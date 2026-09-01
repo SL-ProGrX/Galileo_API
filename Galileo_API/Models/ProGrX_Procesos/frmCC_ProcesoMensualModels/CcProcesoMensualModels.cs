@@ -23,7 +23,7 @@
             public string Usuario { get; set; } = string.Empty;
             public bool UsaPlanillaTransito { get; set; } = false;
             public bool AplicaCambioDeducciones { get; set; } = false;
-            public int Redondeo { get; set; } = 0;
+            public bool Redondeo { get; set; } = false;
             public string NombreInstitucion { get; set; } = string.Empty;
             public string NombreEmpresa{ get; set; } = string.Empty;
         }

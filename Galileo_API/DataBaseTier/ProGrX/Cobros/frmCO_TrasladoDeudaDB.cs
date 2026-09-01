@@ -384,12 +384,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>("La Línea para Traslado de Deudas No Existe.");
 
             const string sqlLinea = @"select isnull(count(*),0) from catalogo where codigo = @codigo;";
-            int existeLinea = conn.QueryFirstOrDefault<int>(sqlLinea, new { codigo = lineaNueva });
+            int existeLinea = conn.QueryFirstOrDefault<int>(sqlLinea, new { codigo = lineaNueva }, commandTimeout: 0);
             if (existeLinea <= 0)
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>("La Línea para Traslado de Deudas No Existe.");
 
             const string sqlOperacion = @"select isnull(count(*),0) from reg_creditos where proceso = 'N' and id_solicitud = @id_solicitud;";
-            int existeOpNormal = conn.QueryFirstOrDefault<int>(sqlOperacion, new { id_solicitud = data.id_solicitud.Value });
+            int existeOpNormal = conn.QueryFirstOrDefault<int>(sqlOperacion, new { id_solicitud = data.id_solicitud.Value }, commandTimeout: 0);
             if (existeOpNormal <= 0)
             {
                 return DbHelper.CreateErrorResponse<CoTrasladoDeudaAplicarResponse>(
@@ -428,11 +428,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         private static DateTime ObtenerFechaServidor(SqlConnection conn)
         {
-            return conn.QueryFirstOrDefault<DateTime>("select dbo.MyGetdate();");
+            return conn.QueryFirstOrDefault<DateTime>("select dbo.MyGetdate();", commandTimeout: 0);
         }
         private static int ObtenerContabilidadEnlace(SqlConnection conn)
         {
-            return conn.QueryFirstOrDefault<int>("select isnull(COD_EMPRESA_ENLACE,0) from SIF_EMPRESA;");
+            return conn.QueryFirstOrDefault<int>("select isnull(COD_EMPRESA_ENLACE,0) from SIF_EMPRESA;", commandTimeout: 0);
         }
         private static int ObtenerSysPlanPagos(SqlConnection conn)
         {
@@ -442,12 +442,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         where TABLE_NAME = 'SIF_EMPRESA'
           and COLUMN_NAME = 'SysCrdPlanPago';";
 
-            int existe = conn.QueryFirstOrDefault<int>(sqlExiste);
+            int existe = conn.QueryFirstOrDefault<int>(sqlExiste, commandTimeout: 0);
             if (existe <= 0)
                 return 0;
 
             return conn.QueryFirstOrDefault<int>(
-                "select isnull(SysCrdPlanPago,0) from SIF_EMPRESA;");
+                "select isnull(SysCrdPlanPago,0) from SIF_EMPRESA;",
+                commandTimeout: 0);
         }
         private static CabeceraOperacionRow? ObtenerCabeceraOperacion(SqlConnection conn, long id_solicitud, int sysPlanPagos)
         {
@@ -510,7 +511,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 left join vista_morosidad v on r.id_solicitud = v.id_solicitud
                 where r.id_solicitud = @id_solicitud;";
 
-            return conn.QueryFirstOrDefault<CabeceraOperacionRow>(sql, new { id_solicitud });
+            return conn.QueryFirstOrDefault<CabeceraOperacionRow>(sql, new { id_solicitud }, commandTimeout: 0);
         }
         private ResumenDeudaRow ObtenerResumenDeuda(SqlConnection conn, long id_solicitud, DateTime fechaServidor, int sysPlanPagos, CabeceraOperacionRow cabecera)
         {
@@ -522,7 +523,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     {
                         Operacion = id_solicitud,
                         Fecha = fechaServidor.ToString(FECHA, CultureInfo.InvariantCulture)
-                    }) ?? new PlanPagoCancelacionRow();
+                    },
+                    commandTimeout: 0) ?? new PlanPagoCancelacionRow();
 
                 return new ResumenDeudaRow
                 {
@@ -634,7 +636,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             {
                 id_solicitud,
                 porcentaje = porcentajeBase
-            }).ToList();
+            }, commandTimeout: 0).ToList();
         }
         private static string TraducirProceso(string? proceso)
         {
@@ -677,7 +679,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             {
                 Contabilidad = contabilidad,
                 id_solicitud
-            }) ?? new OficinaContexto();
+            }, commandTimeout: 0) ?? new OficinaContexto();
 
             if (!string.IsNullOrWhiteSpace(row.cod_oficina))
             {
@@ -687,7 +689,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             var op = conn.QueryFirstOrDefault<SpOperacionCtasRow>(
                 "exec spCrdOperacionCtas @Operacion",
-                new { Operacion = id_solicitud }) ?? new SpOperacionCtasRow();
+                new { Operacion = id_solicitud },
+                commandTimeout: 0) ?? new SpOperacionCtasRow();
 
             row.cod_oficina = op.cod_oficina_r;
             row.cod_unidad = op.cod_unidad;
@@ -702,7 +705,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 select top 1 isnull(cod_oficina,'')
                 from sif_oficinas
                 where estado = 1 and oficina_omision = 1;";
-            return conn.QueryFirstOrDefault<string>(sql) ?? string.Empty;
+            return conn.QueryFirstOrDefault<string>(sql, commandTimeout: 0) ?? string.Empty;
         }
         private DocumentoContexto ConstruirDocumentoInicial(SqlConnection conn,int codEmpresa, CoTrasladoDeudaObtenerDto baseDto,CoTrasladoDeudaCalcularResponse calc,string notas,string usuario)
         {
@@ -773,7 +776,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 DETALLE = notas,
                 DOCUMENTO = deposito,
                 LINEA11 = lineas[11]
-            });
+            }, commandTimeout: 0);
 
             return new DocumentoContexto
             {
@@ -793,7 +796,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 from vAfi_Persona_Deductora
                 where cedula = @cedula;";
 
-            var row = conn.QueryFirstOrDefault<PriDeducRow>(sql, new { cedula }) ?? new PriDeducRow();
+            var row = conn.QueryFirstOrDefault<PriDeducRow>(sql, new { cedula }, commandTimeout: 0) ?? new PriDeducRow();
 
             if (row.pri_deduc > 0)
                 return row.pri_deduc;
@@ -809,7 +812,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 from catalogo
                 where codigo = @codigo;";
 
-            return conn.QueryFirstOrDefault<CuentasNuevaLineaRow>(sql, new { codigo = lineaNueva }) ?? new CuentasNuevaLineaRow();
+            return conn.QueryFirstOrDefault<CuentasNuevaLineaRow>(sql, new { codigo = lineaNueva }, commandTimeout: 0) ?? new CuentasNuevaLineaRow();
         }
         private static long InsertarNuevaOperacion(SqlConnection conn, SqlTransaction tx, InsertNuevaOperacionArgs a)
         {
@@ -864,7 +867,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 base_calculo = a.baseCalculo,
                 cod_divisa = a.codDivisa,
                 dia_pago = a.diaPago
-            }, tx);
+            }, tx, commandTimeout: 0);
 
             const string sqlMax = @"
                 select isnull(max(id_solicitud),0)
@@ -876,12 +879,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             {
                 cedula = a.identificacion,
                 codigo = a.lineaNueva
-            }, tx);
+            }, tx, commandTimeout: 0);
         }
         private static decimal ObtenerFechaProcesoActual(SqlConnection conn, SqlTransaction tx)
         {
             return conn.QueryFirstOrDefault<decimal>(
                 "select dbo.fxSIFDateTimeToProceso(dbo.MyGetdate());",
+                commandTimeout: 0,
                 transaction: tx);
         }
         private static void RegistrarAsiento(SqlConnection conn, SqlTransaction? tx, AsientoArgs args)
@@ -904,7 +908,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     Referencia2 = args.referencia2,
                     Referencia3 = args.referencia3
                 },
-                tx);
+                tx,
+                commandTimeout: 0);
         }
         private void EjecutarFlujoPlanPagos(SqlConnection conn, SqlTransaction tx, AplicacionContexto ctx)
         {
@@ -915,7 +920,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     Operacion = ctx.data.id_solicitud,
                     Fecha = ctx.fecha.ToString(FECHA, CultureInfo.InvariantCulture)
                 },
-                tx);
+                tx,
+                commandTimeout: 0);
 
             conn.Execute(
                 "exec spCrdPlanPagoAbonoCancelacion @Operacion, @Concepto, @Usuario, @TipoCom, @NumCom, @Abono, @FechaChr, @Caja",
@@ -930,7 +936,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     FechaChr = ctx.fecha.ToString("yyyy/MM/dd HH:mm:ss", CultureInfo.InvariantCulture),
                     Caja = ""
                 },
-                tx);
+                tx,
+                commandTimeout: 0);
 
             conn.Execute(@"
                 update reg_creditos
@@ -944,7 +951,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     notas = ctx.notas,
                     id_solicitud = ctx.data.id_solicitud
                 },
-                tx);
+                tx,
+                commandTimeout: 0);
         }
         private void EjecutarFlujoSinPlanPagos(SqlConnection conn, SqlTransaction tx, AplicacionContexto ctx)
         {
@@ -970,7 +978,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     usuario = ctx.usuario,
                     id_solicitud = ctx.data.id_solicitud
                 },
-                tx);
+                tx,
+                commandTimeout: 0);
 
             if (ctx.baseDto.interes_pendiente > 0m)
             {
@@ -1002,7 +1011,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         COD_CONCEPTO = ctx.documento.concepto,
                         USUARIO = ctx.usuario
                     },
-                    tx);
+                    tx,
+                    commandTimeout: 0);
             }
 
             decimal diferenciaSaldo = ctx.baseDto.saldo - ctx.baseDto.principal_mora;
@@ -1034,7 +1044,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     COD_CONCEPTO = ctx.documento.concepto,
                     USUARIO = ctx.usuario
                 },
-                tx);
+                tx,
+                commandTimeout: 0);
 
             conn.Execute(@"
                 update reg_creditos
@@ -1053,7 +1064,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     notas = ctx.notas,
                     id_solicitud = ctx.data.id_solicitud
                 },
-                tx);
+                tx,
+                commandTimeout: 0);
         }
         private void EjecutarAsientosPostCommit(SqlConnection conn, int codEmpresa, AplicacionContexto ctx)
         {
@@ -1075,7 +1087,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     {
                         Tipo = ctx.documento.tipo_documento,
                         Transaccion = ctx.documento.documento
-                    }).ToList();
+                    },
+                    commandTimeout: 0).ToList();
 
                 foreach (var item in cargos)
                 {
@@ -1104,7 +1117,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     {
                         Tipo = ctx.documento.tipo_documento,
                         Transaccion = ctx.documento.documento
-                    }).ToList();
+                    },
+                    commandTimeout: 0).ToList();
 
                 foreach (var item in polizas)
                 {
@@ -1191,7 +1205,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 ? @"select isnull(ctaointc,'') as cta_intc, isnull(ctaointm,'') as cta_intm, isnull(ctaoamort,'') as cta_amortiza from catalogo where codigo = @codigo;"
                 : @"select isnull(ctanintc,'') as cta_intc, isnull(ctanintm,'') as cta_intm, isnull(ctanamort,'') as cta_amortiza from catalogo where codigo = @codigo;";
 
-            return conn.QueryFirstOrDefault<CuentasOperacionBaseRow>(sql, new { codigo = linea }) ?? new CuentasOperacionBaseRow();
+            return conn.QueryFirstOrDefault<CuentasOperacionBaseRow>(sql, new { codigo = linea }, commandTimeout: 0) ?? new CuentasOperacionBaseRow();
         }
         private static void RegistrarHistorialCobro(SqlConnection conn, AplicacionContexto ctx)
         {
@@ -1212,7 +1226,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     TipoDoc = ctx.documento.tipo_documento,
                     Documento = ctx.documento.documento,
                     Usuario = ctx.usuario
-                });
+                },
+                commandTimeout: 0);
         }
         private PrepararAplicacionResult PrepararAplicacion(SqlConnection conn, int codEmpresa, CoTrasladoDeudaAplicarRequest data)
         {
@@ -1337,7 +1352,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             conn.Execute(
                 "exec spCrdPlanPagos @Operacion",
                 new { Operacion = nuevaOperacion },
-                tx);
+                tx,
+                commandTimeout: 0);
         }
         private void EjecutarPostAplicacion(SqlConnection conn, int codEmpresa, AplicacionContexto ctx)
         {

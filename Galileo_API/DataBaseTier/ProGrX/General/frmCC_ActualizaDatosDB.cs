@@ -7,7 +7,7 @@ namespace Galileo_API.DataBaseTier
 {
     public class FrmCcActualizaDatosDb
     {
-        private const int TiempoEsperaSegundos = 300;
+        private const int TiempoEsperaSegundos = 0;
         private const string ProcedimientoActualizaDatos = "spCRDActualizaDatos";
 
         private readonly PortalDB _portalDb;

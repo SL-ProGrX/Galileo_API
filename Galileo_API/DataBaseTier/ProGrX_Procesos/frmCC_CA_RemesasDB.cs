@@ -50,8 +50,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                     WHERE activo = 1
                     ORDER BY cod_entidad;";
 
-                response.lineas = conn.Query<DropDownListaGenericaModel>(sqlLineas).ToList();
-                response.entidades = conn.Query<DropDownListaGenericaModel>(sqlEntidades).ToList();
+                response.lineas = conn.Query<DropDownListaGenericaModel>(sqlLineas, commandTimeout: 0).ToList();
+                response.entidades = conn.Query<DropDownListaGenericaModel>(sqlEntidades, commandTimeout: 0).ToList();
 
                 for (var i = 1; i <= 5; i++)
                 {
@@ -106,7 +106,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                         Fecha = request.fecha_vence.Date,
                         NCuotas = request.cuotas
                     },
-                    commandType: CommandType.StoredProcedure).ToList();
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0).ToList();
 
                 return DbHelper.CreateOkResponse(lista);
             }
@@ -126,7 +127,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             try
             {
                 var lista = conn.Query(
-                        @"EXEC spPrm_CA_Remesa_Envia_Pendiente")
+                        @"EXEC spPrm_CA_Remesa_Envia_Pendiente",
+                        commandTimeout: 0)
                         .Select(x => new DropDownListaGenericaModel
                         {
                             item = x.IdX,
@@ -154,7 +156,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 var lista = conn.Query<CcCaRemesasRecibeDetalleData>(
                     "spPrm_CA_Remesa_Consultas",
                     new { NumGeneracion = remesa },
-                    commandType: CommandType.StoredProcedure).ToList();
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0).ToList();
 
                 return DbHelper.CreateOkResponse(lista);
             }
@@ -177,7 +180,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             {
                 var item = conn.QueryFirstOrDefault<CcCaRemesasEnvioPendienteData>(
                     "spPrm_CA_Remesa_Envia_Pendiente",
-                    commandType: CommandType.StoredProcedure);
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0);
 
                 return DbHelper.CreateOkResponse(item);
             }
@@ -200,7 +204,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             {
                 var item = conn.QueryFirstOrDefault<dynamic>(
                     "spPrm_CA_Remesa_Envia_Numero_Genracion",
-                    commandType: CommandType.StoredProcedure);
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0);
 
                 long numero = item == null ? 0 : Convert.ToInt64(item.IdGenera);
                 return DbHelper.CreateOkResponse(numero);
@@ -277,7 +282,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                             FecUlt = item.fecult ?? string.Empty,
                             TipoCuota = item.tipo ?? string.Empty
                         },
-                        commandType: CommandType.StoredProcedure);
+                        commandType: CommandType.StoredProcedure,
+                        commandTimeout: 0);
                 }
 
                 return DbHelper.OkResponse("Información para cobro automático realizada satisfactoriamente.");
@@ -305,7 +311,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 var lista = conn.Query<CcCaRemesasArchivoBancoRow>(
                     "spPrm_CA_Remesa_Archivo_Envia",
                     new { Remesa = numeroGeneracion },
-                    commandType: CommandType.StoredProcedure).ToList();
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0).ToList();
 
                 if (lista.Count == 0)
                     return DbHelper.CreateErrorResponse<ArchivoDto>(
@@ -439,7 +446,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                             Estado = estado,
                             Usuario = (request.usuario ?? string.Empty).Trim()
                         },
-                        commandType: CommandType.StoredProcedure);
+                        commandType: CommandType.StoredProcedure,
+                        commandTimeout: 0);
                 }
 
                 return DbHelper.OkResponse("Autorizaciones cargadas correctamente.");
@@ -474,7 +482,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                         Remesa = numeroGeneracion,
                         Usuario = usuario.Trim()
                     },
-                    commandType: CommandType.StoredProcedure);
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0);
 
                 return DbHelper.OkResponse("Remesa cerrada correctamente.");
             }
@@ -511,7 +520,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                         Documento = request.numero_documento.Trim(),
                         Proceso = request.lote
                     },
-                    commandType: CommandType.StoredProcedure);
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0);
 
                 response.pendientes = row == null ? 0 : Convert.ToInt32(row.Procesado ?? 0);
 
@@ -552,7 +562,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                         Usuario = request.usuario.Trim(),
                         Remesa = request.numero_generacion
                     },
-                    commandType: CommandType.StoredProcedure);
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0);
 
                 return DbHelper.CreateOkResponse(true);
             }
@@ -612,7 +623,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                         Cedula = request.cedula?.Trim() ?? string.Empty,
                         Nombre = request.nombre?.Trim() ?? string.Empty
                     },
-                    commandType: CommandType.StoredProcedure).ToList();
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0).ToList();
 
                 response.detalle = lista;
                 response.total_compromiso = lista.Sum(x => x.monto_cuota);

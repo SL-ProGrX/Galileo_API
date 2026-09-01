@@ -56,9 +56,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
 
             return _dbCargaArchivos.CargarDeduccionesGenerico(request, reglas);
         }
-        public ErrorDto<CcProcesoMensualEstadoResponse> CcProcesoMensual_EstadoActualProceso_Obtener(int codEmpresa, int gInstitucion)
+        public ErrorDto<CcProcesoMensualEstadoResponse> CcProcesoMensual_EstadoActualProceso_Obtener(int codEmpresa, int gInstitucion, string? pasoEjecutado = null)
         {
-            return _dbEstado.CcProcesoMensual_EstadoActualProceso_Obtener(codEmpresa, gInstitucion);
+            return _dbEstado.CcProcesoMensual_EstadoActualProceso_Obtener(codEmpresa, gInstitucion, pasoEjecutado);
         }
         public ErrorDto<CcProcesoMensualCargaConfigDbModel> CcProcesoMensual_DatosInstitucion_Obtener(int codEmpresa, int codInstitucion)
         {

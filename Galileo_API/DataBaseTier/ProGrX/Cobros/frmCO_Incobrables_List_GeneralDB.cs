@@ -37,7 +37,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     commandText: spName,
                     parameters: new { pOperacion, pCxC_Operacion },
                     commandType: CommandType.StoredProcedure,
-                    commandTimeout: 60  
+                    commandTimeout: 0  
                 );
 
                 return conn.Query<CbrIncobrableMovimientos>(cmd).ToList();
@@ -84,7 +84,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         filtros.Usuario
                     },
                     commandType: CommandType.StoredProcedure,
-                    commandTimeout: 60 
+                    commandTimeout: 0 
                 );
 
                 return conn.Query<CbrIncobrableGeneral>(cmd).ToList();

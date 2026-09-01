@@ -20,8 +20,7 @@ namespace Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels
             public bool ExisteParametroProceso { get; set; }
             public string Mensaje { get; set; } = string.Empty;
             public CcProcesoMensualIndicadoresModel Indicadores { get; set; } = new();
-
-
+            public string? PasoEjecutado { get; set; }
         }
 
         public class CcProcesoMensualFrecuenciaSeleccionModel

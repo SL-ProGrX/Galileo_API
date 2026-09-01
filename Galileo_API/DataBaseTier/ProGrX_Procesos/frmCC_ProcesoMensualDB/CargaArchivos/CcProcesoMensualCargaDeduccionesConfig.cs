@@ -89,7 +89,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
             {
                 CodDeduccion = "C",
                 Tipo = TipoCredito,
-                ColumnasOrigen = ["APORTES"],
+                ColumnasOrigen = ["ABONOS"],
                 RequiereCreditosHabilitados = true,
                 InsertaSoloSiMontoMayorQueCero = true
             }

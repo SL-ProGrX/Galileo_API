@@ -51,7 +51,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             try
             {
-                var raw = conn.Query<dynamic>(CoAplFndPrioridadConst.SP_LISTA).AsList();
+                var raw = conn.Query<dynamic>(CoAplFndPrioridadConst.SP_LISTA, commandTimeout: 0).AsList();
 
                 var lista = MapRaw(raw);
                 lista = AplicarFiltro(lista, filtros.filtro);
@@ -140,7 +140,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var rs = conn.QueryFirstOrDefault<dynamic>(CoAplFndPrioridadConst.SP_DEL,new  {
                     Codigo = cod,
                     Usuario = usuario
-                });
+                }, commandTimeout: 0);
 
                 var respuestaSp = LeerRespuestaSp(rs);
 
@@ -180,7 +180,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     from vCBR_Pagos_Apl_Config_Garantias_Disponibles
                     order by CODIGO;";
 
-                return conn.Query<DropDownListaGenericaModel>(query).ToList();
+                return conn.Query<DropDownListaGenericaModel>(query, commandTimeout: 0).ToList();
             });
         }
 
@@ -196,7 +196,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     from CBR_ACUEDOS_APLICACION_PARAMETROS
                     where CODIGO = 'PRIO';";
 
-                int? valor = conn.QueryFirstOrDefault<int?>(query);
+                int? valor = conn.QueryFirstOrDefault<int?>(query, commandTimeout: 0);
                 return valor ?? 0;
             });
         }
@@ -217,7 +217,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 p.Add("@Valor", prioridad);
                 p.Add("@Usuario", usuario);
 
-                conn.Execute(CoAplFndPrioridadConst.SP_PRIORIDAD_EJECUCION, p);
+                conn.Execute(CoAplFndPrioridadConst.SP_PRIORIDAD_EJECUCION, p, commandTimeout: 0);
 
                 string detalleMovimiento = prioridad == 0
                     ? "Prioridad de Ejecución del Proceso de Aplicación de Fondos, Prioriza Pago a Creditos"
@@ -242,7 +242,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
         private static bool ExisteCodigo(SqlConnection conn, string codigo)
         {
-            var raw = conn.Query<dynamic>(CoAplFndPrioridadConst.SP_LISTA).AsList();
+            var raw = conn.Query<dynamic>(CoAplFndPrioridadConst.SP_LISTA, commandTimeout: 0).AsList();
 
             for (int i = 0; i < raw.Count; i++)
             {
@@ -411,7 +411,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 p.Add("@Activo", activo);
                 p.Add("@Usuario", usuario);
 
-                var rs = conn.QueryFirstOrDefault<dynamic>(CoAplFndPrioridadConst.SP_ADD, p);
+                var rs = conn.QueryFirstOrDefault<dynamic>(CoAplFndPrioridadConst.SP_ADD, p, commandTimeout: 0);
 
                 return ProcesarRespuestaGuardar(
                     CodEmpresa,
