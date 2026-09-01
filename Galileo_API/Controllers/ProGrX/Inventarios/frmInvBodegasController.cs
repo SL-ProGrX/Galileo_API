@@ -11,10 +11,10 @@ namespace Galileo.Controllers
     [ApiController]
     public class FrmInvBodegasController : ControllerBase
     {
-        private readonly FrmInvBodegasBL _bl;
+        private readonly FrmInvBodegasBl _bl;
         public FrmInvBodegasController(IConfiguration config)
         {
-            _bl = new FrmInvBodegasBL(config);
+            _bl = new FrmInvBodegasBl(config);
         }
 
         [HttpGet("Autorizador_Obtener")]
