@@ -2,6 +2,7 @@ using Dapper;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
 using Galileo.Models.Security;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier
 {
@@ -378,152 +379,172 @@ namespace Galileo.DataBaseTier
         }
 
         private ErrorDto INV_TipoES_Guardar(
-            int CodEmpresa,
-            TipoEsGuardarRequest? request,
-            bool esNuevo)
+    int CodEmpresa,
+    TipoEsGuardarRequest? request,
+    bool esNuevo)
         {
-            var validacion =
-                INV_TipoES_Guardar_Validar(request);
+            var validacion = INV_TipoES_Guardar_Validar(request);
 
             if (validacion is not null)
             {
                 return validacion;
             }
 
-            var codigo =
-                INV_TipoES_Codigo_Normalizar(
-                    request!.cod_entsal);
-
-            var descripcion =
-                request.descripcion
-                    .Trim()
-                    .ToUpperInvariant();
-
-            var tipo =
-                INV_TipoES_Tipo_Normalizar(
-                    request.tipo);
-
-            var cuenta =
-                INV_TipoES_Cuenta_Normalizar(
-                    request.cod_cuenta);
-
-            var usuario = request.usuario.Trim();
-
-            const string queryExiste = """
-                select count(1)
-                from pv_entrada_salida
-                where cod_entsal = @cod_entsal;
-                """;
-
-            const string queryInsertar = """
-                insert into pv_entrada_salida
-                (
-                    cod_entsal,
-                    descripcion,
-                    cod_cuenta,
-                    tipo,
-                    activo
-                )
-                values
-                (
-                    @cod_entsal,
-                    @descripcion,
-                    @cod_cuenta,
-                    @tipo,
-                    @activo
-                );
-                """;
-
-            const string queryActualizar = """
-                update pv_entrada_salida
-                set
-                    descripcion = @descripcion,
-                    cod_cuenta = @cod_cuenta,
-                    tipo = @tipo,
-                    activo = @activo
-                where cod_entsal = @cod_entsal;
-                """;
-
-            var parametros = new
-            {
-                cod_entsal = codigo,
-                descripcion,
-                cod_cuenta = cuenta,
-                tipo,
-                request.activo
-            };
-
-            var resultado = DbHelper.WithConn(
-                _portalDb,
-                CodEmpresa,
-                connection =>
-                {
-                    var existe =
-                        connection.QueryFirstOrDefault<int>(
-                            queryExiste,
-                            new
-                            {
-                                cod_entsal = codigo
-                            }) > 0;
-
-                    if (esNuevo && existe)
-                    {
-                        return DbHelper.ErrorResponse(
-                            "El c&oacute;digo del tipo de movimiento ya existe.",
-                            CodigoValidacion);
-                    }
-
-                    if (!esNuevo && !existe)
-                    {
-                        return DbHelper.ErrorResponse(
-                            "El tipo de movimiento indicado no existe.",
-                            CodigoValidacion);
-                    }
-
-                    var query = esNuevo
-                        ? queryInsertar
-                        : queryActualizar;
-
-                    var filasAfectadas =
-                        connection.Execute(
-                            query,
-                            parametros);
-
-                    if (filasAfectadas <= 0)
-                    {
-                        return DbHelper.ErrorResponse(
-                            esNuevo
-                                ? MensajeRegistrarError
-                                : MensajeActualizarError);
-                    }
-
-                    return DbHelper.OkResponse(
-                        esNuevo
-                            ? "Registro agregado correctamente."
-                            : "Registro actualizado correctamente.");
-                });
-
+            var solicitud = request!;
+            var codigo = INV_TipoES_Codigo_Normalizar(solicitud.cod_entsal);
+            var usuario = solicitud.usuario.Trim();
             var mensajeError = esNuevo
                 ? MensajeRegistrarError
                 : MensajeActualizarError;
 
-            var respuesta =
-                INV_TipoES_Resultado_Obtener(
-                    resultado,
-                    mensajeError);
+            var resultado = DbHelper.WithConn(
+                _portalDb,
+                CodEmpresa,
+                connection => INV_TipoES_Guardar_Ejecutar(
+                    connection,
+                    solicitud,
+                    esNuevo));
+
+            var respuesta = INV_TipoES_Resultado_Obtener(
+                resultado,
+                mensajeError);
 
             if (respuesta.Code == 0)
             {
                 INV_TipoES_Bitacora_Registrar(
                     CodEmpresa,
                     usuario,
-                    esNuevo
-                        ? "Registra - WEB"
-                        : "Modifica - WEB",
+                    esNuevo ? "Registra - WEB" : "Modifica - WEB",
                     codigo);
             }
 
             return respuesta;
+        }
+
+        /// <summary>
+        /// Ejecuta el registro o la actualizacion del tipo de movimiento.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="request"></param>
+        /// <param name="esNuevo"></param>
+        /// <returns></returns>
+        private static ErrorDto INV_TipoES_Guardar_Ejecutar(
+            SqlConnection connection,
+            TipoEsGuardarRequest request,
+            bool esNuevo)
+        {
+            const string queryExiste = """
+            select count(1)
+            from pv_entrada_salida
+            where cod_entsal = @cod_entsal;
+            """;
+
+            const string queryInsertar = """
+            insert into pv_entrada_salida
+            (
+                cod_entsal,
+                descripcion,
+                cod_cuenta,
+                tipo,
+                activo
+            )
+            values
+            (
+                @cod_entsal,
+                @descripcion,
+                @cod_cuenta,
+                @tipo,
+                @activo
+            );
+            """;
+
+            const string queryActualizar = """
+            update pv_entrada_salida
+            set
+                descripcion = @descripcion,
+                cod_cuenta = @cod_cuenta,
+                tipo = @tipo,
+                activo = @activo
+            where cod_entsal = @cod_entsal;
+            """;
+
+            var parametros = new
+            {
+                cod_entsal = INV_TipoES_Codigo_Normalizar(
+                    request.cod_entsal),
+                descripcion = request.descripcion
+                    .Trim()
+                    .ToUpperInvariant(),
+                cod_cuenta = INV_TipoES_Cuenta_Normalizar(
+                    request.cod_cuenta),
+                tipo = INV_TipoES_Tipo_Normalizar(
+                    request.tipo),
+                request.activo
+            };
+
+            var existe = connection.QueryFirstOrDefault<int>(
+                queryExiste,
+                new
+                {
+                    parametros.cod_entsal
+                }) > 0;
+
+            var errorExistencia = INV_TipoES_Guardar_Existencia_Validar(
+                esNuevo,
+                existe);
+
+            if (errorExistencia is not null)
+            {
+                return errorExistencia;
+            }
+
+            var query = esNuevo
+                ? queryInsertar
+                : queryActualizar;
+
+            var filasAfectadas = connection.Execute(
+                query,
+                parametros);
+
+            if (filasAfectadas <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    esNuevo
+                        ? MensajeRegistrarError
+                        : MensajeActualizarError);
+            }
+
+            return DbHelper.OkResponse(
+                esNuevo
+                    ? "Registro agregado correctamente."
+                    : "Registro actualizado correctamente.");
+        }
+
+        /// <summary>
+        /// Valida la existencia del tipo de movimiento segun la operacion solicitada.
+        /// </summary>
+        /// <param name="esNuevo"></param>
+        /// <param name="existe"></param>
+        /// <returns></returns>
+        private static ErrorDto? INV_TipoES_Guardar_Existencia_Validar(
+            bool esNuevo,
+            bool existe)
+        {
+            if (esNuevo && existe)
+            {
+                return DbHelper.ErrorResponse(
+                    "El c&oacute;digo del tipo de movimiento ya existe.",
+                    CodigoValidacion);
+            }
+
+            if (!esNuevo && !existe)
+            {
+                return DbHelper.ErrorResponse(
+                    "El tipo de movimiento indicado no existe.",
+                    CodigoValidacion);
+            }
+
+            return null;
         }
 
         private static ErrorDto? INV_TipoES_Guardar_Validar(
