@@ -1,257 +1,600 @@
 using Dapper;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
-using Newtonsoft.Json;
 using System.Globalization;
+using System.Text;
 
 namespace Galileo.DataBaseTier
 {
-    public class FrmInvKardexDB
+    public class FrmInvKardexDb
     {
+        private const string Todos = "Todos";
+        private const int PaginacionMaxima = 1000;
+
+        private const string ErrorEmpresaRequerida =
+            "El c&oacute;digo de la empresa es requerido.";
+
+        private const string ErrorFiltroRequerido =
+            "Los filtros del kardex son requeridos.";
+
+        private const string ErrorFechaInicioRequerida =
+            "La fecha de inicio es requerida.";
+
+        private const string ErrorFechaCorteRequerida =
+            "La fecha de corte es requerida.";
+
+        private const string ErrorFormatoFechas =
+            "Las fechas deben utilizar el formato yyyy-MM-dd.";
+
+        private const string ErrorRangoFechas =
+            "La fecha de inicio no puede ser mayor que la fecha de corte.";
+
+        private const string ErrorPaginaInvalida =
+            "La posici&oacute;n inicial de la p&aacute;gina no es v&aacute;lida.";
+
+        private const string ErrorPaginacionInvalida =
+            "La cantidad de registros por p&aacute;gina no es v&aacute;lida.";
+
+        private const string ErrorConsultarBodegas =
+            "Ocurri&oacute; un error al consultar las bodegas.";
+
+        private const string ErrorConsultarMovimientos =
+            "Ocurri&oacute; un error al consultar los movimientos del kardex.";
+
+        private const string QueryBodegas = """
+            SELECT
+                B.cod_bodega,
+                B.descripcion
+            FROM pv_bodegas B
+            ORDER BY B.cod_bodega
+            """;
+
+        private const string QueryTotal = """
+            SELECT COUNT(1)
+            FROM pv_inventario_mov M
+            INNER JOIN pv_productos P
+                ON M.cod_producto = P.cod_producto
+            INNER JOIN pv_bodegas B
+                ON M.cod_bodega = B.cod_bodega
+            """;
+
+        private const string QueryMovimientos = """
+            SELECT
+                M.fecha,
+                RTRIM(M.cod_producto) + ' - ' +
+                    RTRIM(P.descripcion) AS producto,
+                CASE M.tipo
+                    WHEN 'E' THEN 'ENTRADA'
+                    WHEN 'S' THEN 'SALIDA'
+                    ELSE ''
+                END AS tipox,
+                M.origen,
+                M.codigo,
+                ISNULL(M.existencia, 0) AS existencia,
+                M.cantidad,
+                CASE
+                    WHEN M.tipo = 'E'
+                        THEN ISNULL(M.existencia, 0) + M.cantidad
+                    WHEN M.tipo = 'S'
+                        THEN ISNULL(M.existencia, 0) - M.cantidad
+                    ELSE ISNULL(M.existencia, 0)
+                END AS existenciax,
+                M.precio,
+                M.cantidad * M.precio AS totalsinimp,
+                (M.cantidad * M.precio) *
+                    (M.imp_ventas / 100.0) AS impventas,
+                (M.cantidad * M.precio) *
+                    (M.imp_consumo / 100.0) AS impconsumo,
+                (M.cantidad * M.precio) +
+                    ((M.cantidad * M.precio) *
+                        (M.imp_ventas / 100.0)) +
+                    ((M.cantidad * M.precio) *
+                        (M.imp_consumo / 100.0)) AS totalconimp,
+                RTRIM(M.cod_bodega) + ' - ' +
+                    RTRIM(B.descripcion) AS bodega,
+                ISNULL(
+                    dbo.fxINVBodegaTraslado(
+                        M.origen,
+                        M.tipo,
+                        M.linea
+                    ),
+                    ''
+                ) AS bodegaenlace
+            FROM pv_inventario_mov M
+            INNER JOIN pv_productos P
+                ON M.cod_producto = P.cod_producto
+            INNER JOIN pv_bodegas B
+                ON M.cod_bodega = B.cod_bodega
+            """;
+
         private readonly IConfiguration _config;
 
-        #region Constructor y helpers
-
-        /// <summary>
-        /// Inicializa una nueva instancia de la clase <see cref="FrmInvKardexDB"/>.
-        /// </summary>
-        /// <param name="config">Configuración de la aplicación.</param>
-        public FrmInvKardexDB(IConfiguration config)
+        public FrmInvKardexDb(
+            IConfiguration config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _config = config ??
+                throw new ArgumentNullException(
+                    nameof(config));
         }
 
         /// <summary>
-        /// Crea una instancia de <see cref="PortalDB"/> usando la configuración actual.
+        /// Obtiene las bodegas disponibles para consultar el kardex.
         /// </summary>
-        /// <returns>Instancia de acceso a configuración de base de datos.</returns>
-        private PortalDB CreatePortalDb() => new(_config);
-
-        /// <summary>
-        /// Crea una respuesta vacía para el listado de movimientos.
-        /// </summary>
-        /// <returns>Listado vacío inicializado.</returns>
-        private static MovimientosDtoList CrearListaVacia() => new()
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <returns>Listado de bodegas disponibles.</returns>
+        public ErrorDto<List<InvKardexBodegaDto>>
+            INV_Kardex_Bodegas_Obtener(
+                int CodEmpresa)
         {
-            Total = 0,
-            Movimientos = new List<MovimientosDto>()
-        };
-
-        /// <summary>
-        /// Obtiene el filtro tipado desde la cadena JSON.
-        /// </summary>
-        /// <param name="filtroString">Cadena JSON con los filtros.</param>
-        /// <returns>Objeto de filtros inicializado.</returns>
-        private static MovimientosInventariosFiltros ObtenerFiltros(string filtroString)
-        {
-            return JsonConvert.DeserializeObject<MovimientosInventariosFiltros>(filtroString) ?? new MovimientosInventariosFiltros();
-        }
-
-        /// <summary>
-        /// Valida y normaliza una fecha del filtro.
-        /// </summary>
-        /// <param name="valor">Valor de fecha recibido.</param>
-        /// <param name="nombreCampo">Nombre del campo para mensajes de error.</param>
-        /// <returns>Fecha formateada en yyyy-MM-dd.</returns>
-        /// <exception cref="ArgumentNullException">Se lanza cuando la fecha es nula o vacía.</exception>
-        /// <exception cref="FormatException">Se lanza cuando la fecha no tiene formato válido.</exception>
-        private static string NormalizarFecha(string? valor, string nombreCampo)
-        {
-            if (string.IsNullOrWhiteSpace(valor))
+            if (CodEmpresa <= 0)
             {
-                throw new ArgumentNullException(nombreCampo, $"{nombreCampo} is required");
+                return DbHelper.CreateErrorResponse(
+                    ErrorEmpresaRequerida,
+                    -2,
+                    new List<InvKardexBodegaDto>());
             }
 
-            if (!DateTimeOffset.TryParse(valor, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTimeOffset fecha))
-            {
-                throw new FormatException($"El valor de '{nombreCampo}' no tiene un formato válido.");
-            }
+            var resultado =
+                DbHelper.ExecuteListQuery<
+                    InvKardexBodegaDto>(
+                        CrearPortalDb(),
+                        CodEmpresa,
+                        QueryBodegas);
 
-            return fecha.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            return resultado.Code == 0
+                ? resultado
+                : DbHelper.CreateErrorResponse(
+                    ErrorConsultarBodegas,
+                    resultado.Code.GetValueOrDefault(-1),
+                    new List<InvKardexBodegaDto>());
         }
 
         /// <summary>
-        /// Agrega los filtros del kardex a la consulta y parámetros.
+        /// Obtiene los movimientos del kardex según los filtros indicados.
         /// </summary>
-        /// <param name="filtros">Filtros de búsqueda.</param>
-        /// <param name="whereBuilder">Cláusula WHERE a construir.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarFiltrosKardex(MovimientosInventariosFiltros filtros, System.Text.StringBuilder whereBuilder, DynamicParameters parametros)
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="filtros">Filtros de consulta y paginación.</param>
+        /// <returns>Listado paginado de movimientos del kardex.</returns>
+        public ErrorDto<InvKardexMovimientosListaDto>
+            INV_Kardex_Movimientos_Obtener(
+                int CodEmpresa,
+                InvKardexMovimientosFiltro filtros)
         {
-            string fechaInicio = NormalizarFecha(filtros.fecha_inicio, nameof(filtros.fecha_inicio));
-            string fechaCorte = NormalizarFecha(filtros.fecha_corte, nameof(filtros.fecha_corte));
+            var validacion =
+                INV_Kardex_Filtros_Validar(
+                    CodEmpresa,
+                    filtros);
 
-            whereBuilder.Append(" WHERE M.fecha BETWEEN @FechaInicio AND @FechaCorte ");
-            parametros.Add("FechaInicio", fechaInicio + " 00:00:00");
-            parametros.Add("FechaCorte", fechaCorte + " 23:59:59");
-
-            if (!string.Equals(filtros.Tipo, "Todos", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(validacion))
             {
-                if (string.Equals(filtros.Tipo, "E", StringComparison.OrdinalIgnoreCase) || string.Equals(filtros.Tipo, "S", StringComparison.OrdinalIgnoreCase))
+                return DbHelper.CreateErrorResponse(
+                    validacion,
+                    -2,
+                    CrearResultadoVacio());
+            }
+
+            DateTime fechaInicio =
+                DateTime.ParseExact(
+                    filtros.fecha_inicio,
+                    "yyyy-MM-dd",
+                    CultureInfo.InvariantCulture);
+
+            DateTime fechaCorte =
+                DateTime.ParseExact(
+                    filtros.fecha_corte,
+                    "yyyy-MM-dd",
+                    CultureInfo.InvariantCulture);
+
+            NormalizarFiltros(filtros);
+
+            var parametros =
+                CrearParametros(
+                    filtros,
+                    fechaInicio,
+                    fechaCorte);
+
+            string clausulaWhere =
+                CrearClausulaWhere(
+                    filtros,
+                    parametros);
+
+            var resultado = DbHelper.WithConn(
+                CrearPortalDb(),
+                CodEmpresa,
+                connection =>
                 {
-                    whereBuilder.Append(" AND M.Tipo = @Tipo ");
-                    parametros.Add("Tipo", filtros.Tipo);
-                }
-                else
-                {
-                    whereBuilder.Append(" AND M.Origen = @Origen ");
-                    parametros.Add("Origen", filtros.Tipo);
-                }
-            }
+                    var respuesta =
+                        CrearResultadoVacio();
 
-            if (!string.Equals(filtros.cod_Bodega, "Todos", StringComparison.OrdinalIgnoreCase))
-            {
-                whereBuilder.Append(" AND M.COD_BODEGA = @CodBodega ");
-                parametros.Add("CodBodega", filtros.cod_Bodega);
-            }
+                    respuesta.total =
+                        connection.QueryFirstOrDefault<int>(
+                            QueryTotal +
+                            clausulaWhere,
+                            parametros);
 
-            if (!string.Equals(filtros.cod_Producto, "Todos", StringComparison.OrdinalIgnoreCase))
-            {
-                whereBuilder.Append(" AND M.cod_producto = @CodProducto ");
-                parametros.Add("CodProducto", filtros.cod_Producto);
-            }
+                    string consulta =
+                        CrearConsultaMovimientos(
+                            clausulaWhere);
 
-            if (!string.IsNullOrWhiteSpace(filtros.vfiltro))
-            {
-                whereBuilder.Append(@" AND (
-                                        M.cod_producto LIKE @Filtro
-                                        OR P.descripcion LIKE @Filtro
-                                        OR M.codigo LIKE @Filtro
-                                        OR CONVERT(varchar(30), M.Fecha, 120) LIKE @Filtro
-                                      )");
-                parametros.Add("Filtro", $"%{filtros.vfiltro.Trim()}%");
-            }
+                    respuesta.movimientos =
+                        connection.Query<
+                            InvKardexMovimientoDto>(
+                                consulta,
+                                parametros)
+                            .ToList();
+
+                    return respuesta;
+                });
+
+            return resultado.Code == 0
+                ? DbHelper.CreateOkResponse(
+                    resultado.Result ??
+                    CrearResultadoVacio())
+                : DbHelper.CreateErrorResponse(
+                    ErrorConsultarMovimientos,
+                    resultado.Code.GetValueOrDefault(-1),
+                    CrearResultadoVacio());
         }
 
         /// <summary>
-        /// Agrega paginación OFFSET/FETCH a la consulta.
+        /// Valida la empresa y los filtros recibidos.
         /// </summary>
-        /// <param name="pagina">Fila inicial.</param>
-        /// <param name="paginacion">Cantidad de filas.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarPaginacion(int? pagina, int? paginacion, System.Text.StringBuilder queryBuilder, DynamicParameters parametros)
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="filtros">Filtros de consulta.</param>
+        /// <returns>Mensaje de validación o una cadena vacía.</returns>
+        private static string
+            INV_Kardex_Filtros_Validar(
+                int CodEmpresa,
+                InvKardexMovimientosFiltro? filtros)
         {
-            if (!pagina.HasValue || !paginacion.HasValue)
+            if (CodEmpresa <= 0)
+            {
+                return ErrorEmpresaRequerida;
+            }
+
+            if (filtros is null)
+            {
+                return ErrorFiltroRequerido;
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                filtros.fecha_inicio))
+            {
+                return ErrorFechaInicioRequerida;
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                filtros.fecha_corte))
+            {
+                return ErrorFechaCorteRequerida;
+            }
+
+            if (!TryParseFecha(
+                    filtros.fecha_inicio,
+                    out DateTime fechaInicio) ||
+                !TryParseFecha(
+                    filtros.fecha_corte,
+                    out DateTime fechaCorte))
+            {
+                return ErrorFormatoFechas;
+            }
+
+            if (fechaInicio > fechaCorte)
+            {
+                return ErrorRangoFechas;
+            }
+
+            if (filtros.pagina < 0)
+            {
+                return ErrorPaginaInvalida;
+            }
+
+            if (filtros.paginacion <= 0 ||
+                filtros.paginacion >
+                    PaginacionMaxima)
+            {
+                return ErrorPaginacionInvalida;
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Convierte una fecha con el formato requerido.
+        /// </summary>
+        /// <param name="valor">Fecha recibida.</param>
+        /// <param name="fecha">Fecha convertida.</param>
+        /// <returns>True cuando la fecha es válida.</returns>
+        private static bool TryParseFecha(
+            string valor,
+            out DateTime fecha)
+        {
+            return DateTime.TryParseExact(
+                valor,
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out fecha);
+        }
+
+        /// <summary>
+        /// Normaliza los filtros opcionales.
+        /// </summary>
+        /// <param name="filtros">Filtros que se normalizarán.</param>
+        private static void NormalizarFiltros(
+            InvKardexMovimientosFiltro filtros)
+        {
+            filtros.tipo =
+                NormalizarSeleccion(filtros.tipo);
+
+            filtros.cod_bodega =
+                NormalizarSeleccion(
+                    filtros.cod_bodega);
+
+            filtros.cod_producto =
+                NormalizarSeleccion(
+                    filtros.cod_producto);
+
+            filtros.vfiltro =
+                filtros.vfiltro?.Trim() ??
+                string.Empty;
+        }
+
+        /// <summary>
+        /// Normaliza un valor de selección.
+        /// </summary>
+        /// <param name="valor">Valor recibido.</param>
+        /// <returns>Valor normalizado o Todos.</returns>
+        private static string NormalizarSeleccion(
+            string? valor)
+        {
+            return string.IsNullOrWhiteSpace(valor)
+                ? Todos
+                : valor.Trim();
+        }
+
+        /// <summary>
+        /// Crea los parámetros comunes para las consultas.
+        /// </summary>
+        /// <param name="filtros">Filtros de consulta.</param>
+        /// <param name="fechaInicio">Fecha inicial.</param>
+        /// <param name="fechaCorte">Fecha final.</param>
+        /// <returns>Parámetros de las consultas.</returns>
+        private static DynamicParameters CrearParametros(
+            InvKardexMovimientosFiltro filtros,
+            DateTime fechaInicio,
+            DateTime fechaCorte)
+        {
+            var parametros =
+                new DynamicParameters();
+
+            parametros.Add(
+                "FechaInicio",
+                fechaInicio.Date);
+
+            parametros.Add(
+                "FechaCorte",
+                fechaCorte.Date
+                    .AddHours(23)
+                    .AddMinutes(59)
+                    .AddSeconds(59));
+
+            parametros.Add(
+                "Offset",
+                filtros.pagina);
+
+            parametros.Add(
+                "Fetch",
+                filtros.paginacion);
+
+            return parametros;
+        }
+
+        /// <summary>
+        /// Construye la cláusula WHERE parametrizada.
+        /// </summary>
+        /// <param name="filtros">Filtros de consulta.</param>
+        /// <param name="parametros">Parámetros de la consulta.</param>
+        /// <returns>Cláusula WHERE parametrizada.</returns>
+        private static string CrearClausulaWhere(
+            InvKardexMovimientosFiltro filtros,
+            DynamicParameters parametros)
+        {
+            var where =
+                new StringBuilder(
+                    """
+                     WHERE M.fecha BETWEEN
+                         @FechaInicio AND @FechaCorte
+                    """);
+
+            AgregarFiltroTipo(
+                filtros.tipo,
+                where,
+                parametros);
+
+            AgregarFiltroSeleccion(
+                filtros.cod_bodega,
+                "M.cod_bodega",
+                "CodBodega",
+                where,
+                parametros);
+
+            AgregarFiltroSeleccion(
+                filtros.cod_producto,
+                "M.cod_producto",
+                "CodProducto",
+                where,
+                parametros);
+
+            AgregarFiltroGlobal(
+                filtros.vfiltro,
+                where,
+                parametros);
+
+            return where.ToString();
+        }
+
+        /// <summary>
+        /// Agrega el filtro por tipo u origen del movimiento.
+        /// </summary>
+        /// <param name="tipo">Tipo u origen seleccionado.</param>
+        /// <param name="where">Cláusula WHERE.</param>
+        /// <param name="parametros">Parámetros de la consulta.</param>
+        private static void AgregarFiltroTipo(
+            string tipo,
+            StringBuilder where,
+            DynamicParameters parametros)
+        {
+            if (string.Equals(
+                tipo,
+                Todos,
+                StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
 
-            queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
-            parametros.Add("Offset", pagina.Value);
-            parametros.Add("Fetch", paginacion.Value);
-        }
+            bool filtrarPorTipo =
+                string.Equals(
+                    tipo,
+                    "E",
+                    StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(
+                    tipo,
+                    "S",
+                    StringComparison.OrdinalIgnoreCase);
 
-        /// <summary>
-        /// Construye la consulta para contar movimientos del kardex.
-        /// </summary>
-        /// <param name="whereBuilder">Cláusula WHERE construida con fragmentos controlados.</param>
-        /// <returns>Consulta SQL de conteo.</returns>
-        private static string CrearConsultaTotal(System.Text.StringBuilder whereBuilder)
-        {
-            var totalQuery = new System.Text.StringBuilder(@"SELECT COUNT(M.cod_producto)
-                                          FROM pv_inventario_mov M
-                                          INNER JOIN pv_productos P ON M.cod_producto = P.cod_producto
-                                          INNER JOIN pv_Bodegas B ON M.cod_bodega = B.cod_bodega");
-
-            totalQuery.Append(whereBuilder);
-            return totalQuery.ToString();
-        }
-
-        /// <summary>
-        /// Construye la consulta de detalle para movimientos del kardex.
-        /// </summary>
-        /// <param name="whereBuilder">Cláusula WHERE construida con fragmentos controlados.</param>
-        /// <returns>Consulta SQL de detalle.</returns>
-        private static System.Text.StringBuilder CrearConsultaDetalle(System.Text.StringBuilder whereBuilder)
-        {
-            var detalleQuery = new System.Text.StringBuilder(@"SELECT
-                                    M.Fecha,
-                                    (RTRIM(M.cod_producto) + ' - ' + RTRIM(P.descripcion)) AS Producto,
-                                    CASE M.tipo
-                                        WHEN 'E' THEN 'ENTRADA'
-                                        WHEN 'S' THEN 'SALIDA'
-                                    END AS TipoX,
-                                    M.origen,
-                                    M.codigo,
-                                    ISNULL(M.existencia, 0) AS Existencia,
-                                    M.cantidad,
-                                    CASE
-                                        WHEN M.tipo = 'E' THEN ISNULL(M.existencia, 0) + M.Cantidad
-                                        WHEN M.tipo = 'S' THEN ISNULL(M.existencia, 0) - M.Cantidad
-                                    END AS ExistenciaX,
-                                    M.precio,
-                                    (M.cantidad * M.precio) AS TotalSinImp,
-                                    (M.cantidad * M.precio) * (M.imp_ventas / 100) AS ImpVentas,
-                                    (M.cantidad * M.precio) * (M.imp_consumo / 100) AS ImpConsumo,
-                                    (M.cantidad * M.precio) + ((M.cantidad * M.precio) * (M.imp_ventas / 100)) + ((M.cantidad * M.precio) * (M.imp_consumo / 100)) AS TotalConImp,
-                                    (RTRIM(M.cod_bodega) + ' - ' + RTRIM(B.descripcion)) AS Bodega,
-                                    dbo.fxINVBodegaTraslado(M.Origen, M.Tipo, M.Linea) AS BodegaEnlace
-                                FROM pv_inventario_mov M
-                                INNER JOIN pv_productos P ON M.cod_producto = P.cod_producto
-                                INNER JOIN pv_Bodegas B ON M.cod_bodega = B.cod_bodega");
-
-            detalleQuery.Append(whereBuilder);
-            detalleQuery.Append(" ORDER BY M.Fecha desc ");
-            return detalleQuery;
-        }
-
-        #endregion
-
-        #region Consultas
-
-        /// <summary>
-        /// Obtiene las bodegas disponibles.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <returns>Listado de bodegas.</returns>
-        public ErrorDto<List<ConsultaMovimientoBodegaCDdto>> Obtener_Bodegas(int CodEmpresa)
-        {
-            return DbHelper.ExecuteListQuery<ConsultaMovimientoBodegaCDdto>(
-                CreatePortalDb(),
-                CodEmpresa,
-                "SELECT COD_BODEGA, DESCRIPCION FROM PV_BODEGAS");
-        }
-
-        /// <summary>
-        /// Obtiene los movimientos del kardex filtrados y paginados.
-        /// </summary>
-        /// <param name="CodCliente">Código de la empresa cliente.</param>
-        /// <param name="filtroString">Cadena JSON con los filtros.</param>
-        /// <returns>Listado de movimientos del kardex.</returns>
-        public ErrorDto<MovimientosDtoList> consultarMovimientos_Obtener(int CodCliente, string filtroString)
-        {
-            try
+            if (filtrarPorTipo)
             {
-                var filtros = ObtenerFiltros(filtroString);
-                var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
-                {
-                    var respuesta = CrearListaVacia();
-                    var parametros = new DynamicParameters();
-                    var whereBuilder = new System.Text.StringBuilder();
+                where.Append(
+                    " AND M.tipo = @Tipo");
 
-                    AgregarFiltrosKardex(filtros, whereBuilder, parametros);
+                parametros.Add(
+                    "Tipo",
+                    tipo.ToUpperInvariant());
 
-                    string totalQuery = CrearConsultaTotal(whereBuilder);
-                    respuesta.Total = connection.QueryFirstOrDefault<int>(totalQuery, parametros);
-
-                    var detalleQuery = CrearConsultaDetalle(whereBuilder);
-                    AgregarPaginacion(filtros.pagina, filtros.paginacion, detalleQuery, parametros);
-
-                    respuesta.Movimientos = connection.Query<MovimientosDto>(detalleQuery.ToString(), parametros).ToList();
-                    return respuesta;
-                });
-
-                return result.Code == 0
-                    ? DbHelper.CreateOkResponse(result.Result ?? CrearListaVacia())
-                    : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener los movimientos del kardex.", result.Code.GetValueOrDefault(-1), CrearListaVacia());
+                return;
             }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse(ex.Message, -1, CrearListaVacia());
-            }
+
+            where.Append(
+                " AND M.origen = @Origen");
+
+            parametros.Add(
+                "Origen",
+                tipo);
         }
 
-        #endregion
+        /// <summary>
+        /// Agrega un filtro opcional de selección.
+        /// </summary>
+        /// <param name="valor">Valor seleccionado.</param>
+        /// <param name="columna">Columna SQL controlada.</param>
+        /// <param name="parametro">Nombre del parámetro.</param>
+        /// <param name="where">Cláusula WHERE.</param>
+        /// <param name="parametros">Parámetros de la consulta.</param>
+        private static void AgregarFiltroSeleccion(
+            string valor,
+            string columna,
+            string parametro,
+            StringBuilder where,
+            DynamicParameters parametros)
+        {
+            if (string.Equals(
+                valor,
+                Todos,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            where.Append(" AND ");
+            where.Append(columna);
+            where.Append(" = @");
+            where.Append(parametro);
+
+            parametros.Add(
+                parametro,
+                valor);
+        }
+
+        /// <summary>
+        /// Agrega el filtro global de movimientos.
+        /// </summary>
+        /// <param name="filtro">Texto del filtro global.</param>
+        /// <param name="where">Cláusula WHERE.</param>
+        /// <param name="parametros">Parámetros de la consulta.</param>
+        private static void AgregarFiltroGlobal(
+            string filtro,
+            StringBuilder where,
+            DynamicParameters parametros)
+        {
+            if (string.IsNullOrWhiteSpace(filtro))
+            {
+                return;
+            }
+
+            where.Append(
+                """
+                 AND (
+                     M.cod_producto LIKE @Filtro
+                     OR P.descripcion LIKE @Filtro
+                     OR M.codigo LIKE @Filtro
+                     OR M.origen LIKE @Filtro
+                     OR B.descripcion LIKE @Filtro
+                     OR CONVERT(
+                         varchar(30),
+                         M.fecha,
+                         120
+                     ) LIKE @Filtro
+                 )
+                """);
+
+            parametros.Add(
+                "Filtro",
+                $"%{filtro.Trim()}%");
+        }
+
+        /// <summary>
+        /// Construye la consulta paginada de movimientos.
+        /// </summary>
+        /// <param name="clausulaWhere">Cláusula WHERE parametrizada.</param>
+        /// <returns>Consulta paginada de movimientos.</returns>
+        private static string CrearConsultaMovimientos(
+            string clausulaWhere)
+        {
+            return string.Concat(
+                QueryMovimientos,
+                clausulaWhere,
+                """
+                 ORDER BY
+                     M.fecha DESC,
+                     M.linea DESC
+                 OFFSET @Offset ROWS
+                 FETCH NEXT @Fetch ROWS ONLY
+                """);
+        }
+
+        /// <summary>
+        /// Crea una respuesta vacía de movimientos.
+        /// </summary>
+        /// <returns>Respuesta vacía inicializada.</returns>
+        private static
+            InvKardexMovimientosListaDto
+            CrearResultadoVacio()
+        {
+            return new InvKardexMovimientosListaDto
+            {
+                total = 0,
+                movimientos = []
+            };
+        }
+
+        /// <summary>
+        /// Crea el acceso a configuración de base de datos.
+        /// </summary>
+        /// <returns>Instancia de PortalDB.</returns>
+        private PortalDB CrearPortalDb()
+        {
+            return new PortalDB(_config);
+        }
     }
 }
