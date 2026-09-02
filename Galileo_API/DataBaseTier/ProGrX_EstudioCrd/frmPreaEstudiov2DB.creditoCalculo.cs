@@ -1,4 +1,4 @@
-using Dapper;
+﻿using Dapper;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
 using System.Collections.Generic;
@@ -14,7 +14,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// columnas crudas de CRD_PREA_PREANALISIS para estos campos, siempre las
         /// recalcula al mostrar el expediente.
         /// </summary>
-        private static FrmPreaEstudiov2CreditoDto ConstruirCredito(IDbConnection connection, IDictionary<string, object> row)
+        private static FrmPreaEstudiov2CreditoDto ConstruirCredito(
+            IDbConnection connection,
+            IDictionary<string, object> row,
+            string frecuenciaPago)
         {
             var monto = GetDecimal(row, "Monto");
             var plazo = GetInt(row, "Plazo");
@@ -24,7 +27,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             var polizaIncendio = GetBool(row, "apl_poliza_incendio");
             var polizaPrenda = GetBool(row, "APL_POLIZA_VEHICULO");
             var polizaDesempleo = GetBool(row, "APL_POLIZA_DESEMPLEO");
-            var frecuenciaPago = ObtenerFrecuenciaPago(connection, GetString(row, "Cedula"));
 
             var recalculo = RecalcularCreditoPolizas(
                 connection,

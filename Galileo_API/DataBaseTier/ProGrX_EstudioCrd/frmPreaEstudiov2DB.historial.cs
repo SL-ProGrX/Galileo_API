@@ -26,7 +26,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
                 var parameters = new DynamicParameters();
-                parameters.Add("@Expediente", cod_preanalisis.Trim(), DbType.String);
+                parameters.Add("@COD_PREANANLISIS", cod_preanalisis.Trim(), DbType.String);
 
                 var historialEjecutivo = connection.Query<FrmPreaEstudiov2HistorialDto>(
                     "spCrdPreaGetHistorial",

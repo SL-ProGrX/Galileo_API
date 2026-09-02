@@ -28,7 +28,22 @@
         public FrmPreaEstudiov2CreditoDto credito { get; set; } = new();
         public FrmPreaEstudiov2SalariosDto salarios { get; set; } = new();
         public FrmPreaEstudiov2ResumenDto resumen { get; set; } = new();
-        public FrmPreaEstudiov2CatalogosResponse catalogos { get; set; } = new();
+        /// <summary>
+        /// Solo los combos en cascada que dependen de la línea del expediente
+        /// (sbSTCargaCboDestinos / sbSTCargaCboGarantiav2). Los catálogos estáticos
+        /// —líneas, tipos de salario, comités, deducciones, etiquetas, tipos de extra,
+        /// fondos, oficinas, ejecutivos— ya no viajan aquí: VB6 los llena una sola vez en
+        /// Form_Load, no en sbLigarDatos, y Angular los pide con
+        /// Prea_frmPreaEstudiov2_Catalogos_Consultar al abrir la pantalla.
+        /// </summary>
+        public FrmPreaEstudiov2DestinosGarantiasResponse catalogos { get; set; } = new();
+
+        /// <summary>
+        /// Sub-expedientes (fiadores) del expediente principal. VB6 los recarga dentro de
+        /// la misma carga (sbLlenarComboFiltrado sobre cboSubExpediente), así que viajan
+        /// con la respuesta en vez de costar una segunda llamada HTTP.
+        /// </summary>
+        public List<string> sub_expedientes { get; set; } = [];
 
         /// <summary>
         /// Comité resolutivo asignado (VB6: rs!ID_COMITE, dentro del mismo
@@ -391,16 +406,17 @@
         public decimal liquidez_con_fianzas_comp_porc { get; set; }
     }
 
+    /// <summary>
+    /// Catálogos que NO dependen del expediente ni de la línea. VB6 los carga una sola vez
+    /// en Form_Load (sbCargarCombos / sbCargaCboComites / cboFondo / lookups F4); antes se
+    /// reconsultaban en cada carga de expediente.
+    /// </summary>
     public class FrmPreaEstudiov2CatalogosResponse
     {
-        public List<FrmPreaEstudiov2DropdownDto> expedientes { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> lineas { get; set; } = [];
-        public List<FrmPreaEstudiov2DropdownDto> destinos { get; set; } = [];
-        public List<FrmPreaEstudiov2DropdownDto> garantias { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> tipos_salario { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> componentes_adicionales { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> comites { get; set; } = [];
-        public List<FrmPreaEstudiov2DropdownDto> bancos { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> deducciones { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> etiquetas { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> tipos_extra { get; set; } = [];
@@ -1147,6 +1163,13 @@
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
         public int id_adjunto { get; set; } = 0;
+        public List<int> ids_adjuntos { get; set; } = [];
+    }
+
+    public class FrmPreaEstudiov2AdjuntoDescargaDto
+    {
+        public byte[] contenido { get; set; } = [];
+        public string nombre_archivo { get; set; } = string.Empty;
     }
 
     #endregion
@@ -1155,12 +1178,20 @@
 
     public class FrmPreaEstudiov2ResolucionResponse
     {
-        public string comite { get; set; } = string.Empty;
-        public string sesion { get; set; } = string.Empty;
-        public string autorizador { get; set; } = string.Empty;
-        public string resolucion { get; set; } = string.Empty;
-        public string observaciones { get; set; } = string.Empty;
-        public List<FrmPreaEstudiov2HistorialDto> historial { get; set; } = [];
+        public string acta { get; set; } = string.Empty;
+        public string acta_sesion { get; set; } = string.Empty;
+        public DateTime? acta_fecha { get; set; }
+        public List<FrmPreaEstudiov2ResolucionDetalleDto> detalle { get; set; } = [];
+    }
+
+    public class FrmPreaEstudiov2ResolucionDetalleDto
+    {
+        public string estado { get; set; } = string.Empty;
+        public DateTime? registro_fecha { get; set; }
+        public string registro_usuario { get; set; } = string.Empty;
+        public string notas { get; set; } = string.Empty;
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
     }
 
     #endregion

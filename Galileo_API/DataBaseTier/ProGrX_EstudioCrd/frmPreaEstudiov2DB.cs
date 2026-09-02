@@ -38,8 +38,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         ///   - salarios.tabla_salarios/extras/incapacidades: ObtenerTablaSalarios/ObtenerExtras/
         ///     ObtenerIncapacidades (réplica de sbSalarios_Load/sbExtras_Load/sbIncapacidades_Load).
         ///   - comite_resolutivo: rs!ID_COMITE (sí está en el recordset plano).
-        ///   - salario_minimo_inembargable/salario_normativa: ObtenerParametrosSalario
-        ///     (parámetros globales de empresa, CRD_PREA_PARAMETROS, no del expediente).
+        ///   - salario_minimo_inembargable/salario_normativa, edad máxima permitida,
+        ///     % P.S.D. y % FRAP/FAP: ParametrosGlobales (parámetros globales de empresa,
+        ///     CRD_PREA_PARAMETROS, no del expediente; una sola lectura por carga).
         ///
         /// Campos que SIGUEN sin origen confirmado (quedan con su valor por defecto):
         ///   - encabezado.clasificacion_crediticia (rs!CATEGORIA en LigarDatosClasificacion, sub aparte)
@@ -76,6 +77,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
+                // La carga de un expediente encadena decenas de consultas sobre esta misma
+                // conexión. Dapper la abre y la cierra en cada Query cuando llega cerrada,
+                // así que se abre una sola vez aquí y el using se encarga de cerrarla.
+                connection.Open();
+
+                // Snapshot único de CRD_PREA_PARAMETROS (ver ParametrosGlobales): antes se
+                // leía 5 veces durante esta misma carga.
+                var parametros = ParametrosGlobales.Leer(connection);
+
                 // clsEntidad concatena el parámetro como literal SQL (fxFormatearValor),
                 // no como parámetro nombrado. Se replica igual, escapando comillas simples.
                 const string sql = "EXEC spCRDPreaPREANALISIS_T @CodPreanalisis";
@@ -97,16 +107,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 // sin importar cómo los haya declarado el SP en la base de datos.
                 IDictionary<string, object> row = new Dictionary<string, object>(rawRow, StringComparer.OrdinalIgnoreCase);
 
-                var extrasFijas = GetDecimal(row, "EXTRAS_FIJAS");
-                var porcComponenteAdicional = GetDecimal(row, "PORCENTAJE_COMPONENTE_AD");
-                var (edadAplica, edadJustificacion) = ObtenerJustificacionEdad(connection, codPreanalisis);
+                // Estado de la persona, edad, frecuencia de pago y justificación de edad
+                // en un solo batch (antes eran cuatro consultas sueltas).
+                var datosPersona = ObtenerDatosPersona(
+                    connection,
+                    GetString(row, "Cedula"),
+                    GetDateTime(row, "fecha_nacimiento"),
+                    codPreanalisis);
+
                 var lineaActual = GetString(row, "Cod_Linea");
-                var (_, _, porcFrapFap) = ObtenerParametrosCargas(connection);
-                var porcPsd = ObtenerPorcentajePsd(connection);
+                // '09' -> GlobalPorcFRAPFAP, '13' -> GlobalPorcPSD (mPreAnalisis.bas,
+                // sbInicializaGlobales).
+                var porcFrapFap = parametros.Decimal("09");
+                var porcPsd = parametros.Decimal("13");
                 var ptsExtraFrap = row.ContainsKey("PTS_EXTRA_FRAP")
                     ? GetDecimal(row, "PTS_EXTRA_FRAP")
                     : GetDecimal(row, "PTS_EXTRA_FAP");
-                var credito = ConstruirCredito(connection, row);
+                var credito = ConstruirCredito(connection, row, datosPersona.FrecuenciaPago);
                 var esExpedientePrincipal = EsExpedientePrincipal(codPreanalisis);
                 var psd = CalcularPsd(credito.monto, porcPsd, esExpedientePrincipal);
                 var montoGirar = CalcularMontoGirar(
@@ -137,11 +154,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         nombre = GetString(row, "Nombre"),
                         sexo = GetString(row, "sexo"),
                         fecha_nacimiento = GetDateTime(row, "fecha_nacimiento"),
-                        estado_persona = ObtenerEstadoPersona(connection, GetString(row, "Cedula")),
-                        edad = ObtenerEdad(connection, GetDateTime(row, "fecha_nacimiento")),
+                        estado_persona = datosPersona.EstadoPersona,
+                        edad = datosPersona.Edad,
                         clasificacion_crediticia = ObtenerClasificacionCrediticia(connection, GetString(row, "Cedula"), GetString(row, "Estado")),
-                        edad_aplica = edadAplica,
-                        edad_justificacion = edadJustificacion,
+                        edad_aplica = datosPersona.EdadAplica,
+                        edad_justificacion = datosPersona.EdadJustificacion,
                         observacion_analista = GetString(row, "OBSERVACION_ANALISTA"),
                         observacion_comite = GetString(row, "OBSERVACION_COMITE"),
                         observacion_jd = GetString(row, "OBSERVACION_JD"),
@@ -149,25 +166,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         registro_fecha = GetDateTime(row, "FECHA_CREACION"),
                     },
                     credito = credito,
-                    salarios = new FrmPreaEstudiov2SalariosDto
-                    {
-                        tipo_salario = GetString(row, "tipo_salario"),
-                        corte_colilla = GetDateTime(row, "FECHA_CORTE_COLIILA"), // nombre real en VB6 (con typo)
-                        salario_devengado = GetDecimal(row, "SALARIO_DEVENGADO_COLILLA"),
-                        salario_mensual = GetDecimal(row, "DEVENGADO_MES"),
-                        salario_constancia = GetDecimal(row, "SALARIO_CONSTANCIA"),
-                        salario_orden_patronal = GetDecimal(row, "SALARIO_ORDEN_PATRONAL"),
-                        ingreso_privado = GetDecimal(row, "MONTO_ACT_PRIVADAS"),
-                        componente_adicional_id = GetInt(row, "ID_COMPONENTE_AD"),
-                        componente_adicional_porc = porcComponenteAdicional,
-                        componente_adicional_base = extrasFijas,
-                        // Replica el cálculo cliente de VB6: txtCompAdicional = base * porc / 100
-                        componentes_adicionales = Math.Round(extrasFijas * porcComponenteAdicional / 100m, 2),
-                        total_extras = GetDecimal(row, "REBAJO_EXTRAS"),
-                        tabla_salarios = ObtenerTablaSalarios(connection, codPreanalisis),
-                        extras = ObtenerExtras(connection, codPreanalisis),
-                        incapacidades = ObtenerIncapacidades(connection, codPreanalisis),
-                    },
+                    salarios = ConstruirSalarios(connection, row, codPreanalisis),
                     resumen = new FrmPreaEstudiov2ResumenDto
                     {
                         salario_real = GetDecimal(row, "SALARIO_REAL"),
@@ -209,15 +208,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         liquidez_con_fianzas_comp = GetDecimal(row, "LIQUIDEZ_CFIANZAS_CA"),
                         liquidez_con_fianzas_comp_porc = GetDecimal(row, "PORC_LIQ_CON_FIANZA_CA"),
                     },
-                    catalogos = CargarCatalogos(connection, request.usuario?.Trim() ?? string.Empty, lineaActual),
+                    catalogos = ObtenerDestinosGarantiasResponse(connection, lineaActual),
                     comite_resolutivo = GetString(row, "ID_COMITE"),
                 };
 
-                (result.Result.salario_minimo_inembargable, result.Result.salario_normativa) =
-                    ObtenerParametrosSalario(connection);
+                // '17' -> GlobalSalarioMinimoInembargable,
+                // GlobalSalarioNormativo = VALOR('17') + VALOR('22').
+                var salarioMinimoInembargable = parametros.Decimal("17");
+                result.Result.salario_minimo_inembargable = salarioMinimoInembargable;
+                result.Result.salario_normativa = salarioMinimoInembargable + parametros.Decimal("22");
 
-                (result.Result.edad_maxima_hombres, result.Result.edad_maxima_mujeres) =
-                    ObtenerEdadMaximaPermitida(connection);
+                // '01' -> GlobalEdadMaximaPermitidaHombre, '02' -> ...Mujeres.
+                result.Result.edad_maxima_hombres = parametros.Entero("01");
+                result.Result.edad_maxima_mujeres = parametros.Entero("02");
+
+                // VB6 recarga cboSubExpediente dentro de la misma carga; se devuelve aquí
+                // para que Angular no necesite una segunda llamada HTTP.
+                result.Result.sub_expedientes = ObtenerSubExpedientes(
+                    connection,
+                    ObtenerExpedientePadre(codPreanalisis));
             }
             catch (Exception ex)
             {
@@ -227,69 +236,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             }
 
             return result;
-        }
-
-        /// <summary>
-        /// Salario Mínimo Inembargable y Salario Normativa. Son parámetros globales
-        /// de la empresa, no del expediente.
-        /// VB6: mPreAnalisis.bas, sbInicializaGlobales() ->
-        ///   SELECT * FROM CRD_PREA_PARAMETROS
-        ///   COD_PARAMETRO='17' -> GlobalSalarioMinimoInembargable
-        ///   COD_PARAMETRO='22' -> GlobalSalarioNormativo = GlobalSalarioMinimoInembargable + VALOR('22')
-        /// </summary>
-        private static (decimal salarioMinimoInembargable, decimal salarioNormativa) ObtenerParametrosSalario(IDbConnection connection)
-        {
-            try
-            {
-                var parametros = connection.Query(
-                    "SELECT COD_PARAMETRO, VALOR FROM CRD_PREA_PARAMETROS WHERE COD_PARAMETRO IN ('17', '22')"
-                );
-
-                decimal salarioMinimo = 0m;
-                decimal spreadNormativa = 0m;
-
-                foreach (var p in parametros)
-                {
-                    var dict = new Dictionary<string, object>((IDictionary<string, object>)p, StringComparer.OrdinalIgnoreCase);
-                    var codParametro = GetString(dict, "COD_PARAMETRO");
-                    var valor = GetDecimal(dict, "VALOR");
-
-                    if (codParametro == "17")
-                    {
-                        salarioMinimo = valor;
-                    }
-                    else if (codParametro == "22")
-                    {
-                        spreadNormativa = valor;
-                    }
-                }
-
-                return (salarioMinimo, salarioMinimo + spreadNormativa);
-            }
-            catch (DataException)
-            {
-                return (0m, 0m);
-            }
-        }
-
-        /// <summary>
-        /// Porcentaje de P.S.D. global. VB6: GlobalPorcPSD, CRD_PREA_PARAMETROS
-        /// COD_PARAMETRO='13'.
-        /// </summary>
-        private static decimal ObtenerPorcentajePsd(IDbConnection connection)
-        {
-            try
-            {
-                const string sql = "SELECT VALOR FROM CRD_PREA_PARAMETROS WHERE COD_PARAMETRO = '13'";
-                var row = connection.QueryFirstOrDefault(sql) as IDictionary<string, object>;
-                return row is null
-                    ? 0m
-                    : GetDecimal(new Dictionary<string, object>(row, StringComparer.OrdinalIgnoreCase), "VALOR");
-            }
-            catch (DataException)
-            {
-                return 0m;
-            }
         }
 
         /// <summary>
@@ -336,49 +282,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 + rebajos.Intereses
                 + rebajos.Comisiones);
         }
-
-        /// <summary>
-        /// Edad Máxima Permitida para Hombres / Mujeres (años). Parámetros globales
-        /// de la empresa, no del expediente.
-        /// VB6: mPreAnalisis.bas, sbInicializaGlobales() ->
-        ///   COD_PARAMETRO='01' -> GlobalEdadMaximaPermitidaHombre
-        ///   COD_PARAMETRO='02' -> GlobalEdadMaximaPermitidaMujeres
-        /// </summary>
-        private static (int edadMaximaHombres, int edadMaximaMujeres) ObtenerEdadMaximaPermitida(IDbConnection connection)
-        {
-            try
-            {
-                var parametros = connection.Query(
-                    "SELECT COD_PARAMETRO, VALOR FROM CRD_PREA_PARAMETROS WHERE COD_PARAMETRO IN ('01', '02')"
-                );
-
-                int edadHombres = 0;
-                int edadMujeres = 0;
-
-                foreach (var p in parametros)
-                {
-                    var dict = new Dictionary<string, object>((IDictionary<string, object>)p, StringComparer.OrdinalIgnoreCase);
-                    var codParametro = GetString(dict, "COD_PARAMETRO");
-                    var valor = GetInt(dict, "VALOR");
-
-                    if (codParametro == "01")
-                    {
-                        edadHombres = valor;
-                    }
-                    else if (codParametro == "02")
-                    {
-                        edadMujeres = valor;
-                    }
-                }
-
-                return (edadHombres, edadMujeres);
-            }
-            catch (DataException)
-            {
-                return (0, 0);
-            }
-        }
-
         /// <summary>
         /// Edad de la persona en años. VB6 (txtCedula_LostFocus, línea ~16869):
         ///   SELECT dbo.fxSys_Edad_Anios('&lt;fecha_nacimiento&gt;') as 'Edad'
@@ -606,6 +509,157 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Indica si el par Línea/Destino aplica Primera Cuota. Fiel a VB6
+        /// (frmPreaEstudiov2.frm, sbAplicaPrimeraCta ~línea 14082):
+        ///   clsEntidad.tablaName = "spCRDPreaDestinos"
+        ///   clsEntidad.fxTraerFiltrado("AplicaPrimCta", "'&lt;linea&gt;','&lt;destino&gt;'")
+        ///   -&gt; EXEC spCRDPreaDestinos_TXAplicaPrimCta '&lt;linea&gt;','&lt;destino&gt;'
+        ///   chkPrimerCuota.Value = rs!PRIMER_CUOTA (0 si el SP no devuelve fila).
+        /// Reemplaza la llamada que Angular hacía a Prea_frmPreaEstudiov2_Cargar completo
+        /// (decenas de consultas) solo para resolver este único indicador.
+        /// </summary>
+        public ErrorDto<bool> Prea_frmPreaEstudiov2_Destino_PrimeraCuota(
+            int codEmpresa, string linea, string destino)
+        {
+            var result = new ErrorDto<bool>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = false
+            };
+
+            var lineaTrim = linea?.Trim() ?? string.Empty;
+            var destinoTrim = destino?.Trim() ?? string.Empty;
+
+            // VB6 sale sin marcar el check si no hay destino o no hay línea descrita.
+            if (string.IsNullOrEmpty(lineaTrim) || string.IsNullOrEmpty(destinoTrim))
+            {
+                return result;
+            }
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+
+                const string sql = "EXEC spCRDPreaDestinos_TXAplicaPrimCta @Linea, @Destino";
+                var row = connection.QueryFirstOrDefault(
+                    sql,
+                    new { Linea = lineaTrim, Destino = destinoTrim }) as IDictionary<string, object>;
+
+                if (row is not null)
+                {
+                    var dict = new Dictionary<string, object>(row, StringComparer.OrdinalIgnoreCase);
+                    result.Result = GetBool(dict, "PRIMER_CUOTA");
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = false;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Expediente padre de un sub-expediente. VB6 usa el prefijo antes del guion
+        /// (v_Expediente / txtExpediente): "5424-1" -&gt; "5424".
+        /// </summary>
+        private static string ObtenerExpedientePadre(string codPreanalisis)
+        {
+            var valor = (codPreanalisis ?? string.Empty).Trim();
+            var idx = valor.IndexOf('-', StringComparison.Ordinal);
+            return idx > -1 ? valor[..idx] : valor;
+        }
+
+        /// <summary>
+        /// Códigos de los sub-expedientes de un expediente principal. VB6
+        /// (sbLlenarComboFiltrado sobre cboSubExpediente, línea ~11198):
+        ///   EXEC spCRDPreaPREANALISIS_TXSubExpediente '&lt;padre&gt;'
+        /// No incluye al expediente principal; eso lo agrega el consumidor.
+        /// </summary>
+        private static List<string> ObtenerSubExpedientes(IDbConnection connection, string expedientePadre)
+        {
+            var padre = (expedientePadre ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(padre))
+            {
+                return [];
+            }
+
+            try
+            {
+                const string sql = "EXEC spCRDPreaPREANALISIS_TXSubExpediente @Padre";
+                var rows = connection.Query(sql, new { Padre = padre });
+
+                var subExpedientes = new List<string>();
+                foreach (var r in rows)
+                {
+                    var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
+                    var codPreanalisis = GetString(dict, "COD_PREANALISIS");
+
+                    // VB6 (sbLlenarComboFiltrado) descarta filas con ValueMember = "-1".
+                    if (!string.IsNullOrEmpty(codPreanalisis) && codPreanalisis != "-1")
+                    {
+                        subExpedientes.Add(codPreanalisis);
+                    }
+                }
+
+                return subExpedientes;
+            }
+            catch (DataException)
+            {
+                return [];
+            }
+        }
+
+        /// <summary>
+        /// Destinos y garantías en cascada por línea, ya empaquetados en la respuesta que
+        /// consume tanto Cargar como el endpoint de cambio de línea.
+        /// </summary>
+        private static FrmPreaEstudiov2DestinosGarantiasResponse ObtenerDestinosGarantiasResponse(
+            IDbConnection connection, string linea)
+        {
+            var (destinos, garantias) = ObtenerDestinosGarantias(connection, linea);
+            return new FrmPreaEstudiov2DestinosGarantiasResponse
+            {
+                destinos = destinos,
+                garantias = garantias,
+            };
+        }
+
+        /// <summary>
+        /// Catálogos estáticos del formulario (los que VB6 llena una sola vez en
+        /// Form_Load). Angular los pide al abrir la pantalla, no en cada expediente.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2CatalogosResponse> Prea_frmPreaEstudiov2_Catalogos_Consultar(int codEmpresa)
+        {
+            var result = new ErrorDto<FrmPreaEstudiov2CatalogosResponse>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new FrmPreaEstudiov2CatalogosResponse()
+            };
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+                connection.Open();
+
+                var parametros = ParametrosGlobales.Leer(connection);
+                result.Result = CargarCatalogosEstaticos(connection, parametros);
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = new FrmPreaEstudiov2CatalogosResponse();
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Sub-expedientes (fiadores) ligados a un expediente principal. VB6
         /// (sbLlenarComboFiltrado sobre cboSubExpediente, línea ~11198):
         ///   clsEntidad.tablaName = "spCRDPreaPREANALISIS"
@@ -633,23 +687,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
-                const string sql = "EXEC spCRDPreaPREANALISIS_TXSubExpediente @Padre";
-                var rows = connection.Query(sql, new { Padre = padre });
-
-                var subExpedientes = new List<string>();
-                foreach (var r in rows)
-                {
-                    var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
-                    var codPreanalisis = GetString(dict, "COD_PREANALISIS");
-
-                    // VB6 (sbLlenarComboFiltrado) descarta filas con ValueMember = "-1".
-                    if (!string.IsNullOrEmpty(codPreanalisis) && codPreanalisis != "-1")
-                    {
-                        subExpedientes.Add(codPreanalisis);
-                    }
-                }
-
-                result.Result.sub_expedientes = subExpedientes;
+                result.Result.sub_expedientes = ObtenerSubExpedientes(connection, padre);
             }
             catch (Exception ex)
             {
@@ -735,40 +773,45 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             try
             {
                 const string sql = "EXEC spCrdPreaTraeSalariosExpediente @CodPreanalisis";
-                var rows = connection.Query(sql, new { CodPreanalisis = codPreanalisis });
-
-                var lista = new List<FrmPreaEstudiov2SalarioDetalleDto>();
-                foreach (var r in rows)
-                {
-                    var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
-
-                    // VB6 sólo agrega la fila si Salario1 + Salario0 + Monto_CA > 0
-                    var salario1 = GetDecimal(dict, "Salario1");
-                    var salario0 = GetDecimal(dict, "Salario0");
-                    var montoCa = GetDecimal(dict, "Monto_CA");
-
-                    if (salario1 + salario0 + montoCa <= 0)
-                    {
-                        continue;
-                    }
-
-                    lista.Add(new FrmPreaEstudiov2SalarioDetalleDto
-                    {
-                        orden = GetInt(dict, "Orden"),
-                        fecha = GetDateTime(dict, "Fecha1"),
-                        salario_s = salario1,
-                        mes = GetInt(dict, "Mes1"),
-                        salario_rh = salario0,
-                        ca = montoCa,
-                    });
-                }
-
-                return lista;
+                return MapearTablaSalarios(connection.Query(sql, new { CodPreanalisis = codPreanalisis }));
             }
             catch
             {
                 return [];
             }
+        }
+
+        /// <summary>Mapeo de las filas de spCrdPreaTraeSalariosExpediente.</summary>
+        private static List<FrmPreaEstudiov2SalarioDetalleDto> MapearTablaSalarios(IEnumerable<dynamic> rows)
+        {
+            var lista = new List<FrmPreaEstudiov2SalarioDetalleDto>();
+
+            foreach (var r in rows)
+            {
+                var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
+
+                // VB6 sólo agrega la fila si Salario1 + Salario0 + Monto_CA > 0
+                var salario1 = GetDecimal(dict, "Salario1");
+                var salario0 = GetDecimal(dict, "Salario0");
+                var montoCa = GetDecimal(dict, "Monto_CA");
+
+                if (salario1 + salario0 + montoCa <= 0)
+                {
+                    continue;
+                }
+
+                lista.Add(new FrmPreaEstudiov2SalarioDetalleDto
+                {
+                    orden = GetInt(dict, "Orden"),
+                    fecha = GetDateTime(dict, "Fecha1"),
+                    salario_s = salario1,
+                    mes = GetInt(dict, "Mes1"),
+                    salario_rh = salario0,
+                    ca = montoCa,
+                });
+            }
+
+            return lista;
         }
 
         /// <summary>
@@ -780,28 +823,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             try
             {
                 const string sql = "EXEC spCRDPreaDETALLE_EXTRAS_TxExpediente @CodPreanalisis";
-                var rows = connection.Query(sql, new { CodPreanalisis = codPreanalisis });
-
-                var lista = new List<FrmPreaEstudiov2ExtraDto>();
-                foreach (var r in rows)
-                {
-                    var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
-
-                    lista.Add(new FrmPreaEstudiov2ExtraDto
-                    {
-                        idx = GetInt(dict, "IdX"),
-                        cod_extras = GetString(dict, "COD_EXTRAS"),
-                        tipo_extra = GetString(dict, "TipoExtra"),
-                        monto = GetDecimal(dict, "Monto"),
-                    });
-                }
-
-                return lista;
+                return MapearExtras(connection.Query(sql, new { CodPreanalisis = codPreanalisis }));
             }
             catch
             {
                 return [];
             }
+        }
+
+        /// <summary>Mapeo de las filas de spCRDPreaDETALLE_EXTRAS_TxExpediente.</summary>
+        private static List<FrmPreaEstudiov2ExtraDto> MapearExtras(IEnumerable<dynamic> rows)
+        {
+            var lista = new List<FrmPreaEstudiov2ExtraDto>();
+
+            foreach (var r in rows)
+            {
+                var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
+
+                lista.Add(new FrmPreaEstudiov2ExtraDto
+                {
+                    idx = GetInt(dict, "IdX"),
+                    cod_extras = GetString(dict, "COD_EXTRAS"),
+                    tipo_extra = GetString(dict, "TipoExtra"),
+                    monto = GetDecimal(dict, "Monto"),
+                });
+            }
+
+            return lista;
         }
 
         /// <summary>
@@ -823,26 +871,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     parameters
                 );
 
-                var lista = new List<FrmPreaEstudiov2IncapacidadDto>();
-                foreach (var r in registros)
-                {
-                    var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
-
-                    lista.Add(new FrmPreaEstudiov2IncapacidadDto
-                    {
-                        orden = GetInt(dict, "Orden"),
-                        desde = GetDateTime(dict, "Desde"),
-                        hasta = GetDateTime(dict, "Hasta"),
-                        dias = GetInt(dict, "Dias"),
-                    });
-                }
-
-                return lista;
+                return MapearIncapacidades(registros);
             }
             catch
             {
                 return [];
             }
+        }
+
+        /// <summary>Mapeo de las filas de CRD_PREA_V2_INCAPACIDADES.</summary>
+        private static List<FrmPreaEstudiov2IncapacidadDto> MapearIncapacidades(IEnumerable<dynamic> rows)
+        {
+            var lista = new List<FrmPreaEstudiov2IncapacidadDto>();
+
+            foreach (var r in rows)
+            {
+                var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
+
+                lista.Add(new FrmPreaEstudiov2IncapacidadDto
+                {
+                    orden = GetInt(dict, "Orden"),
+                    desde = GetDateTime(dict, "Desde"),
+                    hasta = GetDateTime(dict, "Hasta"),
+                    dias = GetInt(dict, "Dias"),
+                });
+            }
+
+            return lista;
         }
 
         private static string GetString(IDictionary<string, object> row, string column)
@@ -921,22 +976,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         ///     FROM CRD_PREA_PARAMETROS WHERE COD_PARAMETRO IN('18','19','20')".
         ///   - comites: sbCargaCboComites -> "Select id_comite as IdX, descripcion as ItmX
         ///     from comites where estado = 1".
+        ///
+        /// NO se cargan aquí (se quitaron por costo, no por paridad):
+        ///   - expedientes: era un SELECT completo de CRD_PREA_PREANALISIS en cada carga
+        ///     de expediente y ningún control de Angular lo consumía (en VB6 la búsqueda
+        ///     de expedientes es frmPreaConsultaExpeditentes, no un combo precargado).
+        ///   - bancos: el tab Desembolsos los obtiene de
+        ///     Prea_frmPreaEstudiov2_Desembolsos_Consultar, que ya ejecuta
+        ///     spCrd_SGT_Bancos_Desembolso con el usuario de sesión.
         /// </summary>
-        private static FrmPreaEstudiov2CatalogosResponse CargarCatalogos(System.Data.IDbConnection connection, string usuario, string linea = "")
+        private static FrmPreaEstudiov2CatalogosResponse CargarCatalogosEstaticos(
+            System.Data.IDbConnection connection,
+            ParametrosGlobales parametros)
         {
             var catalogos = new FrmPreaEstudiov2CatalogosResponse();
-
-            try
-            {
-                var expedientes = connection.Query<FrmPreaEstudiov2DropdownDto>(
-                    "SELECT cod_preanalisis AS item, cod_preanalisis AS descripcion FROM CRD_PREA_PREANALISIS WHERE estado <> 'B' ORDER BY cod_preanalisis"
-                ).ToList();
-                catalogos.expedientes = expedientes;
-            }
-            catch
-            {
-                catalogos.expedientes = [];
-            }
 
             try
             {
@@ -949,10 +1002,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 catalogos.lineas = [];
             }
-
-            var (destinos, garantias) = ObtenerDestinosGarantias(connection, linea);
-            catalogos.destinos = destinos;
-            catalogos.garantias = garantias;
 
             try
             {
@@ -977,19 +1026,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 catalogos.tipos_salario = [];
             }
 
-            try
-            {
-                var componentes = connection.Query<FrmPreaEstudiov2DropdownDto>(
-                    @"SELECT COD_PARAMETRO AS item, RTRIM(DESCRIPCION) + ' [ ' + VALOR + ' % ]' AS descripcion
-                      FROM CRD_PREA_PARAMETROS
-                      WHERE COD_PARAMETRO IN ('18', '19', '20')"
-                ).ToList();
-                catalogos.componentes_adicionales = componentes;
-            }
-            catch
-            {
-                catalogos.componentes_adicionales = [];
-            }
+            // Se resuelve desde el snapshot de CRD_PREA_PARAMETROS que ya trajo Cargar,
+            // en lugar de repetir la consulta a la misma tabla.
+            catalogos.componentes_adicionales = parametros.ComponentesAdicionales("18", "19", "20");
 
             try
             {
@@ -1070,23 +1109,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             catch
             {
                 catalogos.fondos = [];
-            }
-
-            try
-            {
-                var bancosParameters = new DynamicParameters();
-                bancosParameters.Add("@Usuario", usuario ?? string.Empty, DbType.String);
-
-                var bancos = connection.Query<FrmPreaEstudiov2DropdownDto>(
-                    "spCrd_SGT_Bancos_Desembolso",
-                    bancosParameters,
-                    commandType: CommandType.StoredProcedure
-                ).ToList();
-                catalogos.bancos = bancos;
-            }
-            catch
-            {
-                catalogos.bancos = [];
             }
 
             try
@@ -1389,15 +1411,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
                 const string sql = @"
-                    SELECT Pa.COD_CAUSAS AS id_causa, 
-                           Cg.DESCRIPCION AS descripcion, 
-                           Pa.OBSERVACIONES AS observaciones,
-                           Pa.REGISTRO_FECHA AS fecha,
+                    SELECT Pa.COD_CAUSAS AS cod_causas,
+                           Cg.DESCRIPCION AS descripcion,
+                           Pa.REGISTRO_FECHA AS registro_fecha,
+                           Pa.REGISTRO_USUARIO AS registro_usuario,
                            Pa.TIPO AS tipo
                     FROM CRD_PREA_GESTION Pa
-                    INNER JOIN OPERACION_CAUSAS Cg 
+                    INNER JOIN OPERACION_CAUSAS Cg
                         ON Pa.COD_CAUSAS = Cg.COD_CAUSAS AND Pa.TIPO = Cg.TIPO
-                    WHERE Pa.COD_PREANALISIS = @cod_preanalisis 
+                    WHERE Pa.COD_PREANALISIS = @cod_preanalisis
                       AND Pa.TIPO = @tipo
                     ORDER BY Pa.REGISTRO_FECHA";
 
@@ -1421,64 +1443,5 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             return result;
         }
 
-        /// <summary>
-        /// Guarda observaciones de una causa del expediente.
-        /// Actualiza las observaciones de una causa específica en la gestión del preanálisis.
-        /// AVISO: no se encontró en VB6 (frmPreaEstudiov2.frm) ningún mecanismo de edición o
-        /// guardado de causas — sbCargarListaCausas solo lee CRD_PREA_GESTION/OPERACION_CAUSAS
-        /// (lista de solo lectura, sin columna de observación editable ni botón de guardar).
-        /// Este endpoint fue una invención de un pase anterior y ya no se invoca desde Angular
-        /// (tab-causas.component.ts). Se conserva sin usar hasta confirmar si existe un flujo
-        /// real equivalente antes de eliminarlo o de darle un uso legítimo.
-        /// </summary>
-        public ErrorDto<string> Prea_frmPreaEstudiov2_Causas_Guardar(
-            int codEmpresa,
-            FrmPreaEstudiov2CausasGuardarRequest request)
-        {
-            var result = new ErrorDto<string>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = string.Empty
-            };
-
-            try
-            {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
-                connection.Open();
-
-                const string sql = @"
-                    UPDATE CRD_PREA_GESTION 
-                    SET OBSERVACIONES = @observaciones,
-                        REGISTRO_USUARIO = @usuario,
-                        REGISTRO_FECHA = GETDATE()
-                    WHERE COD_PREANALISIS = @cod_preanalisis 
-                      AND COD_CAUSAS = @id_causa 
-                      AND TIPO = @tipo";
-
-                var parameters = new DynamicParameters();
-                parameters.Add("@cod_preanalisis", request.cod_preanalisis.Trim(), DbType.String);
-                parameters.Add("@id_causa", request.id_causa, DbType.Int32);
-                parameters.Add("@tipo", request.tipo.Trim(), DbType.String);
-                parameters.Add("@observaciones", request.observaciones?.Trim() ?? string.Empty, DbType.String);
-                parameters.Add("@usuario", request.usuario.Trim(), DbType.String);
-
-                connection.Execute(
-                    sql,
-                    parameters,
-                    commandType: CommandType.Text
-                );
-
-                result.Result = "Observaciones guardadas correctamente.";
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = string.Empty;
-            }
-
-            return result;
-        }
     }
 }

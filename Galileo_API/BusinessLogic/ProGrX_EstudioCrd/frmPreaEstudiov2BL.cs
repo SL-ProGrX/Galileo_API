@@ -65,6 +65,44 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Catálogos estáticos del formulario (VB6: los combos que se llenan en Form_Load).
+        /// Angular los pide una sola vez al abrir la pantalla.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2CatalogosResponse> Prea_frmPreaEstudiov2_Catalogos_Consultar(int codEmpresa)
+        {
+            return _db.Prea_frmPreaEstudiov2_Catalogos_Consultar(codEmpresa);
+        }
+
+        /// <summary>
+        /// Detalle de la pestaña Salarios de un expediente, sin recargarlo completo.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2SalariosDto> Prea_frmPreaEstudiov2_Salarios_Consultar(
+            int codEmpresa, string codPreanalisis)
+        {
+            if (string.IsNullOrWhiteSpace(codPreanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2SalariosDto>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2SalariosDto()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Salarios_Consultar(codEmpresa, codPreanalisis);
+        }
+
+        /// <summary>
+        /// Indica si el par Línea/Destino aplica Primera Cuota. VB6: sbAplicaPrimeraCta
+        /// -&gt; EXEC spCRDPreaDestinos_TXAplicaPrimCta.
+        /// </summary>
+        public ErrorDto<bool> Prea_frmPreaEstudiov2_Destino_PrimeraCuota(
+            int codEmpresa, string linea, string destino)
+        {
+            return _db.Prea_frmPreaEstudiov2_Destino_PrimeraCuota(codEmpresa, linea, destino);
+        }
+
+        /// <summary>
         /// Valida si la cédula requiere abrir Verificación de Datos Personales. VB6:
         /// txtCedula_LostFocus -> dbo.fxCrdPrea_Persona_Datos_Valida.
         /// </summary>
@@ -700,7 +738,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             int codEmpresa,
             FrmPreaEstudiov2AdjuntoGuardarRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.cod_preanalisis))
+            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
             {
                 return new ErrorDto<string> { Code = -1, Description = MensajeCodigoExpedienteRequerido, Result = string.Empty };
             }
@@ -734,23 +772,70 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// VB6: lswArchivos_DblClick. Obtiene el contenido binario de un adjunto.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2AdjuntoDescargaDto> Prea_frmPreaEstudiov2_Adjunto_Descargar(
+            int codEmpresa,
+            string cod_preanalisis,
+            int id_adjunto)
+        {
+            if (string.IsNullOrWhiteSpace(cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaEstudiov2AdjuntoDescargaDto>
+                {
+                    Code = -1,
+                    Description = MensajeCodigoExpedienteRequerido,
+                    Result = new FrmPreaEstudiov2AdjuntoDescargaDto()
+                };
+            }
+
+            if (id_adjunto <= 0)
+            {
+                return new ErrorDto<FrmPreaEstudiov2AdjuntoDescargaDto>
+                {
+                    Code = -1,
+                    Description = "Debe indicar el adjunto a descargar.",
+                    Result = new FrmPreaEstudiov2AdjuntoDescargaDto()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Adjunto_Descargar(codEmpresa, cod_preanalisis, id_adjunto);
+        }
+
+        /// <summary>
         /// VB6: btnAdjunto_Elimina_Click. Elimina un archivo adjunto del expediente.
         /// </summary>
         public ErrorDto<string> Prea_frmPreaEstudiov2_Adjunto_Eliminar(
             int codEmpresa,
             FrmPreaEstudiov2AdjuntoEliminarRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.cod_preanalisis))
+            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
             {
                 return new ErrorDto<string> { Code = -1, Description = MensajeCodigoExpedienteRequerido, Result = string.Empty };
             }
 
-            if (request.id_adjunto <= 0)
+            var idsAdjuntos = ObtenerAdjuntosEliminar(request);
+            if (idsAdjuntos.Count == 0)
             {
-                return new ErrorDto<string> { Code = -1, Description = "Debe indicar el adjunto a eliminar.", Result = string.Empty };
+                return new ErrorDto<string> { Code = -1, Description = "Debe indicar los adjuntos a eliminar.", Result = string.Empty };
             }
 
-            return _db.Prea_frmPreaEstudiov2_Adjunto_Eliminar(codEmpresa, request.cod_preanalisis, request.id_adjunto);
+            return _db.Prea_frmPreaEstudiov2_Adjunto_Eliminar(codEmpresa, request.cod_preanalisis, idsAdjuntos);
+        }
+
+        private static List<int> ObtenerAdjuntosEliminar(FrmPreaEstudiov2AdjuntoEliminarRequest request)
+        {
+            var ids = request.ids_adjuntos?
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList() ?? [];
+
+            if (ids.Count == 0 && request.id_adjunto > 0)
+            {
+                ids.Add(request.id_adjunto);
+            }
+
+            return ids;
         }
 
         /// <summary>
@@ -758,7 +843,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         /// </summary>
         public ErrorDto<FrmPreaEstudiov2ResolucionResponse> Prea_frmPreaEstudiov2_Resolucion_Consultar(
             int codEmpresa,
-            string cod_preanalisis)
+            string cod_preanalisis,
+            string tipo)
         {
             if (string.IsNullOrWhiteSpace(cod_preanalisis))
             {
@@ -770,7 +856,18 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 };
             }
 
-            return _db.Prea_frmPreaEstudiov2_Resolucion_Consultar(codEmpresa, cod_preanalisis);
+            var tipoNormalizado = (tipo ?? string.Empty).Trim().ToUpperInvariant();
+            if (tipoNormalizado is not ("RES" or "AUT" or "ASI"))
+            {
+                return new ErrorDto<FrmPreaEstudiov2ResolucionResponse>
+                {
+                    Code = -1,
+                    Description = "El tipo de resolución indicado no es válido.",
+                    Result = new FrmPreaEstudiov2ResolucionResponse()
+                };
+            }
+
+            return _db.Prea_frmPreaEstudiov2_Resolucion_Consultar(codEmpresa, cod_preanalisis, tipoNormalizado);
         }
 
         /// <summary>
@@ -952,26 +1049,6 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             }
 
             return _db.Prea_frmPreaEstudiov2_Causas_Consultar(codEmpresa, cod_preanalisis, tipo);
-        }
-
-        /// <summary>
-        /// Guarda observaciones de una causa del expediente.
-        /// </summary>
-        public ErrorDto<string> Prea_frmPreaEstudiov2_Causas_Guardar(
-            int codEmpresa,
-            FrmPreaEstudiov2CausasGuardarRequest request)
-        {
-            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
-            {
-                return new ErrorDto<string>
-                {
-                    Code = -1,
-                    Description = "Debe indicar el expediente y la causa.",
-                    Result = string.Empty
-                };
-            }
-
-            return _db.Prea_frmPreaEstudiov2_Causas_Guardar(codEmpresa, request);
         }
 
         /// <summary>

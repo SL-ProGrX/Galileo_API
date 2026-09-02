@@ -128,12 +128,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                var exp = request.cod_preanalisis.Trim().Replace("'", "''");
+                var expediente = request.cod_preanalisis.Trim();
+                var estado = connection.QueryFirstOrDefault<string>(
+                    "SELECT Estado FROM CRD_PREA_PREANALISIS WHERE cod_Preanalisis = @Expediente",
+                    new { Expediente = expediente });
+
+                if (estado == "A" || estado == "D")
+                {
+                    response.Code = -1;
+                    response.Description = "No es posible realizar cambios en las observaciones del expediente seleccionado.";
+                    return response;
+                }
 
                 var actualRow = connection.QueryFirstOrDefault(
                     "select OBSERVACION_ANALISTA, OBSERVACION_COMITE, OBSERVACION_JD" +
                     " from CRD_PREA_PREANALISIS where cod_Preanalisis = @Expediente",
-                    new { Expediente = request.cod_preanalisis.Trim() }
+                    new { Expediente = expediente }
                 ) as IDictionary<string, object>;
 
                 var dict = actualRow is null
@@ -164,7 +174,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 }
 
                 const string sql = "EXEC spCRDPreaObservaciones_M @Expediente, @Analista, @Comite, @Jd";
-                connection.Execute(sql, new { Expediente = exp, Analista = analista, Comite = comite, Jd = jd });
+                connection.Execute(sql, new { Expediente = expediente, Analista = analista, Comite = comite, Jd = jd });
 
                 response.Result = "La información se registró correctamente.";
                 return response;

@@ -85,18 +85,68 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         public ErrorDto<string> Prea_frmPreaEstudiov2_Adjunto_Eliminar(
             int codEmpresa,
             string cod_preanalisis,
-            int id_adjunto)
+            IReadOnlyCollection<int> ids_adjuntos)
         {
             return EjecutarCambioAdjunto(codEmpresa, cod_preanalisis, (connection, codPreanalisis) =>
             {
-                const string sql = @"DELETE CRD_PREA_V2_ADJUNTOS WHERE ID_EXPEDIENTE = @Expediente AND ID_ADJUNTO = @IdAdjunto";
+                const string sql = @"DELETE CRD_PREA_V2_ADJUNTOS WHERE ID_EXPEDIENTE = @Expediente AND ID_ADJUNTO IN @IdsAdjuntos";
 
                 connection.Execute(sql, new
                 {
                     Expediente = codPreanalisis,
-                    IdAdjunto = id_adjunto
+                    IdsAdjuntos = ids_adjuntos
                 }, commandType: CommandType.Text);
             });
+        }
+
+        /// <summary>
+        /// VB6: lswArchivos_DblClick. Obtiene el binario de un adjunto para abrirlo o descargarlo.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2AdjuntoDescargaDto> Prea_frmPreaEstudiov2_Adjunto_Descargar(
+            int codEmpresa,
+            string cod_preanalisis,
+            int id_adjunto)
+        {
+            var result = new ErrorDto<FrmPreaEstudiov2AdjuntoDescargaDto>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new FrmPreaEstudiov2AdjuntoDescargaDto()
+            };
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+
+                const string sql = @"SELECT DOC_ADJUNTO AS contenido, NOM_ADJUNTO AS nombre_archivo
+                                     FROM CRD_PREA_V2_ADJUNTOS
+                                     WHERE ID_EXPEDIENTE = @Expediente
+                                       AND ID_ADJUNTO = @IdAdjunto";
+
+                result.Result = connection.QueryFirstOrDefault<FrmPreaEstudiov2AdjuntoDescargaDto>(
+                    sql,
+                    new
+                    {
+                        Expediente = cod_preanalisis.Trim(),
+                        IdAdjunto = id_adjunto
+                    },
+                    commandType: CommandType.Text
+                ) ?? new FrmPreaEstudiov2AdjuntoDescargaDto();
+
+                if (result.Result.contenido.Length == 0)
+                {
+                    result.Code = -1;
+                    result.Description = "Adjunto no encontrado.";
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = new FrmPreaEstudiov2AdjuntoDescargaDto();
+            }
+
+            return result;
         }
 
         private ErrorDto<string> EjecutarCambioAdjunto(
