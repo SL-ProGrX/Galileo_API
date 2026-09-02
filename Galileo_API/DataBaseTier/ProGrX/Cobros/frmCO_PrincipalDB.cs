@@ -56,6 +56,98 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
         /// <summary>
+        /// Obtiene las operaciones formalizadas de forma paginada para el buscador F4.
+        /// </summary>
+        public ErrorDto<OperacionBusquedaListaDto> Operaciones_Obtener(
+            int codEmpresa,
+            FiltrosLazyLoadData filtros)
+        {
+            var response = new ErrorDto<OperacionBusquedaListaDto>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                var pagina = Math.Max(0, filtros.pagina);
+                var paginacion = Math.Clamp(filtros.paginacion, 1, 100);
+                var filtro = string.IsNullOrWhiteSpace(filtros.filtro)
+                    ? null
+                    : $"%{filtros.filtro.Trim()}%";
+                var campoOrden = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant() switch
+                {
+                    "codigo" => "codigo",
+                    "cedula" => "cedula",
+                    "montoapr" => "montoapr",
+                    "saldo" => "saldo",
+                    _ => "operacion"
+                };
+                var ordenDescendente = filtros.sortOrder == 0;
+
+                const string sql = @"
+                    SELECT COUNT(1)
+                    FROM reg_creditos
+                    WHERE estadosol = 'F'
+                      AND (
+                          @filtro IS NULL
+                          OR CONVERT(VARCHAR(20), id_solicitud) LIKE @filtro
+                          OR codigo LIKE @filtro
+                          OR cedula LIKE @filtro
+                      );
+
+                    SELECT
+                        id_solicitud AS operacion,
+                        RTRIM(codigo) AS codigo,
+                        RTRIM(cedula) AS cedula,
+                        montoapr,
+                        saldo
+                    FROM reg_creditos
+                    WHERE estadosol = 'F'
+                      AND (
+                          @filtro IS NULL
+                          OR CONVERT(VARCHAR(20), id_solicitud) LIKE @filtro
+                          OR codigo LIKE @filtro
+                          OR cedula LIKE @filtro
+                      )
+                    ORDER BY
+                        CASE WHEN @campoOrden = 'operacion' AND @ordenDescendente = 0 THEN id_solicitud END ASC,
+                        CASE WHEN @campoOrden = 'operacion' AND @ordenDescendente = 1 THEN id_solicitud END DESC,
+                        CASE WHEN @campoOrden = 'codigo' AND @ordenDescendente = 0 THEN codigo END ASC,
+                        CASE WHEN @campoOrden = 'codigo' AND @ordenDescendente = 1 THEN codigo END DESC,
+                        CASE WHEN @campoOrden = 'cedula' AND @ordenDescendente = 0 THEN cedula END ASC,
+                        CASE WHEN @campoOrden = 'cedula' AND @ordenDescendente = 1 THEN cedula END DESC,
+                        CASE WHEN @campoOrden = 'montoapr' AND @ordenDescendente = 0 THEN montoapr END ASC,
+                        CASE WHEN @campoOrden = 'montoapr' AND @ordenDescendente = 1 THEN montoapr END DESC,
+                        CASE WHEN @campoOrden = 'saldo' AND @ordenDescendente = 0 THEN saldo END ASC,
+                        CASE WHEN @campoOrden = 'saldo' AND @ordenDescendente = 1 THEN saldo END DESC,
+                        id_solicitud ASC
+                    OFFSET @pagina ROWS FETCH NEXT @paginacion ROWS ONLY;";
+
+                using var resultados = cn.QueryMultiple(sql, new
+                {
+                    filtro,
+                    pagina,
+                    paginacion,
+                    campoOrden,
+                    ordenDescendente
+                });
+
+                response.Result = new OperacionBusquedaListaDto
+                {
+                    total = resultados.ReadSingle<int>(),
+                    lista = resultados.Read<OperacionBusquedaDto>().ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        /// <summary>
         /// Consulta la operacion 
         /// </summary>
         /// <param name="codEmpresa"></param>

@@ -3,7 +3,6 @@
     public partial class FrmFndTrasladoPatrimonioDB
     {
         private readonly IConfiguration _config;
-
         private const string TipoRecibo = "FRE";
         private const string TipoNotaCredito = "FNC";
         private const string TipoNotaDebito = "FND";
@@ -25,7 +24,9 @@
                                WHEN Patrimonio_Tipo = 'O' THEN 'Aporte Obrero'
                                WHEN Patrimonio_Tipo = 'C' THEN 'Capitalización'
                                ELSE 'No Identificado'
-                           END AS Patrimonio
+                           END AS Patrimonio,
+                           LTRIM(RTRIM(cod_moneda)) AS Divisa,
+                           LTRIM(RTRIM(cuenta_conta)) AS Cuenta_FND
                     FROM dbo.Fnd_Planes
                     WHERE Cod_Operadora = @IdOperadora
                       AND Cod_Plan = @CodPlan
@@ -332,6 +333,9 @@
         public FrmFndTrasladoPatrimonioDB(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
+            _mProGrx = new MProGrxMain(config);
         }
+
+        private readonly MProGrxMain _mProGrx;
     }
 }

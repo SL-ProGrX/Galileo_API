@@ -143,5 +143,18 @@ namespace Galileo.Controllers.ProGrX.Clientes
         {
             return _bl.ParAfah_Cuentas_Obtener(CodEmpresa);
         }
+
+        [Authorize]
+        [HttpGet("Fnd_TrasladoPatrimonio_Globales_Obtener")]
+        public ErrorDto<FndTrasladoPatrimonioGlobalesResult?> Fnd_TrasladoPatrimonio_Globales_Obtener(
+            int CodEmpresa,
+            string usuario,
+            int codContabilidad)
+        {
+            return _bl.Fnd_TrasladoPatrimonio_Globales_Obtener(
+                CodEmpresa,
+                usuario,
+                codContabilidad);
+        }
     }
 }

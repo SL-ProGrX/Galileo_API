@@ -11,6 +11,14 @@
         public string? Descripcion { get; set; }
         public string? Patrimonio_Tipo { get; set; }
         public string? Patrimonio { get; set; }
+        public string? Divisa { get; set; }
+        public string? Cuenta_FND { get; set; }
+    }
+
+    public class FndTrasladoPatrimonioGlobalesResult
+    {
+        public string OficinaTitular { get; set; } = string.Empty;
+        public string OficinaUnidad { get; set; } = string.Empty;
     }
 
     public class FndTrasladoPatrimonioContrato
