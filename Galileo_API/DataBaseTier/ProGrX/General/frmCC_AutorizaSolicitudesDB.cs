@@ -8,7 +8,7 @@ namespace Galileo.DataBaseTier
     public class FrmCcAutorizaSolicitudesDb
     {
         private const int CodigoErrorValidacion = -2;
-        private const int TiempoEsperaSegundos = 300;
+        private const int TiempoEsperaSegundos = 0;
         private const string FormatoFecha = "yyyy-MM-dd";
 
         private readonly PortalDB _portalDb;

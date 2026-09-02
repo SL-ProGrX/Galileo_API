@@ -130,7 +130,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var result = conn.QueryFirstOrDefault<CoAplFndAcuerdosDetalleResponse>(
                     SpConsulta,
                     parameters,
-                    commandType: CommandType.StoredProcedure);
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0);
 
                 return result ?? new CoAplFndAcuerdosDetalleResponse();
             });
@@ -155,7 +156,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return conn.Query<CoAplFndAcuerdosGridResponse>(
                     SpListado,
                     parameters,
-                    commandType: CommandType.StoredProcedure
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0
                 ).ToList();
             });
         }
@@ -186,7 +188,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var result = connection.QueryFirstOrDefault<CoAplFndAcuerdosGuardarResponse>(
                     SpGuardar,
                     parameters,
-                    commandType: CommandType.StoredProcedure);
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0);
 
                 if (result == null)
                 {
@@ -286,7 +289,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     var dbResult = connection.QueryFirstOrDefault<CoAplFndAcuerdosGuardarResponse>(
                         SpGuardar,
                         parameters,
-                        commandType: CommandType.StoredProcedure);
+                        commandType: CommandType.StoredProcedure,
+                        commandTimeout: 0);
 
                     if (dbResult == null)
                     {

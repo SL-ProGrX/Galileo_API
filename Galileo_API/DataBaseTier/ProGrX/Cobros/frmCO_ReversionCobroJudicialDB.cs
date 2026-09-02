@@ -138,7 +138,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 parametros.Add("@Notas", request.Notas.Trim(), DbType.String);
                 parametros.Add("@Usuario", request.Usuario.Trim(), DbType.String);
 
-                var result = connection.QueryFirstOrDefault<CrdReversionCobroJudicialReversaDbModel>(query, parametros);
+                var result = connection.QueryFirstOrDefault<CrdReversionCobroJudicialReversaDbModel>(query, parametros, commandTimeout: 0);
 
                 if (result is null)
                 {
@@ -304,7 +304,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             return connection.QueryFirstOrDefault<CrdReversionCobroJudicialConsultaDbModel>(
                 query,
-                new { Operacion = operacion });
+                new { Operacion = operacion },
+                commandTimeout: 0);
         }
 
         /// <summary>
@@ -320,7 +321,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return connection.QueryFirstOrDefault<CrdReversionCobroJudicialInteresesHoyDbModel>(query, new
             {
                 Operacion = operacion
-            });
+            }, commandTimeout: 0);
         }
         
         /// <summary>
@@ -345,7 +346,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return connection.ExecuteScalar<decimal>(query, new
             {
                 Tramite = tramite.Value
-            });
+            }, commandTimeout: 0);
         }
         
         /// <summary>
@@ -382,7 +383,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var existe = connection.ExecuteScalar<int>(query, new
             {
                 request.Operacion
-            });
+            }, commandTimeout: 0);
 
             if (existe <= 0)
             {

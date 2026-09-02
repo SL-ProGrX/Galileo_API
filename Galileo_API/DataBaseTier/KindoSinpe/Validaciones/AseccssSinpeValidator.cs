@@ -112,7 +112,8 @@ namespace Galileo_API.DataBaseTier
                                             CodEmpresa,
                                             string.Empty,
                                             LaInformacionDeLaCuentaPIN.Errors[0].Code,
-                                           Convert.ToInt64(solicitud));
+                                           Convert.ToInt64(solicitud)
+                                           ,usuario);
                                     response = new ErrorDto
                                     {
                                         Code = -1,
@@ -850,7 +851,7 @@ namespace Galileo_API.DataBaseTier
                             .TES_EmisionDocumentos_Sinpe_CrearRechazo(
                                 idRechazo,
                                 rechazo);
-                        _mKindo.UpdateErrorTransaccionSinpe(CodEmpresa, string.Empty, idRechazo, Nsolicitud);
+                        _mKindo.UpdateErrorTransaccionSinpe(CodEmpresa, string.Empty, idRechazo, Nsolicitud, vUsuario);
                     }
                     else
                     {
@@ -869,7 +870,7 @@ namespace Galileo_API.DataBaseTier
                                     CodEmpresa,
                                     respuesta.CodigoReferencia ?? string.Empty,
                                     idRechazo,
-                                    Nsolicitud);
+                                    Nsolicitud, vUsuario);
                         }
                         else
                         {
@@ -1319,7 +1320,7 @@ namespace Galileo_API.DataBaseTier
                         ?? ElResultadoDeSendTransfer?.PINSendingResult?.SINPERefNumber
                         ?? string.Empty,
                     idRechazo,
-                    Nsolicitud);
+                    Nsolicitud, vUsuario);
                         }
 
             return response;

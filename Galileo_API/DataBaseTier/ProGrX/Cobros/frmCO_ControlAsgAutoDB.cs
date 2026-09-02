@@ -40,7 +40,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return conn.Query<CbrUsuarioGrupoListResult>(
                     "spCbr_Usuarios_Grupos_List",
                     dbParam,
-                    commandType: System.Data.CommandType.StoredProcedure
+                    commandType: System.Data.CommandType.StoredProcedure,
+                    commandTimeout: 0
                 ).ToList();
             });
         }

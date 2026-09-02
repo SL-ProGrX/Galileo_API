@@ -15,6 +15,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
 
     public class FrmCcProcesoMensualController : ControllerBase
     {
+        private const int MaxCargaDeduccionesBytes = 8_000_000; // 8 MB
 
         private readonly CcProcesoMensualBL _bl;
 
@@ -60,6 +61,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [HttpPost("CcProcesoMensual_CargarDeducciones")]
+        [RequestSizeLimit(MaxCargaDeduccionesBytes)]
         public ErrorDto<CcProcesoMensualCargaDeduccionesResponse> CcProcesoMensual_CargarDeducciones(
             [FromBody] CcProcesoMensualCargaDeduccionesRequest request)
         {
@@ -76,11 +78,13 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         [HttpGet("CcProcesoMensual_EstadoActualProceso_Obtener")]
         public ErrorDto<CcProcesoMensualEstadoResponse> CcProcesoMensual_EstadoActualProceso_Obtener(
             int codEmpresa,
-            int gInstitucion)
+            int gInstitucion,
+            string? pasoEjecutado = null)
         {
             return _bl.CcProcesoMensual_EstadoActualProceso_Obtener(
                 codEmpresa,
-                gInstitucion);
+                gInstitucion,
+                pasoEjecutado);
         }
 
         [HttpGet("CcProcesoMensual_DatosInstitucion_Obtener")]

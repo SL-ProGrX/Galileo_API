@@ -327,7 +327,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     Meses         = data.meses_calculo,
                     Usuario       = usuario,
                     CompraDoc     = data.compra_documento,
-                    CompraProv    = data.proveedor,
+                    CompraProv    = data.cod_proveedor,
                     VentaDoc      = data.venta_documento,
                     VentaCliente  = data.venta_cliente
                 }).FirstOrDefault();

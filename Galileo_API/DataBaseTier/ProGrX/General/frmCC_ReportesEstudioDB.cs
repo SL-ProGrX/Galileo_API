@@ -432,7 +432,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
-                var rows = connection.Query(sql, parametros, commandTimeout: 180);
+                var rows = connection.Query(sql, parametros, commandTimeout: 0);
                 var resultado = rows.Select(row => ((IDictionary<string, object?>)row)
                     .ToDictionary(column => column.Key, column => column.Value)).ToList();
                 return DbHelper.CreateOkResponse(resultado);

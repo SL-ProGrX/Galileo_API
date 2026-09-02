@@ -56,7 +56,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         private static decimal FxFechaProcesoAnterior(IDbConnection connection, IDbTransaction tx, decimal proceso)
         {
             const string sql = @"SELECT ISNULL(dbo.fxSIFPrmProcesoAnt(@Proceso), @Proceso);";
-            return connection.ExecuteScalar<decimal>(sql, new { Proceso = proceso }, tx);
+            return connection.ExecuteScalar<decimal>(sql, new { Proceso = proceso }, tx, commandTimeout: 0);
         }
 
 
@@ -70,7 +70,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         private static decimal FxFechaProcesoSiguiente(IDbConnection connection, IDbTransaction tx, decimal proceso)
         {
             const string sql = @"SELECT ISNULL(dbo.fxSIFPrmProcesoSig(@Proceso), @Proceso);";
-            return connection.ExecuteScalar<decimal>(sql, new { Proceso = proceso }, tx);
+            return connection.ExecuteScalar<decimal>(sql, new { Proceso = proceso }, tx, commandTimeout: 0);
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             try
             {
                 const string sqlFechaServidor = @"SELECT GETDATE();";
-                var fechaServidor = connection.ExecuteScalar<DateTime>(sqlFechaServidor, transaction: tx);
+                var fechaServidor = connection.ExecuteScalar<DateTime>(sqlFechaServidor, transaction: tx, commandTimeout: 0);
 
 
                 var fechaProcesoSiguiente = FxFechaProcesoSiguiente(connection, tx, glngFechaCR);
@@ -129,7 +129,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                           AND R.estado = 'A'
                           AND S.estadoActual NOT IN ('S');";
 
-                connection.Execute(sqlExAsociados, new { request.CodInstitucion, Codigo }, tx);
+                connection.Execute(sqlExAsociados, new { request.CodInstitucion, Codigo }, tx, commandTimeout: 0);
 
                 const string sqlActualizarActuales = @"
                 UPDATE R
@@ -143,7 +143,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                   AND R.estado = 'A'
                   AND S.estadoActual = 'S';";
 
-                connection.Execute(sqlActualizarActuales, new { request.CodInstitucion, Codigo, Monto }, tx);
+                connection.Execute(sqlActualizarActuales, new { request.CodInstitucion, Codigo, Monto }, tx, commandTimeout: 0);
 
                 const string sqlInsertNuevos = @"
                         INSERT INTO reg_creditos(
@@ -189,7 +189,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                         FechaProcesoSiguiente = fechaProcesoSiguiente,
                         FechaProcesoAnterior = fechaProcesoAnterior
                     },
-                    tx
+                    tx,
+                    commandTimeout: 0
                 );
 
                 const string sqlCongelamiento = @"
@@ -208,7 +209,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                               AND per_cobro_cuotaCr = 0
                       );";
 
-                connection.Execute(sqlCongelamiento, new { request.CodInstitucion, Codigo }, tx);
+                connection.Execute(sqlCongelamiento, new { request.CodInstitucion, Codigo }, tx, commandTimeout: 0);
 
                 const string sqlSinAportes = @"
                     UPDATE reg_creditos
@@ -224,7 +225,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                               AND S.cod_institucion = @CodInstitucion
                       );";
 
-                connection.Execute(sqlSinAportes, new { request.CodInstitucion, Codigo }, tx);
+                connection.Execute(sqlSinAportes, new { request.CodInstitucion, Codigo }, tx, commandTimeout: 0);
 
                 tx.Commit();
                 return DbHelper.OkResponse("Cuota de Mantenimiento Actualizada Satisfactoriamente...");

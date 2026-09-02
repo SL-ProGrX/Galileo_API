@@ -628,7 +628,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                                 Amortizacion = saldoAbs,
                                 Fecha = vFecha
                             },
-                            tx);
+                            tx,
+                            commandTimeout: 0);
                     }
                     else
                     {
@@ -644,7 +645,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                                 Operacion = credito.Id_Solicitud,
                                 credito.Saldo
                             },
-                            tx);
+                            tx,
+                            commandTimeout: 0);
 
                         conn.Execute(
                             @"INSERT INTO CREDITOS_DT
@@ -663,7 +665,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                                 TipoDoc = TipoDocumentoNd,
                                 Documento = lngNumero
                             },
-                            tx);
+                            tx,
+                            commandTimeout: 0);
                     }
 
                     var cuentas = ObtenerCuentasOperacion(conn, tx, credito.Id_Solicitud);
@@ -810,7 +813,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                           AND (@Institucion IS NULL OR S.cod_institucion = @Institucion)
                     );";
 
-                conn.Execute(sqlCargos, parametros, tx);
+                conn.Execute(sqlCargos, parametros, tx, commandTimeout: 0);
 
                 const string sqlMora = @"
                     DELETE M
@@ -832,7 +835,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                       AND (@Destino IS NULL OR R.cod_destino = @Destino)
                       AND (@Institucion IS NULL OR S.cod_institucion = @Institucion);";
 
-                conn.Execute(sqlMora, parametros, tx);
+                conn.Execute(sqlMora, parametros, tx, commandTimeout: 0);
 
                 tx.Commit();
 
@@ -885,7 +888,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                 // El SP retorna: SELECT @TipoDoc AS TipoDoc, @NumDoc AS NumDoc
                 var spResult = conn.QueryFirstOrDefault<CcAnomaliaCtaDerivadaSpDto>(
                     "exec spSys_Creditos_Clean_Ctas_Menores @Usuario",
-                    new { Usuario = usuario });
+                    new { Usuario = usuario },
+                    commandTimeout: 0);
 
                 if (spResult is null || string.IsNullOrWhiteSpace(spResult.NumDoc))
                 {
@@ -972,7 +976,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                         Documento = lngNumero,
                         Saldo = saldoAbs
                     },
-                    tx);
+                    tx,
+                    commandTimeout: 0);
             }
             else
             {
@@ -988,7 +993,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                         Operacion = credito.Id_Solicitud,
                         credito.Saldo
                     },
-                    tx);
+                    tx,
+                    commandTimeout: 0);
 
                 conn.Execute(
                     @"INSERT INTO CREDITOS_DT
@@ -1006,7 +1012,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                         TipoDoc = TipoDocumentoNc,
                         Documento = lngNumero
                     },
-                    tx);
+                    tx,
+                    commandTimeout: 0);
             }
 
             var cuentas = ObtenerCuentasOperacion(conn, tx, credito.Id_Solicitud);
@@ -1121,7 +1128,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                     Linea2 = $"Corrige Saldos Menor a :{montoLimite:0.##}",
                     Linea9 = $"Usuario           {usuario}"
                 },
-                tx);
+                tx,
+                commandTimeout: 0);
         }
 
         /// <summary>
@@ -1158,7 +1166,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                     Linea2 = "Corrige Saldos Negativos",
                     Linea9 = $"Usuario           {usuario}"
                 },
-                tx);
+                tx,
+                commandTimeout: 0);
         }
 
         /// <summary>
@@ -1210,7 +1219,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
             => conn.QueryFirstOrDefault<CcAnomaliaOperacionCtasDto>(
                 "exec spCrdOperacionCtas @Operacion",
                 new { Operacion = operacion },
-                tx)
+                tx,
+                commandTimeout: 0)
                 ?? throw new InvalidOperationException(
                     $"No fue posible obtener las cuentas de la operación {operacion}.");
 
@@ -1247,7 +1257,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                     Operacion = asiento.Operacion ?? string.Empty,
                     Codigo = asiento.Codigo ?? string.Empty
                 },
-                tx);
+                tx,
+                commandTimeout: 0);
         }
 
         private static ErrorDto<CcAnomaliaSaldosMenoresCorregirResultado> CrearErrorCorregir(

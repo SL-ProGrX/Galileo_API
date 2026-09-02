@@ -156,7 +156,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Procesos
                 {
                     idReferencia = request.id_referencia,
                     Usuario = usuarioNorm
-                });
+                }, commandTimeout: 0);
                 Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -253,7 +253,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Procesos
                 var lineas = conn.Query<CcPlanillaMatriculaCadenaDto>(sp, new
                 {
                     Institucion = request.cod_institucion
-                }).ToList();
+                }, commandTimeout: 0).ToList();
                 var contenido = string.Join(Environment.NewLine, lineas.Select(x => x.cadena ?? string.Empty));
                 var bytes = Encoding.UTF8.GetBytes(contenido);
                 response.nombre_archivo = BuildNombreArchivoTotal(institucion.codigo_inst_deduc);
@@ -408,14 +408,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Procesos
                 index++;
                 if (sql.Length > BatchSqlLength)
                 {
-                    conn.Execute(sql.ToString(), parameters, tx);
+                    conn.Execute(sql.ToString(), parameters, tx, commandTimeout: 0);
                     sql.Clear();
                     parameters = new DynamicParameters();
                 }
             }
             if (sql.Length > 0)
             {
-                conn.Execute(sql.ToString(), parameters, tx);
+                conn.Execute(sql.ToString(), parameters, tx, commandTimeout: 0);
             }
         }
         private static void AppendBloqueoMasivoExec(StringBuilder sql, int index)

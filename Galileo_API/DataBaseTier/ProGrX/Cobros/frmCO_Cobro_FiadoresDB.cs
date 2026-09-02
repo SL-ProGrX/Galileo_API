@@ -237,7 +237,8 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                     conn.Execute(
                         spec.Procedimiento,
                         CrearParametrosAccionBulk(spec.ParametroOperacion, id, usuario, spec.IncluirNotas),
-                        commandType: System.Data.CommandType.StoredProcedure);
+                        commandType: System.Data.CommandType.StoredProcedure,
+                        commandTimeout: 0);
                 }
 
                 return true;
@@ -292,7 +293,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                         WHERE COD_PARAMETRO = '25'
                     );";
 
-            if (conn.QueryFirstOrDefault<int>(query) == 0)
+            if (conn.QueryFirstOrDefault<int>(query, commandTimeout: 0) == 0)
             {
                 throw new InvalidOperationException("No se encuentra configurada la Línea/Retención para Cobro a Fiador.");
             }
@@ -309,7 +310,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                         WHERE COD_PARAMETRO = '27'
                     );";
 
-            if (conn.QueryFirstOrDefault<int>(query) == 0)
+            if (conn.QueryFirstOrDefault<int>(query, commandTimeout: 0) == 0)
             {
                 throw new InvalidOperationException("No se encuentra configurado el Fondo de Devolución para Cobro a Fiador, verifique los parámetros de cobro [27]");
             }

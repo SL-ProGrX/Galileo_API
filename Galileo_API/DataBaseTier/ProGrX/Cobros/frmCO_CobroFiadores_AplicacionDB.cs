@@ -60,7 +60,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         Paso = 0
                     },
                     commandType: CommandType.StoredProcedure,
-                    commandTimeout: 5200);
+                    commandTimeout: 0);
 
                 response.Result.pendientes = pendientes;
                 return response;
@@ -101,7 +101,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 const int topLote = 20;
                 const int pasoConsulta = 0;
                 const int pasoProcesa = 1;
-                const int timeoutSegundos = 5200;
+                const int timeoutSegundos = 0;
                 const int maxIteraciones = 10000;
 
                 var pendientesIniciales = conn.QueryFirstOrDefault<int>(
@@ -206,7 +206,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     "spCbr_Cobro_Fiadores_Cancela_Masivo",
                     new { Usuario = usuario },
                     commandType: CommandType.StoredProcedure,
-                    commandTimeout: 5200);
+                    commandTimeout: 0);
 
                 Bitacora(new BitacoraInsertarDto
                 {

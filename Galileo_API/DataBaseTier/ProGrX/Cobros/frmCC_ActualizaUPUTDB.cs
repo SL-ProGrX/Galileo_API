@@ -152,6 +152,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         Paso = accion
                     },
                     transaction: transaction,
+                    commandTimeout: 0,
                     commandType: CommandType.StoredProcedure);
             }
 
@@ -167,6 +168,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     Paso = 3
                 },
                 transaction: transaction,
+                commandTimeout: 0,
                 commandType: CommandType.StoredProcedure);
         }
 

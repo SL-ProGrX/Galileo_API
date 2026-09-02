@@ -140,7 +140,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="gInstitucion">Código de la institución.</param>
         /// <returns>Estado actual del proceso mensual.</returns>
-        public ErrorDto<CcProcesoMensualEstadoResponse> CcProcesoMensual_EstadoActualProceso_Obtener(int codEmpresa, int gInstitucion)
+        public ErrorDto<CcProcesoMensualEstadoResponse> CcProcesoMensual_EstadoActualProceso_Obtener(int codEmpresa, int gInstitucion, string? pasoEjecutado = null)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
@@ -159,6 +159,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
                 var response = CrearEstadoResponse(
                     parametros);
+
+                response.PasoEjecutado = pasoEjecutado;
 
                 return DbHelper.CreateOkResponse(response);
             }

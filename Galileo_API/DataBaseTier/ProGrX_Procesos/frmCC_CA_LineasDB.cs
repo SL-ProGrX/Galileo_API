@@ -50,7 +50,8 @@ namespace Galileo.DataBaseTier
                              or Cod_Linea like @Filtro
                              or descripcion like @Filtro
                              or cod_plan like @Filtro",
-                        new { Filtro = filtroSql }),
+                        new { Filtro = filtroSql },
+                        commandTimeout: 0),
                     lista = new List<CcCaLineasData>()
                 };
 
@@ -94,7 +95,8 @@ namespace Galileo.DataBaseTier
                         SortDirection = sortDirection,
                         OffsetRows = offsetRows,
                         FetchRows = fetchRows
-                    }).ToList();
+                    },
+                    commandTimeout: 0).ToList();
 
                 return salida;
             });
@@ -122,7 +124,8 @@ namespace Galileo.DataBaseTier
             {
                 var existe = connection.QueryFirstOrDefault<int>(
                     "select isnull(count(*),0) as Existe from PRM_CA_LINEAS where Cod_Linea = @cod_linea",
-                    new { request.cod_linea });
+                    new { request.cod_linea },
+                    commandTimeout: 0);
 
                 if (request.isNew)
                 {
@@ -164,7 +167,8 @@ namespace Galileo.DataBaseTier
                     datos.cod_plan,
                     datos.activo,
                     usuario
-                });
+                },
+                commandTimeout: 0);
 
             RegistrarBitacora(CodEmpresa, usuario, $"Cargo Automatico - Tipo Linea: {datos.cod_linea}", "Modifica - WEB");
             return DbHelper.OkResponse("Ok");
@@ -190,7 +194,8 @@ namespace Galileo.DataBaseTier
                     datos.cod_plan,
                     datos.activo,
                     usuario
-                });
+                },
+                commandTimeout: 0);
 
             RegistrarBitacora(CodEmpresa, usuario, $"Cargo Automatico - Tipo Linea: {datos.cod_linea}", "Registra - WEB");
             return DbHelper.OkResponse("Ok");
@@ -373,7 +378,8 @@ namespace Galileo.DataBaseTier
                         cod_Linea,
                         codigo,
                         usuario
-                    });
+                    },
+                    commandTimeout: 0);
 
                 RegistrarBitacora(CodEmpresa, usuario, $"Cargo Automatico: Linea: {cod_Linea} Cod: {codigo} ", "Registra - WEB");
                 return true;

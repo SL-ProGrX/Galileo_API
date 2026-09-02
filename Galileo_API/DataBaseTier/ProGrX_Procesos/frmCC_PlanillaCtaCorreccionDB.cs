@@ -251,7 +251,8 @@ where d.cod_institucion = @cod_institucion
                 conn.Execute(
                     "spPrm_CreditoCambiosManuales_Registro",
                     p,
-                    commandType: CommandType.StoredProcedure);
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0);
 
                 LogBitacora(new LogBitacoraParams
                 {

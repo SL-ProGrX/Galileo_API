@@ -4,13 +4,13 @@ using Galileo.Models.INV;
 
 namespace Galileo.BusinessLogic
 {
-    public class FrmInvBodegasBL
+    public class FrmInvBodegasBl
     {
-        private readonly FrmInvBodegasDB _db;
+        private readonly FrmInvBodegasDb _db;
 
-        public FrmInvBodegasBL(IConfiguration config)
+        public FrmInvBodegasBl(IConfiguration config)
         {
-            _db = new FrmInvBodegasDB(config);
+            _db = new FrmInvBodegasDb(config);
         }
 
         public ErrorDto<List<PermisosBodegasDto>> Autorizador_ObtenerTodos(int CodEmpresa, string CodBodega)

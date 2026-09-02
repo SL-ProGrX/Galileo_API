@@ -87,7 +87,8 @@ namespace Galileo.DataBaseTier
                             Cedula = identificacion,
                             Usuario = usuarioConsulta
                         },
-                        commandType: CommandType.StoredProcedure);
+                        commandType: CommandType.StoredProcedure,
+                        commandTimeout: 0);
 
                     if (acceso is null)
                     {

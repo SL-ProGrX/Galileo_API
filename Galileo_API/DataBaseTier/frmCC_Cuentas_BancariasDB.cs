@@ -200,7 +200,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var rows = connection.Execute(sql, parameters);
+                var rows = connection.Execute(sql, parameters, commandTimeout: 0);
                 resp.Code = rows;
                 resp.Description = "Ok";
             }
@@ -274,7 +274,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var rows = connection.Execute(sql, parameters);
+                var rows = connection.Execute(sql, parameters, commandTimeout: 0);
                 resp.Code = rows;
                 resp.Description = "Ok";
             }
@@ -339,7 +339,8 @@ namespace Galileo.DataBaseTier
 
                 var existe = connection.QueryFirstOrDefault<int>(
                     sqlValida,
-                    new { Cuenta = cuentaNormalizada });
+                    new { Cuenta = cuentaNormalizada },
+                    commandTimeout: 0);
 
                 if (existe > 0)
                 {
@@ -359,7 +360,7 @@ namespace Galileo.DataBaseTier
                     Identificacion = data.Identificacion.Trim(),
                     Cod_Banco      = data.Cod_Banco.Trim(),
                     Cuenta_Interna = data.Cuenta_Interna.Trim()
-                });
+                }, commandTimeout: 0);
 
                 resp.Code = rows;
                 resp.Description = "Ok";

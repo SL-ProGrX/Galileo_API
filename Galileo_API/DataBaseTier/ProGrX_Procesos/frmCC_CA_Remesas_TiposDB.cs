@@ -137,7 +137,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Procesos
             return conn.Query<CcCaRemesasTiposData>(
                 "spPrm_CA_Remesas_Tipos_Lista",
                 new { Entidad = entidad },
-                commandType: CommandType.StoredProcedure).ToList();
+                commandType: CommandType.StoredProcedure,
+                commandTimeout: 0).ToList();
         }
 
         private ErrorDto EjecutarGuardarInterno(
@@ -164,7 +165,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Procesos
                             Entidad = NormalizeText(item.cod_entidad),
                             Usuario = NormalizeText(usuarioSesion)
                         },
-                        commandType: CommandType.StoredProcedure));
+                        commandType: CommandType.StoredProcedure,
+                        commandTimeout: 0));
 
                 if (result.Pass != 1)
                     return DbHelper.ErrorResponse(result.Mensaje, -2);
@@ -348,7 +350,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Procesos
                             Id = id,
                             Usuario = usuario
                         },
-                        commandType: CommandType.StoredProcedure));
+                        commandType: CommandType.StoredProcedure,
+                        commandTimeout: 0));
 
                 if (result.Pass != 1)
                     return DbHelper.ErrorResponse(result.Mensaje, -2);
@@ -386,7 +389,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Procesos
                 WHERE ACTIVO = 1
                 ORDER BY COD_ENTIDAD;";
 
-                var lista = conn.Query<DropDownListaGenericaModel>(sql).ToList();
+                var lista = conn.Query<DropDownListaGenericaModel>(sql, commandTimeout: 0).ToList();
                 return DbHelper.CreateOkResponse(lista);
             }
             catch (SqlException ex)

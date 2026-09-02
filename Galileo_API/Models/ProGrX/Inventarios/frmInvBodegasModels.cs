@@ -7,9 +7,9 @@ namespace Galileo.Models.INV
         public DateTime? Fecha { get; set; }
         public string Estado { get; set; } = string.Empty;
         public DateTime? Ult_Modificacion { get; set; }
-        public required bool E_Modifica { get; set; }
-        public required bool E_Autoriza { get; set; }
-        public required bool E_Procesa { get; set; }
+        public required bool E_Modifica { get; set; } = false;
+        public required bool E_Autoriza { get; set; } = false;
+        public required bool E_Procesa { get; set; } = false;
     }
 
     public class BodegasDto
@@ -20,9 +20,9 @@ namespace Galileo.Models.INV
         public string Cod_Cuenta { get; set; } = string.Empty;
         public string Cod_Cta_Gastostf { get; set; } = string.Empty;
         public string Cod_Cta_Ingresostf { get; set; } = string.Empty;
-        public required int Permite_Entradas { get; set; }
-        public required int Permite_Salidas { get; set; }
-        public required int Utiliza_Permisos { get; set; }
+        public required int Permite_Entradas { get; set; } = 0;
+        public required int Permite_Salidas { get; set; } = 0;
+        public required int Utiliza_Permisos { get; set; } = 0;
         public string Estado { get; set; } = string.Empty;
     }
 }

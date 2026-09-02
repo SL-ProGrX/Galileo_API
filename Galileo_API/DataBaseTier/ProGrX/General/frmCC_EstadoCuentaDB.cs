@@ -623,17 +623,18 @@ namespace Galileo.DataBaseTier
                 string cedula,
                 string usuario)
         {
-            var acceso =
-                connection.QueryFirstOrDefault
-                    <CcEstadoCuentaAccesoData>(
-                        "spSYS_RA_Consulta_Status",
-                        new
-                        {
-                            cedula,
-                            usuario
-                        },
-                        commandType:
-                            CommandType.StoredProcedure);
+                    var acceso =
+                        connection.QueryFirstOrDefault
+                            <CcEstadoCuentaAccesoData>(
+                                "spSYS_RA_Consulta_Status",
+                                new
+                                {
+                                    cedula,
+                                    usuario
+                                },
+                                commandType:
+                                    CommandType.StoredProcedure,
+                                commandTimeout: 0);
 
             return acceso is null ||
                    acceso.persona_id <= 0 ||
@@ -648,7 +649,8 @@ namespace Galileo.DataBaseTier
                 .Query<CcEstadoCuentaPeriodoData>(
                     "spSys_Periodos_Cierre_Consulta",
                     commandType:
-                        CommandType.StoredProcedure)
+                        CommandType.StoredProcedure,
+                    commandTimeout: 0)
                 .Select(periodo =>
                     new DropDownListaGenericaModel
                     {
