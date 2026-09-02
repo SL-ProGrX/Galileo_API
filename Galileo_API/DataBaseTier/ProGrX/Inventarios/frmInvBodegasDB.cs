@@ -15,6 +15,7 @@ namespace Galileo.DataBaseTier
         private const string ErrorActualizarBodega = "Error al actualizar la bodega.";
         private const string ErrorEliminarBodega = "Error al eliminar la bodega.";
         private const string ErrorActualizarPermiso = "Error al actualizar los permisos de la bodega.";
+        private const string BodegaCodigoRequerido = "El c&oacute;digo de la bodega es requerido.";
 
         private const string CamposBodega = """
             cod_bodega,
@@ -332,7 +333,7 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(cod_bodega))
             {
                 return DbHelper.CreateErrorResponse(
-                    "El c&oacute;digo de la bodega es requerido.",
+                    BodegaCodigoRequerido,
                     -2,
                     (BodegasDto)null);
             }
@@ -370,7 +371,7 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(consecutivo))
             {
                 return DbHelper.CreateErrorResponse(
-                    "El c&oacute;digo de la bodega es requerido.",
+                    BodegaCodigoRequerido,
                     -2,
                     (BodegasDto)null);
             }
@@ -419,7 +420,7 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(cod_bodega))
             {
                 return DbHelper.CreateErrorResponse(
-                    "El c&oacute;digo de la bodega es requerido.",
+                    BodegaCodigoRequerido,
                     -2,
                     new List<PermisosBodegasDto>());
             }
@@ -543,7 +544,7 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(cod_bodega))
             {
                 return DbHelper.ErrorResponse(
-                    "El c&oacute;digo de la bodega es requerido.",
+                    BodegaCodigoRequerido,
                     -2);
             }
 
@@ -732,7 +733,7 @@ namespace Galileo.DataBaseTier
 
             if (string.IsNullOrWhiteSpace(request.cod_bodega))
             {
-                return "El c&oacute;digo de la bodega es requerido.";
+                return BodegaCodigoRequerido;
             }
 
             if (string.IsNullOrWhiteSpace(request.descripcion))
@@ -763,7 +764,7 @@ namespace Galileo.DataBaseTier
 
             if (string.IsNullOrWhiteSpace(request.cod_bodega))
             {
-                return "El c&oacute;digo de la bodega es requerido.";
+                return BodegaCodigoRequerido;
             }
 
             if (string.IsNullOrWhiteSpace(request.usuario))
