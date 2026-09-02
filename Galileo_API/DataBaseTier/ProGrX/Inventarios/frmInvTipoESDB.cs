@@ -1,269 +1,722 @@
 using Dapper;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
-using Newtonsoft.Json;
-using System.Data;
-using System.Text;
+using Galileo.Models.Security;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier
 {
-    public class FrmInvTipoEsDB
+    public sealed class FrmInvTipoEsDb
     {
-        private readonly IConfiguration _config;
+        private const int CodigoValidacion = -2;
+        private const int ModuloInventarios = 32;
+        private const int PaginacionPredeterminada = 30;
+        private const int PaginacionMaxima = 500;
+        private const int LongitudFiltroMaxima = 100;
 
-        #region Constructor y helpers
+        private const string MensajeListaError =
+            "Ocurri&oacute; un error al consultar los tipos de movimientos.";
 
-        /// <summary>
-        /// Inicializa una nueva instancia de la clase <see cref="FrmInvTipoEsDB"/>.
-        /// </summary>
-        /// <param name="config">Configuración de la aplicación.</param>
-        public FrmInvTipoEsDB(IConfiguration config)
+        private const string MensajeBuscarError =
+            "Ocurri&oacute; un error al buscar los tipos de movimientos.";
+
+        private const string MensajeRegistrarError =
+            "Ocurri&oacute; un error al registrar el tipo de movimiento.";
+
+        private const string MensajeActualizarError =
+            "Ocurri&oacute; un error al actualizar el tipo de movimiento.";
+
+        private const string MensajeEliminarError =
+            "Ocurri&oacute; un error al eliminar el tipo de movimiento.";
+
+        private readonly PortalDB _portalDb;
+        private readonly MSecurityMainDb _securityMainDb;
+
+        public FrmInvTipoEsDb(IConfiguration config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+            ArgumentNullException.ThrowIfNull(config);
+
+            _portalDb = new PortalDB(config);
+            _securityMainDb = new MSecurityMainDb(config);
         }
 
         /// <summary>
-        /// Crea una instancia de <see cref="PortalDB"/> usando la configuración actual.
+        /// Obtiene los tipos de movimientos paginados.
         /// </summary>
-        /// <returns>Instancia de acceso a configuración de base de datos.</returns>
-        private PortalDB CreatePortalDb() => new(_config);
-
-        /// <summary>
-        /// Crea una respuesta vacía para el listado de tipos de entrada y salida.
-        /// </summary>
-        /// <returns>Listado vacío inicializado.</returns>
-        private static TipoESList CrearListaVacia() => new()
+        /// <param name="CodEmpresa"></param>
+        /// <param name="CodContabilidad"></param>
+        /// <param name="filtros"></param>
+        /// <returns></returns>
+        public ErrorDto<TipoESList> INV_TipoES_Lista_Obtener(
+            int CodEmpresa,
+            int CodContabilidad,
+            TipoESFiltros? filtros)
         {
-            Total = 0,
-            Lista = new List<TipoEsDto>()
-        };
+            var respuesta = INV_TipoES_Lista_Vacia();
 
-        /// <summary>
-        /// Crea una respuesta estándar para operaciones no query.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="successMessage">Mensaje de éxito.</param>
-        /// <param name="errorMessage">Mensaje de error.</param>
-        /// <returns>Respuesta estándar para operaciones no query.</returns>
-        private static ErrorDto CrearRespuestaNonQuery(ErrorDto result, string successMessage, string errorMessage)
-        {
-            return result.Code == 0
-                ? DbHelper.OkResponse(successMessage)
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
-        }
-
-        /// <summary>
-        /// Deserializa el filtro del listado de tipos de entrada y salida.
-        /// </summary>
-        /// <param name="filtros">Cadena JSON con filtros.</param>
-        /// <returns>Filtro tipado inicializado.</returns>
-        private static TipoESFiltros ObtenerFiltros(string filtros)
-        {
-            return JsonConvert.DeserializeObject<TipoESFiltros>(filtros) ?? new TipoESFiltros();
-        }
-
-        /// <summary>
-        /// Agrega filtro de búsqueda al query del listado.
-        /// </summary>
-        /// <param name="filtro">Texto filtro.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarFiltroListado(string? filtro, StringBuilder queryBuilder, DynamicParameters parametros)
-        {
-            if (string.IsNullOrWhiteSpace(filtro))
+            if (CodContabilidad <= 0)
             {
-                return;
+                return DbHelper.CreateErrorResponse(
+                    "El c&oacute;digo de contabilidad es requerido.",
+                    CodigoValidacion,
+                    respuesta);
             }
 
-            queryBuilder.Append(@" WHERE T.cod_entsal LIKE @Filtro
-                                   OR T.descripcion LIKE @Filtro
-                                   OR T.cod_cuenta LIKE @Filtro
-                                   OR C.descripcion LIKE @Filtro ");
-            parametros.Add("Filtro", $"%{filtro.Trim()}%");
-        }
+            var pagina = Math.Max(
+                0,
+                filtros?.pagina ?? 0);
 
-        /// <summary>
-        /// Agrega paginación OFFSET/FETCH al query del listado.
-        /// </summary>
-        /// <param name="pagina">Fila inicial.</param>
-        /// <param name="paginacion">Cantidad de filas.</param>
-        /// <param name="queryBuilder">Consulta a modificar.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarPaginacion(int? pagina, int? paginacion, StringBuilder queryBuilder, DynamicParameters parametros)
-        {
-            if (!pagina.HasValue || !paginacion.HasValue)
+            var paginacionSolicitada =
+                filtros?.paginacion ?? 0;
+
+            var paginacion = paginacionSolicitada <= 0
+                ? PaginacionPredeterminada
+                : Math.Min(
+                    paginacionSolicitada,
+                    PaginacionMaxima);
+
+            var filtro =
+                filtros?.filtro?.Trim() ??
+                string.Empty;
+
+            if (filtro.Length > LongitudFiltroMaxima)
             {
-                return;
+                return DbHelper.CreateErrorResponse(
+                    $"El filtro no puede superar los {LongitudFiltroMaxima} caracteres.",
+                    CodigoValidacion,
+                    respuesta);
             }
 
-            queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
-            parametros.Add("Offset", pagina.Value);
-            parametros.Add("Fetch", paginacion.Value);
-        }
+            var filtroLike = string.IsNullOrWhiteSpace(filtro)
+                ? null
+                : $"%{INV_TipoES_Filtro_Escapar(filtro)}%";
 
-        /// <summary>
-        /// Normaliza el código de cuenta quitando guiones.
-        /// </summary>
-        /// <param name="codCuenta">Código de cuenta.</param>
-        /// <returns>Código de cuenta normalizado.</returns>
-        private static string NormalizarCodCuenta(string? codCuenta)
-        {
-            return (codCuenta ?? string.Empty).Replace("-", string.Empty);
-        }
+            const string queryTotal = """
+                select count(1)
+                from pv_entrada_salida T
+                left join CntX_cuentas C
+                    on C.cod_cuenta = T.cod_cuenta
+                   and C.cod_contabilidad = @CodContabilidad
+                where
+                    @Filtro is null
+                    or T.cod_entsal like @Filtro escape '\'
+                    or T.descripcion like @Filtro escape '\'
+                    or T.tipo like @Filtro escape '\'
+                    or T.cod_cuenta like @Filtro escape '\'
+                    or C.descripcion like @Filtro escape '\';
+                """;
 
-        #endregion
+            const string queryLista = """
+                select
+                    rtrim(isnull(T.cod_entsal, ''))
+                        as cod_entsal,
+                    rtrim(isnull(T.descripcion, ''))
+                        as descripcion,
+                    rtrim(isnull(T.tipo, ''))
+                        as tipo,
+                    rtrim(isnull(T.cod_cuenta, ''))
+                        as cod_cuenta,
+                    cast(isnull(T.activo, 0) as bit)
+                        as activo,
+                    rtrim(isnull(C.descripcion, ''))
+                        as cta_desc
+                from pv_entrada_salida T
+                left join CntX_cuentas C
+                    on C.cod_cuenta = T.cod_cuenta
+                   and C.cod_contabilidad = @CodContabilidad
+                where
+                    @Filtro is null
+                    or T.cod_entsal like @Filtro escape '\'
+                    or T.descripcion like @Filtro escape '\'
+                    or T.tipo like @Filtro escape '\'
+                    or T.cod_cuenta like @Filtro escape '\'
+                    or C.descripcion like @Filtro escape '\'
+                order by T.cod_entsal
+                offset @Pagina rows
+                fetch next @Paginacion rows only;
+                """;
 
-        #region Consultas
-
-        /// <summary>
-        /// Obtiene los tipos de entrada y salida paginados.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="filtros">Cadena JSON con filtros.</param>
-        /// <returns>Listado de tipos de entrada y salida.</returns>
-        public ErrorDto<TipoESList> TipoES_Obtener(int CodEmpresa, string filtros)
-        {
-            var filtro = ObtenerFiltros(filtros);
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            var parametros = new
             {
-                var respuesta = CrearListaVacia();
-                respuesta.Total = connection.QueryFirstOrDefault<int>(
-                    "SELECT COUNT(*) FROM pv_entrada_salida T LEFT JOIN CntX_cuentas C ON T.cod_cuenta = C.cod_cuenta");
+                CodContabilidad,
+                Filtro = filtroLike,
+                Pagina = pagina,
+                Paginacion = paginacion
+            };
 
-                var parametros = new DynamicParameters();
-                var queryBuilder = new StringBuilder(@"SELECT T.cod_entsal,
-                                                             T.descripcion as descripcion,
-                                                             T.tipo,
-                                                             T.cod_cuenta,
-                                                             T.activo,
-                                                             C.descripcion AS ctaDesc,
-                                                             T.mancomunado
-                                                      FROM pv_entrada_salida T
-                                                      LEFT JOIN CntX_cuentas C ON T.cod_cuenta = C.cod_cuenta");
-
-                AgregarFiltroListado(filtro.filtro, queryBuilder, parametros);
-                queryBuilder.Append(" ORDER BY T.cod_entsal ");
-                AgregarPaginacion(filtro.pagina, filtro.paginacion, queryBuilder, parametros);
-
-                respuesta.Lista = connection.Query<TipoEsDto>(queryBuilder.ToString(), parametros)
-                                          .GroupBy(x => x.Cod_Entsal)
-                                          .Select(x => x.First())
-                                          .ToList();
-
-                return respuesta;
-            });
-
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? CrearListaVacia())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener tipos de entrada y salida.", result.Code.GetValueOrDefault(-1), CrearListaVacia());
-        }
-
-        /// <summary>
-        /// Busca tipos de transacciones o movimientos por tipo.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="Tipo">Tipo de movimiento.</param>
-        /// <returns>Listado de tipos de entrada y salida.</returns>
-        public ErrorDto<List<TipoEsDto>> TipoES_Buscar(int CodEmpresa, string Tipo)
-        {
-            var result = DbHelper.ExecuteListQuery<TipoEsDto>(
-                CreatePortalDb(),
+            var resultado = DbHelper.WithConn(
+                _portalDb,
                 CodEmpresa,
-                @"SELECT DISTINCT T.cod_entsal,
-                                  T.descripcion as descripcion,
-                                  T.tipo,
-                                  T.cod_cuenta,
-                                  T.activo,
-                                  C.descripcion AS ctaDesc
-                  FROM pv_entrada_salida T
-                  LEFT JOIN CntX_cuentas C ON T.cod_cuenta = C.cod_cuenta
-                  WHERE T.tipo = @Tipo
-                  ORDER BY T.cod_entsal",
-                new { Tipo });
-
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? new List<TipoEsDto>())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al buscar tipos de entrada y salida.", result.Code.GetValueOrDefault(-1), new List<TipoEsDto>());
-        }
-
-        #endregion
-
-        #region Mantenimiento
-
-        /// <summary>
-        /// Actualiza un tipo de transacción.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="request">Datos del tipo de transacción.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto TipoES_Actualizar(int CodEmpresa, TipoEsDto request)
-        {
-            var result = DbHelper.ExecuteNonQuery(
-                CreatePortalDb(),
-                CodEmpresa,
-                @"UPDATE pv_entrada_salida
-                  SET descripcion = @Descripcion,
-                      cod_cuenta = @Cod_Cuenta,
-                      tipo = @Tipo,
-                      activo = @Activo,
-                      mancomunado = @Mancomunado
-                  WHERE cod_Entsal = @Cod_Entsal",
-                new
+                connection =>
                 {
-                    request.Cod_Entsal,
-                    request.Descripcion,
-                    request.Tipo,
-                    Cod_Cuenta = NormalizarCodCuenta(request.Cod_Cuenta),
-                    request.Activo,
-                    request.Mancomunado
+                    var lista = INV_TipoES_Lista_Vacia();
+
+                    lista.total =
+                        connection.QueryFirstOrDefault<int>(
+                            queryTotal,
+                            parametros);
+
+                    lista.lista =
+                        connection.Query<TipoEsDto>(
+                            queryLista,
+                            parametros)
+                        .ToList();
+
+                    return lista;
                 });
 
-            return CrearRespuestaNonQuery(result, "Registro actualizado correctamente", "Error al actualizar el tipo de transacción.");
+            if (resultado.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    resultado.Description ??
+                    MensajeListaError,
+                    resultado.Code.GetValueOrDefault(-1),
+                    respuesta);
+            }
+
+            return DbHelper.CreateOkResponse(
+                resultado.Result ??
+                respuesta);
         }
 
         /// <summary>
-        /// Inserta un nuevo tipo de transacción.
+        /// Obtiene los tipos de movimientos de una categor&iacute;a.
         /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="request">Datos del tipo de transacción.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto TipoES_Insertar(int CodEmpresa, TipoEsDto request)
+        /// <param name="CodEmpresa"></param>
+        /// <param name="CodContabilidad"></param>
+        /// <param name="tipo"></param>
+        /// <returns></returns>
+        public ErrorDto<List<TipoEsDto>> INV_TipoES_Tipo_Buscar(
+            int CodEmpresa,
+            int CodContabilidad,
+            string? tipo)
         {
-            var result = DbHelper.ExecuteNonQuery(
-                CreatePortalDb(),
+            var lista = new List<TipoEsDto>();
+
+            if (CodContabilidad <= 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "El c&oacute;digo de contabilidad es requerido.",
+                    CodigoValidacion,
+                    lista);
+            }
+
+            var tipoNormalizado =
+                INV_TipoES_Tipo_Normalizar(tipo);
+
+            if (!InvTipoEsTiposMovimiento
+                    .INV_TipoES_Tipo_Valido(tipoNormalizado))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "El tipo de movimiento no es v&aacute;lido.",
+                    CodigoValidacion,
+                    lista);
+            }
+
+            const string query = """
+                select
+                    rtrim(isnull(T.cod_entsal, ''))
+                        as cod_entsal,
+                    rtrim(isnull(T.descripcion, ''))
+                        as descripcion,
+                    rtrim(isnull(T.tipo, ''))
+                        as tipo,
+                    rtrim(isnull(T.cod_cuenta, ''))
+                        as cod_cuenta,
+                    cast(isnull(T.activo, 0) as bit)
+                        as activo,
+                    rtrim(isnull(C.descripcion, ''))
+                        as cta_desc
+                from pv_entrada_salida T
+                left join CntX_cuentas C
+                    on C.cod_cuenta = T.cod_cuenta
+                   and C.cod_contabilidad = @CodContabilidad
+                where T.tipo = @Tipo
+                order by T.cod_entsal;
+                """;
+
+            var resultado =
+                DbHelper.ExecuteListQuery<TipoEsDto>(
+                    _portalDb,
+                    CodEmpresa,
+                    query,
+                    new
+                    {
+                        CodContabilidad,
+                        Tipo = tipoNormalizado
+                    });
+
+            if (resultado.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    resultado.Description ??
+                    MensajeBuscarError,
+                    resultado.Code.GetValueOrDefault(-1),
+                    lista);
+            }
+
+            return DbHelper.CreateOkResponse(
+                resultado.Result ??
+                lista);
+        }
+
+        /// <summary>
+        /// Registra un tipo de movimiento.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto INV_TipoES_Registrar(
+            int CodEmpresa,
+            TipoEsGuardarRequest? request)
+        {
+            return INV_TipoES_Guardar(
                 CodEmpresa,
-                @"INSERT INTO pv_entrada_salida(cod_Entsal, descripcion, tipo, cod_cuenta, activo, mancomunado)
-                  VALUES(@Cod_Entsal, @Descripcion, @Tipo, @Cod_Cuenta, @Activo, @Mancomunado)",
-                new
+                request,
+                true);
+        }
+
+        /// <summary>
+        /// Actualiza un tipo de movimiento.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto INV_TipoES_Actualizar(
+            int CodEmpresa,
+            TipoEsGuardarRequest? request)
+        {
+            return INV_TipoES_Guardar(
+                CodEmpresa,
+                request,
+                false);
+        }
+
+        /// <summary>
+        /// Elimina un tipo de movimiento.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto INV_TipoES_Eliminar(
+            int CodEmpresa,
+            TipoEsEliminarRequest? request)
+        {
+            var validacion =
+                INV_TipoES_Eliminar_Validar(request);
+
+            if (validacion is not null)
+            {
+                return validacion;
+            }
+
+            var codigo =
+                INV_TipoES_Codigo_Normalizar(
+                    request!.cod_entsal);
+
+            var usuario = request.usuario.Trim();
+
+            const string queryExiste = """
+                select count(1)
+                from pv_entrada_salida
+                where cod_entsal = @cod_entsal;
+                """;
+
+            const string queryEliminar = """
+                delete from pv_entrada_salida
+                where cod_entsal = @cod_entsal;
+                """;
+
+            var resultado = DbHelper.WithConn(
+                _portalDb,
+                CodEmpresa,
+                connection =>
                 {
-                    request.Cod_Entsal,
-                    request.Descripcion,
-                    request.Tipo,
-                    Cod_Cuenta = NormalizarCodCuenta(request.Cod_Cuenta),
-                    request.Activo,
-                    request.Mancomunado
+                    var parametros = new
+                    {
+                        cod_entsal = codigo
+                    };
+
+                    var existe =
+                        connection.QueryFirstOrDefault<int>(
+                            queryExiste,
+                            parametros);
+
+                    if (existe == 0)
+                    {
+                        return DbHelper.ErrorResponse(
+                            "El tipo de movimiento indicado no existe.",
+                            CodigoValidacion);
+                    }
+
+                    var filasAfectadas =
+                        connection.Execute(
+                            queryEliminar,
+                            parametros);
+
+                    return filasAfectadas > 0
+                        ? DbHelper.OkResponse(
+                            "Registro eliminado correctamente.")
+                        : DbHelper.ErrorResponse(
+                            MensajeEliminarError);
                 });
 
-            return CrearRespuestaNonQuery(result, "Registro agregado correctamente", "Error al insertar el tipo de transacción.");
+            var respuesta =
+                INV_TipoES_Resultado_Obtener(
+                    resultado,
+                    MensajeEliminarError);
+
+            if (respuesta.Code == 0)
+            {
+                INV_TipoES_Bitacora_Registrar(
+                    CodEmpresa,
+                    usuario,
+                    "Elimina - WEB",
+                    codigo);
+            }
+
+            return respuesta;
+        }
+
+        private ErrorDto INV_TipoES_Guardar(
+    int CodEmpresa,
+    TipoEsGuardarRequest? request,
+    bool esNuevo)
+        {
+            var validacion = INV_TipoES_Guardar_Validar(request);
+
+            if (validacion is not null)
+            {
+                return validacion;
+            }
+
+            var solicitud = request!;
+            var codigo = INV_TipoES_Codigo_Normalizar(solicitud.cod_entsal);
+            var usuario = solicitud.usuario.Trim();
+            var mensajeError = esNuevo
+                ? MensajeRegistrarError
+                : MensajeActualizarError;
+
+            var resultado = DbHelper.WithConn(
+                _portalDb,
+                CodEmpresa,
+                connection => INV_TipoES_Guardar_Ejecutar(
+                    connection,
+                    solicitud,
+                    esNuevo));
+
+            var respuesta = INV_TipoES_Resultado_Obtener(
+                resultado,
+                mensajeError);
+
+            if (respuesta.Code == 0)
+            {
+                INV_TipoES_Bitacora_Registrar(
+                    CodEmpresa,
+                    usuario,
+                    esNuevo ? "Registra - WEB" : "Modifica - WEB",
+                    codigo);
+            }
+
+            return respuesta;
         }
 
         /// <summary>
-        /// Elimina un tipo de transacción.
+        /// Ejecuta el registro o la actualizacion del tipo de movimiento.
         /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="codTiposES">Código del tipo de transacción.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto TipoES_Eliminar(int CodEmpresa, string codTiposES)
+        /// <param name="connection"></param>
+        /// <param name="request"></param>
+        /// <param name="esNuevo"></param>
+        /// <returns></returns>
+        private static ErrorDto INV_TipoES_Guardar_Ejecutar(
+            SqlConnection connection,
+            TipoEsGuardarRequest request,
+            bool esNuevo)
         {
-            var result = DbHelper.ExecuteNonQuery(
-                CreatePortalDb(),
-                CodEmpresa,
-                "DELETE pv_entrada_salida WHERE cod_Entsal = @Cod_Entsal",
-                new { Cod_Entsal = codTiposES });
+            const string queryExiste = """
+            select count(1)
+            from pv_entrada_salida
+            where cod_entsal = @cod_entsal;
+            """;
 
-            return CrearRespuestaNonQuery(result, "Registro eliminado correctamente", "Error al eliminar el tipo de transacción.");
+            const string queryInsertar = """
+            insert into pv_entrada_salida
+            (
+                cod_entsal,
+                descripcion,
+                cod_cuenta,
+                tipo,
+                activo
+            )
+            values
+            (
+                @cod_entsal,
+                @descripcion,
+                @cod_cuenta,
+                @tipo,
+                @activo
+            );
+            """;
+
+            const string queryActualizar = """
+            update pv_entrada_salida
+            set
+                descripcion = @descripcion,
+                cod_cuenta = @cod_cuenta,
+                tipo = @tipo,
+                activo = @activo
+            where cod_entsal = @cod_entsal;
+            """;
+
+            var parametros = new
+            {
+                cod_entsal = INV_TipoES_Codigo_Normalizar(
+                    request.cod_entsal),
+                descripcion = request.descripcion
+                    .Trim()
+                    .ToUpperInvariant(),
+                cod_cuenta = INV_TipoES_Cuenta_Normalizar(
+                    request.cod_cuenta),
+                tipo = INV_TipoES_Tipo_Normalizar(
+                    request.tipo),
+                request.activo
+            };
+
+            var existe = connection.QueryFirstOrDefault<int>(
+                queryExiste,
+                new
+                {
+                    parametros.cod_entsal
+                }) > 0;
+
+            var errorExistencia = INV_TipoES_Guardar_Existencia_Validar(
+                esNuevo,
+                existe);
+
+            if (errorExistencia is not null)
+            {
+                return errorExistencia;
+            }
+
+            var query = esNuevo
+                ? queryInsertar
+                : queryActualizar;
+
+            var filasAfectadas = connection.Execute(
+                query,
+                parametros);
+
+            if (filasAfectadas <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    esNuevo
+                        ? MensajeRegistrarError
+                        : MensajeActualizarError);
+            }
+
+            return DbHelper.OkResponse(
+                esNuevo
+                    ? "Registro agregado correctamente."
+                    : "Registro actualizado correctamente.");
         }
 
-        #endregion
+        /// <summary>
+        /// Valida la existencia del tipo de movimiento segun la operacion solicitada.
+        /// </summary>
+        /// <param name="esNuevo"></param>
+        /// <param name="existe"></param>
+        /// <returns></returns>
+        private static ErrorDto? INV_TipoES_Guardar_Existencia_Validar(
+            bool esNuevo,
+            bool existe)
+        {
+            if (esNuevo && existe)
+            {
+                return DbHelper.ErrorResponse(
+                    "El c&oacute;digo del tipo de movimiento ya existe.",
+                    CodigoValidacion);
+            }
+
+            if (!esNuevo && !existe)
+            {
+                return DbHelper.ErrorResponse(
+                    "El tipo de movimiento indicado no existe.",
+                    CodigoValidacion);
+            }
+
+            return null;
+        }
+
+        private static ErrorDto? INV_TipoES_Guardar_Validar(
+            TipoEsGuardarRequest? request)
+        {
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse(
+                    "La solicitud es requerida.",
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                    request.cod_entsal))
+            {
+                return DbHelper.ErrorResponse(
+                    "El c&oacute;digo del tipo de movimiento es requerido.",
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                    request.descripcion))
+            {
+                return DbHelper.ErrorResponse(
+                    "La descripci&oacute;n del tipo de movimiento es requerida.",
+                    CodigoValidacion);
+            }
+
+            var tipo =
+                INV_TipoES_Tipo_Normalizar(
+                    request.tipo);
+
+            if (!InvTipoEsTiposMovimiento
+                    .INV_TipoES_Tipo_Valido(tipo))
+            {
+                return DbHelper.ErrorResponse(
+                    "El tipo de movimiento no es v&aacute;lido.",
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                    request.usuario))
+            {
+                return DbHelper.ErrorResponse(
+                    "El usuario es requerido.",
+                    CodigoValidacion);
+            }
+
+            return null;
+        }
+
+        private static ErrorDto? INV_TipoES_Eliminar_Validar(
+            TipoEsEliminarRequest? request)
+        {
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse(
+                    "La solicitud es requerida.",
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                    request.cod_entsal))
+            {
+                return DbHelper.ErrorResponse(
+                    "El c&oacute;digo del tipo de movimiento es requerido.",
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                    request.usuario))
+            {
+                return DbHelper.ErrorResponse(
+                    "El usuario es requerido.",
+                    CodigoValidacion);
+            }
+
+            return null;
+        }
+
+        private static ErrorDto INV_TipoES_Resultado_Obtener(
+            ErrorDto<ErrorDto> resultado,
+            string mensajeError)
+        {
+            if (resultado.Code != 0)
+            {
+                return DbHelper.ErrorResponse(
+                    resultado.Description ??
+                    mensajeError,
+                    resultado.Code.GetValueOrDefault(-1));
+            }
+
+            return resultado.Result ??
+                   DbHelper.ErrorResponse(
+                       mensajeError);
+        }
+
+        private static TipoESList INV_TipoES_Lista_Vacia()
+        {
+            return new TipoESList
+            {
+                total = 0,
+                lista = []
+            };
+        }
+
+        private static string INV_TipoES_Codigo_Normalizar(
+            string? codigo)
+        {
+            return (codigo ?? string.Empty)
+                .Trim()
+                .ToUpperInvariant();
+        }
+
+        private static string INV_TipoES_Tipo_Normalizar(
+            string? tipo)
+        {
+            var valor = (tipo ?? string.Empty)
+                .Trim()
+                .ToUpperInvariant();
+
+            return string.IsNullOrEmpty(valor)
+                ? string.Empty
+                : valor[..1];
+        }
+
+        private static string INV_TipoES_Cuenta_Normalizar(
+            string? cuenta)
+        {
+            return string.Concat(
+                (cuenta ?? string.Empty)
+                .Where(char.IsLetterOrDigit));
+        }
+
+        private static string INV_TipoES_Filtro_Escapar(
+            string filtro)
+        {
+            return filtro
+                .Replace(
+                    "\\",
+                    "\\\\",
+                    StringComparison.Ordinal)
+                .Replace(
+                    "%",
+                    "\\%",
+                    StringComparison.Ordinal)
+                .Replace(
+                    "_",
+                    "\\_",
+                    StringComparison.Ordinal)
+                .Replace(
+                    "[",
+                    "\\[",
+                    StringComparison.Ordinal);
+        }
+
+        private void INV_TipoES_Bitacora_Registrar(
+            int CodEmpresa,
+            string usuario,
+            string movimiento,
+            string codigo)
+        {
+            _securityMainDb.Bitacora(
+                new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = usuario,
+                    Movimiento = movimiento,
+                    DetalleMovimiento =
+                        $"Tipo de E/S/T Cod: {codigo}",
+                    Modulo = ModuloInventarios
+                });
+        }
     }
 }

@@ -1,25 +1,35 @@
 ﻿namespace Galileo.Models.INV
 {
-    public class UnidadMedicion
+    public abstract class UnidadMedicionBase
     {
-        public string Cod_Unidad { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
+        public string cod_unidad { get; set; } = string.Empty;
+
+        public string descripcion { get; set; } = string.Empty;
     }
 
-    public class UnidadMedicionDto
+    public sealed class UnidadMedicion
+        : UnidadMedicionBase
     {
-        public string Cod_Unidad { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
-        public string Hacienda { get; set; } = string.Empty;
-        public required bool Activo { get; set; }
-        public string Estado { get; set; } = string.Empty;
-        public string Registro_Usuario { get; set; } = string.Empty;
-        public DateTime? Registro_Fecha { get; set; }
     }
 
-    public class UnidadesDataLista
+    public sealed class UnidadMedicionDto
+        : UnidadMedicionBase
     {
-        public int Total { get; set; }
-        public List<UnidadMedicionDto> Unidades { get; set; } = new List<UnidadMedicionDto>();
+        public string hacienda { get; set; } = string.Empty;
+
+        public bool activo { get; set; } = false;
+
+        public string estado { get; set; } = string.Empty;
+
+        public string registro_usuario { get; set; } = string.Empty;
+
+        public DateTime? registro_fecha { get; set; }
+    }
+
+    public sealed class UnidadesDataLista
+    {
+        public int total { get; set; } = 0;
+
+        public List<UnidadMedicionDto> unidades { get; set; } = [];
     }
 }

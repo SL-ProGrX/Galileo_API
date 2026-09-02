@@ -13,44 +13,78 @@ namespace Galileo.BusinessLogic
             _db = new FrmInvBodegasDb(config);
         }
 
-        public ErrorDto<List<PermisosBodegasDto>> Autorizador_ObtenerTodos(int CodEmpresa, string CodBodega)
+        public ErrorDto<List<BodegasDto>> INV_Bodegas_Lista_Obtener(
+            int CodEmpresa)
         {
-            return _db.Autorizador_ObtenerTodos(CodEmpresa, CodBodega);
+            return _db.INV_Bodegas_Lista_Obtener(
+                CodEmpresa);
         }
 
-        public ErrorDto<List<BodegasDto>> Bodegas_Obtener(int CodEmpresa)
+        public ErrorDto<BodegasDto> INV_Bodegas_Codigo_Obtener(
+            int CodEmpresa,
+            string cod_bodega)
         {
-            return _db.Bodegas_Obtener(CodEmpresa);
+            return _db.INV_Bodegas_Codigo_Obtener(
+                CodEmpresa,
+                cod_bodega);
         }
 
-        public ErrorDto<BodegasDto> ConsultaAscDesc(int CodEmpresa, int consecutivo, string tipo)
+        public ErrorDto<BodegasDto> INV_Bodegas_Navegacion_Obtener(
+            int CodEmpresa,
+            string consecutivo,
+            string tipo)
         {
-            return _db.ConsultaAscDesc(CodEmpresa, consecutivo, tipo);
+            return _db.INV_Bodegas_Navegacion_Obtener(
+                CodEmpresa,
+                consecutivo,
+                tipo);
         }
 
-        public ErrorDto<BodegasDto> bodegaConsecutivo_Obtener(int CodEmpresa, string consecutivo)
+        public ErrorDto<List<PermisosBodegasDto>> INV_Bodegas_Permisos_Obtener(
+            int CodEmpresa,
+            string cod_bodega,
+            string tipo_transaccion)
         {
-            return _db.bodegaConsecutivo_Obtener(CodEmpresa, consecutivo);
+            return _db.INV_Bodegas_Permisos_Obtener(
+                CodEmpresa,
+                cod_bodega,
+                tipo_transaccion);
         }
 
-        public ErrorDto bodega_Insertar(int CodEmpresa, BodegasDto data)
+        public ErrorDto INV_Bodegas_Registrar(
+            int CodEmpresa,
+            BodegasDto request)
         {
-            return _db.bodega_Insertar(CodEmpresa, data);
+            return _db.INV_Bodegas_Registrar(
+                CodEmpresa,
+                request);
         }
 
-        public ErrorDto bodega_Actualizar(int CodEmpresa, BodegasDto data)
+        public ErrorDto INV_Bodegas_Actualizar(
+            int CodEmpresa,
+            BodegasDto request)
         {
-            return _db.bodega_Actualizar(CodEmpresa, data);
+            return _db.INV_Bodegas_Actualizar(
+                CodEmpresa,
+                request);
         }
 
-        public ErrorDto bodega_Eliminar(int CodEmpresa, string cod_bodega)
+        public ErrorDto INV_Bodegas_Eliminar(
+            int CodEmpresa,
+            string cod_bodega)
         {
-            return _db.bodega_Eliminar(CodEmpresa, cod_bodega);
+            return _db.INV_Bodegas_Eliminar(
+                CodEmpresa,
+                cod_bodega);
         }
 
-        public ErrorDto permisosBodega_Actualizar(int CodEmpresa, PermisosBodegasDto request, string cod_bodega)
+        public ErrorDto INV_Bodegas_Permiso_Actualizar(
+            int CodEmpresa,
+            InvBodegasPermisoActualizarRequest request)
         {
-            return _db.permisosBodega_Actualizar(CodEmpresa, request, cod_bodega);
+            return _db.INV_Bodegas_Permiso_Actualizar(
+                CodEmpresa,
+                request);
         }
     }
 }
