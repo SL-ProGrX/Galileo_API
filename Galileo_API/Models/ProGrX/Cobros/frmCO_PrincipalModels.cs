@@ -7,6 +7,8 @@
         public string cedula { get; set; } = string.Empty;
         public decimal montoapr { get; set; }
         public decimal saldo { get; set; }
+        public string proceso { get; set; } = string.Empty;
+        public string estado { get; set; } = string.Empty;
     }
 
     public class OperacionConsultarDto
@@ -14,6 +16,8 @@
         public int operacion { get; set; }
         public string descripcion { get; set; } = string.Empty; // NORMAL
         public string estado { get; set; } = string.Empty;      // NO
+        /// <summary>Proceso actual de la operación.</summary>
+        public string proceso { get; set; } = string.Empty;
 
         public int codInstitucion { get; set; }
 
@@ -203,7 +207,16 @@
     public class CobroJudicialRequestDto
     {
         public required int operacion { get; set; }
-        public string usuario { get; set; } = string.Empty;
+        public required string usuario { get; set; }
+        public required string notas { get; set; }
+    }
+
+    internal sealed class CobroJudicialResultadoDbDto
+    {
+        public int Pass { get; set; }
+        public string Mensaje { get; set; } = string.Empty;
+        public string NumDoc { get; set; } = string.Empty;
+        public string TipoDoc { get; set; } = string.Empty;
     }
 
 

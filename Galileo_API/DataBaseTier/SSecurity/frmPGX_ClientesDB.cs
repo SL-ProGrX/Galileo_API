@@ -11,11 +11,13 @@ namespace Galileo.DataBaseTier
         private readonly IConfiguration _config;
         private const string connectionStringName = "DefaultConnString";
         private readonly MSecurityMainDb DBBitacora;
+        private readonly PortalDB _portalDb;
 
         public FrmPgxClientesDb(IConfiguration config)
         {
             _config = config;
             DBBitacora = new MSecurityMainDb(_config);
+            _portalDb = new PortalDB(_config);
         }
 
         public ErrorDto Bitacora(BitacoraInsertarDto data)
@@ -94,7 +96,7 @@ namespace Galileo.DataBaseTier
 
         #region CLIENTES
 
-        public ClientesDataLista Clientes_Obtener(int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<ClientesDataLista> Clientes_Obtener(int? pagina, int? paginacion, string? filtro)
         {
             var info = new ClientesDataLista
             {
@@ -110,7 +112,9 @@ namespace Galileo.DataBaseTier
 
                 bool hasFiltro = !string.IsNullOrWhiteSpace(filtro);
                 parameters.Add("@HasFiltro", hasFiltro ? 1 : 0);
-                parameters.Add("@Filtro", hasFiltro ? "%" + filtro + "%" : (object)DBNull.Value);
+                // Dapper no acepta DBNull.Value como valor de parámetro; null
+                // se traduce correctamente a NULL para el filtro opcional.
+                parameters.Add("@Filtro", hasFiltro ? "%" + filtro + "%" : null);
 
                 int offset = 0;
                 int fetch = int.MaxValue;
@@ -149,10 +153,10 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                return DbHelper.CreateErrorResponse<ClientesDataLista>(ex.Message);
             }
 
-            return info;
+            return DbHelper.CreateOkResponse(info);
         }
 
         public ClienteDto Cliente_Obtener(int CodEmpresa)
@@ -538,12 +542,38 @@ namespace Galileo.DataBaseTier
         public List<ServicioDto> ServiciosCliente_Obtener(int CodEmpresa)
         {
             const string sql = @"
-                SELECT S.Cod_Servicio, S.Descripcion, A.Monto, A.Costo, A.Cantidad_Usuarios, A.Registro_Fecha, A.Registro_Usuario
+                SELECT S.Cod_Servicio, S.Descripcion, A.Monto, A.Costo, A.Cantidad_Usuarios, A.Registro_Fecha, A.Registro_Usuario, A.Activo
                 FROM PGX_Servicios S
                 INNER JOIN PGX_Servicios_ASG A ON S.Cod_Servicio = A.Cod_Servicio
                 WHERE A.Cod_Empresa = @CodEmpresa AND A.Activo = 1";
 
             return QueryList<ServicioDto>(sql, new { CodEmpresa });
+        }
+
+        public ErrorDto ServicioAsignar(ServicioAsignarDto request, string modo)
+        {
+            try
+            {
+                using var connection = CreateConnection();
+                const string sql = "EXEC spPGX_Servicio_Asigna @p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7";
+                connection.Execute(sql, new
+                {
+                    p0 = request.CodEmpresa,
+                    p1 = request.CodServicio,
+                    p2 = request.Monto,
+                    p3 = request.Costo,
+                    p4 = request.CantidadUsuarios,
+                    p5 = request.AplicaPorUsuario ? 1 : 0,
+                    p6 = request.Usuario,
+                    p7 = modo
+                });
+
+                return new ErrorDto { Code = 0, Description = "Operación realizada correctamente." };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto { Code = -1, Description = ex.Message };
+            }
         }
 
         #endregion
@@ -737,7 +767,7 @@ namespace Galileo.DataBaseTier
 
         #region TEST Y SINC
 
-        public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos)
+        public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos, bool idPortal)
         {
             var errorResponse = new ErrorDto();
             int i = 0;
@@ -775,19 +805,32 @@ namespace Galileo.DataBaseTier
                     i++;
                     Console.WriteLine($"Sincronizando: {cliente.nombre_corto} [{i} - {clientes.Count}]");
 
-                    using var dbConnection = new SqlConnection(
-                        $"Server={cliente.pgx_core_server};Database={cliente.pgx_core_db};User Id={cliente.pgx_core_user};Password={cliente.pgx_core_key};");
+                    using var dbConnection = _portalDb.CreateConnection(cliente.cod_empresa ?? 0);
 
                     dbConnection.Open();
 
-                    var updateSql = $"UPDATE SIF_EMPRESA SET PORTAL_ID = {cliente.cod_empresa}";
+                    var updateSql = "UPDATE SIF_EMPRESA SET ";
+                    var updates = new List<string>();
+
+                    if (idPortal)
+                    {
+                        updates.Add($"PORTAL_ID = {cliente.cod_empresa}");
+                    }
 
                     if (logos && cliente.url_logo_activo == true)
                     {
-                        updateSql += $", LOGO_WEB_SITE = '{cliente.url_logo}'";
+                        updates.Add("LOGO_WEB_SITE = @LogoWebSite");
                     }
 
+                    if (updates.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    updateSql += string.Join(", ", updates);
+
                     using var command = new SqlCommand(updateSql, dbConnection);
+                    command.Parameters.AddWithValue("@LogoWebSite", cliente.url_logo ?? string.Empty);
                     command.ExecuteNonQuery();
 
                     errorResponse.Code = 0;

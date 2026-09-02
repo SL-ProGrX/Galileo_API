@@ -21,21 +21,21 @@ namespace Galileo.Controllers
 
 
         [HttpPost("UsuarioExiste")]
-        public int UsuarioExiste(string usuario)
+        public ErrorDto<int> UsuarioExiste(string usuario)
         {
             return UsuariosBL.UsuarioExiste(usuario);
         }
 
 
         [HttpGet("UsuariosEmpresaObtener")]
-        public List<UsuarioModel> UsuariosEmpresaObtener(int codEmpresa, bool AdminView, bool DirGlobal)
+        public ErrorDto<List<UsuarioModel>> UsuariosEmpresaObtener(int codEmpresa, bool AdminView, bool DirGlobal)
         {
             return UsuariosBL.UsuariosEmpresaObtener(codEmpresa, AdminView, DirGlobal);
         }
 
 
         [HttpGet("UsuarioConsultar")]
-        public UsuarioModel UsuarioConsultar(string nombreUsuario, int codEmpresa, bool AdminView, bool DirGlobal)
+        public ErrorDto<UsuarioModel?> UsuarioConsultar(string nombreUsuario, int codEmpresa, bool AdminView, bool DirGlobal)
         {
             return UsuariosBL.UsuarioConsultar(nombreUsuario, codEmpresa, AdminView, DirGlobal);
         }
@@ -49,7 +49,7 @@ namespace Galileo.Controllers
 
         
         [HttpGet("UsuarioClientesConsultar")]
-        public List<UsuarioClienteDto> UsuarioClientesConsultar(string nombreUsuario)
+        public ErrorDto<List<UsuarioClienteDto>> UsuarioClientesConsultar(string nombreUsuario)
         {
             return UsuariosBL.UsuarioClientesConsultar(nombreUsuario);
         }
@@ -63,23 +63,23 @@ namespace Galileo.Controllers
 
 
         [HttpGet("UsuarioCuentaTiposTransaccionObtener")]
-        public List<TipoTransaccionBitacora> UsuarioCuentaTiposTransaccionObtener()
+        public ErrorDto<List<TipoTransaccionBitacora>> UsuarioCuentaTiposTransaccionObtener()
         {
             return UsuariosBL.UsuarioCuentaTiposTransaccionObtener();
         }
 
 
         [HttpPost("UsuarioBitacoraConsultar")]
-        public List<UsuarioCuentaBitacora> UsuarioBitacoraConsultar(UsuarioBitacoraRequest usuarioCuentaBitacoraRequestDto)
+        public ErrorDto<List<UsuarioCuentaBitacora>> UsuarioBitacoraConsultar(UsuarioBitacoraRequest usuarioCuentaBitacoraRequestDto)
         {
             return UsuariosBL.UsuarioBitacoraConsultar(usuarioCuentaBitacoraRequestDto);
         }
 
 
         [HttpGet("UsuarioClienteRolesConsultar")]
-        public List<UsuarioClienteRolDto> UsuarioClienteRolesConsultar(string nombreUsuario, string codEmpresa)
+        public ErrorDto<List<UsuarioClienteRolDto>> UsuarioClienteRolesConsultar(string nombreUsuario, int codEmpresa)
         {
-            return UsuariosBL.UsuarioClienteRolesConsultar(nombreUsuario, codEmpresa);
+            return UsuariosBL.UsuarioClienteRolesConsultar(nombreUsuario, codEmpresa.ToString());
         }
 
 

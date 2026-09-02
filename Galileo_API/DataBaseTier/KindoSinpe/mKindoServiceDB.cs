@@ -2275,6 +2275,43 @@ WHERE COD_REFERENCIA = @codReferencia;";
             return response;
         }
 
+
+        public void UpdateErrorTransaccionSinpe(int CodEmpresa, string cod_referencia, int cod_rechazo, long nsolicitud)
+        {
+            const string Query = @"UPDATE TES_TRANSACCIONES
+                                SET
+                                    estado_sinpe   = 0,
+                                    ID_RECHAZO     = @idRechazo,
+                                    REFERENCIA_SINPE = @CodReferencia
+                                WHERE
+                                    NSOLICITUD = @nSolicitud ;";
+            var parametros = new
+            {
+                idRechazo = cod_rechazo,
+                CodReferencia = cod_referencia,
+                nSolicitud = nsolicitud
+            };
+            DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, Query, parametros);
+        }
+
+        public void UpdateOkTransaccionSinpe(int CodEmpresa, string cod_referencia, int cod_rechazo, long nsolicitud)
+        {
+            const string Query = @"UPDATE TES_TRANSACCIONES
+                                SET
+                                    estado_sinpe   = 1,
+                                    ID_RECHAZO     = null,
+                                    REFERENCIA_SINPE = @CodReferencia
+                                WHERE
+                                    NSOLICITUD = @nSolicitud ;";
+            var parametros = new
+            {
+                idRechazo = cod_rechazo,
+                CodReferencia = cod_referencia,
+                nSolicitud = nsolicitud
+            };
+            DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, Query, parametros);
+        }
+
         #endregion
     }
 }

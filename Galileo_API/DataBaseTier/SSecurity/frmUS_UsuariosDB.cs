@@ -22,9 +22,9 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public int UsuarioExiste(string usuario)
+        public ErrorDto<int> UsuarioExiste(string usuario)
         {
-            int resp = 0;
+            var resp = DbHelper.CreateOkResponse(0);
 
             string sql = "select count(*) as 'Existe' from US_USUARIOS where Usuario = @usuario";
             var values = new
@@ -36,13 +36,13 @@ namespace Galileo.DataBaseTier
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-                    resp = connection.Query<int>(sql, values).FirstOrDefault();
+                    resp.Result = connection.Query<int>(sql, values).FirstOrDefault();
                 }
 
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                return DbHelper.CreateErrorResponse<int>(ex.Message);
             }
 
             return resp;
@@ -95,7 +95,7 @@ namespace Galileo.DataBaseTier
                     var esAdminPortal = parameters.Get<bool>("@EsAdminPortal");
 
 
-                    if (esAdminPortal && !(usuarioDto.ModoEdicion ?? false) && usuarioDto.EmpresaId > 0)
+                    if (!esAdminPortal && !(usuarioDto.ModoEdicion ?? false) && usuarioDto.EmpresaId > 0)
                     {
                         try
                         {
@@ -133,9 +133,9 @@ namespace Galileo.DataBaseTier
         /// <param name="AdminView"></param>
         /// <param name="DirGlobal"></param>
         /// <returns></returns>
-        public UsuarioModel UsuarioConsultar(string paramUsuario, int codEmpresa, bool AdminView, bool DirGlobal)
+        public ErrorDto<UsuarioModel?> UsuarioConsultar(string paramUsuario, int codEmpresa, bool AdminView, bool DirGlobal)
         {
-            UsuarioModel result = null;
+            UsuarioModel? result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -165,15 +165,15 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                return DbHelper.CreateErrorResponse<UsuarioModel?>(ex.Message);
             }
-            return result;
+            return DbHelper.CreateOkResponse(result);
         }
 
 
-        public List<UsuarioModel> UsuariosEmpresaObtener(int codEmpresa, bool AdminView, bool DirGlobal)
+        public ErrorDto<List<UsuarioModel>> UsuariosEmpresaObtener(int codEmpresa, bool AdminView, bool DirGlobal)
         {
-            List<UsuarioModel> result = null;
+            List<UsuarioModel>? result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -190,14 +190,14 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                return DbHelper.CreateErrorResponse<List<UsuarioModel>>(ex.Message);
             }
-            return result;
+            return DbHelper.CreateOkResponse(result);
         }
 
-        public List<UsuarioClienteDto> UsuarioClientesConsultar(string nombreUsuario)
+        public ErrorDto<List<UsuarioClienteDto>> UsuarioClientesConsultar(string nombreUsuario)
         {
-            List<UsuarioClienteDto> result = null;
+            List<UsuarioClienteDto>? result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -212,9 +212,9 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                return DbHelper.CreateErrorResponse<List<UsuarioClienteDto>>(ex.Message);
             }
-            return result;
+            return DbHelper.CreateOkResponse(result);
         }
 
         public ErrorDto UsuarioClienteAsignar(UsuarioClienteAsignaDto usuarioClienteAsignaDto)
@@ -310,9 +310,9 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        public List<TipoTransaccionBitacora> UsuarioCuentaTiposTransaccionObtener()
+        public ErrorDto<List<TipoTransaccionBitacora>> UsuarioCuentaTiposTransaccionObtener()
         {
-            List<TipoTransaccionBitacora> resultado = new List<TipoTransaccionBitacora>();
+            List<TipoTransaccionBitacora> resultado;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -323,14 +323,14 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                return DbHelper.CreateErrorResponse<List<TipoTransaccionBitacora>>(ex.Message);
             }
-            return resultado;
+            return DbHelper.CreateOkResponse(resultado);
         }
 
-        public List<UsuarioCuentaBitacora> UsuarioBitacoraConsultar(UsuarioBitacoraRequest request)
+        public ErrorDto<List<UsuarioCuentaBitacora>> UsuarioBitacoraConsultar(UsuarioBitacoraRequest request)
         {
-            List<UsuarioCuentaBitacora> result = null;
+            List<UsuarioCuentaBitacora>? result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -349,14 +349,14 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                return DbHelper.CreateErrorResponse<List<UsuarioCuentaBitacora>>(ex.Message);
             }
-            return result;
+            return DbHelper.CreateOkResponse(result);
         }
 
-        public List<UsuarioClienteRolDto> UsuarioClienteRolesConsultar(string nombreUsuario, string codEmpresa)
+        public ErrorDto<List<UsuarioClienteRolDto>> UsuarioClienteRolesConsultar(string nombreUsuario, string codEmpresa)
         {
-            List<UsuarioClienteRolDto> result = null;
+            List<UsuarioClienteRolDto> result = new();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -367,14 +367,42 @@ namespace Galileo.DataBaseTier
                         Usuario = nombreUsuario,
                         CodEmpresa = codEmpresa
                     };
-                    result = connection.Query<UsuarioClienteRolDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    // El procedimiento devuelve CodRol como entero, mientras el
+                    // contrato HTTP lo expone como texto para conservar el
+                    // formato usado por SSecurity Web.
+                    static object? Valor(IDataRecord row, string nombre)
+                    {
+                        var esperado = nombre.Replace("_", string.Empty, StringComparison.Ordinal)
+                            .ToLowerInvariant();
+                        for (var index = 0; index < row.FieldCount; index++)
+                        {
+                            var actual = row.GetName(index).Replace("_", string.Empty, StringComparison.Ordinal)
+                                .ToLowerInvariant();
+                            if (actual == esperado)
+                                return row.IsDBNull(index) ? null : row.GetValue(index);
+                        }
+                        return null;
+                    }
+
+                    using var reader = connection.ExecuteReader(procedure, values, commandType: CommandType.StoredProcedure);
+                    while (reader.Read())
+                    {
+                        result.Add(new UsuarioClienteRolDto
+                        {
+                            CodigoRol = Convert.ToString(Valor(reader, "CodigoRol")) ?? string.Empty,
+                            Descripcion = Convert.ToString(Valor(reader, "Descripcion")) ?? string.Empty,
+                            Asignado = Convert.ToBoolean(Valor(reader, "Asignado")),
+                            RegistroFecha = Convert.ToDateTime(Valor(reader, "RegistroFecha")),
+                            RegistroUsuario = Convert.ToString(Valor(reader, "RegistroUsuario")) ?? string.Empty
+                        });
+                    }
                 }
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                return DbHelper.CreateErrorResponse<List<UsuarioClienteRolDto>>(ex.Message);
             }
-            return result;
+            return DbHelper.CreateOkResponse(result);
         }
 
         public ErrorDto UsuarioClienteRolAsignar(UsuarioClienteRolAsignaDto usuarioClienteRolAsignaDto)

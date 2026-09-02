@@ -136,6 +136,13 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [HttpGet("OperacionesPorPersona_Listar")]
+        public ErrorDto<List<OperacionBusquedaDto>> OperacionesPorPersona_Listar(int codEmpresa, string cedula)
+        {
+            return _bl.OperacionesPorPersona_Listar(codEmpresa, cedula);
+        }
+
+        [Authorize]
         [HttpPost("CambiarDeductora")]
         public ErrorDto<string> CambiarDeductora(int codEmpresa, COCambiarDeductoraRequestDto request)
         {
@@ -154,16 +161,22 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             );
         }
 
+        [Authorize]
         [HttpPost("ValidarPasoCobroJudicial")]
         public ErrorDto<bool> ValidarPasoCobroJudicial(int codEmpresa, int operacion)
         {
             return _bl.ValidarPasoCobroJudicial(codEmpresa, operacion);
         }
 
+        [Authorize]
         [HttpPost("CobroJudicial_Ejecutar")]
         public ErrorDto<string> CobroJudicial_Ejecutar(int codEmpresa, CobroJudicialRequestDto request)
         {
-            return _bl.CobroJudicial_Ejecutar(codEmpresa, request.operacion, request.usuario
+            return _bl.CobroJudicial_Ejecutar(
+                codEmpresa,
+                request.operacion,
+                request.usuario,
+                request.notas
             );
         }
 

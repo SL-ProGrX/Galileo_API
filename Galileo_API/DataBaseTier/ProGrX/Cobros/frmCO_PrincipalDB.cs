@@ -33,7 +33,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
                 const string sql = @"
-                                SELECT TOP 10
+                                SELECT
                                     id_solicitud AS operacion,
                                     RTRIM(codigo) AS codigo,
                                     RTRIM(cedula) AS cedula,
@@ -84,7 +84,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                                     ELSE 'SI'
                                 END AS estado,
 
-                     
+                                CASE UPPER(ISNULL(rc.proceso, 'N'))
+                                    WHEN 'T' THEN 'TRASPASO DEUDAS'
+                                    WHEN 'J' THEN 'COBRO JUDICIAL'
+                                    ELSE 'NORMAL'
+                                END AS proceso,
+
                                 s.cod_institucion AS codInstitucion,
                                 ISNULL(rc.cod_deductora, s.cod_deductora) AS deductora,
 
@@ -1019,6 +1024,48 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return response;
         }
 
+        /// <summary>
+        /// Lista las operaciones formalizadas asociadas a una persona.
+        /// Equivale a la búsqueda F4 del campo Línea en el formulario original.
+        /// </summary>
+        public ErrorDto<List<OperacionBusquedaDto>> OperacionesPorPersona_Listar(int codEmpresa, string cedula)
+        {
+            var response = new ErrorDto<List<OperacionBusquedaDto>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                const string sql = @"
+                    SELECT
+                        id_solicitud AS operacion,
+                        RTRIM(codigo) AS codigo,
+                        RTRIM(cedula) AS cedula,
+                        RTRIM(ISNULL(proceso, '')) AS proceso,
+                        RTRIM(ISNULL(estado, '')) AS estado,
+                        ISNULL(montoapr, 0) AS montoapr,
+                        ISNULL(saldo, 0) AS saldo
+                    FROM reg_creditos
+                    WHERE estadosol = 'F'
+                      AND cedula = @cedula
+                    ORDER BY id_solicitud
+                ";
+
+                response.Result = cn.Query<OperacionBusquedaDto>(
+                    sql,
+                    new { cedula }
+                ).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
 
         /// <summary>
         /// Cambia la deductora
@@ -1172,29 +1219,54 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="codEmpresa"></param>
         /// <param name="operacion"></param>
         /// <param name="usuario"></param>
+        /// <param name="notas"></param>
         /// <returns></returns>
-        public ErrorDto<string> CobroJudicial_Ejecutar(int codEmpresa, int operacion, string usuario)
+        public ErrorDto<string> CobroJudicial_Ejecutar(int codEmpresa, int operacion, string usuario, string notas)
         {
             var response = new ErrorDto<string>();
 
             try
             {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                var parameters = new
+                var notasLimpias = notas?.Trim() ?? string.Empty;
+                if (notasLimpias.Length <= 30)
                 {
-                    operacion,
-                    usuario
-                };
+                    response.Code = -1;
+                    response.Description = "Debe indicar una observación válida de ejecución de Cobro Judicial de más de 30 caracteres.";
+                    return response;
+                }
 
-                cn.Execute(
-                    "spCO_CobroJudicial_Ejecutar",
-                    parameters,
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                var result = cn.QueryFirstOrDefault<CobroJudicialResultadoDbDto>(
+                    "spCBR_Cobro_Judicial_Aplica",
+                    new
+                    {
+                        Operacion = operacion,
+                        Notas = notasLimpias,
+                        Usuario = usuario
+                    },
                     commandType: CommandType.StoredProcedure
                 );
 
-                response.Result = "Operación enviada a cobro judicial correctamente";
+                if (result == null)
+                {
+                    response.Code = -1;
+                    response.Description = "No se obtuvo respuesta al enviar la operación a cobro judicial.";
+                    return response;
+                }
+
+                if (result.Pass != 1)
+                {
+                    response.Code = -1;
+                    response.Description = string.IsNullOrWhiteSpace(result.Mensaje)
+                        ? "No fue posible enviar la operación a cobro judicial."
+                        : result.Mensaje;
+                    return response;
+                }
+
+                response.Result = string.IsNullOrWhiteSpace(result.NumDoc)
+                    ? $"La operación fue enviada a Cobro Judicial. Se generó el asiento CBR{operacion}."
+                    : $"La operación fue enviada a Cobro Judicial. Se generó la nota de cobro número {result.NumDoc}.";
             }
             catch (Exception ex)
             {

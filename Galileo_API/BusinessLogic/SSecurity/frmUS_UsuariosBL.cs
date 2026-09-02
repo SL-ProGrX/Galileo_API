@@ -14,17 +14,17 @@ namespace Galileo.BusinessLogic
             UsuariosDB = new FrmUsUsuariosDb(config);
         }
 
-        public int UsuarioExiste(string usuario)
+        public ErrorDto<int> UsuarioExiste(string usuario)
         {
             return UsuariosDB.UsuarioExiste(usuario);
         }
 
-        public List<UsuarioModel> UsuariosEmpresaObtener(int codEmpresa, bool AdminView, bool DirGlobal)
+        public ErrorDto<List<UsuarioModel>> UsuariosEmpresaObtener(int codEmpresa, bool AdminView, bool DirGlobal)
         {
             return UsuariosDB.UsuariosEmpresaObtener(codEmpresa, AdminView, DirGlobal);
         }
 
-        public UsuarioModel UsuarioConsultar(string paramUsuario, int codEmpresa, bool AdminView, bool DirGlobal)
+        public ErrorDto<UsuarioModel?> UsuarioConsultar(string paramUsuario, int codEmpresa, bool AdminView, bool DirGlobal)
         {
             return UsuariosDB.UsuarioConsultar(paramUsuario, codEmpresa, AdminView, DirGlobal);
         }
@@ -34,9 +34,13 @@ namespace Galileo.BusinessLogic
             return UsuariosDB.UsuarioGuardarActualizar(usuarioDto);
         }
 
-        public List<UsuarioClienteDto> UsuarioClientesConsultar(string nombreUsuario)
+        public ErrorDto<List<UsuarioClienteDto>> UsuarioClientesConsultar(string nombreUsuario)
         {
-            List<UsuarioClienteDto> clientes = UsuariosDB.UsuarioClientesConsultar(nombreUsuario);
+            var respuesta = UsuariosDB.UsuarioClientesConsultar(nombreUsuario);
+            if ((respuesta.Code ?? 0) < 0 || respuesta.Result is null)
+                return respuesta;
+
+            List<UsuarioClienteDto> clientes = respuesta.Result;
 
             foreach (UsuarioClienteDto cli in clientes)
             {
@@ -51,7 +55,8 @@ namespace Galileo.BusinessLogic
                     cli.Seleccionado = false;
                 }
             }
-            return clientes;
+            respuesta.Result = clientes;
+            return respuesta;
         }
 
         public ErrorDto UsuarioClienteAsignar(UsuarioClienteAsignaDto usuarioClienteAsignaDto)
@@ -59,17 +64,17 @@ namespace Galileo.BusinessLogic
             return UsuariosDB.UsuarioClienteAsignar(usuarioClienteAsignaDto);
         }
 
-        public List<TipoTransaccionBitacora> UsuarioCuentaTiposTransaccionObtener()
+        public ErrorDto<List<TipoTransaccionBitacora>> UsuarioCuentaTiposTransaccionObtener()
         {
             return UsuariosDB.UsuarioCuentaTiposTransaccionObtener();
         }
 
-        public List<UsuarioCuentaBitacora> UsuarioBitacoraConsultar(UsuarioBitacoraRequest request)
+        public ErrorDto<List<UsuarioCuentaBitacora>> UsuarioBitacoraConsultar(UsuarioBitacoraRequest request)
         {
             return UsuariosDB.UsuarioBitacoraConsultar(request);
         }
 
-        public List<UsuarioClienteRolDto> UsuarioClienteRolesConsultar(string nombreUsuario, string codEmpresa)
+        public ErrorDto<List<UsuarioClienteRolDto>> UsuarioClienteRolesConsultar(string nombreUsuario, string codEmpresa)
         {
             return UsuariosDB.UsuarioClienteRolesConsultar(nombreUsuario, codEmpresa);
         }
