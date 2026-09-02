@@ -2,27 +2,36 @@ namespace Galileo.Models.INV
 {
     public class PermisosBodegasDto
     {
-        public string Nombre { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
-        public DateTime? Fecha { get; set; }
-        public string Estado { get; set; } = string.Empty;
-        public DateTime? Ult_Modificacion { get; set; }
-        public required bool E_Modifica { get; set; } = false;
-        public required bool E_Autoriza { get; set; } = false;
-        public required bool E_Procesa { get; set; } = false;
+        public string nombre { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public DateTime? fecha { get; set; }
+        public string estado { get; set; } = string.Empty;
+        public DateTime? ult_modificacion { get; set; }
+        public bool modifica { get; set; } = false;
+        public bool autoriza { get; set; } = false;
+        public bool procesa { get; set; } = false;
+    }
+
+    public class InvBodegasPermisoActualizarRequest
+    {
+        public string cod_bodega { get; set; } = string.Empty;
+        public string tipo_transaccion { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public string permiso { get; set; } = string.Empty;
+        public bool valor { get; set; } = false;
     }
 
     public class BodegasDto
     {
-        public string Cod_Bodega { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
-        public string Observacion { get; set; } = string.Empty;
-        public string Cod_Cuenta { get; set; } = string.Empty;
-        public string Cod_Cta_Gastostf { get; set; } = string.Empty;
-        public string Cod_Cta_Ingresostf { get; set; } = string.Empty;
-        public required int Permite_Entradas { get; set; } = 0;
-        public required int Permite_Salidas { get; set; } = 0;
-        public required int Utiliza_Permisos { get; set; } = 0;
-        public string Estado { get; set; } = string.Empty;
+        public string cod_bodega { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public string observacion { get; set; } = string.Empty;
+        public string cod_cuenta { get; set; } = string.Empty;
+        public string cod_cta_gastostf { get; set; } = string.Empty;
+        public string cod_cta_ingresostf { get; set; } = string.Empty;
+        public int permite_entradas { get; set; } = 0;
+        public int permite_salidas { get; set; } = 0;
+        public int utiliza_permisos { get; set; } = 0;
+        public string estado { get; set; } = string.Empty;
     }
 }

@@ -1,50 +1,78 @@
-using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [Authorize]
     [ApiController]
-    public class FrmInvTipoESController : ControllerBase
+    public sealed class FrmInvTipoEsController : ControllerBase
     {
-        private readonly FrmInvTipoEsBL _bl;
-        public FrmInvTipoESController(IConfiguration config)
+        private readonly FrmInvTipoEsBl _bl;
+
+        public FrmInvTipoEsController(
+            IConfiguration config)
         {
-            _bl = new FrmInvTipoEsBL(config);
+            ArgumentNullException.ThrowIfNull(config);
+
+            _bl = new FrmInvTipoEsBl(config);
         }
 
-        [HttpGet("TiposES_Obtener")]
-        public ErrorDto<TipoESList> TipoES_Obtener(int CodEmpresa, string filtros)
+        [HttpGet("INV_TipoES_Lista_Obtener")]
+        public ErrorDto<TipoESList> INV_TipoES_Lista_Obtener(
+            int CodEmpresa,
+            int CodContabilidad,
+            string? filtros)
         {
-            return _bl.TipoES_Obtener(CodEmpresa, filtros);
+            return _bl.INV_TipoES_Lista_Obtener(
+                CodEmpresa,
+                CodContabilidad,
+                filtros);
         }
 
-        [HttpGet("TipoES_Buscar")]
-        public ErrorDto<List<TipoEsDto>> TipoES_Buscar(int CodEmpresa, string Tipo)
+        [HttpGet("INV_TipoES_Tipo_Buscar")]
+        public ErrorDto<List<TipoEsDto>> INV_TipoES_Tipo_Buscar(
+            int CodEmpresa,
+            int CodContabilidad,
+            string? tipo)
         {
-            return _bl.TipoES_Buscar(CodEmpresa, Tipo);
+            return _bl.INV_TipoES_Tipo_Buscar(
+                CodEmpresa,
+                CodContabilidad,
+                tipo);
         }
 
-        [HttpPost("TipoES_Insertar")]
-        public ErrorDto TipoES_Insertar(int CodEmpresa, TipoEsDto request)
+        [HttpPost("INV_TipoES_Registrar")]
+        public ErrorDto INV_TipoES_Registrar(
+            int CodEmpresa,
+            TipoEsGuardarRequest? request)
         {
-            return _bl.TipoES_Insertar(CodEmpresa, request);
+            return _bl.INV_TipoES_Registrar(
+                CodEmpresa,
+                request);
         }
 
-        [HttpPost("TipoES_Actualizar")]
-        public ErrorDto TipoES_Actualizar(int CodEmpresa, TipoEsDto request)
+        [HttpPost("INV_TipoES_Actualizar")]
+        public ErrorDto INV_TipoES_Actualizar(
+            int CodEmpresa,
+            TipoEsGuardarRequest? request)
         {
-            return _bl.TipoES_Actualizar(CodEmpresa, request);
+            return _bl.INV_TipoES_Actualizar(
+                CodEmpresa,
+                request);
         }
 
-        [HttpPost("TipoES_Eliminar")]
-        public ErrorDto TipoES_Eliminar(int CodEmpresa, string codTipoES)
+        [HttpDelete("INV_TipoES_Eliminar")]
+        public ErrorDto INV_TipoES_Eliminar(
+            int CodEmpresa,
+            TipoEsEliminarRequest? request)
         {
-            return _bl.TipoES_Eliminar(CodEmpresa, codTipoES);
+            return _bl.INV_TipoES_Eliminar(
+                CodEmpresa,
+                request);
         }
     }
 }

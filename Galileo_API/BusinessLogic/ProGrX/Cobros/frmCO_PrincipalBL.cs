@@ -2,6 +2,7 @@
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX.Cobros;
 using Galileo_API.Models.ProGrX.Cobros;
+using Newtonsoft.Json;
 
 
 namespace Galileo_API.BusinessLogic.ProGrX.Cobros
@@ -18,6 +19,13 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
         public ErrorDto<List<OperacionBusquedaDto>> Operaciones_Listar(int codEmpresa)
         {
             return _db.Operaciones_Listar(codEmpresa);
+        }
+
+        public ErrorDto<OperacionBusquedaListaDto> Operaciones_Obtener(int codEmpresa, string filtros)
+        {
+            var filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(filtros)
+                ?? new FiltrosLazyLoadData();
+            return _db.Operaciones_Obtener(codEmpresa, filtro);
         }
 
         public ErrorDto<OperacionConsultarDto> Operacion_Consultar(int codEmpresa, int operacion)

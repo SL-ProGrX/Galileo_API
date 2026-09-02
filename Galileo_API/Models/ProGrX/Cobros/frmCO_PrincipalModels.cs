@@ -11,6 +11,12 @@
         public string estado { get; set; } = string.Empty;
     }
 
+    public class OperacionBusquedaListaDto
+    {
+        public int total { get; set; }
+        public List<OperacionBusquedaDto> lista { get; set; } = new();
+    }
+
     public class OperacionConsultarDto
     {
         public int operacion { get; set; }
