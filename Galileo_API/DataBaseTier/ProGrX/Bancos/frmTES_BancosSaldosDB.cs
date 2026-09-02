@@ -399,7 +399,7 @@ FETCH NEXT @fetch ROWS ONLY;";
                 string sqlEmisiones = @"SELECT D.debehaber AS Movimiento, SUM(D.monto) AS Total
                         FROM Tes_Transacciones C INNER JOIN Tes_Trans_Asiento D ON C.nsolicitud = D.nsolicitud
                         WHERE C.fecha_emision BETWEEN @inicio AND @corte 
-                          AND C.estado IN ('I','T','A')
+                          AND C.estado IN ('I','T','A', 'E')
                           AND D.cuenta_contable = @cuenta
                         GROUP BY D.debehaber";
                 var emisiones = conn.Query(sqlEmisiones, new { inicio = FechaInicio, corte = FechaCorte, cuenta = vCuenta });
