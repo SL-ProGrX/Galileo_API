@@ -1003,6 +1003,44 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 catalogos.lineas = [];
             }
 
+            catalogos.tipos_documento =
+            [
+                new() { item = "CK", descripcion = "Cheque" },
+                new() { item = "TE", descripcion = "Transferencia" },
+                new() { item = "TS", descripcion = "Transferencia SINPE" },
+                new() { item = "ND", descripcion = "Nota Debito" },
+            ];
+
+            try
+            {
+                // VB6: sbCargarCombos -> cboTipoId desde AFI_TIPOS_IDS.
+                var tiposId = connection.Query<FrmPreaEstudiov2DropdownDto>(
+                    @"SELECT CONVERT(varchar(10), TIPO_ID) AS item, RTRIM(Descripcion) AS descripcion
+                      FROM AFI_TIPOS_IDS
+                      ORDER BY TIPO_ID"
+                ).ToList();
+                catalogos.tipos_id = tiposId;
+            }
+            catch
+            {
+                catalogos.tipos_id = [];
+            }
+
+            try
+            {
+                // VB6: sbCargarCombos -> cboDivisa desde vSys_Divisas.
+                var divisas = connection.Query<FrmPreaEstudiov2DropdownDto>(
+                    @"SELECT RTRIM(COD_DIVISA) AS item, RTRIM(DESCRIPCION) AS descripcion
+                      FROM vSys_Divisas
+                      ORDER BY DESCRIPCION"
+                ).ToList();
+                catalogos.divisas = divisas;
+            }
+            catch
+            {
+                catalogos.divisas = [];
+            }
+
             try
             {
                 var rawRows = connection.Query("EXEC spCRDPreaTIPO_SALARIO_TT");

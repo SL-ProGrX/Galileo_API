@@ -610,6 +610,28 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Consulta acreedores/conceptos para la lista de selección del tab Desembolsos.
+        /// </summary>
+        public ErrorDto<List<FrmPreaEstudiov2DesembolsoAcreedorDto>> Prea_frmPreaEstudiov2_Desembolsos_Acreedores_Consultar(
+            int codEmpresa,
+            bool ordinario,
+            string? filtro)
+        {
+            return _db.Prea_frmPreaEstudiov2_Desembolsos_Acreedores_Consultar(codEmpresa, ordinario, filtro);
+        }
+
+        /// <summary>
+        /// Consulta cuentas bancarias para el tab Desembolsos.
+        /// </summary>
+        public ErrorDto<List<FrmPreaEstudiov2DropdownDto>> Prea_frmPreaEstudiov2_Desembolsos_Cuentas_Consultar(
+            int codEmpresa,
+            string identificacion,
+            string banco)
+        {
+            return _db.Prea_frmPreaEstudiov2_Desembolsos_Cuentas_Consultar(codEmpresa, identificacion, banco);
+        }
+
+        /// <summary>
         /// Guarda un desembolso del expediente.
         /// </summary>
         public ErrorDto<FrmPreaEstudiov2DesembolsosResponse> Prea_frmPreaEstudiov2_Desembolsos_Guardar(

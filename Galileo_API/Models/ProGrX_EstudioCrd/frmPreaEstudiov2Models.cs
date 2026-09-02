@@ -414,6 +414,9 @@
     public class FrmPreaEstudiov2CatalogosResponse
     {
         public List<FrmPreaEstudiov2DropdownDto> lineas { get; set; } = [];
+        public List<FrmPreaEstudiov2DropdownDto> tipos_id { get; set; } = [];
+        public List<FrmPreaEstudiov2DropdownDto> divisas { get; set; } = [];
+        public List<FrmPreaEstudiov2DropdownDto> tipos_documento { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> tipos_salario { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> componentes_adicionales { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> comites { get; set; } = [];
@@ -1070,6 +1073,14 @@
     {
         public List<FrmPreaEstudiov2DesembolsoDto> desembolsos { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> bancos { get; set; } = [];
+    }
+
+    public class FrmPreaEstudiov2DesembolsoAcreedorDto
+    {
+        public string id { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string nombre_giro { get; set; } = string.Empty;
+        public int modifica { get; set; }
     }
 
     public class FrmPreaEstudiov2DesembolsoDto
