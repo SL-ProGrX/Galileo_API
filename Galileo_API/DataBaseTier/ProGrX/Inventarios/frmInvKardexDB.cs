@@ -2,7 +2,6 @@ using Dapper;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
 using System.Globalization;
-using System.Text;
 
 namespace Galileo.DataBaseTier
 {
@@ -56,6 +55,40 @@ namespace Galileo.DataBaseTier
                 ON M.cod_producto = P.cod_producto
             INNER JOIN pv_bodegas B
                 ON M.cod_bodega = B.cod_bodega
+            WHERE M.fecha >= @FechaInicio
+              AND M.fecha < @FechaCorteExclusiva
+              AND (
+                  @Tipo = @Todos
+                  OR (
+                      @Tipo IN ('E', 'S')
+                      AND M.tipo = @Tipo
+                  )
+                  OR (
+                      @Tipo NOT IN ('E', 'S')
+                      AND M.origen = @Tipo
+                  )
+              )
+              AND (
+                  @CodBodega = @Todos
+                  OR M.cod_bodega = @CodBodega
+              )
+              AND (
+                  @CodProducto = @Todos
+                  OR M.cod_producto = @CodProducto
+              )
+              AND (
+                  @Filtro = ''
+                  OR M.cod_producto LIKE @FiltroBusqueda
+                  OR P.descripcion LIKE @FiltroBusqueda
+                  OR M.codigo LIKE @FiltroBusqueda
+                  OR M.origen LIKE @FiltroBusqueda
+                  OR B.descripcion LIKE @FiltroBusqueda
+                  OR CONVERT(
+                      varchar(30),
+                      M.fecha,
+                      120
+                  ) LIKE @FiltroBusqueda
+              )
             """;
 
         private const string QueryMovimientos = """
@@ -86,10 +119,14 @@ namespace Galileo.DataBaseTier
                 (M.cantidad * M.precio) *
                     (M.imp_consumo / 100.0) AS impconsumo,
                 (M.cantidad * M.precio) +
-                    ((M.cantidad * M.precio) *
-                        (M.imp_ventas / 100.0)) +
-                    ((M.cantidad * M.precio) *
-                        (M.imp_consumo / 100.0)) AS totalconimp,
+                    (
+                        (M.cantidad * M.precio) *
+                        (M.imp_ventas / 100.0)
+                    ) +
+                    (
+                        (M.cantidad * M.precio) *
+                        (M.imp_consumo / 100.0)
+                    ) AS totalconimp,
                 RTRIM(M.cod_bodega) + ' - ' +
                     RTRIM(B.descripcion) AS bodega,
                 ISNULL(
@@ -105,6 +142,45 @@ namespace Galileo.DataBaseTier
                 ON M.cod_producto = P.cod_producto
             INNER JOIN pv_bodegas B
                 ON M.cod_bodega = B.cod_bodega
+            WHERE M.fecha >= @FechaInicio
+              AND M.fecha < @FechaCorteExclusiva
+              AND (
+                  @Tipo = @Todos
+                  OR (
+                      @Tipo IN ('E', 'S')
+                      AND M.tipo = @Tipo
+                  )
+                  OR (
+                      @Tipo NOT IN ('E', 'S')
+                      AND M.origen = @Tipo
+                  )
+              )
+              AND (
+                  @CodBodega = @Todos
+                  OR M.cod_bodega = @CodBodega
+              )
+              AND (
+                  @CodProducto = @Todos
+                  OR M.cod_producto = @CodProducto
+              )
+              AND (
+                  @Filtro = ''
+                  OR M.cod_producto LIKE @FiltroBusqueda
+                  OR P.descripcion LIKE @FiltroBusqueda
+                  OR M.codigo LIKE @FiltroBusqueda
+                  OR M.origen LIKE @FiltroBusqueda
+                  OR B.descripcion LIKE @FiltroBusqueda
+                  OR CONVERT(
+                      varchar(30),
+                      M.fecha,
+                      120
+                  ) LIKE @FiltroBusqueda
+              )
+            ORDER BY
+                M.fecha DESC,
+                M.linea DESC
+            OFFSET @Offset ROWS
+            FETCH NEXT @Fetch ROWS ONLY
             """;
 
         private readonly IConfiguration _config;
@@ -160,7 +236,7 @@ namespace Galileo.DataBaseTier
                 int CodEmpresa,
                 InvKardexMovimientosFiltro filtros)
         {
-            var validacion =
+            string validacion =
                 INV_Kardex_Filtros_Validar(
                     CodEmpresa,
                     filtros);
@@ -187,16 +263,11 @@ namespace Galileo.DataBaseTier
 
             NormalizarFiltros(filtros);
 
-            var parametros =
+            DynamicParameters parametros =
                 CrearParametros(
                     filtros,
                     fechaInicio,
                     fechaCorte);
-
-            string clausulaWhere =
-                CrearClausulaWhere(
-                    filtros,
-                    parametros);
 
             var resultado = DbHelper.WithConn(
                 CrearPortalDb(),
@@ -208,18 +279,13 @@ namespace Galileo.DataBaseTier
 
                     respuesta.total =
                         connection.QueryFirstOrDefault<int>(
-                            QueryTotal +
-                            clausulaWhere,
+                            QueryTotal,
                             parametros);
-
-                    string consulta =
-                        CrearConsultaMovimientos(
-                            clausulaWhere);
 
                     respuesta.movimientos =
                         connection.Query<
-                            InvKardexMovimientoDto>(
-                                consulta,
+                                InvKardexMovimientoDto>(
+                                QueryMovimientos,
                                 parametros)
                             .ToList();
 
@@ -289,7 +355,8 @@ namespace Galileo.DataBaseTier
                 return ErrorPaginaInvalida;
             }
 
-            if (filtros.paginacion <= 0 ||
+            if (
+                filtros.paginacion <= 0 ||
                 filtros.paginacion >
                     PaginacionMaxima)
             {
@@ -325,7 +392,8 @@ namespace Galileo.DataBaseTier
             InvKardexMovimientosFiltro filtros)
         {
             filtros.tipo =
-                NormalizarSeleccion(filtros.tipo);
+                NormalizarSeleccion(
+                    filtros.tipo);
 
             filtros.cod_bodega =
                 NormalizarSeleccion(
@@ -354,17 +422,20 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Crea los parámetros comunes para las consultas.
+        /// Crea los parámetros utilizados por las consultas del kardex.
         /// </summary>
-        /// <param name="filtros">Filtros de consulta.</param>
+        /// <param name="filtros">Filtros normalizados.</param>
         /// <param name="fechaInicio">Fecha inicial.</param>
         /// <param name="fechaCorte">Fecha final.</param>
-        /// <returns>Parámetros de las consultas.</returns>
+        /// <returns>Parámetros de consulta.</returns>
         private static DynamicParameters CrearParametros(
             InvKardexMovimientosFiltro filtros,
             DateTime fechaInicio,
             DateTime fechaCorte)
         {
+            string filtro =
+                filtros.vfiltro.Trim();
+
             var parametros =
                 new DynamicParameters();
 
@@ -373,11 +444,34 @@ namespace Galileo.DataBaseTier
                 fechaInicio.Date);
 
             parametros.Add(
-                "FechaCorte",
-                fechaCorte.Date
-                    .AddHours(23)
-                    .AddMinutes(59)
-                    .AddSeconds(59));
+                "FechaCorteExclusiva",
+                fechaCorte.Date.AddDays(1));
+
+            parametros.Add(
+                "Todos",
+                Todos);
+
+            parametros.Add(
+                "Tipo",
+                filtros.tipo);
+
+            parametros.Add(
+                "CodBodega",
+                filtros.cod_bodega);
+
+            parametros.Add(
+                "CodProducto",
+                filtros.cod_producto);
+
+            parametros.Add(
+                "Filtro",
+                filtro);
+
+            parametros.Add(
+                "FiltroBusqueda",
+                string.IsNullOrEmpty(filtro)
+                    ? string.Empty
+                    : $"%{filtro}%");
 
             parametros.Add(
                 "Offset",
@@ -391,194 +485,10 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Construye la cláusula WHERE parametrizada.
-        /// </summary>
-        /// <param name="filtros">Filtros de consulta.</param>
-        /// <param name="parametros">Parámetros de la consulta.</param>
-        /// <returns>Cláusula WHERE parametrizada.</returns>
-        private static string CrearClausulaWhere(
-            InvKardexMovimientosFiltro filtros,
-            DynamicParameters parametros)
-        {
-            var where =
-                new StringBuilder(
-                    """
-                     WHERE M.fecha BETWEEN
-                         @FechaInicio AND @FechaCorte
-                    """);
-
-            AgregarFiltroTipo(
-                filtros.tipo,
-                where,
-                parametros);
-
-            AgregarFiltroSeleccion(
-                filtros.cod_bodega,
-                "M.cod_bodega",
-                "CodBodega",
-                where,
-                parametros);
-
-            AgregarFiltroSeleccion(
-                filtros.cod_producto,
-                "M.cod_producto",
-                "CodProducto",
-                where,
-                parametros);
-
-            AgregarFiltroGlobal(
-                filtros.vfiltro,
-                where,
-                parametros);
-
-            return where.ToString();
-        }
-
-        /// <summary>
-        /// Agrega el filtro por tipo u origen del movimiento.
-        /// </summary>
-        /// <param name="tipo">Tipo u origen seleccionado.</param>
-        /// <param name="where">Cláusula WHERE.</param>
-        /// <param name="parametros">Parámetros de la consulta.</param>
-        private static void AgregarFiltroTipo(
-            string tipo,
-            StringBuilder where,
-            DynamicParameters parametros)
-        {
-            if (string.Equals(
-                tipo,
-                Todos,
-                StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            bool filtrarPorTipo =
-                string.Equals(
-                    tipo,
-                    "E",
-                    StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(
-                    tipo,
-                    "S",
-                    StringComparison.OrdinalIgnoreCase);
-
-            if (filtrarPorTipo)
-            {
-                where.Append(
-                    " AND M.tipo = @Tipo");
-
-                parametros.Add(
-                    "Tipo",
-                    tipo.ToUpperInvariant());
-
-                return;
-            }
-
-            where.Append(
-                " AND M.origen = @Origen");
-
-            parametros.Add(
-                "Origen",
-                tipo);
-        }
-
-        /// <summary>
-        /// Agrega un filtro opcional de selección.
-        /// </summary>
-        /// <param name="valor">Valor seleccionado.</param>
-        /// <param name="columna">Columna SQL controlada.</param>
-        /// <param name="parametro">Nombre del parámetro.</param>
-        /// <param name="where">Cláusula WHERE.</param>
-        /// <param name="parametros">Parámetros de la consulta.</param>
-        private static void AgregarFiltroSeleccion(
-            string valor,
-            string columna,
-            string parametro,
-            StringBuilder where,
-            DynamicParameters parametros)
-        {
-            if (string.Equals(
-                valor,
-                Todos,
-                StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            where.Append(" AND ");
-            where.Append(columna);
-            where.Append(" = @");
-            where.Append(parametro);
-
-            parametros.Add(
-                parametro,
-                valor);
-        }
-
-        /// <summary>
-        /// Agrega el filtro global de movimientos.
-        /// </summary>
-        /// <param name="filtro">Texto del filtro global.</param>
-        /// <param name="where">Cláusula WHERE.</param>
-        /// <param name="parametros">Parámetros de la consulta.</param>
-        private static void AgregarFiltroGlobal(
-            string filtro,
-            StringBuilder where,
-            DynamicParameters parametros)
-        {
-            if (string.IsNullOrWhiteSpace(filtro))
-            {
-                return;
-            }
-
-            where.Append(
-                """
-                 AND (
-                     M.cod_producto LIKE @Filtro
-                     OR P.descripcion LIKE @Filtro
-                     OR M.codigo LIKE @Filtro
-                     OR M.origen LIKE @Filtro
-                     OR B.descripcion LIKE @Filtro
-                     OR CONVERT(
-                         varchar(30),
-                         M.fecha,
-                         120
-                     ) LIKE @Filtro
-                 )
-                """);
-
-            parametros.Add(
-                "Filtro",
-                $"%{filtro.Trim()}%");
-        }
-
-        /// <summary>
-        /// Construye la consulta paginada de movimientos.
-        /// </summary>
-        /// <param name="clausulaWhere">Cláusula WHERE parametrizada.</param>
-        /// <returns>Consulta paginada de movimientos.</returns>
-        private static string CrearConsultaMovimientos(
-            string clausulaWhere)
-        {
-            return string.Concat(
-                QueryMovimientos,
-                clausulaWhere,
-                """
-                 ORDER BY
-                     M.fecha DESC,
-                     M.linea DESC
-                 OFFSET @Offset ROWS
-                 FETCH NEXT @Fetch ROWS ONLY
-                """);
-        }
-
-        /// <summary>
         /// Crea una respuesta vacía de movimientos.
         /// </summary>
         /// <returns>Respuesta vacía inicializada.</returns>
-        private static
-            InvKardexMovimientosListaDto
+        private static InvKardexMovimientosListaDto
             CrearResultadoVacio()
         {
             return new InvKardexMovimientosListaDto
