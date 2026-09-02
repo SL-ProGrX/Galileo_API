@@ -33,7 +33,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             if (Path.IsPathRooted(nombreArchivoPredeterminado))
                 throw new InvalidOperationException("El nombre predeterminado de Global.ini no es válido.");
 
-            var rutaPredeterminada = Path.Combine(
+            var rutaPredeterminada = Path.Join(
                 AppContext.BaseDirectory,
                 nombreArchivoPredeterminado);
             _rutaArchivo = config["SIF_Globales:RutaArchivo"]
@@ -208,7 +208,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             if (Path.IsPathRooted(nombreTemporal))
                 throw new InvalidOperationException("El nombre temporal generado no es válido.");
 
-            var temporal = Path.Combine(directorio, nombreTemporal);
+            var temporal = Path.Join(directorio, nombreTemporal);
             try
             {
                 File.WriteAllLines(temporal, lineas, Encoding.Latin1);
