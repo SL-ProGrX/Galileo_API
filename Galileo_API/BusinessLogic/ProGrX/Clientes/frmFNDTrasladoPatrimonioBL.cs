@@ -96,5 +96,16 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
         {
             return _db.ParAfah_Cuentas_Obtener(CodEmpresa);
         }
+
+        public ErrorDto<FndTrasladoPatrimonioGlobalesResult?> Fnd_TrasladoPatrimonio_Globales_Obtener(
+            int CodEmpresa,
+            string usuario,
+            int codContabilidad)
+        {
+            return _db.Fnd_TrasladoPatrimonio_Globales_Obtener(
+                CodEmpresa,
+                usuario,
+                codContabilidad);
+        }
     }
 }
