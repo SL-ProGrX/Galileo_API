@@ -286,7 +286,7 @@ namespace Galileo.DataBaseTier
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto INV_Unidades_Registrar(
             int CodEmpresa,
-            UnidadMedicionDto? request)
+            UnidadMedicionDto request)
         {
             string validacion = INV_Unidades_Datos_Validar(
                 request,
@@ -299,7 +299,7 @@ namespace Galileo.DataBaseTier
                     CodigoValidacion);
             }
 
-            var parametros = INV_Unidades_Parametros_Obtener(request!);
+            var parametros = INV_Unidades_Parametros_Obtener(request);
 
             var result = DbHelper.WithConn(
                 _portalDb,
@@ -350,7 +350,7 @@ namespace Galileo.DataBaseTier
             {
                 INV_Unidades_Bitacora_Registrar(
                     CodEmpresa,
-                    request!.registro_usuario,
+                    request.registro_usuario,
                     "Registra - WEB",
                     $"Unidad de Medida : {request.cod_unidad}");
             }
@@ -366,7 +366,7 @@ namespace Galileo.DataBaseTier
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto INV_Unidades_Actualizar(
             int CodEmpresa,
-            UnidadMedicionDto? request)
+            UnidadMedicionDto request)
         {
             string validacion = INV_Unidades_Datos_Validar(
                 request,
@@ -379,7 +379,7 @@ namespace Galileo.DataBaseTier
                     CodigoValidacion);
             }
 
-            var parametros = INV_Unidades_Parametros_Obtener(request!);
+            var parametros = INV_Unidades_Parametros_Obtener(request);
 
             var result = DbHelper.WithConn(
                 _portalDb,
@@ -405,7 +405,7 @@ namespace Galileo.DataBaseTier
             {
                 INV_Unidades_Bitacora_Registrar(
                     CodEmpresa,
-                    request!.registro_usuario,
+                    request.registro_usuario,
                     "Modifica - WEB",
                     $"Unidad de Medida : {request.cod_unidad}");
             }
@@ -549,7 +549,7 @@ namespace Galileo.DataBaseTier
         /// <param name="validarUsuario">Indica si debe validar el usuario.</param>
         /// <returns>Mensaje de validación o una cadena vacía.</returns>
         private static string INV_Unidades_Datos_Validar(
-            UnidadMedicionDto? request,
+            UnidadMedicionDto request,
             bool validarUsuario)
         {
             if (request is null)

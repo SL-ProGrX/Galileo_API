@@ -49,7 +49,7 @@ namespace Galileo.Controllers
         [HttpPost("INV_Unidades_Registrar")]
         public ErrorDto INV_Unidades_Registrar(
             int CodEmpresa,
-            [FromBody] UnidadMedicionDto? request)
+            UnidadMedicionDto request)
         {
             return _bl.INV_Unidades_Registrar(
                 CodEmpresa,
@@ -59,7 +59,7 @@ namespace Galileo.Controllers
         [HttpPut("INV_Unidades_Actualizar")]
         public ErrorDto INV_Unidades_Actualizar(
             int CodEmpresa,
-            [FromBody] UnidadMedicionDto? request)
+            UnidadMedicionDto request)
         {
             return _bl.INV_Unidades_Actualizar(
                 CodEmpresa,

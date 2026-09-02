@@ -62,7 +62,7 @@ namespace Galileo.BusinessLogic
 
         public ErrorDto INV_Unidades_Registrar(
             int CodEmpresa,
-            UnidadMedicionDto? request)
+            UnidadMedicionDto request)
         {
             return _db.INV_Unidades_Registrar(
                 CodEmpresa,
@@ -71,7 +71,7 @@ namespace Galileo.BusinessLogic
 
         public ErrorDto INV_Unidades_Actualizar(
             int CodEmpresa,
-            UnidadMedicionDto? request)
+            UnidadMedicionDto request)
         {
             return _db.INV_Unidades_Actualizar(
                 CodEmpresa,
