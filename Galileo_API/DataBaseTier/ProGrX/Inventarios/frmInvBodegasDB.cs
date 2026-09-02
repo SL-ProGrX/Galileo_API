@@ -6,7 +6,7 @@ namespace Galileo.DataBaseTier
 {
     public class FrmInvBodegasDb
     {
-        private const string MensajeOk = "Ok";
+        private const string MensajeOk = "Ok.";
         private const string ErrorConsultarPermisos = "Error al consultar los permisos de la bodega.";
         private const string ErrorConsultarBodegas = "Error al consultar las bodegas.";
         private const string ErrorConsultarBodega = "Error al consultar la bodega.";
