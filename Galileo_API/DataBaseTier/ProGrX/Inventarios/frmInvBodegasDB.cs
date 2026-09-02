@@ -1,344 +1,834 @@
 using Dapper;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
-using System.Data;
 
 namespace Galileo.DataBaseTier
 {
     public class FrmInvBodegasDb
     {
-        private readonly IConfiguration _config;
-
-        private const string MensajeOk = "Ok";
-        private const string ErrorDesplazamiento = "Error al obtener el desplazamiento de bodega.";
-        private const string ErrorBodegaConsecutivo = "Error al obtener la bodega por consecutivo.";
-        private const string ErrorInsertarBodega = "Error al insertar la bodega.";
+        private const string MensajeOk = "Ok.";
+        private const string ErrorConsultarPermisos = "Error al consultar los permisos de la bodega.";
+        private const string ErrorConsultarBodegas = "Error al consultar las bodegas.";
+        private const string ErrorConsultarBodega = "Error al consultar la bodega.";
+        private const string ErrorNavegarBodegas = "Error al navegar entre las bodegas.";
+        private const string ErrorRegistrarBodega = "Error al registrar la bodega.";
         private const string ErrorActualizarBodega = "Error al actualizar la bodega.";
         private const string ErrorEliminarBodega = "Error al eliminar la bodega.";
-        private const string ErrorActualizarPermisos = "Error al actualizar los permisos de la bodega.";
-        private const string ErrorBodegaExistente = "Ya existe el numero de Bodega";
-        private const string QueryObtenerBodegas = "select * from PV_BODEGAS";
-        private const string QueryExisteBodega = "SELECT COUNT(*) FROM PV_BODEGAS WHERE cod_bodega = @CodBodega";
-        private const string QueryBodegaPorCodigo = @"SELECT *
-                  FROM PV_BODEGAS
-                  WHERE COD_BODEGA = @CodBodega";
-        private const string QueryEliminarPermisosBodega = "DELETE FROM PV_BODEGAS_PERMISOS WHERE COD_BODEGA = @CodBodega";
+        private const string ErrorActualizarPermiso = "Error al actualizar los permisos de la bodega.";
+        private const string BodegaCodigoRequerido = "El c&oacute;digo de la bodega es requerido.";
 
-        private const string QueryEliminarBodega = "DELETE FROM PV_BODEGAS WHERE COD_BODEGA = @CodBodega";
+        private const string CamposBodega = """
+            cod_bodega,
+            descripcion,
+            observacion,
+            cod_cuenta,
+            cod_cta_gastosTF AS cod_cta_gastostf,
+            cod_cta_ingresosTF AS cod_cta_ingresostf,
+            permite_entradas,
+            permite_salidas,
+            utiliza_permisos,
+            estado
+            """;
 
+        private const string QueryObtenerBodegas = $"""
+            SELECT
+                {CamposBodega}
+            FROM PV_BODEGAS
+            ORDER BY cod_bodega ASC;
+            """;
 
-        #region Constructor y helpers
+        private const string QueryObtenerBodega = $"""
+            SELECT
+                {CamposBodega}
+            FROM PV_BODEGAS
+            WHERE cod_bodega = @CodBodega;
+            """;
 
-        /// <summary>
-        /// Inicializa una nueva instancia de la clase <see cref="FrmInvBodegasDb"/>.
-        /// </summary>
-        /// <param name="config">Configuración de la aplicación.</param>
+        private const string QueryNavegarBodegas = $"""
+            SELECT TOP 1
+                {CamposBodega}
+            FROM PV_BODEGAS
+            WHERE
+                (@Tipo = 'asc' AND cod_bodega > @CodBodega)
+                OR
+                (@Tipo = 'desc' AND cod_bodega < @CodBodega)
+            ORDER BY
+                CASE
+                    WHEN @Tipo = 'asc' THEN cod_bodega
+                END ASC,
+                CASE
+                    WHEN @Tipo = 'desc' THEN cod_bodega
+                END DESC;
+            """;
+
+        private const string QueryExisteBodega = """
+            SELECT COUNT(1)
+            FROM PV_BODEGAS
+            WHERE cod_bodega = @CodBodega;
+            """;
+
+        private const string QueryRegistrarBodega = """
+            INSERT INTO PV_BODEGAS
+            (
+                cod_bodega,
+                descripcion,
+                observacion,
+                estado,
+                fecha_inclusion,
+                permite_entradas,
+                permite_salidas,
+                cod_cuenta,
+                cod_cta_ingresosTF,
+                cod_cta_gastosTF,
+                utiliza_permisos
+            )
+            VALUES
+            (
+                @CodBodega,
+                @Descripcion,
+                @Observacion,
+                @Estado,
+                GETDATE(),
+                @PermiteEntradas,
+                @PermiteSalidas,
+                @CodCuenta,
+                @CodCtaIngresosTf,
+                @CodCtaGastosTf,
+                @UtilizaPermisos
+            );
+            """;
+
+        private const string QueryActualizarBodega = """
+            UPDATE PV_BODEGAS
+            SET descripcion = @Descripcion,
+                observacion = @Observacion,
+                estado = @Estado,
+                permite_entradas = @PermiteEntradas,
+                permite_salidas = @PermiteSalidas,
+                cod_cuenta = @CodCuenta,
+                cod_cta_ingresosTF = @CodCtaIngresosTf,
+                cod_cta_gastosTF = @CodCtaGastosTf,
+                utiliza_permisos = @UtilizaPermisos
+            WHERE cod_bodega = @CodBodega;
+            """;
+
+        private const string QueryEliminarPermisos = """
+            DELETE FROM PV_BODEGAS_PERMISOS
+            WHERE cod_bodega = @CodBodega;
+            """;
+
+        private const string QueryEliminarBodega = """
+            DELETE FROM PV_BODEGAS
+            WHERE cod_bodega = @CodBodega;
+            """;
+
+        private const string QueryObtenerPermisos = """
+            SELECT
+                U.nombre,
+                U.descripcion,
+                CONVERT
+                (
+                    bit,
+                    CASE @TipoTransaccion
+                        WHEN 'E' THEN ISNULL(C.E_Modifica, 0)
+                        WHEN 'S' THEN ISNULL(C.S_Modifica, 0)
+                        WHEN 'T' THEN ISNULL(C.T_Modifica, 0)
+                        WHEN 'F' THEN ISNULL(C.F_Modifica, 0)
+                        ELSE 0
+                    END
+                ) AS modifica,
+                CONVERT
+                (
+                    bit,
+                    CASE @TipoTransaccion
+                        WHEN 'E' THEN ISNULL(C.E_Autoriza, 0)
+                        WHEN 'S' THEN ISNULL(C.S_Autoriza, 0)
+                        WHEN 'T' THEN ISNULL(C.T_Autoriza, 0)
+                        ELSE 0
+                    END
+                ) AS autoriza,
+                CONVERT
+                (
+                    bit,
+                    CASE @TipoTransaccion
+                        WHEN 'E' THEN ISNULL(C.E_Procesa, 0)
+                        WHEN 'S' THEN ISNULL(C.S_Procesa, 0)
+                        WHEN 'T' THEN ISNULL(C.T_Procesa, 0)
+                        WHEN 'F' THEN ISNULL(C.F_Procesa, 0)
+                        ELSE 0
+                    END
+                ) AS procesa
+            FROM USUARIOS U
+            LEFT JOIN PV_BODEGAS_PERMISOS C
+                ON U.nombre = C.usuario
+               AND C.cod_bodega = @CodBodega
+            WHERE U.estado = 'A'
+            ORDER BY U.nombre ASC;
+            """;
+
+        private const string QueryActualizarPermiso = """
+            IF NOT EXISTS
+            (
+                SELECT 1
+                FROM PV_BODEGAS_PERMISOS WITH (UPDLOCK, HOLDLOCK)
+                WHERE usuario = @Usuario
+                  AND cod_bodega = @CodBodega
+            )
+            BEGIN
+                INSERT INTO PV_BODEGAS_PERMISOS
+                (
+                    usuario,
+                    cod_bodega,
+                    E_Modifica,
+                    E_Autoriza,
+                    E_Procesa,
+                    S_Modifica,
+                    S_Autoriza,
+                    S_Procesa,
+                    T_Modifica,
+                    T_Autoriza,
+                    T_Procesa,
+                    F_Modifica,
+                    F_Procesa
+                )
+                VALUES
+                (
+                    @Usuario,
+                    @CodBodega,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                );
+            END;
+
+            UPDATE PV_BODEGAS_PERMISOS
+            SET
+                E_Modifica =
+                    CASE
+                        WHEN @TipoTransaccion = 'E'
+                         AND @Permiso = 'MODIFICA'
+                            THEN @Valor
+                        ELSE E_Modifica
+                    END,
+                E_Autoriza =
+                    CASE
+                        WHEN @TipoTransaccion = 'E'
+                         AND @Permiso = 'AUTORIZA'
+                            THEN @Valor
+                        ELSE E_Autoriza
+                    END,
+                E_Procesa =
+                    CASE
+                        WHEN @TipoTransaccion = 'E'
+                         AND @Permiso = 'PROCESA'
+                            THEN @Valor
+                        ELSE E_Procesa
+                    END,
+                S_Modifica =
+                    CASE
+                        WHEN @TipoTransaccion = 'S'
+                         AND @Permiso = 'MODIFICA'
+                            THEN @Valor
+                        ELSE S_Modifica
+                    END,
+                S_Autoriza =
+                    CASE
+                        WHEN @TipoTransaccion = 'S'
+                         AND @Permiso = 'AUTORIZA'
+                            THEN @Valor
+                        ELSE S_Autoriza
+                    END,
+                S_Procesa =
+                    CASE
+                        WHEN @TipoTransaccion = 'S'
+                         AND @Permiso = 'PROCESA'
+                            THEN @Valor
+                        ELSE S_Procesa
+                    END,
+                T_Modifica =
+                    CASE
+                        WHEN @TipoTransaccion = 'T'
+                         AND @Permiso = 'MODIFICA'
+                            THEN @Valor
+                        ELSE T_Modifica
+                    END,
+                T_Autoriza =
+                    CASE
+                        WHEN @TipoTransaccion = 'T'
+                         AND @Permiso = 'AUTORIZA'
+                            THEN @Valor
+                        ELSE T_Autoriza
+                    END,
+                T_Procesa =
+                    CASE
+                        WHEN @TipoTransaccion = 'T'
+                         AND @Permiso = 'PROCESA'
+                            THEN @Valor
+                        ELSE T_Procesa
+                    END,
+                F_Modifica =
+                    CASE
+                        WHEN @TipoTransaccion = 'F'
+                         AND @Permiso = 'MODIFICA'
+                            THEN @Valor
+                        ELSE F_Modifica
+                    END,
+                F_Procesa =
+                    CASE
+                        WHEN @TipoTransaccion = 'F'
+                         AND @Permiso = 'PROCESA'
+                            THEN @Valor
+                        ELSE F_Procesa
+                    END
+            WHERE usuario = @Usuario
+              AND cod_bodega = @CodBodega;
+            """;
+
+        private readonly IConfiguration _config;
+
         public FrmInvBodegasDb(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }
 
         /// <summary>
-        /// Crea una instancia de <see cref="PortalDB"/> usando la configuración actual.
+        /// Obtiene el listado de bodegas.
         /// </summary>
-        /// <returns>Instancia de acceso a configuración de base de datos.</returns>
-        private PortalDB CreatePortalDb() => new(_config);
-
-
-        /// <summary>
-        /// Crea los parámetros comunes para una bodega.
-        /// </summary>
-        /// <param name="CodBodega">Código de bodega.</param>
-        /// <returns>Objeto de parámetros para Dapper.</returns>
-        private static object CrearParametrosBodega(string CodBodega) => new
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <returns>Listado de bodegas.</returns>
+        public ErrorDto<List<BodegasDto>> INV_Bodegas_Lista_Obtener(
+            int CodEmpresa)
         {
-            CodBodega
-        };
+            var result = DbHelper.ExecuteListQuery<BodegasDto>(
+                CreatePortalDb(),
+                CodEmpresa,
+                QueryObtenerBodegas);
 
-
-        /// <summary>
-        /// Crea los parámetros para actualizar permisos de bodega.
-        /// </summary>
-        /// <param name="request">Datos de permisos.</param>
-        /// <param name="codBodega">Código de bodega.</param>
-        /// <returns>Objeto de parámetros para Dapper.</returns>
-        private static object CrearParametrosPermisos(PermisosBodegasDto request, string codBodega) => new
-        {
-            Modifica = request.E_Modifica ? 1 : 0,
-            Autoriza = request.E_Autoriza ? 1 : 0,
-            Procesa = request.E_Procesa ? 1 : 0,
-            Autorizador = request.Nombre,
-            cod_bodega = codBodega
-        };
-
-
-        /// <summary>
-        /// Ejecuta un procedimiento almacenado que devuelve un código entero y lo transforma en <see cref="ErrorDto"/>.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="procedure">Nombre del procedimiento almacenado.</param>
-        /// <param name="values">Parámetros del procedimiento.</param>
-        /// <param name="errorMessage">Mensaje de error estándar.</param>
-        /// <returns>Respuesta con el código devuelto por el procedimiento.</returns>
-        private ErrorDto EjecutarProcedimientoConCodigo(int CodEmpresa, string procedure, object values, string errorMessage)
-        {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-            {
-                var code = connection.QueryFirstOrDefault<int>(procedure, values, commandType: CommandType.StoredProcedure);
-                return new ErrorDto
-                {
-                    Code = code,
-                    Description = MensajeOk
-                };
-            });
-
-            return result.Code == 0 && result.Result is not null
-                ? result.Result
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
+            return result.Code == 0
+                ? result
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? ErrorConsultarBodegas,
+                    result.Code.GetValueOrDefault(-1),
+                    new List<BodegasDto>());
         }
 
-        #endregion
+        /// <summary>
+        /// Obtiene una bodega mediante su código.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="cod_bodega">Código de bodega.</param>
+        /// <returns>Información de la bodega.</returns>
+        public ErrorDto<BodegasDto> INV_Bodegas_Codigo_Obtener(
+            int CodEmpresa,
+            string cod_bodega)
+        {
+            if (string.IsNullOrWhiteSpace(cod_bodega))
+            {
+                return DbHelper.CreateErrorResponse(
+                    BodegaCodigoRequerido,
+                    -2,
+                    (BodegasDto)null);
+            }
 
-        #region Consultas
+            var result = DbHelper.ExecuteSingleQuery<BodegasDto>(
+                CreatePortalDb(),
+                CodEmpresa,
+                QueryObtenerBodega,
+                null,
+                new
+                {
+                    CodBodega = cod_bodega.Trim()
+                });
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result)
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? ErrorConsultarBodega,
+                    result.Code.GetValueOrDefault(-1),
+                    (BodegasDto)null);
+        }
+
+        /// <summary>
+        /// Obtiene la bodega anterior o siguiente.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="consecutivo">Código actual de la bodega.</param>
+        /// <param name="tipo">Dirección ascendente o descendente.</param>
+        /// <returns>Bodega encontrada.</returns>
+        public ErrorDto<BodegasDto> INV_Bodegas_Navegacion_Obtener(
+            int CodEmpresa,
+            string consecutivo,
+            string tipo)
+        {
+            if (string.IsNullOrWhiteSpace(consecutivo))
+            {
+                return DbHelper.CreateErrorResponse(
+                    BodegaCodigoRequerido,
+                    -2,
+                    (BodegasDto)null);
+            }
+
+            string direccion = tipo?.Trim().ToLowerInvariant() ?? string.Empty;
+
+            if (direccion is not ("asc" or "desc"))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "La direcci&oacute;n de navegaci&oacute;n no es v&aacute;lida.",
+                    -2,
+                    (BodegasDto)null);
+            }
+
+            var result = DbHelper.ExecuteSingleQuery<BodegasDto>(
+                CreatePortalDb(),
+                CodEmpresa,
+                QueryNavegarBodegas,
+                null,
+                new
+                {
+                    CodBodega = consecutivo.Trim(),
+                    Tipo = direccion
+                });
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result)
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? ErrorNavegarBodegas,
+                    result.Code.GetValueOrDefault(-1),
+                    (BodegasDto)null);
+        }
 
         /// <summary>
         /// Obtiene los permisos de los usuarios para una bodega.
         /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="CodBodega">Código de la bodega.</param>
-        /// <returns>Listado de permisos por usuario.</returns>
-        public ErrorDto<List<PermisosBodegasDto>> Autorizador_ObtenerTodos(int CodEmpresa, string CodBodega)
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="cod_bodega">Código de bodega.</param>
+        /// <param name="tipo_transaccion">Tipo de transacción E, S, T o F.</param>
+        /// <returns>Listado de usuarios y permisos.</returns>
+        public ErrorDto<List<PermisosBodegasDto>> INV_Bodegas_Permisos_Obtener(
+            int CodEmpresa,
+            string cod_bodega,
+            string tipo_transaccion)
         {
-            return DbHelper.ExecuteListQuery<PermisosBodegasDto>(
-                CreatePortalDb(),
-                CodEmpresa,
-                @"SELECT 
-                        U.Nombre,
-                        U.DESCRIPCION,
-                        C.COD_BODEGA,
-                        ISNULL(C.E_PROCESA, 0) AS E_Procesa,
-                        ISNULL(C.E_MODIFICA, 0) AS E_Modifica,
-                        ISNULL(C.E_AUTORIZA, 0) AS E_Autoriza
-                  FROM usuarios U
-                  LEFT JOIN PV_BODEGAS_PERMISOS C
-                    ON U.nombre = C.usuario
-                   AND C.cod_bodega = @CodBodega
-                  WHERE U.estado = 'A'
-                  ORDER BY U.nombre ASC;",
-                CrearParametrosBodega(CodBodega));
-        }
-
-        /// <summary>
-        /// Obtiene el listado de bodegas.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <returns>Listado de bodegas.</returns>
-        public ErrorDto<List<BodegasDto>> Bodegas_Obtener(int CodEmpresa)
-        {
-            return DbHelper.ExecuteListQuery<BodegasDto>(
-                CreatePortalDb(),
-                CodEmpresa,
-                QueryObtenerBodegas);
-        }
-
-        /// <summary>
-        /// Obtiene la bodega anterior o siguiente según el desplazamiento indicado.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="consecutivo">Código actual de bodega.</param>
-        /// <param name="tipo">Dirección del desplazamiento: asc o desc.</param>
-        /// <returns>Bodega encontrada para el desplazamiento.</returns>
-        public ErrorDto<BodegasDto> ConsultaAscDesc(int CodEmpresa, int consecutivo, string tipo)
-        {
-            string query;
-            object parametros;
-
-            if (tipo == "desc")
+            if (string.IsNullOrWhiteSpace(cod_bodega))
             {
-                if (consecutivo == 0)
-                {
-                    query = @"select Top 1 *
-                              from PV_BODEGAS
-                              order by COD_BODEGA desc";
-                    parametros = new { };
-                }
-                else
-                {
-                    query = @"select Top 1 *
-                              from PV_BODEGAS
-                              where COD_BODEGA < @Consecutivo
-                              order by COD_BODEGA desc";
-                    parametros = new { Consecutivo = consecutivo };
-                }
-            }
-            else
-            {
-                query = @"select Top 1 *
-                          from PV_BODEGAS
-                          where COD_BODEGA > @Consecutivo
-                          order by COD_BODEGA asc";
-                parametros = new { Consecutivo = consecutivo };
+                return DbHelper.CreateErrorResponse(
+                    BodegaCodigoRequerido,
+                    -2,
+                    new List<PermisosBodegasDto>());
             }
 
-            var result = DbHelper.ExecuteSingleQuery<BodegasDto>(
-                CreatePortalDb(),
-                CodEmpresa,
-                query,
-                null,
-                parametros);
-            return result.Code == 0
-                            ? DbHelper.CreateOkResponse(result.Result)
-                            : DbHelper.CreateErrorResponse(result.Description ?? ErrorDesplazamiento, result.Code.GetValueOrDefault(-1), (BodegasDto)null);
-        }
+            string tipoTransaccion = TipoTransaccionNormalizar(
+                tipo_transaccion);
 
-        /// <summary>
-        /// Obtiene una bodega por su consecutivo.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="consecutivo">Código de la bodega.</param>
-        /// <returns>Bodega encontrada.</returns>
-        public ErrorDto<BodegasDto> bodegaConsecutivo_Obtener(int CodEmpresa, string consecutivo)
-        {
-            var result = DbHelper.ExecuteSingleQuery<BodegasDto>(
-                CreatePortalDb(),
-                CodEmpresa,
-                QueryBodegaPorCodigo,
-                null,
-                CrearParametrosBodega(consecutivo));
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result)
-                : DbHelper.CreateErrorResponse(result.Description ?? ErrorBodegaConsecutivo, result.Code.GetValueOrDefault(-1), (BodegasDto)null);
-        }
-
-        #endregion
-
-        #region Mantenimiento
-
-        public ErrorDto bodega_Insertar(int CodEmpresa, BodegasDto data)
-        {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            if (string.IsNullOrEmpty(tipoTransaccion))
             {
-                var existe = connection.QueryFirstOrDefault<int>(
-                    QueryExisteBodega,
-                    CrearParametrosBodega(data.Cod_Bodega));
+                return DbHelper.CreateErrorResponse(
+                    "El tipo de transacci&oacute;n no es v&aacute;lido.",
+                    -2,
+                    new List<PermisosBodegasDto>());
+            }
 
-                if (existe >= 1)
-                {
-                    return DbHelper.ErrorResponse(ErrorBodegaExistente, -1);
-                }
-
-                connection.Execute(
-                    @"INSERT INTO pv_bodegas
-                        (cod_bodega, descripcion, observacion, estado, fecha_inclusion, permite_entradas, permite_salidas, cod_cuenta, cod_cta_ingresosTF, cod_cta_gastosTF, UTILIZA_PERMISOS)
-                      VALUES
-                        (@Cod_Bodega, @Descripcion, @Observacion, @Estado, @Fecha_Inclusion, @Permite_Entradas, @Permite_Salidas, @Cod_Cuenta, @Cod_Cta_Ingresostf, @Cod_Cta_Gastostf, @Utiliza_Permisos)",
-                    new
-                    {
-                        data.Cod_Bodega,
-                        data.Descripcion,
-                        data.Observacion,
-                        data.Estado,
-                        Fecha_Inclusion = DateTime.Now,
-                        data.Permite_Entradas,
-                        data.Permite_Salidas,
-                        data.Cod_Cuenta,
-                        data.Cod_Cta_Ingresostf,
-                        data.Cod_Cta_Gastostf,
-                        data.Utiliza_Permisos
-                    });
-
-                return new ErrorDto
-                {
-                    Code = 0,
-                    Description = MensajeOk
-                };
-            });
-
-            return result.Code == 0 && result.Result is not null
-                ? result.Result
-                : DbHelper.ErrorResponse(result.Description ?? ErrorInsertarBodega, result.Code.GetValueOrDefault(-1));
-        }
-
-        public ErrorDto bodega_Actualizar(int CodEmpresa, BodegasDto data)
-        {
-            var result = DbHelper.ExecuteNonQuery(
+            var result = DbHelper.ExecuteListQuery<PermisosBodegasDto>(
                 CreatePortalDb(),
                 CodEmpresa,
-                @"UPDATE pv_bodegas
-                  SET observacion = @Observacion,
-                      cod_cuenta = @Cod_Cuenta,
-                      cod_cta_gastoSTF = @Cod_Cta_Gastostf,
-                      cod_cta_ingresostf = @Cod_Cta_Ingresostf,
-                      permite_entradas = @Permite_Entradas,
-                      permite_salidas = @Permite_Salidas,
-                      utiliza_permisos = @Utiliza_Permisos,
-                      estado = @Estado,
-                      descripcion = @Descripcion
-                  WHERE cod_bodega = @Cod_Bodega",
+                QueryObtenerPermisos,
                 new
                 {
-                    data.Cod_Bodega,
-                    data.Observacion,
-                    data.Cod_Cuenta,
-                    data.Cod_Cta_Gastostf,
-                    data.Cod_Cta_Ingresostf,
-                    data.Permite_Entradas,
-                    data.Permite_Salidas,
-                    data.Utiliza_Permisos,
-                    data.Estado,
-                    data.Descripcion
+                    CodBodega = cod_bodega.Trim(),
+                    TipoTransaccion = tipoTransaccion
                 });
 
             return result.Code == 0
+                ? result
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? ErrorConsultarPermisos,
+                    result.Code.GetValueOrDefault(-1),
+                    new List<PermisosBodegasDto>());
+        }
+
+        /// <summary>
+        /// Registra una bodega.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="request">Información de la bodega.</param>
+        /// <returns>Resultado de la operación.</returns>
+        public ErrorDto INV_Bodegas_Registrar(
+            int CodEmpresa,
+            BodegasDto request)
+        {
+            string validacion = BodegaValidar(request);
+
+            if (!string.IsNullOrEmpty(validacion))
+            {
+                return DbHelper.ErrorResponse(validacion, -2);
+            }
+
+            var parametros = BodegaParametrosObtener(request);
+
+            var result = DbHelper.WithConn(
+                CreatePortalDb(),
+                CodEmpresa,
+                connection =>
+                {
+                    int existe = connection.QueryFirstOrDefault<int>(
+                        QueryExisteBodega,
+                        parametros);
+
+                    if (existe > 0)
+                    {
+                        return DbHelper.ErrorResponse(
+                            "El c&oacute;digo de la bodega ya existe.",
+                            -2);
+                    }
+
+                    connection.Execute(
+                        QueryRegistrarBodega,
+                        parametros);
+
+                    return DbHelper.OkResponse(MensajeOk);
+                });
+
+            return ResultObtener(
+                result,
+                ErrorRegistrarBodega);
+        }
+
+        /// <summary>
+        /// Actualiza una bodega.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="request">Información de la bodega.</param>
+        /// <returns>Resultado de la operación.</returns>
+        public ErrorDto INV_Bodegas_Actualizar(
+            int CodEmpresa,
+            BodegasDto request)
+        {
+            string validacion = BodegaValidar(request);
+
+            if (!string.IsNullOrEmpty(validacion))
+            {
+                return DbHelper.ErrorResponse(validacion, -2);
+            }
+
+            var result = DbHelper.ExecuteNonQuery(
+                CreatePortalDb(),
+                CodEmpresa,
+                QueryActualizarBodega,
+                BodegaParametrosObtener(request));
+
+            return result.Code == 0
                 ? DbHelper.OkResponse(MensajeOk)
-                : DbHelper.ErrorResponse(result.Description ?? ErrorActualizarBodega, result.Code.GetValueOrDefault(-1));
+                : DbHelper.ErrorResponse(
+                    result.Description ?? ErrorActualizarBodega,
+                    result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
         /// Elimina una bodega y sus permisos asociados.
         /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="cod_bodega">Código de la bodega.</param>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="cod_bodega">Código de bodega.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto bodega_Eliminar(int CodEmpresa, string cod_bodega)
+        public ErrorDto INV_Bodegas_Eliminar(
+            int CodEmpresa,
+            string cod_bodega)
         {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            if (string.IsNullOrWhiteSpace(cod_bodega))
             {
-                connection.Execute(
-                    QueryEliminarPermisosBodega,
-                    CrearParametrosBodega(cod_bodega));
+                return DbHelper.ErrorResponse(
+                    BodegaCodigoRequerido,
+                    -2);
+            }
 
-                connection.Execute(
-                    QueryEliminarBodega,
-                    CrearParametrosBodega(cod_bodega));
-                return new ErrorDto
+            var result = DbHelper.WithConn(
+                CreatePortalDb(),
+                CodEmpresa,
+                connection =>
                 {
-                    Code = 0,
-                    Description = MensajeOk
-                };
-            });
+                    connection.Open();
 
-            return result.Code == 0 && result.Result is not null
-                ? result.Result
-                : DbHelper.ErrorResponse(result.Description ?? ErrorEliminarBodega, result.Code.GetValueOrDefault(-1));
+                    using var transaction =
+                        connection.BeginTransaction();
+
+                    try
+                    {
+                        var parametros = new
+                        {
+                            CodBodega =
+                                cod_bodega.Trim()
+                        };
+
+                        connection.Execute(
+                            QueryEliminarPermisos,
+                            parametros,
+                            transaction);
+
+                        int registros =
+                            connection.Execute(
+                                QueryEliminarBodega,
+                                parametros,
+                                transaction);
+
+                        if (registros == 0)
+                        {
+                            transaction.Rollback();
+
+                            return DbHelper.ErrorResponse(
+                                "La bodega indicada no existe.",
+                                -2);
+                        }
+
+                        transaction.Commit();
+
+                        return DbHelper.OkResponse(
+                            MensajeOk);
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                });
+
+            return ResultObtener(
+                result,
+                ErrorEliminarBodega);
         }
 
         /// <summary>
-        /// Actualiza los permisos de una bodega para un usuario.
+        /// Actualiza un permiso de usuario para una bodega.
         /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="request">Datos de permisos.</param>
-        /// <param name="cod_bodega">Código de la bodega.</param>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="request">Información del permiso que se actualizará.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto permisosBodega_Actualizar(int CodEmpresa, PermisosBodegasDto request, string cod_bodega)
+        public ErrorDto INV_Bodegas_Permiso_Actualizar(
+            int CodEmpresa,
+            InvBodegasPermisoActualizarRequest request)
         {
-            return EjecutarProcedimientoConCodigo(
+            string validacion = PermisoValidar(request);
+
+            if (!string.IsNullOrEmpty(validacion))
+            {
+                return DbHelper.ErrorResponse(
+                    validacion,
+                    -2);
+            }
+
+            string tipoTransaccion =
+                TipoTransaccionNormalizar(
+                    request.tipo_transaccion);
+
+            string permiso = request.permiso
+                .Trim()
+                .ToUpperInvariant();
+
+            if (
+                tipoTransaccion == "F" &&
+                permiso == "AUTORIZA"
+            )
+            {
+                return DbHelper.OkResponse(MensajeOk);
+            }
+
+            var parametros = new
+            {
+                CodBodega =
+                    request.cod_bodega.Trim(),
+                Usuario =
+                    request.usuario.Trim(),
+                TipoTransaccion =
+                    tipoTransaccion,
+                Permiso =
+                    permiso,
+                Valor =
+                    request.valor ? 1 : 0
+            };
+
+            var result = DbHelper.WithConn(
+                CreatePortalDb(),
                 CodEmpresa,
-                "[spINV_W_PermisosBodegas_Actualizar]",
-                CrearParametrosPermisos(request, cod_bodega),
-                ErrorActualizarPermisos);
+                connection =>
+                {
+                    connection.Open();
+
+                    using var transaction =
+                        connection.BeginTransaction();
+
+                    try
+                    {
+                        connection.Execute(
+                            QueryActualizarPermiso,
+                            parametros,
+                            transaction);
+
+                        transaction.Commit();
+
+                        return DbHelper.OkResponse(
+                            MensajeOk);
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                });
+
+            return ResultObtener(
+                result,
+                ErrorActualizarPermiso);
         }
 
-        #endregion
+        /// <summary>
+        /// Crea la instancia de acceso a la configuración de base de datos.
+        /// </summary>
+        /// <returns>Instancia de PortalDB.</returns>
+        private PortalDB CreatePortalDb()
+        {
+            return new PortalDB(_config);
+        }
+
+        /// <summary>
+        /// Obtiene los parámetros normalizados de una bodega.
+        /// </summary>
+        /// <param name="request">Información de la bodega.</param>
+        /// <returns>Parámetros utilizados por las consultas.</returns>
+        private static object BodegaParametrosObtener(
+            BodegasDto request)
+        {
+            return new
+            {
+                CodBodega = request.cod_bodega.Trim(),
+                Descripcion = request.descripcion.Trim().ToUpperInvariant(),
+                Observacion = request.observacion?.Trim() ?? string.Empty,
+                Estado = request.estado.Trim(),
+                PermiteEntradas = request.permite_entradas,
+                PermiteSalidas = request.permite_salidas,
+                CodCuenta = request.cod_cuenta?.Trim() ?? string.Empty,
+                CodCtaIngresosTf = request.cod_cta_ingresostf?.Trim() ?? string.Empty,
+                CodCtaGastosTf = request.cod_cta_gastostf?.Trim() ?? string.Empty,
+                UtilizaPermisos = request.utiliza_permisos
+            };
+        }
+
+        /// <summary>
+        /// Valida la información requerida de una bodega.
+        /// </summary>
+        /// <param name="request">Información de la bodega.</param>
+        /// <returns>Mensaje de validación.</returns>
+        private static string BodegaValidar(
+            BodegasDto request)
+        {
+            if (request is null)
+            {
+                return "La informaci&oacute;n de la bodega es requerida.";
+            }
+
+            if (string.IsNullOrWhiteSpace(request.cod_bodega))
+            {
+                return BodegaCodigoRequerido;
+            }
+
+            if (string.IsNullOrWhiteSpace(request.descripcion))
+            {
+                return "La descripci&oacute;n de la bodega es requerida.";
+            }
+
+            if (string.IsNullOrWhiteSpace(request.estado))
+            {
+                return "El estado de la bodega es requerido.";
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Valida la información requerida para actualizar un permiso.
+        /// </summary>
+        /// <param name="request">Información del permiso.</param>
+        /// <returns>Mensaje de validación.</returns>
+        private static string PermisoValidar(
+            InvBodegasPermisoActualizarRequest request)
+        {
+            if (request is null)
+            {
+                return "La informaci&oacute;n del permiso es requerida.";
+            }
+
+            if (string.IsNullOrWhiteSpace(request.cod_bodega))
+            {
+                return BodegaCodigoRequerido;
+            }
+
+            if (string.IsNullOrWhiteSpace(request.usuario))
+            {
+                return "El usuario es requerido.";
+            }
+
+            string tipoTransaccion = TipoTransaccionNormalizar(
+                request.tipo_transaccion);
+
+            if (string.IsNullOrEmpty(tipoTransaccion))
+            {
+                return "El tipo de transacci&oacute;n no es v&aacute;lido.";
+            }
+
+            string permiso = request.permiso?
+                .Trim()
+                .ToUpperInvariant() ?? string.Empty;
+
+            if (permiso is not ("MODIFICA" or "AUTORIZA" or "PROCESA"))
+            {
+                return "El permiso indicado no es v&aacute;lido.";
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Normaliza el tipo de transacción utilizado por el formulario.
+        /// </summary>
+        /// <param name="tipoTransaccion">Tipo de transacción recibido.</param>
+        /// <returns>Código E, S, T o F.</returns>
+        private static string TipoTransaccionNormalizar(
+            string tipoTransaccion)
+        {
+            string valor = tipoTransaccion?
+                .Trim()
+                .ToUpperInvariant() ?? string.Empty;
+
+            return valor switch
+            {
+                "E" or "ENTRADA" or "ENTRADAS" => "E",
+                "S" or "SALIDA" or "SALIDAS" => "S",
+                "T" or "TRASLADO" or "TRASLADOS" => "T",
+                "F" or "TOMA FISICA" or "TOMA FÍSICA" => "F",
+                _ => string.Empty
+            };
+        }
+
+        /// <summary>
+        /// Obtiene el resultado interno generado por DbHelper.
+        /// </summary>
+        /// <param name="result">Resultado interno de la ejecución.</param>
+        /// <param name="mensajeError">Mensaje utilizado cuando ocurre un error.</param>
+        /// <returns>Resultado final de la operación.</returns>
+        private static ErrorDto ResultObtener(
+            ErrorDto<ErrorDto> result,
+            string mensajeError)
+        {
+            return result.Code == 0 && result.Result is not null
+                ? result.Result
+                : DbHelper.ErrorResponse(
+                    result.Description ?? mensajeError,
+                    result.Code.GetValueOrDefault(-1));
+        }
     }
 }

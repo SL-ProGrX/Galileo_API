@@ -1,26 +1,65 @@
 namespace Galileo.Models.INV
 {
-    public class TipoEsDto
+    public static class InvTipoEsTiposMovimiento
     {
-        public string Cod_Entsal { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
-        public string Tipo { get; set; } = string.Empty;
-        public string Cod_Cuenta { get; set; } = string.Empty;
-        public string CtaDesc { get; set; } = string.Empty;
-        public bool Activo { get; set; } = false;
-        public bool Mancomunado { get; set; } = false;
+        public const string Entrada = "E";
+        public const string Salida = "S";
+        public const string Traslado = "T";
+        public const string Requisicion = "R";
+
+        public static bool INV_TipoES_Tipo_Valido(string? tipo)
+        {
+            return tipo is
+                Entrada or
+                Salida or
+                Traslado or
+                Requisicion;
+        }
     }
 
-    public class TipoESList
+    public abstract class TipoEsRegistroBase
     {
-        public int Total { get; set; }
-        public List<TipoEsDto> Lista { get; set; } = new List<TipoEsDto>();
+        public string cod_entsal { get; set; } = string.Empty;
+
+        public string descripcion { get; set; } = string.Empty;
+
+        public string tipo { get; set; } = string.Empty;
+
+        public string cod_cuenta { get; set; } = string.Empty;
+
+        public bool activo { get; set; } = false;
     }
 
-    public class TipoESFiltros
+    public sealed class TipoEsDto : TipoEsRegistroBase
     {
-        public int? pagina { get; set; }
-        public int? paginacion { get; set; }
-        public string? filtro { get; set; }
+        public string cta_desc { get; set; } = string.Empty;
+    }
+
+    public sealed class TipoEsGuardarRequest : TipoEsRegistroBase
+    {
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public sealed class TipoEsEliminarRequest
+    {
+        public string cod_entsal { get; set; } = string.Empty;
+
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public sealed class TipoESList
+    {
+        public int total { get; set; } = 0;
+
+        public List<TipoEsDto> lista { get; set; } = [];
+    }
+
+    public sealed class TipoESFiltros
+    {
+        public int pagina { get; set; } = 0;
+
+        public int paginacion { get; set; } = 0;
+
+        public string filtro { get; set; } = string.Empty;
     }
 }
