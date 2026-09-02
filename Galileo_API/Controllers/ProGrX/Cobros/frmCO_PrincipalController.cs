@@ -24,6 +24,13 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [HttpGet("Operaciones_Obtener")]
+        public ErrorDto<OperacionBusquedaListaDto> Operaciones_Obtener(int codEmpresa, string filtros)
+        {
+            return _bl.Operaciones_Obtener(codEmpresa, filtros);
+        }
+
+        [Authorize]
         [HttpGet("Operacion_Consultar")]
         public ErrorDto<OperacionConsultarDto> Operacion_Consultar(int codEmpresa, int operacion)
         {
