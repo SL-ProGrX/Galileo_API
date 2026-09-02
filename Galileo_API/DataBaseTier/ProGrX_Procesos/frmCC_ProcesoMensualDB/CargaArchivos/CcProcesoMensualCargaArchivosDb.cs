@@ -109,7 +109,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
 
                 ReportarProgreso(
                     reportarProgreso,
-                    $"Insertando {registros.Count} registros en prm_cargado...",
+                    $"Insertando {registros.Count} registros...",
                     total: registros.Count,
                     procesadas: 0,
                     exitosas: 0,
