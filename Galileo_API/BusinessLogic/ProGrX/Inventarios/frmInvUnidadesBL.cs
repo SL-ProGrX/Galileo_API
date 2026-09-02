@@ -1,46 +1,107 @@
 ﻿using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
+using Newtonsoft.Json;
 
 namespace Galileo.BusinessLogic
 {
-    public class FrmInvUnidadesBL
+    public sealed class FrmInvUnidadesBl
     {
-        private readonly FrmInvUnidadesDB _db;
+        private const int CodigoValidacion = -2;
 
-        public FrmInvUnidadesBL(IConfiguration config)
+        private readonly FrmInvUnidadesDb _db;
+
+        public FrmInvUnidadesBl(IConfiguration config)
         {
-            _db = new FrmInvUnidadesDB(config);
+            ArgumentNullException.ThrowIfNull(config);
+            _db = new FrmInvUnidadesDb(config);
         }
 
-        public ErrorDto<UnidadesDataLista> UnidadMedicion_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<UnidadesDataLista> INV_Unidades_Lista_Obtener(
+            int CodEmpresa,
+            string? filtros)
         {
-            return _db.UnidadMedicion_Obtener(CodCliente, pagina, paginacion, filtro);
+            if (string.IsNullOrWhiteSpace(filtros))
+            {
+                return INV_Unidades_Lista_Error(
+                    "Los filtros de consulta son requeridos.");
+            }
+
+            try
+            {
+                var filtrosDeserializados =
+                    JsonConvert.DeserializeObject<FiltrosLazyLoadData>(
+                        filtros);
+
+                return filtrosDeserializados is null
+                    ? INV_Unidades_Lista_Error(
+                        "Los filtros de consulta no son v&aacute;lidos.")
+                    : _db.INV_Unidades_Lista_Obtener(
+                        CodEmpresa,
+                        filtrosDeserializados);
+            }
+            catch (JsonException)
+            {
+                return INV_Unidades_Lista_Error(
+                    "El formato de los filtros de consulta no es v&aacute;lido.");
+            }
         }
 
-        public ErrorDto<List<UnidadMedicionDto>> UnidadMedicion_ObtenerTodosDetalle(int CodEmpresa)
+        public ErrorDto<List<UnidadMedicionDto>>
+            INV_Unidades_Detalle_Obtener(int CodEmpresa)
         {
-            return _db.UnidadMedicion_ObtenerTodosDetalle(CodEmpresa);
+            return _db.INV_Unidades_Detalle_Obtener(CodEmpresa);
         }
 
-        public ErrorDto<List<UnidadMedicion>> UnidadMedicion_ObtenerTodos(int CodEmpresa)
+        public ErrorDto<List<UnidadMedicion>>
+            INV_Unidades_Catalogo_Obtener(int CodEmpresa)
         {
-            return _db.UnidadMedicion_ObtenerTodos(CodEmpresa);
+            return _db.INV_Unidades_Catalogo_Obtener(CodEmpresa);
         }
 
-        public ErrorDto UnidadMedicion_Insertar(int CodEmpresa, UnidadMedicionDto request)
+        public ErrorDto INV_Unidades_Registrar(
+            int CodEmpresa,
+            UnidadMedicionDto? request)
         {
-            return _db.UnidadMedicion_Agregar(CodEmpresa, request);
+            return _db.INV_Unidades_Registrar(
+                CodEmpresa,
+                request);
         }
 
-        public ErrorDto UnidadMedicion_Actualizar(int CodEmpresa, UnidadMedicionDto request)
+        public ErrorDto INV_Unidades_Actualizar(
+            int CodEmpresa,
+            UnidadMedicionDto? request)
         {
-            return _db.UnidadMedicion_Actualizar(CodEmpresa, request);
+            return _db.INV_Unidades_Actualizar(
+                CodEmpresa,
+                request);
         }
 
-        public ErrorDto UnidadMedicion_Eliminar(int CodEmpresa, string unidad)
+        public ErrorDto INV_Unidades_Eliminar(
+            int CodEmpresa,
+            string? unidad,
+            string? usuario)
         {
-            return _db.UnidadMedicion_Eliminar(CodEmpresa, unidad);
+            return _db.INV_Unidades_Eliminar(
+                CodEmpresa,
+                unidad,
+                usuario);
+        }
+
+        private static ErrorDto<UnidadesDataLista>
+            INV_Unidades_Lista_Error(string mensaje)
+        {
+            return new ErrorDto<UnidadesDataLista>
+            {
+                Code = CodigoValidacion,
+                Description = mensaje,
+                Result = new UnidadesDataLista
+                {
+                    total = 0,
+                    unidades = []
+                }
+            };
         }
     }
 }
