@@ -74,17 +74,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var filtro = string.IsNullOrWhiteSpace(filtros.filtro)
                     ? null
                     : $"%{filtros.filtro.Trim()}%";
-                var columnaOrden = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant() switch
+                var campoOrden = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant() switch
                 {
                     "codigo" => "codigo",
                     "cedula" => "cedula",
                     "montoapr" => "montoapr",
                     "saldo" => "saldo",
-                    _ => "id_solicitud"
+                    _ => "operacion"
                 };
-                var direccionOrden = filtros.sortOrder == 0 ? "DESC" : "ASC";
+                var ordenDescendente = filtros.sortOrder == 0;
 
-                var sql = $@"
+                const string sql = @"
                     SELECT COUNT(1)
                     FROM reg_creditos
                     WHERE estadosol = 'F'
@@ -109,14 +109,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                           OR codigo LIKE @filtro
                           OR cedula LIKE @filtro
                       )
-                    ORDER BY {columnaOrden} {direccionOrden}
+                    ORDER BY
+                        CASE WHEN @campoOrden = 'operacion' AND @ordenDescendente = 0 THEN id_solicitud END ASC,
+                        CASE WHEN @campoOrden = 'operacion' AND @ordenDescendente = 1 THEN id_solicitud END DESC,
+                        CASE WHEN @campoOrden = 'codigo' AND @ordenDescendente = 0 THEN codigo END ASC,
+                        CASE WHEN @campoOrden = 'codigo' AND @ordenDescendente = 1 THEN codigo END DESC,
+                        CASE WHEN @campoOrden = 'cedula' AND @ordenDescendente = 0 THEN cedula END ASC,
+                        CASE WHEN @campoOrden = 'cedula' AND @ordenDescendente = 1 THEN cedula END DESC,
+                        CASE WHEN @campoOrden = 'montoapr' AND @ordenDescendente = 0 THEN montoapr END ASC,
+                        CASE WHEN @campoOrden = 'montoapr' AND @ordenDescendente = 1 THEN montoapr END DESC,
+                        CASE WHEN @campoOrden = 'saldo' AND @ordenDescendente = 0 THEN saldo END ASC,
+                        CASE WHEN @campoOrden = 'saldo' AND @ordenDescendente = 1 THEN saldo END DESC,
+                        id_solicitud ASC
                     OFFSET @pagina ROWS FETCH NEXT @paginacion ROWS ONLY;";
 
                 using var resultados = cn.QueryMultiple(sql, new
                 {
                     filtro,
                     pagina,
-                    paginacion
+                    paginacion,
+                    campoOrden,
+                    ordenDescendente
                 });
 
                 response.Result = new OperacionBusquedaListaDto
