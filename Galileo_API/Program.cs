@@ -15,6 +15,7 @@ using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcPro
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCcProcesoMensualArchivos();
+builder.Services.AddCcProcesoMensualProceso();
 builder.Services.AddTesEmisionDocumentosProceso(builder.Configuration);
 builder.Services.Configure<ArchivosGeneradosOptions>(
 builder.Configuration.GetSection("ArchivosGenerados"));
