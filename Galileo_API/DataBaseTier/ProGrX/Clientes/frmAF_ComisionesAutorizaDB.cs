@@ -131,12 +131,15 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 condiciones.Add("dbo.fxAFIComisionAporte(S.FechaIngreso, S.Cedula) > 0");
             }
 
-            if (filtro.ChkPromotor)
+            // En la pantalla, el check activo significa "Todos los Promotores".
+            // El filtro individual solo aplica cuando el usuario desmarca esa opción.
+            if (!filtro.ChkPromotor && filtro.IdPromotor.HasValue)
             {
                 condiciones.Add("S.id_promotor = @idPromotor");
             }
 
-            if (filtro.ChkUsuarios)
+            // En la pantalla, el check activo significa "Todos los Usuarios".
+            if (!filtro.ChkUsuarios && !string.IsNullOrWhiteSpace(filtro.Usuario))
             {
                 condiciones.Add("S.reg_user = @usuario");
             }

@@ -1,8 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
-using Microsoft.AspNetCore.Authorization;
 using Galileo.Models.INV;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo.Controllers
 {
@@ -12,61 +12,92 @@ namespace Galileo.Controllers
     public class FrmInvBodegasController : ControllerBase
     {
         private readonly FrmInvBodegasBl _bl;
+
         public FrmInvBodegasController(IConfiguration config)
         {
             _bl = new FrmInvBodegasBl(config);
         }
 
-        [HttpGet("Autorizador_Obtener")]
-        public ErrorDto<List<PermisosBodegasDto>> Autorizador_Obtener(int CodEmpresa, string CodBodega)
+        [HttpGet("INV_Bodegas_Lista_Obtener")]
+        public ErrorDto<List<BodegasDto>> INV_Bodegas_Lista_Obtener(
+            int CodEmpresa)
         {
-            return _bl.Autorizador_ObtenerTodos(CodEmpresa, CodBodega);
+            return _bl.INV_Bodegas_Lista_Obtener(
+                CodEmpresa);
         }
 
-
-        [HttpGet("Bodegas_Obtener")]
-        public ErrorDto<List<BodegasDto>> Bodegas_Obtener(int CodEmpresa)
+        [HttpGet("INV_Bodegas_Codigo_Obtener")]
+        public ErrorDto<BodegasDto> INV_Bodegas_Codigo_Obtener(
+            int CodEmpresa,
+            string cod_bodega)
         {
-            return _bl.Bodegas_Obtener(CodEmpresa);
+            return _bl.INV_Bodegas_Codigo_Obtener(
+                CodEmpresa,
+                cod_bodega);
         }
 
-
-        [HttpGet("ConsultaAscDesc")]
-        public ErrorDto<BodegasDto> ConsultaAscDesc(int CodEmpresa, int consecutivo, string tipo)
+        [HttpGet("INV_Bodegas_Navegacion_Obtener")]
+        public ErrorDto<BodegasDto> INV_Bodegas_Navegacion_Obtener(
+            int CodEmpresa,
+            string consecutivo,
+            string tipo)
         {
-            return _bl.ConsultaAscDesc(CodEmpresa, consecutivo, tipo);
+            return _bl.INV_Bodegas_Navegacion_Obtener(
+                CodEmpresa,
+                consecutivo,
+                tipo);
         }
 
-
-        [HttpGet("bodegaConsecutivo_Obtener")]
-        public ErrorDto<BodegasDto> bodegaConsecutivo_Obtener(int CodEmpresa, string consecutivo)
+        [HttpGet("INV_Bodegas_Permisos_Obtener")]
+        public ErrorDto<List<PermisosBodegasDto>> INV_Bodegas_Permisos_Obtener(
+            int CodEmpresa,
+            string cod_bodega,
+            string tipo_transaccion)
         {
-            return _bl.bodegaConsecutivo_Obtener(CodEmpresa, consecutivo);
+            return _bl.INV_Bodegas_Permisos_Obtener(
+                CodEmpresa,
+                cod_bodega,
+                tipo_transaccion);
         }
 
-
-        [HttpPost("bodega_Insertar")]
-        public ErrorDto bodega_Insertar(int CodEmpresa, BodegasDto data)
+        [HttpPost("INV_Bodegas_Registrar")]
+        public ErrorDto INV_Bodegas_Registrar(
+            int CodEmpresa,
+            [FromBody] BodegasDto request)
         {
-            return _bl.bodega_Insertar(CodEmpresa, data);
+            return _bl.INV_Bodegas_Registrar(
+                CodEmpresa,
+                request);
         }
 
-        [HttpPost("actualizar_Bodega")]
-        public ErrorDto actualizar_Bodega(int CodEmpresa, BodegasDto request)
+        [HttpPut("INV_Bodegas_Actualizar")]
+        public ErrorDto INV_Bodegas_Actualizar(
+            int CodEmpresa,
+            [FromBody] BodegasDto request)
         {
-            return _bl.bodega_Actualizar(CodEmpresa, request);
+            return _bl.INV_Bodegas_Actualizar(
+                CodEmpresa,
+                request);
         }
 
-        [HttpDelete("bodega_Eliminar")]
-        public ErrorDto bodega_Eliminar(int CodEmpresa, string cod_bodega)
+        [HttpDelete("INV_Bodegas_Eliminar")]
+        public ErrorDto INV_Bodegas_Eliminar(
+            int CodEmpresa,
+            string cod_bodega)
         {
-            return _bl.bodega_Eliminar(CodEmpresa, cod_bodega);
+            return _bl.INV_Bodegas_Eliminar(
+                CodEmpresa,
+                cod_bodega);
         }
 
-        [HttpPost("permisosBodega_Actualizar")]
-        public ErrorDto permisosBodega_Actualizar(int CodEmpresa, PermisosBodegasDto request, string cod_bodega)
+        [HttpPut("INV_Bodegas_Permiso_Actualizar")]
+        public ErrorDto INV_Bodegas_Permiso_Actualizar(
+            int CodEmpresa,
+            [FromBody] InvBodegasPermisoActualizarRequest request)
         {
-            return _bl.permisosBodega_Actualizar(CodEmpresa, request, cod_bodega);
+            return _bl.INV_Bodegas_Permiso_Actualizar(
+                CodEmpresa,
+                request);
         }
     }
 }
