@@ -18,7 +18,7 @@ namespace Galileo.Controllers
 
         [HttpGet("AppLog_ObtenerTodos")]
         [Authorize]
-        public List<AppLog> TiposId_ObtenerTodos(int empresa, string ini, string fin)
+        public List<AppLog> AppLog_ObtenerTodos(int empresa, string ini, string fin)
         {
             return new AppLogBL(_config).AppLog_ObtenerTodos(empresa, ini, fin);
         }

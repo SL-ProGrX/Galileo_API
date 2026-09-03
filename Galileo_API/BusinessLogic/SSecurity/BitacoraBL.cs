@@ -16,5 +16,10 @@ namespace Galileo.BusinessLogic
         {
             return new BitacoraDb(_config).BitacoraObtener(bitacoraRequestDto);
         }
+
+        public List<ModuloDto> ModulosObtener()
+        {
+            return new BitacoraDb(_config).ModulosObtener();
+        }
     }
 }

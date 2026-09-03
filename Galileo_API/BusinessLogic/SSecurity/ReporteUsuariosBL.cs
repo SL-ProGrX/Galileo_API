@@ -1,5 +1,6 @@
 ﻿using Galileo.DataBaseTier;
 using Galileo.Models.Security;
+using Galileo.Models.ERROR;
 
 namespace Galileo.BusinessLogic
 {
@@ -12,32 +13,32 @@ namespace Galileo.BusinessLogic
             _config = config;
         }
 
-        public List<ReporteUsuariosListaRespuestaDto> ReporteUsuariosListadoObtener(ReporteUsuariosListaSolicitudDto solicitudDto)
+        public ErrorDto<List<ReporteUsuariosListaRespuestaDto>> ReporteUsuariosListadoObtener(ReporteUsuariosListaSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosDb(_config).ReporteUsuariosListadoObtener(solicitudDto);
         }
 
-        public List<ReporteUsuariosRolesRespuestaDto> ReporteUsuariosRolesObtener(ReporteUsuariosRolesSolicitudDto solicitudDto)
+        public ErrorDto<List<ReporteUsuariosRolesRespuestaDto>> ReporteUsuariosRolesObtener(ReporteUsuariosRolesSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosDb(_config).ReporteUsuariosRolesObtener(solicitudDto);
         }
 
-        public List<ReporteUsuariosPermisosRespuestaDto> ReporteUsuariosPermisosObtener(ReporteUsuariosPermisosSolicitudDto solicitudDto)
+        public ErrorDto<List<ReporteUsuariosPermisosRespuestaDto>> ReporteUsuariosPermisosObtener(ReporteUsuariosPermisosSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosDb(_config).ReporteUsuariosPermisosObtener(solicitudDto);
         }
 
-        public List<ReporteRolesPermisosRespuestaDto> ReporteRolesPermisosObtener(ReporteRolesPermisosSolicitudDto solicitudDto)
+        public ErrorDto<List<ReporteRolesPermisosRespuestaDto>> ReporteRolesPermisosObtener(ReporteRolesPermisosSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosDb(_config).ReporteRolesPermisosObtener(solicitudDto);
         }
 
-        public List<ReporteUsuarioRolesDto> RolesObtener()
+        public ErrorDto<List<ReporteUsuarioRolesDto>> RolesObtener()
         {
             return new ReporteUsuariosDb(_config).RolesObtener();
         }
 
-        public List<ReporteUsuarioVinculacionDto> VinculacionesObtener(int codEmpresa)
+        public ErrorDto<List<ReporteUsuarioVinculacionDto>> VinculacionesObtener(int codEmpresa)
         {
             return new ReporteUsuariosDb(_config).VinculacionesObtener(codEmpresa);
         }

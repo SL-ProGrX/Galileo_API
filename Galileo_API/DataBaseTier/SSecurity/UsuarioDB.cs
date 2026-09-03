@@ -100,9 +100,9 @@ namespace Galileo.DataBaseTier
                     resultado = connection.Query<UsuarioCuentaMovimientoResultDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                throw;
             }
             return resultado;
         }
