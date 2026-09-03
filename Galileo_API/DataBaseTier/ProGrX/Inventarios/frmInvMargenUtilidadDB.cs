@@ -225,7 +225,7 @@ namespace Galileo.DataBaseTier
                 return validacion;
             }
 
-            var solicitud = request!;
+            var solicitud = request;
 
             INV_MargenUtilidad_Solicitud_Normalizar(
                 solicitud);
