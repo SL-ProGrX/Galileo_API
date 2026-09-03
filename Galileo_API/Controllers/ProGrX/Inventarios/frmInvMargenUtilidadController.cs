@@ -1,44 +1,76 @@
-using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
+using Galileo.Models;
 using Galileo.Models.ERROR;
-using Microsoft.AspNetCore.Authorization;
 using Galileo.Models.INV;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [Authorize]
     [ApiController]
-    public class FrmInvMargenUtilidadController : ControllerBase
+    public sealed class FrmInvMargenUtilidadController
+        : ControllerBase
     {
-        private readonly FrmInvMargenUtilidadBL _bl;
-        public FrmInvMargenUtilidadController(IConfiguration config)
+        private readonly FrmInvMargenUtilidadBl _bl;
+
+        public FrmInvMargenUtilidadController(
+            IConfiguration config)
         {
-            _bl = new FrmInvMargenUtilidadBL(config);
+            ArgumentNullException.ThrowIfNull(config);
+            _bl = new FrmInvMargenUtilidadBl(config);
         }
 
-        [HttpGet("Linea_Obtener")]
-        public ErrorDto<List<LineaDto>> Linea_Obtener(int CodEmpresa)
+        [HttpGet(
+            "INV_MargenUtilidad_Lineas_Obtener")]
+        public ErrorDto<
+            List<DropDownListaGenericaModel<int>>>
+            INV_MargenUtilidad_Lineas_Obtener(
+                int CodEmpresa)
         {
-            return _bl.Linea_Obtener(CodEmpresa);
+            return _bl
+                .INV_MargenUtilidad_Lineas_Obtener(
+                    CodEmpresa);
         }
 
-        [HttpGet("SubLinea_Obtener")]
-        public ErrorDto<List<SubLineaDto>> SubLinea_Obtener(int CodEmpresa)
+        [HttpGet(
+            "INV_MargenUtilidad_Sublineas_Obtener")]
+        public ErrorDto<
+            List<DropDownListaGenericaModel<int>>>
+            INV_MargenUtilidad_Sublineas_Obtener(
+                int CodEmpresa,
+                int codLinea)
         {
-            return _bl.SubLinea_Obtener(CodEmpresa);
+            return _bl
+                .INV_MargenUtilidad_Sublineas_Obtener(
+                    CodEmpresa,
+                    codLinea);
         }
 
-        [HttpGet("ListadoPrecios_Obtener")]
-        public ErrorDto<List<PrecioDto>> ListadoPrecios_Obtener(int CodEmpresa)
+        [HttpGet(
+            "INV_MargenUtilidad_Precios_Obtener")]
+        public ErrorDto<
+            List<DropDownListaGenericaModel<string>>>
+            INV_MargenUtilidad_Precios_Obtener(
+                int CodEmpresa)
         {
-            return _bl.ListadoPrecios_Obtener(CodEmpresa);
+            return _bl
+                .INV_MargenUtilidad_Precios_Obtener(
+                    CodEmpresa);
         }
 
-        [HttpPost("cambio_margen")]
-        public ErrorDto cambio_margen(int CodEmpresa, int monto, int cod_linea, int cod_sublinea, string cambio_margen)
+        [HttpPost(
+            "INV_MargenUtilidad_Cambios_Aplicar")]
+        public ErrorDto
+            INV_MargenUtilidad_Cambios_Aplicar(
+                int CodEmpresa,
+                InvMargenUtilidadAplicarRequest request)
         {
-            return _bl.cambio_margen(CodEmpresa, monto, cod_linea, cod_sublinea, cambio_margen);
+            return _bl
+                .INV_MargenUtilidad_Cambios_Aplicar(
+                    CodEmpresa,
+                    request);
         }
     }
 }
