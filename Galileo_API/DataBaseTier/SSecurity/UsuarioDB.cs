@@ -54,9 +54,9 @@ namespace Galileo.DataBaseTier
             return resultado;
         }
 
-        public UsuarioCuentaRevisarDto UsuarioCuentaObtener(string nombreUsuario)
+        public UsuarioCuentaRevisarDto? UsuarioCuentaObtener(string nombreUsuario)
         {
-            UsuarioCuentaRevisarDto result = null;
+            UsuarioCuentaRevisarDto? result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -78,33 +78,24 @@ namespace Galileo.DataBaseTier
 
         public List<UsuarioCuentaMovimientoResultDto> UsuarioCuentaMovimientosObtener(UsuarioCuentaMovimientoRequestDto usuarioCuentaMovimientoRequestDto)
         {
-            List<UsuarioCuentaMovimientoResultDto> resultado = new List<UsuarioCuentaMovimientoResultDto>();
-            try
+            using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
+                var procedure = "[spPGX_Cuenta_Log_Movimientos_Obtener]";
+                var values = new
                 {
-                    var procedure = "[spPGX_Cuenta_Log_Movimientos_Obtener]";
-                    var values = new
-                    {
-                        Usuario = usuarioCuentaMovimientoRequestDto.Usuario.Trim(),
-                        FechaInicio = usuarioCuentaMovimientoRequestDto.FechaInicio,
-                        FechaCorte = usuarioCuentaMovimientoRequestDto.FechaCorte,
-                        Estacion = usuarioCuentaMovimientoRequestDto.Estacion != null ? usuarioCuentaMovimientoRequestDto.Estacion.Trim() : string.Empty,
-                        ListaCodTransacciones = usuarioCuentaMovimientoRequestDto.ListaCodTransacciones.Trim(),
-                        AppName = usuarioCuentaMovimientoRequestDto.AppName != null ? usuarioCuentaMovimientoRequestDto.AppName.Trim() : string.Empty,
-                        AppVersion = usuarioCuentaMovimientoRequestDto.AppVersion,
-                        UsuarioBusqueda = usuarioCuentaMovimientoRequestDto.UsuarioBusqueda,
-                        Revision = usuarioCuentaMovimientoRequestDto.Revision.Trim(),
-                        RevisionInd = usuarioCuentaMovimientoRequestDto.RevisionInd
-                    };
-                    resultado = connection.Query<UsuarioCuentaMovimientoResultDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
-                }
+                    Usuario = usuarioCuentaMovimientoRequestDto.Usuario.Trim(),
+                    FechaInicio = usuarioCuentaMovimientoRequestDto.FechaInicio,
+                    FechaCorte = usuarioCuentaMovimientoRequestDto.FechaCorte,
+                    Estacion = usuarioCuentaMovimientoRequestDto.Estacion != null ? usuarioCuentaMovimientoRequestDto.Estacion.Trim() : string.Empty,
+                    ListaCodTransacciones = usuarioCuentaMovimientoRequestDto.ListaCodTransacciones.Trim(),
+                    AppName = usuarioCuentaMovimientoRequestDto.AppName != null ? usuarioCuentaMovimientoRequestDto.AppName.Trim() : string.Empty,
+                    AppVersion = usuarioCuentaMovimientoRequestDto.AppVersion,
+                    UsuarioBusqueda = usuarioCuentaMovimientoRequestDto.UsuarioBusqueda,
+                    Revision = usuarioCuentaMovimientoRequestDto.Revision.Trim(),
+                    RevisionInd = usuarioCuentaMovimientoRequestDto.RevisionInd
+                };
+                return connection.Query<UsuarioCuentaMovimientoResultDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
             }
-            catch
-            {
-                throw;
-            }
-            return resultado;
         }
 
         public ErrorDto UsuarioCuentaMovimientoRevisar(UsuarioCuentaMovimientoRevisarDto movimiento)
