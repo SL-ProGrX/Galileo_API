@@ -1,141 +1,656 @@
 using Dapper;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
+using System.Data;
 
 namespace Galileo.DataBaseTier
 {
-    public class FrmInvMargenUtilidadDB
+    public sealed class FrmInvMargenUtilidadDb
     {
-        private readonly IConfiguration _config;
+        private const int CodigoValidacion = -2;
+        private const string ModoMargenesPrecios = "MU";
+        private const string ModoSoloPrecios = "P";
 
-        #region Constructor y helpers
+        private const string MensajeEmpresaRequerida =
+            "El c&oacute;digo de la empresa es requerido.";
 
-        /// <summary>
-        /// Inicializa una nueva instancia de la clase <see cref="FrmInvMargenUtilidadDB"/>.
-        /// </summary>
-        /// <param name="config">Configuración de la aplicación.</param>
-        public FrmInvMargenUtilidadDB(IConfiguration config)
+        private const string MensajeSolicitudRequerida =
+            "La informaci&oacute;n para actualizar los m&aacute;rgenes es requerida.";
+
+        private const string MensajeLineaRequerida =
+            "La l&iacute;nea de producto es requerida.";
+
+        private const string MensajeSublineaRequerida =
+            "La subl&iacute;nea de producto es requerida.";
+
+        private const string MensajeModoRequerido =
+            "El modo de actualizaci&oacute;n es requerido.";
+
+        private const string MensajeModoInvalido =
+            "El modo de actualizaci&oacute;n indicado no es v&aacute;lido.";
+
+        private const string MensajeCodigoPrecioRequerido =
+            "El c&oacute;digo del tipo de precio es requerido.";
+
+        private const string MensajePrecioDuplicado =
+            "No se permite incluir el mismo tipo de precio m&aacute;s de una vez.";
+
+        private const string MensajeLineasError =
+            "Ocurri&oacute; un error al consultar las l&iacute;neas de productos.";
+
+        private const string MensajeSublineasError =
+            "Ocurri&oacute; un error al consultar las subl&iacute;neas de productos.";
+
+        private const string MensajePreciosError =
+            "Ocurri&oacute; un error al consultar los tipos de precio.";
+
+        private const string MensajeAplicarError =
+            "Ocurri&oacute; un error al actualizar los m&aacute;rgenes y precios.";
+
+        private const string MensajeMargenesActualizados =
+            "M&aacute;rgenes de utilidad actualizados correctamente.";
+
+        private const string MensajePreciosActualizados =
+            "Precios actualizados correctamente.";
+
+        private readonly PortalDB _portalDb;
+
+        public FrmInvMargenUtilidadDb(
+            IConfiguration config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+            ArgumentNullException.ThrowIfNull(config);
+            _portalDb = new PortalDB(config);
         }
 
         /// <summary>
-        /// Crea una instancia de <see cref="PortalDB"/> usando la configuración actual.
+        /// Obtiene las lineas de productos disponibles.
         /// </summary>
-        /// <returns>Instancia de acceso a configuración de base de datos.</returns>
-        private PortalDB CreatePortalDb() => new(_config);
-
-        /// <summary>
-        /// Crea una respuesta estándar para operaciones no query.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="successMessage">Mensaje de éxito.</param>
-        /// <param name="errorMessage">Mensaje de error.</param>
-        /// <returns>Respuesta estándar para operaciones no query.</returns>
-        private static ErrorDto CrearRespuestaNonQuery(ErrorDto result, string successMessage, string errorMessage)
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<
+            List<DropDownListaGenericaModel<int>>>
+            INV_MargenUtilidad_Lineas_Obtener(
+                int CodEmpresa)
         {
-            return result.Code == 0
-                ? DbHelper.OkResponse(successMessage)
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
+            var lista =
+                new List<
+                    DropDownListaGenericaModel<int>>();
+
+            if (CodEmpresa <= 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    MensajeEmpresaRequerida,
+                    CodigoValidacion,
+                    lista);
+            }
+
+            const string QueryLineas = """
+            select
+                COD_PRODCLAS as item,
+                DESCRIPCION as descripcion
+            from PV_PROD_CLASIFICA
+            order by COD_PRODCLAS;
+            """;
+
+            var resultado =
+                DbHelper.ExecuteListQuery<
+                    DropDownListaGenericaModel<int>>(
+                        _portalDb,
+                        CodEmpresa,
+                        QueryLineas);
+
+            return INV_MargenUtilidad_Lista_Resultado_Obtener(
+                resultado,
+                MensajeLineasError);
         }
 
         /// <summary>
-        /// Obtiene la consulta SQL para actualizar el margen según el tipo de cambio.
+        /// Obtiene las sublineas pertenecientes a una linea de producto.
         /// </summary>
-        /// <param name="cambioMargen">Tipo de cambio de margen.</param>
-        /// <returns>Consulta SQL parametrizada.</returns>
-        private static string ObtenerQueryCambioMargen(string cambioMargen)
+        /// <param name="CodEmpresa"></param>
+        /// <param name="codLinea"></param>
+        /// <returns></returns>
+        public ErrorDto<
+            List<DropDownListaGenericaModel<int>>>
+            INV_MargenUtilidad_Sublineas_Obtener(
+                int CodEmpresa,
+                int codLinea)
         {
-            return cambioMargen == "MU"
-                ? @"UPDATE pv_productos
-                    SET precio_regular = costo_regular + (costo_regular * @Monto / 100.0),
-                        porc_utilidad = @Monto
-                    WHERE estado = 'A'
-                      AND cod_prodclas = @CodLinea
-                      AND COD_LINEA_SUB = @CodSublinea"
-                : @"UPDATE P
-                    SET P.porc_utilidad = @Monto * 100.0,
-                        P.PRECIO_REGULAR = P.costo_regular + (P.costo_regular * @Monto)
-                    FROM pv_productos P
-                    INNER JOIN pv_producto_precios X ON P.cod_producto = X.cod_producto
-                    WHERE P.estado = 'A'
-                      AND P.cod_prodclas = @CodLinea
-                      AND P.COD_LINEA_SUB = @CodSublinea";
+            var lista =
+                new List<
+                    DropDownListaGenericaModel<int>>();
+
+            if (CodEmpresa <= 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    MensajeEmpresaRequerida,
+                    CodigoValidacion,
+                    lista);
+            }
+
+            if (codLinea <= 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    MensajeLineaRequerida,
+                    CodigoValidacion,
+                    lista);
+            }
+
+            const string QuerySublineas = """
+            select
+                COD_LINEA_SUB as item,
+                DESCRIPCION as descripcion
+            from PV_PROD_CLASIFICA_SUB
+            where COD_PRODCLAS = @CodLinea
+            order by COD_LINEA_SUB;
+            """;
+
+            var resultado =
+                DbHelper.ExecuteListQuery<
+                    DropDownListaGenericaModel<int>>(
+                        _portalDb,
+                        CodEmpresa,
+                        QuerySublineas,
+                        new
+                        {
+                            CodLinea = codLinea
+                        });
+
+            return INV_MargenUtilidad_Lista_Resultado_Obtener(
+                resultado,
+                MensajeSublineasError);
         }
 
-        #endregion
+        /// <summary>
+        /// Obtiene los tipos de precio disponibles.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<
+            List<DropDownListaGenericaModel<string>>>
+            INV_MargenUtilidad_Precios_Obtener(
+                int CodEmpresa)
+        {
+            var lista =
+                new List<
+                    DropDownListaGenericaModel<string>>();
 
-        #region Consultas
+            if (CodEmpresa <= 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    MensajeEmpresaRequerida,
+                    CodigoValidacion,
+                    lista);
+            }
+
+            const string QueryTiposPrecio = """
+            select
+                cod_precio as item,
+                descripcion
+            from pv_tipos_precios
+            order by cod_precio;
+            """;
+
+            var resultado =
+                DbHelper.ExecuteListQuery<
+                    DropDownListaGenericaModel<string>>(
+                        _portalDb,
+                        CodEmpresa,
+                        QueryTiposPrecio);
+
+            return INV_MargenUtilidad_Lista_Resultado_Obtener(
+                resultado,
+                MensajePreciosError);
+        }
 
         /// <summary>
-        /// Obtiene el listado de líneas de producto.
+        /// Actualiza los márgenes y precios para la linea y sublinea seleccionadas.
         /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <returns>Listado de líneas.</returns>
-        public ErrorDto<List<LineaDto>> Linea_Obtener(int CodEmpresa)
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto
+            INV_MargenUtilidad_Cambios_Aplicar(
+                int CodEmpresa,
+                InvMargenUtilidadAplicarRequest request)
         {
-            return DbHelper.ExecuteListQuery<LineaDto>(
-                CreatePortalDb(),
+            var validacion =
+                INV_MargenUtilidad_Solicitud_Validar(
+                    CodEmpresa,
+                    request);
+
+            if (validacion is not null)
+            {
+                return validacion;
+            }
+
+            var solicitud = request!;
+
+            INV_MargenUtilidad_Solicitud_Normalizar(
+                solicitud);
+
+            var resultado = DbHelper.WithConn(
+                _portalDb,
                 CodEmpresa,
-                "select * from PV_PROD_CLASIFICA");
+                connection =>
+                {
+                    connection.Open();
+
+                    using var transaction =
+                        connection.BeginTransaction();
+
+                    try
+                    {
+                        INV_MargenUtilidad_Proceso_Ejecutar(
+                            connection,
+                            transaction,
+                            solicitud);
+
+                        transaction.Commit();
+
+                        return true;
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                });
+
+            if (resultado.Code != 0)
+            {
+                return DbHelper.ErrorResponse(
+                    resultado.Description ??
+                    MensajeAplicarError,
+                    resultado.Code.GetValueOrDefault(-1));
+            }
+
+            return DbHelper.OkResponse(
+                solicitud.modo ==
+                    ModoMargenesPrecios
+                    ? MensajeMargenesActualizados
+                    : MensajePreciosActualizados);
         }
 
         /// <summary>
-        /// Obtiene el listado de sublíneas de producto.
+        /// Ejecuta el proceso correspondiente al modo seleccionado.
         /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <returns>Listado de sublíneas.</returns>
-        public ErrorDto<List<SubLineaDto>> SubLinea_Obtener(int CodEmpresa)
+        /// <param name="connection"></param>
+        /// <param name="transaction"></param>
+        /// <param name="request"></param>
+        private static void
+            INV_MargenUtilidad_Proceso_Ejecutar(
+                IDbConnection connection,
+                IDbTransaction transaction,
+                InvMargenUtilidadAplicarRequest request)
         {
-            return DbHelper.ExecuteListQuery<SubLineaDto>(
-                CreatePortalDb(),
-                CodEmpresa,
-                "select * from PV_PROD_CLASIFICA_SUB");
+            if (request.modo == ModoMargenesPrecios)
+            {
+                INV_MargenUtilidad_Margenes_Actualizar(
+                    connection,
+                    transaction,
+                    request);
+
+                return;
+            }
+
+            INV_MargenUtilidad_Precios_Actualizar(
+                connection,
+                transaction,
+                request);
         }
 
         /// <summary>
-        /// Obtiene el listado de tipos de precio.
+        /// Actualiza los márgenes indicados y recalcula los precios.
         /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <returns>Listado de precios.</returns>
-        public ErrorDto<List<PrecioDto>> ListadoPrecios_Obtener(int CodEmpresa)
+        /// <param name="connection"></param>
+        /// <param name="transaction"></param>
+        /// <param name="request"></param>
+        private static void
+            INV_MargenUtilidad_Margenes_Actualizar(
+                IDbConnection connection,
+                IDbTransaction transaction,
+                InvMargenUtilidadAplicarRequest request)
         {
-            return DbHelper.ExecuteListQuery<PrecioDto>(
-                CreatePortalDb(),
-                CodEmpresa,
-                "select * from pv_tipos_precios");
+            const string QueryMargenPrecioRegular = """
+            update pv_productos
+            set
+                precio_regular =
+                    costo_regular +
+                    (
+                        costo_regular *
+                        @UtilidadPrecioRegular / 100.0
+                    ),
+                porc_utilidad =
+                    @UtilidadPrecioRegular
+            where estado = 'A'
+              and cod_prodclas = @CodLinea
+              and COD_LINEA_SUB = @CodSublinea;
+            """;
+
+            INV_MargenUtilidad_PrecioRegular_Actualizar(
+                connection,
+                transaction,
+                request,
+                QueryMargenPrecioRegular);
+
+            if (request.precios.Count == 0)
+            {
+                return;
+            }
+
+            var parametros =
+                request.precios.Select(
+                    precio => new
+                    {
+                        CodLinea = request.cod_linea,
+                        CodSublinea =
+                            request.cod_sublinea,
+                        CodPrecio =
+                            precio.cod_precio,
+                        Utilidad =
+                            precio.utilidad
+                    });
+
+           const string QueryMargenesTiposPrecio = """
+            update X
+            set
+                X.porc_utilidad = @Utilidad,
+                X.monto =
+                    P.costo_regular +
+                    (
+                        P.costo_regular *
+                        @Utilidad / 100.0
+                    )
+            from pv_productos P
+            inner join pv_producto_precios X
+                on P.cod_producto = X.cod_producto
+            where P.estado = 'A'
+              and P.cod_prodclas = @CodLinea
+              and P.COD_LINEA_SUB = @CodSublinea
+              and X.cod_precio = @CodPrecio;
+            """;
+
+            connection.Execute(
+                QueryMargenesTiposPrecio,
+                parametros,
+                transaction);
         }
 
-        #endregion
+        /// <summary>
+        /// Recalcula los precios utilizando los márgenes actuales.
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="transaction"></param>
+        /// <param name="request"></param>
+        private static void
+            INV_MargenUtilidad_Precios_Actualizar(
+                IDbConnection connection,
+                IDbTransaction transaction,
+                InvMargenUtilidadAplicarRequest request)
+        {
+            const string QueryPrecioRegularSegunMargen = """
+            update pv_productos
+            set precio_regular =
+                costo_regular +
+                (
+                    costo_regular *
+                    porc_utilidad / 100.0
+                )
+            where estado = 'A'
+              and cod_prodclas = @CodLinea
+              and COD_LINEA_SUB = @CodSublinea;
+            """;
 
-        #region Mantenimiento
+            INV_MargenUtilidad_PrecioRegular_Actualizar(
+                 connection,
+                 transaction,
+                 request,
+                 QueryPrecioRegularSegunMargen);
+
+            if (request.precios.Count == 0)
+            {
+                return;
+            }
+
+            string[] codigosPrecio =
+                request.precios
+                    .Select(
+                        precio =>
+                            precio.cod_precio)
+                    .ToArray(); 
+
+            const string QueryTiposPrecioSegunMargen = """
+            update X
+            set X.monto =
+                P.costo_regular +
+                (
+                    P.costo_regular *
+                    X.porc_utilidad / 100.0
+                )
+            from pv_productos P
+            inner join pv_producto_precios X
+                on P.cod_producto = X.cod_producto
+            where P.estado = 'A'
+              and P.cod_prodclas = @CodLinea
+              and P.COD_LINEA_SUB = @CodSublinea
+              and X.cod_precio in @CodigosPrecio;
+            """;
+
+            connection.Execute(
+                QueryTiposPrecioSegunMargen,
+                new
+                {
+                    CodLinea = request.cod_linea,
+                    CodSublinea =
+                        request.cod_sublinea,
+                    CodigosPrecio =
+                        codigosPrecio
+                },
+                transaction);
+        }
 
         /// <summary>
-        /// Actualiza el margen de utilidad o precio de los productos según la línea y sublínea indicadas.
+        /// Actualiza el precio regular cuando fue solicitado.
         /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="monto">Monto o porcentaje aplicado al margen.</param>
-        /// <param name="cod_linea">Código de línea.</param>
-        /// <param name="cod_sublinea">Código de sublínea.</param>
-        /// <param name="cambio_margen">Tipo de cambio de margen.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto cambio_margen(int CodEmpresa, int monto, int cod_linea, int cod_sublinea, string cambio_margen)
+        /// <param name="connection"></param>
+        /// <param name="transaction"></param>
+        /// <param name="request"></param>
+        /// <param name="query"></param>
+        private static void
+            INV_MargenUtilidad_PrecioRegular_Actualizar(
+                IDbConnection connection,
+                IDbTransaction transaction,
+                InvMargenUtilidadAplicarRequest request,
+                string query)
         {
-            var query = ObtenerQueryCambioMargen(cambio_margen);
-            var result = DbHelper.ExecuteNonQuery(
-                CreatePortalDb(),
-                CodEmpresa,
+            if (!request.actualiza_precio_regular)
+            {
+                return;
+            }
+
+            connection.Execute(
                 query,
                 new
                 {
-                    Monto = monto,
-                    CodLinea = cod_linea,
-                    CodSublinea = cod_sublinea
-                });
-
-            return CrearRespuestaNonQuery(result, "Ok", "Error al actualizar el margen de utilidad.");
+                    CodLinea = request.cod_linea,
+                    CodSublinea =
+                        request.cod_sublinea,
+                    UtilidadPrecioRegular =
+                        request.utilidad_precio_regular
+                },
+                transaction);
         }
 
-        #endregion
+        /// <summary>
+        /// Valida la empresa y la solicitud recibida.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        private static ErrorDto?
+            INV_MargenUtilidad_Solicitud_Validar(
+                int CodEmpresa,
+                InvMargenUtilidadAplicarRequest? request)
+        {
+            if (CodEmpresa <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeEmpresaRequerida,
+                    CodigoValidacion);
+            }
+
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeSolicitudRequerida,
+                    CodigoValidacion);
+            }
+
+            if (request.cod_linea <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeLineaRequerida,
+                    CodigoValidacion);
+            }
+
+            if (request.cod_sublinea <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeSublineaRequerida,
+                    CodigoValidacion);
+            }
+
+            return INV_MargenUtilidad_Modo_Validar(
+                request);
+        }
+
+        /// <summary>
+        /// Valida el modo y los precios de la solicitud.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        private static ErrorDto?
+            INV_MargenUtilidad_Modo_Validar(
+                InvMargenUtilidadAplicarRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.modo))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeModoRequerido,
+                    CodigoValidacion);
+            }
+
+            string modo =
+                request.modo
+                    .Trim()
+                    .ToUpperInvariant();
+
+            if (
+                modo != ModoMargenesPrecios &&
+                modo != ModoSoloPrecios)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeModoInvalido,
+                    CodigoValidacion);
+            }
+
+            return INV_MargenUtilidad_Precios_Validar(
+                request.precios);
+        }
+
+        /// <summary>
+        /// Valida los tipos de precio recibidos.
+        /// </summary>
+        /// <param name="precios"></param>
+        /// <returns></returns>
+        private static ErrorDto?
+            INV_MargenUtilidad_Precios_Validar(
+                List<InvMargenUtilidadPrecioAplicarRequest>?
+                    precios)
+        {
+            if (precios is null || precios.Count == 0)
+            {
+                return null;
+            }
+
+            if (
+                precios.Any(
+                    precio =>
+                        precio is null ||
+                        string.IsNullOrWhiteSpace(
+                            precio.cod_precio)))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeCodigoPrecioRequerido,
+                    CodigoValidacion);
+            }
+
+            int preciosDistintos =
+                precios
+                    .Select(
+                        precio =>
+                            precio.cod_precio.Trim())
+                    .Distinct(
+                        StringComparer.OrdinalIgnoreCase)
+                    .Count();
+
+            return preciosDistintos == precios.Count
+                ? null
+                : DbHelper.ErrorResponse(
+                    MensajePrecioDuplicado,
+                    CodigoValidacion);
+        }
+
+        /// <summary>
+        /// Normaliza los datos de la solicitud.
+        /// </summary>
+        /// <param name="request"></param>
+        private static void
+            INV_MargenUtilidad_Solicitud_Normalizar(
+                InvMargenUtilidadAplicarRequest request)
+        {
+            request.modo =
+                request.modo
+                    .Trim()
+                    .ToUpperInvariant();
+
+            request.precios ??= [];
+
+            foreach (var precio in request.precios)
+            {
+                precio.cod_precio =
+                    precio.cod_precio.Trim();
+            }
+        }
+
+        /// <summary>
+        /// Convierte el resultado de una consulta en una respuesta estándar.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="resultado"></param>
+        /// <param name="mensajeError"></param>
+        /// <returns></returns>
+        private static ErrorDto<List<T>>
+            INV_MargenUtilidad_Lista_Resultado_Obtener<T>(
+                ErrorDto<List<T>> resultado,
+                string mensajeError)
+        {
+            var lista =
+                resultado.Result ??
+                new List<T>();
+
+            if (resultado.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    resultado.Description ??
+                    mensajeError,
+                    resultado.Code.GetValueOrDefault(-1),
+                    lista);
+            }
+
+            return DbHelper.CreateOkResponse(lista);
+        }
     }
 }
