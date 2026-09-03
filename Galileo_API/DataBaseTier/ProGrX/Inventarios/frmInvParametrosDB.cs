@@ -3,7 +3,7 @@ using Galileo.Models.INV;
 
 namespace Galileo.DataBaseTier
 {
-    public class FrmInvParametrosDB
+    public class FrmInvParametrosDb
     {
         private readonly IConfiguration _config;
 
@@ -13,7 +13,7 @@ namespace Galileo.DataBaseTier
         /// Inicializa una nueva instancia de la clase <see cref="FrmInvParametrosDB"/>.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
-        public FrmInvParametrosDB(IConfiguration config)
+        public FrmInvParametrosDb(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }

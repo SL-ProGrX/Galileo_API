@@ -9,10 +9,10 @@ namespace Galileo.Controllers
     [ApiController]
     public class FrmInvParametrosController : ControllerBase
     {
-        private readonly FrmInvParametrosBL _bl;
+        private readonly FrmInvParametrosBl _bl;
         public FrmInvParametrosController(IConfiguration config)
         {
-            _bl = new FrmInvParametrosBL(config);
+            _bl = new FrmInvParametrosBl(config);
         }
 
         [HttpGet("Parametros_Obtener")]

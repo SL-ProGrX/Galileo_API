@@ -4,13 +4,13 @@ using Galileo.Models.INV;
 
 namespace Galileo.BusinessLogic
 {
-    public class FrmInvParametrosBL
+    public class FrmInvParametrosBl
     {
-        private readonly FrmInvParametrosDB _db;
+        private readonly FrmInvParametrosDb _db;
 
-        public FrmInvParametrosBL(IConfiguration config)
+        public FrmInvParametrosBl(IConfiguration config)
         {
-            _db = new FrmInvParametrosDB(config);
+            _db = new FrmInvParametrosDb(config);
         }
 
         public ErrorDto<ParametrosGenDto?> Parametros_Obtener(int CodEmpresa)
