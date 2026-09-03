@@ -4,13 +4,13 @@ using Galileo_API.Models.ProGrX_Conciliacion;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Conciliacion
 {
-    public class FrmVerificaSaldosASEBL
+    public class FrmVerificaSaldosAsebl
     {
-        private readonly FrmVerificaSaldosASEDB _db;
+        private readonly FrmVerificaSaldosAsedb _db;
 
-        public FrmVerificaSaldosASEBL(IConfiguration config)
+        public FrmVerificaSaldosAsebl(IConfiguration config)
         {
-            _db = new FrmVerificaSaldosASEDB(config);
+            _db = new FrmVerificaSaldosAsedb(config);
         }
 
         public ErrorDto<AseVerificaSaldosInicialData> ASE_VerificaSaldos_Inicial_Obtener(int CodEmpresa)

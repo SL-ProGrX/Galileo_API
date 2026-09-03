@@ -8,7 +8,7 @@ using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
 {
-    public class FrmVerificaSaldosASEDB
+    public class FrmVerificaSaldosAsedb
     {
         private const string TipoActual = "A";
         private const string TipoHistorico = "H";
@@ -413,7 +413,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
 
         private readonly PortalDB _portalDb;
 
-        public FrmVerificaSaldosASEDB(IConfiguration config)
+        public FrmVerificaSaldosAsedb(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
         }

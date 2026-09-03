@@ -8,13 +8,13 @@ namespace Galileo_API.Controllers.ProGrX.Conciliacion
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmVerificaSaldosASEController : ControllerBase
+    public class FrmVerificaSaldosAseController : ControllerBase
     {
-        private readonly FrmVerificaSaldosASEBL _bl;
+        private readonly FrmVerificaSaldosAsebl _bl;
 
-        public FrmVerificaSaldosASEController(IConfiguration config)
+        public FrmVerificaSaldosAseController(IConfiguration config)
         {
-            _bl = new FrmVerificaSaldosASEBL(config);
+            _bl = new FrmVerificaSaldosAsebl(config);
         }
 
         [Authorize]
