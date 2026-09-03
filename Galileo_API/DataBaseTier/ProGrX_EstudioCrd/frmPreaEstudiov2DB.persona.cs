@@ -125,12 +125,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
             try
             {
-                // dbo.fxSys_Edad_Anios no se invoca sin fecha: VB6 tampoco calcula edad
-                // cuando fecha_nacimiento viene nula.
-                var sqlEdad = fechaNacimiento is null
-                    ? "SELECT 0;"
-                    : "SELECT dbo.fxSys_Edad_Anios(@FechaNacimiento);";
-
                 var sql = @"
                     SELECT ISNULL(E.descripcion, '')
                     FROM socios S
@@ -139,7 +133,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                     SELECT TOP 1 1 FROM CRD_PREA_PREANALISIS WHERE cedula = @Cedula;
 
-                    " + sqlEdad + @"
+                    SELECT CASE
+                               WHEN @FechaNacimiento IS NULL THEN 0
+                               ELSE dbo.fxSys_Edad_Anios(@FechaNacimiento)
+                           END;
 
                     SELECT ISNULL(I.Frecuencia, 'M')
                     FROM socios S
@@ -156,8 +153,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 parameters.Add("@CodPreanalisis", codPreanalisis ?? string.Empty, DbType.String);
                 parameters.Add(
                     "@FechaNacimiento",
-                    fechaNacimiento?.ToString("yyyy-MM-dd") ?? string.Empty,
-                    DbType.String);
+                    fechaNacimiento,
+                    DbType.DateTime);
 
                 using var multi = connection.QueryMultiple(sql, parameters);
 
