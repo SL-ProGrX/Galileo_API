@@ -6,8 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
-    [Route("api/FrmUsRolesMembresias")]
-    [Route("api/frmUS_Roles_Membresias")]
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize]
     public class FrmUsRolesMembresiasController : ControllerBase
@@ -42,7 +41,7 @@ namespace Galileo.Controllers
 
 
         [HttpGet("UsuariosVinculadosConsultar")]
-        public List<UsuariosVinculadosConsultaDto> UsuariosVinculadosConsultar2(string? usuario, bool contabiliza, bool adminView, int codEmpresa)
+        public List<UsuariosVinculadosConsultaDto> UsuariosVinculadosConsultar2(string? usuario, int contabiliza, bool adminView, int codEmpresa)
         {
             return new FrmUsRolesMembresiasBl(_config).UsuariosVinculadosConsultar(usuario, contabiliza, adminView, codEmpresa);
         }

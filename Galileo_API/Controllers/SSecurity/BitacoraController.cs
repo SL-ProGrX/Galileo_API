@@ -22,5 +22,12 @@ namespace Galileo.Controllers
         {
             return new BitacoraBL(_config).BitacoraObtener(bitacoraRequestDto);
         }
+
+        [HttpGet("ModulosObtener")]
+        [Authorize]
+        public List<ModuloDto> ModulosObtener()
+        {
+            return new BitacoraBL(_config).ModulosObtener();
+        }
     }
 }

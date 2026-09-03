@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.Security;
+using Galileo.Models.ERROR;
 using System.Data;
 
 namespace Galileo.DataBaseTier
@@ -15,9 +16,9 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
-        public List<ReporteUsuariosListaRespuestaDto> ReporteUsuariosListadoObtener(ReporteUsuariosListaSolicitudDto solicitudDto)
+        public ErrorDto<List<ReporteUsuariosListaRespuestaDto>> ReporteUsuariosListadoObtener(ReporteUsuariosListaSolicitudDto solicitudDto)
         {
-            List<ReporteUsuariosListaRespuestaDto> result = null;
+            var response = new ErrorDto<List<ReporteUsuariosListaRespuestaDto>> { Code = 0, Result = [] };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -31,19 +32,16 @@ namespace Galileo.DataBaseTier
                         Vinculado = solicitudDto.Vinculado,
                         Contabiliza = solicitudDto.Contabiliza
                     };
-                    result = connection.Query<ReporteUsuariosListaRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<ReporteUsuariosListaRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return result;
+            catch (Exception ex) { response.Code = -1; response.Description = ex.Message; }
+            return response;
         }
 
-        public List<ReporteUsuariosRolesRespuestaDto> ReporteUsuariosRolesObtener(ReporteUsuariosRolesSolicitudDto solicitudDto)
+        public ErrorDto<List<ReporteUsuariosRolesRespuestaDto>> ReporteUsuariosRolesObtener(ReporteUsuariosRolesSolicitudDto solicitudDto)
         {
-            List<ReporteUsuariosRolesRespuestaDto> result = null;
+            var response = new ErrorDto<List<ReporteUsuariosRolesRespuestaDto>> { Code = 0, Result = [] };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -55,19 +53,16 @@ namespace Galileo.DataBaseTier
                         Usuario = solicitudDto.Usuario,
                         Contabiliza = solicitudDto.Contabiliza
                     };
-                    result = connection.Query<ReporteUsuariosRolesRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<ReporteUsuariosRolesRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return result;
+            catch (Exception ex) { response.Code = -1; response.Description = ex.Message; }
+            return response;
         }
 
-        public List<ReporteUsuariosPermisosRespuestaDto> ReporteUsuariosPermisosObtener(ReporteUsuariosPermisosSolicitudDto solicitudDto)
+        public ErrorDto<List<ReporteUsuariosPermisosRespuestaDto>> ReporteUsuariosPermisosObtener(ReporteUsuariosPermisosSolicitudDto solicitudDto)
         {
-            List<ReporteUsuariosPermisosRespuestaDto> result = null;
+            var response = new ErrorDto<List<ReporteUsuariosPermisosRespuestaDto>> { Code = 0, Result = [] };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -79,19 +74,16 @@ namespace Galileo.DataBaseTier
                         Usuario = solicitudDto.Usuario,
                         Contabiliza = solicitudDto.Contabiliza
                     };
-                    result = connection.Query<ReporteUsuariosPermisosRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<ReporteUsuariosPermisosRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return result;
+            catch (Exception ex) { response.Code = -1; response.Description = ex.Message; }
+            return response;
         }
 
-        public List<ReporteRolesPermisosRespuestaDto> ReporteRolesPermisosObtener(ReporteRolesPermisosSolicitudDto solicitudDto)
+        public ErrorDto<List<ReporteRolesPermisosRespuestaDto>> ReporteRolesPermisosObtener(ReporteRolesPermisosSolicitudDto solicitudDto)
         {
-            List<ReporteRolesPermisosRespuestaDto> result = null;
+            var response = new ErrorDto<List<ReporteRolesPermisosRespuestaDto>> { Code = 0, Result = [] };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -101,37 +93,31 @@ namespace Galileo.DataBaseTier
                     {
                         RolId = solicitudDto.RolId
                     };
-                    result = connection.Query<ReporteRolesPermisosRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<ReporteRolesPermisosRespuestaDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return result;
+            catch (Exception ex) { response.Code = -1; response.Description = ex.Message; }
+            return response;
         }
 
-        public List<ReporteUsuarioRolesDto> RolesObtener()
+        public ErrorDto<List<ReporteUsuarioRolesDto>> RolesObtener()
         {
-            List<ReporteUsuarioRolesDto> result = null;
+            var response = new ErrorDto<List<ReporteUsuarioRolesDto>> { Code = 0, Result = [] };
 
             string sql = "select COD_ROL as 'IdX', DESCRIPCION as 'ItmX' From US_ROLES Where ACTIVO = 1 order by DESCRIPCION";
 
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                result = connection.Query<ReporteUsuarioRolesDto>(sql).ToList();
+                response.Result = connection.Query<ReporteUsuarioRolesDto>(sql).ToList();
             }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return result;
+            catch (Exception ex) { response.Code = -1; response.Description = ex.Message; }
+            return response;
         }
 
-        public List<ReporteUsuarioVinculacionDto> VinculacionesObtener(int codEmpresa)
+        public ErrorDto<List<ReporteUsuarioVinculacionDto>> VinculacionesObtener(int codEmpresa)
         {
-            List<ReporteUsuarioVinculacionDto> result = null;
+            var response = new ErrorDto<List<ReporteUsuarioVinculacionDto>> { Code = 0, Result = [] };
 
             string sql = "Select Usuario, Nombre, Estado_Desc, Vinculacion From vPGX_Usuarios_Empresa_Historica where cod_empresa = @CodEmpresa order by Nombre";
             var values = new
@@ -142,14 +128,11 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                result = connection.Query<ReporteUsuarioVinculacionDto>(sql, values).ToList();
+                response.Result = connection.Query<ReporteUsuarioVinculacionDto>(sql, values).ToList();
             }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
+            catch (Exception ex) { response.Code = -1; response.Description = ex.Message; }
 
-            return result;
+            return response;
         }
     }
 }

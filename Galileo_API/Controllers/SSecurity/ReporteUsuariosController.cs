@@ -2,6 +2,7 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.Security;
 using Microsoft.AspNetCore.Authorization;
+using Galileo.Models.ERROR;
 
 namespace Galileo.Controllers
 {
@@ -19,42 +20,42 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("ReporteUsuariosListadoObtener")]
-        public List<ReporteUsuariosListaRespuestaDto> ReporteUsuariosListadoObtener(ReporteUsuariosListaSolicitudDto solicitudDto)
+        public ErrorDto<List<ReporteUsuariosListaRespuestaDto>> ReporteUsuariosListadoObtener(ReporteUsuariosListaSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosBL(_config).ReporteUsuariosListadoObtener(solicitudDto);
         }
 
 
         [HttpPost("ReporteUsuariosRolesObtener")]
-        public List<ReporteUsuariosRolesRespuestaDto> ReporteUsuariosRolesObtener(ReporteUsuariosRolesSolicitudDto solicitudDto)
+        public ErrorDto<List<ReporteUsuariosRolesRespuestaDto>> ReporteUsuariosRolesObtener(ReporteUsuariosRolesSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosBL(_config).ReporteUsuariosRolesObtener(solicitudDto);
         }
 
 
         [HttpPost("ReporteUsuariosPermisosObtener")]
-        public List<ReporteUsuariosPermisosRespuestaDto> ReporteUsuariosPermisosObtener(ReporteUsuariosPermisosSolicitudDto solicitudDto)
+        public ErrorDto<List<ReporteUsuariosPermisosRespuestaDto>> ReporteUsuariosPermisosObtener(ReporteUsuariosPermisosSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosBL(_config).ReporteUsuariosPermisosObtener(solicitudDto);
         }
 
 
         [HttpPost("ReporteRolesPermisosObtener")]
-        public List<ReporteRolesPermisosRespuestaDto> ReporteRolesPermisosObtener(ReporteRolesPermisosSolicitudDto solicitudDto)
+        public ErrorDto<List<ReporteRolesPermisosRespuestaDto>> ReporteRolesPermisosObtener(ReporteRolesPermisosSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosBL(_config).ReporteRolesPermisosObtener(solicitudDto);
         }
 
 
         [HttpGet("RolesObtener")]
-        public List<ReporteUsuarioRolesDto> RolesObtener()
+        public ErrorDto<List<ReporteUsuarioRolesDto>> RolesObtener()
         {
             return new ReporteUsuariosBL(_config).RolesObtener();
         }
 
 
         [HttpGet("VinculacionesObtener")]
-        public List<ReporteUsuarioVinculacionDto> VinculacionesObtener(int codEmpresa)
+        public ErrorDto<List<ReporteUsuarioVinculacionDto>> VinculacionesObtener(int codEmpresa)
         {
             return new ReporteUsuariosBL(_config).VinculacionesObtener(codEmpresa);
         }
