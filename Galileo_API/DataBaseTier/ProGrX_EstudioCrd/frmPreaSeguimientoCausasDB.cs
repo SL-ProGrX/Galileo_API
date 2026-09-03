@@ -47,7 +47,6 @@ LEFT JOIN CRD_PREA_GESTION Pa
     ON Cg.COD_CAUSAS = Pa.COD_CAUSAS
     AND Cg.TIPO = Pa.TIPO
     AND Pa.COD_PREANALISIS = @cod_preanalisis
-    AND Pa.CODIGO = @codigo
 WHERE Cg.TIPO = @tipo
 ORDER BY ISNULL(Pa.REGISTRO_FECHA, GETDATE()) ASC, Cg.COD_CAUSAS;";
 
@@ -86,6 +85,14 @@ ORDER BY ISNULL(Pa.REGISTRO_FECHA, GETDATE()) ASC, Cg.COD_CAUSAS;";
                 if (request.activo)
                 {
                     const string insertSql = @"
+IF NOT EXISTS (
+    SELECT 1
+    FROM CRD_PREA_GESTION
+    WHERE COD_CAUSAS = @cod_causas
+      AND TIPO = @tipo
+      AND COD_PREANALISIS = @cod_preanalisis
+)
+BEGIN
 INSERT INTO CRD_PREA_GESTION
 (
     cod_causas,
@@ -103,7 +110,8 @@ VALUES
     @codigo,
     dbo.Mygetdate(),
     @usuario
-);";
+);
+END;";
 
                     connection.Execute(
                         insertSql,
@@ -124,8 +132,7 @@ VALUES
 DELETE FROM CRD_PREA_GESTION
 WHERE cod_causas = @cod_causas
   AND tipo = @tipo
-  AND cod_preanalisis = @cod_preanalisis
-  AND codigo = @codigo;";
+  AND cod_preanalisis = @cod_preanalisis;";
 
                     connection.Execute(
                         deleteSql,

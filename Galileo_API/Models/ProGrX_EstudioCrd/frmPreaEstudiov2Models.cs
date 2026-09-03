@@ -28,7 +28,22 @@
         public FrmPreaEstudiov2CreditoDto credito { get; set; } = new();
         public FrmPreaEstudiov2SalariosDto salarios { get; set; } = new();
         public FrmPreaEstudiov2ResumenDto resumen { get; set; } = new();
-        public FrmPreaEstudiov2CatalogosResponse catalogos { get; set; } = new();
+        /// <summary>
+        /// Solo los combos en cascada que dependen de la línea del expediente
+        /// (sbSTCargaCboDestinos / sbSTCargaCboGarantiav2). Los catálogos estáticos
+        /// —líneas, tipos de salario, comités, deducciones, etiquetas, tipos de extra,
+        /// fondos, oficinas, ejecutivos— ya no viajan aquí: VB6 los llena una sola vez en
+        /// Form_Load, no en sbLigarDatos, y Angular los pide con
+        /// Prea_frmPreaEstudiov2_Catalogos_Consultar al abrir la pantalla.
+        /// </summary>
+        public FrmPreaEstudiov2DestinosGarantiasResponse catalogos { get; set; } = new();
+
+        /// <summary>
+        /// Sub-expedientes (fiadores) del expediente principal. VB6 los recarga dentro de
+        /// la misma carga (sbLlenarComboFiltrado sobre cboSubExpediente), así que viajan
+        /// con la respuesta en vez de costar una segunda llamada HTTP.
+        /// </summary>
+        public List<string> sub_expedientes { get; set; } = [];
 
         /// <summary>
         /// Comité resolutivo asignado (VB6: rs!ID_COMITE, dentro del mismo
@@ -391,16 +406,20 @@
         public decimal liquidez_con_fianzas_comp_porc { get; set; }
     }
 
+    /// <summary>
+    /// Catálogos que NO dependen del expediente ni de la línea. VB6 los carga una sola vez
+    /// en Form_Load (sbCargarCombos / sbCargaCboComites / cboFondo / lookups F4); antes se
+    /// reconsultaban en cada carga de expediente.
+    /// </summary>
     public class FrmPreaEstudiov2CatalogosResponse
     {
-        public List<FrmPreaEstudiov2DropdownDto> expedientes { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> lineas { get; set; } = [];
-        public List<FrmPreaEstudiov2DropdownDto> destinos { get; set; } = [];
-        public List<FrmPreaEstudiov2DropdownDto> garantias { get; set; } = [];
+        public List<FrmPreaEstudiov2DropdownDto> tipos_id { get; set; } = [];
+        public List<FrmPreaEstudiov2DropdownDto> divisas { get; set; } = [];
+        public List<FrmPreaEstudiov2DropdownDto> tipos_documento { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> tipos_salario { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> componentes_adicionales { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> comites { get; set; } = [];
-        public List<FrmPreaEstudiov2DropdownDto> bancos { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> deducciones { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> etiquetas { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> tipos_extra { get; set; } = [];
@@ -1016,16 +1035,24 @@
         /// <summary>Clave real usada por VB6 en el UPDATE de Aplica/Cancela_Mora (id_solicitud).</summary>
         public int id_solicitud { get; set; }
         public int orden { get; set; }
-        public string descripcion { get; set; } = string.Empty;
         public decimal saldo { get; set; }
         public decimal cuota { get; set; }
-        /// <summary>Cantidad de fiadores; VB6 divide saldo/cuota/monto_mora entre este valor.</summary>
+        /// <summary>Cantidad de fiadores; SP: nfiadores. VB6 divide saldo/cuota/monto_mora entre este valor.</summary>
         public int fiadores { get; set; }
+        /// <summary>Cantidad de cuotas en mora; SP: Mora_Cuotas.</summary>
+        public int mora_cuotas { get; set; }
+        /// <summary>Monto en mora; SP: Mora_Monto.</summary>
         public decimal monto_mora { get; set; }
         /// <summary>Columna real CRD_PREA_DETALLE_FIANZAS.Aplica.</summary>
         public bool aplica { get; set; }
         /// <summary>Columna real CRD_PREA_DETALLE_FIANZAS.Cancela_Mora.</summary>
         public bool cancela_mora { get; set; }
+        /// <summary>Monto aprobado inicial; SP: MontoApr.</summary>
+        public decimal montoApr { get; set; }
+        /// <summary>Porcentaje cancelado; SP: Porcentaje.</summary>
+        public decimal porcentaje { get; set; }
+        /// <summary>Clasificación crediticia; SP: Clasificacion.</summary>
+        public string clasificacion { get; set; } = string.Empty;
     }
 
     public class FrmPreaEstudiov2FianzaToggleRequest
@@ -1054,6 +1081,14 @@
     {
         public List<FrmPreaEstudiov2DesembolsoDto> desembolsos { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> bancos { get; set; } = [];
+    }
+
+    public class FrmPreaEstudiov2DesembolsoAcreedorDto
+    {
+        public string id { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string nombre_giro { get; set; } = string.Empty;
+        public int modifica { get; set; }
     }
 
     public class FrmPreaEstudiov2DesembolsoDto
@@ -1119,6 +1154,13 @@
         public string usuario { get; set; } = string.Empty;
         public string accion { get; set; } = string.Empty;
         public string detalle { get; set; } = string.Empty;
+        public string cod_etiqueta { get; set; } = string.Empty;
+        public string codigo_etiqueta { get; set; } = string.Empty;
+        public string etiqueta { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public string usuario_registra_1 { get; set; } = string.Empty;
+        public string usuario_registra_2 { get; set; } = string.Empty;
+        public string usuario_revision { get; set; } = string.Empty;
     }
 
     #endregion
@@ -1147,6 +1189,13 @@
         public string usuario { get; set; } = string.Empty;
         public string cod_preanalisis { get; set; } = string.Empty;
         public int id_adjunto { get; set; } = 0;
+        public List<int> ids_adjuntos { get; set; } = [];
+    }
+
+    public class FrmPreaEstudiov2AdjuntoDescargaDto
+    {
+        public byte[] contenido { get; set; } = [];
+        public string nombre_archivo { get; set; } = string.Empty;
     }
 
     #endregion
@@ -1155,12 +1204,20 @@
 
     public class FrmPreaEstudiov2ResolucionResponse
     {
-        public string comite { get; set; } = string.Empty;
-        public string sesion { get; set; } = string.Empty;
-        public string autorizador { get; set; } = string.Empty;
-        public string resolucion { get; set; } = string.Empty;
-        public string observaciones { get; set; } = string.Empty;
-        public List<FrmPreaEstudiov2HistorialDto> historial { get; set; } = [];
+        public string acta { get; set; } = string.Empty;
+        public string acta_sesion { get; set; } = string.Empty;
+        public DateTime? acta_fecha { get; set; }
+        public List<FrmPreaEstudiov2ResolucionDetalleDto> detalle { get; set; } = [];
+    }
+
+    public class FrmPreaEstudiov2ResolucionDetalleDto
+    {
+        public string estado { get; set; } = string.Empty;
+        public DateTime? registro_fecha { get; set; }
+        public string registro_usuario { get; set; } = string.Empty;
+        public string notas { get; set; } = string.Empty;
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
     }
 
     #endregion

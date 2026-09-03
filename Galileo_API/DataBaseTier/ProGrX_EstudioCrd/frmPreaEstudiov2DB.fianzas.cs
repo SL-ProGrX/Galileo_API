@@ -44,10 +44,31 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         private static FrmPreaEstudiov2FianzasResponse ConsultarFianzas(IDbConnection connection, string cod_preanalisis)
         {
             const string sql = "EXEC spCrdPreaConsultaFianzas @Expediente";
-            var fianzas = connection.Query<FrmPreaEstudiov2FianzaDto>(
+            var rawFianzas = connection.Query(
                 sql,
                 new { Expediente = cod_preanalisis.Trim() }
-            ).ToList();
+            );
+            var fianzas = rawFianzas.Select(row =>
+            {
+                var item = new Dictionary<string, object>(
+                    (IDictionary<string, object>)row,
+                    StringComparer.OrdinalIgnoreCase);
+
+                return new FrmPreaEstudiov2FianzaDto
+                {
+                    id_solicitud = GetInt(item, "id_solicitud"),
+                    saldo = GetDecimal(item, "saldo"),
+                    cuota = GetDecimal(item, "cuota"),
+                    fiadores = GetInt(item, "nfiadores"),
+                    mora_cuotas = GetInt(item, "Mora_Cuotas"),
+                    monto_mora = GetDecimal(item, "Mora_Monto"),
+                    aplica = GetBool(item, "aplica"),
+                    cancela_mora = GetBool(item, "Cancela_Mora"),
+                    montoApr = GetDecimal(item, "MontoApr"),
+                    porcentaje = GetDecimal(item, "Porcentaje"),
+                    clasificacion = GetString(item, "Clasificacion"),
+                };
+            }).ToList();
 
             decimal totalSaldos = 0;
             decimal totalCuotas = 0;
