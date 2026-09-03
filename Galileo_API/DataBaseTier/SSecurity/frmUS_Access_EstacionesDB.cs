@@ -53,7 +53,7 @@ namespace Galileo.DataBaseTier
                         //Obtiene la direccion MAC 1 y 2 para cada estacion:
                         List<string> macsList1 = connection.Query<string>(procedureObtMACs1, valuesMACs1, commandType: CommandType.StoredProcedure).ToList();
                         dt.lstMAC1 = macsList1;
-                        dt.lstMAC2 = macsList1;
+                        dt.lstMAC2 = new List<string>(macsList1);
 
                         //Obtiene la direccion MAC 1 y 2 para cada estacion:
                         List<EstacionMacDto> macsList2 = connection.Query<EstacionMacDto>(procedureObtMACs2, valuesMACs2, commandType: CommandType.StoredProcedure).ToList();

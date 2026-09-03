@@ -1,26 +1,18 @@
 namespace Galileo.Models.INV
 {
-    public class LineaDto
+    public class InvMargenUtilidadPrecioAplicarRequest
     {
-        public int cod_prodclas { get; set; }
-        public string Descripcion { get; set; } = string.Empty;
+        public string cod_precio { get; set; } = string.Empty;
+        public decimal utilidad { get; set; } = 0;
     }
 
-    public class SubLineaDto
+    public class InvMargenUtilidadAplicarRequest
     {
-        public int cod_linea_sub { get; set; }
-        public string Descripcion { get; set; } = string.Empty;
-    }
-
-    public class PrecioDto
-    {
-        public string? cod_precio { get; set; } 
-        public string? descripcion { get; set; }
-        public bool? cambio_margen { get; set; }
-        public int? cod_linea { get; set; }
-        public int? cod_sublinea { get; set; }
-        public bool? seleccionado { get; set; }
-        public int? monto { get; set; }
-
+        public int cod_linea { get; set; } = 0;
+        public int cod_sublinea { get; set; } = 0;
+        public string modo { get; set; } = string.Empty;
+        public bool actualiza_precio_regular { get; set; } = false;
+        public decimal utilidad_precio_regular { get; set; } = 0;
+        public List<InvMargenUtilidadPrecioAplicarRequest> precios { get; set; } = [];
     }
 }

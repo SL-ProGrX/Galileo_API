@@ -19,7 +19,7 @@ namespace Galileo.BusinessLogic
             return new UsuarioDB(_config).UsuarioCuentaRevisar(cuentaUsuarioRevisarDto);
         }
 
-        public UsuarioCuentaRevisarDto UsuarioCuentaObtener(string nombreUsuario)
+        public UsuarioCuentaRevisarDto? UsuarioCuentaObtener(string nombreUsuario)
         {
             return new UsuarioDB(_config).UsuarioCuentaObtener(nombreUsuario);
         }

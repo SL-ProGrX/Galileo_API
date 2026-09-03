@@ -1,258 +1,668 @@
 using Dapper;
-using Newtonsoft.Json;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
-using System.Globalization;
+using System.Data;
 
 namespace Galileo.DataBaseTier
 {
-    public class FrmInvOrdenesAutorizacionDB
+    public sealed class FrmInvOrdenesAutorizacionDb
     {
-        private readonly IConfiguration _config;
+        private const int CodigoValidacion = -2;
 
-        #region Constructor y helpers
+        private const string TipoEntrada = "E";
+        private const string TipoSalida = "S";
+        private const string TipoTraspaso = "T";
+        private const string TipoRequisicion = "R";
 
-        /// <summary>
-        /// Inicializa una nueva instancia de la clase <see cref="FrmInvOrdenesAutorizacionDB"/>.
-        /// </summary>
-        /// <param name="config">Configuración de la aplicación.</param>
-        public FrmInvOrdenesAutorizacionDB(IConfiguration config)
+        private const string EstadoAutorizado = "A";
+        private const string EstadoRechazado = "R";
+
+        private const string MensajeEmpresaRequerida =
+            "El c&oacute;digo de la empresa es requerido.";
+
+        private const string MensajeFiltrosRequeridos =
+            "Los filtros de consulta son requeridos.";
+
+        private const string MensajeTipoRequerido =
+            "El tipo de transacci&oacute;n es requerido.";
+
+        private const string MensajeTipoInvalido =
+            "El tipo de transacci&oacute;n indicado no es v&aacute;lido.";
+
+        private const string MensajeUsuarioRequerido =
+            "El usuario es requerido.";
+
+        private const string MensajeFechaInicioRequerida =
+            "La fecha inicial es requerida.";
+
+        private const string MensajeFechaCorteRequerida =
+            "La fecha de corte es requerida.";
+
+        private const string MensajeRangoFechasInvalido =
+            "La fecha inicial no puede ser mayor que la fecha de corte.";
+
+        private const string MensajeSolicitudRequerida =
+            "La informaci&oacute;n de las &oacute;rdenes es requerida.";
+
+        private const string MensajeOrdenesRequeridas =
+            "Debe seleccionar al menos una orden.";
+
+        private const string MensajeCodigoOrdenRequerido =
+            "El c&oacute;digo de la orden es requerido.";
+
+        private const string MensajeOrdenDuplicada =
+            "No se permite incluir la misma orden m&aacute;s de una vez.";
+
+        private const string MensajeOrdenNoDisponible =
+            "Una o m&aacute;s &oacute;rdenes no pudieron ser actualizadas.";
+
+        private const string MensajeConsultaError =
+            "Ocurri&oacute; un error al consultar las &oacute;rdenes pendientes.";
+
+        private const string MensajeAutorizarError =
+            "Ocurri&oacute; un error al autorizar las &oacute;rdenes seleccionadas.";
+
+        private const string MensajeRechazarError =
+            "Ocurri&oacute; un error al rechazar las &oacute;rdenes seleccionadas.";
+
+        private const string MensajeAutorizacionExitosa =
+            "Solicitudes autorizadas satisfactoriamente.";
+
+        private const string MensajeRechazoExitoso =
+            "Solicitudes rechazadas satisfactoriamente.";
+
+        private readonly PortalDB _portalDb;
+
+        public FrmInvOrdenesAutorizacionDb(
+            IConfiguration config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+            ArgumentNullException.ThrowIfNull(config);
+            _portalDb = new PortalDB(config);
         }
 
         /// <summary>
-        /// Crea una instancia de <see cref="PortalDB"/> usando la configuración actual.
+        /// Obtiene las órdenes pendientes de autorización o rechazo.
         /// </summary>
-        /// <returns>Instancia de acceso a configuración de base de datos.</returns>
-        private PortalDB CreatePortalDb() => new(_config);
-
-        /// <summary>
-        /// Obtiene el filtro tipado desde la cadena JSON.
-        /// </summary>
-        /// <param name="filtroString">Cadena JSON con los filtros.</param>
-        /// <returns>Objeto de filtros inicializado.</returns>
-        private static ResolucionTransaccionFiltros ObtenerFiltros(string filtroString)
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="filtros">Filtros aplicados a la consulta.</param>
+        /// <returns>Listado de órdenes pendientes.</returns>
+        public ErrorDto<List<ResolucionTransaccionDto>>
+            INV_OrdenesAutorizacion_Ordenes_Obtener(
+                int CodEmpresa,
+                InvOrdenesAutorizacionFiltros filtros)
         {
-            return JsonConvert.DeserializeObject<ResolucionTransaccionFiltros>(filtroString) ?? new ResolucionTransaccionFiltros();
-        }
+            var lista = new List<ResolucionTransaccionDto>();
 
-        /// <summary>
-        /// Valida y normaliza una fecha del filtro.
-        /// </summary>
-        /// <param name="valor">Valor de fecha recibido.</param>
-        /// <param name="nombreCampo">Nombre del campo para mensajes de error.</param>
-        /// <returns>Fecha formateada en yyyy-MM-dd.</returns>
-        private static string NormalizarFecha(string? valor, string nombreCampo)
-        {
-            if (string.IsNullOrWhiteSpace(valor))
+            if (CodEmpresa <= 0)
             {
-                throw new ArgumentNullException(nombreCampo, $"{nombreCampo} is required");
+                return DbHelper.CreateErrorResponse(
+                    MensajeEmpresaRequerida,
+                    CodigoValidacion,
+                    lista);
             }
 
-            if (!DateTimeOffset.TryParse(valor, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTimeOffset fecha))
+            if (filtros is null)
             {
-                throw new FormatException($"El valor de '{nombreCampo}' no tiene un formato válido.");
+                return DbHelper.CreateErrorResponse(
+                    MensajeFiltrosRequeridos,
+                    CodigoValidacion,
+                    lista);
             }
 
-            return fecha.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        }
+            string validacion =
+                INV_OrdenesAutorizacion_Filtros_Validar(
+                    filtros);
 
-        /// <summary>
-        /// Agrega el filtro de fechas a la consulta de resolución de transacciones.
-        /// </summary>
-        /// <param name="filtros">Filtros de búsqueda.</param>
-        /// <param name="whereBuilder">Builder del WHERE.</param>
-        /// <param name="parametros">Parámetros Dapper.</param>
-        private static void AgregarFiltroFecha(ResolucionTransaccionFiltros filtros, System.Text.StringBuilder whereBuilder, DynamicParameters parametros)
-        {
-            if (filtros.fecha == "0")
+            if (!string.IsNullOrEmpty(validacion))
             {
-                string fechaInicio = NormalizarFecha(filtros.fecha_inicio, nameof(filtros.fecha_inicio));
-                string fechaCorte = NormalizarFecha(filtros.fecha_corte, nameof(filtros.fecha_corte));
-
-                whereBuilder.Append(" WHERE R.Genera_Fecha BETWEEN @FechaInicio AND @FechaCorte ");
-                parametros.Add("FechaInicio", fechaInicio + " 00:00:00");
-                parametros.Add("FechaCorte", fechaCorte + " 23:59:59");
-                return;
+                return DbHelper.CreateErrorResponse(
+                    validacion,
+                    CodigoValidacion,
+                    lista);
             }
 
-            whereBuilder.Append(" WHERE R.Genera_Fecha BETWEEN @FechaInicio AND @FechaCorte ");
-            parametros.Add("FechaInicio", "1900-01-01 23:59:59");
-            parametros.Add("FechaCorte", "2999-01-01 23:59:59");
-        }
+            const string QueryOrdenesInventario = """
+            SELECT
+                O.boleta AS cod_orden,
+                O.tipo AS tipo_orden,
+                O.total,
+                O.genera_user AS user_solicita,
+                O.genera_fecha AS fecha,
+                C.descripcion AS causa,
+                O.notas AS nota,
+                'P' AS proceso
+            FROM pv_InvTranSac O
+            INNER JOIN pv_entrada_salida C
+                ON O.cod_entsal = C.cod_entsal
+            WHERE O.autoriza_fecha IS NULL
+              AND O.estado = 'S'
+              AND O.tipo = @Tipo
+              AND O.genera_user IN
+              (
+                  SELECT usuario_asignado
+                  FROM pv_orden_autousers
+                  WHERE usuario = @Usuario
+              )
+              AND
+              (
+                  @TodasFechas = 1
+                  OR O.genera_fecha BETWEEN
+                      @FechaInicio AND @FechaCorte
+              )
+            ORDER BY
+                O.genera_fecha,
+                O.boleta;
+            """;
 
-        /// <summary>
-        /// Actualiza el estado de una orden seleccionada.
-        /// </summary>
-        /// <param name="connection">Conexión activa.</param>
-        /// <param name="tipo">Tipo de orden.</param>
-        /// <param name="usuario">Usuario que autoriza o rechaza.</param>
-        /// <param name="item">Orden a procesar.</param>
-        /// <param name="estado">Estado a aplicar.</param>
-        private static void ActualizarEstadoOrden(System.Data.IDbConnection connection, string tipo, string usuario, ResolucionTransaccionDto item, string estado)
-        {
-            if (tipo == "R")
-            {
-                connection.Execute(
-                    @"update pv_requisiciones
-                      set autoriza_fecha = GetDate(),
-                          autoriza_user = @Usuario,
-                          estado = @Estado
-                      where cod_requisicion = @CodOrden",
-                    new
-                    {
-                        Usuario = usuario,
-                        Estado = estado,
-                        CodOrden = item.Cod_Orden
-                    });
+            const string QueryRequisiciones = """
+                SELECT
+                    R.cod_requisicion AS cod_orden,
+                    'R' AS tipo_orden,
+                    0 AS total,
+                    R.Genera_User AS user_solicita,
+                    R.Genera_Fecha AS fecha,
+                    C.descripcion AS causa,
+                    R.notas AS nota,
+                    'P' AS proceso
+                FROM pv_requisiciones R
+                INNER JOIN pv_entrada_salida C
+                    ON R.cod_entsal = C.cod_entsal
+                WHERE R.autoriza_fecha IS NULL
+                  AND R.Genera_User IN
+                  (
+                      SELECT usuario_asignado
+                      FROM pv_orden_autousers
+                      WHERE usuario = @Usuario
+                  )
+                  AND
+                  (
+                      @TodasFechas = 1
+                      OR R.Genera_Fecha BETWEEN
+                          @FechaInicio AND @FechaCorte
+                  )
+                ORDER BY
+                    R.Genera_Fecha,
+                    R.cod_requisicion;
+                """;
 
-                return;
-            }
+            string tipo = filtros.tipo
+                .Trim()
+                .ToUpperInvariant();
 
-            connection.Execute(
-                @"update pv_InvTranSac
-                  set autoriza_fecha = GetDate(),
-                      autoriza_user = @Usuario,
-                      estado = @Estado
-                  where boleta = @CodOrden
-                    and tipo = @Tipo",
-                new
-                {
-                    Usuario = usuario,
-                    Estado = estado,
-                    CodOrden = item.Cod_Orden,
-                    Tipo = tipo
-                });
-        }
+            var parametros =
+                INV_OrdenesAutorizacion_Filtros_Parametros_Obtener(
+                    filtros,
+                    tipo);
 
-        #endregion
+            ErrorDto<List<ResolucionTransaccionDto>> resultado;
 
-        #region Consultas
+            string query = tipo == TipoRequisicion
+                ? QueryRequisiciones
+                : QueryOrdenesInventario;
 
-        /// <summary>
-        /// Obtiene las transacciones pendientes de resolución según los filtros indicados.
-        /// </summary>
-        /// <param name="CodCliente">Código de la empresa cliente.</param>
-        /// <param name="filtroString">Cadena JSON con los filtros.</param>
-        /// <returns>Listado de transacciones pendientes.</returns>
-        public ErrorDto<List<ResolucionTransaccionDto>> resolucionTransaccion_Obtener(int CodCliente, string filtroString)
-        {
-            try
-            {
-                var filtros = ObtenerFiltros(filtroString);
-                var parametros = new DynamicParameters();
-                var whereBuilder = new System.Text.StringBuilder();
-                AgregarFiltroFecha(filtros, whereBuilder, parametros);
-
-                if (filtros.tipo == "R")
-                {
-                    string query = @"SELECT
-                                        R.cod_requisicion AS Cod_Orden,
-                                        'Requisiones' AS Tipo_Orden,
-                                        0 AS Total,
-                                        R.Genera_User AS User_Solicita,
-                                        R.Genera_Fecha AS Fecha,
-                                        C.descripcion AS Causa,
-                                        R.notas AS Nota,
-                                        'Proceso' AS proceso
-                                     FROM pv_requisiciones R
-                                     INNER JOIN pv_entrada_salida C ON R.cod_entsal = C.cod_entsal"
-                                     + whereBuilder
-                                     + " AND R.ESTADO = 'P'";
-
-                    return DbHelper.ExecuteListQuery<ResolucionTransaccionDto>(
-                        CreatePortalDb(),
-                        CodCliente,
-                        query,
-                        parametros);
-                }
-
-                parametros.Add("Tipo", filtros.tipo);
-                string inventarioQuery = @"SELECT 
-                                            R.boleta AS Cod_Orden,
-                                            CASE 
-                                                WHEN R.tipo = 'E' THEN 'Entrada'
-                                                WHEN R.tipo = 'S' THEN 'Salida'
-                                                ELSE R.tipo
-                                            END AS Tipo_Orden,
-                                            R.total,
-                                            R.GENERA_USER,
-                                            R.Genera_Fecha AS Fecha,
-                                            C.descripcion AS Causa,
-                                            R.notas AS Nota,
-                                            'Proceso' AS proceso
-                                          FROM pv_InvTranSac R
-                                          INNER JOIN pv_entrada_salida C ON R.cod_entsal = C.cod_entsal"
-                                          + whereBuilder
-                                          + " AND R.TIPO = @Tipo AND R.ESTADO = 'P'";
-
-                return DbHelper.ExecuteListQuery<ResolucionTransaccionDto>(
-                    CreatePortalDb(),
-                    CodCliente,
-                    inventarioQuery,
+            resultado =
+                DbHelper.ExecuteListQuery<ResolucionTransaccionDto>(
+                    _portalDb,
+                    CodEmpresa,
+                    query,
                     parametros);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse(ex.Message, -1, new List<ResolucionTransaccionDto>());
-            }
+
+            return resultado.Code == 0
+                ? DbHelper.CreateOkResponse(
+                    resultado.Result ?? lista)
+                : DbHelper.CreateErrorResponse(
+                    resultado.Description ??
+                    MensajeConsultaError,
+                    resultado.Code.GetValueOrDefault(-1),
+                    lista);
         }
-
-        #endregion
-
-        #region Mantenimiento
 
         /// <summary>
         /// Autoriza las órdenes seleccionadas.
         /// </summary>
-        /// <param name="CodCliente">Código de la empresa cliente.</param>
-        /// <param name="tipo">Tipo de orden.</param>
-        /// <param name="usuario">Usuario que autoriza.</param>
-        /// <param name="lista">Listado de órdenes.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto ResolucionTransaccion_Autorizar(int CodCliente, string tipo, string usuario, List<ResolucionTransaccionDto> lista)
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="request">Información de las órdenes seleccionadas.</param>
+        /// <returns>Resultado del proceso.</returns>
+        public ErrorDto
+            INV_OrdenesAutorizacion_Ordenes_Autorizar(
+                int CodEmpresa,
+                InvOrdenesAutorizacionProcesarRequest request)
         {
-            var result = DbHelper.WithConn<bool>(CreatePortalDb(), CodCliente, connection =>
-            {
-                foreach (var item in lista.Where(x => x.seleccionado == true))
-                {
-                    ActualizarEstadoOrden(connection, tipo, usuario, item, "A");
-                }
-
-                return true;
-            });
-
-            return result.Code == 0 && result.Result
-                ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al autorizar las transacciones.", result.Code.GetValueOrDefault(-1));
+            return INV_OrdenesAutorizacion_Ordenes_Procesar(
+                CodEmpresa,
+                request,
+                true);
         }
 
         /// <summary>
         /// Rechaza las órdenes seleccionadas.
         /// </summary>
-        /// <param name="CodCliente">Código de la empresa cliente.</param>
-        /// <param name="tipo">Tipo de orden.</param>
-        /// <param name="usuario">Usuario que rechaza.</param>
-        /// <param name="lista">Listado de órdenes.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto ResolucionTransaccion_Rechazo(int CodCliente, string tipo, string usuario, List<ResolucionTransaccionDto> lista)
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="request">Información de las órdenes seleccionadas.</param>
+        /// <returns>Resultado del proceso.</returns>
+        public ErrorDto
+            INV_OrdenesAutorizacion_Ordenes_Rechazar(
+                int CodEmpresa,
+                InvOrdenesAutorizacionProcesarRequest request)
         {
-            var result = DbHelper.WithConn<bool>(CreatePortalDb(), CodCliente, connection =>
-            {
-                foreach (var item in lista.Where(x => x.seleccionado == true))
-                {
-                    ActualizarEstadoOrden(connection, tipo, usuario, item, "R");
-                }
-
-                return true;
-            });
-
-            return result.Code == 0 && result.Result
-                ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al rechazar las transacciones.", result.Code.GetValueOrDefault(-1));
+            return INV_OrdenesAutorizacion_Ordenes_Procesar(
+                CodEmpresa,
+                request,
+                false);
         }
 
-        #endregion
+        /// <summary>
+        /// Ejecuta la autorización o rechazo de las órdenes seleccionadas.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="request">Información de las órdenes seleccionadas.</param>
+        /// <param name="autorizar">Indica si las órdenes deben autorizarse.</param>
+        /// <returns>Resultado del proceso.</returns>
+        private ErrorDto
+            INV_OrdenesAutorizacion_Ordenes_Procesar(
+                int CodEmpresa,
+                InvOrdenesAutorizacionProcesarRequest? request,
+                bool autorizar)
+        {
+            if (CodEmpresa <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeEmpresaRequerida,
+                    CodigoValidacion);
+            }
+
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeSolicitudRequerida,
+                    CodigoValidacion);
+            }
+
+            string validacion =
+                INV_OrdenesAutorizacion_Procesamiento_Validar(
+                    request);
+
+            if (!string.IsNullOrEmpty(validacion))
+            {
+                return DbHelper.ErrorResponse(
+                    validacion,
+                    CodigoValidacion);
+            }
+
+            string usuario = request.usuario.Trim();
+
+            List<ResolucionTransaccionDto> ordenes =
+                INV_OrdenesAutorizacion_Ordenes_Normalizar(
+                    request.ordenes);
+
+            string estado = autorizar
+                ? EstadoAutorizado
+                : EstadoRechazado;
+
+            string mensajeExito = autorizar
+                ? MensajeAutorizacionExitosa
+                : MensajeRechazoExitoso;
+
+            string mensajeError = autorizar
+                ? MensajeAutorizarError
+                : MensajeRechazarError;
+
+            var resultado = DbHelper.WithConn(
+                _portalDb,
+                CodEmpresa,
+                connection =>
+                {
+                    connection.Open();
+
+                    using var transaction =
+                        connection.BeginTransaction();
+
+                    try
+                    {
+                        int registrosActualizados =
+                            INV_OrdenesAutorizacion_Ordenes_Actualizar(
+                                connection,
+                                transaction,
+                                ordenes,
+                                usuario,
+                                estado);
+
+                        if (registrosActualizados != ordenes.Count)
+                        {
+                            transaction.Rollback();
+
+                            return DbHelper.ErrorResponse(
+                                MensajeOrdenNoDisponible,
+                                CodigoValidacion);
+                        }
+
+                        transaction.Commit();
+
+                        return DbHelper.OkResponse(
+                            mensajeExito);
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                });
+
+            return INV_OrdenesAutorizacion_Resultado_Obtener(
+                resultado,
+                mensajeError);
+        }
+
+        /// <summary>
+        /// Actualiza todas las órdenes seleccionadas.
+        /// </summary>
+        /// <param name="connection">Conexión activa.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="ordenes">Órdenes seleccionadas.</param>
+        /// <param name="usuario">Usuario que ejecuta el proceso.</param>
+        /// <param name="estado">Estado que se aplicará.</param>
+        /// <returns>Cantidad de registros actualizados.</returns>
+        private static int
+            INV_OrdenesAutorizacion_Ordenes_Actualizar(
+                IDbConnection connection,
+                IDbTransaction transaction,
+                IEnumerable<ResolucionTransaccionDto> ordenes,
+                string usuario,
+                string estado)
+        {
+            int registrosActualizados = 0;
+
+            foreach (var orden in ordenes)
+            {
+                registrosActualizados +=
+                    INV_OrdenesAutorizacion_Orden_Actualizar(
+                        connection,
+                        transaction,
+                        orden,
+                        usuario,
+                        estado);
+            }
+
+            return registrosActualizados;
+        }
+
+        /// <summary>
+        /// Actualiza una orden de inventario o una requisición.
+        /// </summary>
+        /// <param name="connection">Conexión activa.</param>
+        /// <param name="transaction">Transacción activa.</param>
+        /// <param name="orden">Orden que se actualizará.</param>
+        /// <param name="usuario">Usuario que ejecuta el proceso.</param>
+        /// <param name="estado">Estado que se aplicará.</param>
+        /// <returns>Cantidad de registros actualizados.</returns>
+        private static int
+            INV_OrdenesAutorizacion_Orden_Actualizar(
+                IDbConnection connection,
+                IDbTransaction transaction,
+                ResolucionTransaccionDto orden,
+                string usuario,
+                string estado)
+        {
+            const string QueryOrdenInventarioActualizar = """
+                UPDATE pv_InvTranSac
+                SET
+                    autoriza_fecha = GetDate(),
+                    autoriza_user = @Usuario,
+                    estado = @Estado
+                WHERE boleta = @CodOrden
+                  AND tipo = @TipoOrden;
+                """;
+
+            const string QueryRequisicionActualizar = """
+                UPDATE pv_requisiciones
+                SET
+                    autoriza_fecha = GetDate(),
+                    autoriza_user = @Usuario,
+                    estado = @Estado
+                WHERE cod_requisicion = @CodOrden;
+                """;
+
+            var parametros = new
+            {
+                CodOrden = orden.cod_orden,
+                TipoOrden = orden.tipo_orden,
+                Usuario = usuario,
+                Estado = estado
+            };
+
+            if (orden.tipo_orden == TipoRequisicion)
+            {
+                return connection.Execute(
+                    QueryRequisicionActualizar,
+                    parametros,
+                    transaction);
+            }
+
+            return connection.Execute(
+                QueryOrdenInventarioActualizar,
+                parametros,
+                transaction);
+        }
+
+        /// <summary>
+        /// Valida los filtros utilizados para consultar las órdenes.
+        /// </summary>
+        /// <param name="filtros">Filtros recibidos.</param>
+        /// <returns>Mensaje de validación o una cadena vacía.</returns>
+        private static string
+            INV_OrdenesAutorizacion_Filtros_Validar(
+                InvOrdenesAutorizacionFiltros filtros)
+        {
+            if (string.IsNullOrWhiteSpace(filtros.tipo))
+            {
+                return MensajeTipoRequerido;
+            }
+
+            if (!INV_OrdenesAutorizacion_Tipo_EsValido(
+                    filtros.tipo))
+            {
+                return MensajeTipoInvalido;
+            }
+
+            if (string.IsNullOrWhiteSpace(filtros.usuario))
+            {
+                return MensajeUsuarioRequerido;
+            }
+
+            return INV_OrdenesAutorizacion_Fechas_Validar(
+                filtros);
+        }
+
+        /// <summary>
+        /// Valida las fechas utilizadas en la consulta.
+        /// </summary>
+        /// <param name="filtros">Filtros recibidos.</param>
+        /// <returns>Mensaje de validación o una cadena vacía.</returns>
+        private static string
+            INV_OrdenesAutorizacion_Fechas_Validar(
+                InvOrdenesAutorizacionFiltros filtros)
+        {
+            if (filtros.todas_fechas)
+            {
+                return string.Empty;
+            }
+
+            if (!filtros.fecha_inicio.HasValue)
+            {
+                return MensajeFechaInicioRequerida;
+            }
+
+            if (!filtros.fecha_corte.HasValue)
+            {
+                return MensajeFechaCorteRequerida;
+            }
+
+            return filtros.fecha_inicio.Value >
+                   filtros.fecha_corte.Value
+                ? MensajeRangoFechasInvalido
+                : string.Empty;
+        }
+
+        /// <summary>
+        /// Valida la información utilizada para procesar las órdenes.
+        /// </summary>
+        /// <param name="request">Información recibida.</param>
+        /// <returns>Mensaje de validación o una cadena vacía.</returns>
+        private static string
+            INV_OrdenesAutorizacion_Procesamiento_Validar(
+                InvOrdenesAutorizacionProcesarRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.usuario))
+            {
+                return MensajeUsuarioRequerido;
+            }
+
+            List<ResolucionTransaccionDto> seleccionadas =
+                request.ordenes?
+                    .Where(orden =>
+                        orden is not null &&
+                        orden.seleccionado)
+                    .ToList() ?? [];
+
+            if (seleccionadas.Count == 0)
+            {
+                return MensajeOrdenesRequeridas;
+            }
+
+            return INV_OrdenesAutorizacion_Ordenes_Validar(
+                seleccionadas);
+        }
+
+        /// <summary>
+        /// Valida las órdenes seleccionadas.
+        /// </summary>
+        /// <param name="ordenes">Órdenes seleccionadas.</param>
+        /// <returns>Mensaje de validación o una cadena vacía.</returns>
+        private static string
+            INV_OrdenesAutorizacion_Ordenes_Validar(
+                List<ResolucionTransaccionDto> ordenes)
+        {
+            if (ordenes.Any(orden =>
+                    string.IsNullOrWhiteSpace(
+                        orden.cod_orden)))
+            {
+                return MensajeCodigoOrdenRequerido;
+            }
+
+            if (ordenes.Any(orden =>
+                    !INV_OrdenesAutorizacion_Tipo_EsValido(
+                        orden.tipo_orden)))
+            {
+                return MensajeTipoInvalido;
+            }
+
+            int ordenesDistintas = ordenes
+                .Select(orden =>
+                    string.Concat(
+                        orden.tipo_orden
+                            .Trim()
+                            .ToUpperInvariant(),
+                        "|",
+                        orden.cod_orden.Trim()))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Count();
+
+            return ordenesDistintas == ordenes.Count
+                ? string.Empty
+                : MensajeOrdenDuplicada;
+        }
+
+        /// <summary>
+        /// Normaliza las órdenes seleccionadas.
+        /// </summary>
+        /// <param name="ordenes">Órdenes recibidas.</param>
+        /// <returns>Órdenes seleccionadas y normalizadas.</returns>
+        private static List<ResolucionTransaccionDto>
+            INV_OrdenesAutorizacion_Ordenes_Normalizar(
+                IEnumerable<ResolucionTransaccionDto> ordenes)
+        {
+            return ordenes
+                .Where(orden => orden.seleccionado)
+                .Select(orden =>
+                    new ResolucionTransaccionDto
+                    {
+                        cod_orden =
+                            orden.cod_orden.Trim(),
+                        tipo_orden =
+                            orden.tipo_orden
+                                .Trim()
+                                .ToUpperInvariant(),
+                        seleccionado = true
+                    })
+                .ToList();
+        }
+
+        /// <summary>
+        /// Obtiene los parámetros utilizados para consultar las órdenes.
+        /// </summary>
+        /// <param name="filtros">Filtros recibidos.</param>
+        /// <param name="tipo">Tipo normalizado.</param>
+        /// <returns>Parámetros utilizados por la consulta.</returns>
+        private static object
+            INV_OrdenesAutorizacion_Filtros_Parametros_Obtener(
+                InvOrdenesAutorizacionFiltros filtros,
+                string tipo)
+        {
+            DateTime fechaPredeterminada =
+                DateTime.Today;
+
+            return new
+            {
+                Tipo = tipo,
+                Usuario = filtros.usuario.Trim(),
+                TodasFechas = filtros.todas_fechas,
+                FechaInicio =
+                    filtros.fecha_inicio ??
+                    fechaPredeterminada,
+                FechaCorte =
+                    filtros.fecha_corte ??
+                    fechaPredeterminada
+            };
+        }
+
+        /// <summary>
+        /// Indica si el tipo de orden recibido es válido.
+        /// </summary>
+        /// <param name="tipo">Tipo de orden.</param>
+        /// <returns>Verdadero cuando el tipo está permitido.</returns>
+        private static bool
+            INV_OrdenesAutorizacion_Tipo_EsValido(
+                string? tipo)
+        {
+            string tipoNormalizado =
+                tipo?.Trim().ToUpperInvariant() ??
+                string.Empty;
+
+            return tipoNormalizado is
+                TipoEntrada or
+                TipoSalida or
+                TipoTraspaso or
+                TipoRequisicion;
+        }
+
+        /// <summary>
+        /// Convierte el resultado interno en la respuesta final.
+        /// </summary>
+        /// <param name="resultado">Resultado generado por DbHelper.</param>
+        /// <param name="mensajeError">Mensaje de error predeterminado.</param>
+        /// <returns>Resultado final del proceso.</returns>
+        private static ErrorDto
+            INV_OrdenesAutorizacion_Resultado_Obtener(
+                ErrorDto<ErrorDto> resultado,
+                string mensajeError)
+        {
+            return resultado.Code == 0 &&
+                   resultado.Result is not null
+                ? resultado.Result
+                : DbHelper.ErrorResponse(
+                    resultado.Description ??
+                    mensajeError,
+                    resultado.Code.GetValueOrDefault(-1));
+        }
     }
 }

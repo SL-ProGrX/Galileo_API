@@ -6,8 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
-    [Route("api/FrmUsDerechoXOpcion")]
-    [Route("api/frmUS_DerechoXOpcion")]
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize]
     public class FrmUsDerechoXOpcionController : ControllerBase

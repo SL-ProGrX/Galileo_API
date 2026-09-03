@@ -6,8 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 namespace Galileo.Controllers
 {
 
-    [Route("api/SeguridadPortal")]
-    [Route("api/seguridad_portal")]
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize]
 

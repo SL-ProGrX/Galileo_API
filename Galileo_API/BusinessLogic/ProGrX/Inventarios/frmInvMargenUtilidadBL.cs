@@ -1,37 +1,62 @@
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
 
 namespace Galileo.BusinessLogic
 {
-    public class FrmInvMargenUtilidadBL
+    public sealed class FrmInvMargenUtilidadBl
     {
-        private readonly FrmInvMargenUtilidadDB _db;
+        private readonly FrmInvMargenUtilidadDb _db;
 
-        public FrmInvMargenUtilidadBL(IConfiguration config)
+        public FrmInvMargenUtilidadBl(
+            IConfiguration config)
         {
-            _db = new FrmInvMargenUtilidadDB(config);
+            ArgumentNullException.ThrowIfNull(config);
+            _db = new FrmInvMargenUtilidadDb(config);
         }
 
-        public ErrorDto<List<LineaDto>> Linea_Obtener(int CodEmpresa)
+        public ErrorDto<
+            List<DropDownListaGenericaModel<int>>>
+            INV_MargenUtilidad_Lineas_Obtener(
+                int CodEmpresa)
         {
-            return _db.Linea_Obtener(CodEmpresa);
+            return _db
+                .INV_MargenUtilidad_Lineas_Obtener(
+                    CodEmpresa);
         }
 
-        public ErrorDto<List<SubLineaDto>> SubLinea_Obtener(int CodEmpresa)
+        public ErrorDto<
+            List<DropDownListaGenericaModel<int>>>
+            INV_MargenUtilidad_Sublineas_Obtener(
+                int CodEmpresa,
+                int codLinea)
         {
-            return _db.SubLinea_Obtener(CodEmpresa);
+            return _db
+                .INV_MargenUtilidad_Sublineas_Obtener(
+                    CodEmpresa,
+                    codLinea);
         }
 
-        public ErrorDto<List<PrecioDto>> ListadoPrecios_Obtener(int CodEmpresa)
+        public ErrorDto<
+            List<DropDownListaGenericaModel<string>>>
+            INV_MargenUtilidad_Precios_Obtener(
+                int CodEmpresa)
         {
-            return _db.ListadoPrecios_Obtener(CodEmpresa);
+            return _db
+                .INV_MargenUtilidad_Precios_Obtener(
+                    CodEmpresa);
         }
 
-        public ErrorDto cambio_margen(int CodEmpresa, int monto, int cod_linea, int cod_sublinea, string cambio_margen)
+        public ErrorDto
+            INV_MargenUtilidad_Cambios_Aplicar(
+                int CodEmpresa,
+                InvMargenUtilidadAplicarRequest request)
         {
-            return _db.cambio_margen(CodEmpresa, monto, cod_linea, cod_sublinea, cambio_margen);
+            return _db
+                .INV_MargenUtilidad_Cambios_Aplicar(
+                    CodEmpresa,
+                    request);
         }
-
     }
 }

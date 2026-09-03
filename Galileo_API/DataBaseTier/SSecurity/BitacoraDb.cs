@@ -48,6 +48,13 @@ namespace Galileo.DataBaseTier
             }
         }
 
+        public List<ModuloDto> ModulosObtener()
+        {
+            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
+            const string procedure = "[spSEG_Modulos_Consulta]";
+            return connection.Query<ModuloDto>(procedure, commandType: CommandType.StoredProcedure).ToList();
+        }
+
         private static (DateTime ini, DateTime fin) GetDateRange(BitacoraRequestDto dto)
         {
             var fechaInicio = dto.FechaInicio?.Date ?? new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);

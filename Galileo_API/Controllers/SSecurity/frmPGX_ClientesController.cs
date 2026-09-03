@@ -7,8 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
-    [Route("api/FrmPgxClientes")]
-    [Route("api/frmPGX_Clientes")]
+    [Route("api/[controller]")]
     [ApiController]
     public class FrmPgxClientesController : ControllerBase
     {

@@ -94,5 +94,22 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 SqlParAfahCuentas,
                 null);
         }
+
+        public ErrorDto<FndTrasladoPatrimonioGlobalesResult?> Fnd_TrasladoPatrimonio_Globales_Obtener(
+            int CodEmpresa,
+            string usuario,
+            int codContabilidad)
+        {
+            var globales = _mProGrx
+                .sbSifParametrosInicializa(CodEmpresa, usuario, codContabilidad)
+                .Result;
+
+            return DbHelper.CreateOkResponse<FndTrasladoPatrimonioGlobalesResult?>(
+                new FndTrasladoPatrimonioGlobalesResult
+                {
+                    OficinaTitular = globales.GOficinaTitular ?? string.Empty,
+                    OficinaUnidad = globales.GOficinaUnidad ?? string.Empty,
+                });
+        }
     }
 }

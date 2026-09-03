@@ -6,8 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
-    [Route("api/FrmUsBeTiposMov")]
-    [Route("api/frmUS_Be_TiposMov")]
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize]
     public class FrmUsBeTiposMovController : ControllerBase

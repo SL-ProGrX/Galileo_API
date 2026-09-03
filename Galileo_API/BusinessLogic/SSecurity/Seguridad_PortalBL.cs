@@ -33,25 +33,36 @@ namespace Galileo.BusinessLogic
                 accessPortal.Rol_ResetKeys = true;
             }
 
-            if (SecurityDb.UsuarioObtenerKeyAdmin(pUsuario) == 0)
-            {
-                accessPortal.ResultMsg = "Este usuario no tiene cuenta de administración para el portal!";
-            }
-            else
-            {
-                accessPortal.ResultMsg = "OK";
-            }
-
             UsAdminClientesDto usAdminClientesDto = SecurityDb.US_ADMIN_CLIENTES_Obtener(pUsuario, EmpresaId);
             if (usAdminClientesDto != null)
             {
 
-                accessPortal.Rol_DirGlobal = usAdminClientesDto.R_GLOBAL_DIR_SEARCH == 1;
-                accessPortal.Rol_AdminView = usAdminClientesDto.R_ADMIN_REVIEW == 1;
-                accessPortal.Rol_LocalUsers = usAdminClientesDto.R_LOCAL_USERS == 1;
-                accessPortal.Rol_Permisos = usAdminClientesDto.R_LOCAL_GRANTS == 1;
-                accessPortal.Rol_ResetKeys = usAdminClientesDto.R_LOCAL_KEY_RESET == 1;
+                // Los permisos del administrador del portal son globales y no deben
+                // ser rebajados por la fila de permisos de una empresa específica.
+                accessPortal.Rol_DirGlobal |= usAdminClientesDto.R_GLOBAL_DIR_SEARCH == 1;
+                accessPortal.Rol_AdminView |= usAdminClientesDto.R_ADMIN_REVIEW == 1;
+                accessPortal.Rol_LocalUsers |= usAdminClientesDto.R_LOCAL_USERS == 1;
+                accessPortal.Rol_Permisos |= usAdminClientesDto.R_LOCAL_GRANTS == 1;
+                accessPortal.Rol_ResetKeys |= usAdminClientesDto.R_LOCAL_KEY_RESET == 1;
 
+            }
+
+            var tienePermisoEmpresa = usAdminClientesDto != null &&
+                (usAdminClientesDto.R_GLOBAL_DIR_SEARCH == 1 ||
+                 usAdminClientesDto.R_ADMIN_REVIEW == 1 ||
+                 usAdminClientesDto.R_LOCAL_USERS == 1 ||
+                 usAdminClientesDto.R_LOCAL_GRANTS == 1 ||
+                 usAdminClientesDto.R_LOCAL_KEY_RESET == 1);
+
+            if (accessPortal.Admin_Portal ||
+                SecurityDb.UsuarioObtenerKeyAdmin(pUsuario) > 0 ||
+                tienePermisoEmpresa)
+            {
+                accessPortal.ResultMsg = "OK";
+            }
+            else
+            {
+                accessPortal.ResultMsg = "Este usuario no tiene permisos administrativos para la empresa seleccionada!";
             }
 
             return accessPortal;

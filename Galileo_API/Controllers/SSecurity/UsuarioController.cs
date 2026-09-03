@@ -25,7 +25,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("UsuarioCuentaObtener")]
-        public UsuarioCuentaRevisarDto UsuarioCuentaObtener(string nombreUsuario)
+        public UsuarioCuentaRevisarDto? UsuarioCuentaObtener(string nombreUsuario)
         {
             return new UsuarioBL(_config).UsuarioCuentaObtener(nombreUsuario);
         }

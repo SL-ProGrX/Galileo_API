@@ -54,7 +54,7 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        public List<UsuariosVinculadosConsultaDto> UsuariosVinculadosConsultar(string? usuario, bool contabiliza, bool adminView, int codEmpresa)
+        public List<UsuariosVinculadosConsultaDto> UsuariosVinculadosConsultar(string? usuario, int contabiliza, bool adminView, int codEmpresa)
         {
             try
             {
@@ -66,8 +66,10 @@ namespace Galileo.DataBaseTier
                     INNER JOIN PGX_Clientes_USERS A 
                         ON U.Usuario = A.usuario AND A.cod_Empresa = @codEmpresa
                     WHERE (U.Usuario LIKE @usuarioPattern OR U.Nombre LIKE @usuarioPattern)
-                    AND U.Contabiliza = @contabiliza
                 ";
+
+                if (contabiliza != 2)
+                    sql += " AND U.Contabiliza = @contabiliza";
 
                 if (!adminView)
                     sql += " AND ISNULL(key_admin,0) = 0";
@@ -78,7 +80,7 @@ namespace Galileo.DataBaseTier
                 {
                     codEmpresa,
                     usuarioPattern = "%" + (usuario ?? "") + "%",
-                    contabiliza = Convert.ToInt16(contabiliza)
+                    contabiliza
                 };
 
                 return connection.Query<UsuariosVinculadosConsultaDto>(sql, parameters).ToList();
