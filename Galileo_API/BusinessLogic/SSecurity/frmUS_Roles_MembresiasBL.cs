@@ -28,7 +28,7 @@ namespace Galileo.BusinessLogic
             return new FrmUsRolesMembresiasDb(_config).UsuariosConsultar(usuario, adminView, dirGlobal, codEmpresa);
         }
 
-        public List<UsuariosVinculadosConsultaDto> UsuariosVinculadosConsultar(string? usuario, bool contabiliza, bool adminView, int codEmpresa)
+        public List<UsuariosVinculadosConsultaDto> UsuariosVinculadosConsultar(string? usuario, int contabiliza, bool adminView, int codEmpresa)
         {
             return new FrmUsRolesMembresiasDb(_config).UsuariosVinculadosConsultar(usuario, contabiliza, adminView, codEmpresa);
         }
