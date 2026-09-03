@@ -34,6 +34,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         {
             return codPreanalisis.Contains('-');
         }
+
+        /// <summary>
+        /// VB6: fxValidaFormalizacion -> SELECT dbo.fxCrdPreaFormalizacionValida(expediente).
+        /// </summary>
+        private static bool EstaFormalizado(IDbConnection connection, string codPreanalisis)
+        {
+            var valida = connection.QueryFirstOrDefault<int?>(
+                "SELECT dbo.fxCrdPreaFormalizacionValida(@Expediente)",
+                new { Expediente = codPreanalisis }
+            );
+
+            return valida.GetValueOrDefault() == 1;
+        }
+
         /// <summary>
         /// Navega al expediente siguiente o anterior según el scroll_code.
         /// 0 = anterior, 1 = siguiente.

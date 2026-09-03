@@ -112,6 +112,19 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Obtiene nombre, estado, edad y clasificación al confirmar la identificación.
+        /// VB6: txtCedula_LostFocus.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2EncabezadoDto> Prea_frmPreaEstudiov2_Persona_Datos_Obtener(
+            int codEmpresa,
+            string cedula,
+            string codPreanalisis,
+            string estado)
+        {
+            return _db.Prea_frmPreaEstudiov2_Persona_Datos_Obtener(codEmpresa, cedula, codPreanalisis, estado);
+        }
+
+        /// <summary>
         /// Calcula el Monto según el FORMULARIO de la Garantía (F01/F06). VB6: cboGarantia_Click.
         /// </summary>
         public ErrorDto<FrmPreaEstudiov2GarantiaMontoResponse> Prea_frmPreaEstudiov2_Garantia_Monto(

@@ -1035,16 +1035,24 @@
         /// <summary>Clave real usada por VB6 en el UPDATE de Aplica/Cancela_Mora (id_solicitud).</summary>
         public int id_solicitud { get; set; }
         public int orden { get; set; }
-        public string descripcion { get; set; } = string.Empty;
         public decimal saldo { get; set; }
         public decimal cuota { get; set; }
-        /// <summary>Cantidad de fiadores; VB6 divide saldo/cuota/monto_mora entre este valor.</summary>
+        /// <summary>Cantidad de fiadores; SP: nfiadores. VB6 divide saldo/cuota/monto_mora entre este valor.</summary>
         public int fiadores { get; set; }
+        /// <summary>Cantidad de cuotas en mora; SP: Mora_Cuotas.</summary>
+        public int mora_cuotas { get; set; }
+        /// <summary>Monto en mora; SP: Mora_Monto.</summary>
         public decimal monto_mora { get; set; }
         /// <summary>Columna real CRD_PREA_DETALLE_FIANZAS.Aplica.</summary>
         public bool aplica { get; set; }
         /// <summary>Columna real CRD_PREA_DETALLE_FIANZAS.Cancela_Mora.</summary>
         public bool cancela_mora { get; set; }
+        /// <summary>Monto aprobado inicial; SP: MontoApr.</summary>
+        public decimal montoApr { get; set; }
+        /// <summary>Porcentaje cancelado; SP: Porcentaje.</summary>
+        public decimal porcentaje { get; set; }
+        /// <summary>Clasificación crediticia; SP: Clasificacion.</summary>
+        public string clasificacion { get; set; } = string.Empty;
     }
 
     public class FrmPreaEstudiov2FianzaToggleRequest
@@ -1146,6 +1154,13 @@
         public string usuario { get; set; } = string.Empty;
         public string accion { get; set; } = string.Empty;
         public string detalle { get; set; } = string.Empty;
+        public string cod_etiqueta { get; set; } = string.Empty;
+        public string codigo_etiqueta { get; set; } = string.Empty;
+        public string etiqueta { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public string usuario_registra_1 { get; set; } = string.Empty;
+        public string usuario_registra_2 { get; set; } = string.Empty;
+        public string usuario_revision { get; set; } = string.Empty;
     }
 
     #endregion

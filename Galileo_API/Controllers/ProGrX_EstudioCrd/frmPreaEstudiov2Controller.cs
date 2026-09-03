@@ -141,6 +141,19 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Obtiene datos de persona al confirmar una cédula (VB6: txtCedula_LostFocus).
+        /// </summary>
+        [HttpGet("Prea_frmPreaEstudiov2_Persona_Datos_Obtener")]
+        public ErrorDto<FrmPreaEstudiov2EncabezadoDto> Prea_frmPreaEstudiov2_Persona_Datos_Obtener(
+            int codEmpresa,
+            [FromQuery] string cedula,
+            [FromQuery] string codPreanalisis = "",
+            [FromQuery] string estado = "")
+        {
+            return _bl.Prea_frmPreaEstudiov2_Persona_Datos_Obtener(codEmpresa, cedula, codPreanalisis, estado);
+        }
+
+        /// <summary>
         /// Calcula el Monto según el FORMULARIO de la Garantía (F01/F06).
         /// </summary>
         [HttpPost("Prea_frmPreaEstudiov2_Garantia_Monto")]

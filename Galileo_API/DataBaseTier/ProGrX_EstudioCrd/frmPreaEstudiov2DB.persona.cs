@@ -1,4 +1,6 @@
 ﻿using Dapper;
+using Galileo.Models.ERROR;
+using Galileo_API.Models.ProGrX_EstudioCrd;
 using System.Collections.Generic;
 using System.Data;
 
@@ -17,6 +19,95 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             string FrecuenciaPago,
             int EdadAplica,
             string EdadJustificacion);
+
+        /// <summary>
+        /// VB6: txtCedula_LostFocus. Al confirmar una cédula busca primero en SOCIOS
+        /// y si no existe busca en CRD_PREA_PREANALISIS; luego calcula estado de
+        /// persona, edad y clasificación crediticia.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2EncabezadoDto> Prea_frmPreaEstudiov2_Persona_Datos_Obtener(
+            int codEmpresa,
+            string cedula,
+            string codPreanalisis,
+            string estado)
+        {
+            var result = new ErrorDto<FrmPreaEstudiov2EncabezadoDto>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new FrmPreaEstudiov2EncabezadoDto()
+            };
+
+            var cedulaTrim = (cedula ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(cedulaTrim))
+            {
+                return result;
+            }
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+                connection.Open();
+
+                var parameters = new DynamicParameters();
+                parameters.Add("@Cedula", cedulaTrim, DbType.String);
+
+                var row = connection.QueryFirstOrDefault(
+                    @"SELECT TOP 1
+                             S.cedula,
+                             S.nombre,
+                             S.FECHA_NAC AS fecha_nacimiento,
+                             S.sexo
+                      FROM socios S
+                      WHERE S.cedula = @Cedula",
+                    parameters) as IDictionary<string, object>;
+
+                if (row is null)
+                {
+                    row = connection.QueryFirstOrDefault(
+                        @"SELECT TOP 1
+                                 cedula,
+                                 nombre,
+                                 FECHA_NACIMIENTO AS fecha_nacimiento,
+                                 sexo
+                          FROM CRD_PREA_PREANALISIS
+                          WHERE cedula = @Cedula",
+                        parameters) as IDictionary<string, object>;
+                }
+
+                if (row is null)
+                {
+                    result.Result.cedula = cedulaTrim;
+                    return result;
+                }
+
+                var dict = new Dictionary<string, object>(row, StringComparer.OrdinalIgnoreCase);
+                var fechaNacimiento = GetDateTime(dict, "fecha_nacimiento");
+                var datosPersona = ObtenerDatosPersona(connection, cedulaTrim, fechaNacimiento, codPreanalisis);
+
+                result.Result = new FrmPreaEstudiov2EncabezadoDto
+                {
+                    cedula = GetString(dict, "cedula"),
+                    nombre = GetString(dict, "nombre"),
+                    sexo = GetString(dict, "sexo"),
+                    fecha_nacimiento = fechaNacimiento,
+                    estado_persona = datosPersona.EstadoPersona,
+                    edad = datosPersona.Edad,
+                    clasificacion_crediticia = ObtenerClasificacionCrediticia(connection, cedulaTrim, estado),
+                    edad_aplica = datosPersona.EdadAplica,
+                    edad_justificacion = datosPersona.EdadJustificacion
+                };
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = new FrmPreaEstudiov2EncabezadoDto();
+                return result;
+            }
+        }
 
         /// <summary>
         /// Un QueryMultiple con las cuatro lecturas por cedula/expediente. El SQL de cada

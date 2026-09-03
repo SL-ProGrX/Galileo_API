@@ -1331,7 +1331,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// Validaciones defensivas replicadas del VB6:
         ///   1. Estado "D" (Descartado) → no se puede abandonar
         ///   2. Estado "B" (Abandonado) → ya fue abandonado anteriormente
-        ///   3. Estado "A" (Aprobado/Formalizado) → no se puede abandonar
+        ///   3. Estado "A" + formalización válida → no se puede abandonar
         ///   4. Sub-expediente → no se puede abandonar
         /// </summary>
         public ErrorDto<FrmPreaEstudiov2AbandonarResponse> Prea_frmPreaEstudiov2_Abandonar(
@@ -1392,8 +1392,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     return response;
                 }
 
-                // Validación 4: Estado "A" (Aprobado/Formalizado)
-                if (string.Equals(estadoActual, "A", StringComparison.OrdinalIgnoreCase))
+                // Validación 4: VB6 solo bloquea estado "A" cuando fxValidaFormalizacion = True.
+                if (
+                    string.Equals(estadoActual, "A", StringComparison.OrdinalIgnoreCase) &&
+                    EstaFormalizado(connection, codPreanalisis)
+                )
                 {
                     response.Code = -1;
                     response.Description = "No se puede ABANDONAR un expediente que ya ha sido FORMALIZADO.";
