@@ -196,24 +196,16 @@ namespace Galileo.DataBaseTier
 
             ErrorDto<List<ResolucionTransaccionDto>> resultado;
 
-            if (tipo == TipoRequisicion)
-            {
-                resultado =
-                    DbHelper.ExecuteListQuery<ResolucionTransaccionDto>(
-                        _portalDb,
-                        CodEmpresa,
-                        QueryRequisiciones,
-                        parametros);
-            }
-            else
-            {
-                resultado =
-                    DbHelper.ExecuteListQuery<ResolucionTransaccionDto>(
-                        _portalDb,
-                        CodEmpresa,
-                        QueryOrdenesInventario,
-                        parametros);
-            }
+            string query = tipo == TipoRequisicion
+                ? QueryRequisiciones
+                : QueryOrdenesInventario;
+
+            resultado =
+                DbHelper.ExecuteListQuery<ResolucionTransaccionDto>(
+                    _portalDb,
+                    CodEmpresa,
+                    query,
+                    parametros);
 
             return resultado.Code == 0
                 ? DbHelper.CreateOkResponse(
