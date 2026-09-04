@@ -1,19 +1,19 @@
+using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.INV;
 
 namespace Galileo.DataBaseTier
 {
-    public class FrmInvRepConHorizontalDB
+    public class FrmInvRepConHorizontalDb
     {
         private readonly IConfiguration _config;
 
         #region Constructor y helpers
 
         /// <summary>
-        /// Inicializa una nueva instancia de la clase <see cref="FrmInvRepConHorizontalDB"/>.
+        /// Inicializa una nueva instancia de la clase <see cref="FrmInvRepConHorizontalDb"/>.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
-        public FrmInvRepConHorizontalDB(IConfiguration config)
+        public FrmInvRepConHorizontalDb(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }
@@ -33,12 +33,12 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <returns>Listado de bodegas.</returns>
-        public ErrorDto<List<RepBodegaDto>> Obtener_Bodegas(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Obtener_Bodegas(int CodEmpresa)
         {
-            return DbHelper.ExecuteListQuery<RepBodegaDto>(
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 CreatePortalDb(),
                 CodEmpresa,
-                "SELECT * FROM pv_Bodegas");
+                "SELECT cod_bodega as item, descripcion FROM pv_Bodegas");
         }
 
         #endregion
