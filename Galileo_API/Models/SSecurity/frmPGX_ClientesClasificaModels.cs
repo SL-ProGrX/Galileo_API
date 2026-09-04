@@ -2,7 +2,7 @@
 {
     public class ClienteClasifica
     {
-        public int CodEmpresa { get; set; }
+        public required int CodEmpresa { get; set; }
         public string Cod_Clasificacion { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public bool? Activa { get; set; }
