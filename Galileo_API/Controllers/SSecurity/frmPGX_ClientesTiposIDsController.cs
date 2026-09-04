@@ -19,16 +19,16 @@ namespace Galileo.Controllers
 
         [HttpGet("TipoId_ObtenerTodos")]
         [Authorize]
-        public List<TipoId> TiposId_ObtenerTodos()
+        public ErrorDto<List<TipoId>> TiposId_ObtenerTodos()
         {
             return ClientesTiposIDsBL.TipoId_ObtenerTodos();
         }
 
         [HttpDelete("TipoId_Eliminar")]
         [Authorize]
-        public ErrorDto TipoId_Eliminar(string tipo_id)
+        public ErrorDto TipoId_Eliminar(string tipo_id, int codEmpresa = 0, string usuario = "")
         {
-            return ClientesTiposIDsBL.TipoId_Eliminar(tipo_id);
+            return ClientesTiposIDsBL.TipoId_Eliminar(tipo_id, codEmpresa, usuario);
         }
 
         [HttpPost("TipoId_Guardar")]

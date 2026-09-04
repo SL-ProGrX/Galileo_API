@@ -2,9 +2,11 @@
 {
     public class RolesVincularDto
     {
-        public int Index { get; set; }
+        public int? Index { get; set; }
         public string CodRol { get; set; } = string.Empty;
         public long? CodEmpresa { get; set; }
+        public long? EmpresaBitacora { get; set; }
+        public string Usuario { get; set; } = string.Empty;
     }
 
     public class RolesObtenerDto

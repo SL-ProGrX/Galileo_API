@@ -82,6 +82,16 @@
         public bool Asignado { get; set; }
         public DateTime RegistroFecha { get; set; }
         public string RegistroUsuario { get; set; } = string.Empty;
+        public string ClienteLink { get; set; } = string.Empty;
+    }
+
+    public class RolMiembroExplorerDto
+    {
+        public string Usuario { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public DateTime? RegistroFecha { get; set; }
+        public string Estado { get; set; } = string.Empty;
+        public string ClienteLink { get; set; } = string.Empty;
     }
 
     public class UsuarioClienteRolAsignaDto

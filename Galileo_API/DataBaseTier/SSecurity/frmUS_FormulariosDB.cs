@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
+using Galileo.Models;
 using Galileo.Models.Security;
 using System.Data;
 
@@ -10,10 +11,13 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
         private const string connectionStringName = "DefaultConnString";
+        private const int moduloBitacora = 13;
+        private readonly MProGrXSecurityMainDb DBBitacora;
 
         public FrmUsFormulariosDb(IConfiguration config)
         {
             _config = config;
+            DBBitacora = new MProGrXSecurityMainDb(config);
         }
 
         // ========== Helpers comunes ==========
@@ -83,26 +87,60 @@ namespace Galileo.DataBaseTier
 
         private ErrorDto Formulario_Insertar(FormularioDto request)
         {
-            const string procedure = "[spPGX_Formulario_Insertar]";
-            return EjecutarFormularioSp(procedure, BuildFormularioParams(request));
+            var response = new ErrorDto { Code = 0, Description = "Ok" };
+            try
+            {
+                using var connection = CreateConnection();
+                connection.Open();
+                using var transaction = connection.BeginTransaction();
+                connection.Execute("[spPGX_Formulario_Insertar]", BuildFormularioParams(request), transaction, commandType: CommandType.StoredProcedure);
+
+                var codOpcion = connection.QuerySingle<int>("SELECT ISNULL(MAX(Cod_Opcion), 0) + 1 FROM US_OPCIONES", transaction: transaction);
+                connection.Execute(@"INSERT INTO US_OPCIONES
+                    (Modulo, Formulario, Cod_Opcion, Opcion, Opcion_Descripcion, Registro_Fecha, Registro_Usuario)
+                    VALUES (@Modulo, @Formulario, @CodOpcion, 'MenuAccess', 'Acceso al Formulario', GETDATE(), @Usuario)",
+                    new { Modulo = request.ModuloId, Formulario = request.Nombre, CodOpcion = codOpcion, Usuario = request.Usuario }, transaction);
+                transaction.Commit();
+                RegistrarBitacora(request, "REGISTRA", $"Formulario: {request.Nombre}");
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+            return response;
         }
 
-        public ErrorDto Formulario_Eliminar(int modulo, string formulario)
+        public ErrorDto Formulario_Eliminar(int modulo, string formulario, int codEmpresa, string usuario)
         {
-            const string procedure = "[spPGX_Formulario_Eliminar]";
-            var values = new
+            var response = new ErrorDto { Code = 0, Description = "Ok" };
+            try
             {
-                ModuloId = modulo,
-                Formulario = formulario
-            };
-
-            return EjecutarFormularioSp(procedure, values);
+                using var connection = CreateConnection();
+                connection.Open();
+                using var transaction = connection.BeginTransaction();
+                var values = new { ModuloId = modulo, Formulario = formulario };
+                connection.Execute(@"DELETE FROM US_ROL_PERMISOS
+                    WHERE Cod_Opcion IN (SELECT Cod_Opcion FROM US_OPCIONES WHERE Formulario = @Formulario AND Modulo = @ModuloId)", values, transaction);
+                connection.Execute("DELETE FROM US_OPCIONES WHERE Formulario = @Formulario AND Modulo = @ModuloId", values, transaction);
+                connection.Execute("[spPGX_Formulario_Eliminar]", values, transaction, commandType: CommandType.StoredProcedure);
+                transaction.Commit();
+                RegistrarBitacora(new FormularioDto { ModuloId = modulo, Nombre = formulario, CodEmpresa = codEmpresa, Usuario = usuario }, "ELIMINA", $"Formulario: {formulario}");
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+            return response;
         }
 
         private ErrorDto Formulario_Actualizar(FormularioDto request)
         {
             const string procedure = "[spPGX_Formulario_Editar]";
-            return EjecutarFormularioSp(procedure, BuildFormularioParams(request));
+            var response = EjecutarFormularioSp(procedure, BuildFormularioParams(request));
+            if (response.Code == 0) RegistrarBitacora(request, "MODIFICA", $"Formulario: {request.Nombre}");
+            return response;
         }
 
         public ErrorDto Formulario_Guardar(FormularioDto request)
@@ -131,6 +169,20 @@ namespace Galileo.DataBaseTier
             }
 
             return resp;
+        }
+
+        private void RegistrarBitacora(FormularioDto request, string movimiento, string detalle)
+        {
+            if (request.CodEmpresa <= 0 || string.IsNullOrWhiteSpace(request.Usuario)) return;
+
+            _ = DBBitacora.Bitacora(new MProGrXSecurityMainBitacora
+            {
+                CodEmpresa = request.CodEmpresa.GetValueOrDefault(),
+                usuario = request.Usuario,
+                vModulo = moduloBitacora,
+                strTipoMovimiento = $"{movimiento} - WEB",
+                strDetalleMovimiento = detalle
+            });
         }
     }
 }

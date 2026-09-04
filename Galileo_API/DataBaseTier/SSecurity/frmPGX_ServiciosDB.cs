@@ -1,32 +1,36 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using System.Data;
 
 namespace Galileo.DataBaseTier
 {
-    public class ServicioDB
+    public class FrmPgxServiciosDB
     {
         private readonly IConfiguration _config;
         private const string connectionStringName = "DefaultConnString";
+        private const int modulo = 13;
+        private readonly MProGrXSecurityMainDb DBBitacora;
 
-        public ServicioDB(IConfiguration config)
+        public FrmPgxServiciosDB(IConfiguration config)
         {
             _config = config;
+            DBBitacora = new MProGrXSecurityMainDb(config);
         }
 
-        public List<ServicioSuscripcion> Servicio_ObtenerTodos()
+        public ErrorDto<List<ServicioSuscripcion>> Servicio_ObtenerTodos()
         {
-            List<ServicioSuscripcion> servs = new List<ServicioSuscripcion>();
+            var response = new ErrorDto<List<ServicioSuscripcion>> { Result = new List<ServicioSuscripcion>(), Code = 0 };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Servicios_Obtener]";
 
-                    servs = connection.Query<ServicioSuscripcion>(procedure, commandType: CommandType.StoredProcedure).ToList();
-                    foreach (ServicioSuscripcion dt in servs)
+                    response.Result = connection.Query<ServicioSuscripcion>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                    foreach (ServicioSuscripcion dt in response.Result)
                     {
                         dt.Estado = dt.Activo == 1 ? "ACTIVO" : "INACTIVO";
                         dt.PorUsuario = dt.Aplica_Por_Usuario == 1 ? "APLICA" : "NO_APLICA";
@@ -35,9 +39,11 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return servs;
+            response.Description = response.Code == 0 ? "Ok" : response.Description;
+            return response;
         }
 
         public ErrorDto Servicio_Insertar(ServicioSuscripcion request)
@@ -61,6 +67,7 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
+                    RegistrarBitacora(request.CodEmpresa ?? 0, request.Registro_Usuario, "REGISTRA", $"Servicio: {request.Cod_Servicio} - {request.Descripcion}");
                 }
             }
             catch (Exception ex)
@@ -88,6 +95,7 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
+                    RegistrarBitacora(request.CodEmpresa ?? 0, request.Registro_Usuario, "ELIMINA", $"Servicio: {request.Cod_Servicio} - {request.Descripcion}");
                 }
             }
             catch (Exception ex)
@@ -118,6 +126,7 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
+                    RegistrarBitacora(request.CodEmpresa ?? 0, request.Registro_Usuario, "MODIFICA", $"Servicio: {request.Cod_Servicio} - {request.Descripcion}");
                 }
             }
             catch (Exception ex)
@@ -126,6 +135,20 @@ namespace Galileo.DataBaseTier
                 resp.Description = ex.Message;
             }
             return resp;
+        }
+
+        private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
+        {
+            if (codEmpresa <= 0 || string.IsNullOrWhiteSpace(usuario)) return;
+
+            _ = DBBitacora.Bitacora(new MProGrXSecurityMainBitacora
+            {
+                CodEmpresa = codEmpresa,
+                usuario = usuario,
+                vModulo = modulo,
+                strTipoMovimiento = $"{movimiento} - WEB",
+                strDetalleMovimiento = detalle
+            });
         }
 
 

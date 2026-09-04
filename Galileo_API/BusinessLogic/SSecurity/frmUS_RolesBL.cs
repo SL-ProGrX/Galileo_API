@@ -29,9 +29,14 @@ namespace Galileo.BusinessLogic
             return RolesDB.RolGuardar(req);
         }
 
-        public ErrorDto RolEliminar(string RolId)
+        public ErrorDto RolEliminar(string RolId, int codEmpresa, string usuario)
         {
-            return RolesDB.RolEliminar(RolId);
+            return RolesDB.RolEliminar(RolId, codEmpresa, usuario);
+        }
+
+        public ErrorDto RolesVincular(RolesVincularDto req)
+        {
+            return RolesDB.RolesVincular(req);
         }
 
         public List<ClientesObtenerDto> ClientesObtener()

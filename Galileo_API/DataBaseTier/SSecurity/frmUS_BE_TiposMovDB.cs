@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
+using Galileo.Models;
 using Galileo.Models.Security;
 using System.Data;
 
@@ -10,10 +11,13 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
         private const string connectionStringName = "DefaultConnString";
+        private const int moduloBitacora = 13;
+        private readonly MProGrXSecurityMainDb DBBitacora;
 
         public FrmUsBeTiposMovDb(IConfiguration config)
         {
             _config = config;
+            DBBitacora = new MProGrXSecurityMainDb(config);
         }
 
         public List<MovimientoBE> MovimientoBE_ObtenerTodos(int modulo)
@@ -44,22 +48,11 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
 
-                // ✅ Parametrizado (sin SQL Injection)
-                var sql = @"
-                    SELECT TOP 1 MOVIMIENTO + 1
-                    FROM US_MOVIMIENTOS_BE
-                    WHERE MODULO = @Modulo
-                    ORDER BY MOVIMIENTO DESC;";
-
-                var id = connection.Query<int>(sql, new { Modulo = request.Modulo }).FirstOrDefault();
-
-                var movimiento = id.ToString().PadLeft(2, '0');
-
                 var procedure = "[spPGX_W_MovimientoBE_Insertar]";
                 var values = new
                 {
                     Modulo = request.Modulo,
-                    Movimiento = movimiento,
+                    Movimiento = request.Movimiento,
                     Descripcion = request.Descripcion,
                     Registro_Usuario = request.Registro_Usuario
                 };
@@ -68,7 +61,8 @@ namespace Galileo.DataBaseTier
                     procedure, values, commandType: CommandType.StoredProcedure
                 ).FirstOrDefault();
 
-                resp.Description = movimiento;
+                resp.Description = "Ok";
+                if (resp.Code == 0) RegistrarBitacora(request, "REGISTRA", $"Bitácora Especial - Tipo Movimiento: {request.Movimiento}..Modulo: {request.Modulo}");
             }
             catch (Exception ex)
             {
@@ -78,7 +72,7 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        public ErrorDto MovimientoBE_Eliminar(string movimiento, int modulo)
+        public ErrorDto MovimientoBE_Eliminar(string movimiento, int modulo, int codEmpresa, string usuario)
         {
             ErrorDto resp = new() { Code = 0 };
             try
@@ -96,6 +90,7 @@ namespace Galileo.DataBaseTier
                 ).FirstOrDefault();
 
                 resp.Description = "Ok";
+                if (resp.Code == 0) RegistrarBitacora(new MovimientoBE { Movimiento = movimiento, Modulo = modulo, CodEmpresa = codEmpresa, Registro_Usuario = usuario }, "ELIMINA", $"Bitácora Especial - Tipo Movimiento: {movimiento}..Modulo: {modulo}");
             }
             catch (Exception ex)
             {
@@ -124,6 +119,7 @@ namespace Galileo.DataBaseTier
                 ).FirstOrDefault();
 
                 resp.Description = "Ok";
+                if (resp.Code == 0) RegistrarBitacora(request, "MODIFICA", $"Bitácora Especial - Tipo Movimiento: {request.Movimiento}..Modulo: {request.Modulo}");
             }
             catch (Exception ex)
             {
@@ -137,14 +133,27 @@ namespace Galileo.DataBaseTier
         {
             try
             {
-                return request.Movimiento == "00"
-                    ? MovimientoBE_Insertar(request)
-                    : MovimientoBE_Actualizar(request);
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                var existe = connection.QuerySingle<int>("SELECT COUNT(*) FROM US_MOVIMIENTOS_BE WHERE MODULO = @Modulo AND MOVIMIENTO = @Movimiento", new { request.Modulo, request.Movimiento }) > 0;
+                return existe ? MovimientoBE_Actualizar(request) : MovimientoBE_Insertar(request);
             }
             catch (Exception ex)
             {
                 return new ErrorDto { Code = -1, Description = ex.Message };
             }
+        }
+
+        private void RegistrarBitacora(MovimientoBE request, string movimiento, string detalle)
+        {
+            if (request.CodEmpresa <= 0 || string.IsNullOrWhiteSpace(request.Registro_Usuario)) return;
+            _ = DBBitacora.Bitacora(new MProGrXSecurityMainBitacora
+            {
+                CodEmpresa = request.CodEmpresa.GetValueOrDefault(),
+                usuario = request.Registro_Usuario,
+                vModulo = moduloBitacora,
+                strTipoMovimiento = $"{movimiento} - WEB",
+                strDetalleMovimiento = detalle
+            });
         }
     }
 }

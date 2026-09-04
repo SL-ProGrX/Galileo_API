@@ -36,6 +36,12 @@
         public string Estado { get; set; } = string.Empty;
     }
 
+    public class DatosUsuarioResultDto
+    {
+        public string Usuario { get; set; } = string.Empty;
+        public string Estado { get; set; } = string.Empty;
+    }
+
     public class OpcionRolRequestDto
     {
         public int? opcion { get; set; }
