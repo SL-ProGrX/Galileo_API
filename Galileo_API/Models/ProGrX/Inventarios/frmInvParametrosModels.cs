@@ -2,44 +2,33 @@ namespace Galileo.Models.INV
 {
     public class ParametrosGenDto
     {
-        public required int Cod_Par { get; set; }
-        public string Cta_Comisiones { get; set; } = string.Empty;
-        public string Cta_Imp_Renta { get; set; } = string.Empty;
-        public string Cta_Imp_Consumo { get; set; } = string.Empty;
-        public string Cta_Gastos { get; set; } = string.Empty;
-        public string Cta_Costo_Ventas { get; set; } = string.Empty;
-        public string Cta_Recibos { get; set; } = string.Empty;
-        public string Cta_Notas { get; set; } = string.Empty;
-        public string Cta_Ventas_Ing { get; set; } = string.Empty;
-        public string Ta_Factura_Man { get; set; } = string.Empty;
-        public string Ta_Factura_Auto { get; set; } = string.Empty;
-        public string Ta_Entradas { get; set; } = string.Empty;
-        public string Ta_Salidas { get; set; } = string.Empty;
-        public string Ta_Traslados { get; set; } = string.Empty;
-        public string Ta_Devoluciones { get; set; } = string.Empty;
-        public string Ta_Nc { get; set; } = string.Empty;
-        public string Ta_Recibos { get; set; } = string.Empty;
-        public string Ta_Nd { get; set; } = string.Empty;
-        public string Ta_Gen { get; set; } = string.Empty;
-        public string Enlace_Conta { get; set; } = string.Empty;
-        public string Enlace_Sif { get; set; } = string.Empty;
+        public int cod_par { get; set; } = 0;
+        public int cod_empresa { get; set; } = 0;
+        public string cta_comisiones { get; set; } = string.Empty;
+        public string cta_imp_renta { get; set; } = string.Empty;
+        public string cta_imp_consumo { get; set; } = string.Empty;
+        public string cta_gastos { get; set; } = string.Empty;
+        public string cta_costo_ventas { get; set; } = string.Empty;
+        public string cta_recibos { get; set; } = string.Empty;
+        public string cta_notas { get; set; } = string.Empty;
+        public string cta_ventas_ing { get; set; } = string.Empty;
+        public string ta_factura_man { get; set; } = string.Empty;
+        public string ta_factura_auto { get; set; } = string.Empty;
+        public string ta_entradas { get; set; } = string.Empty;
+        public string ta_salidas { get; set; } = string.Empty;
+        public string ta_traslados { get; set; } = string.Empty;
+        public string ta_devoluciones { get; set; } = string.Empty;
+        public string ta_nc { get; set; } = string.Empty;
+        public string ta_recibos { get; set; } = string.Empty;
+        public string ta_nd { get; set; } = string.Empty;
+        public string ta_gen { get; set; } = string.Empty;
+        public string enlace_conta { get; set; } = string.Empty;
+        public string enlace_sif { get; set; } = string.Empty;
     }
 
     public class CntXContaDto
     {
-        public int Cod_Contabilidad { get; set; }
-        public string Nombre { get; set; } = string.Empty;
-    }
-
-    public class DescripcionCuentasDto
-    {
-        public string Descripcion { get; set; } = string.Empty;
-        public string Cod_Cuenta { get; set; } = string.Empty;
-    }
-
-    public class DescripcionTipoAsientoDto
-    {
-        public string Tipo_Asiento { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
+        public int cod_contabilidad { get; set; } = 0;
+        public string nombre { get; set; } = string.Empty;
     }
 }
