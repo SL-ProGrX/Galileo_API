@@ -13,7 +13,7 @@
         public string Descripcion { get; set; } = String.Empty;
         public int ModuloId { get; set; } = 0;
         public string Usuario { get; set; } = String.Empty;
-        public int CodEmpresa { get; set; }
+        public int? CodEmpresa { get; set; }
         public bool IsNew { get; set; } = false;
     }
 }

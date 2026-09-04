@@ -67,7 +67,7 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
-                    RegistrarBitacora(request.CodEmpresa, request.Registro_Usuario, "REGISTRA", $"Servicio: {request.Cod_Servicio} - {request.Descripcion}");
+                    RegistrarBitacora(request.CodEmpresa ?? 0, request.Registro_Usuario, "REGISTRA", $"Servicio: {request.Cod_Servicio} - {request.Descripcion}");
                 }
             }
             catch (Exception ex)
@@ -95,7 +95,7 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
-                    RegistrarBitacora(request.CodEmpresa, request.Registro_Usuario, "ELIMINA", $"Servicio: {request.Cod_Servicio} - {request.Descripcion}");
+                    RegistrarBitacora(request.CodEmpresa ?? 0, request.Registro_Usuario, "ELIMINA", $"Servicio: {request.Cod_Servicio} - {request.Descripcion}");
                 }
             }
             catch (Exception ex)
@@ -126,7 +126,7 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
-                    RegistrarBitacora(request.CodEmpresa, request.Registro_Usuario, "MODIFICA", $"Servicio: {request.Cod_Servicio} - {request.Descripcion}");
+                    RegistrarBitacora(request.CodEmpresa ?? 0, request.Registro_Usuario, "MODIFICA", $"Servicio: {request.Cod_Servicio} - {request.Descripcion}");
                 }
             }
             catch (Exception ex)

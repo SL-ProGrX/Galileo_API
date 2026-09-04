@@ -139,11 +139,12 @@ namespace Galileo.DataBaseTier
 
         private void RegistrarBitacora(ModuloDto request, string movimiento, string detalle)
         {
-            if (request.CodEmpresa <= 0 || string.IsNullOrWhiteSpace(request.Registro_Usuario)) return;
+            var empresaId = request.CodEmpresa.GetValueOrDefault();
+            if (empresaId <= 0 || string.IsNullOrWhiteSpace(request.Registro_Usuario)) return;
 
             _ = _securityMainDb.Bitacora(new BitacoraInsertarDto
             {
-                EmpresaId = request.CodEmpresa,
+                EmpresaId = empresaId,
                 Usuario = request.Registro_Usuario,
                 Modulo = moduloBitacora,
                 Movimiento = $"{movimiento} - WEB",
