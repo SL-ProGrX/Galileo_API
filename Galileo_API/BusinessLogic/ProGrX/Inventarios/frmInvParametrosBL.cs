@@ -1,46 +1,72 @@
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
 
 namespace Galileo.BusinessLogic
 {
-    public class FrmInvParametrosBl
+    public sealed class FrmInvParametrosBl
     {
         private readonly FrmInvParametrosDb _db;
 
-        public FrmInvParametrosBl(IConfiguration config)
+        public FrmInvParametrosBl(
+            IConfiguration config)
         {
+            ArgumentNullException.ThrowIfNull(config);
             _db = new FrmInvParametrosDb(config);
         }
 
-        public ErrorDto<ParametrosGenDto?> Parametros_Obtener(int CodEmpresa)
+        public ErrorDto<ParametrosGenDto?>
+            INV_Parametros_Parametros_Obtener(
+                int CodEmpresa)
         {
-            return _db.Parametros_Obtener(CodEmpresa);
+            return _db
+                .INV_Parametros_Parametros_Obtener(
+                    CodEmpresa);
         }
 
-        public ErrorDto<List<CntXContaDto>> obtenerContabilidades(int CodEmpresa)
+        public ErrorDto<List<CntXContaDto>>
+            INV_Parametros_Contabilidades_Obtener(
+                int CodEmpresa)
         {
-            return _db.ObtenerContabilidades(CodEmpresa);
+            return _db
+                .INV_Parametros_Contabilidades_Obtener(
+                    CodEmpresa);
         }
 
-        public ErrorDto actualizar_Parametros(int CodEmpresa, ParametrosGenDto data)
+        public ErrorDto<
+            List<DropDownListaGenericaModel<string>>>
+            INV_Parametros_Cuentas_Descripciones_Obtener(
+                int CodEmpresa,
+                int codContabilidad)
         {
-            return _db.actualizar_Parametros(CodEmpresa, data);
+            return _db
+                .INV_Parametros_Cuentas_Descripciones_Obtener(
+                    CodEmpresa,
+                    codContabilidad);
         }
 
-        public ErrorDto<List<DescripcionCuentasDto>> Obtener_DescripcionesCuenta(int CodEmpresa)
+        public ErrorDto<
+            List<DropDownListaGenericaModel<string>>>
+            INV_Parametros_Asientos_Obtener(
+                int CodEmpresa,
+                int codContabilidad)
         {
-            return _db.Obtener_DescripcionesCuenta(CodEmpresa);
+            return _db
+                .INV_Parametros_Asientos_Obtener(
+                    CodEmpresa,
+                    codContabilidad);
         }
 
-        public ErrorDto<List<DescripcionTipoAsientoDto>> Obtener_DescripcionesAsiento(int CodEmpresa)
+        public ErrorDto
+            INV_Parametros_Actualizar(
+                int CodEmpresa,
+                ParametrosGenDto request)
         {
-            return _db.Obtener_DescripcionesAsiento(CodEmpresa);
-        }
-
-        public ErrorDto<List<DescripcionTipoAsientoDto>> Asientos_Obtener(int CodEmpresa)
-        {
-            return _db.Asientos_Obtener(CodEmpresa);
+            return _db
+                .INV_Parametros_Actualizar(
+                    CodEmpresa,
+                    request);
         }
     }
 }

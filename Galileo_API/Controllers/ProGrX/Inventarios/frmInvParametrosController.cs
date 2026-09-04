@@ -1,54 +1,88 @@
-using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
-    public class FrmInvParametrosController : ControllerBase
+    public sealed class FrmInvParametrosController
+        : ControllerBase
     {
         private readonly FrmInvParametrosBl _bl;
-        public FrmInvParametrosController(IConfiguration config)
+
+        public FrmInvParametrosController(
+            IConfiguration config)
         {
+            ArgumentNullException.ThrowIfNull(config);
             _bl = new FrmInvParametrosBl(config);
         }
 
-        [HttpGet("Parametros_Obtener")]
-        public ErrorDto<ParametrosGenDto?> Parametros_Obtener(int CodEmpresa)
+        [HttpGet(
+            "INV_Parametros_Parametros_Obtener")]
+        public ErrorDto<ParametrosGenDto?>
+            INV_Parametros_Parametros_Obtener(
+                int CodEmpresa)
         {
-            return _bl.Parametros_Obtener(CodEmpresa);
+            return _bl
+                .INV_Parametros_Parametros_Obtener(
+                    CodEmpresa);
         }
 
-        [HttpGet("obtenerContabilidades")]
-        public ErrorDto<List<CntXContaDto>> obtenerContabilidades(int CodEmpresa)
+        [HttpGet(
+            "INV_Parametros_Contabilidades_Obtener")]
+        public ErrorDto<List<CntXContaDto>>
+            INV_Parametros_Contabilidades_Obtener(
+                int CodEmpresa)
         {
-            return _bl.obtenerContabilidades(CodEmpresa);
+            return _bl
+                .INV_Parametros_Contabilidades_Obtener(
+                    CodEmpresa);
         }
 
-        [HttpPost("actualizar_Parametros")]
-        public ErrorDto actualizar_Parametros(int CodEmpresa, ParametrosGenDto data)
+        [HttpGet(
+            "INV_Parametros_Cuentas_Descripciones_Obtener")]
+        public ErrorDto<
+            List<DropDownListaGenericaModel<string>>>
+            INV_Parametros_Cuentas_Descripciones_Obtener(
+                int CodEmpresa,
+                int codContabilidad)
         {
-            return _bl.actualizar_Parametros(CodEmpresa, data);
+            return _bl
+                .INV_Parametros_Cuentas_Descripciones_Obtener(
+                    CodEmpresa,
+                    codContabilidad);
         }
 
-        [HttpGet("Obtener_DescripcionesCuenta")]
-        public ErrorDto<List<DescripcionCuentasDto>> Obtener_DescripcionesCuenta(int CodEmpresa)
+        [HttpGet(
+            "INV_Parametros_Asientos_Obtener")]
+        public ErrorDto<
+            List<DropDownListaGenericaModel<string>>>
+            INV_Parametros_Asientos_Obtener(
+                int CodEmpresa,
+                int codContabilidad)
         {
-            return _bl.Obtener_DescripcionesCuenta(CodEmpresa);
+            return _bl
+                .INV_Parametros_Asientos_Obtener(
+                    CodEmpresa,
+                    codContabilidad);
         }
 
-        [HttpGet("Obtener_DescripcionesAsiento")]
-        public ErrorDto<List<DescripcionTipoAsientoDto>> Obtener_DescripcionesAsiento(int CodEmpresa)
+        [HttpPost(
+            "INV_Parametros_Actualizar")]
+        public ErrorDto
+            INV_Parametros_Actualizar(
+                int CodEmpresa,
+                ParametrosGenDto request)
         {
-            return _bl.Obtener_DescripcionesAsiento(CodEmpresa);
-        }
-
-        [HttpGet("Asientos_Obtener")]
-        public ErrorDto<List<DescripcionTipoAsientoDto>> Asientos_Obtener(int CodEmpresa)
-        {
-            return _bl.Asientos_Obtener(CodEmpresa);
+            return _bl
+                .INV_Parametros_Actualizar(
+                    CodEmpresa,
+                    request);
         }
     }
 }
