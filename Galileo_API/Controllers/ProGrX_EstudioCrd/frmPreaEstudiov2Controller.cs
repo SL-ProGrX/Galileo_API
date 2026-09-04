@@ -1,4 +1,4 @@
-﻿using Galileo.Models.ERROR;
+using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX_EstudioCrd;
 using Galileo_API.Models.ProGrX_EstudioCrd;
 using Microsoft.AspNetCore.Authorization;
@@ -118,6 +118,18 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Actualiza m_NumPagos cuando cambia la fecha de corte de colilla (VB6: dtpCorte_Change).
+        /// </summary>
+        [HttpGet("Prea_frmPreaEstudiov2_NumPagos_Obtener")]
+        public ErrorDto<int> Prea_frmPreaEstudiov2_NumPagos_Obtener(
+            int codEmpresa,
+            [FromQuery] string cedula,
+            [FromQuery] DateTime fechaCorte)
+        {
+            return _bl.Prea_frmPreaEstudiov2_NumPagos_Obtener(codEmpresa, cedula, fechaCorte);
+        }
+
+        /// <summary>
         /// Indica si el par Línea/Destino aplica Primera Cuota (VB6: sbAplicaPrimeraCta).
         /// </summary>
         [HttpGet("Prea_frmPreaEstudiov2_Destino_PrimeraCuota")]
@@ -148,9 +160,10 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             int codEmpresa,
             [FromQuery] string cedula,
             [FromQuery] string codPreanalisis = "",
-            [FromQuery] string estado = "")
+            [FromQuery] string estado = "",
+            [FromQuery] int plazo = 0)
         {
-            return _bl.Prea_frmPreaEstudiov2_Persona_Datos_Obtener(codEmpresa, cedula, codPreanalisis, estado);
+            return _bl.Prea_frmPreaEstudiov2_Persona_Datos_Obtener(codEmpresa, cedula, codPreanalisis, estado, plazo);
         }
 
         /// <summary>
@@ -185,6 +198,17 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             [FromQuery] string expedientePadre)
         {
             return _bl.Prea_frmPreaEstudiov2_SubExpedientes_Consultar(codEmpresa, expedientePadre);
+        }
+
+        /// <summary>
+        /// VB6: fxExistenFiadores. Cuenta fiadores registrados para un expediente principal.
+        /// </summary>
+        [HttpGet("Prea_frmPreaEstudiov2_Fiadores_Contar")]
+        public ErrorDto<int> Prea_frmPreaEstudiov2_Fiadores_Contar(
+            int codEmpresa,
+            [FromQuery] string expedientePadre)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Fiadores_Contar(codEmpresa, expedientePadre);
         }
 
         /// <summary>

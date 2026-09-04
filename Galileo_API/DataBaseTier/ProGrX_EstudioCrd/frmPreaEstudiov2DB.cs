@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
@@ -124,6 +124,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     ? GetDecimal(row, "PTS_EXTRA_FRAP")
                     : GetDecimal(row, "PTS_EXTRA_FAP");
                 var credito = ConstruirCredito(connection, row, datosPersona.FrecuenciaPago);
+                var edadPlazo = CalcularEdadPlazo(
+                    GetDateTime(row, "fecha_nacimiento"),
+                    GetDateTime(row, "FECHA_CREACION") ?? ObtenerFechaServidor(connection),
+                    GetString(row, "sexo"),
+                    credito.plazo,
+                    parametros.Entero("01"),
+                    parametros.Entero("02"),
+                    datosPersona.EdadAplica,
+                    datosPersona.EdadJustificacion);
                 var esExpedientePrincipal = EsExpedientePrincipal(codPreanalisis);
                 var psd = CalcularPsd(credito.monto, porcPsd, esExpedientePrincipal);
                 var montoGirar = CalcularMontoGirar(
@@ -156,6 +165,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         fecha_nacimiento = GetDateTime(row, "fecha_nacimiento"),
                         estado_persona = datosPersona.EstadoPersona,
                         edad = datosPersona.Edad,
+                        edad_anios = edadPlazo.Anios,
+                        edad_meses = edadPlazo.Meses,
+                        edad_dias = edadPlazo.Dias,
+                        edad_descripcion = edadPlazo.Descripcion,
+                        plazo_maximo = edadPlazo.PlazoMaximo,
+                        edad_excede_limite = edadPlazo.ExcedeLimite,
                         clasificacion_crediticia = ObtenerClasificacionCrediticia(connection, GetString(row, "Cedula"), GetString(row, "Estado")),
                         edad_aplica = datosPersona.EdadAplica,
                         edad_justificacion = datosPersona.EdadJustificacion,
@@ -281,6 +296,101 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 + rebajos.Psd
                 + rebajos.Intereses
                 + rebajos.Comisiones);
+        }
+        private sealed record EdadPlazoResultado(
+            int Anios,
+            int Meses,
+            int Dias,
+            string Descripcion,
+            int PlazoMaximo,
+            bool ExcedeLimite);
+
+        private static EdadPlazoResultado CalcularEdadPlazo(
+            DateTime? fechaNacimiento,
+            DateTime fechaReferencia,
+            string sexo,
+            int plazo,
+            int edadMaximaHombres,
+            int edadMaximaMujeres,
+            int edadAplica,
+            string edadJustificacion)
+        {
+            if (!fechaNacimiento.HasValue)
+            {
+                return new EdadPlazoResultado(0, 0, 0, string.Empty, 0, false);
+            }
+
+            var nacimiento = fechaNacimiento.Value.Date;
+            var referencia = fechaReferencia.Date;
+            var mesesOri = ((referencia.Year - nacimiento.Year) * 12) + referencia.Month - nacimiento.Month;
+            var fechaMasMeses = nacimiento.AddMonths(mesesOri);
+            if (fechaMasMeses.Date > referencia)
+            {
+                mesesOri -= 1;
+                fechaMasMeses = nacimiento.AddMonths(mesesOri);
+            }
+
+            var anios = mesesOri / 12;
+            var meses = mesesOri - (anios * 12);
+            var dias = (referencia - fechaMasMeses.Date).Days;
+            var edadDecimal = anios + (meses / 12m);
+            var edadMax = string.Equals((sexo ?? string.Empty).Trim(), "F", StringComparison.OrdinalIgnoreCase)
+                ? edadMaximaMujeres
+                : edadMaximaHombres;
+            var plazoMaximo = edadMax > 0
+                ? Convert.ToInt32((edadMax - edadDecimal) * 12m)
+                : 0;
+            var excede = edadMax > 0 && edadDecimal + (plazo / 12m) >= edadMax;
+            var justificada = edadAplica == 1 && !string.IsNullOrWhiteSpace(edadJustificacion);
+
+            return new EdadPlazoResultado(
+                anios,
+                meses,
+                dias,
+                FormatearEdad(anios, meses, dias),
+                plazoMaximo,
+                excede && !justificada);
+        }
+
+        private static string FormatearEdad(int anios, int meses, int dias)
+        {
+            var partes = new List<string>();
+            if (anios == 1) partes.Add("1 Año");
+            else if (anios > 1) partes.Add($"{anios} Años");
+            if (meses == 1) partes.Add("1 Mes");
+            else if (meses > 1) partes.Add($"{meses} Meses");
+            if (dias == 1) partes.Add("1 Día");
+            else if (dias > 1) partes.Add($"{dias} Días");
+            return string.Join(" ", partes);
+        }
+
+        private static DateTime ObtenerFechaServidor(IDbConnection connection)
+        {
+            try
+            {
+                return connection.QuerySingle<DateTime>("SELECT dbo.MyGetdate()");
+            }
+            catch
+            {
+                return DateTime.Now;
+            }
+        }
+
+        private static DateTime ObtenerFechaReferenciaEdad(IDbConnection connection, string codPreanalisis)
+        {
+            var expediente = (codPreanalisis ?? string.Empty).Trim();
+            if (!string.IsNullOrEmpty(expediente))
+            {
+                var fechaCreacion = connection.QueryFirstOrDefault<DateTime?>(
+                    "SELECT FECHA_CREACION FROM CRD_PREA_PREANALISIS WHERE COD_PREANALISIS = @Expediente",
+                    new { Expediente = expediente });
+                if (fechaCreacion.HasValue)
+                {
+                    return fechaCreacion.Value;
+                }
+            }
+
+            return ObtenerFechaServidor(connection);
         }
         /// <summary>
         /// Edad de la persona en años. VB6 (txtCedula_LostFocus, línea ~16869):
@@ -509,6 +619,51 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// VB6: dtpCorte_Change -&gt; sbNumPagos_Update.
+        /// Ejecuta spCrd_Prea_NumPagos con cédula y corte de colilla; m_NumPagos
+        /// conserva 2 como default de Form_Load si no hay fila útil.
+        /// </summary>
+        public ErrorDto<int> Prea_frmPreaEstudiov2_NumPagos_Obtener(
+            int codEmpresa, string cedula, DateTime fechaCorte)
+        {
+            var result = new ErrorDto<int>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = 2
+            };
+
+            var cedulaTrim = cedula?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(cedulaTrim))
+            {
+                return result;
+            }
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+                const string sql = "EXEC spCrd_Prea_NumPagos @Cedula, @FechaCorte";
+                var row = connection.QueryFirstOrDefault(
+                    sql,
+                    new { Cedula = cedulaTrim, FechaCorte = fechaCorte }) as IDictionary<string, object>;
+
+                if (row is not null)
+                {
+                    var dict = new Dictionary<string, object>(row, StringComparer.OrdinalIgnoreCase);
+                    result.Result = GetInt(dict, "Num_Pagos");
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = 2;
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// Indica si el par Línea/Destino aplica Primera Cuota. Fiel a VB6
         /// (frmPreaEstudiov2.frm, sbAplicaPrimeraCta ~línea 14082):
         ///   clsEntidad.tablaName = "spCRDPreaDestinos"
@@ -688,6 +843,42 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
                 result.Result.sub_expedientes = ObtenerSubExpedientes(connection, padre);
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// VB6: fxExistenFiadores (frmPreaEstudiov2.frm ~11050). Cuenta los
+        /// sub-expedientes (fiadores) registrados para un expediente principal.
+        /// Se usa para validar que para garantías Fiduciarias (F02), la cantidad
+        /// de fiadores configurados no exceda los ya registrados.
+        /// </summary>
+        public ErrorDto<int> Prea_frmPreaEstudiov2_Fiadores_Contar(
+            int codEmpresa, string expedientePadre)
+        {
+            var result = new ErrorDto<int>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = 0
+            };
+
+            var padre = (expedientePadre ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(padre))
+            {
+                return result;
+            }
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+                result.Result = ContarFiadoresRegistrados(connection, padre);
             }
             catch (Exception ex)
             {
@@ -1067,6 +1258,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             // Se resuelve desde el snapshot de CRD_PREA_PARAMETROS que ya trajo Cargar,
             // en lugar de repetir la consulta a la misma tabla.
             catalogos.componentes_adicionales = parametros.ComponentesAdicionales("18", "19", "20");
+
+            // GlobalEdadMaximaPermitidaHombre/Mujeres (CRD_PREA_PARAMETROS '01'/'02').
+            // VB6: mPreAnalisis.bas Form_Load -> GlobalEdadMaximaPermitidaHombre/Mujeres.
+            // Angular los necesita al abrir la pantalla para calcular txtPlMax sin expediente.
+            catalogos.edad_maxima_hombres = parametros.Entero("01");
+            catalogos.edad_maxima_mujeres = parametros.Entero("02");
+
+            // Fecha/hora del servidor SQL (VB6: fxFechaServidor / mFecha en fxCalculaEdadAnos).
+            // Angular la usa como referencia de "hoy" para calcular edad y plazo máximo.
+            // VB6 usa dbo.MyGetdate() (no GETDATE()) — misma función del API principal.
+            try
+            {
+                catalogos.fecha_servidor = connection.QuerySingle<DateTime>("SELECT dbo.MyGetdate()");
+            }
+            catch
+            {
+                catalogos.fecha_servidor = DateTime.Now;
+            }
 
             try
             {

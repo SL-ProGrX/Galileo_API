@@ -49,6 +49,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// VB6: fxExistenFiadores (frmPreaEstudiov2.frm ~11050). Cuenta los
+        /// sub-expedientes (fiadores) ligados a un expediente principal.
+        /// </summary>
+        public int ContarFiadoresRegistrados(IDbConnection connection, string expedientePadre)
+        {
+            return connection.QueryFirstOrDefault<int>(
+                @"SELECT COUNT(*)
+                  FROM CRD_PREA_PREANALISIS
+                  WHERE COD_PREANALISIS_REF = @ExpedientePadre",
+                new { ExpedientePadre = expedientePadre }
+            );
+        }
+
+        /// <summary>
         /// Navega al expediente siguiente o anterior según el scroll_code.
         /// 0 = anterior, 1 = siguiente.
         /// </summary>

@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
 using System.Collections.Generic;
@@ -29,7 +29,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             int codEmpresa,
             string cedula,
             string codPreanalisis,
-            string estado)
+            string estado,
+            int plazo = 0)
         {
             var result = new ErrorDto<FrmPreaEstudiov2EncabezadoDto>
             {
@@ -48,6 +49,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
                 connection.Open();
+                var parametros = ParametrosGlobales.Leer(connection);
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@Cedula", cedulaTrim, DbType.String);
@@ -84,6 +86,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 var dict = new Dictionary<string, object>(row, StringComparer.OrdinalIgnoreCase);
                 var fechaNacimiento = GetDateTime(dict, "fecha_nacimiento");
                 var datosPersona = ObtenerDatosPersona(connection, cedulaTrim, fechaNacimiento, codPreanalisis);
+                var edadPlazo = CalcularEdadPlazo(
+                    fechaNacimiento,
+                    ObtenerFechaReferenciaEdad(connection, codPreanalisis),
+                    GetString(dict, "sexo"),
+                    plazo,
+                    parametros.Entero("01"),
+                    parametros.Entero("02"),
+                    datosPersona.EdadAplica,
+                    datosPersona.EdadJustificacion);
 
                 result.Result = new FrmPreaEstudiov2EncabezadoDto
                 {
@@ -93,6 +104,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     fecha_nacimiento = fechaNacimiento,
                     estado_persona = datosPersona.EstadoPersona,
                     edad = datosPersona.Edad,
+                    edad_anios = edadPlazo.Anios,
+                    edad_meses = edadPlazo.Meses,
+                    edad_dias = edadPlazo.Dias,
+                    edad_descripcion = edadPlazo.Descripcion,
+                    plazo_maximo = edadPlazo.PlazoMaximo,
+                    edad_excede_limite = edadPlazo.ExcedeLimite,
                     clasificacion_crediticia = ObtenerClasificacionCrediticia(connection, cedulaTrim, estado),
                     edad_aplica = datosPersona.EdadAplica,
                     edad_justificacion = datosPersona.EdadJustificacion
