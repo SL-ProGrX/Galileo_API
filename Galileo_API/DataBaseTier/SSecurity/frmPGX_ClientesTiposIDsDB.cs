@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
+using Galileo.Models;
 using Galileo.Models.Security;
 using System.Data;
 
@@ -10,29 +11,34 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
         private const string connectionStringName = "DefaultConnString";
+        private const int moduloBitacora = 13;
+        private readonly MProGrXSecurityMainDb DBBitacora;
 
         public FrmPgxClientesTiposIDsDb(IConfiguration config)
         {
             _config = config;
+            DBBitacora = new MProGrXSecurityMainDb(config);
         }
 
-        public List<TipoId> TipoId_ObtenerTodos()
+        public ErrorDto<List<TipoId>> TipoId_ObtenerTodos()
         {
-            List<TipoId> types = new List<TipoId>();
+            var response = new ErrorDto<List<TipoId>> { Result = new List<TipoId>(), Code = 0 };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_TiposId_Obtener]";
 
-                    types = connection.Query<TipoId>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<TipoId>(procedure, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return types;
+            response.Description = response.Code == 0 ? "Ok" : response.Description;
+            return response;
         }
 
         private ErrorDto TipoId_Insertar(TipoId request)
@@ -54,6 +60,7 @@ namespace Galileo.DataBaseTier
                         var queryUpdate = "UPDATE PGX_TIPOS_ID SET ACTIVA = 1 WHERE TIPO_ID = @TipoId";
                         connection.Query<int>(queryUpdate, new { TipoId = request.tipo });
                         resp.Description = "Ok";
+                        RegistrarBitacora(request, "MODIFICA", $"Tipo de ID: {request.tipo}");
                         return resp;
                     }
 
@@ -69,6 +76,7 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
+                    if (resp.Code == 0) RegistrarBitacora(request, "REGISTRA", $"Tipo de ID: {request.tipo}");
                 }
             }
             catch (Exception ex)
@@ -79,7 +87,7 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        public ErrorDto TipoId_Eliminar(string tipo_id)
+        public ErrorDto TipoId_Eliminar(string tipo_id, int codEmpresa, string usuario)
         {
             ErrorDto resp = new ErrorDto();
             resp.Code = 0;
@@ -97,6 +105,7 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
+                    if (resp.Code == 0) RegistrarBitacora(new TipoId { tipo = tipo_id, CodEmpresa = codEmpresa, Registro_Usuario = usuario }, "ELIMINA", $"Tipo de ID: {tipo_id}");
                 }
             }
             catch (Exception ex)
@@ -126,6 +135,7 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
+                    if (resp.Code == 0) RegistrarBitacora(request, "MODIFICA", $"Tipo de ID: {request.Tipo_Id}");
                 }
             }
             catch (Exception ex)
@@ -148,6 +158,20 @@ namespace Galileo.DataBaseTier
                 resp = TipoId_Actualizar(request);
             }
             return resp;
+        }
+
+        private void RegistrarBitacora(TipoId request, string movimiento, string detalle)
+        {
+            if (request.CodEmpresa <= 0 || string.IsNullOrWhiteSpace(request.Registro_Usuario)) return;
+
+            _ = DBBitacora.Bitacora(new MProGrXSecurityMainBitacora
+            {
+                CodEmpresa = request.CodEmpresa,
+                usuario = request.Registro_Usuario,
+                vModulo = moduloBitacora,
+                strTipoMovimiento = $"{movimiento} - WEB",
+                strDetalleMovimiento = detalle
+            });
         }
     }
 }

@@ -37,9 +37,15 @@ namespace Galileo.Controllers
         }
 
         [HttpDelete("RolEliminar")]
-        public ErrorDto RolEliminar(string RolId)
+        public ErrorDto RolEliminar(string RolId, int codEmpresa = 0, string usuario = "")
         {
-            return RolesBL.RolEliminar(RolId);
+            return RolesBL.RolEliminar(RolId, codEmpresa, usuario);
+        }
+
+        [HttpPost("RolesVincular")]
+        public ErrorDto RolesVincular(RolesVincularDto req)
+        {
+            return RolesBL.RolesVincular(req);
         }
 
         [HttpGet("ClientesObtener")]

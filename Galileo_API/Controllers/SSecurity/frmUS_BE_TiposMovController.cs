@@ -33,9 +33,9 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("MovimientoBE_Eliminar")]
-        public ErrorDto MovimientoBE_Eliminar(string movimiento, int modulo)
+        public ErrorDto MovimientoBE_Eliminar(string movimiento, int modulo, int codEmpresa = 0, string usuario = "")
         {
-            return MovimientoBEBL.MovimientoBE_Eliminar(movimiento, modulo);
+            return MovimientoBEBL.MovimientoBE_Eliminar(movimiento, modulo, codEmpresa, usuario);
         }
     }
 }
