@@ -13,7 +13,7 @@ namespace Galileo.BusinessLogic
             ClientesTiposIDsDB = new FrmPgxClientesTiposIDsDb(config);
         }
 
-        public List<TipoId> TipoId_ObtenerTodos()
+        public ErrorDto<List<TipoId>> TipoId_ObtenerTodos()
         {
             return ClientesTiposIDsDB.TipoId_ObtenerTodos();
         }
@@ -23,9 +23,9 @@ namespace Galileo.BusinessLogic
             return ClientesTiposIDsDB.TipoId_Guardar(request);
         }
 
-        public ErrorDto TipoId_Eliminar(string tipo_id)
+        public ErrorDto TipoId_Eliminar(string tipo_id, int codEmpresa, string usuario)
         {
-            return ClientesTiposIDsDB.TipoId_Eliminar(tipo_id);
+            return ClientesTiposIDsDB.TipoId_Eliminar(tipo_id, codEmpresa, usuario);
         }
     }
 }

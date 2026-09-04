@@ -98,6 +98,29 @@ namespace Galileo.DataBaseTier
             }
         }
 
+        public List<DatosUsuarioResultDto> DatosUsuariosObtener(int opcion, char estado, int codEmpresa)
+        {
+            try
+            {
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                const string sql = @"
+                    SELECT DISTINCT U.Nombre AS Usuario, P.Estado
+                    FROM US_ROL_PERMISOS P
+                    INNER JOIN US_OPCIONES O ON P.cod_Opcion = O.cod_Opcion
+                    INNER JOIN US_ROL_MIEMBROS M ON P.cod_Rol = M.cod_Rol
+                    INNER JOIN US_USUARIOS U ON U.Usuario = M.Usuario
+                    WHERE O.cod_Opcion = @Opcion
+                      AND P.Estado = @Estado
+                      AND (@CodEmpresa = 0 OR M.cod_Empresa = @CodEmpresa)
+                    ORDER BY U.Nombre";
+                return connection.Query<DatosUsuarioResultDto>(sql, new { Opcion = opcion, Estado = estado.ToString(), CodEmpresa = codEmpresa }).ToList();
+            }
+            catch
+            {
+                return [];
+            }
+        }
+
         public ErrorDto RolPermisosActualizar(OpcionRolRequestDto req)
         {
             ErrorDto resp = new();

@@ -7,6 +7,8 @@
         public string Descripcion { get; set; } = string.Empty;
         public bool? Activo { get; set; }
         public string KeyEnt { get; set; } = string.Empty;
+        public int CodEmpresa { get; set; }
+        public string Registro_Usuario { get; set; } = string.Empty;
 
     }
 }

@@ -1,4 +1,5 @@
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 
@@ -22,6 +23,16 @@ namespace Galileo.BusinessLogic
         public ErrorDto<List<UsuarioModel>> UsuariosEmpresaObtener(int codEmpresa, bool AdminView, bool DirGlobal)
         {
             return UsuariosDB.UsuariosEmpresaObtener(codEmpresa, AdminView, DirGlobal);
+        }
+
+        public ErrorDto<List<UsuarioModel>> UsuariosExplorerObtener(int codEmpresa)
+        {
+            return UsuariosDB.UsuariosExplorerObtener(codEmpresa);
+        }
+
+        public ErrorDto<ExplorerRootInfoDto> ExplorerRootInfoObtener(int codEmpresa)
+        {
+            return UsuariosDB.ExplorerRootInfoObtener(codEmpresa);
         }
 
         public ErrorDto<UsuarioModel?> UsuarioConsultar(string paramUsuario, int codEmpresa, bool AdminView, bool DirGlobal)
@@ -77,6 +88,16 @@ namespace Galileo.BusinessLogic
         public ErrorDto<List<UsuarioClienteRolDto>> UsuarioClienteRolesConsultar(string nombreUsuario, string codEmpresa)
         {
             return UsuariosDB.UsuarioClienteRolesConsultar(nombreUsuario, codEmpresa);
+        }
+
+        public ErrorDto<List<UsuarioClienteRolDto>> UsuarioClienteRolesExplorerObtener(string nombreUsuario, int codEmpresa)
+        {
+            return UsuariosDB.UsuarioClienteRolesExplorerObtener(nombreUsuario, codEmpresa);
+        }
+
+        public ErrorDto<List<RolMiembroExplorerDto>> RolMiembrosExplorerObtener(string rolId, int codEmpresa)
+        {
+            return UsuariosDB.RolMiembrosExplorerObtener(rolId, codEmpresa);
         }
 
         public ErrorDto UsuarioClienteRolAsignar(UsuarioClienteRolAsignaDto usuarioClienteRolAsignaDto)

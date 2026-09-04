@@ -10,29 +10,32 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
         private const string connectionStringName = "DefaultConnString";
+        private const int moduloBitacora = 13;
 
         public FrmPgxClientesClasificaDb(IConfiguration config)
         {
             _config = config;
         }
 
-        public List<ClienteClasifica> Cliente_Clasifica_ObtenerTodos()
+        public ErrorDto<List<ClienteClasifica>> Cliente_Clasifica_ObtenerTodos()
         {
-            List<ClienteClasifica> data = new List<ClienteClasifica>();
+            var response = new ErrorDto<List<ClienteClasifica>> { Result = new List<ClienteClasifica>(), Code = 0 };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Clientes_Clasifica_Obtener]";
 
-                    data = connection.Query<ClienteClasifica>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<ClienteClasifica>(procedure, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return data;
+            response.Description = response.Code == 0 ? "Ok" : response.Description;
+            return response;
         }
 
         private ErrorDto Cliente_Clasifica_Insertar(ClienteClasifica request)
@@ -55,6 +58,10 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
+                    if (resp.Code == 0)
+                    {
+                        RegistrarBitacora(request, "REGISTRA", $"Cliente Clasifica: {request.Cod_Clasificacion}");
+                    }
                 }
             }
             catch (Exception ex)
@@ -65,7 +72,7 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Cliente_Clasifica_Eliminar(string request)
+        public ErrorDto Cliente_Clasifica_Eliminar(string request, int codEmpresa, string usuario)
         {
             ErrorDto resp = new ErrorDto();
             resp.Code = 0;
@@ -82,6 +89,15 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
+                    if (resp.Code == 0)
+                    {
+                        RegistrarBitacora(new ClienteClasifica
+                        {
+                            CodEmpresa = codEmpresa,
+                            Cod_Clasificacion = request,
+                            Registro_Usuario = usuario
+                        }, "ELIMINA", $"Cliente Clasifica: {request}");
+                    }
                 }
             }
             catch (Exception ex)
@@ -112,6 +128,10 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
+                    if (resp.Code == 0)
+                    {
+                        RegistrarBitacora(request, "MODIFICA", $"Cliente Clasifica: {request.Cod_Clasificacion}");
+                    }
                 }
             }
             catch (Exception ex)
@@ -120,6 +140,36 @@ namespace Galileo.DataBaseTier
                 resp.Description = ex.Message;
             }
             return resp;
+        }
+
+        private void RegistrarBitacora(ClienteClasifica request, string movimiento, string detalle)
+        {
+            if (request.CodEmpresa <= 0 || string.IsNullOrWhiteSpace(request.Registro_Usuario))
+            {
+                return;
+            }
+
+            try
+            {
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                connection.Execute("spSEG_Bitacora_Add", new
+                {
+                    Cliente = request.CodEmpresa,
+                    Usuario = request.Registro_Usuario,
+                    Modulo = moduloBitacora,
+                    Movimiento = $"{movimiento} - WEB",
+                    Detalle = detalle,
+                    AppName = "ProGrX_WEB",
+                    AppVersion = "",
+                    LogEquipo = "",
+                    LogIP = "",
+                    LogEquipoMac = ""
+                }, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                _ = ex.Message;
+            }
         }
 
         public List<ClienteSelecciona> Cliente_Selecciona_ObtenerTodos(string usuario)

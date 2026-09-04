@@ -19,16 +19,16 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("FormulariosObtener")]
-        public List<FormularioDto> FormulariosObtener(int moduloId)
+        public ErrorDto<List<FormularioDto>> FormulariosObtener(int moduloId)
         {
             return FormulariosBL.FormulariosObtener(moduloId);
         }
 
 
         [HttpDelete("Formulario_Eliminar")]
-        public ErrorDto Formulario_Eliminar(int modulo, string formulario)
+        public ErrorDto Formulario_Eliminar(int modulo, string formulario, int codEmpresa = 0, string usuario = "")
         {
-            return FormulariosBL.Formulario_Eliminar(modulo, formulario);
+            return FormulariosBL.Formulario_Eliminar(modulo, formulario, codEmpresa, usuario);
         }
 
 

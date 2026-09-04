@@ -1,43 +1,54 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using System.Data;
 
 namespace Galileo.DataBaseTier
 {
-    public class VendedorDB
+    public class FrmPgxVendedoresDB
     {
         private readonly IConfiguration _config;
         private const string connectionStringName = "DefaultConnString";
+        private const int modulo = 13;
+        private readonly MProGrXSecurityMainDb DBBitacora;
 
-        public VendedorDB(IConfiguration config)
+        public FrmPgxVendedoresDB(IConfiguration config)
         {
             _config = config;
+            DBBitacora = new MProGrXSecurityMainDb(config);
         }
 
-        public List<Vendedor> Vendedor_ObtenerTodos()
+        public ErrorDto<List<Vendedor>> Vendedor_ObtenerTodos()
         {
-            List<Vendedor> servs = new List<Vendedor>();
+            var response = new ErrorDto<List<Vendedor>>
+            {
+                Result = new List<Vendedor>(),
+                Code = 0,
+                Description = string.Empty,
+            };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Vendedor_Obtener]";
 
-                    servs = connection.Query<Vendedor>(procedure, commandType: CommandType.StoredProcedure).ToList();
-                    foreach (Vendedor dt in servs)
+                    response.Result = connection.Query<Vendedor>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                    foreach (Vendedor dt in response.Result)
                     {
                         dt.Estado = dt.Activo == 1 ? "ACTIVO" : "INACTIVO";
 
                     }
+                    response.Description = "Ok";
                 }
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return servs;
+            return response;
         }
 
         public ErrorDto Vendedor_Insertar(Vendedor request)
@@ -63,6 +74,7 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
+                    RegistrarBitacora(request.CodEmpresa, request.Registro_Usuario, "REGISTRA", $"Vendedor: {request.Cod_Vendedor}");
                 }
             }
             catch (Exception ex)
@@ -88,6 +100,7 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
+                    RegistrarBitacora(request.CodEmpresa, request.Registro_Usuario, "ELIMINA", $"Vendedor: {request.Cod_Vendedor}");
                 }
             }
             catch (Exception ex)
@@ -120,6 +133,7 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
+                    RegistrarBitacora(request.CodEmpresa, request.Registro_Usuario, "MODIFICA", $"Vendedor: {request.Cod_Vendedor}");
                 }
             }
             catch (Exception ex)
@@ -128,6 +142,20 @@ namespace Galileo.DataBaseTier
                 resp.Description = ex.Message;
             }
             return resp;
+        }
+
+        private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
+        {
+            if (codEmpresa <= 0 || string.IsNullOrWhiteSpace(usuario)) return;
+
+            _ = DBBitacora.Bitacora(new MProGrXSecurityMainBitacora
+            {
+                CodEmpresa = codEmpresa,
+                usuario = usuario,
+                vModulo = modulo,
+                strTipoMovimiento = $"{movimiento} - WEB",
+                strDetalleMovimiento = detalle
+            });
         }
     }
 }

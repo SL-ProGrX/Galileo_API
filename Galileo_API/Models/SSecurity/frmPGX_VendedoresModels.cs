@@ -2,6 +2,7 @@
 {
     public class Vendedor
     {
+        public int CodEmpresa { get; set; }
         public string Cod_Vendedor { get; set; } = string.Empty;
         public string Identificacion { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;

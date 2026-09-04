@@ -42,6 +42,12 @@ namespace Galileo.Controllers
             return DerechoXOpcionBL.DatosObtener(opcion, estado);
         }
 
+        [HttpGet("DatosUsuariosObtener")]
+        public List<DatosUsuarioResultDto> DatosUsuariosObtener(int opcion, char estado, int codEmpresa = 0)
+        {
+            return DerechoXOpcionBL.DatosUsuariosObtener(opcion, estado, codEmpresa);
+        }
+
         [HttpPost("RolPermisosActualizar")]
         public ErrorDto RolPermisosActualizar(OpcionRolRequestDto req)
         {

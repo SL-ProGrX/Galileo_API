@@ -8,5 +8,6 @@
         public bool? Activa { get; set; }
         public string? Registro_Usuario { get; set; } = string.Empty;
         public DateTime? Registro_Fecha { get; set; }
+        public int CodEmpresa { get; set; }
     }
 }
