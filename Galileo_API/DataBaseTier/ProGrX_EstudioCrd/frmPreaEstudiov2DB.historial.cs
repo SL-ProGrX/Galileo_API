@@ -26,19 +26,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
                 var parameters = new DynamicParameters();
-                parameters.Add("@Expediente", cod_preanalisis.Trim(), DbType.String);
+                parameters.Add("@COD_PREANANLISIS", cod_preanalisis.Trim(), DbType.String);
 
-                var historialEjecutivo = connection.Query<FrmPreaEstudiov2HistorialDto>(
+                var historialEjecutivo = connection.Query(
                     "spCrdPreaGetHistorial",
                     parameters,
                     commandType: CommandType.StoredProcedure
-                ).ToList();
+                ).Select(MapHistorialEtiqueta).ToList();
 
-                var historialGeneral = connection.Query<FrmPreaEstudiov2HistorialDto>(
+                var historialGeneral = connection.Query(
                     "spCrdPreaGetHistorialGeneral",
                     parameters,
                     commandType: CommandType.StoredProcedure
-                ).ToList();
+                ).Select(MapHistorialEtiqueta).ToList();
 
                 result.Result = new FrmPreaEstudiov2HistorialResponse
                 {
@@ -54,6 +54,71 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             }
 
             return result;
+        }
+
+        private static FrmPreaEstudiov2HistorialDto MapHistorialEtiqueta(dynamic row)
+        {
+            var values = (IDictionary<string, object>)row;
+            var codigoEtiqueta = GetString(values, "cod_etiqueta", "COD_ETIQUETA", "codigo_etiqueta", "tag_codigo", "TAG_CODIGO", "Código Etiqueta", "Codigo Etiqueta");
+            var etiqueta = GetString(values, "etiqueta", "Etiqueta", "ETIQUETA");
+            var descripcion = GetString(values, "descripcion", "Descripción", "Descripcion", "DESCRIPCION", "notas", "NOTAS", "detalle");
+            var usuarioRegistra1 = GetString(values, "usuario_registra_1", "USUARIO_REGISTRA_1", "Usuario Registra 1", "registro_usuario", "REGISTRO_USUARIO", "usuario");
+            var usuarioRegistra2 = GetString(values, "usuario_registra_2", "USUARIO_REGISTRA_2", "Usuario Registra 2 (Opcional)", "usuario_registra_2_opcional");
+            var usuarioRevision = GetString(values, "usuario_revision", "USUARIO_REVISION", "Usuario Revisión", "Usuario Revision", "autorizador");
+            var fecha = GetDate(values, "fecha", "Fecha", "FECHA", "REGISTRO_FECHA", "registro_fecha");
+
+            return new FrmPreaEstudiov2HistorialDto
+            {
+                fecha = fecha,
+                usuario = usuarioRegistra1,
+                accion = etiqueta,
+                detalle = descripcion,
+                cod_etiqueta = codigoEtiqueta,
+                codigo_etiqueta = codigoEtiqueta,
+                etiqueta = etiqueta,
+                descripcion = descripcion,
+                usuario_registra_1 = usuarioRegistra1,
+                usuario_registra_2 = usuarioRegistra2,
+                usuario_revision = usuarioRevision
+            };
+        }
+
+        private static string GetString(IDictionary<string, object> values, params string[] keys)
+        {
+            foreach (var key in keys)
+            {
+                if (values.TryGetValue(key, out var value) && value is not null && value is not DBNull)
+                {
+                    return Convert.ToString(value)?.Trim() ?? string.Empty;
+                }
+
+                var match = values.FirstOrDefault(item => string.Equals(item.Key, key, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(match.Key) && match.Value is not null && match.Value is not DBNull)
+                {
+                    return Convert.ToString(match.Value)?.Trim() ?? string.Empty;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static DateTime GetDate(IDictionary<string, object> values, params string[] keys)
+        {
+            foreach (var key in keys)
+            {
+                if (values.TryGetValue(key, out var value) && value is not null && value is not DBNull)
+                {
+                    return Convert.ToDateTime(value);
+                }
+
+                var match = values.FirstOrDefault(item => string.Equals(item.Key, key, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(match.Key) && match.Value is not null && match.Value is not DBNull)
+                {
+                    return Convert.ToDateTime(match.Value);
+                }
+            }
+
+            return default;
         }
 
         /// <summary>

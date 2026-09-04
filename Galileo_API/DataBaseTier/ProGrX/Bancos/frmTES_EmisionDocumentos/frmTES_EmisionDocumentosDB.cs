@@ -22,6 +22,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
         private readonly MReportingServicesDB mReporting;
         private readonly PortalDB _portalDB;
         private readonly MTesFuncionesDb mTesFunciones;
+        private readonly MProGrxMain _mProGrxMain;
 
         private const string nSolicitudes = "solicitudes";
         private const string nFechas = "fechas";
@@ -36,6 +37,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
             mReporting = new MReportingServicesDB(config);
             _portalDB = new PortalDB(config);
             mTesFunciones = new MTesFuncionesDb(config);
+            _mProGrxMain = new MProGrxMain(config);
             var maximoParalelo = config.GetValue<int?>(
                 "TES_EmisionDocumentos:SinpeMaximoParalelo");
             _tesEmisionDocumentosSinpeProcessor =
@@ -119,8 +121,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
             public List<TesTransaccionDto> ListaConFirmas { get; } = new();
             public List<TesTransaccionDto> ListaSinFirmas { get; } = new();
 
-            public List<byte[]> PdfsBoleta { get; } = new();
-            public FileContentResult? FileResultBoleta { get; set; }
+            public List<FileContentResult> BoletasRegistro { get; } = new();
 
             public string ReporteCkConFirmas { get; set; } = string.Empty;
             public string ReporteCkSinFirmas { get; set; } = string.Empty;
@@ -660,6 +661,11 @@ where B.estado = 'A'
 
             var state = new ClasificacionState();
             var reporteData = CrearReporteDataBase(ctx.CodEmpresa, ctx.Filtro.usuario);
+            var contabilidadReporte = ObtenerContabilidadReporte(ctx);
+            if (contabilidadReporte.Code != 0)
+                return DbHelper.CreateErrorResponse<object>(
+                    contabilidadReporte.Description
+                    ?? "No fue posible obtener la contabilidad para generar la boleta.");
 
             int contador = 0;
 
@@ -675,7 +681,12 @@ where B.estado = 'A'
                 if (ctx.BancoDocs.doc_auto == 1)
                     consecutivo = mTesoreria.fxTesTipoDocConsec(ctx.CodEmpresa, ctx.Filtro.banco, ctx.Filtro.tipoDoc, "+").Result;
 
-                var clas = ClasificarYGenerarBoletaSiAplica(ctx, state, reporteData, item);
+                var clas = ClasificarYGenerarBoletaSiAplica(
+                    ctx,
+                    state,
+                    reporteData,
+                    item,
+                    contabilidadReporte.Result);
                 if (clas.Code != 0)
                     return clas;
 
@@ -684,7 +695,7 @@ where B.estado = 'A'
 
             var (ckConFirma, ckSinFirma) = GenerarReportesCheques(reporteData, state);
 
-            var boletaReg = GenerarBoletaRegistro(state.PdfsBoleta, state.FileResultBoleta);
+            var boletaReg = GenerarBoletaRegistro(state.BoletasRegistro);
             if (boletaReg.Code != 0)
                 return boletaReg;
 
@@ -871,6 +882,10 @@ SET Estado = 'I',
                 nsolicitud
             });
 
+            item.fecha_emision = vFecha;
+            if (ctx.BancoDocs.doc_auto == 1)
+                item.ndocumento = consecutivo.ToString(CultureInfo.InvariantCulture);
+
             mTesoreria.sbTesBancosAfectacion(ctx.CodEmpresa, nsolicitud, "E");
             mTesoreria.sbTesBitacoraEspecial(ctx.CodEmpresa, nsolicitud, "10", "", (ctx.Filtro.usuario ?? "").ToUpperInvariant());
 
@@ -903,13 +918,18 @@ SET Estado = 'I',
             EmisionContext ctx,
             ClasificacionState state,
             FrmReporteGlobal reporteData,
-            TesTransaccionDto item)
+            TesTransaccionDto item,
+            int contabilidad)
         {
             if (ctx.BancoDocs.comprobante == "01")
                 return ClasificarChequeFormulaContinua(ctx, state, item);
 
             if (ctx.BancoDocs.comprobante is "02" or "03")
-                return GenerarBoletaRegistroPorItem(state, reporteData, item);
+                return GenerarBoletaRegistroPorItem(
+                    state,
+                    reporteData,
+                    item,
+                    contabilidad);
 
             return DbHelper.CreateOkResponse<object>();
         }
@@ -952,10 +972,18 @@ SET Estado = 'I',
             return DbHelper.CreateOkResponse<object>();
         }
 
-        private ErrorDto<object> GenerarBoletaRegistroPorItem(ClasificacionState state, FrmReporteGlobal reporteData, TesTransaccionDto item)
+        private ErrorDto<object> GenerarBoletaRegistroPorItem(
+            ClasificacionState state,
+            FrmReporteGlobal reporteData,
+            TesTransaccionDto item,
+            int contabilidad)
         {
             reporteData.nombreReporte = "Banking_BoletaRegistro";
-            reporteData.parametros = JsonConvert.SerializeObject(new { nSolicitud = item.nsolicitud });
+            reporteData.parametros = JsonConvert.SerializeObject(new
+            {
+                contabilidad,
+                nSolicitud = item.nsolicitud
+            });
 
             var action = mReporting.ReporteRDLC_v2(reporteData);
 
@@ -966,11 +994,11 @@ SET Estado = 'I',
                 return DbHelper.CreateErrorResponse<object>(err.Description ?? $"Error al generar boleta para solicitud {item.nsolicitud}.");
             }
 
-            state.FileResultBoleta = action as FileContentResult;
+            var fileResultBoleta = action as FileContentResult;
 
-            if (state.FileResultBoleta?.FileContents is { Length: > 0 } bytes)
+            if (fileResultBoleta?.FileContents is { Length: > 0 })
             {
-                state.PdfsBoleta.Add(bytes);
+                state.BoletasRegistro.Add(fileResultBoleta);
                 return DbHelper.CreateOkResponse<object>();
             }
 
@@ -999,31 +1027,40 @@ SET Estado = 'I',
             return (ckCon, ckSin);
         }
 
-        private static ErrorDto<object> GenerarBoletaRegistro(List<byte[]> pdfsBoleta, FileContentResult? fileResultBoleta)
+        private static ErrorDto<object> GenerarBoletaRegistro(List<FileContentResult> boletasRegistro)
         {
-            if (pdfsBoleta == null || pdfsBoleta.Count == 0)
+            if (boletasRegistro == null || boletasRegistro.Count == 0)
                 return DbHelper.CreateOkResponse<object>(string.Empty);
 
-            if (fileResultBoleta == null || string.IsNullOrWhiteSpace(fileResultBoleta.ContentType))
-                return DbHelper.CreateErrorResponse<object>("No se pudo generar boleta: FileContentResult es nulo o inválido.");
+            if (boletasRegistro.Count == 1)
+                return DbHelper.CreateOkResponse<object>(SerializarBoletaRegistro(boletasRegistro[0]));
 
-            try
+            return DbHelper.CreateOkResponse<object>(
+                JsonConvert.SerializeObject(boletasRegistro, Formatting.Indented));
+        }
+
+        private static string SerializarBoletaRegistro(FileContentResult boletaRegistro)
+        {
+            return JsonConvert.SerializeObject(boletaRegistro, Formatting.Indented);
+        }
+
+        private ErrorDto<int> ObtenerContabilidadReporte(EmisionContext ctx)
+        {
+            if (ctx.BancoDocs.comprobante is not ("02" or "03"))
+                return DbHelper.CreateOkResponse(0);
+
+            var globales = _mProGrxMain.sbSifParametrosInicializa(
+                ctx.CodEmpresa,
+                ctx.Filtro.usuario ?? string.Empty);
+
+            if (globales.Code != 0 || globales.Result == null)
             {
-                var combinado = MProGrXAuxiliarDB.CombinarBytesPdfSharp(pdfsBoleta.ToArray());
-                if (combinado == null || combinado.Length == 0)
-                    return DbHelper.CreateErrorResponse<object>("No se pudo generar boleta: el PDF combinado quedó vacío.");
-
-                var resultFile = new FileContentResult(combinado, fileResultBoleta.ContentType)
-                {
-                    FileDownloadName = fileResultBoleta.FileDownloadName
-                };
-
-                return DbHelper.CreateOkResponse<object>(JsonConvert.SerializeObject(resultFile, Formatting.Indented));
+                return DbHelper.CreateErrorResponse<int>(
+                    globales.Description
+                    ?? "No fue posible inicializar los parámetros globales.");
             }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<object>(ex.Message);
-            }
+
+            return DbHelper.CreateOkResponse(globales.Result.GEnlace);
         }
 
         private static FrmReporteGlobal CrearReporteDataBase(int codEmpresa, string? usuario) => new()
