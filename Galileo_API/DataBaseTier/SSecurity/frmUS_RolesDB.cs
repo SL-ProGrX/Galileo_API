@@ -62,7 +62,7 @@ namespace Galileo.DataBaseTier
                         case 1: // Desvincular
                             strSQL = "update us_roles set cod_empresa = null where cod_rol = @CodRol";
                             connection.Execute(strSQL, new { req.CodRol });
-                            RegistrarBitacora(connection, req, "ELIMINA", $"Cliente desvinculado del rol: {req.CodRol}");
+                            RegistrarBitacora(req, "ELIMINA", $"Cliente desvinculado del rol: {req.CodRol}");
                             resp.Code = 1;
                             resp.Description = "Cliente Desvinculado al Rol, satisfactoriamente!";
                             break;
@@ -173,19 +173,14 @@ namespace Galileo.DataBaseTier
                     var afectados = connection.Execute(strSQL, new { CodRol });
                     if (afectados > 0 && codEmpresa > 0 && !string.IsNullOrWhiteSpace(usuario))
                     {
-                        connection.Execute("spSEG_Bitacora_Add", new
+                        _ = DBBitacora.Bitacora(new MProGrXSecurityMainBitacora
                         {
-                            Cliente = codEmpresa,
-                            Usuario = usuario,
-                            Modulo = modulo,
-                            Movimiento = "ELIMINA - WEB",
-                            Detalle = $"Rol de Usuario: {CodRol}",
-                            AppName = "ProGrX_WEB",
-                            AppVersion = "",
-                            LogEquipo = "",
-                            LogIP = "",
-                            LogEquipoMac = ""
-                        }, commandType: System.Data.CommandType.StoredProcedure);
+                            CodEmpresa = codEmpresa,
+                            usuario = usuario,
+                            vModulo = modulo,
+                            strTipoMovimiento = "ELIMINA - WEB",
+                            strDetalleMovimiento = $"Rol de Usuario: {CodRol}"
+                        });
                     }
 
                     resp.Description = "Rol eliminado exitosamente";
@@ -199,24 +194,19 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        private static void RegistrarBitacora(SqlConnection connection, RolesVincularDto req, string movimiento, string detalle)
+        private void RegistrarBitacora(RolesVincularDto req, string movimiento, string detalle)
         {
-            var empresa = req.EmpresaBitacora > 0 ? req.EmpresaBitacora : req.CodEmpresa.GetValueOrDefault();
+            var empresa = (int)(req.EmpresaBitacora > 0 ? req.EmpresaBitacora : req.CodEmpresa.GetValueOrDefault());
             if (empresa <= 0 || string.IsNullOrWhiteSpace(req.Usuario)) return;
 
-            connection.Execute("spSEG_Bitacora_Add", new
+            _ = DBBitacora.Bitacora(new MProGrXSecurityMainBitacora
             {
-                Cliente = empresa,
-                Usuario = req.Usuario,
-                Modulo = modulo,
-                Movimiento = $"{movimiento} - WEB",
-                Detalle = detalle,
-                AppName = "ProGrX_WEB",
-                AppVersion = "",
-                LogEquipo = "",
-                LogIP = "",
-                LogEquipoMac = ""
-            }, commandType: System.Data.CommandType.StoredProcedure);
+                CodEmpresa = empresa,
+                usuario = req.Usuario,
+                vModulo = modulo,
+                strTipoMovimiento = $"{movimiento} - WEB",
+                strDetalleMovimiento = detalle
+            });
         }
 
         public List<RolesObtenerDto> RolesObtener()

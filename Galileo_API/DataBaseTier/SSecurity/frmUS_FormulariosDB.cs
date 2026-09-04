@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
+using Galileo.Models;
 using Galileo.Models.Security;
 using System.Data;
 
@@ -11,10 +12,12 @@ namespace Galileo.DataBaseTier
         private readonly IConfiguration _config;
         private const string connectionStringName = "DefaultConnString";
         private const int moduloBitacora = 13;
+        private readonly MProGrXSecurityMainDb DBBitacora;
 
         public FrmUsFormulariosDb(IConfiguration config)
         {
             _config = config;
+            DBBitacora = new MProGrXSecurityMainDb(config);
         }
 
         // ========== Helpers comunes ==========
@@ -172,27 +175,14 @@ namespace Galileo.DataBaseTier
         {
             if (request.CodEmpresa <= 0 || string.IsNullOrWhiteSpace(request.Usuario)) return;
 
-            try
+            _ = DBBitacora.Bitacora(new MProGrXSecurityMainBitacora
             {
-                using var connection = CreateConnection();
-                connection.Execute("spSEG_Bitacora_Add", new
-                {
-                    Cliente = request.CodEmpresa,
-                    Usuario = request.Usuario,
-                    Modulo = moduloBitacora,
-                    Movimiento = $"{movimiento} - WEB",
-                    Detalle = detalle,
-                    AppName = "ProGrX_WEB",
-                    AppVersion = "",
-                    LogEquipo = "",
-                    LogIP = "",
-                    LogEquipoMac = ""
-                }, commandType: CommandType.StoredProcedure);
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
+                CodEmpresa = request.CodEmpresa.GetValueOrDefault(),
+                usuario = request.Usuario,
+                vModulo = moduloBitacora,
+                strTipoMovimiento = $"{movimiento} - WEB",
+                strDetalleMovimiento = detalle
+            });
         }
     }
 }
