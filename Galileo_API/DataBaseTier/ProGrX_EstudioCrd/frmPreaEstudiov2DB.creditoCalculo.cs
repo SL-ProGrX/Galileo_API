@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
+using System;
 using System.Collections.Generic;
 using System.Data;
 
@@ -105,6 +106,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
 
+                Console.WriteLine($"[Credito_Recalcular] codEmpresa={codEmpresa} origen='{request.origen}' linea='{request.linea}' destino='{request.destino}' garantia='{request.garantia}' monto={request.monto} plazo={request.plazo} tasa={request.tasa} cedula='{request.cedula}' estado='{request.estado}'");
+
                 var tasa = request.tasa;
                 var plazo = request.plazo;
                 var tasaPtsBono = 0m;
@@ -157,9 +160,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     poliza_incendio = polizaIncendio || recalculo.PolizaIncendioAutoMarcada,
                     tasa_pts_bono = tasaPtsBono,
                 };
+
+                Console.WriteLine($"[Credito_Recalcular] RESULT tasa={tasa} plazo={plazo} cuota={recalculo.Cuota} compromiso={recalculo.Compromiso} tasaPtsBono={tasaPtsBono}");
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[Credito_Recalcular] EXCEPTION: {ex}");
                 result.Code = -1;
                 result.Description = ex.Message;
                 result.Result = new FrmPreaEstudiov2CreditoRecalculoResponse();
@@ -312,12 +318,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
             var esFondo = string.Equals(parametros.Garantia.Trim(), "Y", StringComparison.OrdinalIgnoreCase);
 
+            Console.WriteLine($"[RecalcularTasaPlazoCatalogo] linea='{parametros.Linea}' destino='{parametros.Destino}' garantia='{parametros.Garantia}' monto={parametros.Monto} tasaActual={parametros.TasaActual} plazoActual={parametros.PlazoActual} esFondo={esFondo} estado='{parametros.Estado}'");
+
             if (!esFondo && !string.IsNullOrWhiteSpace(parametros.Linea) && parametros.Monto > 0)
             {
                 plazo = (int)CalcularCatalogoRango(
                     connection, parametros.Linea, parametros.Monto, "P", parametros.Destino, parametros.Garantia);
                 tasa = CalcularCatalogoRango(
                     connection, parametros.Linea, parametros.Monto, "I", parametros.Destino, parametros.Garantia);
+                Console.WriteLine($"[RecalcularTasaPlazoCatalogo] CatalogoRango result: plazo={plazo} tasa={tasa}");
             }
 
             var tasaPtsBono = 0m;
