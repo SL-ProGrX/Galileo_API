@@ -1,4 +1,4 @@
-﻿using Galileo.Models.ERROR;
+using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX_EstudioCrd;
 using Galileo_API.Models.ProGrX_EstudioCrd;
 
@@ -41,12 +41,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             int codEmpresa,
             FrmPreaEstudiov2CreditoRecalcularRequest request)
         {
-            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
+            if (request is null)
             {
                 return new ErrorDto<FrmPreaEstudiov2CreditoRecalculoResponse>
                 {
                     Code = -1,
-                    Description = MensajeCodigoExpedienteRequerido,
+                    Description = "Debe indicar la información del crédito.",
                     Result = new FrmPreaEstudiov2CreditoRecalculoResponse()
                 };
             }
@@ -93,6 +93,16 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Actualiza m_NumPagos cuando cambia la fecha de corte de colilla. VB6:
+        /// dtpCorte_Change -&gt; sbNumPagos_Update -&gt; EXEC spCrd_Prea_NumPagos.
+        /// </summary>
+        public ErrorDto<int> Prea_frmPreaEstudiov2_NumPagos_Obtener(
+            int codEmpresa, string cedula, DateTime fechaCorte)
+        {
+            return _db.Prea_frmPreaEstudiov2_NumPagos_Obtener(codEmpresa, cedula, fechaCorte);
+        }
+
+        /// <summary>
         /// Indica si el par Línea/Destino aplica Primera Cuota. VB6: sbAplicaPrimeraCta
         /// -&gt; EXEC spCRDPreaDestinos_TXAplicaPrimCta.
         /// </summary>
@@ -119,9 +129,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             int codEmpresa,
             string cedula,
             string codPreanalisis,
-            string estado)
+            string estado,
+            int plazo)
         {
-            return _db.Prea_frmPreaEstudiov2_Persona_Datos_Obtener(codEmpresa, cedula, codPreanalisis, estado);
+            return _db.Prea_frmPreaEstudiov2_Persona_Datos_Obtener(codEmpresa, cedula, codPreanalisis, estado, plazo);
         }
 
         /// <summary>
@@ -150,6 +161,16 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             int codEmpresa, string expedientePadre)
         {
             return _db.Prea_frmPreaEstudiov2_SubExpedientes_Consultar(codEmpresa, expedientePadre);
+        }
+
+        /// <summary>
+        /// VB6: fxExistenFiadores. Cuenta sub-expedientes (fiadores) registrados
+        /// para un expediente principal.
+        /// </summary>
+        public ErrorDto<int> Prea_frmPreaEstudiov2_Fiadores_Contar(
+            int codEmpresa, string expedientePadre)
+        {
+            return _db.Prea_frmPreaEstudiov2_Fiadores_Contar(codEmpresa, expedientePadre);
         }
 
         /// <summary>
