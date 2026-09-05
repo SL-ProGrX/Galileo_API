@@ -41,12 +41,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             int codEmpresa,
             FrmPreaEstudiov2CreditoRecalcularRequest request)
         {
-            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
+            if (request is null)
             {
                 return new ErrorDto<FrmPreaEstudiov2CreditoRecalculoResponse>
                 {
                     Code = -1,
-                    Description = MensajeCodigoExpedienteRequerido,
+                    Description = "Debe indicar la información del crédito.",
                     Result = new FrmPreaEstudiov2CreditoRecalculoResponse()
                 };
             }
