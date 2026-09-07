@@ -370,7 +370,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 return connection.QuerySingle<DateTime>("SELECT dbo.MyGetdate()");
             }
-            catch
+            catch (DataException)
             {
                 return DateTime.Now;
             }
