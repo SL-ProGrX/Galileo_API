@@ -35,6 +35,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         {
             var extrasFijas = GetDecimal(row, "EXTRAS_FIJAS");
             var porcComponenteAdicional = GetDecimal(row, "PORCENTAJE_COMPONENTE_AD");
+            var porcentajeIngresoPrivado = row.TryGetValue("PORCENTAJE_LIBRE", out var porcentajeRaw)
+                && porcentajeRaw is not null
+                && porcentajeRaw is not DBNull
+                ? Convert.ToDecimal(porcentajeRaw)
+                : 100m;
             var detalle = ObtenerDetalleSalarios(connection, codPreanalisis);
 
             return new FrmPreaEstudiov2SalariosDto
@@ -46,6 +51,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 salario_constancia = GetDecimal(row, "SALARIO_CONSTANCIA"),
                 salario_orden_patronal = GetDecimal(row, "SALARIO_ORDEN_PATRONAL"),
                 ingreso_privado = GetDecimal(row, "MONTO_ACT_PRIVADAS"),
+                ingreso_privado_porc = porcentajeIngresoPrivado,
                 componente_adicional_id = GetInt(row, "ID_COMPONENTE_AD"),
                 componente_adicional_porc = porcComponenteAdicional,
                 componente_adicional_base = extrasFijas,

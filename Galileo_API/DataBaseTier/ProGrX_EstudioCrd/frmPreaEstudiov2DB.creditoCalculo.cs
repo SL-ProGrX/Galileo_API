@@ -10,10 +10,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
     public partial class FrmPreaEstudiov2DB
     {
         /// <summary>
-        /// Arma el DTO de crédito a partir del recordset y recalcula Cuota/Pólizas/
-        /// Compromiso en vivo (ver RecalcularCreditoPolizas) — VB6 no confía en las
-        /// columnas crudas de CRD_PREA_PREANALISIS para estos campos, siempre las
-        /// recalcula al mostrar el expediente.
+        /// Arma el DTO de crédito a partir del recordset.
+        /// VB6: sbLigarDatos carga directamente Monto, Plazo, Cuota, Compromiso y
+        /// MONTO_POLIZA_* desde spCRDPreaPREANALISIS_T. El recálculo queda reservado
+        /// para los cambios explícitos del usuario en Prea_frmPreaEstudiov2_Credito_Recalcular.
         /// </summary>
         private static FrmPreaEstudiov2CreditoDto ConstruirCredito(
             IDbConnection connection,
@@ -24,49 +24,41 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             var plazo = GetInt(row, "Plazo");
             var tasa = GetDecimal(row, "TASA");
             var montoConstruccion = GetDecimal(row, "MONTO_CONSTRUCCION");
+            var cuota = GetDecimal(row, "Cuota");
+            var compromiso = GetDecimal(row, "COMPROMISO");
+            var montoPolizaVida = GetDecimal(row, "MONTO_POLIZA_VIDA");
+            var montoPolizaIncendio = GetDecimal(row, "MONTO_POLIZA_INCENDIO");
+            var montoPolizaPrenda = GetDecimal(row, "MONTO_POLIZA_VEHICULO");
+            var montoPolizaDesempleo = GetDecimal(row, "MONTO_POLIZA_DESEMPLEO");
             var polizaVida = GetBool(row, "APL_POLIZA_VIDA");
             var polizaIncendio = GetBool(row, "apl_poliza_incendio");
             var polizaPrenda = GetBool(row, "APL_POLIZA_VEHICULO");
             var polizaDesempleo = GetBool(row, "APL_POLIZA_DESEMPLEO");
-
-            var recalculo = RecalcularCreditoPolizas(
-                connection,
-                new CreditoPolizasCalculoParametros
-                {
-                    Monto = monto,
-                    Plazo = plazo,
-                    Tasa = tasa,
-                    FrecuenciaPago = frecuenciaPago,
-                    MontoConstruccion = montoConstruccion,
-                    PolizaVida = polizaVida,
-                    PolizaIncendio = polizaIncendio,
-                    PolizaPrenda = polizaPrenda,
-                    PolizaDesempleo = polizaDesempleo
-                });
 
             return new FrmPreaEstudiov2CreditoDto
             {
                 linea = GetString(row, "Cod_Linea"),
                 destino = GetString(row, "cod_destino"),
                 garantia = GetString(row, "GARANTIA"),
+                garantia_fondo = GetString(row, "GARANTIA_FND"),
                 fiadores = GetInt(row, "NSUB_EXP"),
                 no_op_crm = GetString(row, "NUM_OPORT_CRM"),
                 monto = monto,
                 tasa = tasa,
                 plazo = plazo,
                 frecuencia_pago = frecuenciaPago,
-                cuota = recalculo.Cuota,
+                cuota = cuota,
                 monto_construccion = montoConstruccion,
                 poliza_vida = polizaVida,
-                poliza_incendio = polizaIncendio || recalculo.PolizaIncendioAutoMarcada,
+                poliza_incendio = polizaIncendio,
                 poliza_prenda = polizaPrenda,
                 poliza_desempleo = polizaDesempleo,
                 primera_cuota = GetBool(row, "APL_PRIMER_CUOTA"),
-                monto_poliza_vida = recalculo.MontoPolizaVida,
-                monto_poliza_incendio = recalculo.MontoPolizaIncendio,
-                monto_poliza_prenda = recalculo.MontoPolizaPrenda,
-                monto_poliza_desempleo = recalculo.MontoPolizaDesempleo,
-                compromiso = recalculo.Compromiso,
+                monto_poliza_vida = montoPolizaVida,
+                monto_poliza_incendio = montoPolizaIncendio,
+                monto_poliza_prenda = montoPolizaPrenda,
+                monto_poliza_desempleo = montoPolizaDesempleo,
+                compromiso = compromiso,
                 asignado_operacion = GetString(row, "ID_SOLICITUD"),
                 cph = GetString(row, "COD_FORMULARIO_CPH"),
                 valor_prenda = GetDecimal(row, "MONTO_VALOR_VEHICULO"),

@@ -193,6 +193,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         carga_frap = GetDecimal(row, "CARGA_FRAP"),
                         carga_impuesto_salario = GetDecimal(row, "CARGA_IMPUESTO_SALARIO"),
                         pts_extra_frap = ptsExtraFrap,
+                        porc_asociacion = parametros.Decimal("08"),
                         porc_frap_fap = porcFrapFap,
                         aplica_carga_asociacion = GetDecimal(row, "CARGA_ASOCIACION") > 0m,
                         aplica_carga_frap = GetDecimal(row, "CARGA_FRAP") > 0m,
@@ -558,7 +559,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// Si no hay línea seleccionada, VB6 llama con "-1" al inicializar el formulario
         /// (ambas consultas típicamente no devuelven filas en ese caso).
         /// </summary>
-        private static (List<FrmPreaEstudiov2DropdownDto> destinos, List<FrmPreaEstudiov2DropdownDto> garantias) ObtenerDestinosGarantias(
+        private static (List<FrmPreaEstudiov2DropdownDto> destinos, List<FrmPreaEstudiov2DropdownDto> garantias, List<FrmPreaEstudiov2DropdownDto> cph) ObtenerDestinosGarantias(
             IDbConnection connection, string linea)
         {
             var lineaParam = string.IsNullOrWhiteSpace(linea) ? "-1" : linea.Trim();
@@ -592,7 +593,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 garantias = [];
             }
 
-            return (destinos, garantias);
+            List<FrmPreaEstudiov2DropdownDto> cph;
+            try
+            {
+                cph = connection.Query<FrmPreaEstudiov2DropdownDto>(
+                    @"SELECT CONVERT(varchar(10), COD_CPH) AS item,
+                             'CPH ' + CONVERT(varchar(10), COD_CPH) AS descripcion
+                      FROM CRD_FORMULARIO_CPH
+                      WHERE COD_LINEA = @Linea
+                      ORDER BY COD_CPH",
+                    new { Linea = lineaParam }
+                ).ToList();
+            }
+            catch
+            {
+                cph = [];
+            }
+
+            return (destinos, garantias, cph);
         }
 
         /// <summary>
@@ -613,9 +631,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
-                var (destinos, garantias) = ObtenerDestinosGarantias(connection, linea);
+                var (destinos, garantias, cph) = ObtenerDestinosGarantias(connection, linea);
                 result.Result.destinos = destinos;
                 result.Result.garantias = garantias;
+                result.Result.cph = cph;
             }
             catch (Exception ex)
             {
@@ -783,11 +802,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         private static FrmPreaEstudiov2DestinosGarantiasResponse ObtenerDestinosGarantiasResponse(
             IDbConnection connection, string linea)
         {
-            var (destinos, garantias) = ObtenerDestinosGarantias(connection, linea);
+            var (destinos, garantias, cph) = ObtenerDestinosGarantias(connection, linea);
             return new FrmPreaEstudiov2DestinosGarantiasResponse
             {
                 destinos = destinos,
                 garantias = garantias,
+                cph = cph,
             };
         }
 
@@ -1109,6 +1129,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             return value.ToString()?.Trim() ?? string.Empty;
         }
 
+        private static string GetFirstString(IDictionary<string, object> row, params string[] columns)
+        {
+            foreach (var column in columns)
+            {
+                var value = GetString(row, column);
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+
+            return string.Empty;
+        }
+
         private static decimal GetDecimal(IDictionary<string, object> row, string column)
         {
             if (!row.TryGetValue(column, out var value) || value is null || value is DBNull)
@@ -1353,10 +1387,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 foreach (var r in rawRows)
                 {
                     var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
+                    var item = GetFirstString(dict, "IdX", "COD_FONDO", "CODIGO", "FONDO", "GARANTIA_FND");
+                    var descripcion = GetFirstString(dict, "ItmX", "DESCRIPCION", "NOMBRE", "DESC_FONDO");
+                    if (string.IsNullOrWhiteSpace(item) || string.IsNullOrWhiteSpace(descripcion))
+                    {
+                        continue;
+                    }
+
                     fondos.Add(new FrmPreaEstudiov2DropdownDto
                     {
-                        item = GetString(dict, "IdX"),
-                        descripcion = GetString(dict, "ItmX"),
+                        item = item,
+                        descripcion = descripcion,
                     });
                 }
                 catalogos.fondos = fondos;

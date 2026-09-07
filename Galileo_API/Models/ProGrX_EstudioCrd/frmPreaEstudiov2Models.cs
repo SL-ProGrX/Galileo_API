@@ -181,6 +181,8 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         public string linea { get; set; } = string.Empty;
         public string destino { get; set; } = string.Empty;
         public string garantia { get; set; } = string.Empty;
+        /// <summary>cboFondo en VB6 (GARANTIA_FND), mostrado como Respaldo en Angular.</summary>
+        public string garantia_fondo { get; set; } = string.Empty;
         public int fiadores { get; set; }
         public string contrato { get; set; } = string.Empty;
         public string no_op_crm { get; set; } = string.Empty;
@@ -341,6 +343,8 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         public decimal carga_impuesto_salario { get; set; }
         /// <summary>rs!PTS_EXTRA_FRAP (txtFrapPorc).</summary>
         public decimal pts_extra_frap { get; set; }
+        /// <summary>CRD_PREA_PARAMETROS '08' (GlobalPorcAsocSolidarista), usado por el recálculo local.</summary>
+        public decimal porc_asociacion { get; set; }
         /// <summary>CRD_PREA_PARAMETROS '09' (GlobalPorcFRAPFAP), usado por el recálculo local.</summary>
         public decimal porc_frap_fap { get; set; }
         /// <summary>chkCargaAsociacion.Tag = "S" cuando CARGA_ASOCIACION es mayor a 0.</summary>
@@ -472,6 +476,7 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
     {
         public List<FrmPreaEstudiov2DropdownDto> destinos { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> garantias { get; set; } = [];
+        public List<FrmPreaEstudiov2DropdownDto> cph { get; set; } = [];
     }
 
     /// <summary>
