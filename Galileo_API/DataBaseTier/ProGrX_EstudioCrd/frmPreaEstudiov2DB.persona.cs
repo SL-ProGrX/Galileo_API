@@ -87,14 +87,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 var fechaNacimiento = GetDateTime(dict, "fecha_nacimiento");
                 var datosPersona = ObtenerDatosPersona(connection, cedulaTrim, fechaNacimiento, codPreanalisis);
                 var edadPlazo = CalcularEdadPlazo(
-                    fechaNacimiento,
-                    ObtenerFechaReferenciaEdad(connection, codPreanalisis),
-                    GetString(dict, "sexo"),
-                    plazo,
-                    parametros.Entero("01"),
-                    parametros.Entero("02"),
-                    datosPersona.EdadAplica,
-                    datosPersona.EdadJustificacion);
+                    new EdadPlazoDatos(
+                        fechaNacimiento,
+                        ObtenerFechaReferenciaEdad(connection, codPreanalisis),
+                        GetString(dict, "sexo"),
+                        plazo),
+                    new EdadPlazoReglas(
+                        parametros.Entero("01"),
+                        parametros.Entero("02"),
+                        datosPersona.EdadAplica,
+                        datosPersona.EdadJustificacion));
 
                 result.Result = new FrmPreaEstudiov2EncabezadoDto
                 {
