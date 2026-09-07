@@ -40,36 +40,48 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
 
             if (!EsCodigoNo(configuracion.CodigoAportesEnv))
             {
-                ultimoArchivo = GenerarArchivoAportes(
+                var archivoAportes = GenerarArchivoAportes(
                     connection,
                     request,
                     configuracion,
                     rutaDirectorio, rutaBase);
 
-                archivosGenerados.Add(ultimoArchivo);
+                if (!string.IsNullOrWhiteSpace(archivoAportes))
+                {
+                    ultimoArchivo = archivoAportes;
+                    archivosGenerados.Add(archivoAportes);
+                }
             }
 
             if (!EsCodigoNo(configuracion.CodigoCreditosEnv))
             {
-                ultimoArchivo = GenerarArchivoCreditos(
+                var archivoCreditos = GenerarArchivoCreditos(
                     connection,
                     request,
                     configuracion.CodigoCreditosEnv,
                     configuracion.CodCreArc,
                     rutaDirectorio, rutaBase);
 
-                archivosGenerados.Add(ultimoArchivo);
+                if (!string.IsNullOrWhiteSpace(archivoCreditos))
+                {
+                    ultimoArchivo = archivoCreditos;
+                    archivosGenerados.Add(archivoCreditos);
+                }
 
                 if (DebeGenerarCreditoAlterno(configuracion))
                 {
-                    ultimoArchivo = GenerarArchivoCreditos(
+                    var archivoCreditosAlterno = GenerarArchivoCreditos(
                         connection,
                         request,
                         configuracion.CodigoCreditosAlternoEnv,
                         configuracion.CodCreArcAlterno,
                         rutaDirectorio, rutaBase);
 
-                    archivosGenerados.Add(ultimoArchivo);
+                    if (!string.IsNullOrWhiteSpace(archivoCreditosAlterno))
+                    {
+                        ultimoArchivo = archivoCreditosAlterno;
+                        archivosGenerados.Add(archivoCreditosAlterno);
+                    }
                 }
             }
 
@@ -105,17 +117,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 new { CodInstitucion = codInstitucion }) ?? new CcProcesoMensualArchivoF01ConfigDbModel();
         }
 
-        private static string GenerarArchivoAportes(
+        private static string? GenerarArchivoAportes(
             IDbConnection connection,
             CcProcesoMensualGeneraArchivoRequest request,
             CcProcesoMensualArchivoF01ConfigDbModel configuracion,
             string rutaDirectorio, string rutaBase)
         {
             var codigoAportes = FormatearCodigoEnvio(configuracion.CodigoAportesEnv);
-            var nombreArchivo = CrearNombreArchivo( request.CodInstitucion, request.FechaProceso, configuracion.CodApoArc);
-            
-            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(rutaBase,rutaDirectorio, nombreArchivo);
-
             var registros = ObtenerRegistrosPorTipo(
                 connection,
                 request.CodInstitucion,
@@ -123,6 +131,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 TipoAporte,
                 null);
 
+            if (registros.Count == 0)
+            {
+                return null;
+            }
+
+            var nombreArchivo = CrearNombreArchivo(request.CodInstitucion, request.FechaProceso, configuracion.CodApoArc);
+            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(rutaBase, rutaDirectorio, nombreArchivo);
             var contenido = CrearContenidoAportes(registros, codigoAportes);
 
             Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(rutaBase,
@@ -134,7 +149,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return rutaArchivo;
         }
 
-        private static string GenerarArchivoCreditos(
+        private static string? GenerarArchivoCreditos(
             IDbConnection connection,
             CcProcesoMensualGeneraArchivoRequest request,
             string codigoEnvio,
@@ -142,14 +157,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             string rutaDirectorio,string rutaBase)
         {
             var codigoCredito = FormatearCodigoEnvio(codigoEnvio);
-
-            var nombreArchivo = CrearNombreArchivo(
-                request.CodInstitucion,
-                request.FechaProceso,
-                codigoArchivo);
-             
-            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(rutaBase,rutaDirectorio, nombreArchivo);
-
             var registros = ObtenerRegistrosPorTipo(
                 connection,
                 request.CodInstitucion,
@@ -157,6 +164,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 TipoCredito,
                 codigoCredito);
 
+            if (registros.Count == 0)
+            {
+                return null;
+            }
+
+            var nombreArchivo = CrearNombreArchivo(
+                request.CodInstitucion,
+                request.FechaProceso,
+                codigoArchivo);
+            var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(rutaBase, rutaDirectorio, nombreArchivo);
             var contenido = CrearContenidoCreditos(registros, codigoCredito);
 
             Helpers.CcProcesoMensualArchivoRutaHelperDb.GuardarArchivoTexto(rutaBase,
