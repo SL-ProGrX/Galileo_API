@@ -91,7 +91,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     $"Los parámetros adicionales del procedimiento {procedimiento} no son válidos.");
             }
 
-            var parametrosAdd = item.ParametrosAdd?.Trim();
+            var parametrosAdd = ObtenerParametrosAdicionalesCompatibles(
+                connection,
+                procedimiento,
+                item.ParametrosPlanillas,
+                item.ParametrosAdd);
 
             var query = CrearQueryProcesoAdd( procedimiento, item.ParametrosPlanillas,parametrosAdd);
 
@@ -102,6 +106,45 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     CodInstitucion = codInstitucion,
                     Proceso = proceso
                 });
+        }
+
+        /// <summary>
+        /// Omite parámetros adicionales obsoletos cuando la firma actual del
+        /// procedimiento ya está completa con los parámetros base de planilla.
+        /// </summary>
+        private static string? ObtenerParametrosAdicionalesCompatibles(
+            IDbConnection connection,
+            string procedimiento,
+            int parametrosPlanillas,
+            string? parametrosAdd)
+        {
+            var parametrosConfigurados = parametrosAdd?.Trim();
+
+            if (string.IsNullOrWhiteSpace(parametrosConfigurados))
+            {
+                return null;
+            }
+
+            const string query = @"
+                SELECT CASE
+                    WHEN OBJECT_ID(@Procedimiento) IS NULL THEN NULL
+                    ELSE (
+                        SELECT COUNT(*)
+                        FROM sys.parameters
+                        WHERE object_id = OBJECT_ID(@Procedimiento)
+                    )
+                END";
+
+            var parametrosDefinidos = connection.QuerySingleOrDefault<int?>(
+                query,
+                new { Procedimiento = procedimiento });
+
+            var parametrosBase = parametrosPlanillas == 1 ? 2 : 0;
+
+            return parametrosDefinidos.HasValue
+                && parametrosDefinidos.Value <= parametrosBase
+                    ? null
+                    : parametrosConfigurados;
         }
 
         /// <summary>

@@ -35,7 +35,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
              if(!deduccionesResp.Result)
             {
                 return DbHelper.CreateErrorResponse<CcProcesoMensualGeneraDeduccionesResponse>(
-                    "No se pudo generar las deducciones.",
+                    deduccionesResp.Description ?? "No se pudo generar las deducciones.",
                     -1,
                     new CcProcesoMensualGeneraDeduccionesResponse { }
                 );
@@ -53,7 +53,32 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
             };
 
             var archivoGenerado = GenerarArchivo(connection,archivoRequest);
+
+            if (!archivoGenerado.Generado)
+            {
+                return DbHelper.CreateErrorResponse<CcProcesoMensualGeneraDeduccionesResponse>(
+                    "Las deducciones se generaron, pero no existen registros para construir el archivo de la institución y el período seleccionados.",
+                    -1,
+                    new CcProcesoMensualGeneraDeduccionesResponse
+                    {
+                        Generado = false,
+                        Archivo = archivoGenerado
+                    });
+            }
+
             CompletarArchivoDescarga(archivoGenerado);
+
+            if (archivoGenerado.ArchivoBytes.Length == 0)
+            {
+                return DbHelper.CreateErrorResponse<CcProcesoMensualGeneraDeduccionesResponse>(
+                    "El archivo de deducciones se generó sin contenido descargable.",
+                    -1,
+                    new CcProcesoMensualGeneraDeduccionesResponse
+                    {
+                        Generado = false,
+                        Archivo = archivoGenerado
+                    });
+            }
 
             return DbHelper.CreateOkResponse(new CcProcesoMensualGeneraDeduccionesResponse
             {
@@ -243,7 +268,24 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
             connection.Open();
 
             var archivo = GenerarArchivo(connection, request);
+
+            if (!archivo.Generado)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "No existen deducciones para la institución y el período seleccionados.",
+                    -1,
+                    archivo);
+            }
+
             CompletarArchivoDescarga(archivo);
+
+            if (archivo.ArchivoBytes.Length == 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "El archivo se generó sin contenido descargable.",
+                    -1,
+                    archivo);
+            }
 
             return DbHelper.CreateOkResponse(archivo);
         }

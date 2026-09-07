@@ -39,33 +39,43 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         public ErrorDto<CcProcesoMensualProcesoResultado> Proceso_Iniciar(
             int codEmpresa, string propietario, CcProcesoMensualProcesoIniciarRequest request)
         {
-            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-            connection.Open();
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                connection.Open();
 
-            var hash = CalcularHash(codEmpresa, request.CodInstitucion, request.FechaProceso, request.TipoProceso, propietario);
+                var hash = CalcularHash(codEmpresa, request.CodInstitucion, request.FechaProceso, request.TipoProceso, propietario);
 
-            var resultado = connection.QueryFirstOrDefault<CcProcesoMensualProcesoResultado>(
-                "spPRM_ProcesoMensual_Proceso_Iniciar",
-                new
+                var resultado = connection.QueryFirstOrDefault<CcProcesoMensualProcesoResultado>(
+                    "spPRM_ProcesoMensual_Proceso_Iniciar",
+                    new
+                    {
+                        CodEmpresa = codEmpresa,
+                        CodInstitucion = request.CodInstitucion,
+                        FechaProceso = request.FechaProceso,
+                        TipoProceso = request.TipoProceso,
+                        Propietario = propietario,
+                        Hash = hash,
+                        ContextoJson = request.ContextoJson
+                    },
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0);
+
+                if (resultado is null)
                 {
-                    CodEmpresa = codEmpresa,
-                    CodInstitucion = request.CodInstitucion,
-                    FechaProceso = request.FechaProceso,
-                    TipoProceso = request.TipoProceso,
-                    Propietario = propietario,
-                    Hash = hash,
-                    ContextoJson = request.ContextoJson
-                },
-                commandType: CommandType.StoredProcedure,
-                commandTimeout: 0);
+                    return DbHelper.CreateErrorResponse<CcProcesoMensualProcesoResultado>(
+                        "No se pudo crear el proceso.", -1, new CcProcesoMensualProcesoResultado());
+                }
 
-            if (resultado is null)
+                return DbHelper.CreateOkResponse(resultado);
+            }
+            catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<CcProcesoMensualProcesoResultado>(
-                    "No se pudo crear el proceso.", -1, new CcProcesoMensualProcesoResultado());
+                    $"No se pudo iniciar el proceso mensual. {ex.Message}",
+                    -1,
+                    new CcProcesoMensualProcesoResultado());
             }
-
-            return DbHelper.CreateOkResponse(resultado);
         }
 
         /// <summary>
