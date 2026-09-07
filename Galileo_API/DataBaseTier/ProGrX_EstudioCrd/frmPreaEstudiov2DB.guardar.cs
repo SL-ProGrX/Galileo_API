@@ -413,9 +413,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             // VB6: @PORCENTAJE_LIBRE = txtS_Privado_Porc.Text.
             parameters.Add("@PORCENTAJE_LIBRE", decimal.Round(request.ingreso_privado_porc, 2), DbType.Decimal, precision: 18, scale: 2);
 
-            // VB6: ConectionExecute(strSQL) no consume un valor de retorno del SP.
-            // spCrdPreaPreanalisisModifica puede devolver un valor auxiliar como 0.00;
-            // el codigo valido para una modificacion es el expediente enviado.
             connection.Execute(
                 "spCrdPreaPreanalisisModifica",
                 parameters,
