@@ -125,14 +125,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     : GetDecimal(row, "PTS_EXTRA_FAP");
                 var credito = ConstruirCredito(connection, row, datosPersona.FrecuenciaPago);
                 var edadPlazo = CalcularEdadPlazo(
-                    GetDateTime(row, "fecha_nacimiento"),
-                    GetDateTime(row, "FECHA_CREACION") ?? ObtenerFechaServidor(connection),
-                    GetString(row, "sexo"),
-                    credito.plazo,
-                    parametros.Entero("01"),
-                    parametros.Entero("02"),
-                    datosPersona.EdadAplica,
-                    datosPersona.EdadJustificacion);
+                    new EdadPlazoDatos(
+                        GetDateTime(row, "fecha_nacimiento"),
+                        GetDateTime(row, "FECHA_CREACION") ?? ObtenerFechaServidor(connection),
+                        GetString(row, "sexo"),
+                        credito.plazo),
+                    new EdadPlazoReglas(
+                        parametros.Entero("01"),
+                        parametros.Entero("02"),
+                        datosPersona.EdadAplica,
+                        datosPersona.EdadJustificacion));
                 var esExpedientePrincipal = EsExpedientePrincipal(codPreanalisis);
                 var psd = CalcularPsd(credito.monto, porcPsd, esExpedientePrincipal);
                 var montoGirar = CalcularMontoGirar(
@@ -305,23 +307,29 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             int PlazoMaximo,
             bool ExcedeLimite);
 
+        private readonly record struct EdadPlazoDatos(
+            DateTime? FechaNacimiento,
+            DateTime FechaReferencia,
+            string Sexo,
+            int Plazo);
+
+        private readonly record struct EdadPlazoReglas(
+            int EdadMaximaHombres,
+            int EdadMaximaMujeres,
+            int EdadAplica,
+            string EdadJustificacion);
+
         private static EdadPlazoResultado CalcularEdadPlazo(
-            DateTime? fechaNacimiento,
-            DateTime fechaReferencia,
-            string sexo,
-            int plazo,
-            int edadMaximaHombres,
-            int edadMaximaMujeres,
-            int edadAplica,
-            string edadJustificacion)
+            EdadPlazoDatos datos,
+            EdadPlazoReglas reglas)
         {
-            if (!fechaNacimiento.HasValue)
+            if (!datos.FechaNacimiento.HasValue)
             {
                 return new EdadPlazoResultado(0, 0, 0, string.Empty, 0, false);
             }
 
-            var nacimiento = fechaNacimiento.Value.Date;
-            var referencia = fechaReferencia.Date;
+            var nacimiento = datos.FechaNacimiento.Value.Date;
+            var referencia = datos.FechaReferencia.Date;
             var mesesOri = ((referencia.Year - nacimiento.Year) * 12) + referencia.Month - nacimiento.Month;
             var fechaMasMeses = nacimiento.AddMonths(mesesOri);
             if (fechaMasMeses.Date > referencia)
@@ -334,14 +342,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             var meses = mesesOri - (anios * 12);
             var dias = (referencia - fechaMasMeses.Date).Days;
             var edadDecimal = anios + (meses / 12m);
-            var edadMax = string.Equals((sexo ?? string.Empty).Trim(), "F", StringComparison.OrdinalIgnoreCase)
-                ? edadMaximaMujeres
-                : edadMaximaHombres;
+            var edadMax = string.Equals((datos.Sexo ?? string.Empty).Trim(), "F", StringComparison.OrdinalIgnoreCase)
+                ? reglas.EdadMaximaMujeres
+                : reglas.EdadMaximaHombres;
             var plazoMaximo = edadMax > 0
                 ? Convert.ToInt32((edadMax - edadDecimal) * 12m)
                 : 0;
-            var excede = edadMax > 0 && edadDecimal + (plazo / 12m) >= edadMax;
-            var justificada = edadAplica == 1 && !string.IsNullOrWhiteSpace(edadJustificacion);
+            var excede = edadMax > 0 && edadDecimal + (datos.Plazo / 12m) >= edadMax;
+            var justificada = reglas.EdadAplica == 1 && !string.IsNullOrWhiteSpace(reglas.EdadJustificacion);
 
             return new EdadPlazoResultado(
                 anios,
