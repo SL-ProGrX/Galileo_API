@@ -1451,7 +1451,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 return fondos;
             }
-            catch
+            catch (System.Exception)
             {
                 return [];
             }
