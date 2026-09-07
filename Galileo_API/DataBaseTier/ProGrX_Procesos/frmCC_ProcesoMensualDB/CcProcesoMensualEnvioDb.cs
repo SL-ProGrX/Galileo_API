@@ -84,7 +84,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<bool>(
-                    "Error al generar las deducciones del proceso mensual." + ex.Message,
+                    $"Error al generar las deducciones del proceso mensual. {ex.Message}",
                     -1,
                     false);
             }
