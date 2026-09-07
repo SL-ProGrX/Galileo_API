@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using System.Data;
@@ -15,6 +16,24 @@ namespace Galileo.DataBaseTier
         public FrmUsUsuariosDb(IConfiguration config)
         {
             _config = config;
+        }
+
+        public ErrorDto<ExplorerRootInfoDto> ExplorerRootInfoObtener(int codEmpresa)
+        {
+            try
+            {
+                var connectionString = new SqlConnectionStringBuilder(
+                    _config.GetConnectionString(connectionStringName));
+                return DbHelper.CreateOkResponse(new ExplorerRootInfoDto
+                {
+                    Servidor = connectionString.DataSource,
+                    BaseDatos = connectionString.InitialCatalog,
+                });
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<ExplorerRootInfoDto>(ex.Message);
+            }
         }
 
         /// <summary>
@@ -187,6 +206,38 @@ namespace Galileo.DataBaseTier
                     };
                     result = connection.Query<UsuarioModel>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<List<UsuarioModel>>(ex.Message);
+            }
+            return DbHelper.CreateOkResponse(result);
+        }
+
+        public ErrorDto<List<UsuarioModel>> UsuariosExplorerObtener(int codEmpresa)
+        {
+            List<UsuarioModel>? result = null;
+            try
+            {
+                if (codEmpresa <= 0)
+                    return DbHelper.CreateErrorResponse<List<UsuarioModel>>("La empresa es requerida.");
+
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                const string sql = """
+                    SELECT
+                        U.Usuario AS UserName,
+                        U.UserID AS UserId,
+                        U.Nombre AS Nombre,
+                        CASE WHEN U.ESTADO = 'A' THEN 'Activo' ELSE 'Inactivo' END AS Estado,
+                        U.Registro_Fecha AS FechaIngreso,
+                        U.Fecha_Mod AS FechaUltimo,
+                        U.Contabiliza AS ContabilizaCobranza
+                    FROM US_USUARIOS U
+                    INNER JOIN PGX_CLIENTES_USERS C ON C.USUARIO = U.USUARIO
+                        AND C.COD_EMPRESA = @CodEmpresa
+                    ORDER BY U.NOMBRE
+                    """;
+                result = connection.Query<UsuarioModel>(sql, new { CodEmpresa = codEmpresa }).ToList();
             }
             catch (Exception ex)
             {
@@ -403,6 +454,63 @@ namespace Galileo.DataBaseTier
                 return DbHelper.CreateErrorResponse<List<UsuarioClienteRolDto>>(ex.Message);
             }
             return DbHelper.CreateOkResponse(result);
+        }
+
+        public ErrorDto<List<UsuarioClienteRolDto>> UsuarioClienteRolesExplorerObtener(string nombreUsuario, int codEmpresa)
+        {
+            try
+            {
+                const string sql = @"
+                    SELECT
+                        M.cod_Rol AS CodigoRol,
+                        R.Descripcion,
+                        CAST(1 AS bit) AS Asignado,
+                        M.registro_Fecha AS RegistroFecha,
+                        CAST('' AS nvarchar(100)) AS RegistroUsuario,
+                        C.Nombre_Largo AS ClienteLink
+                    FROM US_ROL_MIEMBROS M
+                    INNER JOIN US_ROLES R ON R.cod_Rol = M.cod_Rol
+                    INNER JOIN PGX_CLIENTES C ON C.cod_Empresa = M.cod_Empresa
+                    WHERE M.Usuario = @NombreUsuario
+                      AND (@CodEmpresa = 0 OR M.cod_Empresa = @CodEmpresa)
+                    ORDER BY C.Nombre_Largo, R.Descripcion";
+
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                var result = connection.Query<UsuarioClienteRolDto>(sql, new { NombreUsuario = nombreUsuario, CodEmpresa = codEmpresa }).ToList();
+                return DbHelper.CreateOkResponse(result);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<List<UsuarioClienteRolDto>>(ex.Message);
+            }
+        }
+
+        public ErrorDto<List<RolMiembroExplorerDto>> RolMiembrosExplorerObtener(string rolId, int codEmpresa)
+        {
+            try
+            {
+                const string sql = @"
+                    SELECT
+                        U.Usuario,
+                        U.Nombre,
+                        M.registro_Fecha AS RegistroFecha,
+                        CASE WHEN U.Estado = 'A' THEN 'Activo' ELSE 'Inactivo' END AS Estado,
+                        C.Nombre_Largo AS ClienteLink
+                    FROM US_ROL_MIEMBROS M
+                    INNER JOIN US_USUARIOS U ON U.Usuario = M.Usuario
+                    LEFT JOIN PGX_CLIENTES C ON C.cod_Empresa = M.cod_Empresa
+                    WHERE M.cod_Rol = @RolId
+                      AND (@CodEmpresa = 0 OR M.cod_Empresa = @CodEmpresa)
+                    ORDER BY C.Nombre_Largo, U.Nombre, M.registro_Fecha";
+
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                var result = connection.Query<RolMiembroExplorerDto>(sql, new { RolId = rolId, CodEmpresa = codEmpresa }).ToList();
+                return DbHelper.CreateOkResponse(result);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<List<RolMiembroExplorerDto>>(ex.Message);
+            }
         }
 
         public ErrorDto UsuarioClienteRolAsignar(UsuarioClienteRolAsignaDto usuarioClienteRolAsignaDto)

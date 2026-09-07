@@ -33,6 +33,11 @@ namespace Galileo.BusinessLogic
             return DerechoXOpcionDB.DatosObtener(opcion, estado);
         }
 
+        public List<DatosUsuarioResultDto> DatosUsuariosObtener(int opcion, char estado, int codEmpresa)
+        {
+            return DerechoXOpcionDB.DatosUsuariosObtener(opcion, estado, codEmpresa);
+        }
+
         public ErrorDto RolPermisosActualizar(OpcionRolRequestDto req)
         {
             return DerechoXOpcionDB.RolPermisosActualizar(req);

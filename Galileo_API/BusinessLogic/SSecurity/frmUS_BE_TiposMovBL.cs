@@ -23,9 +23,9 @@ namespace Galileo.BusinessLogic
             return BE_TiposMovDB.MovimientoBE_Guardar(request);
         }
 
-        public ErrorDto MovimientoBE_Eliminar(string movimiento, int modulo)
+        public ErrorDto MovimientoBE_Eliminar(string movimiento, int modulo, int codEmpresa, string usuario)
         {
-            return BE_TiposMovDB.MovimientoBE_Eliminar(movimiento, modulo);
+            return BE_TiposMovDB.MovimientoBE_Eliminar(movimiento, modulo, codEmpresa, usuario);
         }
 
     }

@@ -20,7 +20,7 @@ namespace Galileo.Controllers
 
         [HttpGet("ClienteClasifica_ObtenerTodos")]
         [Authorize]
-        public List<ClienteClasifica> Cliente_Clasifica_ObtenerTodos()
+        public ErrorDto<List<ClienteClasifica>> Cliente_Clasifica_ObtenerTodos()
         {
             return ClientesClasificaBL.Cliente_Clasifica_ObtenerTodos();
         }
@@ -36,9 +36,9 @@ namespace Galileo.Controllers
 
         [HttpDelete("ClienteClasifica_Eliminar")]
         [Authorize]
-        public ErrorDto Cliente_Clasifica_Eliminar(string request)
+        public ErrorDto Cliente_Clasifica_Eliminar(string request, int codEmpresa = 0, string usuario = "")
         {
-            return ClientesClasificaBL.Cliente_Clasifica_Eliminar(request);
+            return ClientesClasificaBL.Cliente_Clasifica_Eliminar(request, codEmpresa, usuario);
         }
 
 

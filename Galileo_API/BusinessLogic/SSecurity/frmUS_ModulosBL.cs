@@ -13,15 +13,14 @@ namespace Galileo.BusinessLogic
             ModulosDB = new FrmUsModulosDb(config);
         }
 
-        public List<ModuloDto> Modulo_ObtenerTodos()
+        public ErrorDto<List<ModuloDto>> Modulo_ObtenerTodos()
         {
             return ModulosDB.Modulo_ObtenerTodos();
         }
 
-        public ErrorDto Modulo_Eliminar(int request)
+        public ErrorDto Modulo_Eliminar(int request, int codEmpresa, string usuario)
         {
-
-            return ModulosDB.Modulo_Eliminar(request);
+            return ModulosDB.Modulo_Eliminar(request, codEmpresa, usuario);
         }
 
         public ErrorDto Modulo_Guardar(ModuloDto request)

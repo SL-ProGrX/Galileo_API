@@ -378,7 +378,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 return connection.QuerySingle<DateTime>("SELECT dbo.MyGetdate()");
             }
-            catch
+            catch (DataException)
             {
                 return DateTime.Now;
             }
@@ -1280,7 +1280,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 catalogos.fecha_servidor = connection.QuerySingle<DateTime>("SELECT dbo.MyGetdate()");
             }
-            catch
+            catch (DataException)
             {
                 catalogos.fecha_servidor = DateTime.Now;
             }

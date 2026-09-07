@@ -1,5 +1,11 @@
 ﻿namespace Galileo.Models
 {
+    public class ExplorerRootInfoDto
+    {
+        public string Servidor { get; set; } = string.Empty;
+        public string BaseDatos { get; set; } = string.Empty;
+    }
+
     public class UsAdminClientesDto
     {
         public string USUARIO { get; set; } = string.Empty;
