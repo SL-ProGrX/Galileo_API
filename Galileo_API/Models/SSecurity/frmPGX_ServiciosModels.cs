@@ -2,6 +2,7 @@
 {
     public class ServicioSuscripcion
     {
+        public int? CodEmpresa { get; set; }
         public string Cod_Servicio { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public int? Aplica_Por_Usuario { get; set; }

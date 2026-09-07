@@ -10,39 +10,39 @@ namespace Galileo.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class VendedorController : ControllerBase
+    public class FrmPgxVendedoresController : ControllerBase
     {
         private readonly IConfiguration _config;
 
-        public VendedorController(IConfiguration config)
+        public FrmPgxVendedoresController(IConfiguration config)
         {
             _config = config;
         }
 
         [HttpGet("Vendedor_ObtenerTodos")]
-        public List<Vendedor> Vendedor_ObtenerTodos()
+        public ErrorDto<List<Vendedor>> Vendedor_ObtenerTodos()
         {
-            return new VendedorBL(_config).Vendedor_ObtenerTodos();
+            return new FrmPgxVendedoresBL(_config).Vendedor_ObtenerTodos();
         }
 
 
         [HttpPost("Vendedor_Insertar")]
         public ErrorDto Vendedor_Insertar(Vendedor request)
         {
-            return new VendedorBL(_config).Vendedor_Insertar(request);
+            return new FrmPgxVendedoresBL(_config).Vendedor_Insertar(request);
         }
 
         [HttpPost("Vendedor_Eliminar")]
         public ErrorDto Vendedor_Eliminar(Vendedor request)
         {
-            return new VendedorBL(_config).Vendedor_Eliminar(request);
+            return new FrmPgxVendedoresBL(_config).Vendedor_Eliminar(request);
         }
 
 
         [HttpPost("Vendedor_Actualizar")]
         public ErrorDto Vendedor_Actualizar(Vendedor request)
         {
-            return new VendedorBL(_config).Vendedor_Actualizar(request);
+            return new FrmPgxVendedoresBL(_config).Vendedor_Actualizar(request);
         }
     }
 }

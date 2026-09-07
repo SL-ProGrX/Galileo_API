@@ -1,11 +1,11 @@
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
-using Galileo.Models.INV;
 
 namespace Galileo.BusinessLogic
 {
-    public class FrmInvRepGeneralBL
+    public sealed class FrmInvRepGeneralBL
     {
         private readonly FrmInvRepGeneralDB _db;
 
@@ -14,34 +14,40 @@ namespace Galileo.BusinessLogic
             _db = new FrmInvRepGeneralDB(config);
         }
 
-        public ErrorDto<List<BodegaReporteInvDto>> Obtener_Bodegas(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            INV_RepGeneral_Bodegas_Obtener(int CodEmpresa)
         {
-            return _db.Obtener_Bodegas(CodEmpresa);
+            return _db.INV_RepGeneral_Bodegas_Obtener(CodEmpresa);
         }
 
-        public ErrorDto<List<UnidadesReporteInvDto>> Obtener_Unidades(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            INV_RepGeneral_Unidades_Obtener(int CodEmpresa)
         {
-            return _db.Obtener_Unidades(CodEmpresa);
+            return _db.INV_RepGeneral_Unidades_Obtener(CodEmpresa);
         }
 
-        public ErrorDto<List<DepartamentoReporteInvDto>> Obtener_Departamento(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            INV_RepGeneral_Departamentos_Obtener(int CodEmpresa)
         {
-            return _db.Obtener_Departamento(CodEmpresa);
+            return _db.INV_RepGeneral_Departamentos_Obtener(CodEmpresa);
         }
 
-        public ErrorDto<List<ProveedoresInvDto>> Obtener_Proveedor(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            INV_RepGeneral_Proveedores_Obtener(int CodEmpresa)
         {
-            return _db.Obtener_Proveedor(CodEmpresa);
+            return _db.INV_RepGeneral_Proveedores_Obtener(CodEmpresa);
         }
 
-        public ErrorDto<List<LineasInvDto>> Obtener_Lineas(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            INV_RepGeneral_Lineas_Obtener(int CodEmpresa)
         {
-            return _db.Obtener_Lineas(CodEmpresa);
+            return _db.INV_RepGeneral_Lineas_Obtener(CodEmpresa);
         }
 
-        public ErrorDto<List<CprUensLista>> CprUens_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<List<CprUensLista>>
+            INV_RepGeneral_Uens_Obtener(int CodEmpresa, string usuario)
         {
-            return _db.CprUens_Obtener(CodEmpresa, usuario);
+            return _db.INV_RepGeneral_Uens_Obtener(CodEmpresa, usuario);
         }
     }
 }

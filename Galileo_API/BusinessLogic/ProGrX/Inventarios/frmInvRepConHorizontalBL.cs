@@ -1,19 +1,19 @@
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.INV;
 
 namespace Galileo.BusinessLogic
 {
-    public class FrmInvRepConHorizontalBL
+    public class FrmInvRepConHorizontalBl
     {
-        private readonly FrmInvRepConHorizontalDB _db;
+        private readonly FrmInvRepConHorizontalDb _db;
 
-        public FrmInvRepConHorizontalBL(IConfiguration config)
+        public FrmInvRepConHorizontalBl(IConfiguration config)
         {
-            _db = new FrmInvRepConHorizontalDB(config);
+            _db = new FrmInvRepConHorizontalDb(config);
         }
 
-        public ErrorDto<List<RepBodegaDto>> Obtener_Bodegas(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Obtener_Bodegas(int CodEmpresa)
         {
             return _db.Obtener_Bodegas(CodEmpresa);
         }

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
-using Galileo.Models.INV;
+using Galileo.Models;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
@@ -11,15 +11,14 @@ namespace Galileo.Controllers
     [ApiController]
     public class FrmInvRepConHorizontalController : ControllerBase
     {
-        private readonly FrmInvRepConHorizontalBL _bl;
+        private readonly FrmInvRepConHorizontalBl _bl;
         public FrmInvRepConHorizontalController(IConfiguration config)
         {
-            _bl = new FrmInvRepConHorizontalBL(config);
+            _bl = new FrmInvRepConHorizontalBl(config);
         }
 
         [HttpGet("Obtener_Bodegas")]
-        // [Authorize]
-        public ErrorDto<List<RepBodegaDto>> ListadoPrecios_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> ListadoPrecios_Obtener(int CodEmpresa)
         {
             return _bl.Obtener_Bodegas(CodEmpresa);
         }

@@ -20,7 +20,7 @@ namespace Galileo.Controllers
 
 
         [HttpGet("Modulo_ObtenerTodos")]
-        public List<ModuloDto> Modulo_ObtenerTodos()
+        public ErrorDto<List<ModuloDto>> Modulo_ObtenerTodos()
         {
             return ModulosBL.Modulo_ObtenerTodos();
         }
@@ -34,9 +34,9 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("Modulo_Eliminar")]
-        public ErrorDto Modulo_Eliminar(int request)
+        public ErrorDto Modulo_Eliminar(int request, int codEmpresa = 0, string usuario = "")
         {
-            return ModulosBL.Modulo_Eliminar(request);
+            return ModulosBL.Modulo_Eliminar(request, codEmpresa, usuario);
         }
 
     }
