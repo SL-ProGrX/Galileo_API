@@ -123,7 +123,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 var ptsExtraFrap = row.ContainsKey("PTS_EXTRA_FRAP")
                     ? GetDecimal(row, "PTS_EXTRA_FRAP")
                     : GetDecimal(row, "PTS_EXTRA_FAP");
-                var credito = ConstruirCredito(connection, row, datosPersona.FrecuenciaPago);
+                var credito = ConstruirCredito(row, datosPersona.FrecuenciaPago);
                 var edadPlazo = CalcularEdadPlazo(
                     new EdadPlazoDatos(
                         GetDateTime(row, "fecha_nacimiento"),
@@ -1274,28 +1274,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 catalogos.divisas = [];
             }
 
-            try
-            {
-                var rawRows = connection.Query("EXEC spCRDPreaTIPO_SALARIO_TT");
-                var tipos_salario = new List<FrmPreaEstudiov2DropdownDto>();
-                foreach (var r in rawRows)
-                {
-                    var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
-                    tipos_salario.Add(new FrmPreaEstudiov2DropdownDto
-                    {
-                        item = GetString(dict, "TIPO_SALARIO"),
-                        descripcion = GetString(dict, "DescTipoSalario"),
-                        // Flag que indica si el campo Base (EXTRAS_FIJAS) es editable.
-                        // VB6: frmPreaEstudiov2.frm línea 10466 — solo desbloquea si MODIFICA_EXTRAS_FIJAS = 1.
-                        modifica_extras_fijas = GetBool(dict, "MODIFICA_EXTRAS_FIJAS"),
-                    });
-                }
-                catalogos.tipos_salario = tipos_salario;
-            }
-            catch
-            {
-                catalogos.tipos_salario = [];
-            }
+            catalogos.tipos_salario = CargarTiposSalario(connection);
 
             // Se resuelve desde el snapshot de CRD_PREA_PARAMETROS que ya trajo Cargar,
             // en lugar de repetir la consulta a la misma tabla.
@@ -1377,35 +1356,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 catalogos.tipos_extra = [];
             }
 
-            try
-            {
-                // VB6: cboFondo (Form_Load, línea ~11461-11462) -> EXEC spCRDGarantiaFND.
-                // sbCbo_Llena_New (mProGrX_Dlls.bas) liga por nombre de columna (IdX/ItmX),
-                // no posicional; el SP debe devolver esas columnas ya aliasadas.
-                var rawRows = connection.Query("EXEC spCRDGarantiaFND");
-                var fondos = new List<FrmPreaEstudiov2DropdownDto>();
-                foreach (var r in rawRows)
-                {
-                    var dict = new Dictionary<string, object>((IDictionary<string, object>)r, StringComparer.OrdinalIgnoreCase);
-                    var item = GetFirstString(dict, "IdX", "COD_FONDO", "CODIGO", "FONDO", "GARANTIA_FND");
-                    var descripcion = GetFirstString(dict, "ItmX", "DESCRIPCION", "NOMBRE", "DESC_FONDO");
-                    if (string.IsNullOrWhiteSpace(item) || string.IsNullOrWhiteSpace(descripcion))
-                    {
-                        continue;
-                    }
-
-                    fondos.Add(new FrmPreaEstudiov2DropdownDto
-                    {
-                        item = item,
-                        descripcion = descripcion,
-                    });
-                }
-                catalogos.fondos = fondos;
-            }
-            catch
-            {
-                catalogos.fondos = [];
-            }
+            catalogos.fondos = CargarFondos(connection);
 
             try
             {
@@ -1446,6 +1397,64 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             }
 
             return catalogos;
+        }
+
+        private static List<FrmPreaEstudiov2DropdownDto> CargarTiposSalario(System.Data.IDbConnection connection)
+        {
+            try
+            {
+                var rawRows = connection.Query("EXEC spCRDPreaTIPO_SALARIO_TT");
+                var tiposSalario = new List<FrmPreaEstudiov2DropdownDto>();
+                foreach (var row in rawRows)
+                {
+                    var dict = new Dictionary<string, object>((IDictionary<string, object>)row, StringComparer.OrdinalIgnoreCase);
+                    tiposSalario.Add(new FrmPreaEstudiov2DropdownDto
+                    {
+                        item = GetString(dict, "TIPO_SALARIO"),
+                        descripcion = GetString(dict, "DescTipoSalario"),
+                        // VB6: solo desbloquea EXTRAS_FIJAS cuando MODIFICA_EXTRAS_FIJAS = 1.
+                        modifica_extras_fijas = GetBool(dict, "MODIFICA_EXTRAS_FIJAS"),
+                    });
+                }
+
+                return tiposSalario;
+            }
+            catch
+            {
+                return [];
+            }
+        }
+
+        private static List<FrmPreaEstudiov2DropdownDto> CargarFondos(System.Data.IDbConnection connection)
+        {
+            try
+            {
+                // VB6: cboFondo se llena con spCRDGarantiaFND.
+                var rawRows = connection.Query("EXEC spCRDGarantiaFND");
+                var fondos = new List<FrmPreaEstudiov2DropdownDto>();
+                foreach (var row in rawRows)
+                {
+                    var dict = new Dictionary<string, object>((IDictionary<string, object>)row, StringComparer.OrdinalIgnoreCase);
+                    var item = GetFirstString(dict, "IdX", "COD_FONDO", "CODIGO", "FONDO", "GARANTIA_FND");
+                    var descripcion = GetFirstString(dict, "ItmX", "DESCRIPCION", "NOMBRE", "DESC_FONDO");
+                    if (string.IsNullOrWhiteSpace(item) || string.IsNullOrWhiteSpace(descripcion))
+                    {
+                        continue;
+                    }
+
+                    fondos.Add(new FrmPreaEstudiov2DropdownDto
+                    {
+                        item = item,
+                        descripcion = descripcion,
+                    });
+                }
+
+                return fondos;
+            }
+            catch
+            {
+                return [];
+            }
         }
 
         /// <summary>
