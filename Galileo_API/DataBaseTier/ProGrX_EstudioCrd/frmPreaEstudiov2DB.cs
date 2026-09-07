@@ -605,7 +605,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     new { Linea = lineaParam }
                 ).ToList();
             }
-            catch
+            catch (Exception)
             {
                 cph = [];
             }
