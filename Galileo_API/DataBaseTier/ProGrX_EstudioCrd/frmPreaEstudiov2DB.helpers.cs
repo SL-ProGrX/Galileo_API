@@ -461,7 +461,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 connection.Execute(
                     "spCrdPreaEliminarIncapacidades",
-                    new { Expediente = codPreanalisis },
+                    new { COD_PREANALISIS = codPreanalisis },
                     commandType: CommandType.StoredProcedure
                 );
 
@@ -475,7 +475,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         "spCrdPreaGeneraIncapacidades",
                         new
                         {
-                            Expediente = codPreanalisis,
+                            COD_PREANALISIS = codPreanalisis,
                             Dias = dias,
                             Desde = incapacidad.desde.ToString("yyyy-MM-dd"),
                             Hasta = incapacidad.hasta.ToString("yyyy-MM-dd"),
@@ -518,7 +518,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 connection.Execute(
                     "spCrdPreaEliminarIncapacidades",
-                    new { Expediente = cod_preanalisis.Trim() },
+                    new { COD_PREANALISIS = cod_preanalisis.Trim() },
                     commandType: CommandType.StoredProcedure
                 );
 
