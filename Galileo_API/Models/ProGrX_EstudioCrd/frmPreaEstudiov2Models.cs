@@ -1,4 +1,4 @@
-﻿namespace Galileo_API.Models.ProGrX_EstudioCrd
+namespace Galileo_API.Models.ProGrX_EstudioCrd
 {
     #region Carga / Scroll
 
@@ -87,6 +87,12 @@
         public string sexo { get; set; } = string.Empty;
         public DateTime? fecha_nacimiento { get; set; }
         public int edad { get; set; }
+        public int edad_anios { get; set; }
+        public int edad_meses { get; set; }
+        public int edad_dias { get; set; }
+        public string edad_descripcion { get; set; } = string.Empty;
+        public int plazo_maximo { get; set; }
+        public bool edad_excede_limite { get; set; }
         public string estado_persona { get; set; } = string.Empty;
         public string clasificacion_crediticia { get; set; } = string.Empty;
         public int edad_aplica { get; set; }
@@ -439,6 +445,15 @@
         /// VB6: txtEjecutivo_KeyDown (F4) -> select ID_PROMOTOR as 'Id.', Nombre, Usuario
         /// from promotores + " and Estado = 1", orden por ID_PROMOTOR.</summary>
         public List<FrmPreaEstudiov2EjecutivoDto> ejecutivos { get; set; } = [];
+
+        /// <summary>GlobalEdadMaximaPermitidaHombre/Mujeres (CRD_PREA_PARAMETROS '01'/'02').
+        /// Usado por Angular para calcular txtPlMax al abrir la pantalla (sin expediente).</summary>
+        public int edad_maxima_hombres { get; set; }
+        public int edad_maxima_mujeres { get; set; }
+
+        /// <summary>Fecha/hora del servidor SQL (VB6: fxFechaServidor / mFecha).
+        /// Usada por Angular como referencia de "hoy" para calcular edad y plazo máximo.</summary>
+        public DateTime fecha_servidor { get; set; }
     }
 
     /// <summary>
