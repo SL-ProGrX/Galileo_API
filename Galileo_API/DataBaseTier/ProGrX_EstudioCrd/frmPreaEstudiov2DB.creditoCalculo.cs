@@ -16,7 +16,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// para los cambios explícitos del usuario en Prea_frmPreaEstudiov2_Credito_Recalcular.
         /// </summary>
         private static FrmPreaEstudiov2CreditoDto ConstruirCredito(
-            IDbConnection connection,
             IDictionary<string, object> row,
             string frecuenciaPago)
         {
