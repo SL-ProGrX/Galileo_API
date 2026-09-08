@@ -472,10 +472,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
             };
         }
 
-        private static DynamicParameters
-            CrearParametrosConsulta(
-                AseVerificaAsientosDocumentoListaRequest request,
-                bool exportar)
+        private static DynamicParameters CrearParametrosConsulta(
+     AseVerificaAsientosDocumentoListaRequest request,
+     bool exportar)
         {
             var filtros =
                 request.filtros
@@ -524,55 +523,75 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
                     .Date
                     .AddDays(1);
 
-            var parameters =
-                new DynamicParameters();
+            var parameters = new DynamicParameters();
 
-            parameters.Add(
+            AgregarParametro(
+                parameters,
                 "FechaInicio",
                 fechaInicio,
                 DbType.DateTime);
 
-            parameters.Add(
+            AgregarParametro(
+                parameters,
                 "FechaFin",
                 fechaFin,
                 DbType.DateTime);
 
-            parameters.Add(
+            AgregarParametro(
+                parameters,
                 "Filtro",
                 filtro,
                 DbType.String);
 
-            parameters.Add(
+            AgregarParametro(
+                parameters,
                 "Like",
                 $"%{filtro}%",
                 DbType.String);
 
-            parameters.Add(
+            AgregarParametro(
+                parameters,
                 "SortCode",
                 sortCode,
                 DbType.Int32);
 
-            parameters.Add(
+            AgregarParametro(
+                parameters,
                 "SortAsc",
                 sortAsc ? 1 : 0,
                 DbType.Int32);
 
-            parameters.Add(
+            AgregarParametro(
+                parameters,
                 "UsarPaginacion",
                 usarPaginacion ? 1 : 0,
                 DbType.Int32);
 
-            parameters.Add(
+            AgregarParametro(
+                parameters,
                 "Offset",
                 offset,
                 DbType.Int32);
 
-            parameters.Add(
+            AgregarParametro(
+                parameters,
                 "PageSize",
                 pageSize,
                 DbType.Int32);
 
             return parameters;
+        }
+
+        private static void AgregarParametro(
+            DynamicParameters parameters,
+            string nombre,
+            object? valor,
+            DbType tipo)
+        {
+            parameters.Add(
+                nombre,
+                valor,
+                tipo);
         }
 
         private static string? ValidarSolicitud(
