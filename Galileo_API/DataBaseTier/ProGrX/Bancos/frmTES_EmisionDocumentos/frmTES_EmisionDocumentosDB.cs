@@ -671,7 +671,13 @@ where B.estado = 'A'
 
             foreach (var item in transacciones)
             {
-                var now = mTesFunciones.TES_EmisionDocumentos_FechaEmisionResolver(ctx.Conn, item.documento_banco); 
+                var now = DateTime.Now;
+                if (ctx.Filtro.chkEmiteFechaDoc)
+                {
+                    now = mTesFunciones.TES_EmisionDocumentos_FechaEmisionResolver(ctx.Conn, item.documento_banco);
+                }
+
+                 
                 if (contador >= ctx.Filtro.verificacion)
                     break;
 
