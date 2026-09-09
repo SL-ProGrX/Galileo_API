@@ -785,8 +785,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-            var vFecha = mTesFunciones.TES_EmisionDocumentos_FechaEmisionResolver(connection, t.documento_banco);
-
             var emision = mTesoreria.sbTesEmitirDocumento(CodEmpresa, usuario, vModulo, t.nsolicitud, t.ndocumento, null);
 
             if (emision.Code == -1)
