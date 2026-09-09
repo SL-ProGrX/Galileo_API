@@ -654,7 +654,7 @@ where B.estado = 'A'
             if (ctx.ChequesReport == null)
                 return DbHelper.CreateErrorResponse<object>("No se pudo cargar archivos especiales del banco.");
 
-            var now = DateTime.Now;
+           
             var consecutivo = ResolverConsecutivo(ctx);
 
             var transacciones = ctx.Conn.Query<TesTransaccionDto>(ctx.Q.QueryTransac, ctx.Q.Parametros).ToList();
@@ -671,6 +671,7 @@ where B.estado = 'A'
 
             foreach (var item in transacciones)
             {
+                var now = mTesFunciones.TES_EmisionDocumentos_FechaEmisionResolver(ctx.Conn, item.documento_banco); 
                 if (contador >= ctx.Filtro.verificacion)
                     break;
 
