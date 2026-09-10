@@ -41,9 +41,9 @@ namespace Galileo_API.BusinessLogic
             return _Db.Tes_AutoRegistroLista_Obtener(CodEmpresa, Jfiltros);
         }
 
-        public ErrorDto TES_BancosCargados_Aplicar(int CodEmpresa, string cod_banco, string usuario, List<TesCargadoExcelDto> file)
+        public ErrorDto TES_BancosCargados_Aplicar(int CodEmpresa, string cod_banco, string usuario, bool chkGeneraSolicitud, List<TesCargadoExcelDto> file)
         {
-            return _Db.TES_BancosCargados_Aplicar(CodEmpresa, cod_banco, usuario, file);
+            return _Db.TES_BancosCargados_Aplicar(CodEmpresa, cod_banco, usuario, chkGeneraSolicitud, file);
         }
 
         public ErrorDto<List<TeslistaRegistroBancosDto>> TES_ListaRegistroBancos_Obtener(int CodEmpresa, string filtros)
