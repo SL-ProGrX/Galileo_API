@@ -34,6 +34,8 @@
         public string tcon { get; set; } = string.Empty;
         public string ncon { get; set; } = string.Empty;
         public string plan_desc { get; set; } = string.Empty;
-        public string estado { get; set; } = string.Empty;  // Incluido para representar el valor usado en el Select Case
+        public string estado { get; set; } = string.Empty;
+        public string nota_solicita { get; set; } = string.Empty;
+        public string nota_resolucion { get; set; } = string.Empty;
     }
 }
