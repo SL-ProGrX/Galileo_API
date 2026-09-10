@@ -7,5 +7,6 @@
         public string Audience { get; set; } = String.Empty;
         public string Subject { get; set; } = "0";
         public int AccessTokenMinutes { get; set; } = 15;
+        public int RefreshTokenDays { get; set; } = 7;
     }
 }

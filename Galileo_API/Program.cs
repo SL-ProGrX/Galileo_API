@@ -6,7 +6,10 @@ using Galileo_API;
 using System.Text.Json;
 using System.Globalization;
 using Galileo.DataBaseTier;
+using Galileo.BusinessLogic.Auth;
 using Microsoft.OpenApi;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 using Galileo_API.Extensions ;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
 
@@ -35,6 +38,9 @@ if (!string.IsNullOrWhiteSpace(externalConfigPath))
 
 // ✅ Registrar MemoryCache (si luego cacheas permisos)
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<AuthSessionStore>();
+builder.Services.AddSingleton<AccessTokenService>();
+builder.Services.AddScoped<AuthBL>();
 
 // ✅ Registrar el filtro como servicio
 builder.Services.AddScoped<EmpresaAccessFilter>();
@@ -47,6 +53,15 @@ builder.Services.AddControllers(options =>
 
 // ✅ Authorization (esto reemplaza tu AddMvcCore().AddAuthorization())
 builder.Services.AddAuthorization();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("auth", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 20;
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.QueueLimit = 0;
+    });
+});
 
 // Swagger + Bearer
 builder.Services.AddEndpointsApiExplorer();
@@ -141,12 +156,17 @@ builder.Services
         {
             OnAuthenticationFailed = context =>
             {
-                Console.WriteLine("Token inválido: " + context.Exception.Message);
                 return Task.CompletedTask;
             },
             OnTokenValidated = context =>
             {
-                Console.WriteLine("Token válido: " + context.SecurityToken);
+                var sessionId = context.Principal?.FindFirst("sid")?.Value;
+                var sessions = context.HttpContext.RequestServices.GetRequiredService<AuthSessionStore>();
+                if (string.IsNullOrWhiteSpace(sessionId) || !sessions.IsSessionActive(sessionId))
+                {
+                    context.Fail("La sesión ya no está activa.");
+                }
+
                 return Task.CompletedTask;
             },
             OnChallenge = context =>
@@ -212,6 +232,7 @@ app.UseHttpsRedirection();
 app.UseRouting();
 
 app.UseCors(MyAllowSpecificOrigins);
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
