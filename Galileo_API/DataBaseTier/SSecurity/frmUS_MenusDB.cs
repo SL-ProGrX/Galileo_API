@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models;
+using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using System.Data;
 
@@ -50,6 +51,22 @@ namespace Galileo.DataBaseTier
             catch (Exception ex)
             {
                 throw new InvalidOperationException("No fue posible consultar el registro solicitado.", ex);
+            }
+        }
+
+        private static ErrorDto<T> Execute<T>(Func<T> action)
+        {
+            try
+            {
+                return DbHelper.CreateOkResponse(action());
+            }
+            catch (Exception ex)
+            {
+                var baseException = ex.GetBaseException();
+                var description = ReferenceEquals(baseException, ex)
+                    ? ex.Message
+                    : $"{ex.Message} Detalle: {baseException.Message}";
+                return DbHelper.CreateErrorResponse<T>(description);
             }
         }
 
@@ -103,49 +120,49 @@ namespace Galileo.DataBaseTier
 
         // === Métodos públicos ===
 
-        public List<UsMenuDto> ObtenerUsMenusPorTipoYNodoPadreEsNull(string? Tipo)
+        public ErrorDto<List<UsMenuDto>> ObtenerUsMenusPorTipoYNodoPadreEsNull(string? Tipo)
         {
             Tipo ??= "M";
             const string sql = "select * from US_Menus where tipo = @Tipo and nodo_padre is null order by prioridad";
 
-            return QueryList<UsMenuDto>(sql, new { Tipo });
+            return Execute(() => QueryList<UsMenuDto>(sql, new { Tipo }));
         }
 
-        public List<UsMenuDto> ObtenerUsMenus()
+        public ErrorDto<List<UsMenuDto>> ObtenerUsMenus()
         {
             const string sql = "select * from US_Menus order by MENU_NODO";
-            return QueryList<UsMenuDto>(sql);
+            return Execute(() => QueryList<UsMenuDto>(sql));
         }
 
-        public List<UsModuloDto> ObtenerUsModulos()
+        public ErrorDto<List<UsModuloDto>> ObtenerUsModulos()
         {
             const string sql = "select * from us_modulos order by modulo";
-            return QueryList<UsModuloDto>(sql);
+            return Execute(() => QueryList<UsModuloDto>(sql));
         }
 
-        public List<UsFormularioDto> ObtenerUsFormularios()
+        public ErrorDto<List<UsFormularioDto>> ObtenerUsFormularios()
         {
             const string sql = "select *,dbo.fxSEG_OpcionAsignada(Formulario,0) as 'Existe' from US_FORMULARIOS order by formulario";
-            return QueryList<UsFormularioDto>(sql);
+            return Execute(() => QueryList<UsFormularioDto>(sql));
         }
 
-        public int? ObtenerMenuNodoPorNodoPadreYPrioridad(int NodoPadre, int Prioridad)
+        public ErrorDto<int?> ObtenerMenuNodoPorNodoPadreYPrioridad(int NodoPadre, int Prioridad)
         {
             const string sql = "select MENU_NODO  from US_MENUS where NODO_PADRE = @NodoPadre and PRIORIDAD = @Prioridad";
 
-            return QueryFirstOrDefault<int?>(sql, new
+            return Execute(() => QueryFirstOrDefault<int?>(sql, new
             {
                 NodoPadre,
                 Prioridad
-            });
+            }));
         }
 
-        public ResultadoCrearYEditarUsMenuDto? ActualizarUsMenu(UsMenuDto info)
+        public ErrorDto<ResultadoCrearYEditarUsMenuDto?> ActualizarUsMenu(UsMenuDto info)
         {
-            return EjecutarSpMenu("spGa_Menu_Update", info);
+            return Execute(() => EjecutarSpMenu("spGa_Menu_Update", info));
         }
 
-        public int? ObtenerMenuPrioridadPorMenuNodoPadre(int NodoPadre)
+        public ErrorDto<int?> ObtenerMenuPrioridadPorMenuNodoPadre(int NodoPadre)
         {
             string sql = "select isnull(max(prioridad),1000) + 1 as 'Prioridad' from us_menus where Nodo_Padre is null";
 
@@ -154,40 +171,40 @@ namespace Galileo.DataBaseTier
                 sql = "select isnull(max(prioridad),1000) + 1 as 'Prioridad' from us_menus where Nodo_Padre = @NodoPadre";
             }
 
-            return QueryFirstOrDefault<int?>(sql, new { NodoPadre });
+            return Execute(() => QueryFirstOrDefault<int?>(sql, new { NodoPadre }));
         }
 
-        public int? ObtenerMenuNodoConIsNull()
+        public ErrorDto<int?> ObtenerMenuNodoConIsNull()
         {
             const string sql = "select isnull(max(menu_nodo),0) + 1 as MenuNodo from us_Menus";
-            return QueryFirstOrDefault<int?>(sql);
+            return Execute(() => QueryFirstOrDefault<int?>(sql));
         }
 
-        public UsModuloDto? ObtenerUsModulosOrdenadosPorTipo(string Tipo)
+        public ErrorDto<UsModuloDto?> ObtenerUsModulosOrdenadosPorTipo(string Tipo)
         {
             const string sql = "select * from US_modulos where modulo not in(select modulo from us_menus where tipo = @Tipo) order by modulo";
 
-            return QueryFirstOrDefault<UsModuloDto>(sql, new { Tipo });
+            return Execute(() => QueryFirstOrDefault<UsModuloDto>(sql, new { Tipo }));
         }
 
-        public ResultadoCrearYEditarUsMenuDto? CrearUsMenu(UsMenuDto info)
+        public ErrorDto<ResultadoCrearYEditarUsMenuDto?> CrearUsMenu(UsMenuDto info)
         {
-            return EjecutarSpMenu("spGa_Menu_Crear", info);
+            return Execute(() => EjecutarSpMenu("spGa_Menu_Crear", info));
         }
 
-        public int? EliminarUnMenuPorNodoPadre(int NodoPadre)
+        public ErrorDto<int?> EliminarUnMenuPorNodoPadre(int NodoPadre)
         {
             const string sql = "delete us_menus where menu_nodo = @NodoPadre";
-            return ExecuteReturningInt(sql, new { NodoPadre });
+            return Execute(() => ExecuteReturningInt(sql, new { NodoPadre }));
         }
 
-        public int? EliminarTodosLosMenusPorNodoPadre(int NodoPadre)
+        public ErrorDto<int?> EliminarTodosLosMenusPorNodoPadre(int NodoPadre)
         {
             const string sql = "delete us_menus_usos where menu_nodo in(select menu_nodo from us_menus where nodo_padre = @NodoPadre)";
-            return ExecuteReturningInt(sql, new { NodoPadre });
+            return Execute(() => ExecuteReturningInt(sql, new { NodoPadre }));
         }
 
-        public int? EliminarUsMenusPorMenuNodo(int MenuNodo)
+        public ErrorDto<int?> EliminarUsMenusPorMenuNodo(int MenuNodo)
         {
             const string sql = @"
                 DELETE FROM US_MENUS_USOS
@@ -198,37 +215,35 @@ namespace Galileo.DataBaseTier
                 );
                 DELETE FROM US_MENUS
                 WHERE MENU_NODO = @MenuNodo OR NODO_PADRE = @MenuNodo;";
-            return ExecuteReturningInt(sql, new { MenuNodo });
+            return Execute(() => ExecuteReturningInt(sql, new { MenuNodo }));
         }
 
-        public int? ObtenerMenuNodoPorMenuFormulario(string Formulario)
+        public ErrorDto<int?> ObtenerMenuNodoPorMenuFormulario(string Formulario)
         {
             const string sql = "select menu_nodo from us_menus where formulario = @Formulario";
-            return QueryFirstOrDefault<int?>(sql, new { Formulario });
+            return Execute(() => QueryFirstOrDefault<int?>(sql, new { Formulario }));
         }
 
-        public UsFormularioDto ObtenerUsFormularioPorFormulario(string Formulario)
+        public ErrorDto<UsFormularioDto> ObtenerUsFormularioPorFormulario(string Formulario)
         {
             const string sql = "select * from us_formularios where formulario = @Formulario";
 
-            var result = QueryFirstOrDefault<UsFormularioDto>(sql, new { Formulario });
-            return result ?? new UsFormularioDto();
+            return Execute(() => QueryFirstOrDefault<UsFormularioDto>(sql, new { Formulario }) ?? new UsFormularioDto());
         }
 
-        public UsMenuDto ObtenerUsMenuPorMenuNodo(int MenuNodo)
+        public ErrorDto<UsMenuDto> ObtenerUsMenuPorMenuNodo(int MenuNodo)
         {
             const string sql = "Select * from US_Menus where Menu_Nodo = @MenuNodo";
 
-            var result = QueryFirstOrDefault<UsMenuDto>(sql, new { MenuNodo });
-            return result ?? new UsMenuDto();
+            return Execute(() => QueryFirstOrDefault<UsMenuDto>(sql, new { MenuNodo }) ?? new UsMenuDto());
         }
 
-        public List<UsIconWeb> ObtenerUsMenu_IconosWeb()
+        public ErrorDto<List<UsIconWeb>> ObtenerUsMenu_IconosWeb()
         {
             const string sql = @"select DISTINCT ICONO_WEB as 'label',ICONO_WEB as 'value', ICONO_WEB as 'iconMenu' 
                                  from US_Menus order by ICONO_WEB asc";
 
-            return QueryList<UsIconWeb>(sql);
+            return Execute(() => QueryList<UsIconWeb>(sql));
         }
     }
 }
