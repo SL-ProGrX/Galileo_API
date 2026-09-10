@@ -263,15 +263,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         Descripcion = row.descripcion
                     };
 
-                    var query = string.Empty;
-                    if (chkGeneraSolicitud)
-                    {
-                        query = @"EXEC spTes_Bancos_Mov_Load @IdBanco, @Fecha, @Documento, @TipoMov, @Importe,@Descripcion";
-                    }
-                    else
-                    {
-                        query = @"EXEC spTes_W_Bancos_Mov_Load @IdBanco, @Fecha, @Documento, @TipoMov, @Importe,@Descripcion";
-                    }
+                    var query = chkGeneraSolicitud
+                        ? @"EXEC spTes_Bancos_Mov_Load @IdBanco, @Fecha, @Documento, @TipoMov, @Importe,@Descripcion"
+                        : @"EXEC spTes_W_Bancos_Mov_Load @IdBanco, @Fecha, @Documento, @TipoMov, @Importe,@Descripcion";
 
                     var result = conn.Query<int>(query, parametros).FirstOrDefault();
 
