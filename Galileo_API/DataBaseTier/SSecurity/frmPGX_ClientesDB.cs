@@ -230,7 +230,37 @@ namespace Galileo.DataBaseTier
             return DbHelper.CreateOkResponse<ClienteDto?>(info);
         }
 
-        public ErrorDto TestConnection(ConnectionModel info)
+        public ErrorDto TestConnection(int codEmpresa, string? connectionName)
+        {
+            if (codEmpresa <= 0)
+            {
+                return DbHelper.ErrorResponse("Debe seleccionar un cliente guardado para probar la conexión.");
+            }
+
+            var query = ObtenerConsultaConexion(connectionName);
+            if (query is null)
+            {
+                return DbHelper.ErrorResponse("El tipo de conexión no es válido.");
+            }
+
+            var connectionInfo = QuerySingleResponse<ConnectionModel>(
+                query,
+                new { CodEmpresa = codEmpresa });
+
+            if (connectionInfo.Code != 0)
+            {
+                return DbHelper.ErrorResponse(connectionInfo.Description ?? "No fue posible obtener la conexión.");
+            }
+
+            if (connectionInfo.Result is null)
+            {
+                return DbHelper.ErrorResponse("No se encontró la conexión del cliente.");
+            }
+
+            return TestStoredConnection(connectionInfo.Result);
+        }
+
+        private ErrorDto TestStoredConnection(ConnectionModel info)
         {
             var response = new ErrorDto();
 
@@ -282,6 +312,42 @@ namespace Galileo.DataBaseTier
             }
 
             return response;
+        }
+
+        private static string? ObtenerConsultaConexion(string? connectionName)
+        {
+            return connectionName?.Trim().ToUpperInvariant() switch
+            {
+                "CORE" => @"SELECT TOP 1
+                                pgx_core_server AS [Server],
+                                pgx_core_db AS [Database],
+                                pgx_core_user AS [User],
+                                pgx_core_key AS [Password]
+                            FROM PGX_CLIENTES
+                            WHERE cod_empresa = @CodEmpresa",
+                "ANALISIS" => @"SELECT TOP 1
+                                    pgx_analisis_server AS [Server],
+                                    pgx_analisis_db AS [Database],
+                                    pgx_analisis_user AS [User],
+                                    pgx_analisis_key AS [Password]
+                                FROM PGX_CLIENTES
+                                WHERE cod_empresa = @CodEmpresa",
+                "AUXILIAR" => @"SELECT TOP 1
+                                    pgx_auxiliar_server AS [Server],
+                                    pgx_auxiliar_db AS [Database],
+                                    pgx_auxiliar_user AS [User],
+                                    pgx_auxiliar_key AS [Password]
+                                FROM PGX_CLIENTES
+                                WHERE cod_empresa = @CodEmpresa",
+                "PRUEBAS" => @"SELECT TOP 1
+                                   pgx_pruebas_server AS [Server],
+                                   pgx_pruebas_db AS [Database],
+                                   pgx_pruebas_user AS [User],
+                                   pgx_pruebas_key AS [Password]
+                               FROM PGX_CLIENTES
+                               WHERE cod_empresa = @CodEmpresa",
+                _ => null
+            };
         }
 
         private static string ValidarParametroConexion(

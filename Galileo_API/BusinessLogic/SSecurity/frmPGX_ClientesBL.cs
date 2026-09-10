@@ -33,9 +33,9 @@ namespace Galileo.BusinessLogic
             return _clientesDB.ConsultaAscDesc(CodEmpresa, tipo);
         }
 
-        public ErrorDto TestConnection(ConnectionModel info)
+        public ErrorDto TestConnection(int CodEmpresa, string connectionName)
         {
-            return _clientesDB.TestConnection(info);
+            return _clientesDB.TestConnection(CodEmpresa, connectionName);
         }
 
         public ErrorDto Cliente_Modificar(ClienteDto info)

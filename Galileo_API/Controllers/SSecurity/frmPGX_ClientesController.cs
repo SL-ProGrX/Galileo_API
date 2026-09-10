@@ -48,9 +48,9 @@ namespace Galileo.Controllers
 
         [HttpPost("TestConnection")]
         [Authorize]
-        public ErrorDto TestConnection(ConnectionModel info)
+        public ErrorDto TestConnection(int CodEmpresa, string connectionName)
         {
-            return ClientesBL.TestConnection(info);
+            return ClientesBL.TestConnection(CodEmpresa, connectionName);
         }
 
         [HttpPost("Cliente_Modificar")]
