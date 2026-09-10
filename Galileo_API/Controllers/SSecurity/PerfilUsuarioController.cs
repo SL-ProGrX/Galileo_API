@@ -3,6 +3,7 @@ using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Galileo.Controllers
 {
@@ -30,9 +31,24 @@ namespace Galileo.Controllers
         /// <param name="usuario"></param>
         /// <returns></returns>
         [HttpGet("PerfilUsuario_Obtener")]
-        public ErrorDto<PerfilUsuarioDto> PerfilUsuario_Obtener(string usuario)
+        [Authorize]
+        public ActionResult<ErrorDto<PerfilUsuarioDto>> PerfilUsuario_Obtener(string? usuario = null)
         {
-            return new PerfilUsuarioBL(_config).PerfilUsuario_Obtener(usuario);
+            var authenticatedUser = User.FindFirst("UserName")?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrWhiteSpace(authenticatedUser))
+            {
+                return Unauthorized();
+            }
+
+            if (!string.IsNullOrWhiteSpace(usuario) &&
+                !string.Equals(usuario.Trim(), authenticatedUser.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return Forbid();
+            }
+
+            return Ok(new PerfilUsuarioBL(_config).PerfilUsuario_Obtener(authenticatedUser));
         }
 
         /// <summary>
@@ -42,9 +58,17 @@ namespace Galileo.Controllers
         /// <returns></returns>
         [HttpPost("PerfilUsuario_Actualizar")]
         [Authorize]
-        public ErrorDto PerfilUsuario_Actualizar(PerfilUsuarioDto request)
+        public ActionResult<ErrorDto> PerfilUsuario_Actualizar(PerfilUsuarioDto request)
         {
-            return new PerfilUsuarioBL(_config).PerfilUsuario_Actualizar(request);
+            var claimUserId = User.FindFirst("UserId")?.Value
+                ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(claimUserId, out var userId) || request is null || request.UserId != userId)
+            {
+                return Forbid();
+            }
+
+            return Ok(new PerfilUsuarioBL(_config).PerfilUsuario_Actualizar(request));
         }
     }
 }

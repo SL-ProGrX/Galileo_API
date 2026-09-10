@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using System.Data;
+using System.Security.Cryptography;
 
 namespace Galileo.DataBaseTier
 {
@@ -270,9 +271,8 @@ namespace Galileo.DataBaseTier
 
         public static string Generate2FACode()
         {
-            Random random = new();
-            int code = random.Next(100000, 1000000); // Generates a 6-digit number
-            return code.ToString("D6"); // Formats it as a 6-digit string
+            var code = RandomNumberGenerator.GetInt32(100000, 1000000);
+            return code.ToString("D6");
         }
 
         private async Task TfaCodigoEmail_Enviar(TfaDatosCorreo datos)
