@@ -13,7 +13,7 @@ namespace Galileo.BusinessLogic
             CopiarUsuarioDB = new FrmUsCopiaAccesosDb(config);
         }
 
-        public List<UsuarioEmpresa> UsuariosEmpresa_Obtener(int codEmpresa)
+        public ErrorDto<List<UsuarioEmpresa>> UsuariosEmpresa_Obtener(int codEmpresa)
         {
             return CopiarUsuarioDB.UsuariosEmpresa_Obtener(codEmpresa);
         }
@@ -23,7 +23,7 @@ namespace Galileo.BusinessLogic
             return CopiarUsuarioDB.UsuarioAccesos_Copiar(info);
         }
 
-        public UsuarioEmpresa UsuarioEmpresa_Obtener(string nombreUsuario, int codEmpresa)
+        public ErrorDto<UsuarioEmpresa?> UsuarioEmpresa_Obtener(string nombreUsuario, int codEmpresa)
         {
             return CopiarUsuarioDB.UsuarioEmpresa_Obtener(nombreUsuario, codEmpresa);
         }

@@ -13,13 +13,12 @@ namespace Galileo.BusinessLogic
             _config = config;
         }
 
-        public ParametrosObtenerDto ParametrosObtener()
+        public ErrorDto<ParametrosObtenerDto> ParametrosObtener()
         {
-            var result = new CambiarContrasenaDB(_config).ParametrosObtener();
-            return result ?? new ParametrosObtenerDto();
+            return new CambiarContrasenaDB(_config).ParametrosObtener();
         }
 
-        public List<string> KeyHistoryObtener(string Usuario, int topQuantity)
+        public ErrorDto<List<string>> KeyHistoryObtener(string Usuario, int topQuantity)
         {
             return new CambiarContrasenaDB(_config).KeyHistoryObtener(Usuario, topQuantity);
         }

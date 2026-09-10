@@ -15,9 +15,21 @@ namespace Galileo.DataBaseTier
         {
             _config = config;
         }
+        private ErrorDto<T> QuerySingleResponse<T>(string sql, object? parameters = null)
+        {
+            try
+            {
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                return DbHelper.CreateOkResponse(connection.QueryFirstOrDefault<T>(sql, parameters)!);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<T>(ex.Message);
+            }
+        }
 
 
-        public List<UsuariosConsultaDto> UsuariosConsultar(string? usuario, bool adminView, bool dirGlobal, int codEmpresa)
+        public ErrorDto<List<UsuariosConsultaDto>> UsuariosConsultar(string? usuario, bool adminView, bool dirGlobal, int codEmpresa)
         {
             List<UsuariosConsultaDto> resp;
             try
@@ -47,14 +59,14 @@ namespace Galileo.DataBaseTier
                     resp = connection.Query<UsuariosConsultaDto>(strSQL, parameters).ToList();
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                resp = new List<UsuariosConsultaDto>();
+                return DbHelper.CreateErrorResponse<List<UsuariosConsultaDto>>(ex.Message);
             }
-            return resp;
+            return DbHelper.CreateOkResponse(resp);
         }
 
-        public List<UsuariosVinculadosConsultaDto> UsuariosVinculadosConsultar(string? usuario, int contabiliza, bool adminView, int codEmpresa)
+        public ErrorDto<List<UsuariosVinculadosConsultaDto>> UsuariosVinculadosConsultar(string? usuario, int contabiliza, bool adminView, int codEmpresa)
         {
             try
             {
@@ -83,48 +95,34 @@ namespace Galileo.DataBaseTier
                     contabiliza
                 };
 
-                return connection.Query<UsuariosVinculadosConsultaDto>(sql, parameters).ToList();
-            }
-            catch
-            {
-                return new List<UsuariosVinculadosConsultaDto>();
-            }
-        }
-
-
-        public Limites Limites_Obtener(string usuario, int codEmpresa)
-        {
-            Limites info = new Limites();
-
-            try
-            {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var strSQL = @"SELECT ISNULL(Limita_Acceso_Estacion, 0) AS Estacion, 
-                                  ISNULL(Limita_Acceso_Horario, 0) AS Horario
-                           FROM PGX_Clientes_Users 
-                           WHERE cod_empresa = @CodEmpresa 
-                           AND usuario = @Usuario";
-
-                    var parameters = new
-                    {
-                        CodEmpresa = codEmpresa,
-                        Usuario = usuario
-                    };
-
-                    info = connection.QueryFirstOrDefault<Limites>(strSQL, parameters) ?? new Limites();
-
-
-                }
+                return DbHelper.CreateOkResponse(connection.Query<UsuariosVinculadosConsultaDto>(sql, parameters).ToList());
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                return DbHelper.CreateErrorResponse<List<UsuariosVinculadosConsultaDto>>(ex.Message);
             }
-            return info;
         }
 
-        public List<RolConsultaDto> RolesConsultar(string usuario, string? filtro, int codEmpresa)
+
+        public ErrorDto<Limites> Limites_Obtener(string usuario, int codEmpresa)
+        {
+            const string sql = @"SELECT ISNULL(Limita_Acceso_Estacion, 0) AS Estacion,
+                                        ISNULL(Limita_Acceso_Horario, 0) AS Horario
+                                 FROM PGX_Clientes_Users
+                                 WHERE cod_empresa = @CodEmpresa
+                                   AND usuario = @Usuario";
+
+            var response = QuerySingleResponse<Limites>(sql, new
+            {
+                CodEmpresa = codEmpresa,
+                Usuario = usuario
+            });
+
+            response.Result ??= new Limites();
+            return response;
+        }
+
+        public ErrorDto<List<RolConsultaDto>> RolesConsultar(string usuario, string? filtro, int codEmpresa)
         {
             List<RolConsultaDto> resp;
             try
@@ -163,14 +161,14 @@ namespace Galileo.DataBaseTier
                     resp = connection.Query<RolConsultaDto>(strSQL, parameters).ToList();
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                resp = new List<RolConsultaDto>();
+                return DbHelper.CreateErrorResponse<List<RolConsultaDto>>(ex.Message);
             }
-            return resp;
+            return DbHelper.CreateOkResponse(resp);
         }
 
-        public List<HorarioConsultaDto> HorariosConsultar(string usuario, string? filtro, int codEmpresa)
+        public ErrorDto<List<HorarioConsultaDto>> HorariosConsultar(string usuario, string? filtro, int codEmpresa)
         {
             List<HorarioConsultaDto> resp;
             try
@@ -209,14 +207,14 @@ namespace Galileo.DataBaseTier
                     resp = connection.Query<HorarioConsultaDto>(strSQL, parameters).ToList();
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                resp = new List<HorarioConsultaDto>();
+                return DbHelper.CreateErrorResponse<List<HorarioConsultaDto>>(ex.Message);
             }
-            return resp;
+            return DbHelper.CreateOkResponse(resp);
         }
 
-        public List<EstacionConsultaDto> EstacionesConsultar(string usuario, string? filtro, int codEmpresa)
+        public ErrorDto<List<EstacionConsultaDto>> EstacionesConsultar(string usuario, string? filtro, int codEmpresa)
         {
             List<EstacionConsultaDto> resp;
             try
@@ -255,11 +253,11 @@ namespace Galileo.DataBaseTier
                     resp = connection.Query<EstacionConsultaDto>(strSQL, parameters).ToList();
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                resp = new List<EstacionConsultaDto>();
+                return DbHelper.CreateErrorResponse<List<EstacionConsultaDto>>(ex.Message);
             }
-            return resp;
+            return DbHelper.CreateOkResponse(resp);
         }
 
 
@@ -282,7 +280,28 @@ namespace Galileo.DataBaseTier
                     };
 
                     resp.Code = connection.QueryFirstOrDefault<int>("spPGX_Usuario_Cliente_Asigna", values, commandType: CommandType.StoredProcedure);
-                    resp.Description = "Ok";
+                    if (resp.Code != 0)
+                    {
+                        resp.Description = "No fue posible actualizar la membresía del usuario.";
+                        return resp;
+                    }
+
+                    var estadoCore = req.TipoMov == 'I' ? "A" : "I";
+                    var coreResult = SincronizaUsuarioCore(
+                        req.Cliente ?? 0,
+                        req.Usuario,
+                        req.UsuarioNombre,
+                        estadoCore,
+                        req.UsuarioRegistra);
+
+                    if (coreResult < 0)
+                    {
+                        resp.Code = -1;
+                        resp.Description = "La membresía se actualizó, pero no fue posible sincronizar el usuario con el Core.";
+                        return resp;
+                    }
+
+                    resp.Description = "Membresía actualizada correctamente.";
                 }
             }
             catch (Exception ex)
@@ -291,6 +310,28 @@ namespace Galileo.DataBaseTier
                 resp.Description = ex.Message;
             }
             return resp;
+        }
+
+        private int SincronizaUsuarioCore(int codEmpresa, string usuario, string nombre, string estado, string usuarioRegistra)
+        {
+            if (codEmpresa <= 0 || string.IsNullOrWhiteSpace(usuario))
+            {
+                return -1;
+            }
+
+            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+            using var connection = new SqlConnection(clienteConnString);
+            connection.Open();
+
+            var parameters = new
+            {
+                Usuario = usuario,
+                Nombre = nombre ?? string.Empty,
+                Estado = estado,
+                RegUser = usuarioRegistra ?? string.Empty
+            };
+
+            return connection.Execute("spSEG_SincronizaUsuarios", parameters, commandType: CommandType.StoredProcedure);
         }
 
         public ErrorDto UsuarioRolAsigna(UsuarioRolAsignaDto req)

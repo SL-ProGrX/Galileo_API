@@ -115,13 +115,15 @@ namespace Galileo.DataBaseTier
                         AppName = req.AppName,
                         AppVersion = req.AppVersion,
                         Usuario = req.Usuario,
-                        PTransac = req.PTransac,
-                        PNotas = req.PNotas.Substring(0, Math.Min(500, req.PNotas.Length)),
-                        PUserMov = req.PUserMov,
-                        AppMaquina = req.AppMaquina
+                        Transac = req.PTransac,
+                        Notas = req.PNotas.Substring(0, Math.Min(500, req.PNotas.Length)),
+                        UserMov = req.PUserMov,
+                        Equipo = req.AppMaquina,
+                        EquipoMAC = string.Empty
                     };
 
-                    resp.Code = connection.Execute(procedure, values, commandType: CommandType.StoredProcedure);
+                    connection.Execute(procedure, values, commandType: CommandType.StoredProcedure);
+                    resp.Code = 0;
                     resp.Description = "Ok";
                 }
             }

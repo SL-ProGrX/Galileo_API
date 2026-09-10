@@ -36,8 +36,7 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
-                return new List<T>();
+                throw new InvalidOperationException("No fue posible consultar la información de menús.", ex);
             }
         }
 
@@ -50,8 +49,7 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
-                return default;
+                throw new InvalidOperationException("No fue posible consultar el registro solicitado.", ex);
             }
         }
 
@@ -64,8 +62,7 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
-                return null;
+                throw new InvalidOperationException("No fue posible ejecutar la operación de menús.", ex);
             }
         }
 
@@ -100,8 +97,7 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
-                return null;
+                throw new InvalidOperationException("No fue posible guardar el menú.", ex);
             }
         }
 
@@ -193,7 +189,15 @@ namespace Galileo.DataBaseTier
 
         public int? EliminarUsMenusPorMenuNodo(int MenuNodo)
         {
-            const string sql = "DELETE FROM US_MENUS WHERE MENU_NODO = @MenuNodo OR NODO_PADRE = @MenuNodo";
+            const string sql = @"
+                DELETE FROM US_MENUS_USOS
+                WHERE MENU_NODO IN (
+                    SELECT MENU_NODO
+                    FROM US_MENUS
+                    WHERE MENU_NODO = @MenuNodo OR NODO_PADRE = @MenuNodo
+                );
+                DELETE FROM US_MENUS
+                WHERE MENU_NODO = @MenuNodo OR NODO_PADRE = @MenuNodo;";
             return ExecuteReturningInt(sql, new { MenuNodo });
         }
 

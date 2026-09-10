@@ -61,7 +61,10 @@ namespace Galileo.DataBaseTier
                 var jwtSection = _config.GetSection("Jwt");
                 var issuer = jwtSection["Issuer"];
                 var audience = jwtSection["Audience"];
-                var secret = jwtSection["Secret"];
+                // Usar la misma fuente efectiva que utiliza la validación JWT y el login.
+                // Program.cs carga Jwt:Secret en Jwt__Secret cuando corresponde.
+                var secret = Environment.GetEnvironmentVariable("Jwt__Secret");
+                if (string.IsNullOrWhiteSpace(secret)) secret = jwtSection["Secret"];
                 var minutes = int.TryParse(jwtSection["AccessTokenMinutes"], out var m) ? m : 60;
 
                 if (string.IsNullOrWhiteSpace(issuer) ||

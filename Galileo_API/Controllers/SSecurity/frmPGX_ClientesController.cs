@@ -27,16 +27,30 @@ namespace Galileo.Controllers
 
         [HttpGet("Cliente_Obtener")]
         [Authorize]
-        public ClienteDto Cliente_Obtener(int CodEmpresa)
+        public ErrorDto<ClienteDto?> Cliente_Obtener(int CodEmpresa)
         {
             return ClientesBL.Cliente_Obtener(CodEmpresa);
         }
 
+        [HttpGet("Clientes_Sincronizacion_Obtener")]
+        [Authorize]
+        public ErrorDto<List<ClienteSincronizacionDto>> Clientes_Sincronizacion_Obtener()
+        {
+            return ClientesBL.Clientes_Sincronizacion_Obtener();
+        }
+
         [HttpGet("ConsultaAscDesc")]
         [Authorize]
-        public ClienteDto ConsultaAscDesc(int CodEmpresa, string tipo)
+        public ErrorDto<ClienteDto?> ConsultaAscDesc(int CodEmpresa, string tipo)
         {
             return ClientesBL.ConsultaAscDesc(CodEmpresa, tipo);
+        }
+
+        [HttpPost("TestConnection")]
+        [Authorize]
+        public ErrorDto TestConnection(ConnectionModel info)
+        {
+            return ClientesBL.TestConnection(info);
         }
 
         [HttpPost("Cliente_Modificar")]
@@ -48,7 +62,7 @@ namespace Galileo.Controllers
 
         [HttpPost("Cliente_Crear")]
         [Authorize]
-        public RespuestaDto Cliente_Crear(ClienteDto info)
+        public ErrorDto<RespuestaDto> Cliente_Crear(ClienteDto info)
         {
             return ClientesBL.Cliente_Crear(info);
         }
@@ -62,28 +76,28 @@ namespace Galileo.Controllers
 
         [HttpGet("Cliente_TiposId_Obtener")]
         [Authorize]
-        public List<ListaDD> Cliente_TiposId_Obtener()
+        public ErrorDto<List<ListaDD>> Cliente_TiposId_Obtener()
         {
             return ClientesBL.Cliente_TiposId_Obtener();
         }
 
         [HttpGet("Cliente_Clasificaciones_Obtener")]
         [Authorize]
-        public List<ListaDD> Cliente_Clasificaciones_Obtener()
+        public ErrorDto<List<ListaDD>> Cliente_Clasificaciones_Obtener()
         {
             return ClientesBL.Cliente_Clasificaciones_Obtener();
         }
 
         [HttpGet("Cliente_Vendedores_Obtener")]
         [Authorize]
-        public List<ListaDD> Cliente_Vendedores_Obtener()
+        public ErrorDto<List<ListaDD>> Cliente_Vendedores_Obtener()
         {
             return ClientesBL.Cliente_Vendedores_Obtener();
         }
 
         [HttpGet("ContactosCliente_Obtener")]
         [Authorize]
-        public List<ContactoDto> ContactosCliente_Obtener(int CodEmpresa)
+        public ErrorDto<List<ContactoDto>> ContactosCliente_Obtener(int CodEmpresa)
         {
             return ClientesBL.ContactosCliente_Obtener(CodEmpresa);
         }
@@ -104,14 +118,14 @@ namespace Galileo.Controllers
 
         [HttpPost("ContactoCliente_Eliminar")]
         [Authorize]
-        public ErrorDto ContactoCliente_Eliminar(int cod_contacto, int cod_empresa)
+        public ErrorDto ContactoCliente_Eliminar(int cod_contacto, int cod_empresa, string usuario)
         {
-            return ClientesBL.ContactoCliente_Eliminar(cod_contacto, cod_empresa);
+            return ClientesBL.ContactoCliente_Eliminar(cod_contacto, cod_empresa, usuario);
         }
 
         [HttpGet("ServiciosCliente_Obtener")]
         [Authorize]
-        public List<ServicioDto> ServiciosCliente_Obtener(int CodEmpresa)
+        public ErrorDto<List<ServicioDto>> ServiciosCliente_Obtener(int CodEmpresa)
         {
             return ClientesBL.ServiciosCliente_Obtener(CodEmpresa);
         }
@@ -133,7 +147,7 @@ namespace Galileo.Controllers
 
         [HttpGet("ListaSMTP")]
         [Authorize]
-        public List<SmtpDto> ListaSMTP(int CodEmpresa)
+        public ErrorDto<List<SmtpDto>> ListaSMTP(int CodEmpresa)
         {
             return ClientesBL.ListaSMTP(CodEmpresa);
         }
@@ -148,36 +162,36 @@ namespace Galileo.Controllers
 
         [HttpPost("Clientes_Sincronizar")]
         [Authorize]
-        public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos, bool idPortal)
+        public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos)
         {
-            return ClientesBL.Clientes_Sincronizar(CodEmpresa, logos, idPortal);
+            return ClientesBL.Clientes_Sincronizar(CodEmpresa, logos);
         }
 
 
         [HttpGet("ObtenerPaises")]
         [Authorize]
-        public List<PaisesDto> ObtenerPaises()
+        public ErrorDto<List<PaisesDto>> ObtenerPaises()
         {
             return ClientesBL.ObtenerPaises();
         }
 
         [HttpGet("ObtenerProvincia")]
         [Authorize]
-        public List<ProvinciaDto> ObtenerProvincia(string CodPais)
+        public ErrorDto<List<ProvinciaDto>> ObtenerProvincia(string CodPais)
         {
             return ClientesBL.ObtenerProvincia(CodPais);
         }
 
         [HttpGet("ObtenerCanton")]
         [Authorize]
-        public List<CantonDto> ObtenerCanton(string CodPais, string CodProvincia)
+        public ErrorDto<List<CantonDto>> ObtenerCanton(string CodPais, string CodProvincia)
         {
             return ClientesBL.ObtenerCanton(CodPais, CodProvincia);
         }
 
         [HttpGet("ObtenerDistrito")]
         [Authorize]
-        public List<DistritoDto> ObtenerDistrito(string CodPais, string CodProvincia, string CodCanton)
+        public ErrorDto<List<DistritoDto>> ObtenerDistrito(string CodPais, string CodProvincia, string CodCanton)
         {
             return ClientesBL.ObtenerDistrito(CodPais, CodProvincia, CodCanton);
         }

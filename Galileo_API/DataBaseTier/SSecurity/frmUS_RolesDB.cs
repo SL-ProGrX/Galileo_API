@@ -82,9 +82,13 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        public List<RolesObtenerDto> RolFiltroObtener(string filtro)
+        public ErrorDto<List<RolesObtenerDto>> RolFiltroObtener(string filtro)
         {
-            List<RolesObtenerDto> resp;
+            var response = new ErrorDto<List<RolesObtenerDto>>
+            {
+                Result = [],
+                Code = 0,
+            };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -97,14 +101,17 @@ namespace Galileo.DataBaseTier
                         "WHERE R.descripcion LIKE @Filtro " +
                         "ORDER BY R.descripcion";
 
-                    return connection.Query<RolesObtenerDto>(strSQL, new { Filtro = "%" + filtro + "%" }).ToList();
+                    response.Result = connection.Query<RolesObtenerDto>(strSQL, new { Filtro = "%" + filtro + "%" }).ToList();
                 }
+
+                response.Description = "Ok";
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                resp = new List<RolesObtenerDto>();
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return resp;
+            return response;
         }
 
         public ErrorDto RolGuardar(RolInsertarDto rol)
@@ -209,9 +216,13 @@ namespace Galileo.DataBaseTier
             });
         }
 
-        public List<RolesObtenerDto> RolesObtener()
+        public ErrorDto<List<RolesObtenerDto>> RolesObtener()
         {
-            List<RolesObtenerDto> resp;
+            var response = new ErrorDto<List<RolesObtenerDto>>
+            {
+                Result = [],
+                Code = 0,
+            };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -223,19 +234,26 @@ namespace Galileo.DataBaseTier
                         "LEFT JOIN PGX_Clientes C ON R.cod_empresa = C.cod_Empresa " +
                         "ORDER BY R.descripcion";
 
-                    return connection.Query<RolesObtenerDto>(strSQL).ToList();
+                    response.Result = connection.Query<RolesObtenerDto>(strSQL).ToList();
                 }
+
+                response.Description = "Ok";
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                resp = new List<RolesObtenerDto>();
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return resp;
+            return response;
         }
 
-        public List<ClientesObtenerDto> ClientesObtener()
+        public ErrorDto<List<ClientesObtenerDto>> ClientesObtener()
         {
-            List<ClientesObtenerDto> resp;
+            var response = new ErrorDto<List<ClientesObtenerDto>>
+            {
+                Result = [],
+                Code = 0,
+            };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -245,16 +263,18 @@ namespace Galileo.DataBaseTier
                               + ",[NOMBRE_CORTO]"
                           + " FROM[PGX_Portal].[dbo].[PGX_CLIENTES]";
 
-                    resp = connection.Query<ClientesObtenerDto>(strSQL).ToList();
+                    response.Result = connection.Query<ClientesObtenerDto>(strSQL).ToList();
                 }
 
-                resp.Insert(0, new ClientesObtenerDto { Cod_Empresa = "0", Nombre_Largo = "General", Nombre_Corto = "General" });
+                response.Result.Insert(0, new ClientesObtenerDto { Cod_Empresa = "0", Nombre_Largo = "General", Nombre_Corto = "General" });
+                response.Description = "Ok";
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                resp = new List<ClientesObtenerDto>();
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return resp;
+            return response;
         }
 
     }

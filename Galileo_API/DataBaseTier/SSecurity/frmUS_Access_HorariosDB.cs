@@ -15,9 +15,9 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
-        public List<HorarioDto> ObtenerHorariosPorEmpresa(int empresaId)
+        public ErrorDto<List<HorarioDto>> ObtenerHorariosPorEmpresa(int empresaId)
         {
-            List<HorarioDto> result = new List<HorarioDto>();
+            var response = DbHelper.CreateOkResponse(new List<HorarioDto>());
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -27,9 +27,10 @@ namespace Galileo.DataBaseTier
                     {
                         EmpresaId = empresaId,
                     };
-                    result = connection.Query<HorarioDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    var horarios = connection.Query<HorarioDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = horarios;
 
-                    foreach (HorarioDto dt in result)
+                    foreach (HorarioDto dt in horarios)
                     {
                         dt.Estado = (dt.Activo ?? false) ? "ACTIVO" : "INACTIVO";
                     }
@@ -37,14 +38,16 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
             }
-            return result;
+            return response;
         }
 
         public ErrorDto HorarioRegistrar(HorarioDto horarioDto)
         {
-            ErrorDto resp = new ErrorDto();
+            ErrorDto resp = DbHelper.CreateOkResponse();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -73,8 +76,7 @@ namespace Galileo.DataBaseTier
                         Usuario = horarioDto.UsuarioRegistro
                     };
 
-                    resp.Code = connection.Execute(procedure, values, commandType: CommandType.StoredProcedure);
-                    resp.Description = "Ok";
+                    connection.Execute(procedure, values, commandType: CommandType.StoredProcedure);
                 }
             }
             catch (Exception ex)
@@ -87,7 +89,7 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto HorarioEliminar(HorarioDto request)
         {
-            ErrorDto resp = new ErrorDto();
+            ErrorDto resp = DbHelper.CreateOkResponse();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

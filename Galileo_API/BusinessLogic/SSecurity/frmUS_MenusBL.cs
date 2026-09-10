@@ -43,9 +43,9 @@ namespace Galileo.BusinessLogic
                     });
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                throw;
             }
 
             return resultado;
@@ -79,9 +79,9 @@ namespace Galileo.BusinessLogic
 
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                throw;
             }
 
             return resultado;
@@ -109,9 +109,9 @@ namespace Galileo.BusinessLogic
                     });
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                throw;
             }
 
             return resultado;
@@ -125,9 +125,9 @@ namespace Galileo.BusinessLogic
             {
                 resultado = SecurityUsDB.ObtenerMenuNodoPorNodoPadreYPrioridad(NodoPadre, Prioridad);
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                throw;
             }
             return resultado;
         }//end ObtenerMenuNodoPorNodoPadreYPrioridad
@@ -139,9 +139,9 @@ namespace Galileo.BusinessLogic
             {
                 resultado = SecurityUsDB.ActualizarUsMenu(info);
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                throw;
             }
             return resultado;
         }//end ActualizarUsMenu
@@ -153,9 +153,9 @@ namespace Galileo.BusinessLogic
             {
                 resultado = SecurityUsDB.ObtenerMenuNodoConIsNull();
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                throw;
             }
             return resultado;
         }//end ObtenerMenuNodoConIsNull
@@ -167,9 +167,9 @@ namespace Galileo.BusinessLogic
             {
                 resultado = SecurityUsDB.ObtenerMenuPrioridadPorMenuNodoPadre(NodoPadre);
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                throw;
             }
             return resultado;
 
@@ -182,9 +182,9 @@ namespace Galileo.BusinessLogic
             {
                 resultado = SecurityUsDB.ObtenerUsModulosOrdenadosPorTipo(Tipo);
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                throw;
             }
             return resultado;
         }//end ObtenerUsModulosOrdenadosPorTipo
@@ -199,9 +199,9 @@ namespace Galileo.BusinessLogic
                 resultado = SecurityUsDB.CrearUsMenu(info);
 
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                throw;
             }
             return resultado;
 
@@ -215,9 +215,9 @@ namespace Galileo.BusinessLogic
             {
                 resultado = SecurityUsDB.EliminarUnMenuPorNodoPadre(NodoPadre);
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                throw;
             }
             return resultado;
         }//end EliminarUnMenuPorNodoPadre
@@ -229,9 +229,9 @@ namespace Galileo.BusinessLogic
             {
                 resultado = SecurityUsDB.EliminarUsMenusPorMenuNodo(MenuNodo);
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                throw;
             }
             return resultado;
         }//end EliminarUsMenusPorMenuNodo
@@ -243,9 +243,9 @@ namespace Galileo.BusinessLogic
             {
                 resultado = SecurityUsDB.EliminarTodosLosMenusPorNodoPadre(NodoPadre);
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                throw;
             }
             return resultado;
         }//end EliminarTodosLosMenusPorNodoPadre
@@ -257,9 +257,9 @@ namespace Galileo.BusinessLogic
             {
                 resultado = SecurityUsDB.ObtenerMenuNodoPorMenuFormulario(Formulario);
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                throw;
             }
             return resultado;
 
@@ -272,9 +272,9 @@ namespace Galileo.BusinessLogic
             {
                 resultado = SecurityUsDB.ObtenerUsFormularioPorFormulario(Formulario);
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                throw;
             }
             return resultado;
         }//end ObtenerUsFormularioPorFormulario

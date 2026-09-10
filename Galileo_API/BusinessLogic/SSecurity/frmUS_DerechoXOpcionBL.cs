@@ -13,27 +13,27 @@ namespace Galileo.BusinessLogic
             DerechoXOpcionDB = new FrmUsDerechoXOpcionDb(config);
         }
 
-        public List<ModuloResultDto> ModulosObtener()
+        public ErrorDto<List<ModuloResultDto>> ModulosObtener()
         {
             return DerechoXOpcionDB.ModulosObtener();
         }
 
-        public List<FormularioResultDto> FormulariosObtener()
+        public ErrorDto<List<FormularioResultDto>> FormulariosObtener()
         {
             return DerechoXOpcionDB.FormulariosObtener();
         }
 
-        public List<OpcionResultDto> OpcionesObtener()
+        public ErrorDto<List<OpcionResultDto>> OpcionesObtener()
         {
             return DerechoXOpcionDB.OpcionesObtener();
         }
 
-        public List<DatosResultDto> DatosObtener(int opcion, char estado)
+        public ErrorDto<List<DatosResultDto>> DatosObtener(int opcion, char estado)
         {
             return DerechoXOpcionDB.DatosObtener(opcion, estado);
         }
 
-        public List<DatosUsuarioResultDto> DatosUsuariosObtener(int opcion, char estado, int codEmpresa)
+        public ErrorDto<List<DatosUsuarioResultDto>> DatosUsuariosObtener(int opcion, char estado, int codEmpresa)
         {
             return DerechoXOpcionDB.DatosUsuariosObtener(opcion, estado, codEmpresa);
         }

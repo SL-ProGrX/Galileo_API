@@ -28,9 +28,9 @@ namespace Galileo.BusinessLogic
             return OpcionesDB.Opcion_ObtenerTodos(modulo, formulario);
         }
 
-        public ErrorDto Opcion_Eliminar(string codigo, string formulario, int modulo)
+        public ErrorDto Opcion_Eliminar(string codigo, string formulario, int modulo, string usuario, int codEmpresa)
         {
-            return OpcionesDB.Opcion_Eliminar(codigo, formulario, modulo);
+            return OpcionesDB.Opcion_Eliminar(codigo, formulario, modulo, usuario, codEmpresa);
         }
 
         public ErrorDto Opcion_Guardar(OpcionDto request)

@@ -9,6 +9,7 @@
         public string Opcion_Descripcion { get; set; } = string.Empty;
         public DateTime? Registro_Fecha { get; set; }
         public string Registro_Usuario { get; set; } = string.Empty;
+        public int? Cod_Empresa { get; set; }
 
     }
 

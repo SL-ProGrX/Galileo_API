@@ -36,20 +36,6 @@ namespace Galileo.DataBaseTier
             return new SqlConnection(connString);
         }
 
-        private List<T> QueryList<T>(string sql, object? parameters = null)
-        {
-            try
-            {
-                using var connection = CreateConnection();
-                return connection.Query<T>(sql, parameters).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-                return new List<T>();
-            }
-        }
-
         private List<T> QuerySpList<T>(string storedProcedure, object? parameters = null)
         {
             try
@@ -64,20 +50,6 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        private T? QueryFirstOrDefault<T>(string sql, object? parameters = null)
-        {
-            try
-            {
-                using var connection = CreateConnection();
-                return connection.Query<T>(sql, parameters).FirstOrDefault();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-                return default;
-            }
-        }
-
         private int QuerySpScalarInt(string storedProcedure, object? parameters = null)
         {
             try
@@ -89,6 +61,48 @@ namespace Galileo.DataBaseTier
             {
                 _ = ex.Message;
                 return 0;
+            }
+        }
+
+        private ErrorDto<List<T>> QueryListResponse<T>(string sql, object? parameters = null)
+        {
+            try
+            {
+                using var connection = CreateConnection();
+                return DbHelper.CreateOkResponse(connection.Query<T>(sql, parameters).ToList());
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<List<T>>(ex.Message);
+            }
+        }
+
+        private ErrorDto<List<T>> QueryStoredProcedureListResponse<T>(string storedProcedure, object? parameters = null)
+        {
+            try
+            {
+                using var connection = CreateConnection();
+                return DbHelper.CreateOkResponse(connection.Query<T>(
+                    storedProcedure,
+                    parameters,
+                    commandType: CommandType.StoredProcedure).ToList());
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<List<T>>(ex.Message);
+            }
+        }
+
+        private ErrorDto<T?> QuerySingleResponse<T>(string sql, object? parameters = null)
+        {
+            try
+            {
+                using var connection = CreateConnection();
+                return DbHelper.CreateOkResponse(connection.QueryFirstOrDefault<T>(sql, parameters));
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<T?>(ex.Message);
             }
         }
 
@@ -132,7 +146,7 @@ namespace Galileo.DataBaseTier
                     SELECT COUNT(*)
                     FROM PGX_CLIENTES
                     WHERE (@HasFiltro = 0
-                           OR COD_EMPRESA    LIKE @Filtro
+                           OR CONVERT(varchar(20), COD_EMPRESA) LIKE @Filtro
                            OR NOMBRE_LARGO   LIKE @Filtro
                            OR NOMBRE_CORTO   LIKE @Filtro);";
 
@@ -142,7 +156,7 @@ namespace Galileo.DataBaseTier
                     SELECT *
                     FROM PGX_CLIENTES
                     WHERE (@HasFiltro = 0
-                           OR COD_EMPRESA    LIKE @Filtro
+                           OR CONVERT(varchar(20), COD_EMPRESA) LIKE @Filtro
                            OR NOMBRE_LARGO   LIKE @Filtro
                            OR NOMBRE_CORTO   LIKE @Filtro)
                     ORDER BY COD_EMPRESA
@@ -159,16 +173,27 @@ namespace Galileo.DataBaseTier
             return DbHelper.CreateOkResponse(info);
         }
 
-        public ClienteDto Cliente_Obtener(int CodEmpresa)
+        public ErrorDto<ClienteDto?> Cliente_Obtener(int CodEmpresa)
         {
             const string query = "SELECT * FROM PGX_CLIENTES WHERE cod_empresa = @CodEmpresa";
 
-            return QueryFirstOrDefault<ClienteDto>(query, new { CodEmpresa }) ?? new ClienteDto();
+            return QuerySingleResponse<ClienteDto>(query, new { CodEmpresa });
         }
 
-        public ClienteDto ConsultaAscDesc(int CodEmpresa, string tipo)
+        public ErrorDto<List<ClienteSincronizacionDto>> Clientes_Sincronizacion_Obtener()
         {
-            ClienteDto info = new();
+            const string query = @"
+                SELECT COD_EMPRESA, NOMBRE_CORTO
+                FROM PGX_CLIENTES
+                WHERE ESTADO = 'A'
+                ORDER BY COD_EMPRESA;";
+
+            return QueryListResponse<ClienteSincronizacionDto>(query);
+        }
+
+        public ErrorDto<ClienteDto?> ConsultaAscDesc(int CodEmpresa, string tipo)
+        {
+            ClienteDto info;
 
             try
             {
@@ -199,10 +224,55 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                return DbHelper.CreateErrorResponse<ClienteDto?>(ex.Message);
             }
 
-            return info;
+            return DbHelper.CreateOkResponse<ClienteDto?>(info);
+        }
+
+        public ErrorDto TestConnection(ConnectionModel info)
+        {
+            var response = new ErrorDto();
+
+            try
+            {
+                if (info == null || string.IsNullOrWhiteSpace(info.Server) ||
+                    string.IsNullOrWhiteSpace(info.Database) ||
+                    string.IsNullOrWhiteSpace(info.User) ||
+                    string.IsNullOrWhiteSpace(info.Password))
+                {
+                    response.Code = -1;
+                    response.Description = "Los datos de conexión son requeridos.";
+                    return response;
+                }
+
+                var builder = new SqlConnectionStringBuilder
+                {
+                    DataSource = info.Server.Trim(),
+                    InitialCatalog = info.Database.Trim(),
+                    UserID = info.User.Trim(),
+                    Password = info.Password,
+                    ConnectTimeout = 5,
+                    Encrypt = false,
+                    TrustServerCertificate = true
+                };
+
+                using var connection = new SqlConnection(builder.ConnectionString);
+                connection.Open();
+                response.Description = "Conexión exitosa";
+            }
+            catch (SqlException ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
         }
 
         public ErrorDto Cliente_Modificar(ClienteDto info)
@@ -248,14 +318,8 @@ namespace Galileo.DataBaseTier
                                 pgx_pruebas_db = @pgx_pruebas_db,
                                 pgx_pruebas_user = @pgx_pruebas_user,
                                 pgx_pruebas_key = @pgx_pruebas_key,
-                                registro_usuario = @registro_usuario,
-                                registro_fecha = @registro_fecha,
                                 direccion = @direccion,
                                 apto_postal = @apto_postal,
-                                pais = @pais,
-                                provincia = @provincia,
-                                canton = @canton,
-                                distrito = @distrito,
                                 cod_pais = @cod_pais,
                                 cod_pais_n1 = @cod_pais_n1,
                                 cod_pais_n2 = @cod_pais_n2,
@@ -307,14 +371,8 @@ namespace Galileo.DataBaseTier
                     info.pgx_pruebas_db,
                     info.pgx_pruebas_user,
                     info.pgx_pruebas_key,
-                    info.registro_usuario,
-                    info.registro_fecha,
                     info.direccion,
                     info.apto_postal,
-                    info.pais,
-                    info.provincia,
-                    info.canton,
-                    info.distrito,
                     info.cod_pais,
                     info.cod_pais_n1,
                     info.cod_pais_n2,
@@ -364,7 +422,7 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        public RespuestaDto Cliente_Crear(ClienteDto info)
+        public ErrorDto<RespuestaDto> Cliente_Crear(ClienteDto info)
         {
             var resp = new RespuestaDto();
 
@@ -456,6 +514,7 @@ namespace Galileo.DataBaseTier
 
                 resp.Id = newCodEmpresa;
                 resp.HasError = false;
+                resp.ErrorMessage = "Cliente creado correctamente.";
 
                 Bitacora(new BitacoraInsertarDto
                 {
@@ -472,7 +531,9 @@ namespace Galileo.DataBaseTier
                 resp.ErrorMessage = ex.Message;
             }
 
-            return resp;
+            return resp.HasError
+                ? DbHelper.CreateErrorResponse<RespuestaDto>(resp.ErrorMessage, -1, resp)
+                : DbHelper.CreateOkResponse(resp, resp.ErrorMessage);
         }
 
         public ErrorDto Cliente_Eliminar(int CodEmpresa, string usuario)
@@ -511,35 +572,35 @@ namespace Galileo.DataBaseTier
 
         #region LISTAS CMB
 
-        public List<ListaDD> Cliente_TiposId_Obtener()
+        public ErrorDto<List<ListaDD>> Cliente_TiposId_Obtener()
         {
             const string sql = @"select rtrim(TIPO_ID) as  'IdX',  rtrim(Descripcion) as 'ItmX' 
                                  from PGX_TIPOS_ID where activa = 1";
 
-            return QueryList<ListaDD>(sql);
+            return QueryListResponse<ListaDD>(sql);
         }
 
-        public List<ListaDD> Cliente_Clasificaciones_Obtener()
+        public ErrorDto<List<ListaDD>> Cliente_Clasificaciones_Obtener()
         {
             const string sql = @"select rtrim(cod_Clasificacion) as 'IdX', rtrim(descripcion) as 'ItmX' 
                                  from PGX_Clientes_Clasificacion where activa = 1";
 
-            return QueryList<ListaDD>(sql);
+            return QueryListResponse<ListaDD>(sql);
         }
 
-        public List<ListaDD> Cliente_Vendedores_Obtener()
+        public ErrorDto<List<ListaDD>> Cliente_Vendedores_Obtener()
         {
             const string sql = @"select rtrim(cod_Vendedor)  as 'IdX', rtrim(Nombre) as 'ItmX' 
                                  from PGX_Vendedores where activo = 1";
 
-            return QueryList<ListaDD>(sql);
+            return QueryListResponse<ListaDD>(sql);
         }
 
         #endregion
 
         #region SERVICIOS
 
-        public List<ServicioDto> ServiciosCliente_Obtener(int CodEmpresa)
+        public ErrorDto<List<ServicioDto>> ServiciosCliente_Obtener(int CodEmpresa)
         {
             const string sql = @"
                 SELECT S.Cod_Servicio, S.Descripcion, A.Monto, A.Costo, A.Cantidad_Usuarios, A.Registro_Fecha, A.Registro_Usuario, A.Activo
@@ -547,7 +608,7 @@ namespace Galileo.DataBaseTier
                 INNER JOIN PGX_Servicios_ASG A ON S.Cod_Servicio = A.Cod_Servicio
                 WHERE A.Cod_Empresa = @CodEmpresa AND A.Activo = 1";
 
-            return QueryList<ServicioDto>(sql, new { CodEmpresa });
+            return QueryListResponse<ServicioDto>(sql, new { CodEmpresa });
         }
 
         public ErrorDto ServicioAsignar(ServicioAsignarDto request, string modo)
@@ -580,14 +641,14 @@ namespace Galileo.DataBaseTier
 
         #region CONTACTOS CLIENTE
 
-        public List<ContactoDto> ContactosCliente_Obtener(int CodEmpresa)
+        public ErrorDto<List<ContactoDto>> ContactosCliente_Obtener(int CodEmpresa)
         {
             const string sql = @"
                 SELECT cod_Contacto, identificacion, nombre, tel_cell, tel_trabajo, Email_01, Email_02, Activo
                 FROM PGX_Clientes_Contactos
                 WHERE cod_Empresa = @CodEmpresa";
 
-            return QueryList<ContactoDto>(sql, new { CodEmpresa });
+            return QueryListResponse<ContactoDto>(sql, new { CodEmpresa });
         }
 
         public ErrorDto ContactoCliente_Actualizar(ContactoDto contacto)
@@ -681,7 +742,7 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        public ErrorDto ContactoCliente_Eliminar(int cod_contacto, int cod_empresa)
+        public ErrorDto ContactoCliente_Eliminar(int cod_contacto, int cod_empresa, string usuario)
         {
             try
             {
@@ -696,6 +757,15 @@ namespace Galileo.DataBaseTier
 
                 if (rowsAffected > 0)
                 {
+                    Bitacora(new BitacoraInsertarDto
+                    {
+                        EmpresaId = cod_empresa,
+                        Usuario = usuario ?? string.Empty,
+                        DetalleMovimiento = "Cliente Contacto: " + cod_empresa + "-->" + cod_contacto,
+                        Movimiento = "ELIMINA - WEB",
+                        Modulo = 31
+                    });
+
                     return new ErrorDto
                     {
                         Code = 0,
@@ -723,12 +793,12 @@ namespace Galileo.DataBaseTier
 
         #region SMTP CLIENTE
 
-        public List<SmtpDto> ListaSMTP(int CodEmpresa)
+        public ErrorDto<List<SmtpDto>> ListaSMTP(int CodEmpresa)
         {
             const string procedure = "[spPGX_SMTP_Lista]";
             var values = new { Cliente = CodEmpresa };
 
-            return QuerySpList<SmtpDto>(procedure, values);
+            return QueryStoredProcedureListResponse<SmtpDto>(procedure, values);
         }
 
         public ErrorDto SMTP_Autorizar(SmtpDto smtpAuth)
@@ -767,7 +837,7 @@ namespace Galileo.DataBaseTier
 
         #region TEST Y SINC
 
-        public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos, bool idPortal)
+        public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos)
         {
             var errorResponse = new ErrorDto();
             int i = 0;
@@ -810,27 +880,21 @@ namespace Galileo.DataBaseTier
                     dbConnection.Open();
 
                     var updateSql = "UPDATE SIF_EMPRESA SET ";
-                    var updates = new List<string>();
-
-                    if (idPortal)
-                    {
-                        updates.Add($"PORTAL_ID = {cliente.cod_empresa}");
-                    }
+                    var updates = new List<string> { "PORTAL_ID = @PortalId" };
 
                     if (logos && cliente.url_logo_activo == true)
                     {
                         updates.Add("LOGO_WEB_SITE = @LogoWebSite");
                     }
 
-                    if (updates.Count == 0)
-                    {
-                        continue;
-                    }
-
                     updateSql += string.Join(", ", updates);
 
                     using var command = new SqlCommand(updateSql, dbConnection);
-                    command.Parameters.AddWithValue("@LogoWebSite", cliente.url_logo ?? string.Empty);
+                    command.Parameters.AddWithValue("@PortalId", cliente.cod_empresa ?? 0);
+                    if (logos && cliente.url_logo_activo == true)
+                    {
+                        command.Parameters.AddWithValue("@LogoWebSite", cliente.url_logo ?? string.Empty);
+                    }
                     command.ExecuteNonQuery();
 
                     errorResponse.Code = 0;
@@ -839,7 +903,7 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                errorResponse.Description = "An error occurred during synchronization: " + ex.Message;
+                errorResponse.Description = "Error al sincronizar la información: " + ex.Message;
                 errorResponse.Code = -1;
             }
 
@@ -850,28 +914,28 @@ namespace Galileo.DataBaseTier
 
         #region PAIS-PROV-CANT-DIST
 
-        public List<PaisesDto> ObtenerPaises()
+        public ErrorDto<List<PaisesDto>> ObtenerPaises()
         {
             const string query = "SELECT [COD_PAIS] ,[DESCRIPCION] ,[ZONA_HORARIA] FROM [PGX_Portal].[dbo].[PGX_PAIS] WHERE ACTIVO = 1";
-            return QueryList<PaisesDto>(query);
+            return QueryListResponse<PaisesDto>(query);
         }
 
-        public List<ProvinciaDto> ObtenerProvincia(string CodPais)
+        public ErrorDto<List<ProvinciaDto>> ObtenerProvincia(string CodPais)
         {
             const string query = "SELECT [COD_PAIS],[COD_PAIS_N1],[DESCRIPCION] FROM [PGX_Portal].[dbo].[PGX_PAIS_N1] WHERE ACTIVO = 1 AND COD_PAIS = @CodPais";
-            return QueryList<ProvinciaDto>(query, new { CodPais });
+            return QueryListResponse<ProvinciaDto>(query, new { CodPais });
         }
 
-        public List<CantonDto> ObtenerCanton(string CodPais, string CodProvincia)
+        public ErrorDto<List<CantonDto>> ObtenerCanton(string CodPais, string CodProvincia)
         {
             const string query = "SELECT [COD_PAIS] ,[COD_PAIS_N1] ,[COD_PAIS_N2] ,[DESCRIPCION] FROM[PGX_Portal].[dbo].[PGX_PAIS_N2] WHERE COD_PAIS = @CodPais and COD_PAIS_N1 = @CodProvincia and Activo = 1";
-            return QueryList<CantonDto>(query, new { CodPais, CodProvincia });
+            return QueryListResponse<CantonDto>(query, new { CodPais, CodProvincia });
         }
 
-        public List<DistritoDto> ObtenerDistrito(string CodPais, string CodProvincia, string CodCanton)
+        public ErrorDto<List<DistritoDto>> ObtenerDistrito(string CodPais, string CodProvincia, string CodCanton)
         {
             const string query = "SELECT [COD_PAIS],[COD_PAIS_N1],[COD_PAIS_N2],[COD_PAIS_N3],[DESCRIPCION],[REGISTRO_USUARIO] FROM [PGX_Portal].[dbo].[PGX_PAIS_N3] WHERE COD_PAIS = @CodPais and COD_PAIS_N1 = @CodProvincia and COD_PAIS_N2 = @CodCanton and Activo = 1";
-            return QueryList<DistritoDto>(query, new { CodPais, CodProvincia, CodCanton });
+            return QueryListResponse<DistritoDto>(query, new { CodPais, CodProvincia, CodCanton });
         }
 
         #endregion

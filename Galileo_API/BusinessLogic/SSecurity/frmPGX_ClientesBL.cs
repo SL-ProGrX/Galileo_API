@@ -18,14 +18,24 @@ namespace Galileo.BusinessLogic
             return _clientesDB.Clientes_Obtener(pagina, paginacion, filtro);
         }
 
-        public ClienteDto Cliente_Obtener(int CodEmpresa)
+        public ErrorDto<ClienteDto?> Cliente_Obtener(int CodEmpresa)
         {
             return _clientesDB.Cliente_Obtener(CodEmpresa);
         }
 
-        public ClienteDto ConsultaAscDesc(int CodEmpresa, string tipo)
+        public ErrorDto<List<ClienteSincronizacionDto>> Clientes_Sincronizacion_Obtener()
+        {
+            return _clientesDB.Clientes_Sincronizacion_Obtener();
+        }
+
+        public ErrorDto<ClienteDto?> ConsultaAscDesc(int CodEmpresa, string tipo)
         {
             return _clientesDB.ConsultaAscDesc(CodEmpresa, tipo);
+        }
+
+        public ErrorDto TestConnection(ConnectionModel info)
+        {
+            return _clientesDB.TestConnection(info);
         }
 
         public ErrorDto Cliente_Modificar(ClienteDto info)
@@ -33,7 +43,7 @@ namespace Galileo.BusinessLogic
             return _clientesDB.Cliente_Modificar(info);
         }
 
-        public RespuestaDto Cliente_Crear(ClienteDto info)
+        public ErrorDto<RespuestaDto> Cliente_Crear(ClienteDto info)
         {
             return _clientesDB.Cliente_Crear(info);
         }
@@ -43,22 +53,22 @@ namespace Galileo.BusinessLogic
             return _clientesDB.Cliente_Eliminar(CodEmpresa, usuario);
         }
 
-        public List<ListaDD> Cliente_TiposId_Obtener()
+        public ErrorDto<List<ListaDD>> Cliente_TiposId_Obtener()
         {
             return _clientesDB.Cliente_TiposId_Obtener();
         }
 
-        public List<ListaDD> Cliente_Clasificaciones_Obtener()
+        public ErrorDto<List<ListaDD>> Cliente_Clasificaciones_Obtener()
         {
             return _clientesDB.Cliente_Clasificaciones_Obtener();
         }
 
-        public List<ListaDD> Cliente_Vendedores_Obtener()
+        public ErrorDto<List<ListaDD>> Cliente_Vendedores_Obtener()
         {
             return _clientesDB.Cliente_Vendedores_Obtener();
         }
 
-        public List<ContactoDto> ContactosCliente_Obtener(int CodEmpresa)
+        public ErrorDto<List<ContactoDto>> ContactosCliente_Obtener(int CodEmpresa)
         {
             return _clientesDB.ContactosCliente_Obtener(CodEmpresa);
         }
@@ -73,12 +83,12 @@ namespace Galileo.BusinessLogic
             return _clientesDB.ContactoCliente_Insertar(info);
         }
 
-        public ErrorDto ContactoCliente_Eliminar(int cod_contacto, int cod_empresa)
+        public ErrorDto ContactoCliente_Eliminar(int cod_contacto, int cod_empresa, string usuario)
         {
-            return _clientesDB.ContactoCliente_Eliminar(cod_contacto, cod_empresa);
+            return _clientesDB.ContactoCliente_Eliminar(cod_contacto, cod_empresa, usuario);
         }
 
-        public List<ServicioDto> ServiciosCliente_Obtener(int CodEmpresa)
+        public ErrorDto<List<ServicioDto>> ServiciosCliente_Obtener(int CodEmpresa)
         {
             return _clientesDB.ServiciosCliente_Obtener(CodEmpresa);
         }
@@ -88,7 +98,7 @@ namespace Galileo.BusinessLogic
             return _clientesDB.ServicioAsignar(request, modo);
         }
 
-        public List<SmtpDto> ListaSMTP(int CodEmpresa)
+        public ErrorDto<List<SmtpDto>> ListaSMTP(int CodEmpresa)
         {
             return _clientesDB.ListaSMTP(CodEmpresa);
         }
@@ -98,27 +108,27 @@ namespace Galileo.BusinessLogic
             return _clientesDB.SMTP_Autorizar(info);
         }
 
-        public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos, bool idPortal)
+        public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos)
         {
-            return _clientesDB.Clientes_Sincronizar(CodEmpresa, logos, idPortal);
+            return _clientesDB.Clientes_Sincronizar(CodEmpresa, logos);
         }
 
-        public List<PaisesDto> ObtenerPaises()
+        public ErrorDto<List<PaisesDto>> ObtenerPaises()
         {
             return _clientesDB.ObtenerPaises();
         }
 
-        public List<ProvinciaDto> ObtenerProvincia(string CodPais)
+        public ErrorDto<List<ProvinciaDto>> ObtenerProvincia(string CodPais)
         {
             return _clientesDB.ObtenerProvincia(CodPais);
         }
 
-        public List<CantonDto> ObtenerCanton(string CodPais, string CodProvincia)
+        public ErrorDto<List<CantonDto>> ObtenerCanton(string CodPais, string CodProvincia)
         {
             return _clientesDB.ObtenerCanton(CodPais, CodProvincia);
         }
 
-        public List<DistritoDto> ObtenerDistrito(string CodPais, string CodProvincia, string CodCanton)
+        public ErrorDto<List<DistritoDto>> ObtenerDistrito(string CodPais, string CodProvincia, string CodCanton)
         {
             return _clientesDB.ObtenerDistrito(CodPais, CodProvincia, CodCanton);
         }

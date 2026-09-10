@@ -12,27 +12,27 @@ namespace Galileo.BusinessLogic
         {
             _config = config;
         }
-        public List<UsuarioPlataforma> UsuarioPlataforma_Obtener(string? usuarioFiltro)
+        public ErrorDto<List<UsuarioPlataforma>> UsuarioPlataforma_Obtener(string? usuarioFiltro)
         {
             return new AdminRolDB(_config).UsuarioPlataforma_Obtener(usuarioFiltro);
         }
 
-        public List<UsuarioAdmin> UsuarioAdmin_Obtener(string? usuarioFiltro)
+        public ErrorDto<List<UsuarioAdmin>> UsuarioAdmin_Obtener(string? usuarioFiltro)
         {
             return new AdminRolDB(_config).UsuarioAdmin_Obtener(usuarioFiltro);
         }
 
-        public List<ClienteAsignado> ClientesAsigna_Obtener(string usuario, string? ClienteFiltro)
+        public ErrorDto<List<ClienteAsignado>> ClientesAsigna_Obtener(string usuario, string? ClienteFiltro)
         {
             return new AdminRolDB(_config).ClientesAsigna_Obtener(usuario, ClienteFiltro);
         }
 
-        public AdminLocalRoles AdminRoles_Obtener(string usuario)
+        public ErrorDto<AdminLocalRoles> AdminRoles_Obtener(string usuario)
         {
             return new AdminRolDB(_config).AdminRoles_Obtener(usuario);
         }
 
-        public AdminLocalRolesCliente AdminRolesCliente_Obtener(string usuario, int cliente)
+        public ErrorDto<AdminLocalRolesCliente> AdminRolesCliente_Obtener(string usuario, int cliente)
         {
             return new AdminRolDB(_config).AdminRolesCliente_Obtener(usuario, cliente);
         }

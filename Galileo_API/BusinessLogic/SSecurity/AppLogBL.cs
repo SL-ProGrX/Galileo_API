@@ -1,5 +1,6 @@
 ﻿using Galileo.DataBaseTier;
 using Galileo.Models.Security;
+using Galileo.Models.ERROR;
 
 namespace Galileo.BusinessLogic
 {
@@ -12,7 +13,7 @@ namespace Galileo.BusinessLogic
             _config = config;
         }
 
-        public List<AppLog> AppLog_ObtenerTodos(int empresa, string ini, string fin)
+        public ErrorDto<List<AppLog>> AppLog_ObtenerTodos(int empresa, string ini, string fin)
         {
             return new AppLogDB(_config).AppLog_ObtenerTodos(empresa, ini, fin);
         }

@@ -16,90 +16,85 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
-        public List<PaisObtenerDto> PaisObtener()
+        public ErrorDto<List<PaisObtenerDto>> PaisObtener()
         {
-            List<PaisObtenerDto> resp;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-
-                    var strSQL = "select * from PGX_PAIS";
-                    resp = connection.Query<PaisObtenerDto>(strSQL).ToList();
+                    const string strSQL = "SELECT COD_PAIS AS CodPais, DESCRIPCION AS Descripcion, ZONA_HORARIA AS ZonaHoraria, ACTIVO AS Activo, N1_NOMBRE AS N1Nombre, N2_NOMBRE AS N2Nombre, N3_NOMBRE AS N3Nombre, REGISTRO_FECHA AS RegistroFecha, REGISTRO_USUARIO AS RegistroUsuario FROM [PGX_Portal].[dbo].[PGX_PAIS] WHERE ACTIVO = 1 ORDER BY COD_PAIS";
+                    return DbHelper.CreateOkResponse(connection.Query<PaisObtenerDto>(strSQL).ToList());
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                resp = new List<PaisObtenerDto>();
+                return DbHelper.CreateErrorResponse<List<PaisObtenerDto>>(ex.Message);
             }
-            return resp;
         }
 
-        public List<ProvinciasObtenerDto> ProvinciasObtener(string CodPais)
+        public ErrorDto<List<ProvinciasObtenerDto>> ProvinciasObtener(string CodPais)
         {
-            List<ProvinciasObtenerDto> resp;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-
-                    var strSQL = "select Cod_Pais_N1,Descripcion,Activo from PGX_PAIS_N1 where Cod_Pais = @CodPais";
-                    resp = connection.Query<ProvinciasObtenerDto>(strSQL, new { CodPais }).ToList();
+                    const string strSQL = "SELECT COD_PAIS_N1 AS CodPaisN1, DESCRIPCION AS Descripcion, ACTIVO AS Activo FROM [PGX_Portal].[dbo].[PGX_PAIS_N1] WHERE ACTIVO = 1 AND COD_PAIS = @CodPais ORDER BY COD_PAIS_N1";
+                    return DbHelper.CreateOkResponse(connection.Query<ProvinciasObtenerDto>(strSQL, new { CodPais }).ToList());
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                resp = new List<ProvinciasObtenerDto>();
+                return DbHelper.CreateErrorResponse<List<ProvinciasObtenerDto>>(ex.Message);
             }
-            return resp;
         }
 
-        public List<CantonesObtenerDto> CantonesObtener(string CodPais, string CodProvincia)
+        public ErrorDto<List<CantonesObtenerDto>> CantonesObtener(string CodPais, string CodProvincia)
         {
-            List<CantonesObtenerDto> resp;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-
-                    var strSQL = "select Cod_Pais_N2,Descripcion,Activo from PGX_PAIS_N2 where Cod_Pais = @CodPais and cod_Pais_N1 = @CodProvincia";
-                    
-                    
-                    resp = connection.Query<CantonesObtenerDto>(strSQL, new { CodPais, CodProvincia }).ToList();
+                    const string strSQL = "SELECT COD_PAIS_N2 AS CodPaisN2, DESCRIPCION AS Descripcion, ACTIVO AS Activo FROM [PGX_Portal].[dbo].[PGX_PAIS_N2] WHERE ACTIVO = 1 AND COD_PAIS = @CodPais AND COD_PAIS_N1 = @CodProvincia ORDER BY COD_PAIS_N2";
+                    return DbHelper.CreateOkResponse(connection.Query<CantonesObtenerDto>(strSQL, new { CodPais, CodProvincia }).ToList());
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                resp = new List<CantonesObtenerDto>();
+                return DbHelper.CreateErrorResponse<List<CantonesObtenerDto>>(ex.Message);
             }
-            return resp;
         }
 
-        public List<DistritosObtenerDto> DistritosObtener(string CodPais, string CodProvincia, string CodCanton)
+        public ErrorDto<List<DistritosObtenerDto>> DistritosObtener(string CodPais, string CodProvincia, string CodCanton)
         {
-            List<DistritosObtenerDto> resp;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-
-                    var strSQL = "select Cod_Pais_N2,Descripcion,Activo from PGX_PAIS_N3 where Cod_Pais = @CodPais and cod_Pais_N1 = @CodProvincia and cod_Pais_N2 = @CodCanton";
-                    
-                    
-                    
-                    resp = connection.Query<DistritosObtenerDto>(strSQL, new { CodPais, CodProvincia, CodCanton }).ToList();
+                    const string strSQL = "SELECT COD_PAIS_N3 AS CodPaisN3, DESCRIPCION AS Descripcion, ACTIVO AS Activo FROM [PGX_Portal].[dbo].[PGX_PAIS_N3] WHERE ACTIVO = 1 AND COD_PAIS = @CodPais AND COD_PAIS_N1 = @CodProvincia AND COD_PAIS_N2 = @CodCanton ORDER BY COD_PAIS_N3";
+                    return DbHelper.CreateOkResponse(connection.Query<DistritosObtenerDto>(strSQL, new { CodPais, CodProvincia, CodCanton }).ToList());
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                resp = new List<DistritosObtenerDto>();
+                return DbHelper.CreateErrorResponse<List<DistritosObtenerDto>>(ex.Message);
             }
-            return resp;
         }
 
         public ErrorDto FxGuardar(GuardarDto dto)
         {
-            ErrorDto result = new ErrorDto();
+            if (dto is null)
+            {
+                return DbHelper.ErrorResponse("La información a guardar es requerida.");
+            }
+
+            var tipoOperacion = dto.VModifica.Trim().ToUpperInvariant();
+            if (tipoOperacion is not ("P" or "C" or "D"))
+            {
+                return DbHelper.ErrorResponse("El nivel de distribución política no es válido.");
+            }
+
+            var result = DbHelper.CreateOkResponse();
+
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -108,7 +103,7 @@ namespace Galileo.DataBaseTier
                     string strSQL;
                     int existe;
 
-                    switch (dto.VModifica.ToUpper())
+                    switch (tipoOperacion)
                     {
                         case "P":
                             strSQL = "SELECT COUNT(*) FROM Provincias WHERE Provincia = @Provincia";
@@ -168,12 +163,9 @@ namespace Galileo.DataBaseTier
                 }
                 return result;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Log the error
-                result.Code = 0;
-                result.Description = "Ok";
-                return result;
+                return DbHelper.ErrorResponse(ex.Message);
             }
         }
     }
