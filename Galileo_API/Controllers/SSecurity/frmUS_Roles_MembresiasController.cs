@@ -34,42 +34,42 @@ namespace Galileo.Controllers
 
 
         [HttpGet("UsuariosConsultar")]
-        public List<UsuariosConsultaDto> UsuariosConsultar(string? usuario, bool adminView, bool dirGlobal, int codEmpresa)
+        public ErrorDto<List<UsuariosConsultaDto>> UsuariosConsultar(string? usuario, bool adminView, bool dirGlobal, int codEmpresa)
         {
             return new FrmUsRolesMembresiasBl(_config).UsuariosConsultar(usuario, adminView, dirGlobal, codEmpresa);
         }
 
 
         [HttpGet("UsuariosVinculadosConsultar")]
-        public List<UsuariosVinculadosConsultaDto> UsuariosVinculadosConsultar2(string? usuario, int contabiliza, bool adminView, int codEmpresa)
+        public ErrorDto<List<UsuariosVinculadosConsultaDto>> UsuariosVinculadosConsultar2(string? usuario, int contabiliza, bool adminView, int codEmpresa)
         {
             return new FrmUsRolesMembresiasBl(_config).UsuariosVinculadosConsultar(usuario, contabiliza, adminView, codEmpresa);
         }
 
 
         [HttpGet("Limites_Obtener")]
-        public Limites Limites_Obtener(string usuario, int codEmpresa)
+        public ErrorDto<Limites> Limites_Obtener(string usuario, int codEmpresa)
         {
             return new FrmUsRolesMembresiasBl(_config).Limites_Obtener(usuario, codEmpresa);
         }
 
 
         [HttpGet("RolesConsultar")]
-        public List<RolConsultaDto> RolesConsultar(string usuario, string? filtro, int codEmpresa)
+        public ErrorDto<List<RolConsultaDto>> RolesConsultar(string usuario, string? filtro, int codEmpresa)
         {
             return new FrmUsRolesMembresiasBl(_config).RolesConsultar(usuario, filtro, codEmpresa);
         }
 
 
         [HttpGet("HorariosConsultar")]
-        public List<HorarioConsultaDto> HorariosConsultar(string usuario, string? filtro, int codEmpresa)
+        public ErrorDto<List<HorarioConsultaDto>> HorariosConsultar(string usuario, string? filtro, int codEmpresa)
         {
             return new FrmUsRolesMembresiasBl(_config).HorariosConsultar(usuario, filtro, codEmpresa);
         }
 
 
         [HttpGet("EstacionesConsultar")]
-        public List<EstacionConsultaDto> EstacionesConsultar(string usuario, string? filtro, int codEmpresa)
+        public ErrorDto<List<EstacionConsultaDto>> EstacionesConsultar(string usuario, string? filtro, int codEmpresa)
         {
             return new FrmUsRolesMembresiasBl(_config).EstacionesConsultar(usuario, filtro, codEmpresa);
         }

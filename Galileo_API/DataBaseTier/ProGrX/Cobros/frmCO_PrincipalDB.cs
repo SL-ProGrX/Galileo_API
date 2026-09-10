@@ -1334,7 +1334,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     new
                     {
                         Operacion = operacion,
-                        Notas = notasLimpias,
+                        Observacion = notasLimpias,
                         Usuario = usuario
                     },
                     commandType: CommandType.StoredProcedure

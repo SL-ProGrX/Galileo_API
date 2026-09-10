@@ -2,7 +2,6 @@
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
-using System.Data;
 
 namespace Galileo.DataBaseTier
 {
@@ -11,21 +10,55 @@ namespace Galileo.DataBaseTier
         private readonly IConfiguration _config;
         private const string connectionStringName = "BaseConnString";
 
+        private const string ObtenerSql = """
+            SELECT HIT_COD,
+                   DESCRIPCION,
+                   ACTIVO,
+                   REGISTRO_USUARIO,
+                   REGISTRO_FECHA
+            FROM dbo.[APP_Estadistica]
+            ORDER BY HIT_COD;
+            """;
+
+        private const string InsertarSql = """
+            INSERT INTO dbo.[APP_Estadistica]
+                (HIT_COD, DESCRIPCION, ACTIVO, REGISTRO_USUARIO, REGISTRO_FECHA)
+            VALUES
+                (@Hit_Cod, @Descripcion, @Activo, @Registro_Usuario, GETDATE());
+            """;
+
+        private const string EliminarSql = """
+            DELETE FROM dbo.[APP_Estadistica]
+            WHERE HIT_COD = @Hit_Cod;
+            """;
+
+        private const string ActualizarSql = """
+            UPDATE dbo.[APP_Estadistica]
+            SET DESCRIPCION = @Descripcion,
+                ACTIVO = @Activo
+            WHERE HIT_COD = @Hit_Cod;
+            """;
+
         public AppHitsDB(IConfiguration config)
         {
             _config = config;
         }
 
-        public List<AppHits> AppHits_ObtenerTodos()
+        public ErrorDto<List<AppHits>> AppHits_ObtenerTodos()
         {
-            List<AppHits> types = new List<AppHits>();
+            ErrorDto<List<AppHits>> resp = new ErrorDto<List<AppHits>>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new List<AppHits>(),
+            };
+
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
 
-                var procedure = "[spPGX_W_AppHits_Obtener]";
-
-                types = connection.Query<AppHits>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                var types = connection.Query<AppHits>(ObtenerSql).ToList();
+                resp.Result = types;
                 foreach (AppHits dt in types)
                 {
                     dt.Estado = dt.Activo == 1 ? "ACTIVO" : "INACTIVO";
@@ -34,9 +67,10 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                resp.Code = -1;
+                resp.Description = ex.Message;
             }
-            return types;
+            return resp;
         }
 
         public ErrorDto AppHits_Insertar(AppHits request)
@@ -47,7 +81,6 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
 
-                var procedure = "[spPGX_W_AppHits_Insertar]";
                 var values = new
                 {
                     request.Hit_Cod,
@@ -57,7 +90,8 @@ namespace Galileo.DataBaseTier
 
                 };
 
-                resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                connection.Execute(InsertarSql, values);
+                resp.Code = 0;
                 resp.Description = "Ok";
 
             }
@@ -76,13 +110,13 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
 
-                var procedure = "[spPGX_W_AppHits_Eliminar]";
                 var values = new
                 {
                     request.Hit_Cod,
                 };
 
-                resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                connection.Execute(EliminarSql, values);
+                resp.Code = 0;
                 resp.Description = "Ok";
 
             }
@@ -101,7 +135,6 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
 
-                var procedure = "[spPGX_W_AppHits_Editar]";
                 var values = new
                 {
                     request.Hit_Cod,
@@ -110,7 +143,8 @@ namespace Galileo.DataBaseTier
 
                 };
 
-                resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                connection.Execute(ActualizarSql, values);
+                resp.Code = 0;
                 resp.Description = "Ok";
 
             }

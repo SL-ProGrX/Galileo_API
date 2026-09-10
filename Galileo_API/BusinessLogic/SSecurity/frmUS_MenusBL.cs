@@ -1,5 +1,6 @@
 ﻿using Galileo.DataBaseTier;
 using Galileo.Models;
+using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 
 
@@ -15,288 +16,56 @@ namespace Galileo.BusinessLogic
             SecurityUsDB = new FrmUsMenusDb(config);
         }
 
-        public List<UsMenuDto> ObtenerUsMenusPorTipoYNodoPadreEsNull(string Tipo)
-        {
-            List<UsMenuDto> resultado = new List<UsMenuDto>();
-            try
-            {
-                var lista = SecurityUsDB.ObtenerUsMenusPorTipoYNodoPadreEsNull(Tipo);
+        public ErrorDto<List<UsMenuDto>> ObtenerUsMenusPorTipoYNodoPadreEsNull(string Tipo)
+            => SecurityUsDB.ObtenerUsMenusPorTipoYNodoPadreEsNull(Tipo);
 
-                foreach (var item in lista)
-                {
-                    resultado.Add(new UsMenuDto
-                    {
-                        MENU_NODO = item.MENU_NODO,
-                        NODO_PADRE = item.NODO_PADRE,
-                        NODO_DESCRIPCION = item.NODO_DESCRIPCION,
-                        TIPO = item.TIPO,
-                        ICONO = item.ICONO,
-                        MODO = item.MODO,
-                        MODAL = item.MODAL,
-                        ACCESOS_DLL_ID = item.ACCESOS_DLL_ID,
-                        ACCESOS_DLL_CLS = item.ACCESOS_DLL_CLS,
-                        PRIORIDAD = item.PRIORIDAD,
-                        FORMULARIO = item.FORMULARIO,
-                        MODULO = item.MODULO,
-                        Acceso = item.Acceso
+        public ErrorDto<List<UsMenuDto>> ObtenerUsMenus()
+            => SecurityUsDB.ObtenerUsMenus();
 
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
+        public ErrorDto<List<UsModuloDto>> ObtenerUsModulos()
+            => SecurityUsDB.ObtenerUsModulos();
 
-            return resultado;
+        public ErrorDto<List<UsFormularioDto>> ObtenerUsFormularios()
+            => SecurityUsDB.ObtenerUsFormularios();
 
-        }//end ObtenerUsMenusPorTipoYNodoPadreEsNull
+        public ErrorDto<int?> ObtenerMenuNodoPorNodoPadreYPrioridad(int NodoPadre, int Prioridad)
+            => SecurityUsDB.ObtenerMenuNodoPorNodoPadreYPrioridad(NodoPadre, Prioridad);
 
-        public List<UsMenuDto> ObtenerUsMenus()
-        {
-            return SecurityUsDB.ObtenerUsMenus();
+        public ErrorDto<ResultadoCrearYEditarUsMenuDto?> ActualizarUsMenu(UsMenuDto info)
+            => SecurityUsDB.ActualizarUsMenu(info);
 
-        }//end ObtenerUsModulos
+        public ErrorDto<int?> ObtenerMenuNodoConIsNull()
+            => SecurityUsDB.ObtenerMenuNodoConIsNull();
 
-        public List<UsModuloDto> ObtenerUsModulos()
-        {
-            List<UsModuloDto> resultado = new List<UsModuloDto>();
-            try
-            {
-                var lista = SecurityUsDB.ObtenerUsModulos();
+        public ErrorDto<int?> ObtenerMenuPrioridadPorMenuNodoPadre(int NodoPadre)
+            => SecurityUsDB.ObtenerMenuPrioridadPorMenuNodoPadre(NodoPadre);
 
-                foreach (var item in lista)
-                {
-                    resultado.Add(new UsModuloDto
-                    {
-                        MODULO = item.MODULO,
-                        NOMBRE = item.NOMBRE,
-                        DESCRIPCION = item.DESCRIPCION,
-                        ACTIVO = item.ACTIVO,
-                        KEYENT = item.KEYENT
+        public ErrorDto<UsModuloDto?> ObtenerUsModulosOrdenadosPorTipo(string Tipo)
+            => SecurityUsDB.ObtenerUsModulosOrdenadosPorTipo(Tipo);
 
-                    });
+        public ErrorDto<ResultadoCrearYEditarUsMenuDto?> CrearUsMenu(UsMenuDto info)
+            => SecurityUsDB.CrearUsMenu(info);
 
-                }
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
+        public ErrorDto<int?> EliminarUnMenuPorNodoPadre(int NodoPadre)
+            => SecurityUsDB.EliminarUnMenuPorNodoPadre(NodoPadre);
 
-            return resultado;
+        public ErrorDto<int?> EliminarUsMenusPorMenuNodo(int MenuNodo)
+            => SecurityUsDB.EliminarUsMenusPorMenuNodo(MenuNodo);
 
-        }//end ObtenerUsModulos
+        public ErrorDto<int?> EliminarTodosLosMenusPorNodoPadre(int NodoPadre)
+            => SecurityUsDB.EliminarTodosLosMenusPorNodoPadre(NodoPadre);
 
-        public List<UsFormularioDto> ObtenerUsFormularios()
-        {
-            List<UsFormularioDto> resultado = new List<UsFormularioDto>();
-            try
-            {
-                var lista = SecurityUsDB.ObtenerUsFormularios();
+        public ErrorDto<int?> ObtenerMenuNodoPorMenuFormulario(string Formulario)
+            => SecurityUsDB.ObtenerMenuNodoPorMenuFormulario(Formulario);
 
-                foreach (var item in lista)
-                {
-                    resultado.Add(new UsFormularioDto
-                    {
-                        FORMULARIO = item.FORMULARIO,
-                        MODULO = item.MODULO,
-                        DESCRIPCION = item.DESCRIPCION,
-                        REGISTRO_FECHA = item.REGISTRO_FECHA,
-                        REGISTRO_USUARIO = item.REGISTRO_USUARIO,
-                        Existe = item.Existe
+        public ErrorDto<UsFormularioDto> ObtenerUsFormularioPorFormulario(string Formulario)
+            => SecurityUsDB.ObtenerUsFormularioPorFormulario(Formulario);
 
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
+        public ErrorDto<UsMenuDto> ObtenerUsMenuPorMenuNodo(int MenuNodo)
+            => SecurityUsDB.ObtenerUsMenuPorMenuNodo(MenuNodo);
 
-            return resultado;
-
-        }//end ObtenerUsFormularios
-
-        public int? ObtenerMenuNodoPorNodoPadreYPrioridad(int NodoPadre, int Prioridad)
-        {
-            int? resultado = null;
-            try
-            {
-                resultado = SecurityUsDB.ObtenerMenuNodoPorNodoPadreYPrioridad(NodoPadre, Prioridad);
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resultado;
-        }//end ObtenerMenuNodoPorNodoPadreYPrioridad
-
-        public ResultadoCrearYEditarUsMenuDto? ActualizarUsMenu(UsMenuDto info)
-        {
-            ResultadoCrearYEditarUsMenuDto? resultado = null;
-            try
-            {
-                resultado = SecurityUsDB.ActualizarUsMenu(info);
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resultado;
-        }//end ActualizarUsMenu
-
-        public int? ObtenerMenuNodoConIsNull()
-        {
-            int? resultado = null;
-            try
-            {
-                resultado = SecurityUsDB.ObtenerMenuNodoConIsNull();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resultado;
-        }//end ObtenerMenuNodoConIsNull
-
-        public int? ObtenerMenuPrioridadPorMenuNodoPadre(int NodoPadre)
-        {
-            int? resultado = null;
-            try
-            {
-                resultado = SecurityUsDB.ObtenerMenuPrioridadPorMenuNodoPadre(NodoPadre);
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resultado;
-
-        }
-
-        public UsModuloDto? ObtenerUsModulosOrdenadosPorTipo(string Tipo)
-        {
-            UsModuloDto? resultado = null;
-            try
-            {
-                resultado = SecurityUsDB.ObtenerUsModulosOrdenadosPorTipo(Tipo);
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resultado;
-        }//end ObtenerUsModulosOrdenadosPorTipo
-
-        public ResultadoCrearYEditarUsMenuDto? CrearUsMenu(UsMenuDto info)
-        {
-
-            ResultadoCrearYEditarUsMenuDto? resultado = null;
-            try
-            {
-
-                resultado = SecurityUsDB.CrearUsMenu(info);
-
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resultado;
-
-
-        }//end CrearUsMenu
-
-        public int? EliminarUnMenuPorNodoPadre(int NodoPadre)
-        {
-            int? resultado = null;
-            try
-            {
-                resultado = SecurityUsDB.EliminarUnMenuPorNodoPadre(NodoPadre);
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resultado;
-        }//end EliminarUnMenuPorNodoPadre
-
-        public int? EliminarUsMenusPorMenuNodo(int MenuNodo)
-        {
-            int? resultado = null;
-            try
-            {
-                resultado = SecurityUsDB.EliminarUsMenusPorMenuNodo(MenuNodo);
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resultado;
-        }//end EliminarUsMenusPorMenuNodo
-
-        public int? EliminarTodosLosMenusPorNodoPadre(int NodoPadre)
-        {
-            int? resultado = null;
-            try
-            {
-                resultado = SecurityUsDB.EliminarTodosLosMenusPorNodoPadre(NodoPadre);
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resultado;
-        }//end EliminarTodosLosMenusPorNodoPadre
-
-        public int? ObtenerMenuNodoPorMenuFormulario(string Formulario)
-        {
-            int? resultado = null;
-            try
-            {
-                resultado = SecurityUsDB.ObtenerMenuNodoPorMenuFormulario(Formulario);
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resultado;
-
-        }//end ObtenerMenuNodoPorMenuFormulario
-
-        public UsFormularioDto ObtenerUsFormularioPorFormulario(string Formulario)
-        {
-            UsFormularioDto resultado = new UsFormularioDto();
-            try
-            {
-                resultado = SecurityUsDB.ObtenerUsFormularioPorFormulario(Formulario);
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resultado;
-        }//end ObtenerUsFormularioPorFormulario
-
-        public UsMenuDto ObtenerUsMenuPorMenuNodo(int MenuNodo)
-        {
-            UsMenuDto resultado = new UsMenuDto();
-            try
-            {
-                resultado = SecurityUsDB.ObtenerUsMenuPorMenuNodo(MenuNodo);
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resultado;
-        }//end ObtenerUsMenuPorMenuNodo
-
-        public List<UsIconWeb> ObtenerUsMenu_IconosWeb()
-        {
-            return SecurityUsDB.ObtenerUsMenu_IconosWeb();
-        }
+        public ErrorDto<List<UsIconWeb>> ObtenerUsMenu_IconosWeb()
+            => SecurityUsDB.ObtenerUsMenu_IconosWeb();
 
     }
 }

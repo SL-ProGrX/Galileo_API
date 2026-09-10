@@ -13,7 +13,7 @@ namespace Galileo.BusinessLogic
             _config = config;
         }
 
-        public List<AppHits> AppHits_ObtenerTodos()
+        public ErrorDto<List<AppHits>> AppHits_ObtenerTodos()
         {
             return new AppHitsDB(_config).AppHits_ObtenerTodos();
         }

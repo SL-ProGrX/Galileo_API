@@ -23,32 +23,32 @@ namespace Galileo.BusinessLogic
             return new FrmUsRolesMembresiasDb(_config).Acceso_Horario(req);
         }
 
-        public List<UsuariosConsultaDto> UsuariosConsultar(string? usuario, bool adminView, bool dirGlobal, int codEmpresa)
+        public ErrorDto<List<UsuariosConsultaDto>> UsuariosConsultar(string? usuario, bool adminView, bool dirGlobal, int codEmpresa)
         {
             return new FrmUsRolesMembresiasDb(_config).UsuariosConsultar(usuario, adminView, dirGlobal, codEmpresa);
         }
 
-        public List<UsuariosVinculadosConsultaDto> UsuariosVinculadosConsultar(string? usuario, int contabiliza, bool adminView, int codEmpresa)
+        public ErrorDto<List<UsuariosVinculadosConsultaDto>> UsuariosVinculadosConsultar(string? usuario, int contabiliza, bool adminView, int codEmpresa)
         {
             return new FrmUsRolesMembresiasDb(_config).UsuariosVinculadosConsultar(usuario, contabiliza, adminView, codEmpresa);
         }
 
-        public Limites Limites_Obtener(string usuario, int codEmpresa)
+        public ErrorDto<Limites> Limites_Obtener(string usuario, int codEmpresa)
         {
             return new FrmUsRolesMembresiasDb(_config).Limites_Obtener(usuario, codEmpresa);
         }
 
-        public List<RolConsultaDto> RolesConsultar(string usuario, string? filtro, int codEmpresa)
+        public ErrorDto<List<RolConsultaDto>> RolesConsultar(string usuario, string? filtro, int codEmpresa)
         {
             return new FrmUsRolesMembresiasDb(_config).RolesConsultar(usuario, filtro, codEmpresa);
         }
 
-        public List<HorarioConsultaDto> HorariosConsultar(string usuario, string? filtro, int codEmpresa)
+        public ErrorDto<List<HorarioConsultaDto>> HorariosConsultar(string usuario, string? filtro, int codEmpresa)
         {
             return new FrmUsRolesMembresiasDb(_config).HorariosConsultar(usuario, filtro, codEmpresa);
         }
 
-        public List<EstacionConsultaDto> EstacionesConsultar(string usuario, string? filtro, int codEmpresa)
+        public ErrorDto<List<EstacionConsultaDto>> EstacionesConsultar(string usuario, string? filtro, int codEmpresa)
         {
             return new FrmUsRolesMembresiasDb(_config).EstacionesConsultar(usuario, filtro, codEmpresa);
         }

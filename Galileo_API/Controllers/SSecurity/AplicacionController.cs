@@ -22,7 +22,7 @@ namespace Galileo.Controllers
 
         [HttpGet("Aplicacion_ObtenerTodos")]
         [Authorize]
-        public List<Aplicacion> Aplicacion_ObtenerTodos()
+        public ErrorDto<List<Aplicacion>> Aplicacion_ObtenerTodos()
         {
             return new AplicacionBL(_config).Aplicacion_ObtenerTodos();
         }
@@ -41,6 +41,13 @@ namespace Galileo.Controllers
             return new AplicacionBL(_config).Aplicacion_Actualizar(request);
         }
 
+        [HttpPost("Aplicacion_Eliminar")]
+        [Authorize]
+        public ErrorDto Aplicacion_Eliminar(Aplicacion request)
+        {
+            return new AplicacionBL(_config).Aplicacion_Eliminar(request);
+        }
+
         #endregion
 
 
@@ -48,7 +55,7 @@ namespace Galileo.Controllers
 
         [HttpGet("Bloqueo_ObtenerTodos")]
         [Authorize]
-        public List<Bloqueo> Bloqueo_ObtenerTodos(string Cod_App)
+        public ErrorDto<List<Bloqueo>> Bloqueo_ObtenerTodos(string Cod_App)
         {
             return new AplicacionBL(_config).Bloqueo_ObtenerTodos(Cod_App);
         }
@@ -74,7 +81,7 @@ namespace Galileo.Controllers
 
         [HttpGet("Actualizacion_ObtenerTodos")]
         [Authorize]
-        public List<Actualizacion> Actualizacion_ObtenerTodos(string Cod_App)
+        public ErrorDto<List<Actualizacion>> Actualizacion_ObtenerTodos(string Cod_App)
         {
             return new AplicacionBL(_config).Actualizacion_ObtenerTodos(Cod_App);
         }

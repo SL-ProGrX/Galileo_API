@@ -60,7 +60,7 @@ namespace Galileo.DataBaseTier
                     // Validación del parámetro
                     if (string.IsNullOrWhiteSpace(server))
                     {
-                        resp.Code = 0;
+                        resp.Code = -1;
                         resp.Description = "Servidor no especificado.";
                         return resp;
                     }
@@ -68,7 +68,7 @@ namespace Galileo.DataBaseTier
                     // Solo alias permitidos, nada de nombres reales de host
                     if (!ServidoresPermitidos.TryGetValue(server, out var connKey))
                     {
-                        resp.Code = 0;
+                        resp.Code = -1;
                         resp.Description = "Servidor no permitido.";
                         return resp;
                     }
@@ -121,7 +121,7 @@ namespace Galileo.DataBaseTier
                 }
                 else
                 {
-                    resp.Code = 0;
+                    resp.Code = -1;
                     resp.Description = "Paso no válido";
                 }
             }
@@ -129,7 +129,6 @@ namespace Galileo.DataBaseTier
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
-                throw;
             }
 
 
@@ -139,6 +138,7 @@ namespace Galileo.DataBaseTier
         private static readonly Dictionary<string, string> ServidoresPermitidos =
             new(StringComparer.OrdinalIgnoreCase)
         {
+            { "progrx.southcentralus.cloudapp.azure.com", connectionStringName },
             { "default", connectionStringName },
             { "base", "BaseConnString" },
             { "ga", "GAConnString" }

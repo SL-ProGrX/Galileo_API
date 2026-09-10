@@ -19,20 +19,18 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("HorariosObtener")]
-        public List<HorarioDto> HorariosObtener(int empresaId)
+        public ErrorDto<List<HorarioDto>> HorariosObtener(int empresaId)
         {
             return new FrmUsAccessHorariosBl(_config).HorariosObtener(empresaId);
         }
 
         [HttpPost("HorarioRegistrar")]
-        // [Authorize]
         public ErrorDto HorarioRegistrar(HorarioDto request)
         {
             return new FrmUsAccessHorariosBl(_config).HorarioRegistrar(request);
         }
 
         [HttpPost("HorarioEliminar")]
-        //[Authorize]
         public ErrorDto HorarioEliminar(HorarioDto request)
         {
             return new FrmUsAccessHorariosBl(_config).HorarioEliminar(request);

@@ -17,7 +17,7 @@ namespace Galileo.DataBaseTier
 
         public List<PadronConsultarResponseDto> PadronConsultar(PadronConsultarRequestDto padronConsultarDto)
         {
-            List<PadronConsultarResponseDto> resp = null;
+            var resp = new List<PadronConsultarResponseDto>();
 
 
             using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
@@ -34,23 +34,19 @@ namespace Galileo.DataBaseTier
             switch (padronConsultarDto.TInfo)
             {
                 case "General":
-                    List<PadronConsultarResponseDto> respGen = null;
-                    respGen = connection.Query<PadronConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
+                    var respGen = connection.Query<PadronConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
                     resp = respGen;
                     break;
                 case "Telefonos":
-                    List<PadronTelefonosConsultarResponseDto> respTel = null;
-                    respTel = connection.Query<PadronTelefonosConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
+                    var respTel = connection.Query<PadronTelefonosConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
                     resp = respTel.Cast<PadronConsultarResponseDto>().ToList();
                     break;
                 case "Direccion":
-                    List<PadronDireccionesConsultarResponseDto> respDir = null;
-                    respDir = connection.Query<PadronDireccionesConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
+                    var respDir = connection.Query<PadronDireccionesConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
                     resp = respDir.Cast<PadronConsultarResponseDto>().ToList();
                     break;
                 case "Empresas":
-                    List<PadronEmpresasConsultarResponseDto> respEmp = null;
-                    respEmp = connection.Query<PadronEmpresasConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
+                    var respEmp = connection.Query<PadronEmpresasConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
                     resp = respEmp.Cast<PadronConsultarResponseDto>().ToList();
                     break;
             }

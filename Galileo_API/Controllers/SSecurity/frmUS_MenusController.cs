@@ -2,6 +2,7 @@
 using Galileo.BusinessLogic;
 using Galileo.Models;
 using Galileo.Models.Security;
+using Galileo.Models.ERROR;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
@@ -18,107 +19,72 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("obtenerUsMenus")]
-        public List<UsMenuDto> obtenerUsMenus()
-        {
-            return SecurityUsBL.ObtenerUsMenus();
-        }
+        public ErrorDto<List<UsMenuDto>> obtenerUsMenus()
+            => SecurityUsBL.ObtenerUsMenus();
 
         [HttpGet("ObtenerUsModulos")]
-        public List<UsModuloDto> ObtenerUsModulos()
-        {
-            return SecurityUsBL.ObtenerUsModulos();
-        }
+        public ErrorDto<List<UsModuloDto>> ObtenerUsModulos()
+            => SecurityUsBL.ObtenerUsModulos();
 
         [HttpGet("ObtenerUsFormularios")]
-        public List<UsFormularioDto> ObtenerUsFormularios()
-        {
-            return SecurityUsBL.ObtenerUsFormularios();
-        }//end ObtenerUsFormularios
+        public ErrorDto<List<UsFormularioDto>> ObtenerUsFormularios()
+            => SecurityUsBL.ObtenerUsFormularios();//end ObtenerUsFormularios
 
         [HttpGet("ObtenerMenuNodoConIsNull")]
-        public int? ObtenerMenuNodoConIsNull()
-        {
-            return SecurityUsBL.ObtenerMenuNodoConIsNull();
-        }
+        public ErrorDto<int?> ObtenerMenuNodoConIsNull()
+            => SecurityUsBL.ObtenerMenuNodoConIsNull();
 
         [HttpGet("ObtenerUsMenusPorTipoYNodoPadreEsNull")]
-        public List<UsMenuDto> ObtenerUsMenusPorTipoYNodoPadreEsNull(string Tipo)
-        {
-            return SecurityUsBL.ObtenerUsMenusPorTipoYNodoPadreEsNull(Tipo);
-        }
+        public ErrorDto<List<UsMenuDto>> ObtenerUsMenusPorTipoYNodoPadreEsNull(string Tipo)
+            => SecurityUsBL.ObtenerUsMenusPorTipoYNodoPadreEsNull(Tipo);
 
         [HttpGet("ObtenerMenuPrioridadPorMenuNodoPadre")]
-        public int? ObtenerMenuPrioridadPorMenuNodoPadre(int NodoPadre)
-        {
-            return SecurityUsBL.ObtenerMenuPrioridadPorMenuNodoPadre(NodoPadre);
-        }
+        public ErrorDto<int?> ObtenerMenuPrioridadPorMenuNodoPadre(int NodoPadre)
+            => SecurityUsBL.ObtenerMenuPrioridadPorMenuNodoPadre(NodoPadre);
 
         [HttpGet("ObtenerUsModulosOrdenadosPorTipo")]
-        public UsModuloDto ObtenerUsModulosOrdenadosPorTipo(string Tipo)
-        {
-            var result = SecurityUsBL.ObtenerUsModulosOrdenadosPorTipo(Tipo);
-            return result ?? new UsModuloDto();
-        }
+        public ErrorDto<UsModuloDto?> ObtenerUsModulosOrdenadosPorTipo(string Tipo)
+            => SecurityUsBL.ObtenerUsModulosOrdenadosPorTipo(Tipo);
 
         [HttpGet("ObtenerMenuNodoPorNodoPadreYPrioridad")]
-        public int? ObtenerMenuNodoPorNodoPadreYPrioridad(int NodoPadre, int Prioridad)
-        {
-            return SecurityUsBL.ObtenerMenuNodoPorNodoPadreYPrioridad(NodoPadre, Prioridad);
-        }
+        public ErrorDto<int?> ObtenerMenuNodoPorNodoPadreYPrioridad(int NodoPadre, int Prioridad)
+            => SecurityUsBL.ObtenerMenuNodoPorNodoPadreYPrioridad(NodoPadre, Prioridad);
 
         [HttpGet("EliminarUnMenuPorNodoPadre")]
-        public int? EliminarUnMenuPorNodoPadre(int NodoPadre)
-        {
-            return SecurityUsBL.EliminarUnMenuPorNodoPadre(NodoPadre);
-        }
+        public ErrorDto<int?> EliminarUnMenuPorNodoPadre(int NodoPadre)
+            => SecurityUsBL.EliminarUnMenuPorNodoPadre(NodoPadre);
 
         [HttpGet("EliminarUsMenusPorMenuNodo")]
-        public int? EliminarUsMenusPorMenuNodo(int MenuNodo)
-        {
-            return SecurityUsBL.EliminarUsMenusPorMenuNodo(MenuNodo);
-        }
+        public ErrorDto<int?> EliminarUsMenusPorMenuNodo(int MenuNodo)
+            => SecurityUsBL.EliminarUsMenusPorMenuNodo(MenuNodo);
 
         [HttpGet("EliminarTodosLosMenusPorNodoPadre")]
-        public int? EliminarTodosLosMenusPorNodoPadre(int NodoPadre)
-        {
-            return SecurityUsBL.EliminarTodosLosMenusPorNodoPadre(NodoPadre);
-        }
+        public ErrorDto<int?> EliminarTodosLosMenusPorNodoPadre(int NodoPadre)
+            => SecurityUsBL.EliminarTodosLosMenusPorNodoPadre(NodoPadre);
 
         [HttpGet("ObtenerMenuNodoPorMenuFormulario")]
-        public int? ObtenerMenuNodoPorMenuFormulario(string Formulario)
-        {
-            return SecurityUsBL.ObtenerMenuNodoPorMenuFormulario(Formulario);
-        }
+        public ErrorDto<int?> ObtenerMenuNodoPorMenuFormulario(string Formulario)
+            => SecurityUsBL.ObtenerMenuNodoPorMenuFormulario(Formulario);
 
         [HttpGet("ObtenerUsFormularioPorFormulario")]
-        public UsFormularioDto ObtenerUsFormularioPorFormulario(string Formulario)
-        {
-            return SecurityUsBL.ObtenerUsFormularioPorFormulario(Formulario);
-        }
+        public ErrorDto<UsFormularioDto> ObtenerUsFormularioPorFormulario(string Formulario)
+            => SecurityUsBL.ObtenerUsFormularioPorFormulario(Formulario);
 
         [HttpGet("ObtenerUsMenuPorMenuNodo")]
-        public UsMenuDto ObtenerUsMenuPorMenuNodo(int MenuNodo)
-        {
-            return SecurityUsBL.ObtenerUsMenuPorMenuNodo(MenuNodo);
-        }
+        public ErrorDto<UsMenuDto> ObtenerUsMenuPorMenuNodo(int MenuNodo)
+            => SecurityUsBL.ObtenerUsMenuPorMenuNodo(MenuNodo);
 
         [HttpPost("ActualizarUsMenu")]
-        public ResultadoCrearYEditarUsMenuDto? ActualizarUsMenu(UsMenuDto Info)
-        {
-            return SecurityUsBL.ActualizarUsMenu(Info);
-        }
+        public ErrorDto<ResultadoCrearYEditarUsMenuDto?> ActualizarUsMenu(UsMenuDto Info)
+            => SecurityUsBL.ActualizarUsMenu(Info);
 
         [HttpPost("CrearUsMenu")]
-        public ResultadoCrearYEditarUsMenuDto? CrearUsMenu(UsMenuDto Info)
-        {
-            return SecurityUsBL.CrearUsMenu(Info);
-        }
+        public ErrorDto<ResultadoCrearYEditarUsMenuDto?> CrearUsMenu(UsMenuDto Info)
+            => SecurityUsBL.CrearUsMenu(Info);
 
         [HttpPost("ObtenerUsMenu_IconosWeb")]
-        public List<UsIconWeb> ObtenerUsMenu_IconosWeb()
-        {
-            return SecurityUsBL.ObtenerUsMenu_IconosWeb();
-        }
+        public ErrorDto<List<UsIconWeb>> ObtenerUsMenu_IconosWeb()
+            => SecurityUsBL.ObtenerUsMenu_IconosWeb();
 
     }
 }

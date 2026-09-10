@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using Galileo_API.BusinessLogic.ProGrX.Cajas;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.Cajas;
@@ -23,12 +24,29 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
         [Authorize]
         [HttpPost("Cajas_Cambio_Clave")]
-        public ErrorDto<bool> Cajas_Cambio_Clave(int codEmpresa, string usuario, string claveActual,
-         string claveNueva, string cajas)
+        public ErrorDto<bool> Cajas_Cambio_Clave([FromQuery] int codEmpresa,
+            [FromBody] CajasCambioClaveRequestDto request)
         {
-            var listaCajas = string.IsNullOrWhiteSpace(cajas) ? new List<string>() : cajas.Split(',').Select(c => c.Trim()).ToList();
+            // El token de perfil usa Name; el token inicial de login usa UserName.
+            var usuario = User.FindFirst(ClaimTypes.Name)?.Value
+                ?? User.FindFirst("UserName")?.Value;
+            if (string.IsNullOrWhiteSpace(usuario) ||
+                !string.Equals(usuario.Trim(), request.Usuario?.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return new ErrorDto<bool>
+                {
+                    Code = -1,
+                    Description = "Solo puede cambiar las claves de caja de su usuario de sesión.",
+                    Result = false
+                };
+            }
 
-            return BL_Cajas_Clave.Cajas_Cambio_Clave(codEmpresa, usuario, claveActual, claveNueva, listaCajas);
+            var listaCajas = string.IsNullOrWhiteSpace(request.Cajas)
+                ? new List<string>()
+                : request.Cajas.Split(',').Select(c => c.Trim()).ToList();
+
+            return BL_Cajas_Clave.Cajas_Cambio_Clave(codEmpresa, usuario.Trim(),
+                request.ClaveActual, request.ClaveNueva, listaCajas);
         }
     }
 }

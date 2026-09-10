@@ -1,12 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
 using Galileo.Models.Security;
+using Galileo.Models.ERROR;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class AppLogController : ControllerBase
     {
         private readonly IConfiguration _config;
@@ -17,8 +19,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("AppLog_ObtenerTodos")]
-        [Authorize]
-        public List<AppLog> AppLog_ObtenerTodos(int empresa, string ini, string fin)
+        public ErrorDto<List<AppLog>> AppLog_ObtenerTodos(int empresa, string ini, string fin)
         {
             return new AppLogBL(_config).AppLog_ObtenerTodos(empresa, ini, fin);
         }
