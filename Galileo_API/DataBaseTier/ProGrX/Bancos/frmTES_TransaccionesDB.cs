@@ -24,7 +24,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private readonly FrmCntXConsultaCuentasDb _ConsultaCuentasDB;
         private readonly VerificadorCoreFactory _factory;
         private readonly MKindoServiceDb mKindo;
-        private readonly MTesFuncionesDb mTesFunciones;
         private readonly PortalDB _portalDB;
 
         private readonly string descripcion = "descripcion";
@@ -47,7 +46,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             _factory = new VerificadorCoreFactory(config);
             mKindo = new MKindoServiceDb(config);
             _portalDB = new PortalDB(config);
-            mTesFunciones = new MTesFuncionesDb(config);
+
         }
 
         #region Helpers privados para reducir duplicidad
