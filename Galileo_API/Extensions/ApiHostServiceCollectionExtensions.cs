@@ -29,7 +29,18 @@ public static class ApiHostServiceCollectionExtensions
             return configuration;
         }
 
-        var fileName = Path.GetFileName($"appsettings.{environment.EnvironmentName}.json");
+        var requestedFileName = $"appsettings.{environment.EnvironmentName}.json";
+        var fileName = Path.GetFileName(requestedFileName);
+        if (string.IsNullOrWhiteSpace(fileName) ||
+            Path.IsPathRooted(fileName) ||
+            fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
+            fileName.Contains('/') ||
+            fileName.Contains('\\') ||
+            !string.Equals(fileName, requestedFileName, StringComparison.Ordinal))
+        {
+            return configuration;
+        }
+
         configuration.AddJsonFile(
             Path.Combine(externalConfigPath, fileName),
             optional: false,
