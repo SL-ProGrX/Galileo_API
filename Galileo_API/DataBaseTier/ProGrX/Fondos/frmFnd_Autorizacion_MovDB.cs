@@ -48,28 +48,28 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                           CONVERT(varchar(30), Cod_Contrato) LIKE @filtro);
 
                     SELECT
-                        id_autorizacion,
-                        ESTADO_DESC AS estado_desc,
-                        Cedula AS cedula,
-                        Nombre AS nombre,
-                        Tipo_Desc AS tipo_desc,
-                        Monto_Calculado AS monto_calculado,
-                        Monto_Solicitado AS monto_solicitado,
-                        Monto_Dif AS monto_dif,
-                        Registro_Usuario AS registro_usuario,
-                        Registro_Fecha AS registro_fecha,
-                        Cod_Plan AS cod_plan,
-                        Cod_Contrato AS cod_contrato,
-                        Resuelve_Usuario AS resuelve_usuario,
-                        Resuelve_Fecha AS resuelve_fecha,
-                        Aplica_Usuario AS aplica_usuario,
-                        Aplica_Fecha AS aplica_fecha,
-                        Tcon AS tcon,
-                        nCon AS ncon,
-                        Plan_Desc AS plan_desc,
-                        Estado AS estado,
-                        NOTA_SOLICITA AS nota_solicita,
-                        NOTA_RESOLUCION AS nota_resolucion
+                        id_autorizacion AS Id_Autorizacion,
+                        ESTADO_DESC AS Estado_Desc,
+                        Cedula,
+                        Nombre,
+                        Tipo_Desc,
+                        Monto_Calculado,
+                        Monto_Solicitado,
+                        Monto_Dif,
+                        Registro_Usuario,
+                        Registro_Fecha,
+                        Cod_Plan,
+                        Cod_Contrato,
+                        Resuelve_Usuario,
+                        Resuelve_Fecha,
+                        Aplica_Usuario,
+                        Aplica_Fecha,
+                        Tcon,
+                        nCon AS Ncon,
+                        Plan_Desc,
+                        Estado,
+                        NOTA_SOLICITA AS Nota_Solicita,
+                        NOTA_RESOLUCION AS Nota_Resolucion
                     FROM dbo.vFnd_Gestiones_List
                     WHERE Estado = @pEstado
                       AND Registro_Fecha BETWEEN @fechaInicio AND @fechaCorte
@@ -261,13 +261,13 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             var filtros = data ?? new FndAutorizacionMovFiltros();
             var parametros = new DynamicParameters(spec.Params);
             parametros.Add("@fetchSeguro", spec.PageSize == int.MaxValue ? 2147483647 : spec.PageSize, DbType.Int32);
-            parametros.Add("@pEstado", filtros.estado);
-            parametros.Add("@fechaInicio", filtros.fecha_inicio.GetValueOrDefault().Date);
-            parametros.Add("@fechaCorte", filtros.fecha_corte.GetValueOrDefault().Date.AddDays(1).AddSeconds(-1));
-            parametros.Add("@usuario", CrearFiltroLike(filtros.usuario));
-            parametros.Add("@cedula", CrearFiltroLike(filtros.cedula));
-            parametros.Add("@nombre", CrearFiltroLike(filtros.nombre));
-            parametros.Add("@logUsuario", NormalizarTexto(filtros.logUsuario));
+            parametros.Add("@pEstado", filtros.Estado);
+            parametros.Add("@fechaInicio", filtros.Fecha_Inicio.GetValueOrDefault().Date);
+            parametros.Add("@fechaCorte", filtros.Fecha_Corte.GetValueOrDefault().Date.AddDays(1).AddSeconds(-1));
+            parametros.Add("@usuario", CrearFiltroLike(filtros.Usuario));
+            parametros.Add("@cedula", CrearFiltroLike(filtros.Cedula));
+            parametros.Add("@nombre", CrearFiltroLike(filtros.Nombre));
+            parametros.Add("@logUsuario", NormalizarTexto(filtros.LogUsuario));
             return parametros;
         }
 
@@ -299,7 +299,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     "dbo.spFnd_Autorizaciones_Registro",
                     new
                     {
-                        GestionId = item.id_autorizacion,
+                        GestionId = item.Id_Autorizacion,
                         Estado = NormalizarGestion(pGestion),
                         Usuario = NormalizarTexto(pAutorizador),
                         Nota = pNota
@@ -310,7 +310,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             }
             catch (Exception ex)
             {
-                errores.AppendLine($"Error en la gestión {item.id_autorizacion}: {ex.Message}");
+                errores.AppendLine($"Error en la gestión {item.Id_Autorizacion}: {ex.Message}");
             }
         }
 
@@ -320,7 +320,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 EmpresaId = codEmpresa,
                 Usuario = usuario,
-                DetalleMovimiento = $"{estado} de Gestión de Fondo Id: {item.id_autorizacion} ..Id: {item.cedula} ..Nombre: {item.nombre}",
+                DetalleMovimiento = $"{estado} de Gestión de Fondo Id: {item.Id_Autorizacion} ..Id: {item.Cedula} ..Nombre: {item.Nombre}",
                 Movimiento = "Aplica - WEB",
                 Modulo = vModulo
             };

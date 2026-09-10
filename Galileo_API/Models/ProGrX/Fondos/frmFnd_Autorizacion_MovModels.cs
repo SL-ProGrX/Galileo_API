@@ -2,40 +2,40 @@
 {
     public class FndAutorizacionMovFiltros
     {
-        public string usuario { get; set; } = string.Empty;
-        public string cedula { get; set; } = string.Empty;
-        public string nombre { get; set; } = string.Empty;
-        public string estado { get; set; } = string.Empty;
-        public DateTime? fecha_inicio { get; set; } = null;
-        public DateTime? fecha_corte { get; set; } = null;
+        public string Usuario { get; set; } = string.Empty;
+        public string Cedula { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public string Estado { get; set; } = string.Empty;
+        public DateTime? Fecha_Inicio { get; set; } = null;
+        public DateTime? Fecha_Corte { get; set; } = null;
 
-        public string logUsuario { get; set; } = string.Empty;
+        public string LogUsuario { get; set; } = string.Empty;
 
     }
 
     public class FndAutorizacionMovData
     {
-        public int id_autorizacion { get; set; } = 0;
-        public string estado_desc { get; set; } = string.Empty;
-        public string cedula { get; set; } = string.Empty;
-        public string nombre { get; set; } = string.Empty;
-        public string tipo_desc { get; set; } = string.Empty;
-        public decimal monto_calculado { get; set; } = 0;
-        public decimal monto_solicitado { get; set; } = 0;
-        public decimal monto_dif { get; set; } = 0;
-        public string registro_usuario { get; set; } = string.Empty;
-        public DateTime? registro_fecha { get; set; } = null;
-        public string cod_plan { get; set; } = string.Empty;
-        public string cod_contrato { get; set; } = string.Empty;
-        public string resuelve_usuario { get; set; } = string.Empty;
-        public DateTime? resuelve_fecha { get; set; } = null;
-        public string aplica_usuario { get; set; } = string.Empty;
-        public DateTime? aplica_fecha { get; set; } = null;
-        public string tcon { get; set; } = string.Empty;
-        public string ncon { get; set; } = string.Empty;
-        public string plan_desc { get; set; } = string.Empty;
-        public string estado { get; set; } = string.Empty;
-        public string nota_solicita { get; set; } = string.Empty;
-        public string nota_resolucion { get; set; } = string.Empty;
+        public int Id_Autorizacion { get; set; } = 0;
+        public string Estado_Desc { get; set; } = string.Empty;
+        public string Cedula { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public string Tipo_Desc { get; set; } = string.Empty;
+        public decimal Monto_Calculado { get; set; } = 0;
+        public decimal Monto_Solicitado { get; set; } = 0;
+        public decimal Monto_Dif { get; set; } = 0;
+        public string Registro_Usuario { get; set; } = string.Empty;
+        public DateTime? Registro_Fecha { get; set; } = null;
+        public string Cod_Plan { get; set; } = string.Empty;
+        public string Cod_Contrato { get; set; } = string.Empty;
+        public string Resuelve_Usuario { get; set; } = string.Empty;
+        public DateTime? Resuelve_Fecha { get; set; } = null;
+        public string Aplica_Usuario { get; set; } = string.Empty;
+        public DateTime? Aplica_Fecha { get; set; } = null;
+        public string Tcon { get; set; } = string.Empty;
+        public string Ncon { get; set; } = string.Empty;
+        public string Plan_Desc { get; set; } = string.Empty;
+        public string Estado { get; set; } = string.Empty;
+        public string Nota_Solicita { get; set; } = string.Empty;
+        public string Nota_Resolucion { get; set; } = string.Empty;
     }
 }
