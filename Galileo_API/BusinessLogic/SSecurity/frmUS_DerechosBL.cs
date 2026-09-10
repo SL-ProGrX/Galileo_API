@@ -31,14 +31,17 @@ namespace Galileo.BusinessLogic
 
                 if (listaModulos.Code != 0 || listaFormularios.Code != 0 || listaOpciones.Code != 0)
                 {
+                    var descripcion = ObtenerDescripcionError(
+                        listaModulos.Code,
+                        listaModulos.Description,
+                        listaFormularios.Code,
+                        listaFormularios.Description,
+                        listaOpciones.Description);
+
                     return new ErrorDto<List<UsModuloDto>>
                     {
                         Code = -1,
-                        Description = listaModulos.Code != 0
-                            ? listaModulos.Description
-                            : listaFormularios.Code != 0
-                                ? listaFormularios.Description
-                                : listaOpciones.Description,
+                        Description = descripcion,
                         Result = []
                     };
                 }
@@ -77,91 +80,20 @@ namespace Galileo.BusinessLogic
                     return new ErrorDto<List<PrimeTreeDto>>
                     {
                         Code = -1,
-                        Description = listaModulos.Code != 0
-                            ? listaModulos.Description
-                            : listaFormularios.Code != 0
-                                ? listaFormularios.Description
-                                : listaOpciones.Description,
+                        Description = ObtenerDescripcionError(
+                            listaModulos.Code,
+                            listaModulos.Description,
+                            listaFormularios.Code,
+                            listaFormularios.Description,
+                            listaOpciones.Description),
                         Result = []
                     };
                 }
 
-                List<PrimeTreeDto> arbol = [];
-
-                foreach (var modulo in listaModulos.Result ?? [])
-                {
-                    var mod = new PrimeTreeDto
-                    {
-                        Expanded = true,
-                        Key = modulo.MODULO.ToString(),
-                        Label = modulo.DESCRIPCION,
-                        Selectable = true,
-                        //Icon = "fa-regular fa-window-maximize",
-                        ExpandedIcon = "fa-regular fa-window-restore",
-                        CollapsedIcon = "fa-regular fa-window-maximize",
-                        Style = "font-weight: bold;",
-                        Children = new List<PrimeTreeDto>(),
-                        Data = modulo,
-                        leaf = false
-
-                    };
-                    var formulariosDelModulo = (listaFormularios.Result ?? []).Where(x => x.MODULO == modulo.MODULO).ToList();
-
-                    foreach (var frm in formulariosDelModulo)
-                    {
-                        var frmC = new PrimeTreeDto
-                        {
-                            Children = [],
-                            Expanded = true,
-                            Key = frm.FORMULARIO + " del " + frm.MODULO.ToString(),
-                            Label = frm.DESCRIPCION,
-                            Selectable = true,
-                            ExpandedIcon = "pi pi-folder-open",
-                            CollapsedIcon = "pi pi-folder",
-                            leaf = false,
-                            Style = "font-weight: normal;",
-                            Data = frm
-                        };
-                        var opcionesDelFormulario = (listaOpciones.Result ?? [])
-                            .Where(x => x.FORMULARIO != null && frm.FORMULARIO != null && x.FORMULARIO.Trim() == frm.FORMULARIO.Trim() && x.MODULO == frm.MODULO)
-                            .ToList();
-
-                        foreach (var opcion in opcionesDelFormulario)
-                        {
-                            string color = "";
-                            if (opcion.PermisoEstado == "A")
-                            {
-                                color = "color:#3FB652; font-weight: bold;";
-                            }
-                            else if (opcion.PermisoEstado == "R")
-                            {
-                                color = "color:#FF5B5B; font-weight: bold;";
-                            }
-                            // If PermisoEstado == "Z" or any other value, color remains ""
-
-                            var opc = new PrimeTreeDto
-                            {
-                                Children = [],
-                                Expanded = false,
-                                Key = opcion.COD_OPCION.ToString(),
-                                Label = opcion.OPCION_DESCRIPCION.ToString(),
-                                Selectable = true,
-                                ExpandedIcon = "fa-solid fa-pager",
-                                CollapsedIcon = "fa-solid fa-pager",
-                                leaf = true,
-                                Style = color,
-                                Data = opcion
-                            };
-
-                            frmC.Children.Add(opc);
-
-                        }
-
-                        mod.Children.Add(frmC);
-
-                    }
-                    arbol.Add(mod);
-                }
+                var arbol = ConstruirArbolPrime(
+                    listaModulos.Result ?? [],
+                    listaFormularios.Result ?? [],
+                    listaOpciones.Result ?? []);
 
                 return new ErrorDto<List<PrimeTreeDto>> { Code = 0, Description = "Ok", Result = arbol };
             }
@@ -253,6 +185,131 @@ namespace Galileo.BusinessLogic
         public ErrorDto RegistrarBitacora(SegLogInsertarDto request)
         {
             return new MSecurityMainDb(_config).SbSEGCuentaLog(request);
+        }
+
+        private static string? ObtenerDescripcionError(
+            int? modulosCode,
+            string? modulosDescription,
+            int? formulariosCode,
+            string? formulariosDescription,
+            string? opcionesDescription)
+        {
+            if (modulosCode != 0)
+            {
+                return modulosDescription;
+            }
+
+            if (formulariosCode != 0)
+            {
+                return formulariosDescription;
+            }
+
+            return opcionesDescription;
+        }
+
+        private static List<PrimeTreeDto> ConstruirArbolPrime(
+            List<UsModuloDto> modulos,
+            List<UsFormularioDto> formularios,
+            List<UsDerechosNewDto> opciones)
+        {
+            var arbol = new List<PrimeTreeDto>();
+
+            foreach (var modulo in modulos)
+            {
+                var nodoModulo = CrearNodoModulo(modulo);
+                var formulariosDelModulo = formularios.Where(x => x.MODULO == modulo.MODULO);
+
+                foreach (var formulario in formulariosDelModulo)
+                {
+                    nodoModulo.Children!.Add(CrearNodoFormulario(formulario, opciones));
+                }
+
+                arbol.Add(nodoModulo);
+            }
+
+            return arbol;
+        }
+
+        private static PrimeTreeDto CrearNodoModulo(UsModuloDto modulo)
+        {
+            return new PrimeTreeDto
+            {
+                Expanded = true,
+                Key = modulo.MODULO.ToString(),
+                Label = modulo.DESCRIPCION,
+                Selectable = true,
+                //Icon = "fa-regular fa-window-maximize",
+                ExpandedIcon = "fa-regular fa-window-restore",
+                CollapsedIcon = "fa-regular fa-window-maximize",
+                Style = "font-weight: bold;",
+                Children = [],
+                Data = modulo,
+                leaf = false
+            };
+        }
+
+        private static PrimeTreeDto CrearNodoFormulario(
+            UsFormularioDto formulario,
+            List<UsDerechosNewDto> opciones)
+        {
+            var nodoFormulario = new PrimeTreeDto
+            {
+                Children = [],
+                Expanded = true,
+                Key = formulario.FORMULARIO + " del " + formulario.MODULO.ToString(),
+                Label = formulario.DESCRIPCION,
+                Selectable = true,
+                ExpandedIcon = "pi pi-folder-open",
+                CollapsedIcon = "pi pi-folder",
+                leaf = false,
+                Style = "font-weight: normal;",
+                Data = formulario
+            };
+
+            var opcionesDelFormulario = opciones.Where(x =>
+                x.FORMULARIO != null &&
+                formulario.FORMULARIO != null &&
+                x.FORMULARIO.Trim() == formulario.FORMULARIO.Trim() &&
+                x.MODULO == formulario.MODULO);
+
+            foreach (var opcion in opcionesDelFormulario)
+            {
+                nodoFormulario.Children.Add(CrearNodoOpcion(opcion));
+            }
+
+            return nodoFormulario;
+        }
+
+        private static PrimeTreeDto CrearNodoOpcion(UsDerechosNewDto opcion)
+        {
+            return new PrimeTreeDto
+            {
+                Children = [],
+                Expanded = false,
+                Key = opcion.COD_OPCION.ToString(),
+                Label = opcion.OPCION_DESCRIPCION.ToString(),
+                Selectable = true,
+                ExpandedIcon = "fa-solid fa-pager",
+                CollapsedIcon = "fa-solid fa-pager",
+                leaf = true,
+                Style = ObtenerColorPermiso(opcion.PermisoEstado),
+                Data = opcion
+            };
+        }
+
+        private static string ObtenerColorPermiso(string permisoEstado)
+        {
+            if (permisoEstado == "A")
+            {
+                return "color:#3FB652; font-weight: bold;";
+            }
+
+            if (permisoEstado == "R")
+            {
+                return "color:#FF5B5B; font-weight: bold;";
+            }
+
+            return string.Empty;
         }
     }
 }

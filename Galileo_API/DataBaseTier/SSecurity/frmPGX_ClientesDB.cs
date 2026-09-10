@@ -246,12 +246,21 @@ namespace Galileo.DataBaseTier
                     return response;
                 }
 
+                var server = ValidarParametroConexion(info.Server, "servidor");
+                var database = ValidarParametroConexion(info.Database, "base de datos");
+                var user = ValidarParametroConexion(info.User, "usuario");
+                var password = ValidarParametroConexion(
+                    info.Password,
+                    "contraseña",
+                    trim: false,
+                    permitirSeparador: true);
+
                 var builder = new SqlConnectionStringBuilder
                 {
-                    DataSource = info.Server.Trim(),
-                    InitialCatalog = info.Database.Trim(),
-                    UserID = info.User.Trim(),
-                    Password = info.Password,
+                    DataSource = server,
+                    InitialCatalog = database,
+                    UserID = user,
+                    Password = password,
                     ConnectTimeout = 5,
                     Encrypt = false,
                     TrustServerCertificate = true
@@ -273,6 +282,24 @@ namespace Galileo.DataBaseTier
             }
 
             return response;
+        }
+
+        private static string ValidarParametroConexion(
+            string value,
+            string nombre,
+            bool trim = true,
+            bool permitirSeparador = false)
+        {
+            var valor = trim ? value.Trim() : value;
+
+            if ((!permitirSeparador && valor.Contains(';')) ||
+                valor.Contains('\r') ||
+                valor.Contains('\n'))
+            {
+                throw new ArgumentException($"El valor de {nombre} contiene caracteres no permitidos.");
+            }
+
+            return valor;
         }
 
         public ErrorDto Cliente_Modificar(ClienteDto info)
