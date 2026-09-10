@@ -63,11 +63,13 @@ public sealed class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("Refresh")]
-    public ActionResult<AuthSessionResponse> Refresh([FromQuery] string application)
+    public ActionResult<AuthSessionResponse> Refresh(
+        [FromQuery] string application,
+        [FromHeader(Name = "X-Auth-Refresh")] string? csrfHeader)
     {
         if (!IsSupportedApplication(application)) return BadRequest(new { status = "invalidApplication" });
 
-        if (!Request.Headers.TryGetValue("X-Auth-Refresh", out var csrfHeader) || csrfHeader != "1")
+        if (!string.Equals(csrfHeader, "1", StringComparison.Ordinal))
         {
             return BadRequest(new { status = "invalidRefreshRequest" });
         }
@@ -80,7 +82,7 @@ public sealed class AuthController : ControllerBase
 
         if (!_auth.TryRefresh(refreshToken, application, out var response, out var replacementRefreshToken))
         {
-            Response.Cookies.Delete(cookieName, CookieOptions(application));
+            Response.Cookies.Delete(cookieName, CookieOptions());
             return Unauthorized(new { status = "invalidRefreshToken" });
         }
 
@@ -100,7 +102,7 @@ public sealed class AuthController : ControllerBase
             _auth.RevokeRefreshToken(refreshToken);
         }
 
-        Response.Cookies.Delete(cookieName, CookieOptions(application));
+        Response.Cookies.Delete(cookieName, CookieOptions());
         return NoContent();
     }
 
@@ -128,15 +130,15 @@ public sealed class AuthController : ControllerBase
             return;
         }
 
-        Response.Cookies.Append(GetCookieName(application), refreshToken, CookieOptions(application));
+        Response.Cookies.Append(GetCookieName(application), refreshToken, CookieOptions());
     }
 
-    private CookieOptions CookieOptions(string application)
+    private CookieOptions CookieOptions()
     {
         return new CookieOptions
         {
             HttpOnly = true,
-            Secure = Request.IsHttps,
+            Secure = true,
             SameSite = SameSiteMode.Lax,
             IsEssential = true,
             Path = "/api/Auth",

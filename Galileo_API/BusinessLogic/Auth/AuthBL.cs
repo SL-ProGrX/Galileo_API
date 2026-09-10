@@ -26,63 +26,106 @@ public sealed class AuthBL
 
     public async Task<AuthResponseDto> LoginAsync(AuthLoginRequest request, string application)
     {
-        if (request is null || string.IsNullOrWhiteSpace(request.Usuario) || string.IsNullOrWhiteSpace(request.Clave))
+        if (!HasCredentials(request))
         {
             return InvalidCredentials();
         }
 
+        var username = request.Usuario.Trim();
+        if (!CredentialsAreValid(username, request.Clave))
+        {
+            return InvalidCredentials();
+        }
+
+        var user = LoadUser(username);
+        if (user is null)
+        {
+            return InvalidCredentials();
+        }
+
+        return await CompleteLoginAsync(user, application);
+    }
+
+    private bool CredentialsAreValid(string username, string password)
+    {
         var login = _logonDb.LoginObtener(new LoginObtenerDto
         {
-            Usuario = request.Usuario.Trim(),
-            Clave = request.Clave,
+            Usuario = username,
+            Clave = password,
         });
 
-        if (login.Code != 0)
-        {
-            return InvalidCredentials();
-        }
+        return login.Code == 0;
+    }
 
-        var profile = _perfilDb.UsuarioPerfilConsultar(request.Usuario.Trim()).Result;
+    private AuthUserDto? LoadUser(string username)
+    {
+        var profile = _perfilDb.UsuarioPerfilConsultar(username).Result;
         if (profile is null || profile.UserId is null || profile.UserId <= 0)
         {
-            return InvalidCredentials();
+            return null;
         }
 
-        var user = new AuthUserDto
+        return new AuthUserDto
         {
             UserId = profile.UserId.Value,
-            Usuario = string.IsNullOrWhiteSpace(profile.Usuario) ? request.Usuario.Trim() : profile.Usuario,
+            Usuario = string.IsNullOrWhiteSpace(profile.Usuario) ? username : profile.Usuario,
             Nombre = profile.Nombre,
         };
+    }
 
-        if (string.Equals(application, AuthApplications.SSecurity, StringComparison.OrdinalIgnoreCase))
+    private async Task<AuthResponseDto> CompleteLoginAsync(AuthUserDto user, string application)
+    {
+        if (!IsSSecurity(application))
         {
-            var tfa = _logonDb.TFA_Data_Load(user.Usuario);
-            if (tfa.tfa_ind)
-            {
-                var method = string.IsNullOrWhiteSpace(tfa.tfa_metodo) ? "UNKNOWN" : tfa.tfa_metodo.Trim().ToUpperInvariant();
-                var challenge = _sessionStore.CreateChallenge(user, application, new[] { method });
-
-                if (method == "MAIL")
-                {
-                    var sent = await _logonDb.TFA_Codigo_EnviarMAIL(user.Usuario, tfa.email);
-                    if (sent.Code != 0)
-                    {
-                        return new AuthResponseDto { Status = "authenticationUnavailable" };
-                    }
-                }
-
-                return new AuthResponseDto
-                {
-                    Status = "mfaRequired",
-                    ChallengeToken = challenge.Token,
-                    ChallengeExpiresAtUtc = challenge.ExpiresAtUtc,
-                    Methods = challenge.Methods,
-                };
-            }
+            return CreateAuthenticatedResponse(user, application);
         }
 
-        return CreateAuthenticatedResponse(user, application);
+        var tfa = _logonDb.TFA_Data_Load(user.Usuario);
+        if (!tfa.tfa_ind)
+        {
+            return CreateAuthenticatedResponse(user, application);
+        }
+
+        return await CreateMfaChallengeAsync(user, application, tfa);
+    }
+
+    private async Task<AuthResponseDto> CreateMfaChallengeAsync(AuthUserDto user, string application, TfaData tfa)
+    {
+        var method = string.IsNullOrWhiteSpace(tfa.tfa_metodo) ? "UNKNOWN" : tfa.tfa_metodo.Trim().ToUpperInvariant();
+        var challenge = _sessionStore.CreateChallenge(user, application, new[] { method });
+
+        if (method != "MAIL")
+        {
+            return CreateMfaRequiredResponse(challenge);
+        }
+
+        var sent = await _logonDb.TFA_Codigo_EnviarMAIL(user.Usuario, tfa.email);
+        return sent.Code == 0
+            ? CreateMfaRequiredResponse(challenge)
+            : new AuthResponseDto { Status = "authenticationUnavailable" };
+    }
+
+    private static AuthResponseDto CreateMfaRequiredResponse(AuthSessionStore.ChallengeState challenge)
+    {
+        return new AuthResponseDto
+        {
+            Status = "mfaRequired",
+            ChallengeToken = challenge.Token,
+            ChallengeExpiresAtUtc = challenge.ExpiresAtUtc,
+            Methods = challenge.Methods,
+        };
+    }
+
+    private static bool HasCredentials(AuthLoginRequest request)
+    {
+        return request is not null &&
+            !string.IsNullOrWhiteSpace(request.Usuario) &&
+            !string.IsNullOrWhiteSpace(request.Clave);
+    }
+
+    private static bool IsSSecurity(string application)
+    {
+        return string.Equals(application, AuthApplications.SSecurity, StringComparison.OrdinalIgnoreCase);
     }
 
     public AuthResponseDto VerifyMfa(MfaVerifyRequest request)

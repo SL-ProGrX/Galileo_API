@@ -17,8 +17,7 @@ public sealed class AccessTokenService
         var section = configuration.GetSection("Jwt");
         _settings = section.Get<JwtDto>() ?? new JwtDto();
 
-        var secret = Environment.GetEnvironmentVariable("Jwt__Secret")
-            ?? configuration["Jwt:Secret"];
+        var secret = Environment.GetEnvironmentVariable("Jwt__Secret");
 
         if (string.IsNullOrWhiteSpace(secret))
         {
