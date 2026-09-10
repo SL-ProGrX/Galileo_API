@@ -20,9 +20,15 @@ namespace Galileo.DataBaseTier
             DBBitacora = new MProGrXSecurityMainDb(config);
         }
 
-        public List<MovimientoBE> MovimientoBE_ObtenerTodos(int modulo)
+        public ErrorDto<List<MovimientoBE>> MovimientoBE_ObtenerTodos(int modulo)
         {
-            List<MovimientoBE> types = new();
+            var response = new ErrorDto<List<MovimientoBE>>
+            {
+                Code = 0,
+                Result = new List<MovimientoBE>(),
+                Description = "Ok"
+            };
+
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
@@ -30,15 +36,17 @@ namespace Galileo.DataBaseTier
 
                 var values = new { Modulo = modulo };
 
-                types = connection.Query<MovimientoBE>(
+                response.Result = connection.Query<MovimientoBE>(
                     procedure, values, commandType: CommandType.StoredProcedure
                 ).ToList();
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return types;
+
+            return response;
         }
 
         private ErrorDto MovimientoBE_Insertar(MovimientoBE request)

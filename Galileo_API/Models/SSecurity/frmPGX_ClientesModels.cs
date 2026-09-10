@@ -6,6 +6,12 @@
         public List<ClienteDto> Lista { get; set; } = new List<ClienteDto>();
     }
 
+    public class ClienteSincronizacionDto
+    {
+        public int cod_empresa { get; set; }
+        public string nombre_corto { get; set; } = string.Empty;
+    }
+
     public class ClienteDto
     {
         public int? cod_empresa { get; set; }

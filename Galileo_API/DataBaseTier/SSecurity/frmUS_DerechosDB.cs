@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier
@@ -14,11 +15,33 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
-        public List<UsDerechosNewDto> ObtenerUsDerechosNewDTOs(string Rol, string Estado)
+        private string GetConnectionString()
         {
-            string stringConn = _config.GetConnectionString(connectionStringName)
+            return _config.GetConnectionString(connectionStringName)
                 ?? throw new InvalidOperationException($"Connection string '{connectionStringName}' not found.");
+        }
 
+        private static ErrorDto<T> Error<T>(Exception exception)
+        {
+            return new ErrorDto<T>
+            {
+                Code = -1,
+                Description = exception.Message,
+                Result = default
+            };
+        }
+
+        private static ErrorDto Error(Exception exception)
+        {
+            return new ErrorDto
+            {
+                Code = -1,
+                Description = exception.Message
+            };
+        }
+
+        public ErrorDto<List<UsDerechosNewDto>> ObtenerUsDerechosNewDTOs(string Rol, string Estado)
+        {
             const string sql = @"
                 SELECT DISTINCT O.*, ISNULL(P.ESTADO, 'Z') AS PermisoEstado
                 FROM US_OPCIONES O
@@ -27,45 +50,87 @@ namespace Galileo.DataBaseTier
                     ON O.COD_OPCION = P.COD_OPCION
                     AND P.COD_ROL = @rol
                     AND P.ESTADO = @estado
-                ORDER BY O.COD_OPCION;";
+                ORDER BY O.OPCION_DESCRIPCION;";
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                return connection.Query<UsDerechosNewDto>(sql, new { rol = Rol, estado = Estado }).ToList();
+                using var connection = new SqlConnection(GetConnectionString());
+                return new ErrorDto<List<UsDerechosNewDto>>
+                {
+                    Code = 0,
+                    Description = "Ok",
+                    Result = connection.Query<UsDerechosNewDto>(sql, new { rol = Rol, estado = Estado }).ToList()
+                };
             }
-            catch
+            catch (Exception ex)
             {
-                return new List<UsDerechosNewDto>();
+                return Error<List<UsDerechosNewDto>>(ex);
             }
         }
 
-        public List<UsRolDto> ObtenerUsRoles()
+        public ErrorDto<List<UsModuloDto>> ObtenerUsModulos()
         {
-            string stringConn = _config.GetConnectionString(connectionStringName)
-                ?? throw new InvalidOperationException($"Connection string '{connectionStringName}' not found.");
-
-            const string sql = @"SELECT * FROM US_ROLES;";
-
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                return connection.Query<UsRolDto>(sql).ToList();
+                using var connection = new SqlConnection(GetConnectionString());
+                const string sql = "SELECT * FROM US_MODULOS ORDER BY MODULO;";
+                return new ErrorDto<List<UsModuloDto>>
+                {
+                    Code = 0,
+                    Description = "Ok",
+                    Result = connection.Query<UsModuloDto>(sql).ToList()
+                };
             }
-            catch
+            catch (Exception ex)
             {
-                return new List<UsRolDto>();
+                return Error<List<UsModuloDto>>(ex);
             }
         }
 
-        public int CrearUsDerechosNewDTO(CrearUsDerechosNewDto info)
+        public ErrorDto<List<UsFormularioDto>> ObtenerUsFormularios()
         {
-            string stringConn = _config.GetConnectionString(connectionStringName)
-                ?? throw new InvalidOperationException($"Connection string '{connectionStringName}' not found.");
+            try
+            {
+                using var connection = new SqlConnection(GetConnectionString());
+                const string sql = "SELECT * FROM US_FORMULARIOS ORDER BY DESCRIPCION;";
+                return new ErrorDto<List<UsFormularioDto>>
+                {
+                    Code = 0,
+                    Description = "Ok",
+                    Result = connection.Query<UsFormularioDto>(sql).ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                return Error<List<UsFormularioDto>>(ex);
+            }
+        }
+
+        public ErrorDto<List<UsRolDto>> ObtenerUsRoles()
+        {
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(GetConnectionString());
+                const string sql = @"SELECT * FROM US_ROLES ORDER BY DESCRIPCION;";
+                return new ErrorDto<List<UsRolDto>>
+                {
+                    Code = 0,
+                    Description = "Ok",
+                    Result = connection.Query<UsRolDto>(sql).ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                return Error<List<UsRolDto>>(ex);
+            }
+        }
+
+        public ErrorDto CrearUsDerechosNewDTO(CrearUsDerechosNewDto info)
+        {
+            try
+            {
+                using var connection = new SqlConnection(GetConnectionString());
 
                 // ✅ Parametrizado (sin injection)
                 const string sqlValidar = @"
@@ -82,10 +147,19 @@ namespace Galileo.DataBaseTier
                 if (existe != null)
                 {
                     if (existe != info.ESTADO)
-                        return 2;
+                    {
+                        return new ErrorDto
+                        {
+                            Code = 2,
+                            Description = "El registro ya existe en otro estado."
+                        };
+                    }
 
-                    // ya está parametrizado dentro del método
-                    return EliminarUsDerechosNewDTO(info.COD_OPCION ?? 0, info.ESTADO, info.COD_ROL);
+                    return new ErrorDto
+                    {
+                        Code = 0,
+                        Description = "El permiso ya estaba registrado."
+                    };
                 }
 
                 // ✅ Parametrizado (sin injection)
@@ -104,39 +178,38 @@ namespace Galileo.DataBaseTier
                     REGISTRO_USUARIO = info.REGISTRO_USUARIO
                 });
 
-                return 0;
+                return new ErrorDto
+                {
+                    Code = 0,
+                    Description = "Ok"
+                };
             }
-            catch
+            catch (Exception ex)
             {
-                return 1;
+                return Error(ex);
             }
         }
 
-        public int EliminarUsDerechosNewDTO(int COD_OPCION, string ESTADO, string COD_ROL)
+        public ErrorDto EliminarUsDerechosNewDTO(int COD_OPCION, string ESTADO, string COD_ROL)
         {
-            string stringConn = _config.GetConnectionString(connectionStringName)
-                ?? throw new InvalidOperationException($"Connection string '{connectionStringName}' not found.");
-
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(GetConnectionString());
                 const string sql = @"
                     DELETE FROM US_ROL_PERMISOS
                     WHERE COD_OPCION = @COD_OPCION AND ESTADO = @ESTADO AND COD_ROL = @COD_ROL;";
 
-                return connection.Execute(sql, new { COD_OPCION, ESTADO, COD_ROL });
+                connection.Execute(sql, new { COD_OPCION, ESTADO, COD_ROL });
+                return new ErrorDto { Code = 0, Description = "Ok" };
             }
-            catch
+            catch (Exception ex)
             {
-                return 1;
+                return Error(ex);
             }
         }
 
-        public int EditarUsDerechosNew(int COD_OPCION, string ESTADO, string COD_ROL, string NUEVO_ESTADO)
+        public ErrorDto EditarUsDerechosNew(int COD_OPCION, string ESTADO, string COD_ROL, string NUEVO_ESTADO)
         {
-            string stringConn = _config.GetConnectionString(connectionStringName)
-                ?? throw new InvalidOperationException($"Connection string '{connectionStringName}' not found.");
-
             const string sql = @"
                 UPDATE US_ROL_PERMISOS
                 SET ESTADO = @NUEVO_ESTADO
@@ -144,20 +217,20 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(GetConnectionString());
 
-                // ✅ Execute para UPDATE (filas afectadas)
-                return connection.Execute(sql, new
+                connection.Execute(sql, new
                 {
                     NUEVO_ESTADO,
                     COD_OPCION,
                     ESTADO,
                     COD_ROL
                 });
+                return new ErrorDto { Code = 0, Description = "Ok" };
             }
-            catch
+            catch (Exception ex)
             {
-                return 1;
+                return Error(ex);
             }
         }
     }

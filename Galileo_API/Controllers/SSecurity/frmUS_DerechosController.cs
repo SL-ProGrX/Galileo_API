@@ -18,25 +18,25 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("ObtenerUsDerechosNewDTOs")]
-        public List<UsDerechosNewDto> ObtenerUsDerechosNewDTOs(string Rol, string Estado)
+        public ErrorDto<List<UsDerechosNewDto>> ObtenerUsDerechosNewDTOs(string Rol, string Estado)
         {
             return DerechosBL.ObtenerUsDerechosNewDTOs(Rol, Estado);
         }
 
         [HttpGet("ObtenerArbolDerechosNew")]
-        public List<UsModuloDto> ObtenerArbolDerechosNew(string Rol, string Estado)
+        public ErrorDto<List<UsModuloDto>> ObtenerArbolDerechosNew(string Rol, string Estado)
         {
             return DerechosBL.ObtenerArbolDerechosNew(Rol, Estado);
         }
 
         [HttpGet("ObtenerArbolDerechosNewPrime")]
-        public List<PrimeTreeDto> ObtenerArbolDerechosNewPrime(string Rol, string Estado)
+        public ErrorDto<List<PrimeTreeDto>> ObtenerArbolDerechosNewPrime(string Rol, string Estado)
         {
             return DerechosBL.ObtenerArbolDerechosNewPrime(Rol, Estado);
         }
 
         [HttpGet("ObtenerUsRoles")]
-        public List<UsRolDto> ObtenerUsRoles()
+        public ErrorDto<List<UsRolDto>> ObtenerUsRoles()
         {
             return DerechosBL.ObtenerUsRoles();
         }
@@ -49,7 +49,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("CrearUsDerechosNewDTO")]
-        public ErrorDto CrearUsDerechosNewDTO(List<CrearUsDerechosNewDto> info)
+        public ErrorDto CrearUsDerechosNewDTO([FromBody] List<CrearUsDerechosNewDto> info)
         {
             return DerechosBL.CrearUsDerechosNewDTO(info);
         }
@@ -61,9 +61,15 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("GuardarUsDerecho")]
-        public ErrorDto GuardarUsDerecho(List<CrearUsDerechosNewDto> info)
+        public ErrorDto GuardarUsDerecho([FromBody] List<CrearUsDerechosNewDto> info)
         {
             return DerechosBL.CrearUsDerechosNewDTO(info);
+        }
+
+        [HttpPost("RegistrarBitacora")]
+        public ErrorDto RegistrarBitacora([FromBody] SegLogInsertarDto request)
+        {
+            return DerechosBL.RegistrarBitacora(request);
         }
 
     }

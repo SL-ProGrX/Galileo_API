@@ -30,8 +30,9 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <returns></returns>
-        public List<UsuarioEmpresa> UsuariosEmpresa_Obtener(int codEmpresa)
+        public ErrorDto<List<UsuarioEmpresa>> UsuariosEmpresa_Obtener(int codEmpresa)
         {
+            var response = DbHelper.CreateOkResponse(new List<UsuarioEmpresa>());
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
@@ -41,13 +42,15 @@ namespace Galileo.DataBaseTier
             FROM vPGX_Usuarios_Empresa
             WHERE cod_Empresa = @CodEmpresa;";
 
-                return connection.Query<UsuarioEmpresa>(sql, new { CodEmpresa = codEmpresa }).ToList();
+                response.Result = connection.Query<UsuarioEmpresa>(sql, new { CodEmpresa = codEmpresa }).ToList();
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
-                return new List<UsuarioEmpresa>();
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
             }
+            return response;
         }
 
 
@@ -58,10 +61,15 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto UsuarioAccesos_Copiar(UsuarioPermisosCopiar copiaPermisosUsuarioDto)
         {
-            var resultado = new ErrorDto();
+            var resultado = DbHelper.CreateOkResponse();
 
             try
             {
+                if (copiaPermisosUsuarioDto is null)
+                {
+                    return DbHelper.ErrorResponse("La información para copiar accesos es requerida.");
+                }
+
                 resultado.Code = CopiarPermisos(copiaPermisosUsuarioDto, out var errorMsg);
 
                 if (resultado.Code == 0)
@@ -70,8 +78,16 @@ namespace Galileo.DataBaseTier
 
                     if (resultado.Code == 0)
                     {
-                        RegistrarBitacoraCopia(copiaPermisosUsuarioDto);
-                        resultado.Description = "Ok";
+                        var bitacora = RegistrarBitacoraCopia(copiaPermisosUsuarioDto);
+                        if ((bitacora.Code ?? 0) < 0)
+                        {
+                            resultado.Code = -1;
+                            resultado.Description = bitacora.Description;
+                        }
+                        else
+                        {
+                            resultado.Description = "Ok";
+                        }
                     }
                     else
                     {
@@ -177,9 +193,9 @@ namespace Galileo.DataBaseTier
 
         private static int BoolToInt(bool? value) => value == true ? 1 : 0;
 
-        private void RegistrarBitacoraCopia(UsuarioPermisosCopiar dto)
+        private ErrorDto RegistrarBitacoraCopia(UsuarioPermisosCopiar dto)
         {
-            Bitacora(new BitacoraInsertarDto
+            return Bitacora(new BitacoraInsertarDto
             {
                 EmpresaId = (long)(dto.Cliente ?? 0),
                 Usuario = dto.Usuario,
@@ -195,9 +211,9 @@ namespace Galileo.DataBaseTier
         /// <param name="nombreUsuario"></param>
         /// <param name="codEmpresa"></param>
         /// <returns></returns>
-        public UsuarioEmpresa UsuarioEmpresa_Obtener(string nombreUsuario, int codEmpresa)
+        public ErrorDto<UsuarioEmpresa?> UsuarioEmpresa_Obtener(string nombreUsuario, int codEmpresa)
         {
-            UsuarioEmpresa result = null;
+            var response = DbHelper.CreateOkResponse<UsuarioEmpresa?>(null);
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
@@ -207,13 +223,15 @@ namespace Galileo.DataBaseTier
                     CodEmpresa = codEmpresa,
                     Usuario = nombreUsuario,
                 };
-                result = connection.QueryFirstOrDefault<UsuarioEmpresa>(procedure, values, commandType: CommandType.StoredProcedure);
+                response.Result = connection.QueryFirstOrDefault<UsuarioEmpresa>(procedure, values, commandType: CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
             }
-            return result;
+            return response;
         }
 
     }

@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
+using Galileo.Models;
 using Galileo.Models.Security;
 using System.Data;
 
@@ -10,80 +11,31 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
         private const string connectionStringName = "DefaultConnString";
+        private const int moduloBitacora = 13;
+        private readonly MProGrXSecurityMainDb DBBitacora;
 
         public FrmUsOpcionesDb(IConfiguration config)
         {
             _config = config;
+            DBBitacora = new MProGrXSecurityMainDb(config);
         }
 
         public List<ModuloDto> Modulo_ObtenerTodos()
         {
-            List<ModuloDto> data = new List<ModuloDto>();
-            try
-            {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var procedure = "[spPGX_W_Opciones_Modulos_Obtener]";
-
-                    data = connection.Query<ModuloDto>(procedure, commandType: CommandType.StoredProcedure).ToList();
-
-                }
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return data;
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            return connection.Query<ModuloDto>("[spPGX_W_Opciones_Modulos_Obtener]", commandType: CommandType.StoredProcedure).ToList();
         }
 
         public List<FormularioDto> Formulario_ObtenerTodos(int modulo)
         {
-            List<FormularioDto> data = new List<FormularioDto>();
-            try
-            {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var procedure = "[spPGX_W_Opciones_Modulo_Forms_Obtener]";
-
-                    var values = new
-                    {
-                        modulo = modulo,
-                    };
-
-                    data = connection.Query<FormularioDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
-
-                }
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return data;
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            return connection.Query<FormularioDto>("[spPGX_W_Opciones_Modulo_Forms_Obtener]", new { modulo }, commandType: CommandType.StoredProcedure).ToList();
         }
 
         public List<OpcionDto> Opcion_ObtenerTodos(int modulo, string formulario)
         {
-            List<OpcionDto> data = new List<OpcionDto>();
-            try
-            {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var procedure = "[spPGX_W_Opciones_Obtener]";
-
-                    var values = new
-                    {
-                        modulo = modulo,
-                        formulario = formulario,
-                    };
-
-                    data = connection.Query<OpcionDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
-                }
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return data;
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            return connection.Query<OpcionDto>("[spPGX_W_Opciones_Obtener]", new { modulo, formulario }, commandType: CommandType.StoredProcedure).ToList();
         }
 
         private ErrorDto Opcion_Insertar(OpcionDto request)
@@ -118,7 +70,7 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Opcion_Eliminar(string codigo, string formulario, int modulo)
+        public ErrorDto Opcion_Eliminar(string codigo, string formulario, int modulo, string usuario, int codEmpresa)
         {
             ErrorDto resp = new ErrorDto();
             try
@@ -136,6 +88,7 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
+                    if (resp.Code == 0) RegistrarBitacora(codEmpresa, usuario, "ELIMINA", $"Opción de Sistema: {codigo}");
                 }
             }
             catch (Exception ex)
@@ -186,13 +139,35 @@ namespace Galileo.DataBaseTier
             if (request.Cod_Opcion == 0)
             {
                 resp = Opcion_Insertar(request);
+                if (resp.Code == 0) RegistrarBitacora(request, "REGISTRA");
             }
             else
             {
                 resp = Opcion_Actualizar(request);
+                if (resp.Code == 0) RegistrarBitacora(request, "MODIFICA");
             }
 
             return resp;
+        }
+
+        private void RegistrarBitacora(OpcionDto request, string movimiento)
+        {
+            var identificador = request.Cod_Opcion == 0 ? request.Opcion : request.Cod_Opcion?.ToString();
+            RegistrarBitacora(request.Cod_Empresa.GetValueOrDefault(), request.Registro_Usuario, movimiento, $"Opción de Sistema: {identificador}");
+        }
+
+        private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
+        {
+            if (codEmpresa <= 0 || string.IsNullOrWhiteSpace(usuario)) return;
+
+            _ = DBBitacora.Bitacora(new MProGrXSecurityMainBitacora
+            {
+                CodEmpresa = codEmpresa,
+                usuario = usuario,
+                vModulo = moduloBitacora,
+                strTipoMovimiento = $"{movimiento} - WEB",
+                strDetalleMovimiento = detalle,
+            });
         }
     }
 }
