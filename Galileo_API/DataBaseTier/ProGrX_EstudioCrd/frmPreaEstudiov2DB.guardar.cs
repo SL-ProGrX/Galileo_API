@@ -9,14 +9,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
     {
         /// <summary>
         /// Guarda el preanálisis (nuevo expediente, nuevo sub-expediente, o modificación).
-        /// VB6: fxGuardar (frmPreaEstudiov2.frm, línea ~12313):
-        ///   1. fxValidaDatos (validaciones en memoria, replicadas en BL/aquí donde aplica).
-        ///   2. EXEC spCrdFormaliza_Valida_Rangos (no bloqueante; su Mensaje se guarda en
-        ///      CUMPLIMIENTO_NOTAS, sobreescribiendo lo que el usuario haya escrito).
-        ///   3. Según modo: sbEstudio_Guarda_Nuevo (spCrdPreaPreanalisisNuevo) o
-        ///      sbEstudio_Guarda_Modifica (spCrdPreaPreanalisisModifica).
-        ///   4. Si es nuevo: inicializa Refundiciones/Fianzas/CreditosTransito/ImportCreditosVigentes.
-        ///   5. Fix final: UPDATE CUMPLIMIENTO_NOTAS/MONTO_POLIZA_DESEMPLEO/APL_POLIZA_DESEMPLEO.
         /// </summary>
         public ErrorDto<FrmPreaEstudiov2GuardarResponse> Prea_frmPreaEstudiov2_Guardar(
             int codEmpresa,
@@ -153,6 +145,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             var oficina = ObtenerOficinaTitular(connection, usuario);
             var edad = CalcularEdad(request.fecha_nacimiento);
             var cph = string.IsNullOrWhiteSpace(request.cph) ? "0" : request.cph.Trim();
+            var garantiaFondo = string.Equals(request.garantia?.Trim(), "Y", StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(request.garantia_fondo)
+                ? request.garantia_fondo.Trim()
+                : null;
+            var garantiaFondoContrato = string.Equals(request.garantia?.Trim(), "Y", StringComparison.OrdinalIgnoreCase)
+                && int.TryParse(request.contrato, out var contratoFondo)
+                ? contratoFondo
+                : (int?)null;
             const int tasaPtsBono = 0; // ver nota en el comentario del método
 
             var fechaNacimiento = request.fecha_nacimiento.HasValue
@@ -164,8 +164,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 @Linea, @Destino, @Nombre, @Sexo, @FechaNacimiento, @PolizaVida,
                 @PolizaIncendio, @PrimeraCuota, @Monto, @Tasa, @Plazo, @Cuota,
                 @MontoPolizaVida, @MontoPolizaIncendio, @Compromiso, NULL,
-                @Garantia, @Garantia, @Fiadores, NULL, @Oficina, @TasaPtsBono,
-                NULL, @Edad, @EdadAplica, @EdadJustificacion, @Plazo, 0, 0, 0,
+                @Garantia, @Garantia, @Fiadores, @GarantiaFondo, @Oficina, @TasaPtsBono,
+                @GarantiaFondoContrato, @Edad, @EdadAplica, @EdadJustificacion, @Plazo, 0, 0, 0,
                 @Cph, 1, @MontoConstruccion, @PolizaVehiculo, @MontoPolizaPrenda,
                 @ValorPrenda, @ClasificacionCrediticia, @NoOpCrm";
             var row = connection.QueryFirstOrDefault(sql, new
@@ -192,8 +192,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 request.compromiso,
                 Garantia = request.garantia?.Trim() ?? string.Empty,
                 request.fiadores,
+                GarantiaFondo = garantiaFondo,
                 Oficina = oficina,
                 TasaPtsBono = tasaPtsBono,
+                GarantiaFondoContrato = garantiaFondoContrato,
                 Edad = edad,
                 EdadAplica = request.edad_aplica,
                 EdadJustificacion = request.edad_justificacion ?? string.Empty,
@@ -275,14 +277,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             parameters.Add("@MONTO_POLIZA_VIDA", request.monto_poliza_vida, DbType.Decimal);
             parameters.Add("@MONTO_POLIZA_INCENDIO", request.monto_poliza_incendio, DbType.Decimal);
             parameters.Add("@COMPROMISO", request.compromiso, DbType.Decimal);
-            parameters.Add("@SALARIO_DEVENGADO_COLILLA", request.salario_devengado, DbType.Decimal);
-            parameters.Add("@EXTRAS_FIJAS", request.componente_adicional_base, DbType.Decimal);
-            parameters.Add("@SALARIO_CONSTANCIA", request.salario_constancia, DbType.Decimal);
-            parameters.Add("@SALARIO_ORDEN_PATRONAL", request.salario_orden_patronal, DbType.Decimal);
-            parameters.Add("@MONTO_ACT_PRIVADAS", request.ingreso_privado, DbType.Decimal);
+            parameters.Add("@SALARIO_DEVENGADO_COLILLA", decimal.Round(request.salario_devengado, 2), DbType.Decimal, precision: 14, scale: 2);
+            parameters.Add("@EXTRAS_FIJAS", decimal.Round(request.componente_adicional_base, 2), DbType.Decimal, precision: 14, scale: 2);
+            parameters.Add("@SALARIO_CONSTANCIA", decimal.Round(request.salario_constancia, 2), DbType.Decimal, precision: 18, scale: 2);
+            parameters.Add("@SALARIO_ORDEN_PATRONAL", decimal.Round(request.salario_orden_patronal, 2), DbType.Decimal, precision: 18, scale: 2);
+            parameters.Add("@MONTO_ACT_PRIVADAS", decimal.Round(request.ingreso_privado, 2), DbType.Decimal, precision: 18, scale: 2);
             parameters.Add("@ID_COMPONENTE_AD", request.componente_adicional_id, DbType.Int32);
             parameters.Add("@PORCENTAJE_COMPONENTE_AD", request.componente_adicional_porc, DbType.Decimal);
-            parameters.Add("@DEVENGADO_MES", request.salario_mensual, DbType.Decimal);
+            parameters.Add("@DEVENGADO_MES", decimal.Round(request.salario_mensual, 2), DbType.Decimal, precision: 18, scale: 2);
             parameters.Add("@MONTO_CONSTRUCCION", request.monto_construccion, DbType.Decimal);
             parameters.Add("@TIPO_SALARIO", request.tipo_salario?.Trim() ?? string.Empty, DbType.String);
             parameters.Add("@NUM_OPORT_CRM", string.IsNullOrWhiteSpace(request.no_op_crm) ? null : request.no_op_crm.Trim(), DbType.String);
@@ -304,6 +306,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             parameters.Add("@OBSERVACION_ANALISTA", request.observacion_analista ?? string.Empty, DbType.String);
             parameters.Add("@OBSERVACION_COMITE", request.observacion_comite ?? string.Empty, DbType.String);
             parameters.Add("@OBSERVACION_JD", request.observacion_jd ?? string.Empty, DbType.String);
+            // VB6: @CATEGORIA_PERSONA = txtClasificacion.Text.
+            parameters.Add("@CATEGORIA_PERSONA", request.clasificacion_crediticia?.Trim() ?? string.Empty, DbType.String);
             parameters.Add("@COD_ENDEUDAMIENTO", request.cod_endeudamiento ?? string.Empty, DbType.String);
             parameters.Add("@COD_HISTORIAL", request.cod_historial ?? string.Empty, DbType.String);
             parameters.Add("@COD_MORA", request.cod_mora ?? string.Empty, DbType.String);
@@ -353,6 +357,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             // CODPRM_COMPAD (#82) y NUM_OPORT_CRM (#96) usan la MISMA fuente en VB6 (txtCRM.Text,
             // líneas 12289 y 12295) — mismo patrón que CATEGORIA_PERSONA/COD_CATEGORIA_ASOCIADO.
             parameters.Add("@CODPRM_COMPAD", string.IsNullOrWhiteSpace(request.no_op_crm) ? null : request.no_op_crm.Trim(), DbType.String);
+            // VB6: @COD_CATEGORIA_ASOCIADO = txtClasificacion.Text (línea 12290).
+            parameters.Add("@COD_CATEGORIA_ASOCIADO", request.clasificacion_crediticia?.Trim() ?? string.Empty, DbType.String);
 
             // ---- Fase 4: 11 parámetros sin control propio en Angular, resueltos leyendo
             // sbEstudio_Guarda_Modifica línea por línea (frmPreaEstudiov2.frm 12185-12298).
@@ -404,14 +410,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             parameters.Add("@CARGA_ASOCIACION", cargas.CargaAsociacion, DbType.Decimal);
             parameters.Add("@CARGA_FRAP", cargas.CargaFrap, DbType.Decimal);
             parameters.Add("@CARGA_IMPUESTO_SALARIO", cargas.CargaImpuestoSalario, DbType.Decimal);
+            // VB6: @PORCENTAJE_LIBRE = txtS_Privado_Porc.Text.
+            parameters.Add("@PORCENTAJE_LIBRE", decimal.Round(request.ingreso_privado_porc, 2), DbType.Decimal, precision: 18, scale: 2);
 
-            var codPreanalisis = connection.QueryFirstOrDefault<string>(
+            connection.Execute(
                 "spCrdPreaPreanalisisModifica",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
 
-            return codPreanalisis ?? request.cod_preanalisis?.Trim() ?? string.Empty;
+            return request.cod_preanalisis?.Trim() ?? string.Empty;
         }
 
         /// <summary>
