@@ -27,9 +27,9 @@ namespace Galileo.Controllers.ProGrX.Fondos
 
         [Authorize]
         [HttpPost("Fnd_Autorizacion_Mov_Autoriza")]
-        public ErrorDto Fnd_Autorizacion_Mov_Autoriza(int CodEmpresa, string pGestion, string pAutorizador, List<FndAutorizacionMovData> movimiento)
+        public ErrorDto Fnd_Autorizacion_Mov_Autoriza(int CodEmpresa, string pGestion, string pAutorizador, string? pNota, List<FndAutorizacionMovData> movimiento)
         {
-            return _bl.Fnd_Autorizacion_Mov_Autoriza(CodEmpresa, pGestion, pAutorizador, movimiento);
+            return _bl.Fnd_Autorizacion_Mov_Autoriza(CodEmpresa, pGestion, pAutorizador, pNota ?? string.Empty, movimiento);
         }
     }
 }

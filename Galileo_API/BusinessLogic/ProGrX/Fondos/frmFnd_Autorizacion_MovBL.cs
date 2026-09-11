@@ -24,9 +24,9 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
             return _db.Fnd_Autorizacion_Mov_Obtener(CodEmpresa, exporta, data, filtros);
         }
 
-        public ErrorDto Fnd_Autorizacion_Mov_Autoriza(int CodEmpresa, string pGestion, string pAutorizador, List<FndAutorizacionMovData> movimiento)
+        public ErrorDto Fnd_Autorizacion_Mov_Autoriza(int CodEmpresa, string pGestion, string pAutorizador, string pNota, List<FndAutorizacionMovData> movimiento)
         {
-            return _db.Fnd_Autorizacion_Mov_Autoriza(CodEmpresa, pGestion, pAutorizador, movimiento);
+            return _db.Fnd_Autorizacion_Mov_Autoriza(CodEmpresa, pGestion, pAutorizador, pNota, movimiento);
         }
     }
 }
