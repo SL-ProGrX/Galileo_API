@@ -1,10 +1,7 @@
 ﻿using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+using System.Security.Cryptography;
 
 namespace Galileo.BusinessLogic
 {
@@ -14,7 +11,6 @@ namespace Galileo.BusinessLogic
     public class LogonBL
     {
         readonly LogonDB logonDB;
-        readonly IConfiguration _config;
         
         /// <summary>
         /// Inicializa una nueva instancia de la clase LogonBL con la configuración proporcionada.
@@ -22,7 +18,6 @@ namespace Galileo.BusinessLogic
         /// <param name="_config"></param>
         public LogonBL(IConfiguration _config)
         {
-            this._config = _config;
             logonDB = new LogonDB(_config);
         }
 
@@ -59,60 +54,7 @@ namespace Galileo.BusinessLogic
                 };
             }
 
-            if (response.Code == 0)
-            {
-                try
-                {
-                    response.Token = GenerarJwt(req.Usuario);
-                }
-                catch (Exception ex)
-                {
-                    response.Code = 1;
-                    response.Description = $"No fue posible generar el token JWT: {ex.Message}";
-                }
-            }
-
             return response;
-        }
-
-        private string GenerarJwt(string usuario)
-        {
-            var jwt = _config.GetSection("Jwt").Get<JwtDto>()
-                ?? throw new InvalidOperationException("Configuración JWT incompleta.");
-
-            if (string.IsNullOrWhiteSpace(jwt.Issuer) ||
-                string.IsNullOrWhiteSpace(jwt.Audience))
-            {
-                throw new InvalidOperationException("Configuración JWT incompleta.");
-            }
-
-            var claims = new List<Claim>
-            {
-                new(JwtRegisteredClaimNames.Sub, jwt.Subject),
-                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-                new("UserId", "0"),
-                new("UserName", usuario),
-            };
-
-            // La misma configuración se usa aquí para firmar y en Program.cs para validar.
-            // La clave debe existir únicamente como variable de entorno en el despliegue.
-            var secret = Environment.GetEnvironmentVariable("Jwt__Secret");
-            if (string.IsNullOrWhiteSpace(secret))
-            {
-                throw new InvalidOperationException("Jwt:Secret no está configurada.");
-            }
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var token = new JwtSecurityToken(
-                issuer: jwt.Issuer,
-                audience: jwt.Audience,
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(Math.Max(jwt.AccessTokenMinutes, 1)),
-                signingCredentials: credentials);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         /// <summary>
@@ -166,17 +108,10 @@ namespace Galileo.BusinessLogic
         /// <returns></returns>
         static string GenerarToken(int longitud)
         {
-            const string caracteres = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
-            StringBuilder sb = new();
-            Random rnd = new();
-
-            for (int i = 0; i < longitud; i++)
-            {
-                int index = rnd.Next(caracteres.Length);
-                sb.Append(caracteres[index]);
-            }
-
-            return sb.ToString();
+            return Convert.ToBase64String(RandomNumberGenerator.GetBytes(Math.Max(longitud, 16)))
+                .Replace('+', '-')
+                .Replace('/', '_')
+                .TrimEnd('=');
         }
 
         /// <summary>

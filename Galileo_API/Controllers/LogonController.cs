@@ -3,6 +3,7 @@ using Galileo.BusinessLogic;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Galileo.Controllers
 {
@@ -35,8 +36,8 @@ namespace Galileo.Controllers
         }
 
         /// <summary>
-        /// Método de autenticación de SSecurity. Valida las credenciales mediante spSEG_Logon
-        /// y devuelve el resultado de validación junto con el token JWT cuando las credenciales son válidas.
+        /// Valida las credenciales mediante spSEG_Logon para compatibilidad con clientes antiguos.
+        /// La emisión de JWT se realiza únicamente mediante AuthController.
         /// </summary>
         [HttpPost("LoginObtener")]
         public ErrorDto LoginObtener(LoginObtenerDto req)
@@ -51,9 +52,17 @@ namespace Galileo.Controllers
         /// <returns>Resultado con la lista de clientes y empresas.</returns>
         [HttpGet("ClientesObtener")]
         [Authorize]
-        public ErrorDto<List<ClientesEmpresasObtenerDto>> ClientesObtener(string Usuario)
+        public ActionResult<ErrorDto<List<ClientesEmpresasObtenerDto>>> ClientesObtener(string Usuario)
         {
-            return logonBL.ClientesObtener(Usuario);
+            var authenticatedUser = User.FindFirst("UserName")?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+            if (string.IsNullOrWhiteSpace(authenticatedUser) ||
+                !string.Equals(authenticatedUser.Trim(), Usuario?.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return Forbid();
+            }
+
+            return Ok(logonBL.ClientesObtener(authenticatedUser));
         }
 
         /// <summary>
@@ -101,9 +110,10 @@ namespace Galileo.Controllers
         /// <returns>Datos necesarios para la autenticación de dos factores (TFA) del usuario.</returns>
         [HttpGet("TFA_Data_Load")]
         [Authorize]
-        public TfaData TFA_Data_Load(string Usuario)
+        public ActionResult<TfaData> TFA_Data_Load(string Usuario)
         {
-            return logonBL.TFA_Data_Load(Usuario);
+            if (!UsuarioPerteneceASesion(Usuario)) return Forbid();
+            return Ok(logonBL.TFA_Data_Load(Usuario));
         }
 
 
@@ -115,9 +125,9 @@ namespace Galileo.Controllers
         /// <returns>Código de resultado del envío del código TFA.</returns>
         [HttpPost("TFA_Codigo_EnviarMAIL")]
         [Authorize]
-        public Task<ErrorDto> TFA_Codigo_EnviarMAIL(string Usuario, string email)
+        public Task<ActionResult<ErrorDto>> TFA_Codigo_EnviarMAIL(string Usuario, string email)
         {
-            return logonBL.TFA_Codigo_EnviarMAIL(Usuario, email);
+            return EnviarCodigoTfa(Usuario, email);
         }
 
 
@@ -129,9 +139,24 @@ namespace Galileo.Controllers
         /// <returns>Código de resultado de la validación del código TFA.</returns>
         [HttpPost("TFA_Codigo_Validar")]
         [Authorize]
-        public ErrorDto TFA_Codigo_Validar(string Usuario, string codigo)
+        public ActionResult<ErrorDto> TFA_Codigo_Validar(string Usuario, string codigo)
         {
-            return logonBL.TFA_Codigo_Validar(Usuario, codigo);
+            if (!UsuarioPerteneceASesion(Usuario)) return Forbid();
+            return Ok(logonBL.TFA_Codigo_Validar(Usuario, codigo));
+        }
+
+        private bool UsuarioPerteneceASesion(string usuario)
+        {
+            var authenticatedUser = User.FindFirst("UserName")?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+            return !string.IsNullOrWhiteSpace(authenticatedUser) &&
+                string.Equals(authenticatedUser.Trim(), usuario?.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private async Task<ActionResult<ErrorDto>> EnviarCodigoTfa(string usuario, string email)
+        {
+            if (!UsuarioPerteneceASesion(usuario)) return Forbid();
+            return Ok(await logonBL.TFA_Codigo_EnviarMAIL(usuario, email));
         }
 
     }

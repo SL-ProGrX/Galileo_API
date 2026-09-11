@@ -2,11 +2,7 @@
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
-using Microsoft.IdentityModel.Tokens;
 using System.Data;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace Galileo.DataBaseTier
 {
@@ -56,43 +52,6 @@ namespace Galileo.DataBaseTier
                     response.Description = "Usuario inválido (sin UserId).";
                     return response;
                 }
-
-                // Leer configuración JWT
-                var jwtSection = _config.GetSection("Jwt");
-                var issuer = jwtSection["Issuer"];
-                var audience = jwtSection["Audience"];
-                // Usar la misma fuente efectiva que utiliza la validación JWT y el login.
-                // Program.cs carga Jwt:Secret en Jwt__Secret cuando corresponde.
-                var secret = Environment.GetEnvironmentVariable("Jwt__Secret");
-                if (string.IsNullOrWhiteSpace(secret)) secret = jwtSection["Secret"];
-                var minutes = int.TryParse(jwtSection["AccessTokenMinutes"], out var m) ? m : 60;
-
-                if (string.IsNullOrWhiteSpace(issuer) ||
-                    string.IsNullOrWhiteSpace(audience) ||
-                    string.IsNullOrWhiteSpace(secret))
-                {
-                    response.Code = -1;
-                    response.Description = "Configuración JWT incompleta (Jwt:Issuer/Audience/Secret).";
-                    return response;
-                }
-
-                if (!response.Result.UserId.HasValue || response.Result.UserId.Value <= 0)
-                {
-                    response.Code = -1;
-                    response.Description = "Usuario inválido (sin UserId).";
-                    return response;
-                }
-
-                // Generar token
-                response.Result.token = GenerateJwt(
-                    userId: response.Result.UserId.Value,
-                    username: response.Result.Usuario ?? usuario,
-                    issuer: issuer,
-                    audience: audience,
-                    secret: secret,
-                    minutes: minutes
-                // Si quieres, aquí puedes pasar email/rol para agregarlos como claims
-                );
 
                 response.Code = 1;
                 response.Description = "Ok";
@@ -146,37 +105,6 @@ namespace Galileo.DataBaseTier
                 resp.Description = "Error interno";
                 return resp;
             }
-        }
-
-        private static string GenerateJwt(int userId, string username, string issuer, string audience, string secret, int minutes)
-        {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var now = DateTime.UtcNow;
-
-            var claims = new List<Claim>
-            {
-                // Identidad
-                new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-                new Claim(ClaimTypes.Name, username ?? string.Empty),
-
-                // Metadatos
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: issuer,
-                audience: audience,
-                claims: claims,
-                notBefore: now,
-                expires: now.AddMinutes(minutes),
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         public bool UsuarioTieneAccesoAEmpresa(int userId, int codEmpresa)
