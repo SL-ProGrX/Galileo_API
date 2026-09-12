@@ -39,6 +39,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             try
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                conn.Open();
                 CrSeguimientoTramitesRecepcionValidacion validacion =
                     Cr_SeguimientoTramites_Recepcion_Validar(
                         conn,
@@ -81,7 +82,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 }
                 catch
                 {
-                    transaction.Rollback();
+                    if (conn.State == ConnectionState.Open)
+                    {
+                        transaction.Rollback();
+                    }
                     throw;
                 }
             }
