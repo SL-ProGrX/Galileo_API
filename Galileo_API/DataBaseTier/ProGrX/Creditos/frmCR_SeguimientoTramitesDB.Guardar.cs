@@ -82,10 +82,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 }
                 catch
                 {
-                    if (conn.State == ConnectionState.Open)
-                    {
-                        transaction.Rollback();
-                    }
+                    Cr_SeguimientoTramites_Recepcion_Transaccion_Revertir(conn, transaction);
                     throw;
                 }
             }
@@ -119,6 +116,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
 
             return null;
+        }
+
+        private static void Cr_SeguimientoTramites_Recepcion_Transaccion_Revertir(
+            IDbConnection conn,
+            IDbTransaction transaction)
+        {
+            if (conn.State != ConnectionState.Open)
+            {
+                return;
+            }
+
+            transaction.Rollback();
         }
 
         private static void Cr_SeguimientoTramites_Recepcion_CodigoDependencias_Actualizar(
