@@ -23,6 +23,63 @@
         public DateTime? Registro_Fecha { get; set; }
         public string? Registro_Usuario { get; set; }
         public CajasDefinicionRestricciones? Restricciones { get; set; }
+        // La consulta devuelve columnas planas; Dapper no llena objetos anidados.
+        // Mantener ambos formatos sobre los mismos valores para los consumidores del API.
+        public short? Permite_Mov_Cbrjud
+        {
+            get => Restricciones?.Permite_Mov_Cbrjud;
+            set => (Restricciones ??= new()).Permite_Mov_Cbrjud = value;
+        }
+        public short? Limita_Consulta
+        {
+            get => Restricciones?.Limita_Consulta;
+            set => (Restricciones ??= new()).Limita_Consulta = value;
+        }
+        public short? Limita_Creditos
+        {
+            get => Restricciones?.Limita_Creditos;
+            set => (Restricciones ??= new()).Limita_Creditos = value;
+        }
+        public short? Limita_Fondos
+        {
+            get => Restricciones?.Limita_Fondos;
+            set => (Restricciones ??= new()).Limita_Fondos = value;
+        }
+        public short? Limita_Cxc
+        {
+            get => Restricciones?.Limita_Cxc;
+            set => (Restricciones ??= new()).Limita_Cxc = value;
+        }
+        public short? Limita_Patrimonio
+        {
+            get => Restricciones?.Limita_Patrimonio;
+            set => (Restricciones ??= new()).Limita_Patrimonio = value;
+        }
+        public short? Permite_Rc
+        {
+            get => Restricciones?.Permite_Rc;
+            set => (Restricciones ??= new()).Permite_Rc = value;
+        }
+        public short? Permite_Traslados_Ef
+        {
+            get => Restricciones?.Permite_Traslados_Ef;
+            set => (Restricciones ??= new()).Permite_Traslados_Ef = value;
+        }
+        public short? Rol_Boveda
+        {
+            get => Restricciones?.Rol_Boveda;
+            set => (Restricciones ??= new()).Rol_Boveda = value;
+        }
+        public short? Utiliza_Cta_Caja_Ef
+        {
+            get => Restricciones?.Utiliza_Cta_Caja_Ef;
+            set => (Restricciones ??= new()).Utiliza_Cta_Caja_Ef = value;
+        }
+        public short? Limita_Fondos_Fp
+        {
+            get => Restricciones?.Limita_Fondos_Fp;
+            set => (Restricciones ??= new()).Limita_Fondos_Fp = value;
+        }
         public string? OficinaDesc { get; set; }
         public string? CuentaDesc { get; set; }
     }
