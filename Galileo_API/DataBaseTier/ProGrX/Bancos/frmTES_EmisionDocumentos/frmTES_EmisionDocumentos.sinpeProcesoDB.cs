@@ -24,6 +24,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
                 request.filtros.banco = request.banco;
                 request.filtros.plan = request.plan;
                 request.filtros.usuario = usuario;
+                request.filtros.chkEmiteFechaDoc = request.chkEmiteFechaDoc;
 
                 var solicitudesResponse =
                     TES_EmisionDocumento_Solicitudes_Ids_Obtener(

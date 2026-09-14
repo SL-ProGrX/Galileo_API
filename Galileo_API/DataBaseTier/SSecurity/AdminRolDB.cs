@@ -17,9 +17,9 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
-        public List<UsuarioPlataforma> UsuarioPlataforma_Obtener(string? usuarioFiltro)
+        public ErrorDto<List<UsuarioPlataforma>> UsuarioPlataforma_Obtener(string? usuarioFiltro)
         {
-            List<UsuarioPlataforma> data = new List<UsuarioPlataforma>();
+            var response = new ErrorDto<List<UsuarioPlataforma>> { Result = [], Code = 0 };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -31,19 +31,21 @@ namespace Galileo.DataBaseTier
                         Filtro = usuarioFiltro == null ? "" : usuarioFiltro,
                     };
 
-                    data = connection.Query<UsuarioPlataforma>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<UsuarioPlataforma>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
+                response.Description = "Ok";
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return data;
+            return response;
         }
 
-        public List<UsuarioAdmin> UsuarioAdmin_Obtener(string? usuarioFiltro)
+        public ErrorDto<List<UsuarioAdmin>> UsuarioAdmin_Obtener(string? usuarioFiltro)
         {
-            List<UsuarioAdmin> data = new List<UsuarioAdmin>();
+            var response = new ErrorDto<List<UsuarioAdmin>> { Result = [], Code = 0 };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -55,19 +57,21 @@ namespace Galileo.DataBaseTier
                         Filtro = usuarioFiltro == null ? "" : usuarioFiltro,
                     };
 
-                    data = connection.Query<UsuarioAdmin>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<UsuarioAdmin>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
+                response.Description = "Ok";
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return data;
+            return response;
         }
 
-        public List<ClienteAsignado> ClientesAsigna_Obtener(string usuario, string? clienteFiltro)
+        public ErrorDto<List<ClienteAsignado>> ClientesAsigna_Obtener(string usuario, string? clienteFiltro)
         {
-            List<ClienteAsignado> data = new List<ClienteAsignado>();
+            var response = new ErrorDto<List<ClienteAsignado>> { Result = [], Code = 0 };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -80,20 +84,22 @@ namespace Galileo.DataBaseTier
                         Filtro = clienteFiltro == null ? "" : clienteFiltro,
                     };
 
-                    data = connection.Query<ClienteAsignado>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<ClienteAsignado>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
+                response.Description = "Ok";
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return data;
+            return response;
         }
 
 
-        public AdminLocalRoles AdminRoles_Obtener(string usuario)
+        public ErrorDto<AdminLocalRoles> AdminRoles_Obtener(string usuario)
         {
-            AdminLocalRoles data = new AdminLocalRoles();
+            var response = new ErrorDto<AdminLocalRoles> { Result = new AdminLocalRoles(), Code = 0 };
 
             try
             {
@@ -105,20 +111,22 @@ namespace Galileo.DataBaseTier
                     {
                         Usuario = usuario,
                     };
-                    data = connection.Query<AdminLocalRoles>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault() ?? new AdminLocalRoles();
+                    response.Result = connection.Query<AdminLocalRoles>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault() ?? new AdminLocalRoles();
 
                 }
+                response.Description = "Ok";
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return data;
+            return response;
         }
 
-        public AdminLocalRolesCliente AdminRolesCliente_Obtener(string usuario, int cliente)
+        public ErrorDto<AdminLocalRolesCliente> AdminRolesCliente_Obtener(string usuario, int cliente)
         {
-            AdminLocalRolesCliente data = new AdminLocalRolesCliente();
+            var response = new ErrorDto<AdminLocalRolesCliente> { Result = new AdminLocalRolesCliente(), Code = 0 };
 
             try
             {
@@ -131,15 +139,17 @@ namespace Galileo.DataBaseTier
                         Usuario = usuario,
                         EmpresaId = cliente,
                     };
-                    data = connection.Query<AdminLocalRolesCliente>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault() ?? new AdminLocalRolesCliente();
+                    response.Result = connection.Query<AdminLocalRolesCliente>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault() ?? new AdminLocalRolesCliente();
 
                 }
+                response.Description = "Ok";
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return data;
+            return response;
         }
 
 

@@ -10,16 +10,25 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
         private const string SqlOperadoraObtener = @"
                     SELECT
-                        cod_operadora,
-                        Descripcion AS descripcion,
-                        Activa AS activa,
-                        Notas AS notas,
-                        Cta_Fondo AS ctaplan,
-                        Cta_Retiros AS ctaret,
-                        Cta_Ingresos AS ctaing,
-                        MULTA_MNT_TOPE AS multa_mnt_tope
-                    FROM dbo.vFnd_Operadoras
-                    WHERE cod_Operadora = @CodOperadora;";
+                        O.cod_operadora,
+                        O.Descripcion AS descripcion,
+                        O.Activa AS activa,
+                        O.Notas AS notas,
+                        ISNULL(NULLIF(RTRIM(Cp.Cod_Cuenta_Mask), ''), RTRIM(O.Cta_Fondo)) AS ctaplan,
+                        ISNULL(RTRIM(Cp.Descripcion), '') AS ctaplandesc,
+                        ISNULL(NULLIF(RTRIM(Ci.Cod_Cuenta_Mask), ''), RTRIM(O.Cta_Ingresos)) AS ctaing,
+                        ISNULL(RTRIM(Ci.Descripcion), '') AS ctaingdesc,
+                        ISNULL(NULLIF(RTRIM(Cr.Cod_Cuenta_Mask), ''), RTRIM(O.Cta_Retiros)) AS ctaret,
+                        ISNULL(RTRIM(Cr.Descripcion), '') AS ctaretdesc,
+                        O.MULTA_MNT_TOPE AS multa_mnt_tope
+                    FROM dbo.vFnd_Operadoras O
+                    LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL Cp
+                        ON Cp.cod_Cuenta = RTRIM(O.Cta_Fondo)
+                    LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL Ci
+                        ON Ci.cod_Cuenta = RTRIM(O.Cta_Ingresos)
+                    LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL Cr
+                        ON Cr.cod_Cuenta = RTRIM(O.Cta_Retiros)
+                    WHERE O.cod_Operadora = @CodOperadora;";
 
         private const string SqlOperadorasDropdown = @"
                     SELECT

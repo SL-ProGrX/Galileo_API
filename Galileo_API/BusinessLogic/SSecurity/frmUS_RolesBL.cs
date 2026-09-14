@@ -14,12 +14,12 @@ namespace Galileo.BusinessLogic
             RolesDB = new FrmUsRolesDb(config);
         }
 
-        public List<RolesObtenerDto> RolFiltroObtener(string filtro)
+        public ErrorDto<List<RolesObtenerDto>> RolFiltroObtener(string filtro)
         {
             return RolesDB.RolFiltroObtener(filtro);
         }
 
-        public List<RolesObtenerDto> RolesObtener()
+        public ErrorDto<List<RolesObtenerDto>> RolesObtener()
         {
             return RolesDB.RolesObtener();
         }
@@ -39,7 +39,7 @@ namespace Galileo.BusinessLogic
             return RolesDB.RolesVincular(req);
         }
 
-        public List<ClientesObtenerDto> ClientesObtener()
+        public ErrorDto<List<ClientesObtenerDto>> ClientesObtener()
         {
             return RolesDB.ClientesObtener();
         }

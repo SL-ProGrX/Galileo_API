@@ -29,6 +29,7 @@ namespace Galileo.Models.TES
         public string usuario { get; set; } = string.Empty;
         public bool? docBloqueo { get; set; } = false;
         public bool especial { get; set; } = false;
+        public bool chkEmiteFechaDoc { get; set; } = false;
 
         public string? bancoDescripcion { get; set; } = string.Empty;
     }
@@ -47,6 +48,7 @@ namespace Galileo.Models.TES
         public bool? pass { get; set; }
         public string? estadoSinpe { get; set; }
         public int? id_banco { get; set; }
+        public string? documento_banco { get; set; } = string.Empty;
     }
 
     public sealed class TesEmisionDocumentoSolicitudesPaginaRequest

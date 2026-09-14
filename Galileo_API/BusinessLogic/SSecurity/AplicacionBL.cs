@@ -15,7 +15,7 @@ namespace Galileo.BusinessLogic
 
         #region MÉTODOS APP_BANK
 
-        public List<Aplicacion> Aplicacion_ObtenerTodos()
+        public ErrorDto<List<Aplicacion>> Aplicacion_ObtenerTodos()
         {
             return new AplicacionDB(_config).Aplicacion_ObtenerTodos();
         }
@@ -40,7 +40,7 @@ namespace Galileo.BusinessLogic
 
         #region MÉTODOS APP_BLOCK
 
-        public List<Bloqueo> Bloqueo_ObtenerTodos(string Cod_App)
+        public ErrorDto<List<Bloqueo>> Bloqueo_ObtenerTodos(string Cod_App)
         {
             return new AplicacionDB(_config).Bloqueo_ObtenerTodos(Cod_App);
         }
@@ -60,7 +60,7 @@ namespace Galileo.BusinessLogic
 
         #region MÉTODOS APP_UPDATE
 
-        public List<Actualizacion> Actualizacion_ObtenerTodos(string Cod_App)
+        public ErrorDto<List<Actualizacion>> Actualizacion_ObtenerTodos(string Cod_App)
         {
             return new AplicacionDB(_config).Actualizacion_ObtenerTodos(Cod_App);
         }

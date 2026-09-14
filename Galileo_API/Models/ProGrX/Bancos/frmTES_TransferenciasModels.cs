@@ -12,6 +12,7 @@
         public string? tipo { get; set; }
         public string? codigo { get; set; }
         public string? documento { get; set; }
+        public string? documento_banco { get; set; }
     }
 
     public class TesTransferenciasInfo

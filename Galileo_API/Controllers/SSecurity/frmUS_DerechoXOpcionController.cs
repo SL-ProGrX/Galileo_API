@@ -19,31 +19,31 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("ModulosObtener")]
-        public List<ModuloResultDto> ModulosObtener()
+        public ErrorDto<List<ModuloResultDto>> ModulosObtener()
         {
             return DerechoXOpcionBL.ModulosObtener();
         }
 
         [HttpGet("FormulariosObtener")]
-        public List<FormularioResultDto> FormulariosObtener()
+        public ErrorDto<List<FormularioResultDto>> FormulariosObtener()
         {
             return DerechoXOpcionBL.FormulariosObtener();
         }
 
         [HttpGet("OpcionesObtener")]
-        public List<OpcionResultDto> OpcionesObtener()
+        public ErrorDto<List<OpcionResultDto>> OpcionesObtener()
         {
             return DerechoXOpcionBL.OpcionesObtener();
         }
 
         [HttpGet("DatosObtener")]
-        public List<DatosResultDto> DatosObtener(int opcion, char estado)
+        public ErrorDto<List<DatosResultDto>> DatosObtener(int opcion, char estado)
         {
             return DerechoXOpcionBL.DatosObtener(opcion, estado);
         }
 
         [HttpGet("DatosUsuariosObtener")]
-        public List<DatosUsuarioResultDto> DatosUsuariosObtener(int opcion, char estado, int codEmpresa = 0)
+        public ErrorDto<List<DatosUsuarioResultDto>> DatosUsuariosObtener(int opcion, char estado, int codEmpresa = 0)
         {
             return DerechoXOpcionBL.DatosUsuariosObtener(opcion, estado, codEmpresa);
         }

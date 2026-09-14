@@ -5,6 +5,7 @@ namespace Galileo.Models.TES
         public TesEmisionDocFiltros filtros { get; init; } = new();
         public int banco { get; init; } = 0;
         public string plan { get; init; } = string.Empty;
+        public bool chkEmiteFechaDoc { get; init; } = false;
     }
 
     public sealed class TesEmisionDocumentosProcesoResult

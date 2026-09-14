@@ -1,9 +1,5 @@
-﻿using Microsoft.IdentityModel.Tokens;
-using Galileo.DataBaseTier;
+﻿using Galileo.DataBaseTier;
 using Galileo.Models;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using Galileo.Models.Security;
 
 namespace Galileo.BusinessLogic
@@ -30,40 +26,6 @@ namespace Galileo.BusinessLogic
                     resultado.UserId = logindbResultado[0].UserId;
                     resultado.UserName = logindbResultado[0].UserName;
 
-                    var jwt = _config.GetSection("Jwt").Get<JwtDto>();
-
-                    if (jwt == null)
-                    {
-                        throw new InvalidOperationException("JWT configuration is missing or invalid.");
-                    }
-
-                    var claims = new List<Claim>
-                    {
-                        new Claim(JwtRegisteredClaimNames.Sub, jwt.Subject),
-                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                        new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64), // Se utiliza ToUnixTimeSeconds para la propiedad Iat
-                        new Claim("UserId", resultado.UserId.ToString()),
-                        new Claim("UserName", resultado.UserName.ToString()),
-                    };
-
-                    var secret = Environment.GetEnvironmentVariable("Jwt__Secret");
-                    if (string.IsNullOrWhiteSpace(secret))
-                    {
-                        throw new InvalidOperationException("Jwt:Secret no está configurada.");
-                    }
-
-                    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
-                    var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-                    var token = new JwtSecurityToken(
-                        issuer: jwt.Issuer,
-                        audience: jwt.Audience,
-                        claims: claims,
-                        expires: DateTime.UtcNow.AddMinutes(Math.Max(jwt.AccessTokenMinutes, 1)),
-                        signingCredentials: signIn
-                    );
-
-                    resultado.Token = new JwtSecurityTokenHandler().WriteToken(token);
                 }
             }
             catch (Exception ex)

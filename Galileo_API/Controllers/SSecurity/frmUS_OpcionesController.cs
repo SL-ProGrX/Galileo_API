@@ -41,9 +41,9 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("Opcion_Eliminar")]
-        public ErrorDto Opcion_Eliminar(string codigo, string formulario, int modulo)
+        public ErrorDto Opcion_Eliminar(string codigo, string formulario, int modulo, string usuario = "", int codEmpresa = 0)
         {
-            return OpcionesBL.Opcion_Eliminar(codigo, formulario, modulo);
+            return OpcionesBL.Opcion_Eliminar(codigo, formulario, modulo, usuario, codEmpresa);
         }
 
 

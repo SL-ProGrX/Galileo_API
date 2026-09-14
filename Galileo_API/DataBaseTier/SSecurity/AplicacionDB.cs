@@ -18,28 +18,30 @@ namespace Galileo.DataBaseTier
 
         #region MÉTODOS APP_BANK
 
-        public List<Aplicacion> Aplicacion_ObtenerTodos()
+        public ErrorDto<List<Aplicacion>> Aplicacion_ObtenerTodos()
         {
-            List<Aplicacion> data = new List<Aplicacion>();
+            var response = new ErrorDto<List<Aplicacion>> { Code = 0, Result = [] };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Aplicacion_Obtener]";
 
-                    data = connection.Query<Aplicacion>(procedure, commandType: CommandType.StoredProcedure).ToList();
-                    foreach (Aplicacion dt in data)
+                    response.Result = connection.Query<Aplicacion>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                    foreach (Aplicacion dt in response.Result)
                     {
                         dt.Estado = (dt.Activa ?? false) ? "ACTIVO" : "INACTIVO";
 
                     }
+                    response.Description = "Ok";
                 }
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return data;
+            return response;
         }
 
         public ErrorDto Aplicacion_Insertar(Aplicacion request)
@@ -128,9 +130,9 @@ namespace Galileo.DataBaseTier
 
         #region MÉTODOS APP_BLOCK
 
-        public List<Bloqueo> Bloqueo_ObtenerTodos(string Cod_App)
+        public ErrorDto<List<Bloqueo>> Bloqueo_ObtenerTodos(string Cod_App)
         {
-            List<Bloqueo> data = new List<Bloqueo>();
+            var response = new ErrorDto<List<Bloqueo>> { Code = 0, Result = [] };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -141,15 +143,17 @@ namespace Galileo.DataBaseTier
                     {
                         Cod_App = Cod_App,
                     };
-                    data = connection.Query<Bloqueo>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<Bloqueo>(procedure, values, commandType: CommandType.StoredProcedure).Take(100).ToList();
+                    response.Description = "Ok";
 
                 }
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return data;
+            return response;
         }
 
         public ErrorDto Bloqueo_Insertar(Bloqueo request)
@@ -212,9 +216,9 @@ namespace Galileo.DataBaseTier
 
         #region MÉTODOS APP_UPDATE
 
-        public List<Actualizacion> Actualizacion_ObtenerTodos(string Cod_App)
+        public ErrorDto<List<Actualizacion>> Actualizacion_ObtenerTodos(string Cod_App)
         {
-            List<Actualizacion> data = new List<Actualizacion>();
+            var response = new ErrorDto<List<Actualizacion>> { Code = 0, Result = [] };
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -227,14 +231,16 @@ namespace Galileo.DataBaseTier
 
                     };
 
-                    data = connection.Query<Actualizacion>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<Actualizacion>(procedure, values, commandType: CommandType.StoredProcedure).Take(100).ToList();
+                    response.Description = "Ok";
                 }
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
             }
-            return data;
+            return response;
         }
 
         public ErrorDto Actualizacion_Insertar(Actualizacion request)

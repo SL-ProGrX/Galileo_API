@@ -17,9 +17,9 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
-        public ParametrosObtenerDto? ParametrosObtener()
+        public ErrorDto<ParametrosObtenerDto> ParametrosObtener()
         {
-            ParametrosObtenerDto? resp = null;
+            var response = DbHelper.CreateOkResponse(new ParametrosObtenerDto());
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -34,20 +34,27 @@ namespace Galileo.DataBaseTier
                                            [TFA_IND], [TFA_METODO]
                                     FROM [PGX_Portal].[dbo].[US_PARAMETROS]";
 
-                    resp = connection.Query<ParametrosObtenerDto>(strSQL).FirstOrDefault();
+                    var result = connection.Query<ParametrosObtenerDto>(strSQL).FirstOrDefault();
+                    if (result is null)
+                    {
+                        return DbHelper.CreateErrorResponse<ParametrosObtenerDto>("No se encontraron los parámetros de contraseña.");
+                    }
+
+                    response.Result = result;
                 }
             }
             catch (Exception ex)
             {
-                resp = null;
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
             }
-            return resp;
+            return response;
         }
 
-        public List<string> KeyHistoryObtener(string Usuario, int topQuantity)
+        public ErrorDto<List<string>> KeyHistoryObtener(string Usuario, int topQuantity)
         {
-            List<string> resp;
+            var response = DbHelper.CreateOkResponse(new List<string>());
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -58,21 +65,22 @@ namespace Galileo.DataBaseTier
                                 INNER JOIN US_usuarios U ON KH.IDKEYSEC = U.USERID
                                 WHERE U.USUARIO = @Usuario";
 
-                    resp = connection.Query<string>(strSQL, new { TopQuantity = topQuantity, Usuario }).ToList();
+                    response.Result = connection.Query<string>(strSQL, new { TopQuantity = topQuantity, Usuario }).ToList();
                 }
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
-                resp = new List<string>();
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
             }
-            return resp;
+            return response;
         }
 
 
         public ErrorDto CambiarClave(ClaveCambiarDto cambioClave)
         {
-            ErrorDto resp = new ErrorDto();
+            ErrorDto resp = DbHelper.CreateOkResponse();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -116,7 +124,7 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto CambiarClave3(ClaveCambiarDto cambioClave)
         {
-            ErrorDto resp = new ErrorDto();
+            ErrorDto resp = DbHelper.CreateOkResponse();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))

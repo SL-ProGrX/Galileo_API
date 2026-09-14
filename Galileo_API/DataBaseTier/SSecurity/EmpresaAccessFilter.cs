@@ -79,7 +79,7 @@ namespace Galileo.DataBaseTier
             var propertyNames = new[] { "CodEmpresa", "codEmpresa", "EmpresaCod", "empresaCod" };
             var val = context.ActionArguments.Values
                 .Where(arg => arg is not null)
-                .Select(arg => TryGetIntFromProperties(arg, propertyNames))
+                .Select(arg => TryGetIntFromProperties(arg!, propertyNames))
                 .FirstOrDefault(v => v.HasValue);
             if (val.HasValue) return val.Value;
             return null;
@@ -136,7 +136,7 @@ namespace Galileo.DataBaseTier
             return null;
         }
 
-        private static int? TryConvertToInt(object val)
+        private static int? TryConvertToInt(object? val)
         {
             if (val == null) return null;
 

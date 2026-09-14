@@ -13,7 +13,7 @@ namespace Galileo.BusinessLogic
             _config = config;
         }
 
-        public List<EstacionDto> EstacionesObtener(int codEmpresa)
+        public ErrorDto<List<EstacionDto>> EstacionesObtener(int codEmpresa)
         {
             return new FrmUsAccessEstacionesDb(_config).ObtenerEstacionesPorCliente(codEmpresa);
         }
@@ -23,7 +23,7 @@ namespace Galileo.BusinessLogic
             return new FrmUsAccessEstacionesDb(_config).EstacionRegistrar(request);
         }
 
-        public List<EstacionSinVincularDto> EstacionesSinVincularObtener(int codEmpresa)
+        public ErrorDto<List<EstacionSinVincularDto>> EstacionesSinVincularObtener(int codEmpresa)
         {
             return new FrmUsAccessEstacionesDb(_config).EstacionesSinVincularObtener(codEmpresa);
         }

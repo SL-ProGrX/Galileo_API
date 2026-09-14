@@ -19,7 +19,7 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto UsuarioCuentaRevisar(UsuarioCuentaRevisarDto cuentaUsuarioRevisarDto)
         {
-            ErrorDto resultado = new ErrorDto();
+            ErrorDto resultado = DbHelper.CreateOkResponse();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -54,9 +54,9 @@ namespace Galileo.DataBaseTier
             return resultado;
         }
 
-        public UsuarioCuentaRevisarDto? UsuarioCuentaObtener(string nombreUsuario)
+        public ErrorDto<UsuarioCuentaRevisarDto?> UsuarioCuentaObtener(string nombreUsuario)
         {
-            UsuarioCuentaRevisarDto? result = null;
+            var response = DbHelper.CreateOkResponse<UsuarioCuentaRevisarDto?>(null);
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -66,14 +66,22 @@ namespace Galileo.DataBaseTier
                     {
                         NombreUsuario = nombreUsuario,
                     };
-                    result = connection.QueryFirstOrDefault<UsuarioCuentaRevisarDto>(procedure, values, commandType: CommandType.StoredProcedure);
+                    var result = connection.QueryFirstOrDefault<UsuarioCuentaRevisarDto>(procedure, values, commandType: CommandType.StoredProcedure);
+                    if (result is null)
+                    {
+                        return DbHelper.CreateErrorResponse<UsuarioCuentaRevisarDto?>("No se encontró la cuenta del usuario.");
+                    }
+
+                    response.Result = result;
                 }
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
             }
-            return result;
+            return response;
         }
 
         public List<UsuarioCuentaMovimientoResultDto> UsuarioCuentaMovimientosObtener(UsuarioCuentaMovimientoRequestDto usuarioCuentaMovimientoRequestDto)

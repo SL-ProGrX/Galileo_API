@@ -235,7 +235,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <param name="usuario"></param>
         /// <param name="file"></param>
         /// <returns></returns>
-        public ErrorDto TES_BancosCargados_Aplicar(int CodEmpresa, string cod_banco, string usuario, List<TesCargadoExcelDto> file)
+        public ErrorDto TES_BancosCargados_Aplicar(int CodEmpresa, string cod_banco, string usuario, bool chkGeneraSolicitud, List<TesCargadoExcelDto> file)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             var response = new ErrorDto
@@ -249,26 +249,34 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var sb = new StringBuilder();
                 foreach (var row in file)
                 {
+                    var idBanco = string.IsNullOrWhiteSpace(row.id_banco)
+                      ? cod_banco
+                      : row.id_banco.Trim();
 
-                    var query = @"EXEC spTes_Bancos_Mov_Load @IdBanco, @Fecha, @Documento, @TipoMov, @Importe,@Descripcion";
-
-                    var result = conn.Query<int>(query, new
+                    var parametros = new
                     {
-                        IdBanco = cod_banco,
+                        IdBanco = idBanco,
                         Fecha = row.fecha,
                         Documento = row.documento,
                         TipoMov = row.tipo,
                         Importe = row.importe,
-                        Descripcion = row.descripcion,
-                    }).FirstOrDefault();
+                        Descripcion = row.descripcion
+                    };
+
+                    var query = chkGeneraSolicitud
+                        ? @"EXEC spTes_Bancos_Mov_Load @IdBanco, @Fecha, @Documento, @TipoMov, @Importe,@Descripcion"
+                        : @"EXEC spTes_W_Bancos_Mov_Load @IdBanco, @Fecha, @Documento, @TipoMov, @Importe,@Descripcion";
+
+                    var result = conn.Query<int>(query, parametros).FirstOrDefault();
 
                     if (result == -1)
                     {
                         sb.AppendLine($"Documento Repetido: [{row.documento}]");
                     }
+
                 }
 
-                conn.Execute("spTES_W_BancosCargado_SinpeConciliar",commandType: CommandType.StoredProcedure, commandTimeout: 0);
+                conn.Execute("spTES_W_BancosCargado_SinpeConciliar", commandType: CommandType.StoredProcedure, commandTimeout: 0);
 
                 response.Description = sb.ToString();
 

@@ -13,7 +13,7 @@ namespace Galileo.BusinessLogic
             BE_TiposMovDB = new FrmUsBeTiposMovDb(config);
         }
 
-        public List<MovimientoBE> MovimientoBE_ObtenerTodos(int modulo)
+        public ErrorDto<List<MovimientoBE>> MovimientoBE_ObtenerTodos(int modulo)
         {
             return BE_TiposMovDB.MovimientoBE_ObtenerTodos(modulo);
         }

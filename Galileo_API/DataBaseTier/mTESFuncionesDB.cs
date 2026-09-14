@@ -176,5 +176,26 @@ namespace Galileo.DataBaseTier
 
             return DbHelper.CreateOkResponse<dynamic>(formatoData);
         }
+
+        public DateTime TES_EmisionDocumentos_FechaEmisionResolver(
+                    SqlConnection connection,
+                    string? documento)
+                        {
+                            if (string.IsNullOrWhiteSpace(documento))
+                                return DateTime.Now;
+
+                            const string query = @"
+                SELECT TOP (1) FECHA
+                FROM dbo.TES_BANCOS_CARGADO
+                WHERE DOCUMENTO = @documento
+                  AND ESTADO = 'R'
+                ORDER BY FECHA DESC, ID_LINEA DESC;";
+
+            var fechaBanco = connection.QueryFirstOrDefault<DateTime?>(
+                query,
+                new { documento = documento.Trim() });
+
+            return fechaBanco ?? DateTime.Now;
+        }
     }
 }

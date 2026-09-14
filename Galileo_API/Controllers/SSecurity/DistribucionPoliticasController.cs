@@ -19,28 +19,28 @@ namespace Galileo.Controllers
 
         [HttpGet("PaisObtener")]
         [Authorize]
-        public List<PaisObtenerDto> PaisObtener()
+        public ErrorDto<List<PaisObtenerDto>> PaisObtener()
         {
             return new DistribucionPoliticasDb(_config).PaisObtener();
         }
 
         [HttpGet("ProvinciasObtener")]
         [Authorize]
-        public List<ProvinciasObtenerDto> ProvinciasObtener(string CodPais)
+        public ErrorDto<List<ProvinciasObtenerDto>> ProvinciasObtener(string CodPais)
         {
             return new DistribucionPoliticasDb(_config).ProvinciasObtener(CodPais);
         }
 
         [HttpGet("CantonesObtener")]
         [Authorize]
-        public List<CantonesObtenerDto> CantonesObtener(string CodPais, string CodProvincia)
+        public ErrorDto<List<CantonesObtenerDto>> CantonesObtener(string CodPais, string CodProvincia)
         {
             return new DistribucionPoliticasDb(_config).CantonesObtener(CodPais, CodProvincia);
         }
 
         [HttpGet("DistritosObtener")]
         [Authorize]
-        public List<DistritosObtenerDto> DistritosObtener(string CodPais, string CodProvincia, string CodCanton)
+        public ErrorDto<List<DistritosObtenerDto>> DistritosObtener(string CodPais, string CodProvincia, string CodCanton)
         {
             return new DistribucionPoliticasDb(_config).DistritosObtener(CodPais, CodProvincia, CodCanton);
         }

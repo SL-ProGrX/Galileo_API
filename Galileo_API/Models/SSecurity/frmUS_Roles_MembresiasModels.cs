@@ -63,6 +63,7 @@
     {
         public int? Cliente { get; set; }
         public string Usuario { get; set; } = string.Empty;
+        public string UsuarioNombre { get; set; } = string.Empty;
         public string UsuarioRegistra { get; set; } = string.Empty;
         public char? TipoMov { get; set; }
     }

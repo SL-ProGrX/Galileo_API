@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
@@ -23,7 +24,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private readonly FrmCntXConsultaCuentasDb _ConsultaCuentasDB;
         private readonly VerificadorCoreFactory _factory;
         private readonly MKindoServiceDb mKindo;
-
         private readonly PortalDB _portalDB;
 
         private readonly string descripcion = "descripcion";
@@ -46,6 +46,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             _factory = new VerificadorCoreFactory(config);
             mKindo = new MKindoServiceDb(config);
             _portalDB = new PortalDB(config);
+
         }
 
         #region Helpers privados para reducir duplicidad
@@ -781,6 +782,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             t.ndocumento = "";
 
+            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
             var emision = mTesoreria.sbTesEmitirDocumento(CodEmpresa, usuario, vModulo, t.nsolicitud, t.ndocumento, null);
 
             if (emision.Code == -1)
@@ -793,8 +796,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             try
             {
-                
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var query = @"
                     INSERT INTO Tes_Transacciones (
@@ -873,7 +875,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var query = @"
                     update Tes_Transacciones set 
@@ -968,7 +970,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var deleteSql = @"delete Tes_Trans_Asiento where nsolicitud = @solicitud";
                 connection.Execute(deleteSql, new { solicitud });
@@ -1381,7 +1383,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var divisaSql = @"
                     select COD_DIVISA FROM CntX_Cuentas

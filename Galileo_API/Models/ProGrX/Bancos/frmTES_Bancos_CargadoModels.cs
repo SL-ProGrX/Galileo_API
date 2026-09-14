@@ -13,6 +13,7 @@
     {
         public Nullable<DateTime> fecha { get; set; }
         public string? tipo { get; set; }
+        public string? id_banco { get; set; }
         public string? documento { get; set; }
         public decimal? importe { get; set; }
         public string? descripcion { get; set; }
@@ -146,6 +147,7 @@
         public string? codigo { get; set; }
         public string? tipo { get; set; }
         public string? estadoactual { get; set; }
+        public string? estadoMovimiento { get; set; }
     }
 
     public class TesBancosCargadoRevMovConciliaRequest

@@ -20,35 +20,35 @@ namespace Galileo.Controllers
 
         [HttpGet("UsuarioPlataforma_Obtener")]
         [Authorize]
-        public List<UsuarioPlataforma> UsuarioPlataforma_Obtener(string? usuarioFiltro)
+        public ErrorDto<List<UsuarioPlataforma>> UsuarioPlataforma_Obtener(string? usuarioFiltro)
         {
             return new AdminRolBL(_config).UsuarioPlataforma_Obtener(usuarioFiltro);
         }
 
         [HttpGet("UsuarioAdmin_Obtener")]
         [Authorize]
-        public List<UsuarioAdmin> UsuarioAdmin_Obtener(string? usuarioFiltro)
+        public ErrorDto<List<UsuarioAdmin>> UsuarioAdmin_Obtener(string? usuarioFiltro)
         {
             return new AdminRolBL(_config).UsuarioAdmin_Obtener(usuarioFiltro);
         }
 
         [HttpGet("ClientesAsigna_Obtener")]
         [Authorize]
-        public List<ClienteAsignado> ClientesAsigna_Obtener(string usuario, string? ClienteFiltro)
+        public ErrorDto<List<ClienteAsignado>> ClientesAsigna_Obtener(string usuario, string? ClienteFiltro)
         {
             return new AdminRolBL(_config).ClientesAsigna_Obtener(usuario, ClienteFiltro);
         }
 
         [HttpGet("AdminRoles_Obtener")]
         [Authorize]
-        public AdminLocalRoles AdminRoles_Obtener(string usuario)
+        public ErrorDto<AdminLocalRoles> AdminRoles_Obtener(string usuario)
         {
             return new AdminRolBL(_config).AdminRoles_Obtener(usuario);
         }
 
         [HttpGet("AdminRolesCliente_Obtener")]
         [Authorize]
-        public AdminLocalRolesCliente AdminRolesCliente_Obtener(string usuario, int cliente)
+        public ErrorDto<AdminLocalRolesCliente> AdminRolesCliente_Obtener(string usuario, int cliente)
         {
             return new AdminRolBL(_config).AdminRolesCliente_Obtener(usuario, cliente);
         }

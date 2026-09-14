@@ -19,13 +19,13 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("RolFiltroObtener")]
-        public List<RolesObtenerDto> RolFiltroObtener(string filtro)
+        public ErrorDto<List<RolesObtenerDto>> RolFiltroObtener(string filtro)
         {
             return RolesBL.RolFiltroObtener(filtro);
         }
 
         [HttpGet("RolesObtener")]
-        public List<RolesObtenerDto> RolesObtener()
+        public ErrorDto<List<RolesObtenerDto>> RolesObtener()
         {
             return RolesBL.RolesObtener();
         }
@@ -49,7 +49,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("ClientesObtener")]
-        public List<ClientesObtenerDto> ClientesObtener()
+        public ErrorDto<List<ClientesObtenerDto>> ClientesObtener()
         {
             return RolesBL.ClientesObtener();
         }

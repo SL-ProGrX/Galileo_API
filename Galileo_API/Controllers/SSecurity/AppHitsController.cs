@@ -19,7 +19,7 @@ namespace Galileo.Controllers
 
         [HttpGet("AppHits_ObtenerTodos")]
         [Authorize]
-        public List<AppHits> TiposId_ObtenerTodos()
+        public ErrorDto<List<AppHits>> AppHits_ObtenerTodos()
         {
             return new AppHitsBL(_config).AppHits_ObtenerTodos();
         }

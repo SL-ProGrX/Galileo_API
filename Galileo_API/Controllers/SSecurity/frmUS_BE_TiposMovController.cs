@@ -19,7 +19,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("MovimientoBE_ObtenerTodos")]
-        public List<MovimientoBE> TiposId_ObtenerTodos(int modulo)
+        public ErrorDto<List<MovimientoBE>> MovimientoBE_ObtenerTodos(int modulo)
         {
             return MovimientoBEBL.MovimientoBE_ObtenerTodos(modulo);
         }

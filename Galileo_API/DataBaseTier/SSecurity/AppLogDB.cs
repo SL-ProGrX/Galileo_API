@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using System.Data;
 
@@ -14,21 +15,38 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
-        public List<AppLog> AppLog_ObtenerTodos(int empresa, string ini, string fin)
+        public ErrorDto<List<AppLog>> AppLog_ObtenerTodos(int empresa, string ini, string fin)
         {
-            using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
-
-            var values = new
+            var response = new ErrorDto<List<AppLog>>
             {
-                EmpresaId = empresa,
-                Inicio = ini,
-                Corte = fin,
+                Code = 0,
+                Description = "Ok",
+                Result = new List<AppLog>(),
             };
 
-            return connection.Query<AppLog>(
-                "[spAPP_Estadistica]",
-                values,
-                commandType: CommandType.StoredProcedure).ToList();
+            try
+            {
+                using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
+
+                var values = new
+                {
+                    EmpresaId = empresa,
+                    Inicio = ini,
+                    Corte = fin,
+                };
+
+                response.Result = connection.Query<AppLog>(
+                    "[spAPP_Estadistica]",
+                    values,
+                    commandType: CommandType.StoredProcedure).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
         }
     }
 }

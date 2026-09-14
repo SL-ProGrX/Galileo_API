@@ -18,10 +18,12 @@ namespace Galileo_API.DataBaseTier
     {
         private readonly PortalDB _portalDB;
         private readonly MTesoreria _mTesoreria;
+        private readonly MTesFuncionesDb _mTesFunciones;
 
         const int commandTimeoutSeconds = 600;
         public FrmTesTransferenciasDB(IConfiguration config)
         {
+            _mTesFunciones = new MTesFuncionesDb(config);
             _mTesoreria = new MTesoreria(config);
             _portalDB = new PortalDB(config);
         }
@@ -53,7 +55,7 @@ namespace Galileo_API.DataBaseTier
 
                 long consc = 0;
                 decimal curMonto = 0m;
-                var vFecha = DateTime.Now;
+                
 
                 var cantidadSolicitudes = transferencia.parametros.cantidad;
                 cantidadSolicitudes = ValCantidadSolicitudes(cantidadSolicitudes, transferencia);
@@ -71,6 +73,8 @@ namespace Galileo_API.DataBaseTier
                 },
                 commandTimeout: commandTimeoutSeconds).ToList();
 
+                
+
                 long current = conn.QueryFirstOrDefault<long>("SELECT ISNULL(CONSECUTIVO_DET,0) FROM tes_banco_docs WHERE tipo = @Tipo AND id_banco = @Banco", new { Tipo = transferencia.parametros.tipoDoc, Banco = transferencia.parametros.banco});
                 consc = current;
 
@@ -81,7 +85,8 @@ namespace Galileo_API.DataBaseTier
                     var linea = 1;
                     foreach (var item in result)
                     {
-                       
+                        var vFecha = _mTesFunciones.TES_EmisionDocumentos_FechaEmisionResolver(conn, item.documento_banco);
+
                         (vDocumento, consc, linea) = AsignarDocumento(CodEmpresa, transferencia, item, consc, linea);
                         item.documento = vDocumento;
 

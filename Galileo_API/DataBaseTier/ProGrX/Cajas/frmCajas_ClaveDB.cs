@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Microsoft.Data.SqlClient;
 using System.Text;
+using System.Data;
 using Galileo_API.Models.ProGrX.Cajas;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cajas
@@ -58,79 +59,66 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return response;
         }
 
-        public ErrorDto<bool> Cajas_Cambio_Clave(int CodEmpresa,string usuario,string claveActual,
-            string claveNueva,List<string> cajas)
+        public ErrorDto<bool> Cajas_Cambio_Clave(int CodEmpresa, string usuario, string claveActual,
+            string claveNueva, List<string> cajas)
         {
-            string connString = new PortalDB(_config)
-                .ObtenerDbConnStringEmpresa(CodEmpresa);
-
             var response = new ErrorDto<bool>
             {
                 Code = 0,
                 Description = "Cambio de clave realizado correctamente",
-                Result = true
+                Result = false
             };
 
             try
             {
+                if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrEmpty(claveActual) ||
+                    string.IsNullOrWhiteSpace(claveNueva))
+                    throw new InvalidOperationException("Debe ingresar el usuario, la clave del sistema y la clave nueva.");
+
+                var cajasSeleccionadas = (cajas ?? new List<string>())
+                    .Where(c => !string.IsNullOrWhiteSpace(c))
+                    .Select(c => c.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                if (cajasSeleccionadas.Count == 0)
+                    throw new InvalidOperationException("Debe seleccionar al menos una caja.");
+
+                // Recibir el mismo hash que LoginObtener; no recortarlo ni volver a cifrarlo.
+                using (var seguridad = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                {
+                    var autenticado = seguridad.QuerySingleOrDefault<int>(
+                        "spSEG_Logon", new { Usuario = usuario, Clave = claveActual },
+                        commandType: CommandType.StoredProcedure);
+                    if (autenticado != 1)
+                        throw new InvalidOperationException("La clave del sistema digitada no corresponde a su usuario.");
+                }
+
+                string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
                 using var cn = new SqlConnection(connString);
                 cn.Open();
                 using var tx = cn.BeginTransaction();
 
-                string claveActualCifrada = FxStringCifrado(claveActual.Trim());
-
-                int existe = cn.ExecuteScalar<int>(
-                    @"SELECT COUNT(1) FROM cajas_usuarios WHERE usuario = @usuario AND contrasena = @clave",
-                    new
-                    {
-                        usuario,
-                        clave = claveActualCifrada
-                    },
-                    tx
-                );
-
-                // Reemplace la excepci�n gen�rica por una excepci�n espec�fica
-                if (existe == 0)
-                    throw new InvalidOperationException(
-                        "La clave del sistema digitada no corresponde a su usuario."
-                    );
                 string claveNuevaCifrada = FxStringCifrado(claveNueva.Trim());
-
-
-                foreach (var codCaja in cajas)
+                foreach (var codCaja in cajasSeleccionadas)
                 {
-
-                    int periodicidad = cn.ExecuteScalar<int>(
-                        @"SELECT ISNULL(PERIOCIDAD_CONTRASENA, 0)
-                    FROM cajas_usuarios
-                   WHERE cod_caja = @codCaja
-                     AND usuario = @usuario",
-                        new { codCaja, usuario },
-                        tx
-                    );
-
-                    cn.Execute(
-                        @"UPDATE cajas_usuarios
-                     SET contrasena = @claveNueva,
-                         Contrasena_Renovacion = DATEADD(
-                             DAY,
-                             @periodicidad,
-                             dbo.MyGetdate()
-                         )
-                   WHERE cod_caja = @codCaja
-                     AND usuario = @usuario",
-                        new
-                        {
-                            claveNueva = claveNuevaCifrada,
-                            periodicidad,
-                            codCaja,
-                            usuario
-                        },
-                        tx
-                    );
+                    int actualizadas = cn.Execute(
+                        @"UPDATE U
+                          SET contrasena = @claveNueva,
+                              Contrasena_Renovacion = DATEADD(
+                                  DAY, ISNULL(C.PERIOCIDAD_CONTRASENA, 0), dbo.MyGetdate())
+                          FROM cajas_usuarios U
+                          INNER JOIN cajas_definicion C ON C.cod_caja = U.cod_caja
+                          WHERE U.cod_caja = @codCaja
+                            AND U.usuario = @usuario
+                            AND C.Activa = 1",
+                        new { claveNueva = claveNuevaCifrada, codCaja, usuario },
+                        tx);
+                    if (actualizadas != 1)
+                        throw new InvalidOperationException("Una de las cajas seleccionadas no está activa o no está asignada a su usuario.");
                 }
 
                 tx.Commit();
+                response.Result = true;
             }
             catch (Exception ex)
             {

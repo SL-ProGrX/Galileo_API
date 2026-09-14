@@ -19,7 +19,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("UsuariosEmpresa_Obtener")]
-        public List<UsuarioEmpresa> UsuariosEmpresa_Obtener(int codEmpresa)
+        public ErrorDto<List<UsuarioEmpresa>> UsuariosEmpresa_Obtener(int codEmpresa)
         {
             return CopiaAccesosBL.UsuariosEmpresa_Obtener(codEmpresa);
         }
@@ -31,7 +31,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("UsuarioEmpresa_Obtener")]
-        public UsuarioEmpresa UsuarioEmpresa_Obtener(string nombreUsuario, int codEmpresa)
+        public ErrorDto<UsuarioEmpresa?> UsuarioEmpresa_Obtener(string nombreUsuario, int codEmpresa)
         {
             return CopiaAccesosBL.UsuarioEmpresa_Obtener(nombreUsuario, codEmpresa);
         }

@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
+using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
@@ -15,12 +17,27 @@ namespace Galileo.Controllers
             _config = config;
         }
 
-        [HttpGet("PaisObtener")]
+        [HttpGet("TablasObtener")]
+        [HttpGet("PaisObtener")] // Ruta anterior conservada para compatibilidad.
         [Authorize]
-        public List<string> TablasCargar()
+        public ErrorDto<List<string>> TablasCargar()
         {
             var bl = new BDAnalisisBL(_config);
             return bl.TablasCargar();
+        }
+
+        [HttpGet("ResultadosObtener")]
+        [Authorize]
+        public ErrorDto<List<Dictionary<string, object?>>> ResultadosObtener(string objeto)
+        {
+            return new BDAnalisisBL(_config).ResultadosObtener(objeto);
+        }
+
+        [HttpGet("EstructuraObtener")]
+        [Authorize]
+        public ErrorDto<List<BDAnalisisEstructuraDto>> EstructuraObtener(string objeto)
+        {
+            return new BDAnalisisBL(_config).EstructuraObtener(objeto);
         }
 
     }

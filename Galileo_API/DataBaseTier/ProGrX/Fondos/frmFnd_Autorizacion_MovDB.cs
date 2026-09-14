@@ -48,17 +48,28 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                           CONVERT(varchar(30), Cod_Contrato) LIKE @filtro);
 
                     SELECT
-                        id_autorizacion,
-                        ESTADO_DESC,
+                        id_autorizacion AS Id_Autorizacion,
+                        ESTADO_DESC AS Estado_Desc,
                         Cedula,
                         Nombre,
+                        Tipo_Desc,
+                        Monto_Calculado,
+                        Monto_Solicitado,
+                        Monto_Dif,
+                        Registro_Usuario,
+                        Registro_Fecha,
                         Cod_Plan,
                         Cod_Contrato,
-                        Registro_Fecha,
-                        Registro_Usuario,
-                        Monto_Solicitado,
-                        Tipo,
-                        Estado
+                        Resuelve_Usuario,
+                        Resuelve_Fecha,
+                        Aplica_Usuario,
+                        Aplica_Fecha,
+                        Tcon,
+                        nCon AS Ncon,
+                        Plan_Desc,
+                        Estado,
+                        NOTA_SOLICITA AS Nota_Solicita,
+                        NOTA_RESOLUCION AS Nota_Resolucion
                     FROM dbo.vFnd_Gestiones_List
                     WHERE Estado = @pEstado
                       AND Registro_Fecha BETWEEN @fechaInicio AND @fechaCorte
@@ -186,7 +197,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <param name="pAutorizador"></param>
         /// <param name="movimiento"></param>
         /// <returns></returns>
-        public ErrorDto Fnd_Autorizacion_Mov_Autoriza(int CodEmpresa, string pGestion, string pAutorizador, List<FndAutorizacionMovData> movimiento)
+        public ErrorDto Fnd_Autorizacion_Mov_Autoriza(int CodEmpresa, string pGestion, string pAutorizador, string pNota, List<FndAutorizacionMovData> movimiento)
         {
             var valida = Fnd_Autorizacion_Mov_AuthValida(CodEmpresa, pAutorizador);
             if (valida.Code != 0)
@@ -200,12 +211,22 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 return DbHelper.ErrorResponse("Debe seleccionar al menos una gestión para procesar.", -2);
             }
 
+            var gestion = NormalizarGestion(pGestion);
+            var nota = MidNota(pNota);
+
+            if (gestion == "D" && nota.Length < 30)
+            {
+                return DbHelper.ErrorResponse(
+                    "Para Denegar tienen que indicar una Nota de Resolución de al menos 30 caracteres",
+                    -2);
+            }
+
             var resultado = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
             {
                 var errores = new System.Text.StringBuilder();
                 foreach (var item in movimientos)
                 {
-                    ProcesarAutorizacionIndividual(connection, CodEmpresa, pGestion, pAutorizador, item, errores);
+                    ProcesarAutorizacionIndividual(connection, CodEmpresa, gestion, pAutorizador, nota, item, errores);
                 }
 
                 return errores.ToString();
@@ -221,7 +242,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 return DbHelper.ErrorResponse(resultado.Result);
             }
 
-            return DbHelper.OkResponse($"La {ObtenerDescripcionGestion(pGestion)} realizada satisfactoriamente.!");
+            return DbHelper.OkResponse($"La {ObtenerDescripcionGestion(gestion)} realizada satisfactoriamente.!");
         }
 
         private static void PrepararExportacion(FiltrosLazyLoadData filtro, bool exporta)
@@ -240,13 +261,13 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             var filtros = data ?? new FndAutorizacionMovFiltros();
             var parametros = new DynamicParameters(spec.Params);
             parametros.Add("@fetchSeguro", spec.PageSize == int.MaxValue ? 2147483647 : spec.PageSize, DbType.Int32);
-            parametros.Add("@pEstado", filtros.estado);
-            parametros.Add("@fechaInicio", filtros.fecha_inicio.GetValueOrDefault().Date);
-            parametros.Add("@fechaCorte", filtros.fecha_corte.GetValueOrDefault().Date.AddDays(1).AddSeconds(-1));
-            parametros.Add("@usuario", CrearFiltroLike(filtros.usuario));
-            parametros.Add("@cedula", CrearFiltroLike(filtros.cedula));
-            parametros.Add("@nombre", CrearFiltroLike(filtros.nombre));
-            parametros.Add("@logUsuario", NormalizarTexto(filtros.logUsuario));
+            parametros.Add("@pEstado", filtros.Estado);
+            parametros.Add("@fechaInicio", filtros.Fecha_Inicio.GetValueOrDefault().Date);
+            parametros.Add("@fechaCorte", filtros.Fecha_Corte.GetValueOrDefault().Date.AddDays(1).AddSeconds(-1));
+            parametros.Add("@usuario", CrearFiltroLike(filtros.Usuario));
+            parametros.Add("@cedula", CrearFiltroLike(filtros.Cedula));
+            parametros.Add("@nombre", CrearFiltroLike(filtros.Nombre));
+            parametros.Add("@logUsuario", NormalizarTexto(filtros.LogUsuario));
             return parametros;
         }
 
@@ -268,6 +289,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             int codEmpresa,
             string pGestion,
             string pAutorizador,
+            string pNota,
             FndAutorizacionMovData item,
             System.Text.StringBuilder errores)
         {
@@ -277,10 +299,10 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     "dbo.spFnd_Autorizaciones_Registro",
                     new
                     {
-                        GestionId = item.id_autorizacion,
+                        GestionId = item.Id_Autorizacion,
                         Estado = NormalizarGestion(pGestion),
                         Usuario = NormalizarTexto(pAutorizador),
-                        Nota = string.Empty
+                        Nota = pNota
                     },
                     commandType: System.Data.CommandType.StoredProcedure);
 
@@ -288,7 +310,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             }
             catch (Exception ex)
             {
-                errores.AppendLine($"Error en la gestión {item.id_autorizacion}: {ex.Message}");
+                errores.AppendLine($"Error en la gestión {item.Id_Autorizacion}: {ex.Message}");
             }
         }
 
@@ -298,7 +320,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 EmpresaId = codEmpresa,
                 Usuario = usuario,
-                DetalleMovimiento = $"{estado} de Gestión de Fondo Id: {item.id_autorizacion} ..Nombre: {item.nombre}",
+                DetalleMovimiento = $"{estado} de Gestión de Fondo Id: {item.Id_Autorizacion} ..Id: {item.Cedula} ..Nombre: {item.Nombre}",
                 Movimiento = "Aplica - WEB",
                 Modulo = vModulo
             };
@@ -313,5 +335,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             string.Equals(NormalizarTexto(gestion), "A", StringComparison.OrdinalIgnoreCase) ? "A" : "D";
 
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();
+
+        /// <summary>VB6: Mid(txtNota.Text, 1, 3000)</summary>
+        private static string MidNota(string? nota)
+        {
+            var texto = NormalizarTexto(nota);
+            return texto.Length <= 3000 ? texto : texto[..3000];
+        }
     }
 }

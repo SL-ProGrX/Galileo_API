@@ -13,20 +13,20 @@ namespace Galileo.BusinessLogic
             _config = config;
         }
 
-        public List<PaisObtenerDto> PaisObtener()
+        public ErrorDto<List<PaisObtenerDto>> PaisObtener()
         {
             return new DistribucionPoliticasDb(_config).PaisObtener();
         }
-        public List<ProvinciasObtenerDto> ProvinciasObtener(string CodPais)
+        public ErrorDto<List<ProvinciasObtenerDto>> ProvinciasObtener(string CodPais)
         {
             return new DistribucionPoliticasDb(_config).ProvinciasObtener(CodPais);
         }
-        public List<CantonesObtenerDto> CantonesObtener(string CodPais, string CodProvincia)
+        public ErrorDto<List<CantonesObtenerDto>> CantonesObtener(string CodPais, string CodProvincia)
         {
             return new DistribucionPoliticasDb(_config).CantonesObtener(CodPais, CodProvincia);
         }
 
-        public List<DistritosObtenerDto> DistritosObtener(string CodPais, string CodProvincia, string CodCanton)
+        public ErrorDto<List<DistritosObtenerDto>> DistritosObtener(string CodPais, string CodProvincia, string CodCanton)
         {
             return new DistribucionPoliticasDb(_config).DistritosObtener(CodPais, CodProvincia, CodCanton);
         }

@@ -19,7 +19,7 @@ namespace Galileo.Controllers
 
         [HttpGet("EstacionesObtener")]
         [Authorize]
-        public List<EstacionDto> EstacionesObtener(int empresaCod)
+        public ErrorDto<List<EstacionDto>> EstacionesObtener(int empresaCod)
         {
             return new FrmUsAccessEstacionesBl(_config).EstacionesObtener(empresaCod);
         }
@@ -35,7 +35,7 @@ namespace Galileo.Controllers
 
         [HttpGet("EstacionesSinVincularObtener")]
         [Authorize]
-        public List<EstacionSinVincularDto> EstacionesSinVincularObtener(int empresaCod)
+        public ErrorDto<List<EstacionSinVincularDto>> EstacionesSinVincularObtener(int empresaCod)
         {
             return new FrmUsAccessEstacionesBl(_config).EstacionesSinVincularObtener(empresaCod);
         }

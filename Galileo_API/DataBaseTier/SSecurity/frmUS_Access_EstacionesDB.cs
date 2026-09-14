@@ -16,9 +16,9 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
-        public List<EstacionDto> ObtenerEstacionesPorCliente(int codEmpresa)
+        public ErrorDto<List<EstacionDto>> ObtenerEstacionesPorCliente(int codEmpresa)
         {
-            List<EstacionDto> result = new List<EstacionDto>();
+            var response = DbHelper.CreateOkResponse(new List<EstacionDto>());
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -28,12 +28,13 @@ namespace Galileo.DataBaseTier
                     {
                         CodEmpresa = codEmpresa,
                     };
-                    result = connection.Query<EstacionDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    var estaciones = connection.Query<EstacionDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = estaciones;
 
                     var procedureObtMACs1 = "[spPGX_Estacion_Loggin_MACs]";
                     var procedureObtMACs2 = "[spPGX_Estacion_MACs_Consultar]";
 
-                    foreach (EstacionDto dt in result)
+                    foreach (EstacionDto dt in estaciones)
                     {
                         dt.Estado = dt.Activa ? "ACTIVO" : "INACTIVO";
 
@@ -74,14 +75,16 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
             }
-            return result;
+            return response;
         }
 
         public ErrorDto EstacionRegistrar(EstacionGuardarDto estacionDto)
         {
-            ErrorDto resp = new ErrorDto();
+            ErrorDto resp = DbHelper.CreateOkResponse();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -102,8 +105,7 @@ namespace Galileo.DataBaseTier
                         mac2 = estacionDto.MAC2
                     };
 
-                    resp.Code = connection.Execute(procedure, values, commandType: CommandType.StoredProcedure);
-                    resp.Description = "Ok";
+                    connection.Execute(procedure, values, commandType: CommandType.StoredProcedure);
                 }
             }
             catch (Exception ex)
@@ -114,9 +116,9 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        public List<EstacionSinVincularDto> EstacionesSinVincularObtener(int codEmpresa)
+        public ErrorDto<List<EstacionSinVincularDto>> EstacionesSinVincularObtener(int codEmpresa)
         {
-            List<EstacionSinVincularDto> result = new List<EstacionSinVincularDto>();
+            var response = DbHelper.CreateOkResponse(new List<EstacionSinVincularDto>());
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -127,22 +129,24 @@ namespace Galileo.DataBaseTier
                         Cliente = codEmpresa,
                         Loggin = 2
                     };
-                    result = connection.Query<EstacionSinVincularDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    var result = connection.Query<EstacionSinVincularDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
 
                     // Filtrar los resultados excluyendo aquellos con Estacion nulo o vacío
-                    result = result.Where(e => !string.IsNullOrEmpty(e.Estacion)).ToList();
+                    response.Result = result.Where(e => !string.IsNullOrEmpty(e.Estacion)).ToList();
                 }
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
             }
-            return result;
+            return response;
         }
 
         public ErrorDto EstacionVincular(EstacionVinculaDto estacionDto)
         {
-            ErrorDto resp = new ErrorDto();
+            ErrorDto resp = DbHelper.CreateOkResponse();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -156,8 +160,7 @@ namespace Galileo.DataBaseTier
                         Vincula = estacionDto.Vincula
                     };
 
-                    resp.Code = connection.Execute(procedure, values, commandType: CommandType.StoredProcedure);
-                    resp.Description = "Ok";
+                    connection.Execute(procedure, values, commandType: CommandType.StoredProcedure);
                 }
             }
             catch (Exception ex)
@@ -170,7 +173,7 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto EstacionEliminar(EstacionEliminarDto estacionDto)
         {
-            ErrorDto resp = new ErrorDto();
+            ErrorDto resp = DbHelper.CreateOkResponse();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -182,8 +185,7 @@ namespace Galileo.DataBaseTier
                         Estacion = estacionDto.Estacion
                     };
 
-                    resp.Code = connection.Execute(procedure, values, commandType: CommandType.StoredProcedure);
-                    resp.Description = "Ok";
+                    connection.Execute(procedure, values, commandType: CommandType.StoredProcedure);
                 }
             }
             catch (Exception ex)

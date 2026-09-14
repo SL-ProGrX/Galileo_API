@@ -13,7 +13,7 @@ namespace Galileo.BusinessLogic
             _config = config;
         }
 
-        public List<HorarioDto> HorariosObtener(int empresaId)
+        public ErrorDto<List<HorarioDto>> HorariosObtener(int empresaId)
         {
             return new FrmUsAccessHorariosDb(_config).ObtenerHorariosPorEmpresa(empresaId);
         }

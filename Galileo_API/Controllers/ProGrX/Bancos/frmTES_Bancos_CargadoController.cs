@@ -52,9 +52,9 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         [HttpPost("TES_BancosCargados_Aplicar")]
-        public ErrorDto TES_ConciliacionResumenArchivo_Cargar(int CodEmpresa, string cod_banco, string usuario, List<TesCargadoExcelDto> file)
+        public ErrorDto TES_ConciliacionResumenArchivo_Cargar(int CodEmpresa, string cod_banco, string usuario, bool chkGeneraSolicitud, List<TesCargadoExcelDto> file)
         {
-            return _bl.TES_BancosCargados_Aplicar(CodEmpresa, cod_banco, usuario, file);
+            return _bl.TES_BancosCargados_Aplicar(CodEmpresa, cod_banco, usuario, chkGeneraSolicitud, file);
         }
 
         [HttpGet("TES_ListaRegistroBancos_Obtener")]
