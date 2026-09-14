@@ -11,6 +11,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
     {
         private static readonly string[] AllowedExtensions = new[] { ".rdlc", ".rdl" };
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(200);
+        private const string DefaultEmpresaSegment = "ProGrx";
 
         /// <summary>
         /// Construye la ruta base de reportes dentro de la carpeta controlada por empresa.
@@ -36,7 +37,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
             var trimmedRoot = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
             var candidates = BuildBasePathCandidates(trimmedRoot, empresaSegment, safeFolder).ToList();
-            var basePath = candidates.FirstOrDefault(Directory.Exists) ?? candidates.First();
+            var basePath = candidates.FirstOrDefault(Directory.Exists) ?? candidates[0];
 
             return Path.GetFullPath(basePath);
         }
@@ -126,7 +127,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             if (string.IsNullOrWhiteSpace(safeFolder))
             {
                 yield return trimmedRoot + Path.DirectorySeparatorChar + empresaSegment;
-                yield return trimmedRoot + Path.DirectorySeparatorChar + "ProGrx";
+                yield return trimmedRoot + Path.DirectorySeparatorChar + DefaultEmpresaSegment;
 
                 if (IsEmpresaRoot(rootSegment, empresaSegment))
                     yield return trimmedRoot;
@@ -136,7 +137,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
             yield return trimmedRoot + Path.DirectorySeparatorChar + empresaSegment
                 + Path.DirectorySeparatorChar + safeFolder;
-            yield return trimmedRoot + Path.DirectorySeparatorChar + "ProGrx"
+            yield return trimmedRoot + Path.DirectorySeparatorChar + DefaultEmpresaSegment
                 + Path.DirectorySeparatorChar + safeFolder;
 
             if (IsEmpresaRoot(rootSegment, empresaSegment))
@@ -149,7 +150,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
         private static bool IsEmpresaRoot(string? rootSegment, string empresaSegment)
         {
             return string.Equals(rootSegment, empresaSegment, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(rootSegment, "ProGrx", StringComparison.OrdinalIgnoreCase);
+                || string.Equals(rootSegment, DefaultEmpresaSegment, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -182,10 +183,10 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
         private static string validaRutaFinal(string ruta, int codEmpresa)
         {
-            //valido si la ruta final con el documento existe si no busco el archivo en la carpeta ProGrx
+            //valido si la ruta final con el documento existe si no busco el archivo en la carpeta predeterminada
             if(!File.Exists(ruta))
             {
-                ruta = ruta.Replace(codEmpresa.ToString(), "ProGrx");
+                ruta = ruta.Replace(codEmpresa.ToString(), DefaultEmpresaSegment);
             }
             return ruta;
         }
