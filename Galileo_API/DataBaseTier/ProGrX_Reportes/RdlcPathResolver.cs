@@ -35,31 +35,8 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             }
 
             var trimmedRoot = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            string basePath;
-            if (string.IsNullOrWhiteSpace(safeFolder))
-            {
-                basePath = trimmedRoot + Path.DirectorySeparatorChar + empresaSegment;
-            }
-            else
-            {
-                basePath = trimmedRoot + Path.DirectorySeparatorChar + empresaSegment
-                    + Path.DirectorySeparatorChar + safeFolder;
-            }
-
-            //Valido si el forder existe, si no existe reemplazo codEmpresa por ProGrx
-            if(!Directory.Exists(basePath))
-            {
-                empresaSegment = "ProGrx";
-                if (string.IsNullOrWhiteSpace(safeFolder))
-                {
-                    basePath = trimmedRoot + Path.DirectorySeparatorChar + empresaSegment;
-                }
-                else
-                {
-                    basePath = trimmedRoot + Path.DirectorySeparatorChar + empresaSegment
-                        + Path.DirectorySeparatorChar + safeFolder;
-                }
-            }
+            var candidates = BuildBasePathCandidates(trimmedRoot, empresaSegment, safeFolder).ToList();
+            var basePath = candidates.FirstOrDefault(Directory.Exists) ?? candidates.First();
 
             return Path.GetFullPath(basePath);
         }
@@ -137,6 +114,42 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             }
 
             return normalized;
+        }
+
+        private static IEnumerable<string> BuildBasePathCandidates(
+            string trimmedRoot,
+            string empresaSegment,
+            string? safeFolder)
+        {
+            var rootSegment = Path.GetFileName(trimmedRoot);
+
+            if (string.IsNullOrWhiteSpace(safeFolder))
+            {
+                yield return trimmedRoot + Path.DirectorySeparatorChar + empresaSegment;
+                yield return trimmedRoot + Path.DirectorySeparatorChar + "ProGrx";
+
+                if (IsEmpresaRoot(rootSegment, empresaSegment))
+                    yield return trimmedRoot;
+
+                yield break;
+            }
+
+            yield return trimmedRoot + Path.DirectorySeparatorChar + empresaSegment
+                + Path.DirectorySeparatorChar + safeFolder;
+            yield return trimmedRoot + Path.DirectorySeparatorChar + "ProGrx"
+                + Path.DirectorySeparatorChar + safeFolder;
+
+            if (IsEmpresaRoot(rootSegment, empresaSegment))
+                yield return trimmedRoot + Path.DirectorySeparatorChar + safeFolder;
+
+            if (string.Equals(rootSegment, safeFolder, StringComparison.OrdinalIgnoreCase))
+                yield return trimmedRoot;
+        }
+
+        private static bool IsEmpresaRoot(string? rootSegment, string empresaSegment)
+        {
+            return string.Equals(rootSegment, empresaSegment, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(rootSegment, "ProGrx", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
