@@ -201,9 +201,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     rtrim(C.descripcion) as descripcion,
                     rtrim(isnull(C.moneda, '')) as cod_divisa,
                     rtrim(isnull(C.base_calculo, '')) as base_calculo,
-                    isnull(C.id_comite, 0) as comite_id
+                    isnull(C.id_comite, 0) as comite_id,
+                    isnull(I.DEDUCCION_PLANILLA, 0) as deduccion_planilla,
+                    case when exists (
+                            select 1
+                            from EXC_PARAMETROS
+                            where COD_PARAMETRO = '05'
+                              and rtrim(valor) = @Codigo)
+                         then 1 else 0 end as credito_excedente
                 from socios S
                 cross join catalogo C
+                left join Instituciones I on S.cod_institucion = I.cod_Institucion
                 where S.cedula = @Cedula
                   and C.codigo = @Codigo;
 
@@ -262,12 +270,38 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 throw new InvalidOperationException("No existe la persona o la línea indicada.");
             }
 
-            return Cr_SeguimientoTramites_Recepcion_Linea_Contexto_Mapear(
-                encabezado,
-                destinos,
-                garantias,
-                recursos,
-                bancos);
+            CrSeguimientoTramitesRecepcionLineaContextoData contexto =
+                Cr_SeguimientoTramites_Recepcion_Linea_Contexto_Mapear(
+                    encabezado,
+                    destinos,
+                    garantias,
+                    recursos,
+                    bancos);
+
+            // El VB6 solo consulta el excedente disponible cuando la línea es de excedentes.
+            if (contexto.credito_excedente)
+            {
+                contexto.monto_excedente =
+                    Cr_SeguimientoTramites_Recepcion_Excedente_Obtener(conn, cedula);
+            }
+
+            return contexto;
+        }
+
+        /// <summary>
+        /// Monto disponible de excedentes de la persona, equivalente a fxExcedenteDisponible
+        /// del VB6, que lee la columna Base del procedimiento spVoxExcedenteCredito.
+        /// </summary>
+        private static decimal Cr_SeguimientoTramites_Recepcion_Excedente_Obtener(
+            IDbConnection conn,
+            string cedula)
+        {
+            CrSeguimientoTramitesFormalizacionExcedenteRaw? excedente =
+                conn.QueryFirstOrDefault<CrSeguimientoTramitesFormalizacionExcedenteRaw>(
+                    "exec spVoxExcedenteCredito @Cedula;",
+                    new { Cedula = cedula });
+
+            return excedente?.@base ?? 0m;
         }
 
         private static string Cr_SeguimientoTramites_Recepcion_Linea_Moneda_Obtener(
@@ -300,6 +334,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     encabezado.base_calculo.Trim(),
                     "07",
                     StringComparison.Ordinal),
+                deduce_planilla_institucion = encabezado.deduccion_planilla != 0,
+                credito_excedente = encabezado.credito_excedente != 0,
                 destinos = destinos,
                 garantias = garantias,
                 recursos = recursos,

@@ -61,20 +61,43 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         result);
                 }
 
-                CrSeguimientoTramitesFormalizacionAplicarRaw raw =
-                    Cr_SeguimientoTramites_Formalizacion_Procedimiento_Ejecutar(
-                        conn,
-                        request,
-                        globalesResp.Result.GOficinaTitular);
+                // El procedimiento escribe varias tablas de rastro (entre ellas
+                // SIF_TRANSACCIONES). Sin transacción, un error a mitad de su ejecución
+                // deja registros comiteados que bloquean el siguiente intento con una
+                // violación de llave primaria. La transacción cubre solo esta llamada:
+                // las validaciones previas abren conexiones propias y se bloquearían
+                // contra los candados de esta.
+                CrSeguimientoTramitesFormalizacionAplicarRaw raw;
 
-                if (raw.pasaformalizacion != 1)
+                using (IDbTransaction transaction = conn.BeginTransaction())
                 {
-                    return DbHelper.CreateErrorResponse(
-                        string.IsNullOrWhiteSpace(raw.errormsj)
-                            ? "No fue posible aplicar la formalización."
-                            : raw.errormsj.Trim(),
-                        -2,
-                        result);
+                    try
+                    {
+                        raw = Cr_SeguimientoTramites_Formalizacion_Procedimiento_Ejecutar(
+                            conn,
+                            transaction,
+                            request,
+                            globalesResp.Result.GOficinaTitular);
+
+                        if (raw.pasaformalizacion != 1)
+                        {
+                            Cr_SeguimientoTramites_Formalizacion_Transaccion_Revertir(transaction);
+
+                            return DbHelper.CreateErrorResponse(
+                                string.IsNullOrWhiteSpace(raw.errormsj)
+                                    ? "No fue posible aplicar la formalización."
+                                    : raw.errormsj.Trim(),
+                                -2,
+                                result);
+                        }
+
+                        transaction.Commit();
+                    }
+                    catch
+                    {
+                        Cr_SeguimientoTramites_Formalizacion_Transaccion_Revertir(transaction);
+                        throw;
+                    }
                 }
 
                 result.operacion = request.operacion;
@@ -342,6 +365,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private static CrSeguimientoTramitesFormalizacionAplicarRaw
             Cr_SeguimientoTramites_Formalizacion_Procedimiento_Ejecutar(
                 IDbConnection conn,
+                IDbTransaction transaction,
                 CrSeguimientoTramitesFormalizacionAplicarRequest request,
                 string oficinaTitular)
         {
@@ -354,29 +378,42 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     request.primer_deduccion_anio,
                     request.primer_deduccion_mes,
                     request.primer_deduccion_quincena),
-                FechaDesembolso = request.fecha_desembolso.ToString(
+                fDesembolso = request.fecha_desembolso.ToString(
                     "yyyy-MM-dd",
                     CultureInfo.InvariantCulture),
                 Recurso = Cr_SeguimientoTramites_Filtro_Normalizar(request.recurso, 10),
                 Oficina = Cr_SeguimientoTramites_Filtro_Normalizar(oficinaTitular, 10),
                 TasaFacial = request.tasa_facial,
-                Documento = Cr_SeguimientoTramites_Filtro_Normalizar(request.documento, 20),
+                DocumentoCk = Cr_SeguimientoTramites_Filtro_Normalizar(request.documento, 20),
                 Usuario = Cr_SeguimientoTramites_Filtro_Normalizar(request.usuario, 30),
-                EnviarTesoreria = request.ind_enviar_tesoreria ? 1 : 0,
+                I_EnviaTesoreria = request.ind_enviar_tesoreria ? 1 : 0,
                 Pagare = request.pagare,
-                DocumentoReferido = Cr_SeguimientoTramites_Filtro_Normalizar(
+                Documento = Cr_SeguimientoTramites_Filtro_Normalizar(
                     request.documento_referido,
                     18)
             };
 
             return conn.QueryFirst<CrSeguimientoTramitesFormalizacionAplicarRaw>(
-                """
-                exec spCrd_SGT_Formalizacion
-                    @Operacion, @DeducePlanilla, @Deductora, @PriDeduc, @FechaDesembolso,
-                    @Recurso, @Oficina, @TasaFacial, @Documento, @Usuario,
-                    @EnviarTesoreria, @Pagare, @DocumentoReferido;
-                """,
-                parameters);
+                $"exec spCrd_SGT_Formalizacion @Operacion,@DeducePlanilla, @Deductora, @PriDeduc, @fDesembolso, @Recurso, @Oficina, @TasaFacial, @DocumentoCk, @Usuario, @I_EnviaTesoreria, @Pagare, @Documento",
+                parameters,
+                transaction);
+        }
+
+        /// <summary>
+        /// Revierte la transacción de la formalización tolerando que el procedimiento
+        /// almacenado la haya cerrado por su cuenta con un ROLLBACK interno.
+        /// </summary>
+        private static void Cr_SeguimientoTramites_Formalizacion_Transaccion_Revertir(
+            IDbTransaction transaction)
+        {
+            try
+            {
+                transaction.Rollback();
+            }
+            catch (InvalidOperationException)
+            {
+                // La transacción ya fue cerrada dentro del procedimiento almacenado.
+            }
         }
 
         private static void Cr_SeguimientoTramites_Formalizacion_RefundicionesEspejo_Depurar(

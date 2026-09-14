@@ -101,6 +101,13 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
                 [FromQuery] CrSeguimientoTramitesRecepcionGarantiaContextoRequest request)
             => _bl.Cr_SeguimientoTramites_Recepcion_Garantia_Contexto_Obtener(codEmpresa, request);
 
+        [HttpGet("Cr_SeguimientoTramites_Recepcion_Rangos_Obtener")]
+        public ErrorDto<CrSeguimientoTramitesRecepcionRangosData>
+            Cr_SeguimientoTramites_Recepcion_Rangos_Obtener(
+                int codEmpresa,
+                [FromQuery] CrSeguimientoTramitesRecepcionRangosRequest request)
+            => _bl.Cr_SeguimientoTramites_Recepcion_Rangos_Obtener(codEmpresa, request);
+
         [HttpGet("Cr_SeguimientoTramites_Recepcion_Banco_Cuentas_Obtener")]
         public ErrorDto<List<CrSeguimientoTramitesOpcionItem>>
             Cr_SeguimientoTramites_Recepcion_Banco_Cuentas_Obtener(
