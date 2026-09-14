@@ -39,7 +39,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             try
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
-                conn.Open();
+                conn.OpenAsync().GetAwaiter().GetResult();
                 CrSeguimientoTramitesRecepcionValidacion validacion =
                     Cr_SeguimientoTramites_Recepcion_Validar(
                         conn,
@@ -82,7 +82,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 }
                 catch
                 {
-                    Cr_SeguimientoTramites_Recepcion_Transaccion_Revertir(conn, transaction);
+                    transaction.Rollback();
                     throw;
                 }
             }
@@ -116,18 +116,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
 
             return null;
-        }
-
-        private static void Cr_SeguimientoTramites_Recepcion_Transaccion_Revertir(
-            IDbConnection conn,
-            IDbTransaction transaction)
-        {
-            if (conn.State != ConnectionState.Open)
-            {
-                return;
-            }
-
-            transaction.Rollback();
         }
 
         private static void Cr_SeguimientoTramites_Recepcion_CodigoDependencias_Actualizar(
