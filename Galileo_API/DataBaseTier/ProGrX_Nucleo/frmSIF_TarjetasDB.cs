@@ -40,8 +40,21 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     fetch = int.MaxValue;
 
                 // Busco Total (mantiene comportamiento anterior: total sin filtro)
-                const string totalQuery = @"SELECT COUNT(cod_tarjeta) FROM sif_tarjetas";
-                var total = connection.Query<int>(totalQuery).FirstOrDefault();
+                const string totalQuery = """
+                    SELECT COUNT(cod_tarjeta)
+                    FROM sif_tarjetas
+                    WHERE (@search IS NULL
+                           OR cod_tarjeta LIKE @search
+                           OR descripcion LIKE @search);
+                    """;
+
+                var total = connection.Query<int>(
+                    totalQuery,
+                    new
+                    {
+                        search = searchLike
+                    })
+                    .FirstOrDefault();
 
                 const string query = @"
                     SELECT cod_tarjeta, descripcion, activa
@@ -259,7 +272,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// Obtiene la lista de emisores y su asignaci�n para una tarjeta.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="cod_tarjeta"></param>
+        /// <param name="cod_tarjeta"></param>SIF_TarjetasLista_Obtener
         /// <returns></returns>
         public ErrorDto<List<SifEmisoresAsignadosData>> SIF_TarjetasEmisores_Obtener(int CodEmpresa, string cod_tarjeta)
         {
