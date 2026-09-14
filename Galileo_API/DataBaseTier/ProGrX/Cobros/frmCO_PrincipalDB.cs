@@ -172,8 +172,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                                 END AS descripcion,
 
                                 CASE 
-                                    WHEN rc.estadosol = 'F' THEN 'NO'
-                                    ELSE 'SI'
+                                    WHEN ISNULL(rc.opex, 0) = 1 THEN 'SI'
+                                    ELSE 'NO'
                                 END AS estado,
 
                                 CASE UPPER(ISNULL(rc.proceso, 'N'))
@@ -272,11 +272,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 const string sqlOperacion = @"
                  SELECT
-                        CASE
-                            WHEN rc.estado = 'C' THEN 'CANCELADO'
-                            WHEN rc.proceso = 'J' THEN 'COBRO JUDICIAL'
-                            WHEN rc.estadosol = 'F' THEN 'NORMAL'
-                            ELSE ISNULL(RTRIM(rc.estado), '')
+                        CASE ISNULL(rc.estado, 'N')
+                            WHEN 'A' THEN 'Activo'
+                            WHEN 'N' THEN 'Anulado'
+                            WHEN 'C' THEN 'Cancelado'
+                            ELSE ''
                         END AS estado,
 
                         ISNULL(rc.montoapr, 0) AS monto,
@@ -351,7 +351,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         estado.saldo +
                         estado.interes_corriente +
                         estado.interes_moratorio +
-                        estado.principal_atrasado +
                         estado.cargos +
                         estado.polizas;
 
