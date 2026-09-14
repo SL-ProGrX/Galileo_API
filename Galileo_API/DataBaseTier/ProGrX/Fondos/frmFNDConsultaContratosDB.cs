@@ -250,7 +250,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Fondos
                 using var conn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
                 var query = $@"exec spFndReversaLiq @NumLiq, @Usuario";
-                conn.Execute(query, new { NumLiq = boleta, Usuario = usuario });
+                var resp = conn.Query(query, new { NumLiq = boleta, Usuario = usuario });
 
                 //Bitacora
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
