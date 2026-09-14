@@ -109,6 +109,15 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
             => _db.Cr_SeguimientoTramites_Recepcion_Garantia_Contexto_Obtener(codEmpresa, request);
 
         /// <summary>
+        /// Obtiene el plazo y la tasa que corresponden al monto según los rangos de la línea.
+        /// </summary>
+        public ErrorDto<CrSeguimientoTramitesRecepcionRangosData>
+            Cr_SeguimientoTramites_Recepcion_Rangos_Obtener(
+                int codEmpresa,
+                CrSeguimientoTramitesRecepcionRangosRequest request)
+            => _db.Cr_SeguimientoTramites_Recepcion_Rangos_Obtener(codEmpresa, request);
+
+        /// <summary>
         /// Obtiene las cuentas bancarias de la persona para el banco seleccionado.
         /// </summary>
         public ErrorDto<List<CrSeguimientoTramitesOpcionItem>>

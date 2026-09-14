@@ -64,6 +64,72 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
+        /// Obtiene el plazo y la tasa que corresponden al monto según los rangos de la
+        /// línea, equivalente a txtMonto_KeyPress del formulario VB6: consulta
+        /// fxCrdCatalogoRango con tipo P para el plazo y con tipo I para la tasa, y a
+        /// esta última le resta los puntos de bonificación de la operación.
+        /// </summary>
+        public ErrorDto<CrSeguimientoTramitesRecepcionRangosData>
+            Cr_SeguimientoTramites_Recepcion_Rangos_Obtener(
+                int codEmpresa,
+                CrSeguimientoTramitesRecepcionRangosRequest request)
+        {
+            string codigo = Cr_SeguimientoTramites_Filtro_Normalizar(request.codigo, 10);
+            if (string.IsNullOrWhiteSpace(codigo))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "- No se ha indicado la Línea de Crédito",
+                    -2,
+                    new CrSeguimientoTramitesRecepcionRangosData());
+            }
+
+            if (request.monto < 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "- El Monto Solicitado NO es válido",
+                    -2,
+                    new CrSeguimientoTramitesRecepcionRangosData());
+            }
+
+            return DbHelper.WithConn(
+                _portalDb,
+                codEmpresa,
+                conn => Cr_SeguimientoTramites_Recepcion_Rangos_Cargar(conn, request, codigo));
+        }
+
+        private static CrSeguimientoTramitesRecepcionRangosData
+            Cr_SeguimientoTramites_Recepcion_Rangos_Cargar(
+                IDbConnection conn,
+                CrSeguimientoTramitesRecepcionRangosRequest request,
+                string codigo)
+        {
+            const string sql = """
+                select
+                    isnull(dbo.fxCrdCatalogoRango(
+                        @Codigo, @Monto, 'P', @Destino, @Garantia), 0) as plazo,
+                    isnull(dbo.fxCrdCatalogoRango(
+                        @Codigo, @Monto, 'I', @Destino, @Garantia), 0) as tasa;
+                """;
+
+            CrSeguimientoTramitesRecepcionRangosRaw raw =
+                conn.QueryFirst<CrSeguimientoTramitesRecepcionRangosRaw>(
+                    sql,
+                    new
+                    {
+                        Codigo = codigo,
+                        request.monto,
+                        Destino = Cr_SeguimientoTramites_Filtro_Normalizar(request.destino, 10),
+                        Garantia = Cr_SeguimientoTramites_Filtro_Normalizar(request.garantia, 10)
+                    });
+
+            return new CrSeguimientoTramitesRecepcionRangosData
+            {
+                plazo_sugerido = raw.plazo,
+                tasa_sugerida = raw.tasa - request.tasa_pts_bono
+            };
+        }
+
+        /// <summary>
         /// Obtiene contratos activos y cálculos del fondo de garantía seleccionado.
         /// </summary>
         public ErrorDto<CrSeguimientoTramitesRecepcionFondoContextoData>

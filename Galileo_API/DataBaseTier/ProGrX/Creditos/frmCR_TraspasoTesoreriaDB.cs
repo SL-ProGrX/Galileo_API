@@ -33,15 +33,24 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         /// <returns></returns>
         public ErrorDto<List<RemesaModel>> Cr_TraspasoTes_Remesas_Listar(int CodEmpresa)
         {
-            return DbHelper.ExecuteListQuery<RemesaModel>(
+            try
+            {
+                return DbHelper.ExecuteListQuery<RemesaModel>(
                 _portalDB,
                 CodEmpresa,
                 @"select TOP 50 T.cod_remesa, T.usuario, T.fecha, T.estado, 
-                         T.fecha_inicio, T.fecha_corte, T.notas,
+                         T.fecha_inicio, T.fecha_corte, isnull(T.notas,'') as notas,
                          isnull(D.Casos,0) as casos, isnull(D.Monto,0) as monto
                   from CRD_REMESAS_TES T 
                   left join vCrd_Remesa_Tes_Rsm D on T.cod_Remesa = D.cod_Remesa
                   order by T.fecha desc");
+
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<List<RemesaModel>>(ex.Message);
+            }
+           
         }
 
         /// <summary>
@@ -57,7 +66,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 var remesa = connection.QueryFirstOrDefault<RemesaModel>(
                     @"select T.cod_remesa, T.usuario, T.fecha, T.estado, 
-                             T.fecha_inicio, T.fecha_corte, T.notas,
+                             T.fecha_inicio, T.fecha_corte, isnull(T.notas,'') as notas,
                              isnull(D.Casos,0) as casos, isnull(D.Monto,0) as monto
                       from CRD_REMESAS_TES T 
                       left join vCrd_Remesa_Tes_Rsm D on T.cod_Remesa = D.cod_Remesa
@@ -309,7 +318,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                           from reg_creditos R
                           left join vCrdOperacion_DesembolsosGiro vD on R.id_solicitud = vD.id_solicitud
                           where R.id_solicitud = @id_solicitud",
-                        new { idSolicitud });
+                        new { id_solicitud = idSolicitud });
 
                     if (operacion.HasValue)
                     {
@@ -318,7 +327,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                               values(@cod_remesa, @id_solicitud, @monto, @desembolsos)",
                             new
                             {
-                                request.cod_remesa,
+                                cod_remesa = request.cod_remesa,
                                 id_solicitud = idSolicitud,
                                 monto = operacion.Value.monto_girado,
                                 desembolsos = operacion.Value.desem_monto
@@ -729,14 +738,15 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
 
                 var remesa = connection.QueryFirstOrDefault<ConsultaModel>(
                     @"select R.id_solicitud, R.codigo, C.descripcion as descripcion_linea,
-                             S.cedula, S.nombre, R.monto_girado,
-                             Td.cod_remesa,
-                             T.estado as estado_remesa, T.fecha as fecha_remesa,
-                             T.usuario as usuario_remesa, T.monto as monto_remesa,
-                             T.desembolsos as desembolsos_remesa
-                      from reg_creditos R
-                      inner join Socios S on R.cedula = S.cedula
-                      inner join Catalogo C on R.codigo = C.codigo
+                              S.cedula, S.nombre, R.monto_girado,
+                              Td.cod_remesa,
+                              T.estado as estado_remesa, T.fecha as fecha_remesa,
+                              T.usuario as usuario_remesa, Td.monto as monto_remesa,
+                              Td.desembolsos as desembolsos_remesa,
+                              Td.nsolicitud as tesoreria_id
+                       from reg_creditos R
+                       inner join Socios S on R.cedula = S.cedula
+                       inner join Catalogo C on R.codigo = C.codigo
                       inner join CRD_REMESAS_TES_DETALLE Td on R.id_solicitud = Td.id_solicitud
                       inner join CRD_REMESAS_TES T on Td.cod_remesa = T.cod_remesa
                       where R.id_solicitud = @id_solicitud",
@@ -752,6 +762,31 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     monto_girado = operacion.Value.monto_girado
                 };
 
+                var banco = connection.QueryFirstOrDefault<ConsultaModel>(
+                    @"select T.NSOLICITUD as nsolicitud,
+                             T.ndocumento as ndocumento,
+                             T.BENEFICIARIO as beneficiario,
+                             '[' + B.CTA + '] ' + B.DESCRIPCION as cuenta_desc,
+                             Bg.DESCRIPCION as banco_desc,
+                             Td.DESCRIPCION as tipo_desc
+                      from Tes_Transacciones T
+                      inner join TES_BANCOS B on T.ID_BANCO = B.ID_BANCO
+                      inner join TES_BANCOS_GRUPOS Bg on B.COD_GRUPO = Bg.COD_GRUPO
+                      inner join TES_TIPOS_DOC Td on T.tipo = Td.TIPO
+                      where T.op = @id_solicitud
+                        and T.estado in('I','T','P','E')",
+                    new { id_solicitud });
+
+                if (banco is not null)
+                {
+                    remesa.nsolicitud = banco.nsolicitud;
+                    remesa.ndocumento = banco.ndocumento;
+                    remesa.beneficiario = banco.beneficiario;
+                    remesa.banco_desc = banco.banco_desc;
+                    remesa.cuenta_desc = banco.cuenta_desc;
+                    remesa.tipo_desc = banco.tipo_desc;
+                }
+
                 return DbHelper.CreateOkResponse(remesa);
             }
             catch (Exception ex)
@@ -763,6 +798,31 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         #endregion
 
         #region aux.giro
+
+        public ErrorDto Cr_TraspasoTes_AuxGiroExc_Autorizar(int CodEmpresa, string usuario)
+        {
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+                connection.Execute(
+                    "exec spJob_Credito_Excedentes_Autogiro",
+                    commandTimeout: 0);
+
+                RegistrarBitacora(
+                    CodEmpresa,
+                    usuario,
+                    "Autoriza Giro Automático de Excedentes",
+                    "Aplica - WEB");
+
+                return DbHelper.OkResponse("Autorización de giro automático de excedentes ejecutada satisfactoriamente.");
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse($"Error al autorizar el giro automático de excedentes: {ex.Message}", -1);
+            }
+        }
+
         #endregion
 
         private string ObtenerOTokenGenerado(int codEmpresa, string usuario, SqlConnection connection)
