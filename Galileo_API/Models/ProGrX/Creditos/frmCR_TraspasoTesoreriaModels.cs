@@ -16,10 +16,10 @@
     {
         public int cod_remesa { get; set; }
         public string? usuario { get; set; }
-        public DateTime fecha { get; set; }
+        public DateTime? fecha { get; set; }
         public string? estado { get; set; }
-        public DateTime fecha_inicio { get; set; }
-        public DateTime fecha_corte { get; set; }
+        public DateTime? fecha_inicio { get; set; }
+        public DateTime? fecha_corte { get; set; }
         public string? notas { get; set; }
         public int casos { get; set; }
         public decimal monto { get; set; }
@@ -84,6 +84,13 @@
         public string? usuario_remesa { get; set; }
         public decimal? monto_remesa { get; set; }
         public decimal? desembolsos_remesa { get; set; }
+        public int? tesoreria_id { get; set; }
+        public int? nsolicitud { get; set; }
+        public string? ndocumento { get; set; }
+        public string? beneficiario { get; set; }
+        public string? banco_desc { get; set; }
+        public string? cuenta_desc { get; set; }
+        public string? tipo_desc { get; set; }
     }
 
     public class CambioConceptoModel

@@ -195,6 +195,15 @@ namespace Galileo.BusinessLogic.ProGrX.Credito
         #endregion
 
         #region aux.giro
+
+        /// <summary>
+        /// Ejecuta la autorización de giro automático de excedentes
+        /// </summary>
+        public ErrorDto Cr_TraspasoTes_AuxGiroExc_Autorizar(int CodEmpresa, string usuario)
+        {
+            return _db.Cr_TraspasoTes_AuxGiroExc_Autorizar(CodEmpresa, usuario);
+        }
+
         #endregion
     }
 }
