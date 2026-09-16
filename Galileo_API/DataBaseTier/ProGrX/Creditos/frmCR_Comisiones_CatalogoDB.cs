@@ -128,7 +128,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     "spCrd_Comisiones_TP_Consulta",
                     new
                     {
-                        cod_comision = request.cod_comision,
+                        Codigo = request.cod_comision,
                         usuario = request.usuario
                     },
                     commandType: CommandType.StoredProcedure
@@ -177,7 +177,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 var lista = connection.Query<CrComisionesCatalogoLineaData>(
                     "spCrd_Comisiones_Lineas_Asigna_Consulta",
-                    new { cod_comision = request.cod_comision },
+                    new { Codigo = request.cod_comision },
                     commandType: CommandType.StoredProcedure
                 ).ToList();
 
