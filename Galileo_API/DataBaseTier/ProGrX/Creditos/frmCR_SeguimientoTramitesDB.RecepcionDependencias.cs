@@ -143,7 +143,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     codigo));
         }
 
-        public ErrorDto<decimal> Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(
+        public static ErrorDto<decimal> Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(
             CrSeguimientoTramitesRecepcionCuotaRequest request)
         {
             if (request.monto <= 0 || request.plazo <= 0)
