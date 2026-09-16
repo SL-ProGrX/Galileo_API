@@ -93,5 +93,20 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         {
             return _bl.FND_LiquidacionPlan_ArchivoRef_Cargar(codEmpresa, request);
         }
+
+        [Authorize]
+        [HttpGet("FND_LiquidacionPlan_CasosInternos_Obtener")]
+        public ErrorDto<FndCasosInternosDto> FND_LiquidacionPlan_CasosInternos_Obtener(
+            int CodEmpresa,
+            int codOperadora,
+            string codPlan,
+            int validaTarjetaActiva)
+        {
+            return _bl.FND_LiquidacionPlan_CasosInternos_Obtener(
+                CodEmpresa,
+                codOperadora,
+                codPlan,
+                validaTarjetaActiva);
+        }
     }
 }

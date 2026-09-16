@@ -1142,6 +1142,46 @@ where F.Cod_Operadora = @CodOperadora
         #endregion
 
 
+        #region Casos Internos
+
+        public ErrorDto<FndCasosInternosDto> FND_LiquidacionPlan_CasosInternos_Obtener(
+            int CodEmpresa,
+            int codOperadora,
+            string codPlan,
+            int validaTarjetaActiva)
+        {
+            if (codOperadora <= 0)
+                return DbHelper.CreateErrorResponse<FndCasosInternosDto>("La operadora es requerida.");
+
+            if (string.IsNullOrWhiteSpace(codPlan))
+                return DbHelper.CreateErrorResponse<FndCasosInternosDto>("El plan es requerido.");
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                const string sql =
+                    "exec spFnd_Liquida_Casos_InternosCount @codOperadora, @codPlan, @validaTarjetaActiva";
+
+                var row = connection.QueryFirstOrDefault<FndCasosInternosDto>(
+                    sql,
+                    new
+                    {
+                        codOperadora,
+                        codPlan,
+                        validaTarjetaActiva
+                    });
+
+                return DbHelper.CreateOkResponse(row ?? new FndCasosInternosDto());
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<FndCasosInternosDto>(
+                    $"Error al consultar casos internos: {ex.Message}");
+            }
+        }
+
+        #endregion
+
         #region Load Archivo
 
         public ErrorDto<int> FND_LiquidacionPlan_ArchivoRef_Cargar(
