@@ -15,6 +15,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         private readonly MTesoreria _mtes;
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly PortalDB _portalDB;
+        private const string aplicaWeb = "Aplica - WEB";
 
         public FrmCRTraspasoTesoreriaDB(IConfiguration config)
         {
@@ -335,7 +336,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     }
                 }
 
-                RegistrarBitacora(CodEmpresa, usuario, $"Carga Remesa Traslado a Tesoreria : {request.cod_remesa}", "Aplica - WEB");
+                RegistrarBitacora(CodEmpresa, usuario, $"Carga Remesa Traslado a Tesoreria : {request.cod_remesa}", aplicaWeb);
 
                 return DbHelper.OkResponse("Proceso realizado satisfactoriamente.");
             }
@@ -370,7 +371,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     "update CRD_REMESAS_TES set estado = 'C' where cod_remesa = @cod_remesa",
                     new { cod_remesa });
 
-                RegistrarBitacora(CodEmpresa, usuario, $"Cierra Remesa Traslado a Tesoreria : {cod_remesa}", "Aplica - WEB");
+                RegistrarBitacora(CodEmpresa, usuario, $"Cierra Remesa Traslado a Tesoreria : {cod_remesa}", aplicaWeb);
 
                 return DbHelper.OkResponse("Remesa cerrada satisfactoriamente.");
             }
@@ -633,7 +634,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     "update reg_creditos set tesoreria = null where id_solicitud = @id_solicitud",
                     new { id_solicitud });
 
-                RegistrarBitacora(CodEmpresa, usuario, $"ReActivacion Traslado Tes. Op: {id_solicitud}", "Aplica - WEB");
+                RegistrarBitacora(CodEmpresa, usuario, $"ReActivacion Traslado Tes. Op: {id_solicitud}", aplicaWeb);
 
                 _mtes.sbCrdOperacionTags(
                     CodEmpresa,
@@ -813,7 +814,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     CodEmpresa,
                     usuario,
                     "Autoriza Giro Automático de Excedentes",
-                    "Aplica - WEB");
+                    aplicaWeb);
 
                 return DbHelper.OkResponse("Autorización de giro automático de excedentes ejecutada satisfactoriamente.");
             }
