@@ -130,7 +130,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
 
         public ErrorDto<decimal> Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(
             CrSeguimientoTramitesRecepcionCuotaRequest request)
-            => _db.Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(request);
+            => FrmCrSeguimientoTramitesDb.Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(request);
         /// <summary>
         /// Obtiene las cuentas bancarias de la persona para el banco seleccionado.
         /// </summary>
