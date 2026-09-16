@@ -8,6 +8,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
     public partial class FrmCrSeguimientoTramitesDb
     {
+
+        public ErrorDto<bool> Cr_SeguimientoTramites_Linea_PermiteRefunde_Obtener(
+            int codEmpresa,
+            string? codigo)
+        {
+            string linea = Cr_SeguimientoTramites_Filtro_Normalizar(codigo, 10);
+            if (string.IsNullOrWhiteSpace(linea))
+            {
+                return DbHelper.CreateErrorResponse("Debe indicar la línea de crédito.", -2, false);
+            }
+
+            return DbHelper.WithConn(
+                _portalDb,
+                codEmpresa,
+                conn => string.Equals(
+                    conn.QueryFirstOrDefault<string>(
+                        "select isnull(refunde, 'N') from catalogo where codigo = @codigo",
+                        new { codigo = linea }) ?? "N",
+                    "S",
+                    StringComparison.OrdinalIgnoreCase));
+        }
         /// <summary>
         /// Obtiene las cuentas bancarias asociadas a la persona y banco indicados.
         /// </summary>
@@ -97,6 +118,46 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 conn => Cr_SeguimientoTramites_Recepcion_Rangos_Cargar(conn, request, codigo));
         }
 
+
+        public ErrorDto<decimal> Cr_SeguimientoTramites_Recepcion_RangoPlazo_Obtener(
+            int codEmpresa,
+            CrSeguimientoTramitesRecepcionRangoPlazoRequest request)
+        {
+            string codigo = Cr_SeguimientoTramites_Filtro_Normalizar(request.codigo, 10);
+            if (string.IsNullOrWhiteSpace(codigo))
+            {
+                return DbHelper.CreateErrorResponse("- No se ha indicado la Línea de Crédito", -2, 0m);
+            }
+
+            if (request.plazo <= 0)
+            {
+                return DbHelper.CreateErrorResponse("- El Plazo NO es válido", -2, 0m);
+            }
+
+            return DbHelper.WithConn(
+                _portalDb,
+                codEmpresa,
+                conn => Cr_SeguimientoTramites_Recepcion_RangoPlazo_Cargar(
+                    conn,
+                    request,
+                    codigo));
+        }
+
+        public ErrorDto<decimal> Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(
+            CrSeguimientoTramitesRecepcionCuotaRequest request)
+        {
+            if (request.monto <= 0 || request.plazo <= 0)
+            {
+                return DbHelper.CreateOkResponse(0m);
+            }
+
+            return DbHelper.CreateOkResponse(
+                MCobroDb.fxCalcula_Cuota(
+                    request.monto,
+                    request.plazo,
+                    request.tasa,
+                    request.frecuencia));
+        }
         private static CrSeguimientoTramitesRecepcionRangosData
             Cr_SeguimientoTramites_Recepcion_Rangos_Cargar(
                 IDbConnection conn,
@@ -129,6 +190,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             };
         }
 
+
+        private static decimal Cr_SeguimientoTramites_Recepcion_RangoPlazo_Cargar(
+            IDbConnection conn,
+            CrSeguimientoTramitesRecepcionRangoPlazoRequest request,
+            string codigo)
+        {
+            const string sql = """
+                select isnull(dbo.fxCrdCatalogoRangoPlz(
+                    @Codigo, @Plazo, @Destino, @Garantia), 0) as tasa;
+                """;
+
+            decimal tasa = conn.QueryFirst<decimal>(
+                sql,
+                new
+                {
+                    Codigo = codigo,
+                    request.plazo,
+                    Destino = Cr_SeguimientoTramites_Filtro_Normalizar(request.destino, 10),
+                    Garantia = Cr_SeguimientoTramites_Filtro_Normalizar(request.garantia, 10)
+                });
+
+            return tasa - request.tasa_pts_bono;
+        }
         /// <summary>
         /// Obtiene contratos activos y cálculos del fondo de garantía seleccionado.
         /// </summary>

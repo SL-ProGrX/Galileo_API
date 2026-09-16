@@ -90,6 +90,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
                 string? filtro)
             => _db.Cr_SeguimientoTramites_Recepcion_Proveedores_Buscar(codEmpresa, filtro);
 
+
+        public ErrorDto<bool> Cr_SeguimientoTramites_Linea_PermiteRefunde_Obtener(
+            int codEmpresa,
+            string? codigo)
+            => _db.Cr_SeguimientoTramites_Linea_PermiteRefunde_Obtener(codEmpresa, codigo);
         /// <summary>
         /// Obtiene el contexto dependiente de persona y línea de crédito.
         /// </summary>
@@ -117,6 +122,15 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
                 CrSeguimientoTramitesRecepcionRangosRequest request)
             => _db.Cr_SeguimientoTramites_Recepcion_Rangos_Obtener(codEmpresa, request);
 
+
+        public ErrorDto<decimal> Cr_SeguimientoTramites_Recepcion_RangoPlazo_Obtener(
+            int codEmpresa,
+            CrSeguimientoTramitesRecepcionRangoPlazoRequest request)
+            => _db.Cr_SeguimientoTramites_Recepcion_RangoPlazo_Obtener(codEmpresa, request);
+
+        public ErrorDto<decimal> Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(
+            CrSeguimientoTramitesRecepcionCuotaRequest request)
+            => _db.Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(request);
         /// <summary>
         /// Obtiene las cuentas bancarias de la persona para el banco seleccionado.
         /// </summary>
