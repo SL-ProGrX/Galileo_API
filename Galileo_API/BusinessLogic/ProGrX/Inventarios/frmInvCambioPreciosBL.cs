@@ -1,4 +1,5 @@
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
 
@@ -8,24 +9,78 @@ namespace Galileo.BusinessLogic
     {
         private readonly FrmInvCambioPreciosDB _db;
 
-        public FrmInvCambioPreciosBL(IConfiguration config)
+        public FrmInvCambioPreciosBL(
+            IConfiguration config)
         {
-            _db = new FrmInvCambioPreciosDB(config);
+            _db = new FrmInvCambioPreciosDB(
+                config);
         }
 
-        public ErrorDto<List<FacturaPrecioDetalleDto>> OrdenesDetalle_Obtener(int CodEmpresa, string CodFactura, int? CodProveedor)
+        public ErrorDto<
+            List<DropDownListaGenericaModel>>
+            INV_CambioPrecios_TiposPrecio_Obtener(
+                int CodEmpresa)
         {
-            return _db.OrdenesDetalle_Obtener(CodEmpresa, CodFactura, CodProveedor);
+            return _db
+                .INV_CambioPrecios_TiposPrecio_Obtener(
+                    CodEmpresa);
         }
 
-        public ErrorDto PreciosFactura_Actualiza(int CodEmpresa, FacturaPrecioDetalleDto data)
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            INV_CambioPrecios_Proveedores_Obtener(
+                int CodEmpresa)
         {
-            return _db.PreciosFactura_Actualiza(CodEmpresa, data);
+            return _db
+                .INV_CambioPrecios_Proveedores_Obtener(
+                    CodEmpresa);
         }
 
-        public ErrorDto CambiosPrecios_Actualizar(int CodEmpresa, PrecioExcelDto precio)
+        public ErrorDto<
+            CambioPrecioArchivoCargaResponse>
+            INV_CambioPrecios_Archivo_Cargar(
+                int CodEmpresa,
+                CambioPrecioArchivoCargaRequest request)
         {
-            return _db.CambiosPrecios_Actualizar(CodEmpresa, precio);
+            return _db
+                .INV_CambioPrecios_Archivo_Cargar(
+                    CodEmpresa,
+                    request);
+        }
+
+        public ErrorDto
+            INV_CambioPrecios_Archivo_Procesar(
+                int CodEmpresa,
+                CambioPrecioArchivoProcesarRequest request)
+        {
+            return _db
+                .INV_CambioPrecios_Archivo_Procesar(
+                    CodEmpresa,
+                    request);
+        }
+
+        public ErrorDto<
+            List<FacturaPrecioDetalleDto>>
+            INV_CambioPrecios_Factura_Detalle_Obtener(
+                int CodEmpresa,
+                string codFactura,
+                int codProveedor)
+        {
+            return _db
+                .INV_CambioPrecios_Factura_Detalle_Obtener(
+                    CodEmpresa,
+                    codFactura,
+                    codProveedor);
+        }
+
+        public ErrorDto
+            INV_CambioPrecios_Factura_Precios_Actualizar(
+                int CodEmpresa,
+                CambioPrecioFacturaActualizarRequest request)
+        {
+            return _db
+                .INV_CambioPrecios_Factura_Precios_Actualizar(
+                    CodEmpresa,
+                    request);
         }
     }
 }
