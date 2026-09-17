@@ -61,5 +61,34 @@ namespace Galileo.Controllers
             return _bl.SIF_TipoDocumentosConceptosRelacionados_Guardar(CodEmpresa, usuario, cod_concepto, tipoDoc, accion);
         }
 
+        [Authorize]
+        [HttpGet("SIF_tipoDocumento_Cuenta_Validar")]
+        public ErrorDto<SifTipoDocumentoCuentaData> SIF_tipoDocumento_Cuenta_Validar(int CodEmpresa, string cuenta)
+        {
+            return _bl.SIF_tipoDocumento_Cuenta_Validar(CodEmpresa, cuenta);
+        }
+
+        [Authorize]
+        [HttpPost("SIF_tipoDocumento_ArchivoEspecial_Guardar")]
+        [Consumes("multipart/form-data")]
+        public ErrorDto<SifTipoDocumentoArchivoData> SIF_tipoDocumento_ArchivoEspecial_Guardar(int CodEmpresa, string usuario, IFormFile file, bool sobrescribir = false)
+        {
+            return _bl.SIF_tipoDocumento_ArchivoEspecial_Guardar(CodEmpresa, usuario, sobrescribir, file);
+        }
+
+        [Authorize]
+        [HttpGet("SIF_tipoDocumento_ArchivoEspecial_Descargar")]
+        public IActionResult SIF_tipoDocumento_ArchivoEspecial_Descargar(int CodEmpresa, string archivo)
+        {
+            var info = _bl.SIF_tipoDocumento_ArchivoEspecial_Descargar(CodEmpresa, archivo);
+
+            if (info.Code != 0 || info.Result == null)
+            {
+                return NotFound(new { info.Code, info.Description });
+            }
+
+            return File(info.Result.contenido, "application/octet-stream", info.Result.nombre_archivo);
+        }
+
     }
 }

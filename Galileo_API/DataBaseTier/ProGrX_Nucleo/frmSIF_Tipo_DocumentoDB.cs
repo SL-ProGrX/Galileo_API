@@ -7,16 +7,18 @@ using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
-    public class FrmSifTipoDocumentoDB
+    public partial class FrmSifTipoDocumentoDB
     {
         private readonly IConfiguration _config;
         private readonly int vModulo = 10;
         private readonly MSecurityMainDb _Security_MainDB;
+        private readonly MCntLinkDB _mCntLinkDb;
 
         public FrmSifTipoDocumentoDB(IConfiguration config)
         {
             _config = config;
             _Security_MainDB = new MSecurityMainDb(_config);
+            _mCntLinkDb = new MCntLinkDB(_config);
         }
 
         /// <summary>
@@ -232,6 +234,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 if (existe > 0)
                 {
                     info.Code = -2;
+                    info.Description = "El código de documento ya existe.";
                     return info;
                 }
 
@@ -280,14 +283,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             catch (Exception ex)
             {
                 info.Code = -1;
-                if (ex.Message.Contains("Cannot insert duplicate key"))
-                {
-                    info.Description = "El código de beneficio ya existe";
-                }
-                else
-                {
-                    info.Description = ex.Message;
-                }
+                info.Description = ex.Message;
             }
             return info;
         }
@@ -376,6 +372,128 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 result.Description = ex.Message;
             }
             return result;
+        }
+
+
+        /// <summary>
+        /// Valida y formatea una cuenta contable digitada en el formulario.
+        /// Equivale a fxgCntCuentaFormato + fxgCntCuentaValida + fxgCntCuentaDesc del VB6.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="cuenta"></param>
+        /// <returns></returns>
+        public ErrorDto<SifTipoDocumentoCuentaData> SIF_tipoDocumento_Cuenta_Validar(int CodEmpresa, string cuenta)
+        {
+            var result = new ErrorDto<SifTipoDocumentoCuentaData>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new SifTipoDocumentoCuentaData()
+            };
+
+            try
+            {
+                var codCuenta = _mCntLinkDb.fxgCntCuentaFormato(CodEmpresa, false, cuenta, 0);
+
+                result.Result.cod_cuenta = codCuenta;
+                result.Result.cuenta_mask = _mCntLinkDb.fxgCntCuentaFormato(CodEmpresa, true, cuenta, 0);
+                result.Result.valida = _mCntLinkDb.fxgCntCuentaValida(CodEmpresa, codCuenta);
+                result.Result.cuenta_desc = result.Result.valida
+                    ? _mCntLinkDb.fxgCntCuentaDesc(CodEmpresa, codCuenta)
+                    : string.Empty;
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = null;
+            }
+
+            return result;
+        }
+
+
+        /// <summary>
+        /// Valida el tipo de documento antes de persistir. Replica fxValida del VB6:
+        /// acumula todos los mensajes y no corta en el primero.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="tipoDoc"></param>
+        /// <returns></returns>
+        public ErrorDto SIF_tipoDocumento_Validar(int CodEmpresa, SifTipoDocumentoData tipoDoc)
+        {
+            var info = new ErrorDto { Code = 0, Description = "Ok" };
+            var mensajes = new List<string>();
+
+            try
+            {
+                SIF_tipoDocumento_CuentasNormalizar(CodEmpresa, tipoDoc);
+                ValidarDatosBasicos(tipoDoc, mensajes);
+                ValidarCuentas(CodEmpresa, tipoDoc, mensajes);
+
+                if (mensajes.Count > 0)
+                {
+                    info.Code = -3;
+                    info.Description = string.Join(Environment.NewLine, mensajes);
+                }
+            }
+            catch (Exception ex)
+            {
+                info.Code = -1;
+                info.Description = ex.Message;
+            }
+
+            return info;
+        }
+
+
+        /// <summary>
+        /// Normaliza las cuentas contables al formato interno (sin mascara) antes de persistir.
+        /// Equivale a fxgCntCuentaFormato(False, txtCuenta) usado por sbGuardar del VB6.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="tipoDoc"></param>
+        private void SIF_tipoDocumento_CuentasNormalizar(int CodEmpresa, SifTipoDocumentoData tipoDoc)
+        {
+            tipoDoc.cod_cuenta = _mCntLinkDb.fxgCntCuentaFormato(
+                CodEmpresa, false, CuentaOrigen(tipoDoc.cuenta_mask, tipoDoc.cod_cuenta), 0);
+
+            tipoDoc.impuesto_cod_cuenta = _mCntLinkDb.fxgCntCuentaFormato(
+                CodEmpresa, false, CuentaOrigen(tipoDoc.imp_cuenta_mask, tipoDoc.impuesto_cod_cuenta), 0);
+        }
+
+        private static string CuentaOrigen(string? mask, string? codigo) =>
+            string.IsNullOrWhiteSpace(mask) ? (codigo ?? string.Empty) : mask;
+
+        private static void ValidarDatosBasicos(SifTipoDocumentoData tipoDoc, List<string> mensajes)
+        {
+            if (string.IsNullOrWhiteSpace(tipoDoc.descripcion))
+            {
+                mensajes.Add(" - Nombre del Documento no es válido ...");
+            }
+
+            if (tipoDoc.tipo_comprobante == "02" && string.IsNullOrWhiteSpace(tipoDoc.archivo_per))
+            {
+                mensajes.Add(" - Nombre del Archivo especial no es válido ...");
+            }
+
+            if (tipoDoc.reversion_dias_autorizados <= 0)
+            {
+                mensajes.Add(" - Los días autorizados para reversión de un documento no son válidos..");
+            }
+        }
+
+        private void ValidarCuentas(int CodEmpresa, SifTipoDocumentoData tipoDoc, List<string> mensajes)
+        {
+            if (!_mCntLinkDb.fxgCntCuentaValida(CodEmpresa, tipoDoc.cod_cuenta))
+            {
+                mensajes.Add(" - La cuenta para cierre por omisión de los asientos de este tipo de documento no es válida..");
+            }
+
+            if (!_mCntLinkDb.fxgCntCuentaValida(CodEmpresa, tipoDoc.impuesto_cod_cuenta ?? string.Empty))
+            {
+                mensajes.Add(" - La cuenta para Impuestos de los asientos de este tipo de documento no es válida..");
+            }
         }
     }
 }
