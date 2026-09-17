@@ -39,6 +39,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             try
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                conn.OpenAsync().GetAwaiter().GetResult();
                 CrSeguimientoTramitesRecepcionValidacion validacion =
                     Cr_SeguimientoTramites_Recepcion_Validar(
                         conn,

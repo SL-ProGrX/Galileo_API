@@ -11,6 +11,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
     {
         private static readonly string[] AllowedExtensions = new[] { ".rdlc", ".rdl" };
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(200);
+        private const string DefaultEmpresaSegment = "ProGrx";
 
         /// <summary>
         /// Construye la ruta base de reportes dentro de la carpeta controlada por empresa.
@@ -35,31 +36,8 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             }
 
             var trimmedRoot = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            string basePath;
-            if (string.IsNullOrWhiteSpace(safeFolder))
-            {
-                basePath = trimmedRoot + Path.DirectorySeparatorChar + empresaSegment;
-            }
-            else
-            {
-                basePath = trimmedRoot + Path.DirectorySeparatorChar + empresaSegment
-                    + Path.DirectorySeparatorChar + safeFolder;
-            }
-
-            //Valido si el forder existe, si no existe reemplazo codEmpresa por ProGrx
-            if(!Directory.Exists(basePath))
-            {
-                empresaSegment = "ProGrx";
-                if (string.IsNullOrWhiteSpace(safeFolder))
-                {
-                    basePath = trimmedRoot + Path.DirectorySeparatorChar + empresaSegment;
-                }
-                else
-                {
-                    basePath = trimmedRoot + Path.DirectorySeparatorChar + empresaSegment
-                        + Path.DirectorySeparatorChar + safeFolder;
-                }
-            }
+            var candidates = BuildBasePathCandidates(trimmedRoot, empresaSegment, safeFolder).ToList();
+            var basePath = candidates.FirstOrDefault(Directory.Exists) ?? candidates[0];
 
             return Path.GetFullPath(basePath);
         }
@@ -139,6 +117,42 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             return normalized;
         }
 
+        private static IEnumerable<string> BuildBasePathCandidates(
+            string trimmedRoot,
+            string empresaSegment,
+            string? safeFolder)
+        {
+            var rootSegment = Path.GetFileName(trimmedRoot);
+
+            if (string.IsNullOrWhiteSpace(safeFolder))
+            {
+                yield return trimmedRoot + Path.DirectorySeparatorChar + empresaSegment;
+                yield return trimmedRoot + Path.DirectorySeparatorChar + DefaultEmpresaSegment;
+
+                if (IsEmpresaRoot(rootSegment, empresaSegment))
+                    yield return trimmedRoot;
+
+                yield break;
+            }
+
+            yield return trimmedRoot + Path.DirectorySeparatorChar + empresaSegment
+                + Path.DirectorySeparatorChar + safeFolder;
+            yield return trimmedRoot + Path.DirectorySeparatorChar + DefaultEmpresaSegment
+                + Path.DirectorySeparatorChar + safeFolder;
+
+            if (IsEmpresaRoot(rootSegment, empresaSegment))
+                yield return trimmedRoot + Path.DirectorySeparatorChar + safeFolder;
+
+            if (string.Equals(rootSegment, safeFolder, StringComparison.OrdinalIgnoreCase))
+                yield return trimmedRoot;
+        }
+
+        private static bool IsEmpresaRoot(string? rootSegment, string empresaSegment)
+        {
+            return string.Equals(rootSegment, empresaSegment, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(rootSegment, DefaultEmpresaSegment, StringComparison.OrdinalIgnoreCase);
+        }
+
         /// <summary>
         /// Combina segmentos bajo una raíz controlada validando que la ruta final no salga de ella.
         /// </summary>
@@ -169,10 +183,10 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
         private static string validaRutaFinal(string ruta, int codEmpresa)
         {
-            //valido si la ruta final con el documento existe si no busco el archivo en la carpeta ProGrx
+            //valido si la ruta final con el documento existe si no busco el archivo en la carpeta predeterminada
             if(!File.Exists(ruta))
             {
-                ruta = ruta.Replace(codEmpresa.ToString(), "ProGrx");
+                ruta = ruta.Replace(codEmpresa.ToString(), DefaultEmpresaSegment);
             }
             return ruta;
         }

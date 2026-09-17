@@ -30,36 +30,51 @@ namespace Galileo.DataBaseTier
             });
         }
 
-        public ErrorDto Parametros_Actualizar(int CodEmpresa, string usuario, SifParametrosDto parametros)
+        public ErrorDto Parametros_Actualizar(int CodEmpresa,string usuario,SifParametrosDto parametros)
         {
-            const string sql = "UPDATE SIF_PARAMETROS SET valor = @valor WHERE cod_parametro = @codParametro";
+            const string sql = """
+        UPDATE SIF_PARAMETROS
+        SET valor = @valor
+        WHERE cod_parametro = @codParametro
+        """;
 
-            // 1) Actualiza parámetro
-            var upd = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, sql, new
-            {
-                valor = parametros.valor,
-                codParametro = parametros.cod_parametro
-            });
+            var upd = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                new
+                {
+                    valor = parametros.valor,
+                    codParametro = parametros.cod_parametro
+                });
 
-            if ((upd.Code ?? -1) != 0)
+            if ((upd.Code ?? -1) < 0)
                 return upd;
 
-            // 2) Bitácora
-             string detalleBitacora = $"Parametro: {parametros.cod_parametro} - {parametros.valor}";
-            var bit = _securityDb.Bitacora(new BitacoraInsertarDto
+            string detalleBitacora =
+                $"Parametro: {parametros.cod_parametro} - {parametros.valor}";
+
+            var bit = _securityDb.Bitacora(
+                new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = usuario,
+                    Modulo = vModulo,
+                    Movimiento = detalleBitacora,
+                    Detalle = "Modifica - WEB",
+                    AppNombre = "Galileo_API"
+                });
+
+            if ((bit.Code ?? -1) < 0)
             {
-                EmpresaId = CodEmpresa,
-                Usuario = usuario,
-                Modulo = vModulo,
-                Movimiento = detalleBitacora,
-                Detalle = "Modifica - WEB",
-                AppNombre = "Galileo_API"
-            });
+                return DbHelper.ErrorResponse(
+                    "Error al registrar bitácora: " +
+                    (bit.Description ?? "Error al registrar bitácora"),
+                    bit.Code ?? -1);
+            }
 
-            if ((bit.Code ?? -1) != 0)
-                return DbHelper.ErrorResponse("Error al registrar bitácora: " + (bit.Description ?? "Error al registrar bitácora"), bit.Code ?? -1);
-
-            return DbHelper.OkResponse("Registro actualizado satisfactoriamente");
+            return DbHelper.OkResponse(
+                "Registro actualizado satisfactoriamente");
         }
 
     }

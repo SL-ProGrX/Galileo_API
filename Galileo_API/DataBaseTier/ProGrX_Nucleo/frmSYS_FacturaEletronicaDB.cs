@@ -2870,32 +2870,57 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         {
             var seenClienteId = new HashSet<long>();
             var seenClienteIdFe = new HashSet<long>();
+
             const string SQL_INSERT = @"
-                insert into SYS_FE_CLIENTES (COD_CLIENTE, USUARIO, CLIENTE_ID, CLIENTE_ID_FE, CEDULA, NOMBRE)
-                values (@COD_CLIENTE, @USUARIO, @CLIENTE_ID, @CLIENTE_ID_FE, @CEDULA, @NOMBRE);
-                ";
+        INSERT INTO SYS_FE_CLIENTES
+        (
+            COD_CLIENTE,
+            CEDULA,
+            NOMBRE,
+            CLIENTE_ID,
+            CLIENTE_ID_FE,
+            REGISTRO_FECHA,
+            REGISTRO_USUARIO
+        )
+        VALUES
+        (
+            @COD_CLIENTE,
+            @CEDULA,
+            @NOMBRE,
+            @CLIENTE_ID,
+            @CLIENTE_ID_FE,
+            GETDATE(),
+            @REGISTRO_USUARIO
+        );
+    ";
 
             foreach (var r in portalRows)
             {
                 if (!TryGetClienteIds(r, out long clienteId, out long clienteIdFe))
                     continue;
 
-                if (!seenClienteId.Add(clienteId)) continue;
-                if (!seenClienteIdFe.Add(clienteIdFe)) continue;
+                if (!seenClienteId.Add(clienteId))
+                    continue;
 
-                string cedula = ((r.CEDULA ?? "").ToString()).Trim();
-                string nombre = ((r.NOMBRE ?? "").ToString()).Trim();
+                if (!seenClienteIdFe.Add(clienteIdFe))
+                    continue;
+
+                string cedula =
+                    (ExtractKeyFromParametros(r, "CEDULA") ?? "").Trim();
+
+                string nombre =
+                    (ExtractKeyFromParametros(r, "NOMBRE") ?? "").Trim();
 
                 connLocal.Execute(
                     SQL_INSERT,
                     new
                     {
                         COD_CLIENTE = (cod_cliente ?? "").Trim(),
-                        USUARIO = (usuario ?? "").Trim(),
+                        CEDULA = cedula,
+                        NOMBRE = nombre,
                         CLIENTE_ID = clienteId,
                         CLIENTE_ID_FE = clienteIdFe,
-                        CEDULA = cedula,
-                        NOMBRE = nombre
+                        REGISTRO_USUARIO = (usuario ?? "").Trim()
                     },
                     transaction: tx,
                     commandTimeout: 360
@@ -2962,7 +2987,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             public readonly CorteCfg cfg;
             public readonly string cedulaEmisor;
             public readonly string situacion;
-            public readonly string tipoComprobante;
+            public readonly string tipoComprobante; 
 
             public FacturaMapCtx(
                 DateTime fechaFactura,

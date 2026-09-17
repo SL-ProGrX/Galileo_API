@@ -241,7 +241,7 @@ FETCH NEXT @fetch ROWS ONLY;";
                 };
 
                 // Tu código: (sortOrder == 0 ? "DESC" : "ASC")
-                var direction = filtros.sortOrder == 0 ? "DESC" : "ASC";
+                var direction = filtros.sortOrder == 0 ?  "ASC": "DESC";
 
                 // --- COUNT con mismos filtros ---
                 const string sqlCount = @"
@@ -271,27 +271,110 @@ WHERE id_banco = @banco
 
                 // --- LISTA con mismos filtros ---
                 var sqlList = $@"
-SELECT *
-FROM TES_BANCOS_CIERRES
-WHERE id_banco = @banco
-  AND (
-        @filtro IS NULL
-     OR CAST(id_banco AS NVARCHAR(50)) LIKE @like
-     OR CAST(idx AS NVARCHAR(50)) LIKE @like
-     OR usuario LIKE @like
-  )
-  AND (
-        @filtrarFechas = 0
-     OR (INICIO >= @fechaInicio AND CORTE <= @fechaCorte)
-  )
-ORDER BY {orderByField} {direction}";
+                    WITH BaseCierres AS (
+                        SELECT *
+                        FROM TES_BANCOS_CIERRES
+                        WHERE id_banco = @banco
+                          AND (
+                                @filtro IS NULL
+                             OR CAST(id_banco AS NVARCHAR(50)) LIKE @like
+                             OR CAST(idx AS NVARCHAR(50)) LIKE @like
+                             OR usuario LIKE @like
+                          )
+                          AND (
+                                @filtrarFechas = 0
+                             OR (INICIO >= @fechaInicio AND CORTE <= @fechaCorte)
+                          )
+                    ),
+                    PaginaCierres AS (
+                        SELECT *
+                        FROM BaseCierres
+                        ORDER BY {orderByField} {direction}";
 
                 if (usarPaginacion)
                 {
                     sqlList += @"
-OFFSET @offset ROWS
-FETCH NEXT @fetch ROWS ONLY;";
+                        OFFSET @offset ROWS
+                        FETCH NEXT @fetch ROWS ONLY";
                 }
+
+                sqlList += $@"
+                        )
+                        SELECT
+                            TBC.idx,
+                            TBC.id_banco,
+                            TBC.inicio,
+                            TBC.corte,
+                            TBC.saldo_inicial,
+                            TBC.total_debitos,
+                            TBC.total_creditos,
+                            TBC.saldo_final,
+                            TBC.ajuste,
+                            TBC.saldo_minimo,
+                            TBC.fecha,
+                            TBC.usuario,
+                            TBC.cheques_pendientes
+                        FROM PaginaCierres TBC
+                        WHERE ISNULL(TBC.cheques_pendientes, 0) <> 0
+
+                        UNION ALL
+
+                        SELECT
+                            TBC.idx,
+                            TBC.id_banco,
+                            TBC.inicio,
+                            TBC.corte,
+                            TBC.saldo_inicial,
+                            TBC.total_debitos,
+                            TBC.total_creditos,
+                            TBC.saldo_final,
+                            TBC.ajuste,
+                            TBC.saldo_minimo,
+                            TBC.fecha,
+                            TBC.usuario,
+                            ISNULL(CKP.cheques_pendientes, 0) AS cheques_pendientes
+                        FROM PaginaCierres TBC
+                        OUTER APPLY (
+                            SELECT ISNULL(SUM(ISNULL(CK.MontoCheques, 0)), 0) AS cheques_pendientes
+                            FROM (
+                                SELECT ISNULL(SUM(TT.MONTO), 0) AS MontoCheques
+                                FROM dbo.TES_TRANSACCIONES TT WITH (NOLOCK)
+                                WHERE TT.ID_BANCO = TBC.id_banco
+                                  AND TT.TIPO = 'CK'
+                                  AND (TT.DOCUMENTO_BANCO IS NULL OR TT.DOCUMENTO_BANCO = '')
+                                  AND (
+                                        TT.ESTADO IN ('I', 'T')
+                                     OR (
+                                            TT.ESTADO = 'A'
+                                        AND CONVERT(DATE, TT.FECHA_EMISION) <> CONVERT(DATE, TT.FECHA_ANULA)
+                                        AND TT.FECHA_ANULA = CONVERT(DATE, TBC.CORTE)
+                                        )
+                                  )
+                                  AND TT.FECHA_EMISION = CONVERT(DATE, TBC.CORTE)
+
+
+                                UNION ALL
+
+                                SELECT ISNULL(SUM(TT.MONTO), 0) AS MontoCheques
+                                FROM dbo.TES_TRANSACCIONES TT WITH (NOLOCK)
+                                WHERE TT.ID_BANCO = TBC.id_banco
+                                  AND TT.TIPO = 'CK'
+                                  AND (TT.DOCUMENTO_BANCO IS NOT NULL AND TT.DOCUMENTO_BANCO <> '')
+                                  AND TT.FECHA_BANCO >= CONVERT(DATE, TBC.CORTE)
+                                  AND (
+                                        TT.ESTADO IN ('I', 'T')
+                                     OR (
+                                            TT.ESTADO = 'A'
+                                        AND CONVERT(DATE, TT.FECHA_EMISION) <> CONVERT(DATE, TT.FECHA_ANULA)
+                                        AND TT.FECHA_ANULA = CONVERT(DATE, TBC.CORTE)
+                                        )
+                                  )
+                                  AND TT.FECHA_EMISION = CONVERT(DATE, TBC.CORTE)
+                                
+                            ) CK
+                        ) CKP
+                        WHERE ISNULL(TBC.cheques_pendientes, 0) = 0
+                        ORDER BY {orderByField} {direction};";
 
                 response.Result.lista = conn.Query<TesBancosSaldosHistoricoDto>(sqlList, new
                 {
@@ -301,9 +384,11 @@ FETCH NEXT @fetch ROWS ONLY;";
                     filtrarFechas = filtrarFechas ? 1 : 0,
                     fechaInicio,
                     fechaCorte,
+                    fechaInicioCheques = fechaCorte,
                     offset,
                     fetch
                 }).ToList();
+
             }
             catch (Exception ex)
             {

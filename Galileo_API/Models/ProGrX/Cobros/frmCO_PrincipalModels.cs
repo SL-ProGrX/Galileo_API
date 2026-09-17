@@ -21,7 +21,7 @@
     {
         public int operacion { get; set; }
         public string descripcion { get; set; } = string.Empty; // NORMAL
-        public string estado { get; set; } = string.Empty;      // NO
+        public string estado { get; set; } = string.Empty;      // SI/NO según REG_CREDITOS.opex
         /// <summary>Proceso actual de la operación.</summary>
         public string proceso { get; set; } = string.Empty;
 

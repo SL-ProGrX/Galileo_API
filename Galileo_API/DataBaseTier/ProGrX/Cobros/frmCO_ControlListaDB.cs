@@ -197,12 +197,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RTRIM(nombre) AS nombre
             FROM cbr_usuarios
             WHERE (@filtro = '' OR usuario LIKE '%' + @filtro + '%' OR nombre LIKE '%' + @filtro + '%')
+              AND (@solo_activos = 0 OR estado = 1)
+              AND (@excluir_usuario = '' OR usuario <> @excluir_usuario)
             ORDER BY nombre
             """;
 
                 var lista = conn.Query<CoControlListaUsuarioBusquedaRow>(
                     sql,
-                    new { filtro = request.filtro?.Trim() ?? string.Empty }).ToList();
+                    new
+                    {
+                        filtro = request.filtro?.Trim() ?? string.Empty,
+                        solo_activos = request.solo_activos,
+                        excluir_usuario = request.excluir_usuario?.Trim() ?? string.Empty
+                    }).ToList();
 
                 return DbHelper.CreateOkResponse(lista);
             }
