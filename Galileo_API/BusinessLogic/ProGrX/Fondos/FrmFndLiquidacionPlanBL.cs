@@ -71,5 +71,18 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
             return _db.FND_LiquidacionPlan_ArchivoRef_Cargar(codEmpresa, request);
         }
 
+        public ErrorDto<FndCasosInternosDto> FND_LiquidacionPlan_CasosInternos_Obtener(
+            int CodEmpresa,
+            int codOperadora,
+            string codPlan,
+            int validaTarjetaActiva)
+        {
+            return _db.FND_LiquidacionPlan_CasosInternos_Obtener(
+                CodEmpresa,
+                codOperadora,
+                codPlan,
+                validaTarjetaActiva);
+        }
+
     }
 }
