@@ -51,6 +51,8 @@ namespace Galileo.DataBaseTier
         private const string ErrorActualizarFactura =
             "Ocurri&oacute; un error al actualizar los precios de venta.";
 
+        private const string SolicitudRequerida = "La solicitud es requerida.";
+
         private readonly PortalDB _portalDb;
 
         /// <summary>
@@ -135,11 +137,19 @@ namespace Galileo.DataBaseTier
                 int CodEmpresa,
                 CambioPrecioArchivoCargaRequest request)
         {
+            if (request is null)
+            {
+                return DbHelper.CreateErrorResponse(
+                    SolicitudRequerida,
+                    CodigoValidacion,
+                    new CambioPrecioArchivoCargaResponse());
+            }
+
             string validacion =
                 INV_CambioPrecios_Archivo_Validar(
-                    request?.tipo_precio,
-                    request?.usuario,
-                    request?.registros);
+                    request.tipo_precio,
+                    request.usuario,
+                    request.registros);
 
             if (!string.IsNullOrEmpty(validacion))
             {
@@ -216,15 +226,22 @@ namespace Galileo.DataBaseTier
         /// <param name="request">Registros seleccionados y datos del proceso.</param>
         /// <returns>Resultado del procesamiento.</returns>
         public ErrorDto
-            INV_CambioPrecios_Archivo_Procesar(
-                int CodEmpresa,
-                CambioPrecioArchivoProcesarRequest request)
-        {
+         INV_CambioPrecios_Archivo_Procesar(
+             int CodEmpresa,
+             CambioPrecioArchivoProcesarRequest? request)
+            {
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse(
+                    SolicitudRequerida,
+                    CodigoValidacion);
+            }
+
             string validacion =
                 INV_CambioPrecios_Archivo_Validar(
-                    request?.tipo_precio,
-                    request?.usuario,
-                    request?.registros);
+                    request.tipo_precio,
+                    request.usuario,
+                    request.registros);
 
             if (!string.IsNullOrEmpty(validacion))
             {
