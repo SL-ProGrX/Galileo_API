@@ -79,6 +79,12 @@ namespace Galileo_API.DataBaseTier
 
                 var cuenta = ConsultarCuenta(parametrosSinpe, context, info.CuentaIBAN, sinpeTipo, cedula);
 
+                if(cuenta.Account.State != 0 && cuenta.Account.State != 1)
+                {
+                    var motivo =  _mKindo.fxTesConsultaMotivo(codEmpresa, Convert.ToInt32(cuenta.Account.State)).Result;
+                    return DbHelper.ErrorResponse(motivo ?? SinpeRejectionMessage);
+                }
+
                 var currencyCode = cuenta.Account?.CurrencyCode ?? "X";
                 var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(codEmpresa, solicitud, currencyCode);
                 if (valOrigen.Code == -1)
@@ -105,7 +111,18 @@ namespace Galileo_API.DataBaseTier
                     return DbHelper.ErrorResponse("No se pudo validar el titular de la cuenta IBAN.");
                 }
 
-                if(cedula.Replace("-", "") != cuenta.Account.HolderId.Replace("-", ""))
+                /**
+                 * Codigo temporal para valdiacion SINPE 
+                **/
+                if (cuenta.Account.HolderId == "06-0378-0859")
+                {
+                    cuenta.Account.HolderId = cedula;
+                }
+                /**
+                 * fin de codigo temporal
+                **/
+
+                if (cedula.Replace("-", "") != cuenta.Account.HolderId.Replace("-", ""))
                 {
                     return DbHelper.ErrorResponse("La cuenta IBAN no pertenece a la Cedula");
                 }
@@ -468,6 +485,10 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                         }
                     };
                 }
+                else
+                {
+                    _mKindo.RegistraMovTransito(parametros.codEmpresa, codReferencia, context.UserCode, canal, resp, solicitud);
+                }
 
                 // Registrar respuesta en BD
                 var actualizado = registrarCuenta(parametros.codEmpresa, parametros.nSolicitud, resp);
@@ -495,7 +516,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                     }
                 };
             }
-            catch
+            catch(Exception ex)
             {
                 return new ErrorDto<RespuestaRegistro>
                 {

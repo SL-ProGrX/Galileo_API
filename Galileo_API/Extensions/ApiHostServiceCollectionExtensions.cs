@@ -174,17 +174,6 @@ public static class ApiHostServiceCollectionExtensions
                 options.Events = new JwtBearerEvents
                 {
                     OnAuthenticationFailed = _ => Task.CompletedTask,
-                    OnTokenValidated = context =>
-                    {
-                        var sessionId = context.Principal?.FindFirst("sid")?.Value;
-                        var sessions = context.HttpContext.RequestServices.GetRequiredService<AuthSessionStore>();
-                        if (string.IsNullOrWhiteSpace(sessionId) || !sessions.IsSessionActive(sessionId))
-                        {
-                            context.Fail("La sesión ya no está activa.");
-                        }
-
-                        return Task.CompletedTask;
-                    },
                     OnChallenge = context =>
                     {
                         context.HandleResponse();

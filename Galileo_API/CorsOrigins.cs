@@ -10,7 +10,8 @@ internal static class CorsOrigins
         "http://localhost:61968",
         "http://localhost:61969",
         "https://progrxpruebas.aseccss.com",
-        "https://progrxweb.com"
+        "https://progrxweb.com",
+        "http://localhost:4176"
     };
 
     public static readonly HashSet<string> Prod = new(StringComparer.OrdinalIgnoreCase)

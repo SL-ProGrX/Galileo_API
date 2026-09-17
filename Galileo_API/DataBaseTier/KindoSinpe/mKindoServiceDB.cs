@@ -565,7 +565,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                     {
                         CuentaIBAN = result.CUENTA_IBAN,
                         DesProducto = result.DesProducto,
-                        Estado = result.ESTADO,
+                        Estado = (result.ESTADO == "A")? 1 : 0,
                         IdTitular = result.IdTitular,
                         Moneda = result.MONEDA,
                         NombreTitular = result.NombreTitular,
@@ -1105,11 +1105,13 @@ WHERE REFERENCIA_SINPE = @referencia;";
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
+                var cedulaFormateada = formateoCedula(request.identificacion);
+
                 const string query = @"exec sp_Sinpe_ObtenerInformacionCliente @Identificacion";
 
                 var result = connection.QueryFirstOrDefault<dynamic>(query, new
                 {
-                    Identificacion = request.identificacion,
+                    Identificacion = cedulaFormateada,
                 });
 
                 var nombre = (string?)result?.NOMBRE;
@@ -1148,12 +1150,14 @@ WHERE REFERENCIA_SINPE = @referencia;";
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
+                var cedulaFormateada = formateoCedula(request.identificacion);
+
                 var query = $@"exec sp_Sinpe_Obtener_ProductosporCliente
                                         @CEDULAPERSONA ";
 
                 var result = connection.Query<dynamic>(query, new
                 {
-                    CEDULAPERSONA = request.identificacion,
+                    CEDULAPERSONA = cedulaFormateada,
                 }).ToList();
 
                 if (result.Count == 0)
@@ -2018,7 +2022,7 @@ WHERE COD_EMPRESA = @codEmpresa;";
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-            const string Query = @"SELECT SINPE_PRODUCTO, TIPO_SINPE
+            const string Query = @"SELECT SINPE_PRODUCTO,  MOV_SINPE_TIPOS as TIPO_SINPE
                              FROM dbo.fxSinpe_Valida_MovimientosPermitidos(@iban);";
 
             var response = conn.QueryFirstOrDefault<dynamic>(Query, new { iban });
@@ -2145,6 +2149,7 @@ WHERE COD_EMPRESA = @codEmpresa;";
             try
             {
                 var solicitud = fxTesConsultaSolicitud(CodEmpresa,Convert.ToInt32(Nsolicitud)).Result;
+             
 
                 //1) Consulto Cod Divisa Origen
                 const string qryDivisa = "SELECT COD_DIVISA FROM TES_BANCOS WHERE ESTADO = 'A' AND ID_BANCO = @id_banco";
@@ -2152,7 +2157,16 @@ WHERE COD_EMPRESA = @codEmpresa;";
                     new { id_banco = solicitud.id_banco }).FirstOrDefault();
                 string divisaOrigen = GetCurrencyCodeDes(cod_divisa_origen);
 
-                if(divisaOrigen != cod_divisa)
+                //si cod_divisa = 'X' 
+                if(cod_divisa == "X")
+                {
+                    cod_divisa = ValidaCuentaDestinoIBAN(connection, solicitud.Codigo, solicitud.Cuenta);
+                    cod_divisa = GetCurrencyCodeDes(cod_divisa);
+                }
+                
+
+                solicitud.Divisa = GetCurrencyCodeDes(solicitud.Divisa);
+                if (divisaOrigen != cod_divisa)
                 {
                     return new ErrorDto
                     {
@@ -2177,6 +2191,18 @@ WHERE COD_EMPRESA = @codEmpresa;";
             }
         }
 
+        private string ValidaCuentaDestinoIBAN(SqlConnection connection , string cedula, string iban)
+        {
+            const string querySolicitud = @"
+                SELECT TOP (1)
+                    COD_DIVISA
+                FROM SYS_CUENTAS_BANCARIAS
+                WHERE ACTIVA = 1 AND IDENTIFICACION = @cedula AND CUENTA_INTERNA = @iban;";
+
+            return connection.QueryFirstOrDefault<string>(
+                querySolicitud,
+                new { cedula = cedula, iban = iban });
+        }
         private static void ValidarStoredProcedurePermitido(
     string storedProcedure,
     ISet<string> storedProceduresPermitidos)
@@ -2319,6 +2345,19 @@ WHERE COD_REFERENCIA = @codReferencia;";
                 nSolicitud = nsolicitud
             };
             DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, Query, parametros);
+        }
+
+        private string formateoCedula(string cedula)
+        {
+            if (string.IsNullOrWhiteSpace(cedula))
+            {
+                return string.Empty;
+            }
+
+            //quito zero adelante, - y espacios en blanco
+            string cedulaForm = cedula.TrimStart('0').Replace("-", "").Replace(" ", "");
+
+            return cedulaForm;
         }
 
         #endregion
