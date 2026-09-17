@@ -61,6 +61,10 @@ namespace Galileo.Models.ProGrX.Fondos
 
         public bool chktarjetaactiva_valida { get; set; } = false;
 
+        public int ti_casos { get; set; } = 0;
+
+        public decimal ti_monto { get; set; } = 0;
+
         public string? notas { get; set; } = string.Empty;
 
         public string? cod_institucion { get; set; } = string.Empty;
@@ -215,6 +219,12 @@ namespace Galileo.Models.ProGrX.Fondos
     public sealed class FndArchivoRefCargaRequest
     {
         public List<FndConsultaPlanRowDto> lineas { get; set; } = new();
+    }
+
+    public sealed class FndCasosInternosDto
+    {
+        public int casos { get; set; } = 0;
+        public decimal monto { get; set; } = 0;
     }
 
     public class ParametroConn
