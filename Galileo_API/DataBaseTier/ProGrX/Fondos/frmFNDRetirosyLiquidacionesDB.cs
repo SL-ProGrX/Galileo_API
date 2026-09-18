@@ -160,8 +160,9 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
         public ErrorDto<List<DropDownListaGenericaModel>> FND_RetLiq_CuentasBancarias_Obtener(int CodEmpresa, string Cedula, int Banco)
         {
+
             var result = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
-                connection.Query(
+                connection.Query<FndRetLiqCuentaBancariaSp>(
                     SpCuentasBancarias,
                     new
                     {
@@ -170,10 +171,10 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         DivisaCheck = 1
                     },
                     commandType: System.Data.CommandType.StoredProcedure)
-                .Select(row => new DropDownListaGenericaModel
+                .Select(c => new DropDownListaGenericaModel
                 {
-                    item = row.IdX,
-                    descripcion = row.itmX
+                    item = string.IsNullOrWhiteSpace(c.idx) ? c.cuenta_interna : c.idx,
+                    descripcion = string.IsNullOrWhiteSpace(c.itmx) ? c.cuenta_desc : c.itmx
                 }).ToList());
 
             return new ErrorDto<List<DropDownListaGenericaModel>>
@@ -182,6 +183,18 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 Description = result.Description,
                 Result = result.Result ?? new List<DropDownListaGenericaModel>()
             };
+        }
+
+        /// <summary>
+        /// Columnas de spSys_Cuentas_Bancarias (igual que TesCuentasBancarias / CuentaListaData).
+        /// </summary>
+        private sealed class FndRetLiqCuentaBancariaSp
+        {
+            public string cuenta_interna { get; set; } = string.Empty;
+            public string cuenta_desc { get; set; } = string.Empty;
+            public string idx { get; set; } = string.Empty;
+            public string itmx { get; set; } = string.Empty;
+            public int prioridad { get; set; }
         }
 
         /// <summary>
@@ -385,14 +398,15 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns></returns>
         public ErrorDto<FndRetLiqRentaGlobalData> FND_RetLiq_RentaGlobal_Obtener(int CodEmpresa, string Cedula, decimal RndRetiro, string Plan)
         {
+            // spFnd_Renta_Global: @Cedula, @Corte, @MntRetiro, @Plan (mismo contrato que AF Renuncia / Liquidación)
             var result = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
                 connection.QueryFirstOrDefault<FndRetLiqRentaGlobalData>(
                     SpRentaGlobal,
                     new
                     {
                         Cedula = NormalizarTexto(Cedula),
-                        Fecha = DateTime.Now,
-                        RndRetiro,
+                        Corte = DateTime.Now,
+                        MntRetiro = RndRetiro,
                         Plan = NormalizarTexto(Plan)
                     },
                     commandType: System.Data.CommandType.StoredProcedure));
