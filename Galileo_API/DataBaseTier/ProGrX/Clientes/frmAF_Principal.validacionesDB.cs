@@ -96,6 +96,10 @@ namespace Galileo.DataBaseTier
             p.Add("@TraCanton", req.TraCanton);
             p.Add("@TraDistrito", req.TraDistrito);
             p.Add("@TraDireccion", req.TraDireccion);
+            p.Add("@PaisResidencia", req.PaisResidencia);
+            p.Add("@OrigenRecursos", req.OrigenRecursos);
+            p.Add("@OrigenRecursosOtros", req.OrigenRecursosOtros);
+            p.Add("@OtrosIngresos", req.OtrosIngresos);
 
             return p;
         }
