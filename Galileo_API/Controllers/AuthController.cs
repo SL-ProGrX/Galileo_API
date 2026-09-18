@@ -97,6 +97,11 @@ public sealed class AuthController : ControllerBase
         if (!IsSupportedApplication(application)) return BadRequest(new { status = "invalidApplication" });
 
         var cookieName = GetCookieName(application);
+        if (Request.Cookies.TryGetValue(cookieName, out var refreshToken) && !string.IsNullOrWhiteSpace(refreshToken))
+        {
+            _auth.RevokeRefreshToken(refreshToken);
+        }
+
         Response.Cookies.Delete(cookieName, CookieOptions());
         return NoContent();
     }

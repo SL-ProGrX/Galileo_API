@@ -10,6 +10,7 @@ public sealed class AuthBL
     private readonly PerfilUsuarioDB _perfilDb;
     private readonly AccessTokenService _accessTokenService;
     private readonly AuthSessionStore _sessionStore;
+    private readonly JwtDto _jwtSettings;
 
     public AuthBL(
         IConfiguration configuration,
@@ -20,6 +21,7 @@ public sealed class AuthBL
         _perfilDb = new PerfilUsuarioDB(configuration);
         _accessTokenService = accessTokenService;
         _sessionStore = sessionStore;
+        _jwtSettings = configuration.GetSection("Jwt").Get<JwtDto>() ?? new JwtDto();
     }
 
     public async Task<AuthResponseDto> LoginAsync(AuthLoginRequest request, string application)
@@ -165,26 +167,27 @@ public sealed class AuthBL
     public bool TryRefresh(string refreshToken, string application, out AuthSessionResponse response, out string replacementRefreshToken)
     {
         response = default!;
-        if (!_accessTokenService.TryValidateRefreshToken(
-            refreshToken,
-            application,
-            out var user,
-            out var sessionId,
-            out var authenticationMethod))
+        replacementRefreshToken = string.Empty;
+
+        if (!_sessionStore.TryRotateRefreshToken(refreshToken, application, out var session, out replacementRefreshToken))
         {
-            replacementRefreshToken = string.Empty;
             return false;
         }
 
-        response = _accessTokenService.CreateAccessToken(user, application, sessionId, authenticationMethod);
-        replacementRefreshToken = _accessTokenService.CreateRefreshToken(user, application, sessionId, authenticationMethod);
+        response = _accessTokenService.CreateAccessToken(session.User, application, session.SessionId, session.AuthenticationMethod);
         return true;
+    }
+
+    public void RevokeRefreshToken(string refreshToken)
+    {
+        _sessionStore.Revoke(refreshToken);
     }
 
     private AuthResponseDto CreateAuthenticatedResponse(AuthUserDto user, string application, string authenticationMethod = "pwd")
     {
-        var sessionId = Guid.NewGuid().ToString("N");
-        var token = _accessTokenService.CreateAccessToken(user, application, sessionId, authenticationMethod);
+        var refreshDays = Math.Clamp(_jwtSettings.RefreshTokenDays, 1, 30);
+        var session = _sessionStore.CreateSession(user, application, TimeSpan.FromDays(refreshDays), authenticationMethod);
+        var token = _accessTokenService.CreateAccessToken(user, application, session.SessionId, authenticationMethod);
 
         return new AuthResponseDto
         {
@@ -192,7 +195,7 @@ public sealed class AuthBL
             AccessToken = token.AccessToken,
             ExpiresAtUtc = token.ExpiresAtUtc,
             User = token.User,
-            RefreshToken = _accessTokenService.CreateRefreshToken(user, application, sessionId, authenticationMethod),
+            RefreshToken = session.RefreshToken,
         };
     }
 

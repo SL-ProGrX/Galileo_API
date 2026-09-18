@@ -5,13 +5,93 @@ using Galileo.Models.Auth;
 namespace Galileo.BusinessLogic.Auth;
 
 /// <summary>
-/// Stores only short-lived MFA challenges in process memory. Authentication
-/// sessions and refresh tokens are stateless signed JWTs.
+/// Stores refresh sessions and pre-authentication challenges with one-time rotation.
+/// This first PR keeps the store process-local; a shared persistent implementation is
+/// required before running multiple API instances or expecting sessions to survive restarts.
 /// </summary>
 public sealed class AuthSessionStore
 {
     private readonly object _sync = new();
+    private readonly Dictionary<string, SessionState> _sessionsByRefreshHash = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ChallengeState> _challengesByHash = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _revokedSessionIds = new(StringComparer.Ordinal);
+
+    public SessionState CreateSession(AuthUserDto user, string application, TimeSpan lifetime, string authenticationMethod)
+    {
+        var now = DateTime.UtcNow;
+        var session = new SessionState(
+            Guid.NewGuid().ToString("N"),
+            user,
+            application,
+            now.Add(lifetime),
+            CreateOpaqueToken(),
+            authenticationMethod);
+
+        lock (_sync)
+        {
+            _sessionsByRefreshHash[Hash(session.RefreshToken)] = session;
+        }
+
+        return session;
+    }
+
+    public bool TryRotateRefreshToken(
+        string rawRefreshToken,
+        string application,
+        out SessionState session,
+        out string replacementRefreshToken)
+    {
+        session = default!;
+        replacementRefreshToken = string.Empty;
+        var hash = Hash(rawRefreshToken);
+
+        lock (_sync)
+        {
+            if (!_sessionsByRefreshHash.TryGetValue(hash, out var current))
+            {
+                return false;
+            }
+
+            if (current.Used || current.Revoked || current.ExpiresAtUtc <= DateTime.UtcNow ||
+                !string.Equals(current.Application, application, StringComparison.OrdinalIgnoreCase))
+            {
+                current.Revoked = true;
+                _revokedSessionIds.Add(current.SessionId);
+                return false;
+            }
+
+            current.Used = true;
+            replacementRefreshToken = CreateOpaqueToken();
+            var replacement = current with { RefreshToken = replacementRefreshToken, Used = false };
+            _sessionsByRefreshHash[Hash(replacementRefreshToken)] = replacement;
+            session = replacement;
+            return true;
+        }
+    }
+
+    public void Revoke(string rawRefreshToken)
+    {
+        lock (_sync)
+        {
+            if (_sessionsByRefreshHash.TryGetValue(Hash(rawRefreshToken), out var session))
+            {
+                session.Revoked = true;
+                _revokedSessionIds.Add(session.SessionId);
+            }
+        }
+    }
+
+    public bool IsSessionActive(string sessionId)
+    {
+        lock (_sync)
+        {
+            return !_revokedSessionIds.Contains(sessionId) &&
+                _sessionsByRefreshHash.Values.Any(session =>
+                    session.SessionId == sessionId &&
+                    !session.Revoked &&
+                    session.ExpiresAtUtc > DateTime.UtcNow);
+        }
+    }
 
     public ChallengeState CreateChallenge(AuthUserDto user, string application, IReadOnlyCollection<string> methods)
     {
@@ -91,6 +171,18 @@ public sealed class AuthSessionStore
     private static string Hash(string value)
     {
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value ?? string.Empty)));
+    }
+
+    public sealed record SessionState(
+        string SessionId,
+        AuthUserDto User,
+        string Application,
+        DateTime ExpiresAtUtc,
+        string RefreshToken,
+        string AuthenticationMethod)
+    {
+        public bool Used { get; set; }
+        public bool Revoked { get; set; }
     }
 
     public sealed record ChallengeState(
