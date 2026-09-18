@@ -99,7 +99,7 @@ namespace Galileo_API.DataBaseTier
                 return DbHelper.ErrorResponse(motivo ?? SinpeRejectionMessage);
             }
 
-            var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(codEmpresa, solicitud, cuenta.Account?.CurrencyCode ?? "X");
+            var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(codEmpresa, solicitud, cuenta.Account.CurrencyCode ?? "X");
             if (valOrigen.Code == -1)
                 return DbHelper.ErrorResponse(valOrigen.Description);
 
