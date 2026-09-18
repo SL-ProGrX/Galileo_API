@@ -123,7 +123,7 @@ namespace Galileo_API.DataBaseTier
             if (cedula.Replace("-", "") != cuenta.Account.HolderId.Replace("-", ""))
                 return DbHelper.ErrorResponse("La cuenta IBAN no pertenece a la Cedula");
 
-            return ConstruirRespuestaEstado(codEmpresa, cuenta.Account.State ?? 0, info, cuenta);
+            return ConstruirRespuestaEstado(codEmpresa, cuenta.Account.State.Value, info, cuenta);
         }
         private ErrorDto VerificarServicioDisponible(string uriConn, ReqBase context)
         {
