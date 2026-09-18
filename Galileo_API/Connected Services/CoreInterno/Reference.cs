@@ -1590,10 +1590,10 @@ namespace CoreInterno
     public partial class CL_InformacionCliente : object
     {
         
-        private bool ExisteField;
+        private bool ExisteField { get; set; }
         
-        private string NombreField;
-        
+        private string NombreField { get; set; }
+
         [System.Runtime.Serialization.DataMemberAttribute()]
         public bool Existe
         {
@@ -2067,7 +2067,7 @@ namespace CoreInterno
     {
         
         [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=0)]
-        public string identificacion;
+        public string identificacion { get; set; }
         
         public ObtenerInformacionClienteRequest()
         {

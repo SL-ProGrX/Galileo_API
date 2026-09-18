@@ -454,8 +454,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     ? tags.tag_recepcion
                     : tags.tag_devolucion,
                 Observacion = movimiento == MovimientoRecepcion
-                    ? "Recibida la documentacion de la liquidacion"
-                    : "Devolucion la documentacion de la liquidacion"
+                    ? "Recibida la documentación de la liquidación"
+                    : "Devolución la documentación de la liquidación"
             };
         }
 
@@ -575,7 +575,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
             return DbHelper.CreateOkResponse(
                 aplicados,
-                "Proceso concluido con exito.");
+                "Proceso concluido con éxito.");
         }
 
         /// <summary>

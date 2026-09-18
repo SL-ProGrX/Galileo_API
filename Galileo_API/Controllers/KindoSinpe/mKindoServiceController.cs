@@ -1,4 +1,4 @@
-﻿using Galileo.Models.KindoSinpe;
+using Galileo.Models.KindoSinpe;
 using Galileo_API.BusinessLogic.KindoSinpe;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -147,9 +147,22 @@ namespace Galileo_API.Controllers.KindoSinpe
         }
 
         [HttpPost("ObtenerInformacionCliente/{CodEmpresa}")]
-        public CoreInterno.ObtenerInformacionClienteResponse ObtenerInformacionCliente(int CodEmpresa, CoreInterno.ObtenerInformacionClienteRequest request)
+        [ProducesResponseType(typeof(CoreInterno.ObtenerInformacionClienteResponse), StatusCodes.Status200OK)]
+        public IActionResult ObtenerInformacionCliente(int CodEmpresa, CoreInterno.ObtenerInformacionClienteRequest request)
         {
-            return _BL.ObtenerInformacionCliente(CodEmpresa, request);
+            var response = _BL.ObtenerInformacionCliente(CodEmpresa, request);
+
+            return Ok(new
+            {
+                ObtenerInformacionClienteResult = response.ObtenerInformacionClienteResult,
+                informacionCliente = response.informacionCliente == null
+                    ? null
+                    : new
+                    {
+                        response.informacionCliente.Nombre,
+                        response.informacionCliente.Existe,
+                    },
+            });
         }
 
         [HttpPost("ObtenerProductosPorCliente/{CodEmpresa}")]

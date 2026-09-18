@@ -86,7 +86,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 !cedulaTrim.All(char.IsDigit))
             {
                 return DbHelper.CreateErrorResponse<AfRecepcionDevolucionesTagsData?>(
-                    "La cedula no es valida.",
+                    "La cédula no es válida.",
                     -2,
                     null);
             }
@@ -109,7 +109,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 if (afiliacion is null)
                 {
                     return DbHelper.CreateErrorResponse<AfRecepcionDevolucionesTagsData?>(
-                        "No se encontro una afiliacion pendiente para la cedula indicada.",
+                        "No se encontró una afiliación pendiente para la cédula indicada.",
                         -2,
                         null);
                 }
@@ -175,7 +175,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     if (string.IsNullOrWhiteSpace(tags.Tag_Devolucion))
                     {
                         throw new InvalidOperationException(
-                            "No se puede realizar el proceso: no esta definida la etiqueta de devolucion.");
+                            "No se puede realizar el proceso: no está definida la etiqueta de devolución.");
                     }
 
                     int aplicados =
@@ -192,7 +192,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         {
                             Registros_Aplicados = aplicados
                         },
-                        "Proceso concluido con exito.");
+                        "Proceso concluido con éxito.");
                 }
                 catch
                 {
@@ -260,13 +260,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             if (string.IsNullOrWhiteSpace(tags.Tag_Aplicado))
             {
                 throw new InvalidOperationException(
-                    "Falta agregar el parametro 11 en la base de datos.");
+                    "Falta agregar el parámetro 11 en la base de datos.");
             }
 
             if (string.IsNullOrWhiteSpace(tags.Tag_Devolucion))
             {
                 throw new InvalidOperationException(
-                    "Falta agregar el parametro 12 en la base de datos.");
+                    "Falta agregar el parámetro 12 en la base de datos.");
             }
 
             int existeTag = connection.ExecuteScalar<int>(
@@ -291,7 +291,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             if (existeTag == 0)
             {
                 throw new InvalidOperationException(
-                    "El codigo de tag definido en los parametros para la Recepcion/Devolucion no existe.");
+                    "El código de tag definido en los parámetros para la Recepción/Devolución no existe.");
             }
 
             return tags;
@@ -412,7 +412,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 if (string.IsNullOrWhiteSpace(cedula) || item.Consec <= 0)
                 {
                     throw new InvalidOperationException(
-                        "La lista contiene registros no validos.");
+                        "La lista contiene registros no válidos.");
                 }
 
                 AF_frmAF_RecepcionDevolucionesTags_RegistraTag(
@@ -447,14 +447,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
             if (request.Items.Count == 0)
             {
-                return "Debe agregar al menos una cedula.";
+                return "Debe agregar al menos una cédula.";
             }
 
             if (request.Items.Any(item =>
                     string.IsNullOrWhiteSpace(item.Cedula) ||
                     item.Consec <= 0))
             {
-                return "La lista contiene registros no validos.";
+                return "La lista contiene registros no válidos.";
             }
 
             return null;

@@ -169,7 +169,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             {
                 return DbHelper.CreateErrorResponse<
                     FndRecepcionFondosTagsContratoResponse?>(
-                        "Debe indicar un plan y contrato validos.",
+                        "Debe indicar un plan y contrato válidos.",
                         -2,
                         null);
             }
@@ -178,7 +178,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             {
                 return DbHelper.CreateErrorResponse<
                     FndRecepcionFondosTagsContratoResponse?>(
-                        "El tipo de movimiento no es valido.",
+                        "El tipo de movimiento no es válido.",
                         -2,
                         null);
             }
@@ -200,7 +200,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 {
                     return DbHelper.CreateErrorResponse<
                         FndRecepcionFondosTagsContratoResponse?>(
-                            "No se encontro un contrato con el estado requerido.",
+                            "No se encontró un contrato con el estado requerido.",
                             -2,
                             null);
                 }
@@ -243,7 +243,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             if (string.IsNullOrWhiteSpace(tipo))
             {
                 return DbHelper.CreateErrorResponse(
-                    "El tipo de movimiento no es valido.",
+                    "El tipo de movimiento no es válido.",
                     -2,
                     new List<FndRecepcionFondosTagsPendienteResponse>());
             }
@@ -311,9 +311,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     string tag = movimiento == MovimientoRecepcion
                         ? tags.tag_recepcion
                         : tags.tag_devolucion;
-                    string observacion = movimiento == MovimientoRecepcion
-                        ? "Recibida la documentacion del contrato"
-                        : "Devolucion de la documentacion del contrato";
+                    string notas = movimiento == MovimientoRecepcion
+                        ? "Recibida la documentación del contrato"
+                        : "Devolución de la documentación del contrato";
                     int aplicados = 0;
 
                     foreach (var item in request.contratos
@@ -347,7 +347,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                                 Codigo = contrato.cod_plan,
                                 Tag = tag,
                                 Usuario = request.usuario.Trim(),
-                                Observacion = observacion,
+                                Notas = notas,
                                 Documento = contrato.cod_contrato.ToString(),
                                 Modulo,
                                 Llave_01 = contrato.cod_plan,
@@ -365,7 +365,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         {
                             registros_aplicados = aplicados
                         },
-                        "Proceso concluido con exito.");
+                        "Proceso concluido con éxito.");
                 }
                 catch
                 {
@@ -407,7 +407,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             if (request.cod_contrato.HasValue && request.cod_contrato <= 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "El contrato no es valido.",
+                    "El contrato no es válido.",
                     -2,
                     new List<FndRecepcionFondosTagsHistorialResponse>());
             }
@@ -568,7 +568,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 string.IsNullOrWhiteSpace(tags.tag_recepcion_devolucion))
             {
                 throw new InvalidOperationException(
-                    "Falta configurar uno de los parametros de etiquetas 10, 11 o 12.");
+                    "Falta configurar uno de los parámetros de etiquetas 10, 11 o 12.");
             }
 
             int existentes = connection.ExecuteScalar<int>(
@@ -596,7 +596,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             if (existentes != 3)
             {
                 throw new InvalidOperationException(
-                    "Uno o mas codigos de etiqueta configurados no existen.");
+                    "Uno o mas códigos de etiqueta configurados no existen.");
             }
 
             return tags;
@@ -627,7 +627,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         request.movimiento)))
             {
                 return DbHelper.CreateErrorResponse(
-                    "El tipo de movimiento no es valido.",
+                    "El tipo de movimiento no es válido.",
                     -2,
                     new FndRecepcionFondosTagsAplicarResponse());
             }
@@ -637,7 +637,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         x.cod_contrato <= 0))
             {
                 return DbHelper.CreateErrorResponse(
-                    "La lista contiene planes o contratos no validos.",
+                    "La lista contiene planes o contratos no válidos.",
                     -2,
                     new FndRecepcionFondosTagsAplicarResponse());
             }

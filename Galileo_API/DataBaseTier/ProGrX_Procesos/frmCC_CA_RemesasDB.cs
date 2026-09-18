@@ -15,11 +15,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
     {
         private readonly PortalDB _portalDB;
         private readonly MRecibos _mRecibos;
+        private readonly MProGrxMain _mProGrxMain;
 
         public FrmCcCaRemesasDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
             _mRecibos = new MRecibos(config);
+            _mProGrxMain = new MProGrxMain(config);
         }
 
         #region Envio
@@ -66,23 +68,70 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 response.filtros.Add(new DropDownListaGenericaModel { item = "N", descripcion = "Nombre" });
                 response.filtros.Add(new DropDownListaGenericaModel { item = "O", descripcion = "Operación" });
 
-                var hoy = DateTime.Today;
-                var periodo = new DateTime(hoy.Year, hoy.Month, 1, 0, 0, 0, DateTimeKind.Local);
-                for (var i = 0; i <= 6; i++)
-                {
-                    var valor = periodo.AddMonths(i).ToString("yyyyMM");
-                    response.procesos.Add(new DropDownListaGenericaModel
-                    {
-                        item = valor,
-                        descripcion = valor
-                    });
-                }
+                response.procesos = ObtenerProcesos(conn, codEmpresa);
 
                 return DbHelper.CreateOkResponse(response);
             }
             catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<CcCaRemesasCatalogosResponse>(ex.Message, -1, response);
+            }
+        }
+
+        /// <summary>
+        /// Construye la lista de periodos de proceso a partir de GLOBALES.glngFechaCR
+        /// más los 6 siguientes, usando dbo.fxSIFPrmProcesoSig igual que el VB6.
+        /// </summary>
+        /// <param name="conn">Conexión abierta de la empresa.</param>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <returns>Lista de periodos en formato yyyyMM.</returns>
+        private List<DropDownListaGenericaModel> ObtenerProcesos(IDbConnection conn, int codEmpresa)
+        {
+            var lista = new List<DropDownListaGenericaModel>(7);
+
+            decimal periodo = _mProGrxMain.glngFechaCR(codEmpresa);
+
+            if (periodo <= 0)
+            {
+                var hoy = DateTime.Today;
+                periodo = (hoy.Year * 100) + hoy.Month;
+            }
+
+            for (var i = 0; i < 7; i++)
+            {
+                var valor = ((long)periodo).ToString(CultureInfo.InvariantCulture);
+
+                lista.Add(new DropDownListaGenericaModel
+                {
+                    item = valor,
+                    descripcion = valor
+                });
+
+                periodo = FechaProcesoSiguiente(conn, periodo);
+            }
+
+            return lista;
+        }
+
+        /// <summary>
+        /// Obtiene el siguiente periodo de proceso. Equivale a fxFechaProcesoSiguiente del VB6.
+        /// </summary>
+        /// <param name="conn">Conexión abierta de la empresa.</param>
+        /// <param name="proceso">Periodo actual en formato yyyyMM.</param>
+        /// <returns>Periodo siguiente en formato yyyyMM.</returns>
+        private static decimal FechaProcesoSiguiente(IDbConnection conn, decimal proceso)
+        {
+            try
+            {
+                var siguiente = conn.ExecuteScalar<decimal?>(
+                    "select dbo.fxSIFPrmProcesoSig(@Proceso) as Result",
+                    new { Proceso = proceso });
+
+                return siguiente.GetValueOrDefault(proceso);
+            }
+            catch (SqlException)
+            {
+                return proceso;
             }
         }
 
@@ -236,29 +285,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                     return DbHelper.ErrorResponse("No existen registros seleccionados.", -2);
 
                 var procesoTexto = (request.proceso ?? string.Empty).Trim();
-                DateTime fechaProceso;
 
+                // Solo se valida el formato del periodo: el VB6 calcula pInicio/pCorte
+                // pero nunca los envía a spPrm_CA_Remesa_Envia_Add.
                 if (!DateTime.TryParseExact(
                         procesoTexto + "01",
                         "yyyyMMdd",
-                        System.Globalization.CultureInfo.InvariantCulture,
-                        System.Globalization.DateTimeStyles.None,
-                        out fechaProceso))
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.None,
+                        out _))
                 {
                     return DbHelper.ErrorResponse("El proceso indicado no es válido.", -2);
                 }
-
-                /**
-                Linea de codigo anterior
-                var fechaCorte = new DateTime(
-                    fechaProceso.Year,
-                    fechaProceso.Month,
-                    DateTime.DaysInMonth(fechaProceso.Year, fechaProceso.Month),
-                    0,
-                    0,
-                    0,
-                    DateTimeKind.Unspecified);
-                **/
 
                 foreach (var item in request.seleccionados)
                 {
@@ -395,11 +433,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             return texto.Length <= length ? texto : texto[..length];
         }
 
+        /// <summary>
+        /// Rellena por la izquierda hasta el largo indicado.
+        /// Equivale a SIFGlobal.fxStringRelleno(valor, "I", relleno, largo) del VB6,
+        /// que trunca el texto tomando los primeros caracteres.
+        /// </summary>
         private static string PadLeft(string? value, char fill, int length)
         {
-            return (value ?? string.Empty).Trim().PadLeft(length, fill)[^length..];
+            var texto = (value ?? string.Empty).Trim();
+            if (texto.Length > length)
+                texto = texto[..length];
+
+            return texto.PadLeft(length, fill);
         }
 
+        /// <summary>
+        /// Rellena por la derecha hasta el largo indicado.
+        /// Equivale a SIFGlobal.fxStringRelleno(valor, "D", relleno, largo) del VB6.
+        /// </summary>
         private static string PadRight(string? value, char fill, int length)
         {
             var texto = (value ?? string.Empty).Trim();
@@ -510,7 +561,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
 
             try
             {
-                var row = conn.QueryFirstOrDefault<dynamic>(
+                var row = (IDictionary<string, object>?)conn.QueryFirstOrDefault<dynamic>(
                     "spPrm_CA_Abonos_Aplica",
                     new
                     {
@@ -523,7 +574,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: 0);
 
-                response.pendientes = row == null ? 0 : Convert.ToInt32(row.Procesado ?? 0);
+                // VB6 lee rs.Fields(0).Value, es decir la primera columna sin importar su nombre.
+                response.pendientes = LeerPrimeraColumnaEntera(row);
 
                 return DbHelper.CreateOkResponse(response);
             }
@@ -531,6 +583,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             {
                 return DbHelper.CreateErrorResponse<CcCaRemesasRecibeAplicaResponse>(ex.Message, -1, response);
             }
+        }
+
+        /// <summary>
+        /// Obtiene el valor entero de la primera columna devuelta por un stored procedure.
+        /// Equivale a rs.Fields(0).Value del VB6.
+        /// </summary>
+        /// <param name="row">Fila devuelta por Dapper como diccionario.</param>
+        /// <returns>Valor entero de la primera columna, o cero si no existe.</returns>
+        private static int LeerPrimeraColumnaEntera(IDictionary<string, object>? row)
+        {
+            if (row == null || row.Count == 0)
+                return 0;
+
+            var valor = row.Values.First();
+
+            return valor == null ? 0 : Convert.ToInt32(valor);
         }
 
         #endregion
