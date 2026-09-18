@@ -10,6 +10,8 @@
         public List<DropDownListaGenericaModel>? Sociedades { get; set; }
         public List<DropDownListaGenericaModel>? ActividadesEconomicas { get; set; }
         public List<DropDownListaGenericaModel>? Paises { get; set; }
+        public List<DropDownListaGenericaModel>? Generos { get; set; }
+        public List<DropDownListaGenericaModel>? OrigenRecursos { get; set; }
         public List<DropDownListaGenericaModel>? EstadosPersonaIngreso { get; set; }
         public List<DropDownListaGenericaModel>? Nacionalidades { get; set; }
         public List<DropDownListaGenericaModel>? NivelAcademico { get; set; }
@@ -138,6 +140,13 @@
         public string? pep_cargo { get; set; }
         public string? tipo_ces { get; set; }
         public string? Cod_Pais_Nac { get; set; }
+        public string? Cod_Pais_Residencia { get; set; }
+        public string? PaisResidencia { get; set; }
+        public string? Cod_Origen_Recursos { get; set; }
+        public string? OrigenRecursosDesc { get; set; }
+        public decimal? Otros_Ingresos { get; set; }
+        public string? Origen_Recursos_Otros { get; set; }
+        public string? GeneroDesc { get; set; }
         public int? Ind_Activo { get; set; }
         public DateTime? Fecha_Inactiva { get; set; }
         public DateTime? Fecha_Activa { get; set; }
@@ -579,6 +588,12 @@
         public string? TraCanton { get; set; }
         public string? TraDistrito { get; set; }
         public string? TraDireccion { get; set; }          // hasta 1000 chars
+
+        // -------- Residencia / Otros ingresos ----------
+        public string? PaisResidencia { get; set; }
+        public string? OrigenRecursos { get; set; }
+        public string? OrigenRecursosOtros { get; set; }
+        public decimal OtrosIngresos { get; set; }
     }
 
     public class AfPersonaAddResultDto
