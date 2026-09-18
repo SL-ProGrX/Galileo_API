@@ -2,47 +2,47 @@
 {
     public class AutorizadorDto
     {
-        public string Usuario { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
-        public DateTime? Fecha { get; set; }
-        public string Estado { get; set; } = string.Empty;
-        public DateTime? Ult_Modificacion { get; set; }
+        public string usuario { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public DateTime? fecha { get; set; }
+        public string estado { get; set; } = string.Empty;
+        public DateTime? ult_modificacion { get; set; }
     }
 
     public class AutorizadorDataLista
     {
-        public int Total { get; set; }
-        public List<AutorizadorDto> Autorizadores { get; set; } = new List<AutorizadorDto>();
+        public int total { get; set; } = 0;
+        public List<AutorizadorDto> autorizadores { get; set; } = new();
     }
 
     public class UsuarioaCargoDto
     {
-        public string Usuario { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
-        public required bool Entradas { get; set; }
-        public required bool Salidas { get; set; }
-        public required bool Requisiciones { get; set; }
-        public required bool Traslados { get; set; }
-        public string Autorizador { get; set; } = string.Empty;
-        public string Tipo { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public bool entradas { get; set; } = false;
+        public bool salidas { get; set; } = false;
+        public bool requisiciones { get; set; } = false;
+        public bool traslados { get; set; } = false;
+        public string autorizador { get; set; } = string.Empty;
+        public string tipo { get; set; } = string.Empty;
     }
 
     public class UsuariosACargoDataLista
     {
-        public int Total { get; set; }
-        public List<UsuarioaCargoDto> Usuarios { get; set; } = new List<UsuarioaCargoDto>();
+        public int total { get; set; } = 0;
+        public List<UsuarioaCargoDto> usuarios { get; set; } = new();
     }
 
     public class UsuarioaCambioFechaDto
     {
-        public string Usuario { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
-        public string Tipo { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public string tipo { get; set; } = string.Empty;
     }
 
     public class UsuariosCambioFchDataLista
     {
-        public int Total { get; set; }
-        public List<UsuarioaCambioFechaDto> Usuarios { get; set; } = new List<UsuarioaCambioFechaDto>();
+        public int total { get; set; } = 0;
+        public List<UsuarioaCambioFechaDto> usuarios { get; set; } = new();
     }
 }

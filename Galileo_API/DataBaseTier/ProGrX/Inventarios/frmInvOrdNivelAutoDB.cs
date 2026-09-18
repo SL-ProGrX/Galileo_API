@@ -2,480 +2,887 @@
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
 using System.Data;
+using System.Text;
 
 namespace Galileo.DataBaseTier
 {
     public class FrmInvOrdNivelAutoDB
     {
+        private const int CodigoValidacion = -2;
+        private const string TipoEntrada = "E";
+        private const string TipoSalida = "S";
+        private const string TipoTraslado = "T";
+        private const string ProcedimientoAutorizadorEliminar =
+            "[spINV_W_Autorizador_Eliminar]";
+        private const string ProcedimientoUsuarioCargoActualizar =
+            "[spINV_W_UsuarioACargo_Actualizar]";
+
         private readonly IConfiguration _config;
 
-        #region Constructor y helpers
-
         /// <summary>
-        /// Inicializa una nueva instancia de la clase <see cref="FrmInvOrdNivelAutoDB"/>.
+        /// Inicializa el acceso a datos del formulario de niveles de autorización.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
         public FrmInvOrdNivelAutoDB(IConfiguration config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _config = config ??
+                throw new ArgumentNullException(nameof(config));
         }
 
         /// <summary>
-        /// Crea una instancia de <see cref="PortalDB"/> usando la configuración actual.
+        /// Obtiene la lista paginada de usuarios disponibles para autorización.
         /// </summary>
-        /// <returns>Instancia de acceso a configuración de base de datos.</returns>
-        private PortalDB CreatePortalDb() => new(_config);
-
-        /// <summary>
-        /// Crea una respuesta vacía para el listado de autorizadores.
-        /// </summary>
-        /// <returns>Listado vacío inicializado.</returns>
-        private static AutorizadorDataLista CrearAutorizadorListaVacia() => new()
-        {
-            Total = 0,
-            Autorizadores = new List<AutorizadorDto>()
-        };
-
-        /// <summary>
-        /// Crea una respuesta vacía para el listado de usuarios a cargo.
-        /// </summary>
-        /// <returns>Listado vacío inicializado.</returns>
-        private static UsuariosACargoDataLista CrearUsuariosACargoListaVacia() => new()
-        {
-            Total = 0,
-            Usuarios = new List<UsuarioaCargoDto>()
-        };
-
-        /// <summary>
-        /// Crea una respuesta vacía para el listado de usuarios con permiso de cambio de fecha.
-        /// </summary>
-        /// <returns>Listado vacío inicializado.</returns>
-        private static UsuariosCambioFchDataLista CrearUsuariosCambioFchListaVacia() => new()
-        {
-            Total = 0,
-            Usuarios = new List<UsuarioaCambioFechaDto>()
-        };
-
-
-
-        /// <summary>
-        /// Crea parámetros para usuario.
-        /// </summary>
-        /// <param name="usuario">Usuario.</param>
-        /// <returns>Objeto de parámetros para Dapper.</returns>
-        private static object CrearParametrosUsuario(string usuario) => new
-        {
-            Usuario = usuario,
-            usuario
-        };
-
-        /// <summary>
-        /// Crea parámetros para tipo.
-        /// </summary>
-        /// <param name="tipo">Tipo a filtrar.</param>
-        /// <returns>Objeto de parámetros para Dapper.</returns>
-        private static object CrearParametrosTipo(string tipo) => new
-        {
-            Tipo = tipo,
-            tipo
-        };
-
-        /// <summary>
-        /// Crea parámetros para usuario y tipo.
-        /// </summary>
-        /// <param name="usuario">Usuario.</param>
-        /// <param name="tipo">Tipo.</param>
-        /// <returns>Objeto de parámetros para Dapper.</returns>
-        private static object CrearParametrosUsuarioTipo(string usuario, string tipo) => new
-        {
-            Usuario = usuario,
-            usuario,
-            Tipo = tipo,
-            tipo
-        };
-
-        /// <summary>
-        /// Ejecuta un procedimiento almacenado que devuelve un código entero y lo transforma en <see cref="ErrorDto"/>.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="procedure">Nombre del procedimiento almacenado.</param>
-        /// <param name="values">Parámetros del procedimiento.</param>
-        /// <param name="errorMessage">Mensaje de error estándar.</param>
-        /// <returns>Respuesta estándar con el resultado del procedimiento.</returns>
-        private ErrorDto EjecutarProcedimientoConCodigo(int CodEmpresa, string procedure, object values, string errorMessage)
-        {
-            var result = DbHelper.WithConn<int>(CreatePortalDb(), CodEmpresa, connection =>
-                connection.QueryFirstOrDefault<int>(procedure, values, commandType: CommandType.StoredProcedure));
-
-            if (result.Code != 0)
-            {
-                return DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
-            }
-
-            return result.Result == 0
-                ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(errorMessage, result.Result);
-        }
-
-        #endregion
-
-        #region Autorizaciones
-
-        /// <summary>
-        /// Obtiene la lista paginada de autorizadores.
-        /// </summary>
-        /// <param name="CodCliente">Código de la empresa cliente.</param>
-        /// <param name="pagina">Fila inicial para paginación.</param>
-        /// <param name="paginacion">Cantidad de filas a retornar.</param>
+        /// <param name="CodCliente">Código de la empresa.</param>
+        /// <param name="pagina">Registro inicial de la página.</param>
+        /// <param name="paginacion">Cantidad de registros solicitados.</param>
         /// <param name="filtro">Filtro por usuario o descripción.</param>
-        /// <returns>Listado de autorizadores.</returns>
-        public ErrorDto<AutorizadorDataLista> Autorizadores_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        /// <returns>Lista paginada de usuarios y autorizadores.</returns>
+        public ErrorDto<AutorizadorDataLista> Autorizadores_Obtener(
+            int CodCliente,
+            int? pagina,
+            int? paginacion,
+            string? filtro)
         {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
-            {
-                var respuesta = CrearAutorizadorListaVacia();
-                respuesta.Total = connection.QueryFirstOrDefault<int>(
-                    "SELECT count(*) FROM usuarios U LEFT JOIN pv_orden_autorizadores A ON U.nombre = A.usuario WHERE U.Estado = 'A'");
-
-                var parametros = new DynamicParameters();
-                var queryBuilder = new System.Text.StringBuilder(@"SELECT U.nombre as Usuario,
-                                                                        U.descripcion,
-                                                                        A.fecha
-                                                                 FROM usuarios U
-                                                                 LEFT JOIN pv_orden_autorizadores A ON U.nombre = A.usuario
-                                                                 WHERE U.Estado = 'A'");
-
-                if (!string.IsNullOrWhiteSpace(filtro))
+            var result = DbHelper.WithConn(
+                CrearPortalDb(),
+                CodCliente,
+                connection =>
                 {
-                    queryBuilder.Append(" AND (U.nombre LIKE @Filtro OR U.DESCRIPCION LIKE @Filtro) ");
-                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
-                }
+                    var parametros = new DynamicParameters();
+                    var clausulaFiltro = CrearClausulaFiltro(
+                        filtro,
+                        parametros);
 
-                queryBuilder.Append(" ORDER BY A.fecha ASC ");
+                    var total = connection.QueryFirstOrDefault<int>(
+                        $"""
+                        SELECT COUNT(*)
+                        FROM usuarios U
+                        LEFT JOIN pv_orden_autorizadores A
+                            ON U.nombre = A.usuario
+                        WHERE U.estado = 'A'
+                        {clausulaFiltro}
+                        """,
+                        parametros);
 
-                if (pagina.HasValue && paginacion.HasValue)
-                {
-                    queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
-                    parametros.Add("Offset", pagina.Value);
-                    parametros.Add("Fetch", paginacion.Value);
-                }
+                    var consulta = new StringBuilder(
+                        $"""
+                        SELECT
+                            U.nombre AS usuario,
+                            U.descripcion AS descripcion,
+                            A.fecha AS fecha
+                        FROM usuarios U
+                        LEFT JOIN pv_orden_autorizadores A
+                            ON U.nombre = A.usuario
+                        WHERE U.estado = 'A'
+                        {clausulaFiltro}
+                        ORDER BY A.fecha DESC, U.nombre
+                        """);
 
-                respuesta.Autorizadores = connection.Query<AutorizadorDto>(queryBuilder.ToString(), parametros).ToList();
-                return respuesta;
-            });
+                    AgregarPaginacion(
+                        consulta,
+                        parametros,
+                        pagina,
+                        paginacion);
+
+                    return new AutorizadorDataLista
+                    {
+                        total = total,
+                        autorizadores = connection
+                            .Query<AutorizadorDto>(
+                                consulta.ToString(),
+                                parametros)
+                            .ToList()
+                    };
+                });
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? CrearAutorizadorListaVacia())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener autorizadores.", result.Code.GetValueOrDefault(-1), CrearAutorizadorListaVacia());
+                ? DbHelper.CreateOkResponse(
+                    result.Result ?? CrearAutorizadorListaVacia())
+                : DbHelper.CreateErrorResponse(
+                    result.Description ??
+                    "Error al obtener los autorizadores.",
+                    result.Code.GetValueOrDefault(-1),
+                    CrearAutorizadorListaVacia());
         }
 
         /// <summary>
-        /// Lista todos los usuarios, incluyendo autorizadores de la empresa.
+        /// Obtiene todos los usuarios activos e indica cuáles son autorizadores.
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <returns>Listado de usuarios y autorizadores.</returns>
-        public ErrorDto<List<AutorizadorDto>> Autorizador_ObtenerTodos(int CodEmpresa)
+        /// <returns>Lista de usuarios activos.</returns>
+        public ErrorDto<List<AutorizadorDto>> Autorizador_ObtenerTodos(
+            int CodEmpresa)
         {
+            const string query = """
+                SELECT
+                    U.nombre AS usuario,
+                    U.descripcion AS descripcion,
+                    A.fecha AS fecha
+                FROM usuarios U
+                LEFT JOIN pv_orden_autorizadores A
+                    ON U.nombre = A.usuario
+                WHERE U.estado = 'A'
+                ORDER BY A.fecha DESC, U.nombre
+                """;
+
             return DbHelper.ExecuteListQuery<AutorizadorDto>(
-                CreatePortalDb(),
+                CrearPortalDb(),
                 CodEmpresa,
-                @"SELECT U.nombre as Usuario,
-                         U.descripcion,
-                         A.fecha
-                  FROM usuarios U
-                  LEFT JOIN pv_orden_autorizadores A ON U.nombre = A.usuario
-                  WHERE U.Estado = 'A'
-                  ORDER BY A.fecha DESC");
+                query);
         }
 
         /// <summary>
-        /// Lista los autorizadores de la empresa.
+        /// Obtiene los usuarios registrados como autorizadores.
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <returns>Listado de autorizadores.</returns>
-        public ErrorDto<List<AutorizadorDto>> Autorizador_Obtener(int CodEmpresa)
+        /// <returns>Lista de autorizadores activos.</returns>
+        public ErrorDto<List<AutorizadorDto>> Autorizador_Obtener(
+            int CodEmpresa)
         {
+            const string query = """
+                SELECT
+                    U.nombre AS usuario,
+                    U.descripcion AS descripcion,
+                    A.fecha AS fecha
+                FROM usuarios U
+                INNER JOIN pv_orden_autorizadores A
+                    ON U.nombre = A.usuario
+                WHERE U.estado = 'A'
+                ORDER BY U.nombre
+                """;
+
             return DbHelper.ExecuteListQuery<AutorizadorDto>(
-                CreatePortalDb(),
+                CrearPortalDb(),
                 CodEmpresa,
-                @"SELECT U.nombre as Usuario,
-                         U.descripcion
-                  FROM usuarios U
-                  INNER JOIN pv_orden_autorizadores A ON U.nombre = A.usuario
-                  WHERE U.Estado = 'A'
-                  ORDER BY U.nombre");
+                query);
         }
 
         /// <summary>
-        /// Inserta un nuevo autorizador.
+        /// Registra un usuario como autorizador.
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="request">Datos del autorizador.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto Autorizador_Insertar(int CodEmpresa, AutorizadorDto request)
+        public ErrorDto Autorizador_Insertar(
+            int CodEmpresa,
+            AutorizadorDto request)
         {
+            if (request is null ||
+                string.IsNullOrWhiteSpace(request.usuario))
+            {
+                return DbHelper.ErrorResponse(
+                    "El usuario autorizador es requerido.",
+                    CodigoValidacion);
+            }
+
+            const string query = """
+                INSERT INTO pv_orden_autorizadores
+                (
+                    usuario,
+                    fecha,
+                    estado
+                )
+                VALUES
+                (
+                    @usuario,
+                    Getdate(),
+                    'A'
+                )
+                """;
+
             var result = DbHelper.ExecuteNonQuery(
-                CreatePortalDb(),
+                CrearPortalDb(),
                 CodEmpresa,
-                "INSERT pv_orden_autorizadores(USUARIO, FECHA, ESTADO) VALUES (@usuario, @fecha, @estado)",
+                query,
                 new
                 {
-                    usuario = request.Usuario,
-                    fecha = DateTime.Now,
-                    estado = "A"
+                    usuario = request.usuario.Trim()
                 });
 
-            return result.Code == 0
-                ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar el autorizador.", result.Code.GetValueOrDefault(-1));
+            return CrearRespuestaOperacion(
+                result,
+                "Error al registrar el autorizador.");
         }
 
         /// <summary>
-        /// Elimina un autorizador.
+        /// Elimina un autorizador y sus usuarios asociados.
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="usuario">Usuario autorizador.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto Autorizador_Eliminar(int CodEmpresa, string usuario)
+        public ErrorDto Autorizador_Eliminar(
+            int CodEmpresa,
+            string usuario)
         {
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return DbHelper.ErrorResponse(
+                    "El usuario autorizador es requerido.",
+                    CodigoValidacion);
+            }
+
             return EjecutarProcedimientoConCodigo(
                 CodEmpresa,
-                "[spINV_W_Autorizador_Eliminar]",
-                new { Usuario = usuario },
+                ProcedimientoAutorizadorEliminar,
+                new
+                {
+                    Usuario = usuario.Trim()
+                },
                 "Error al eliminar el autorizador.");
         }
 
-        #endregion
-
-        #region Usuarios a Cargo
-
         /// <summary>
-        /// Obtiene la lista paginada de usuarios a cargo del autorizador.
+        /// Obtiene la lista paginada de usuarios asignables a un autorizador.
         /// </summary>
-        /// <param name="CodCliente">Código de la empresa cliente.</param>
+        /// <param name="CodCliente">Código de la empresa.</param>
         /// <param name="usuario">Usuario autorizador.</param>
-        /// <param name="pagina">Fila inicial para paginación.</param>
-        /// <param name="paginacion">Cantidad de filas a retornar.</param>
+        /// <param name="pagina">Registro inicial de la página.</param>
+        /// <param name="paginacion">Cantidad de registros solicitados.</param>
         /// <param name="filtro">Filtro por usuario o descripción.</param>
-        /// <returns>Listado de usuarios a cargo.</returns>
-        public ErrorDto<UsuariosACargoDataLista> UsuariosACargoAut_Obtener(int CodCliente, string usuario, int? pagina, int? paginacion, string? filtro)
+        /// <returns>Lista paginada de usuarios a cargo.</returns>
+        public ErrorDto<UsuariosACargoDataLista>
+            UsuariosACargoAut_Obtener(
+                int CodCliente,
+                string usuario,
+                int? pagina,
+                int? paginacion,
+                string? filtro)
         {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
+            if (string.IsNullOrWhiteSpace(usuario))
             {
-                var respuesta = CrearUsuariosACargoListaVacia();
-                respuesta.Total = connection.QueryFirstOrDefault<int>(
-                    @"SELECT count(*)
-                      FROM usuarios U
-                      LEFT JOIN pv_orden_autousers C ON U.nombre = C.usuario_asignado AND C.usuario = @Usuario
-                      WHERE U.Estado = 'A'",
-                    CrearParametrosUsuario(usuario));
+                return DbHelper.CreateErrorResponse(
+                    "El usuario autorizador es requerido.",
+                    CodigoValidacion,
+                    CrearUsuariosCargoListaVacia());
+            }
 
-                var parametros = new DynamicParameters();
-                parametros.Add("Usuario", usuario);
-                var queryBuilder = new System.Text.StringBuilder(@"SELECT U.nombre as Usuario,
-                                                                        U.descripcion,
-                                                                        C.Usuario AS Autorizador,
-                                                                        isnull(C.Entradas,0) AS Entradas,
-                                                                        isnull(C.Salidas,0) AS Salidas,
-                                                                        isnull(C.requisiciones,0) AS Requisiciones,
-                                                                        isnull(C.Traslados,0) AS Traslados
-                                                                 FROM usuarios U
-                                                                 LEFT JOIN pv_orden_autousers C ON U.nombre = C.usuario_asignado AND C.usuario = @Usuario
-                                                                 WHERE U.Estado = 'A'");
-
-                if (!string.IsNullOrWhiteSpace(filtro))
+            var result = DbHelper.WithConn(
+                CrearPortalDb(),
+                CodCliente,
+                connection =>
                 {
-                    queryBuilder.Append(" AND (U.nombre LIKE @Filtro OR U.DESCRIPCION LIKE @Filtro) ");
-                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
-                }
+                    var parametros = new DynamicParameters();
+                    parametros.Add(
+                        "usuario",
+                        usuario.Trim(),
+                        DbType.String);
 
-                queryBuilder.Append(" ORDER BY C.fecha_asignacion DESC ");
+                    var clausulaFiltro = CrearClausulaFiltro(
+                        filtro,
+                        parametros);
 
-                if (pagina.HasValue && paginacion.HasValue)
-                {
-                    queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
-                    parametros.Add("Offset", pagina.Value);
-                    parametros.Add("Fetch", paginacion.Value);
-                }
+                    var total = connection.QueryFirstOrDefault<int>(
+                        $"""
+                        SELECT COUNT(*)
+                        FROM usuarios U
+                        LEFT JOIN pv_orden_autousers C
+                            ON U.nombre = C.usuario_asignado
+                            AND C.usuario = @usuario
+                        WHERE U.estado = 'A'
+                        {clausulaFiltro}
+                        """,
+                        parametros);
 
-                respuesta.Usuarios = connection.Query<UsuarioaCargoDto>(queryBuilder.ToString(), parametros).ToList();
-                return respuesta;
-            });
+                    var consulta = new StringBuilder(
+                        $"""
+                        SELECT
+                            U.nombre AS usuario,
+                            U.descripcion AS descripcion,
+                            C.usuario AS autorizador,
+                            ISNULL(C.entradas, 0) AS entradas,
+                            ISNULL(C.salidas, 0) AS salidas,
+                            ISNULL(C.requisiciones, 0) AS requisiciones,
+                            ISNULL(C.traslados, 0) AS traslados
+                        FROM usuarios U
+                        LEFT JOIN pv_orden_autousers C
+                            ON U.nombre = C.usuario_asignado
+                            AND C.usuario = @usuario
+                        WHERE U.estado = 'A'
+                        {clausulaFiltro}
+                        ORDER BY
+                            C.fecha_asignacion DESC,
+                            U.nombre
+                        """);
+
+                    AgregarPaginacion(
+                        consulta,
+                        parametros,
+                        pagina,
+                        paginacion);
+
+                    return new UsuariosACargoDataLista
+                    {
+                        total = total,
+                        usuarios = connection
+                            .Query<UsuarioaCargoDto>(
+                                consulta.ToString(),
+                                parametros)
+                            .ToList()
+                    };
+                });
 
             return result.Code == 0
-                ? DbHelper.CreateOkResponse(result.Result ?? CrearUsuariosACargoListaVacia())
-                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener usuarios a cargo.", result.Code.GetValueOrDefault(-1), CrearUsuariosACargoListaVacia());
+                ? DbHelper.CreateOkResponse(
+                    result.Result ??
+                    CrearUsuariosCargoListaVacia())
+                : DbHelper.CreateErrorResponse(
+                    result.Description ??
+                    "Error al obtener los usuarios a cargo.",
+                    result.Code.GetValueOrDefault(-1),
+                    CrearUsuariosCargoListaVacia());
         }
 
         /// <summary>
-        /// Obtiene la lista de usuarios a cargo del autorizador.
+        /// Obtiene todos los usuarios asignables a un autorizador.
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="usuario">Usuario autorizador.</param>
-        /// <returns>Listado de usuarios a cargo.</returns>
-        public List<UsuarioaCargoDto> UsuariosACargo_Obtener(int CodEmpresa, string usuario)
+        /// <returns>Lista de usuarios a cargo.</returns>
+        public List<UsuarioaCargoDto> UsuariosACargo_Obtener(
+            int CodEmpresa,
+            string usuario)
         {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-                connection.Query<UsuarioaCargoDto>(
-                    @"SELECT U.nombre as Usuario,
-                             U.descripcion,
-                             C.Usuario AS Autorizador,
-                             isnull(C.Entradas,0) AS Entradas,
-                             isnull(C.Salidas,0) AS Salidas,
-                             isnull(C.requisiciones,0) AS Requisiciones,
-                             isnull(C.Traslados,0) AS Traslados
-                      FROM usuarios U
-                      LEFT JOIN pv_orden_autousers C ON U.nombre = C.usuario_asignado AND C.usuario = @Usuario
-                      WHERE U.Estado = 'A'
-                      ORDER BY C.fecha_asignacion DESC",
-                    CrearParametrosUsuario(usuario)).ToList());
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return new List<UsuarioaCargoDto>();
+            }
 
-            return result.Code == 0 ? result.Result ?? new List<UsuarioaCargoDto>() : new List<UsuarioaCargoDto>();
+            const string query = """
+                SELECT
+                    U.nombre AS usuario,
+                    U.descripcion AS descripcion,
+                    C.usuario AS autorizador,
+                    ISNULL(C.entradas, 0) AS entradas,
+                    ISNULL(C.salidas, 0) AS salidas,
+                    ISNULL(C.requisiciones, 0) AS requisiciones,
+                    ISNULL(C.traslados, 0) AS traslados
+                FROM usuarios U
+                LEFT JOIN pv_orden_autousers C
+                    ON U.nombre = C.usuario_asignado
+                    AND C.usuario = @usuario
+                WHERE U.estado = 'A'
+                ORDER BY
+                    C.fecha_asignacion DESC,
+                    U.nombre
+                """;
+
+            var result = DbHelper.WithConn(
+                CrearPortalDb(),
+                CodEmpresa,
+                connection => connection
+                    .Query<UsuarioaCargoDto>(
+                        query,
+                        new
+                        {
+                            usuario = usuario.Trim()
+                        })
+                    .ToList());
+
+            return result.Code == 0
+                ? result.Result ?? new List<UsuarioaCargoDto>()
+                : new List<UsuarioaCargoDto>();
         }
 
         /// <summary>
-        /// Actualiza los usuarios a cargo del autorizador.
+        /// Actualiza los permisos de un usuario asignado a un autorizador.
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="request">Datos del usuario a cargo.</param>
+        /// <param name="request">Permisos del usuario.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto UsuarioACargo_Actualizar(int CodEmpresa, UsuarioaCargoDto request)
+        public ErrorDto UsuarioACargo_Actualizar(
+            int CodEmpresa,
+            UsuarioaCargoDto request)
         {
+            var validacion =
+                ValidarUsuarioCargo(request);
+
+            if (validacion is not null)
+            {
+                return validacion;
+            }
+
             return EjecutarProcedimientoConCodigo(
                 CodEmpresa,
-                "[spINV_W_UsuarioACargo_Actualizar]",
+                ProcedimientoUsuarioCargoActualizar,
                 new
                 {
-                    Entradas = request.Entradas,
-                    Salidas = request.Salidas,
-                    Requisiciones = request.Requisiciones,
-                    Traslados = request.Traslados,
-                    Autorizador = request.Autorizador,
-                    Usuario = request.Usuario
+                    Entradas = request.entradas,
+                    Salidas = request.salidas,
+                    Requisiciones = request.requisiciones,
+                    Traslados = request.traslados,
+                    Autorizador = request.autorizador.Trim(),
+                    Usuario = request.usuario.Trim()
                 },
                 "Error al actualizar el usuario a cargo.");
         }
 
-        #endregion
-
-        #region Cambio Fecha
-
         /// <summary>
-        /// Obtiene la lista paginada de usuarios que pueden cambiar fecha.
+        /// Obtiene la lista paginada de usuarios que pueden cambiar fechas.
         /// </summary>
-        /// <param name="CodCliente">Código de la empresa cliente.</param>
-        /// <param name="tipo">Tipo de permiso de cambio de fecha.</param>
-        /// <param name="pagina">Fila inicial para paginación.</param>
-        /// <param name="paginacion">Cantidad de filas a retornar.</param>
+        /// <param name="CodCliente">Código de la empresa.</param>
+        /// <param name="tipo">Tipo de movimiento.</param>
+        /// <param name="pagina">Registro inicial de la página.</param>
+        /// <param name="paginacion">Cantidad de registros solicitados.</param>
         /// <param name="filtro">Filtro por usuario o descripción.</param>
-        /// <returns>Listado de usuarios con permiso de cambio de fecha.</returns>
-        public UsuariosCambioFchDataLista UsuariosCambioFch_Obtener(int CodCliente, string tipo, int? pagina, int? paginacion, string? filtro)
+        /// <returns>Lista paginada de usuarios.</returns>
+        public UsuariosCambioFchDataLista UsuariosCambioFch_Obtener(
+            int CodCliente,
+            string tipo,
+            int? pagina,
+            int? paginacion,
+            string? filtro)
         {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
+            if (!EsTipoValido(tipo))
             {
-                var respuesta = CrearUsuariosCambioFchListaVacia();
-                respuesta.Total = connection.QueryFirstOrDefault<int>(
-                    @"SELECT count(*)
-                      FROM usuarios U
-                      LEFT JOIN PV_INVUSRFECHAS A ON U.nombre = A.usuario AND A.tipo = @Tipo
-                      WHERE U.EStado = 'A'",
-                    CrearParametrosTipo(tipo));
+                return CrearUsuariosCambioFechaListaVacia();
+            }
 
-                var parametros = new DynamicParameters();
-                parametros.Add("Tipo", tipo);
-                var queryBuilder = new System.Text.StringBuilder(@"SELECT U.nombre as Usuario,
-                                                                        U.descripcion,
-                                                                        A.tipo
-                                                                 FROM usuarios U
-                                                                 LEFT JOIN PV_INVUSRFECHAS A ON U.nombre = A.usuario AND A.tipo = @Tipo
-                                                                 WHERE U.EStado = 'A'");
-
-                if (!string.IsNullOrWhiteSpace(filtro))
+            var result = DbHelper.WithConn(
+                CrearPortalDb(),
+                CodCliente,
+                connection =>
                 {
-                    queryBuilder.Append(" AND (U.nombre LIKE @Filtro OR U.DESCRIPCION LIKE @Filtro) ");
-                    parametros.Add("Filtro", $"%{filtro.Trim()}%");
-                }
+                    var parametros = new DynamicParameters();
+                    parametros.Add(
+                        "tipo",
+                        tipo.Trim(),
+                        DbType.String);
 
-                queryBuilder.Append(" ORDER BY A.tipo ASC ");
+                    var clausulaFiltro = CrearClausulaFiltro(
+                        filtro,
+                        parametros);
 
-                if (pagina.HasValue && paginacion.HasValue)
-                {
-                    queryBuilder.Append(" OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ");
-                    parametros.Add("Offset", pagina.Value);
-                    parametros.Add("Fetch", paginacion.Value);
-                }
+                    var total = connection.QueryFirstOrDefault<int>(
+                        $"""
+                        SELECT COUNT(*)
+                        FROM usuarios U
+                        LEFT JOIN PV_INVUSRFECHAS A
+                            ON U.nombre = A.usuario
+                            AND A.tipo = @tipo
+                        WHERE U.estado = 'A'
+                        {clausulaFiltro}
+                        """,
+                        parametros);
 
-                respuesta.Usuarios = connection.Query<UsuarioaCambioFechaDto>(queryBuilder.ToString(), parametros).ToList();
-                return respuesta;
-            });
+                    var consulta = new StringBuilder(
+                        $"""
+                        SELECT
+                            U.nombre AS usuario,
+                            U.descripcion AS descripcion,
+                            A.tipo AS tipo
+                        FROM usuarios U
+                        LEFT JOIN PV_INVUSRFECHAS A
+                            ON U.nombre = A.usuario
+                            AND A.tipo = @tipo
+                        WHERE U.estado = 'A'
+                        {clausulaFiltro}
+                        ORDER BY
+                            A.tipo DESC,
+                            U.nombre
+                        """);
 
-            return result.Code == 0 ? result.Result ?? CrearUsuariosCambioFchListaVacia() : CrearUsuariosCambioFchListaVacia();
-        }
+                    AgregarPaginacion(
+                        consulta,
+                        parametros,
+                        pagina,
+                        paginacion);
 
-        /// <summary>
-        /// Obtiene la lista de usuarios que pueden cambiar fecha.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="tipo">Tipo de permiso de cambio de fecha.</param>
-        /// <returns>Listado de usuarios con permiso de cambio de fecha.</returns>
-        public List<UsuarioaCambioFechaDto> UsuariosCambioFecha_Obtener(int CodEmpresa, string tipo)
-        {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-                connection.Query<UsuarioaCambioFechaDto>(
-                    @"SELECT U.nombre as Usuario,
-                             U.descripcion,
-                             A.tipo
-                      FROM usuarios U
-                      LEFT JOIN PV_INVUSRFECHAS A ON U.nombre = A.usuario AND A.tipo = @Tipo
-                      WHERE U.EStado = 'A'
-                      ORDER BY A.tipo DESC",
-                    CrearParametrosTipo(tipo)).ToList());
-
-            return result.Code == 0 ? result.Result ?? new List<UsuarioaCambioFechaDto>() : new List<UsuarioaCambioFechaDto>();
-        }
-
-        /// <summary>
-        /// Inserta un nuevo usuario que puede cambiar fecha.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="request">Datos del usuario.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto CambioFechas_Insertar(int CodEmpresa, UsuarioaCambioFechaDto request)
-        {
-            var result = DbHelper.ExecuteNonQuery(
-                CreatePortalDb(),
-                CodEmpresa,
-                "INSERT pv_invusrfechas(USUARIO, TIPO) VALUES (@usuario, @tipo)",
-                new
-                {
-                    usuario = request.Usuario,
-                    tipo = request.Tipo
+                    return new UsuariosCambioFchDataLista
+                    {
+                        total = total,
+                        usuarios = connection
+                            .Query<UsuarioaCambioFechaDto>(
+                                consulta.ToString(),
+                                parametros)
+                            .ToList()
+                    };
                 });
 
             return result.Code == 0
-                ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al insertar el permiso de cambio de fecha.", result.Code.GetValueOrDefault(-1));
+                ? result.Result ??
+                  CrearUsuariosCambioFechaListaVacia()
+                : CrearUsuariosCambioFechaListaVacia();
         }
 
         /// <summary>
-        /// Elimina un usuario que puede cambiar fecha.
+        /// Obtiene todos los usuarios que pueden cambiar fechas.
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="request">Datos del usuario.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto CambioFechas_Eliminar(int CodEmpresa, UsuarioaCambioFechaDto request)
+        /// <param name="tipo">Tipo de movimiento.</param>
+        /// <returns>Lista de usuarios y permisos.</returns>
+        public List<UsuarioaCambioFechaDto>
+            UsuariosCambioFecha_Obtener(
+                int CodEmpresa,
+                string tipo)
         {
-            var result = DbHelper.ExecuteNonQuery(
-                CreatePortalDb(),
+            if (!EsTipoValido(tipo))
+            {
+                return new List<UsuarioaCambioFechaDto>();
+            }
+
+            const string query = """
+                SELECT
+                    U.nombre AS usuario,
+                    U.descripcion AS descripcion,
+                    A.tipo AS tipo
+                FROM usuarios U
+                LEFT JOIN PV_INVUSRFECHAS A
+                    ON U.nombre = A.usuario
+                    AND A.tipo = @tipo
+                WHERE U.estado = 'A'
+                ORDER BY
+                    A.tipo DESC,
+                    U.nombre
+                """;
+
+            var result = DbHelper.WithConn(
+                CrearPortalDb(),
                 CodEmpresa,
-                "DELETE pv_invusrfechas WHERE USUARIO = @usuario AND TIPO = @tipo",
-                CrearParametrosUsuarioTipo(request.Usuario, request.Tipo));
+                connection => connection
+                    .Query<UsuarioaCambioFechaDto>(
+                        query,
+                        new
+                        {
+                            tipo = tipo.Trim()
+                        })
+                    .ToList());
 
             return result.Code == 0
-                ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al eliminar el permiso de cambio de fecha.", result.Code.GetValueOrDefault(-1));
+                ? result.Result ??
+                  new List<UsuarioaCambioFechaDto>()
+                : new List<UsuarioaCambioFechaDto>();
         }
 
-        #endregion
+        /// <summary>
+        /// Registra un permiso para cambiar fechas.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="request">Usuario y tipo de movimiento.</param>
+        /// <returns>Resultado de la operación.</returns>
+        public ErrorDto CambioFechas_Insertar(
+            int CodEmpresa,
+            UsuarioaCambioFechaDto request)
+        {
+            var validacion =
+                ValidarCambioFecha(request);
+
+            if (validacion is not null)
+            {
+                return validacion;
+            }
+
+            const string query = """
+                INSERT INTO PV_INVUSRFECHAS
+                (
+                    usuario,
+                    tipo
+                )
+                VALUES
+                (
+                    @usuario,
+                    @tipo
+                )
+                """;
+
+            var result = DbHelper.ExecuteNonQuery(
+                CrearPortalDb(),
+                CodEmpresa,
+                query,
+                new
+                {
+                    usuario = request.usuario.Trim(),
+                    tipo = request.tipo.Trim()
+                });
+
+            return CrearRespuestaOperacion(
+                result,
+                "Error al registrar el permiso de cambio de fecha.");
+        }
+
+        /// <summary>
+        /// Elimina un permiso para cambiar fechas.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="request">Usuario y tipo de movimiento.</param>
+        /// <returns>Resultado de la operación.</returns>
+        public ErrorDto CambioFechas_Eliminar(
+            int CodEmpresa,
+            UsuarioaCambioFechaDto request)
+        {
+            var validacion =
+                ValidarCambioFecha(request);
+
+            if (validacion is not null)
+            {
+                return validacion;
+            }
+
+            const string query = """
+                DELETE FROM PV_INVUSRFECHAS
+                WHERE usuario = @usuario
+                  AND tipo = @tipo
+                """;
+
+            var result = DbHelper.ExecuteNonQuery(
+                CrearPortalDb(),
+                CodEmpresa,
+                query,
+                new
+                {
+                    usuario = request.usuario.Trim(),
+                    tipo = request.tipo.Trim()
+                });
+
+            return CrearRespuestaOperacion(
+                result,
+                "Error al eliminar el permiso de cambio de fecha.");
+        }
+
+        /// <summary>
+        /// Ejecuta un procedimiento que devuelve un código de resultado.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="procedimiento">Procedimiento almacenado.</param>
+        /// <param name="parametros">Parámetros del procedimiento.</param>
+        /// <param name="mensajeError">Mensaje predeterminado de error.</param>
+        /// <returns>Resultado estándar de la operación.</returns>
+        private ErrorDto EjecutarProcedimientoConCodigo(
+            int CodEmpresa,
+            string procedimiento,
+            object parametros,
+            string mensajeError)
+        {
+            var result = DbHelper.WithConn<int>(
+                CrearPortalDb(),
+                CodEmpresa,
+                connection =>
+                    connection.QueryFirstOrDefault<int>(
+                        procedimiento,
+                        parametros,
+                        commandType:
+                            CommandType.StoredProcedure));
+
+            if (result.Code != 0)
+            {
+                return DbHelper.ErrorResponse(
+                    result.Description ?? mensajeError,
+                    result.Code.GetValueOrDefault(-1));
+            }
+
+            return result.Result == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(
+                    mensajeError,
+                    result.Result);
+        }
+
+        /// <summary>
+        /// Agrega la paginación parametrizada a una consulta.
+        /// </summary>
+        /// <param name="consulta">Consulta que se modificará.</param>
+        /// <param name="parametros">Parámetros de la consulta.</param>
+        /// <param name="pagina">Registro inicial de la página.</param>
+        /// <param name="paginacion">Cantidad de registros solicitados.</param>
+        private static void AgregarPaginacion(
+            StringBuilder consulta,
+            DynamicParameters parametros,
+            int? pagina,
+            int? paginacion)
+        {
+            if (!pagina.HasValue ||
+                !paginacion.HasValue ||
+                pagina.Value < 0 ||
+                paginacion.Value <= 0)
+            {
+                return;
+            }
+
+            consulta.Append(
+                " OFFSET @pagina ROWS FETCH NEXT @paginacion ROWS ONLY");
+
+            parametros.Add(
+                "pagina",
+                pagina.Value,
+                DbType.Int32);
+
+            parametros.Add(
+                "paginacion",
+                paginacion.Value,
+                DbType.Int32);
+        }
+
+        /// <summary>
+        /// Crea el filtro parametrizado por usuario o descripción.
+        /// </summary>
+        /// <param name="filtro">Texto que se utilizará como filtro.</param>
+        /// <param name="parametros">Parámetros de la consulta.</param>
+        /// <returns>Cláusula SQL fija para aplicar el filtro.</returns>
+        private static string CrearClausulaFiltro(
+            string? filtro,
+            DynamicParameters parametros)
+        {
+            if (string.IsNullOrWhiteSpace(filtro))
+            {
+                return string.Empty;
+            }
+
+            parametros.Add(
+                "filtro",
+                $"%{filtro.Trim()}%",
+                DbType.String);
+
+            return """
+                 AND
+                 (
+                     U.nombre LIKE @filtro
+                     OR U.descripcion LIKE @filtro
+                 )
+                """;
+        }
+
+        /// <summary>
+        /// Valida los datos utilizados para actualizar un usuario a cargo.
+        /// </summary>
+        /// <param name="request">Datos que se validarán.</param>
+        /// <returns>Error de validación o null cuando los datos son válidos.</returns>
+        private static ErrorDto? ValidarUsuarioCargo(
+            UsuarioaCargoDto? request)
+        {
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse(
+                    "Los datos del usuario son requeridos.",
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(request.autorizador))
+            {
+                return DbHelper.ErrorResponse(
+                    "El usuario autorizador es requerido.",
+                    CodigoValidacion);
+            }
+
+            return string.IsNullOrWhiteSpace(request.usuario)
+                ? DbHelper.ErrorResponse(
+                    "El usuario asignado es requerido.",
+                    CodigoValidacion)
+                : null;
+        }
+
+        /// <summary>
+        /// Valida los datos utilizados para modificar permisos de fechas.
+        /// </summary>
+        /// <param name="request">Datos que se validarán.</param>
+        /// <returns>Error de validación o null cuando los datos son válidos.</returns>
+        private static ErrorDto? ValidarCambioFecha(
+            UsuarioaCambioFechaDto? request)
+        {
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse(
+                    "Los datos del permiso son requeridos.",
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(request.usuario))
+            {
+                return DbHelper.ErrorResponse(
+                    "El usuario es requerido.",
+                    CodigoValidacion);
+            }
+
+            return EsTipoValido(request.tipo)
+                ? null
+                : DbHelper.ErrorResponse(
+                    "El tipo de movimiento no es v&aacute;lido.",
+                    CodigoValidacion);
+        }
+
+        /// <summary>
+        /// Determina si el tipo de movimiento recibido es válido.
+        /// </summary>
+        /// <param name="tipo">Tipo de movimiento.</param>
+        /// <returns>True cuando corresponde a entrada, salida o traslado.</returns>
+        private static bool EsTipoValido(string? tipo)
+        {
+            if (string.IsNullOrWhiteSpace(tipo))
+            {
+                return false;
+            }
+
+            return tipo.Trim() is
+                TipoEntrada or
+                TipoSalida or
+                TipoTraslado;
+        }
+
+        /// <summary>
+        /// Convierte el resultado de DbHelper en una respuesta estándar.
+        /// </summary>
+        /// <param name="result">Resultado de la ejecución.</param>
+        /// <param name="mensajeError">Mensaje predeterminado de error.</param>
+        /// <returns>Respuesta estándar de la operación.</returns>
+        private static ErrorDto CrearRespuestaOperacion(
+            ErrorDto result,
+            string mensajeError)
+        {
+            return result.Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse(
+                    result.Description ?? mensajeError,
+                    result.Code.GetValueOrDefault(-1));
+        }
+
+        /// <summary>
+        /// Crea el acceso a las conexiones de las empresas.
+        /// </summary>
+        /// <returns>Instancia configurada de PortalDB.</returns>
+        private PortalDB CrearPortalDb()
+        {
+            return new PortalDB(_config);
+        }
+
+        /// <summary>
+        /// Crea una respuesta vacía para autorizadores.
+        /// </summary>
+        /// <returns>Respuesta inicializada.</returns>
+        private static AutorizadorDataLista
+            CrearAutorizadorListaVacia()
+        {
+            return new AutorizadorDataLista
+            {
+                total = 0,
+                autorizadores = new List<AutorizadorDto>()
+            };
+        }
+
+        /// <summary>
+        /// Crea una respuesta vacía para usuarios a cargo.
+        /// </summary>
+        /// <returns>Respuesta inicializada.</returns>
+        private static UsuariosACargoDataLista
+            CrearUsuariosCargoListaVacia()
+        {
+            return new UsuariosACargoDataLista
+            {
+                total = 0,
+                usuarios = new List<UsuarioaCargoDto>()
+            };
+        }
+
+        /// <summary>
+        /// Crea una respuesta vacía para permisos de cambio de fecha.
+        /// </summary>
+        /// <returns>Respuesta inicializada.</returns>
+        private static UsuariosCambioFchDataLista
+            CrearUsuariosCambioFechaListaVacia()
+        {
+            return new UsuariosCambioFchDataLista
+            {
+                total = 0,
+                usuarios =
+                    new List<UsuarioaCambioFechaDto>()
+            };
+        }
     }
 }
