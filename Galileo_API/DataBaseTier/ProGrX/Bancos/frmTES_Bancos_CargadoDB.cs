@@ -409,13 +409,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             try
             {
                 var resultados = new List<TesBancoCargadoEliminaResultado>();
+                const string querySP = "spTes_Bancos_Mov_Elimina";
 
-                foreach (var item in lista)
+                foreach (var lineaId in lista.Select(item => item.linea_id))
                 {
-                    var querySP = "spTes_Bancos_Mov_Elimina";
                     var result = conn.QuerySingleOrDefault<TesBancoMovEliminaResult>(querySP, new
                     {
-                        LineaId = item.linea_id
+                        LineaId = lineaId
                     },
                     commandType: CommandType.StoredProcedure);
 
@@ -423,7 +423,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     {
                         resultados.Add(new TesBancoCargadoEliminaResultado
                         {
-                            linea_id = Convert.ToInt32(item.linea_id ?? 0),
+                            linea_id = Convert.ToInt32(lineaId ?? 0),
                             result = -1,
                             mensaje = "El proceso no devolvio resultado."
                         });
