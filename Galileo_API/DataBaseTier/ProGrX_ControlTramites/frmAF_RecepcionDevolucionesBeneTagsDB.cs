@@ -103,7 +103,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 string.IsNullOrWhiteSpace(codigoTrim))
             {
                 return DbHelper.CreateErrorResponse<AfRecepcionDevolucionesBeneTagsData?>(
-                    "Debe indicar el beneficio y el codigo.",
+                    "Debe indicar el beneficio y el código.",
                     -2,
                     null);
             }
@@ -122,7 +122,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 if (beneficio is null)
                 {
                     return DbHelper.CreateErrorResponse<AfRecepcionDevolucionesBeneTagsData?>(
-                        "No se encontro un beneficio pendiente para los datos indicados.",
+                        "No se encontró un beneficio pendiente para los datos indicados.",
                         -2,
                         null);
                 }
@@ -182,7 +182,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     if (string.IsNullOrWhiteSpace(tags.Tag_Devolucion))
                     {
                         throw new InvalidOperationException(
-                            "No se puede realizar el proceso: no esta definida la etiqueta de devolucion.");
+                            "No se puede realizar el proceso: no está definida la etiqueta de devolución.");
                     }
 
                     int aplicados =
@@ -199,7 +199,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         {
                             Registros_Aplicados = aplicados
                         },
-                        "Proceso concluido con exito.");
+                        "Proceso concluido con éxito.");
                 }
                 catch
                 {
@@ -305,7 +305,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 if (string.IsNullOrWhiteSpace(codBeneficio) || item.Consec <= 0)
                 {
                     throw new InvalidOperationException(
-                        "La lista contiene registros no validos.");
+                        "La lista contiene registros no válidos.");
                 }
 
                 FrmAfRecepcionDevolucionesTagsDb
@@ -348,7 +348,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     string.IsNullOrWhiteSpace(item.Cod_Beneficio) ||
                     item.Consec <= 0))
             {
-                return "La lista contiene registros no validos.";
+                return "La lista contiene registros no válidos.";
             }
 
             return null;

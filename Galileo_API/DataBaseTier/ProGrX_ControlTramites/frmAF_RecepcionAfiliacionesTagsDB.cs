@@ -15,7 +15,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         private const string MovimientoRecepcion = "RECEPCION";
         private const string MovimientoDevolucion = "DEVOLUCION";
         private const string MensajeMovimientoInvalido =
-            "El tipo de movimiento no es valido.";
+            "El tipo de movimiento no es válido.";
         private readonly PortalDB _portalDb;
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             if (string.IsNullOrWhiteSpace(identificacion))
             {
                 return DbHelper.CreateErrorResponse(
-                    "La cedula es requerida.",
+                    "La cédula es requerida.",
                     -2,
                     new List<AfRecepcionAfiliacionesTagsBoletaResponse>());
             }
@@ -251,7 +251,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 {
                     return DbHelper.CreateErrorResponse<
                         AfRecepcionAfiliacionesTagsAfiliacionResponse?>(
-                            "No se encontro la afiliacion con el estado requerido.",
+                            "No se encontro la afiliación con el estado requerido.",
                             -2,
                             null);
                 }
@@ -370,7 +370,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         {
                             registros_aplicados = aplicados
                         },
-                        "Proceso concluido con exito.");
+                        "Proceso concluido con éxito.");
                 }
                 catch
                 {
@@ -406,7 +406,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             if (request.documento.HasValue && request.documento <= 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "La boleta no es valida.",
+                    "La boleta no es válida.",
                     -2,
                     new List<AfRecepcionAfiliacionesTagsHistorialResponse>());
             }
@@ -436,26 +436,30 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
             if (cedula.Length > 0)
             {
-                sql.AppendLine("and CT.codigo like @Cedula");
+                sql.AppendLine(" and CT.codigo like @Cedula");
             }
+
             if (request.documento.HasValue)
             {
-                sql.AppendLine("and CT.documento like @Documento");
+                sql.AppendLine(" and CT.documento like @Documento");
             }
+
             if (usuario.Length > 0)
             {
-                sql.AppendLine("and CT.registro_usuario like @Usuario");
+                sql.AppendLine(" and CT.registro_usuario like @Usuario");
             }
+
             if (request.fecha_inicio.HasValue)
             {
-                sql.AppendLine("and CT.registro_fecha >= @FechaInicio");
+                sql.AppendLine(" and CT.registro_fecha >= @FechaInicio");
             }
+
             if (request.fecha_fin.HasValue)
             {
-                sql.AppendLine(
-                    "and CT.registro_fecha < dateadd(day, 1, @FechaFin)");
+                sql.AppendLine(" and CT.registro_fecha < dateadd(day, 1, @FechaFin)");
             }
-            sql.AppendLine("order by CT.registro_fecha desc;");
+
+            sql.AppendLine(" order by CT.registro_fecha desc;");
 
             return DbHelper.ExecuteListQuery<
                 AfRecepcionAfiliacionesTagsHistorialResponse>(
@@ -570,20 +574,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 },
                 transaction);
 
-            if (movimiento == MovimientoRecepcion &&
-                resultados.resultado == 2)
+            if (movimiento == MovimientoRecepcion && resultados.resultado == 2)
             {
-                return $"No es posible registrar dos recepciones consecutivas en la cedula {cedula}.";
+                return $"No es posible registrar dos recepciones consecutivas en la cédula {cedula}.";
             }
 
             if (movimiento == MovimientoDevolucion &&
                 resultados.resultado == 3)
             {
-                return $"No es posible registrar dos devoluciones consecutivas en la cedula {cedula}.";
+                return $"No es posible registrar dos devoluciones consecutivas en la cédula {cedula}.";
             }
 
             return resultados.resultado_recepcion_devolucion == 4
-                ? $"No es posible registrar una recepcion sin aplicar la devolucion en la cedula {cedula}."
+                ? $"No es posible registrar una recepción sin aplicar la devolución en la cédula {cedula}."
                 : null;
         }
 
@@ -644,13 +647,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 string.IsNullOrWhiteSpace(tags.tag_recepcion_devolucion))
             {
                 throw new InvalidOperationException(
-                    "Falta configurar uno de los parametros de etiquetas 10, 11 o 12.");
+                    "Falta configurar uno de los parámetros de etiquetas 10, 11 o 12.");
             }
 
             if (tags.tags_existentes != 3)
             {
                 throw new InvalidOperationException(
-                    "Uno o mas codigos de etiqueta configurados no existen.");
+                    "Uno o más códigos de etiqueta configurados no existen.");
             }
 
             return tags;
@@ -674,7 +677,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             {
                 return DbHelper.CreateErrorResponse<
                     AfRecepcionAfiliacionesTagsAfiliacionResponse?>(
-                        "Debe indicar una cedula y boleta validas.",
+                        "Debe indicar una cédula y boleta válidas.",
                         -2,
                         null);
             }
@@ -727,7 +730,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         item.consec <= 0))
             {
                 return DbHelper.CreateErrorResponse(
-                    "La lista contiene cedulas o boletas no validas.",
+                    "La lista contiene cédulas o boletas no válidas.",
                     -2,
                     new AfRecepcionAfiliacionesTagsAplicarResponse());
             }
@@ -785,24 +788,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
         private sealed class TagValidacionResultado
         {
-            /// <summary>
-            /// Inicializa los resultados devueltos por la funcion de etiquetas.
-            /// </summary>
-            /// <param name="resultado">Resultado general de la validacion.</param>
-            /// <param name="resultado_recepcion_devolucion">
-            /// Resultado de la secuencia recepcion y devolucion.
-            /// </param>
-            public TagValidacionResultado(
-                int resultado,
-                int resultado_recepcion_devolucion)
-            {
-                this.resultado = resultado;
-                this.resultado_recepcion_devolucion =
-                    resultado_recepcion_devolucion;
-            }
-
-            public int resultado { get; }
-            public int resultado_recepcion_devolucion { get; }
+            public short resultado { get; set; }
+            public short resultado_recepcion_devolucion { get; set; }
         }
     }
 }

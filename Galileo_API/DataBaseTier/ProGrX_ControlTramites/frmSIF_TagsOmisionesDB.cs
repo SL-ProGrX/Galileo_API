@@ -68,7 +68,7 @@
             return new ErrorDto
             {
                 Code = 0,
-                Description = "Información guardada satisfactoriamente..."
+                Description = "Información guardada satisfactoriamente."
             };
         }
 

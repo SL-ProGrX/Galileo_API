@@ -34,7 +34,7 @@ namespace Galileo_API.Models.ProGrX_ControlTramites
 
         public string caso { get; set; } = "TODOS";
 
-        public string usuario { get; set; } = string.Empty;
+        public string? usuario { get; set; } = string.Empty;
     }
 
     public sealed class FndRecepcionLiqFondosTagsPendienteResponse
