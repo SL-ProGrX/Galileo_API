@@ -87,6 +87,12 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
                 string? filtro)
             => _bl.Cr_SeguimientoTramites_Recepcion_Proveedores_Buscar(codEmpresa, filtro);
 
+
+        [HttpGet("Cr_SeguimientoTramites_Linea_PermiteRefunde_Obtener")]
+        public ErrorDto<bool> Cr_SeguimientoTramites_Linea_PermiteRefunde_Obtener(
+            int codEmpresa,
+            string? codigo)
+            => _bl.Cr_SeguimientoTramites_Linea_PermiteRefunde_Obtener(codEmpresa, codigo);
         [HttpGet("Cr_SeguimientoTramites_Recepcion_Linea_Contexto_Obtener")]
         public ErrorDto<CrSeguimientoTramitesRecepcionLineaContextoData>
             Cr_SeguimientoTramites_Recepcion_Linea_Contexto_Obtener(
@@ -108,6 +114,18 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
                 [FromQuery] CrSeguimientoTramitesRecepcionRangosRequest request)
             => _bl.Cr_SeguimientoTramites_Recepcion_Rangos_Obtener(codEmpresa, request);
 
+
+        [HttpGet("Cr_SeguimientoTramites_Recepcion_RangoPlazo_Obtener")]
+        public ErrorDto<decimal> Cr_SeguimientoTramites_Recepcion_RangoPlazo_Obtener(
+            int codEmpresa,
+            [FromQuery] CrSeguimientoTramitesRecepcionRangoPlazoRequest request)
+            => _bl.Cr_SeguimientoTramites_Recepcion_RangoPlazo_Obtener(codEmpresa, request);
+
+        [HttpGet("Cr_SeguimientoTramites_Recepcion_Cuota_Calcular")]
+        public ErrorDto<decimal> Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(
+            int codEmpresa,
+            [FromQuery] CrSeguimientoTramitesRecepcionCuotaRequest request)
+            => FrmCrSeguimientoTramitesBl.Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(request);
         [HttpGet("Cr_SeguimientoTramites_Recepcion_Banco_Cuentas_Obtener")]
         public ErrorDto<List<CrSeguimientoTramitesOpcionItem>>
             Cr_SeguimientoTramites_Recepcion_Banco_Cuentas_Obtener(

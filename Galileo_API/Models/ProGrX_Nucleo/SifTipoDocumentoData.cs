@@ -1,5 +1,5 @@
 ﻿namespace Galileo.Models.ProGrX_Nucleo
-{
+{ 
     public class SifTipoDocumentoData
     {
 
@@ -45,5 +45,28 @@
         public string descripcion { get; set; } = string.Empty;
         public string? asignado { get; set; }
         public bool asignadob => !string.IsNullOrEmpty(asignado);
+    }
+
+    public class SifTipoDocumentoCuentaData
+    {
+        public string cod_cuenta { get; set; } = string.Empty;
+        public string cuenta_mask { get; set; } = string.Empty;
+        public string cuenta_desc { get; set; } = string.Empty;
+        public bool valida { get; set; }
+    }
+
+    public class SifTipoDocumentoArchivoData
+    {
+        public string nombre_archivo { get; set; } = string.Empty;
+        public string carpeta { get; set; } = string.Empty;
+        public string respaldo { get; set; } = string.Empty;
+        public bool existe { get; set; }
+    }
+
+    public class SifTipoDocumentoArchivoDescargaData
+    {
+        public string nombre_archivo { get; set; } = string.Empty;
+        public string carpeta { get; set; } = string.Empty;
+        public byte[] contenido { get; set; } = Array.Empty<byte>();
     }
 }
