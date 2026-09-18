@@ -99,7 +99,7 @@ namespace Galileo_API.DataBaseTier
                 return DbHelper.ErrorResponse(motivo ?? SinpeRejectionMessage);
             }
 
-            var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(codEmpresa, solicitud, cuenta.Account?.CurrencyCode ?? "X");
+            var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(codEmpresa, solicitud, cuenta.Account.CurrencyCode ?? "X");
             if (valOrigen.Code == -1)
                 return DbHelper.ErrorResponse(valOrigen.Description);
 
@@ -123,7 +123,7 @@ namespace Galileo_API.DataBaseTier
             if (cedula.Replace("-", "") != cuenta.Account.HolderId.Replace("-", ""))
                 return DbHelper.ErrorResponse("La cuenta IBAN no pertenece a la Cedula");
 
-            return ConstruirRespuestaEstado(codEmpresa, cuenta.Account.State ?? 0, info, cuenta);
+            return ConstruirRespuestaEstado(codEmpresa, cuenta.Account.State.Value, info, cuenta);
         }
         private ErrorDto VerificarServicioDisponible(string uriConn, ReqBase context)
         {
