@@ -6,7 +6,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 
 namespace Galileo.Controllers
-{
+{ 
     [Route("api/[controller]")]
     [ApiController]
 

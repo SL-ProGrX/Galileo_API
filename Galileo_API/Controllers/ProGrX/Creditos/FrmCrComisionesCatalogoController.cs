@@ -11,7 +11,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
     [Authorize]
     public class FrmCrComisionesCatalogoController : ControllerBase
     {
-        private readonly FrmCrComisionesCatalogoBL _bl;
+        private readonly FrmCrComisionesCatalogoBL _bl; 
 
         public FrmCrComisionesCatalogoController(IConfiguration config)
         {

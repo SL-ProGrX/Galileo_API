@@ -6,7 +6,7 @@ using Galileo.Models.Security;
 using System.Globalization;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
-{
+{ 
     /// <summary>
     /// Manejo del Archivo Especial (plantilla de reporte personalizada) del tipo de documento.
     /// Equivale a btnImagenes_Click del VB6, pero además deposita el archivo en el
@@ -178,7 +178,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
 
         /// <summary>
-        /// Busca el archivo en las carpetas preferidas y, si no aparece, en todo el árbol
+        /// Busca el archivo en las carpetas preferidas y, si no aparece, en el árbol
         /// del repositorio de reportes. Devuelve null si no existe.
         /// </summary>
         /// <param name="CodEmpresa"></param>
