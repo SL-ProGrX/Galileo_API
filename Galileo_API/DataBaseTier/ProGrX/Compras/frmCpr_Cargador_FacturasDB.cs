@@ -235,8 +235,9 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto<CprFacturasXmlLista> Cargador_Facturas_Obtener(int CodEmpresa, int proveedor, string filtros)
         {
-            // Mantiene comportamiento original: solo activas (P, A)
-            return Cargador_Facturas_ObtenerCore(CodEmpresa, proveedor, filtros, soloActivas: true);
+            // El listado principal funciona como historial y debe incluir todos los estados.
+            // Para seleccionar facturas pendientes/autorizadas existe el endpoint de activas.
+            return Cargador_Facturas_ObtenerCore(CodEmpresa, proveedor, filtros, soloActivas: false);
         }
 
 
