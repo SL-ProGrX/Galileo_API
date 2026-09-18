@@ -402,28 +402,62 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             
         }
 
-        public ErrorDto TES_RegistrosBancosCargados_Elimina(int CodEmpresa, List<TesBancoCargadoElimina> lista)
+        public ErrorDto<List<TesBancoCargadoEliminaResultado>> TES_RegistrosBancosCargados_Elimina(int CodEmpresa, List<TesBancoCargadoElimina> lista)
         {
           
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
+                var resultados = new List<TesBancoCargadoEliminaResultado>();
+
                 foreach (var item in lista)
                 {
                     var querySP = "spTes_Bancos_Mov_Elimina";
-                    conn.Execute(querySP, new
+                    var result = conn.QuerySingleOrDefault<TesBancoMovEliminaResult>(querySP, new
                     {
                         LineaId = item.linea_id
                     },
                     commandType: CommandType.StoredProcedure);
+
+                    if (result is null)
+                    {
+                        resultados.Add(new TesBancoCargadoEliminaResultado
+                        {
+                            linea_id = Convert.ToInt32(item.linea_id ?? 0),
+                            result = -1,
+                            mensaje = "El proceso no devolvio resultado."
+                        });
+                        continue;
+                    }
+
+                    var mensaje = result.RESULT switch
+                    {
+                        1 => "Eliminada correctamente.",
+                        -1 => "No encontrada.",
+                        -2 => "No se puede eliminar, documento asociado en depositos.",
+                        _ => $"Resultado desconocido ({result.RESULT})."
+                    };
+
+                    resultados.Add(new TesBancoCargadoEliminaResultado
+                    {
+                        linea_id = result.ID_LINEA,
+                        result = result.RESULT,
+                        mensaje = mensaje
+                    });
                 }
-                return DbHelper.OkResponse("Registro procesado correctamente!");
+                return DbHelper.CreateOkResponse(resultados, "Registros procesados correctamente!");
             }
             catch (Exception ex)
             {
-                return DbHelper.ErrorResponse(ex.Message);
+                return DbHelper.CreateErrorResponse<List<TesBancoCargadoEliminaResultado>>(ex.Message, -1, new());
             }
 
+        }
+
+        private sealed class TesBancoMovEliminaResult
+        {
+            public int ID_LINEA { get; set; }
+            public short RESULT { get; set; }
         }
 
         /// <summary>

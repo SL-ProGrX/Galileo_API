@@ -70,7 +70,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         [HttpPost("TES_RegistrosBancosCargados_Elimina")]
-        public ErrorDto TES_RegistrosBancosCargados_Elimina(int CodEmpresa, List<TesBancoCargadoElimina> registroLista)
+        public ErrorDto<List<TesBancoCargadoEliminaResultado>> TES_RegistrosBancosCargados_Elimina(int CodEmpresa, List<TesBancoCargadoElimina> registroLista)
         {
             return _bl.TES_RegistrosBancosCargados_Elimina(CodEmpresa, registroLista);
         }
