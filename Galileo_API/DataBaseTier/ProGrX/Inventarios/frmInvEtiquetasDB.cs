@@ -137,7 +137,7 @@ namespace Galileo.DataBaseTier
         #region Consultas
 
         /// <summary>
-        /// Genera los datos necesarios para la impresión de etiquetas SATO.
+        /// Genera los datos necesarios para la impresion de etiquetas SATO.
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="request">Solicitud de generación de etiquetas.</param>
@@ -149,7 +149,7 @@ namespace Galileo.DataBaseTier
             {
                 return new ErrorDto<List<ProductData>>
                 {
-                    Code = -2,
+                    Code = -1,
                     Description = "La opción de generación indicada no es válida.",
                     Result = new List<ProductData>()
                 };
