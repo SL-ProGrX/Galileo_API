@@ -247,6 +247,27 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public decimal tasa_sugerida { get; set; }
     }
 
+    public class CrSeguimientoTramitesRecepcionRangoPlazoRequest
+    {
+        public string codigo { get; set; } = string.Empty;
+        [JsonRequired]
+        public int plazo { get; set; }
+        public string destino { get; set; } = string.Empty;
+        public string garantia { get; set; } = string.Empty;
+        [JsonRequired]
+        public decimal tasa_pts_bono { get; set; }
+    }
+
+    public class CrSeguimientoTramitesRecepcionCuotaRequest
+    {
+        [JsonRequired]
+        public decimal monto { get; set; }
+        [JsonRequired]
+        public int plazo { get; set; }
+        [JsonRequired]
+        public decimal tasa { get; set; }
+        public string frecuencia { get; set; } = "M";
+    }
     internal sealed class CrSeguimientoTramitesRecepcionRangosRaw
     {
         public decimal plazo { get; set; }

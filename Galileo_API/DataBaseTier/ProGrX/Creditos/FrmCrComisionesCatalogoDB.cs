@@ -7,31 +7,41 @@ using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
-    public class FrmCrComisionesCatalogoDB
+    public class FrmCrComisionesCatalogoDB 
     {
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _bitacora;
+        private readonly MCntLinkDB _cntLinkDb;
         private const int VModulo = 3;
         private const string GuardadoExito = "Información guardada satisfactoriamente...";
         private const string EliminadoExito = "Información eliminada satisfactoriamente...";
         private const string ValIndicaComision = "Debe indicar la comisión.";
+        private const string MovimientoRegistra = "Registra - WEB";
+        private const string MovimientoElimina = "Elimina - WEB";
 
 
         public FrmCrComisionesCatalogoDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
             _bitacora = new MSecurityMainDb(config);
+            _cntLinkDb = new MCntLinkDB(config);
         }
 
         private static string Limpiar(string? valor)
             => valor?.Trim() ?? string.Empty;
 
-        private static string CuentaSinFormato(string? cuenta)
+        /// <summary>
+        /// Normaliza la cuenta contable sin máscara, equivalente a fxCntX_CuentaFormato(False, ...) del VB6.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="cuenta">Cuenta digitada por el usuario, con o sin máscara.</param>
+        /// <returns>Cuenta normalizada y rellenada con ceros según los parámetros contables.</returns>
+        private string CuentaSinFormato(int codEmpresa, string? cuenta)
         {
             if (string.IsNullOrWhiteSpace(cuenta))
                 return string.Empty;
 
-            return cuenta.Replace("-", string.Empty).Trim();
+            return _cntLinkDb.fxgCntCuentaFormato(codEmpresa, false, cuenta, 0);
         }
 
         private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
@@ -98,6 +108,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             CrComisionesCatalogoPorcentajesRequest request)
         {
             request.cod_comision = Limpiar(request.cod_comision);
+            request.usuario = Limpiar(request.usuario);
 
             if (string.IsNullOrWhiteSpace(request.cod_comision))
             {
@@ -117,8 +128,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     "spCrd_Comisiones_TP_Consulta",
                     new
                     {
-                        cod_comision = request.cod_comision,
-                        usuario = string.Empty
+                        Codigo = request.cod_comision,
+                        usuario = request.usuario
                     },
                     commandType: CommandType.StoredProcedure
                 ).ToList();
@@ -166,7 +177,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 var lista = connection.Query<CrComisionesCatalogoLineaData>(
                     "spCrd_Comisiones_Lineas_Asigna_Consulta",
-                    new { cod_comision = request.cod_comision },
+                    new { Codigo = request.cod_comision },
                     commandType: CommandType.StoredProcedure
                 ).ToList();
 
@@ -195,7 +206,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             int codEmpresa,
             string cuenta)
         {
-            string cuentaLimpia = CuentaSinFormato(cuenta);
+            string cuentaLimpia = CuentaSinFormato(codEmpresa, cuenta);
 
             if (string.IsNullOrWhiteSpace(cuentaLimpia))
             {
@@ -238,7 +249,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             request.comision.cod_comision = Limpiar(request.comision.cod_comision);
             request.comision.descripcion = Limpiar(request.comision.descripcion);
             request.comision.base_calculo = Limpiar(request.comision.base_calculo);
-            request.comision.cod_cuenta_mask = CuentaSinFormato(request.comision.cod_cuenta_mask);
+            request.comision.cod_cuenta_mask = CuentaSinFormato(codEmpresa, request.comision.cod_cuenta_mask);
 
             if (string.IsNullOrWhiteSpace(request.comision.descripcion))
             {
@@ -297,11 +308,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 );
 
                 string codigoResultado = Convert.ToString(resultado?.Cod_Comision ?? request.comision.cod_comision) ?? request.comision.cod_comision;
+                string movimiento = Convert.ToString(resultado?.Movimiento ?? string.Empty) ?? string.Empty;
+                movimiento = string.IsNullOrWhiteSpace(movimiento)
+                    ? MovimientoRegistra
+                    : $"{movimiento.Trim()} - WEB";
 
                 return FinalizarRespuestaConBitacora(
                     codEmpresa,
                     request.usuario,
-                    "Registra - WEB",
+                    movimiento,
                     $"Comisión de Crédito Id: {codigoResultado}",
                     new ErrorDto { Code = 0, Description = string.Empty },
                     GuardadoExito
@@ -357,7 +372,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return FinalizarRespuestaConBitacora(
                     codEmpresa,
                     request.usuario,
-                    "Elimina - WEB",
+                    MovimientoElimina,
                     $"Comisión de Crédito Id: {request.cod_comision}",
                     new ErrorDto { Code = 0, Description = string.Empty },
                     EliminadoExito
@@ -417,7 +432,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return FinalizarRespuestaConBitacora(
                     codEmpresa,
                     request.usuario,
-                    "Registra - WEB",
+                    MovimientoRegistra,
                     $"Comisiones, Tabla Porcentajes > Código: {request.cod_comision} > Id: {lineaResultado}",
                     new ErrorDto { Code = 0, Description = string.Empty },
                     GuardadoExito
@@ -475,7 +490,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return FinalizarRespuestaConBitacora(
                     codEmpresa,
                     request.usuario,
-                    "Elimina - WEB",
+                    MovimientoElimina,
                     $"Comisiones, Tabla Porcentajes > Código: {request.cod_comision} > Id: {request.linea_id}",
                     new ErrorDto { Code = 0, Description = string.Empty },
                     EliminadoExito
@@ -512,7 +527,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
 
             string accion = request.asignado ? "I" : "E";
-            string movimiento = request.asignado ? "Registra - WEB" : "Elimina - WEB";
+            string movimiento = request.asignado ? MovimientoRegistra : MovimientoElimina;
             string detalle = $"Comisiones Asignación Línea Id: {request.cod_comision} .. Código: {request.codigo}";
 
             try
