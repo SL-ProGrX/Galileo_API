@@ -2,16 +2,18 @@
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
 using System.Data;
-using System.Text;
 
 namespace Galileo.DataBaseTier
 {
     public class FrmInvOrdNivelAutoDB
     {
         private const int CodigoValidacion = -2;
+        private const int PaginacionPredeterminada = 30;
         private const string TipoEntrada = "E";
         private const string TipoSalida = "S";
         private const string TipoTraslado = "T";
+        private const string MensajeUsuarioAutorizadorRequerido =
+            "El usuario autorizador es requerido.";
         private const string ProcedimientoAutorizadorEliminar =
             "[spINV_W_Autorizador_Eliminar]";
         private const string ProcedimientoUsuarioCargoActualizar =
@@ -23,10 +25,12 @@ namespace Galileo.DataBaseTier
         /// Inicializa el acceso a datos del formulario de niveles de autorización.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
-        public FrmInvOrdNivelAutoDB(IConfiguration config)
+        public FrmInvOrdNivelAutoDB(
+            IConfiguration config)
         {
             _config = config ??
-                throw new ArgumentNullException(nameof(config));
+                throw new ArgumentNullException(
+                    nameof(config));
         }
 
         /// <summary>
@@ -37,67 +41,78 @@ namespace Galileo.DataBaseTier
         /// <param name="paginacion">Cantidad de registros solicitados.</param>
         /// <param name="filtro">Filtro por usuario o descripción.</param>
         /// <returns>Lista paginada de usuarios y autorizadores.</returns>
-        public ErrorDto<AutorizadorDataLista> Autorizadores_Obtener(
-            int CodCliente,
-            int? pagina,
-            int? paginacion,
-            string? filtro)
+        public ErrorDto<AutorizadorDataLista>
+            Autorizadores_Obtener(
+                int CodCliente,
+                int? pagina,
+                int? paginacion,
+                string? filtro)
         {
+            const string query = """
+                SELECT COUNT(*)
+                FROM usuarios U
+                LEFT JOIN pv_orden_autorizadores A
+                    ON U.nombre = A.usuario
+                WHERE U.estado = 'A'
+                  AND
+                  (
+                      @filtro IS NULL
+                      OR U.nombre LIKE @filtro
+                      OR U.descripcion LIKE @filtro
+                  );
+
+                SELECT
+                    U.nombre AS usuario,
+                    U.descripcion AS descripcion,
+                    A.fecha AS fecha
+                FROM usuarios U
+                LEFT JOIN pv_orden_autorizadores A
+                    ON U.nombre = A.usuario
+                WHERE U.estado = 'A'
+                  AND
+                  (
+                      @filtro IS NULL
+                      OR U.nombre LIKE @filtro
+                      OR U.descripcion LIKE @filtro
+                  )
+                ORDER BY
+                    A.fecha DESC,
+                    U.nombre
+                OFFSET @pagina ROWS
+                FETCH NEXT @paginacion ROWS ONLY;
+                """;
+
+            var parametros =
+                CrearParametrosPaginacion(
+                    pagina,
+                    paginacion,
+                    filtro);
+
             var result = DbHelper.WithConn(
                 CrearPortalDb(),
                 CodCliente,
                 connection =>
                 {
-                    var parametros = new DynamicParameters();
-                    var clausulaFiltro = CrearClausulaFiltro(
-                        filtro,
-                        parametros);
-
-                    var total = connection.QueryFirstOrDefault<int>(
-                        $"""
-                        SELECT COUNT(*)
-                        FROM usuarios U
-                        LEFT JOIN pv_orden_autorizadores A
-                            ON U.nombre = A.usuario
-                        WHERE U.estado = 'A'
-                        {clausulaFiltro}
-                        """,
-                        parametros);
-
-                    var consulta = new StringBuilder(
-                        $"""
-                        SELECT
-                            U.nombre AS usuario,
-                            U.descripcion AS descripcion,
-                            A.fecha AS fecha
-                        FROM usuarios U
-                        LEFT JOIN pv_orden_autorizadores A
-                            ON U.nombre = A.usuario
-                        WHERE U.estado = 'A'
-                        {clausulaFiltro}
-                        ORDER BY A.fecha DESC, U.nombre
-                        """);
-
-                    AgregarPaginacion(
-                        consulta,
-                        parametros,
-                        pagina,
-                        paginacion);
+                    using var resultados =
+                        connection.QueryMultiple(
+                            query,
+                            parametros);
 
                     return new AutorizadorDataLista
                     {
-                        total = total,
-                        autorizadores = connection
-                            .Query<AutorizadorDto>(
-                                consulta.ToString(),
-                                parametros)
-                            .ToList()
+                        total =
+                            resultados.ReadFirst<int>(),
+                        autorizadores =
+                            resultados
+                                .Read<AutorizadorDto>()
+                                .ToList()
                     };
                 });
 
             return result.Code == 0
                 ? DbHelper.CreateOkResponse(
-                    result.Result ?? CrearAutorizadorListaVacia())
+                    result.Result ??
+                    CrearAutorizadorListaVacia())
                 : DbHelper.CreateErrorResponse(
                     result.Description ??
                     "Error al obtener los autorizadores.",
@@ -110,8 +125,9 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <returns>Lista de usuarios activos.</returns>
-        public ErrorDto<List<AutorizadorDto>> Autorizador_ObtenerTodos(
-            int CodEmpresa)
+        public ErrorDto<List<AutorizadorDto>>
+            Autorizador_ObtenerTodos(
+                int CodEmpresa)
         {
             const string query = """
                 SELECT
@@ -122,13 +138,16 @@ namespace Galileo.DataBaseTier
                 LEFT JOIN pv_orden_autorizadores A
                     ON U.nombre = A.usuario
                 WHERE U.estado = 'A'
-                ORDER BY A.fecha DESC, U.nombre
+                ORDER BY
+                    A.fecha DESC,
+                    U.nombre;
                 """;
 
-            return DbHelper.ExecuteListQuery<AutorizadorDto>(
-                CrearPortalDb(),
-                CodEmpresa,
-                query);
+            return DbHelper.ExecuteListQuery<
+                AutorizadorDto>(
+                    CrearPortalDb(),
+                    CodEmpresa,
+                    query);
         }
 
         /// <summary>
@@ -136,8 +155,9 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <returns>Lista de autorizadores activos.</returns>
-        public ErrorDto<List<AutorizadorDto>> Autorizador_Obtener(
-            int CodEmpresa)
+        public ErrorDto<List<AutorizadorDto>>
+            Autorizador_Obtener(
+                int CodEmpresa)
         {
             const string query = """
                 SELECT
@@ -148,13 +168,14 @@ namespace Galileo.DataBaseTier
                 INNER JOIN pv_orden_autorizadores A
                     ON U.nombre = A.usuario
                 WHERE U.estado = 'A'
-                ORDER BY U.nombre
+                ORDER BY U.nombre;
                 """;
 
-            return DbHelper.ExecuteListQuery<AutorizadorDto>(
-                CrearPortalDb(),
-                CodEmpresa,
-                query);
+            return DbHelper.ExecuteListQuery<
+                AutorizadorDto>(
+                    CrearPortalDb(),
+                    CodEmpresa,
+                    query);
         }
 
         /// <summary>
@@ -168,10 +189,11 @@ namespace Galileo.DataBaseTier
             AutorizadorDto request)
         {
             if (request is null ||
-                string.IsNullOrWhiteSpace(request.usuario))
+                string.IsNullOrWhiteSpace(
+                    request.usuario))
             {
                 return DbHelper.ErrorResponse(
-                    "El usuario autorizador es requerido.",
+                    MensajeUsuarioAutorizadorRequerido,
                     CodigoValidacion);
             }
 
@@ -185,9 +207,9 @@ namespace Galileo.DataBaseTier
                 VALUES
                 (
                     @usuario,
-                    Getdate(),
+                    GETDATE(),
                     'A'
-                )
+                );
                 """;
 
             var result = DbHelper.ExecuteNonQuery(
@@ -196,7 +218,8 @@ namespace Galileo.DataBaseTier
                 query,
                 new
                 {
-                    usuario = request.usuario.Trim()
+                    usuario =
+                        request.usuario.Trim()
                 });
 
             return CrearRespuestaOperacion(
@@ -217,7 +240,7 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(usuario))
             {
                 return DbHelper.ErrorResponse(
-                    "El usuario autorizador es requerido.",
+                    MensajeUsuarioAutorizadorRequerido,
                     CodigoValidacion);
             }
 
@@ -251,73 +274,79 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(usuario))
             {
                 return DbHelper.CreateErrorResponse(
-                    "El usuario autorizador es requerido.",
+                    MensajeUsuarioAutorizadorRequerido,
                     CodigoValidacion,
                     CrearUsuariosCargoListaVacia());
             }
+
+            const string query = """
+                SELECT COUNT(*)
+                FROM usuarios U
+                LEFT JOIN pv_orden_autousers C
+                    ON U.nombre = C.usuario_asignado
+                    AND C.usuario = @usuario
+                WHERE U.estado = 'A'
+                  AND
+                  (
+                      @filtro IS NULL
+                      OR U.nombre LIKE @filtro
+                      OR U.descripcion LIKE @filtro
+                  );
+
+                SELECT
+                    U.nombre AS usuario,
+                    U.descripcion AS descripcion,
+                    C.usuario AS autorizador,
+                    ISNULL(C.entradas, 0) AS entradas,
+                    ISNULL(C.salidas, 0) AS salidas,
+                    ISNULL(
+                        C.requisiciones,
+                        0
+                    ) AS requisiciones,
+                    ISNULL(C.traslados, 0) AS traslados
+                FROM usuarios U
+                LEFT JOIN pv_orden_autousers C
+                    ON U.nombre = C.usuario_asignado
+                    AND C.usuario = @usuario
+                WHERE U.estado = 'A'
+                  AND
+                  (
+                      @filtro IS NULL
+                      OR U.nombre LIKE @filtro
+                      OR U.descripcion LIKE @filtro
+                  )
+                ORDER BY
+                    C.fecha_asignacion DESC,
+                    U.nombre
+                OFFSET @pagina ROWS
+                FETCH NEXT @paginacion ROWS ONLY;
+                """;
+
+            var parametros =
+                CrearParametrosPaginacion(
+                    pagina,
+                    paginacion,
+                    filtro,
+                    usuario.Trim());
 
             var result = DbHelper.WithConn(
                 CrearPortalDb(),
                 CodCliente,
                 connection =>
                 {
-                    var parametros = new DynamicParameters();
-                    parametros.Add(
-                        "usuario",
-                        usuario.Trim(),
-                        DbType.String);
-
-                    var clausulaFiltro = CrearClausulaFiltro(
-                        filtro,
-                        parametros);
-
-                    var total = connection.QueryFirstOrDefault<int>(
-                        $"""
-                        SELECT COUNT(*)
-                        FROM usuarios U
-                        LEFT JOIN pv_orden_autousers C
-                            ON U.nombre = C.usuario_asignado
-                            AND C.usuario = @usuario
-                        WHERE U.estado = 'A'
-                        {clausulaFiltro}
-                        """,
-                        parametros);
-
-                    var consulta = new StringBuilder(
-                        $"""
-                        SELECT
-                            U.nombre AS usuario,
-                            U.descripcion AS descripcion,
-                            C.usuario AS autorizador,
-                            ISNULL(C.entradas, 0) AS entradas,
-                            ISNULL(C.salidas, 0) AS salidas,
-                            ISNULL(C.requisiciones, 0) AS requisiciones,
-                            ISNULL(C.traslados, 0) AS traslados
-                        FROM usuarios U
-                        LEFT JOIN pv_orden_autousers C
-                            ON U.nombre = C.usuario_asignado
-                            AND C.usuario = @usuario
-                        WHERE U.estado = 'A'
-                        {clausulaFiltro}
-                        ORDER BY
-                            C.fecha_asignacion DESC,
-                            U.nombre
-                        """);
-
-                    AgregarPaginacion(
-                        consulta,
-                        parametros,
-                        pagina,
-                        paginacion);
+                    using var resultados =
+                        connection.QueryMultiple(
+                            query,
+                            parametros);
 
                     return new UsuariosACargoDataLista
                     {
-                        total = total,
-                        usuarios = connection
-                            .Query<UsuarioaCargoDto>(
-                                consulta.ToString(),
-                                parametros)
-                            .ToList()
+                        total =
+                            resultados.ReadFirst<int>(),
+                        usuarios =
+                            resultados
+                                .Read<UsuarioaCargoDto>()
+                                .ToList()
                     };
                 });
 
@@ -338,9 +367,10 @@ namespace Galileo.DataBaseTier
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="usuario">Usuario autorizador.</param>
         /// <returns>Lista de usuarios a cargo.</returns>
-        public List<UsuarioaCargoDto> UsuariosACargo_Obtener(
-            int CodEmpresa,
-            string usuario)
+        public List<UsuarioaCargoDto>
+            UsuariosACargo_Obtener(
+                int CodEmpresa,
+                string usuario)
         {
             if (string.IsNullOrWhiteSpace(usuario))
             {
@@ -354,7 +384,10 @@ namespace Galileo.DataBaseTier
                     C.usuario AS autorizador,
                     ISNULL(C.entradas, 0) AS entradas,
                     ISNULL(C.salidas, 0) AS salidas,
-                    ISNULL(C.requisiciones, 0) AS requisiciones,
+                    ISNULL(
+                        C.requisiciones,
+                        0
+                    ) AS requisiciones,
                     ISNULL(C.traslados, 0) AS traslados
                 FROM usuarios U
                 LEFT JOIN pv_orden_autousers C
@@ -363,7 +396,7 @@ namespace Galileo.DataBaseTier
                 WHERE U.estado = 'A'
                 ORDER BY
                     C.fecha_asignacion DESC,
-                    U.nombre
+                    U.nombre;
                 """;
 
             var result = DbHelper.WithConn(
@@ -379,7 +412,8 @@ namespace Galileo.DataBaseTier
                     .ToList());
 
             return result.Code == 0
-                ? result.Result ?? new List<UsuarioaCargoDto>()
+                ? result.Result ??
+                  new List<UsuarioaCargoDto>()
                 : new List<UsuarioaCargoDto>();
         }
 
@@ -408,10 +442,13 @@ namespace Galileo.DataBaseTier
                 {
                     Entradas = request.entradas,
                     Salidas = request.salidas,
-                    Requisiciones = request.requisiciones,
+                    Requisiciones =
+                        request.requisiciones,
                     Traslados = request.traslados,
-                    Autorizador = request.autorizador.Trim(),
-                    Usuario = request.usuario.Trim()
+                    Autorizador =
+                        request.autorizador.Trim(),
+                    Usuario =
+                        request.usuario.Trim()
                 },
                 "Error al actualizar el usuario a cargo.");
         }
@@ -425,76 +462,82 @@ namespace Galileo.DataBaseTier
         /// <param name="paginacion">Cantidad de registros solicitados.</param>
         /// <param name="filtro">Filtro por usuario o descripción.</param>
         /// <returns>Lista paginada de usuarios.</returns>
-        public UsuariosCambioFchDataLista UsuariosCambioFch_Obtener(
-            int CodCliente,
-            string tipo,
-            int? pagina,
-            int? paginacion,
-            string? filtro)
+        public UsuariosCambioFchDataLista
+            UsuariosCambioFch_Obtener(
+                int CodCliente,
+                string tipo,
+                int? pagina,
+                int? paginacion,
+                string? filtro)
         {
             if (!EsTipoValido(tipo))
             {
-                return CrearUsuariosCambioFechaListaVacia();
+                return
+                    CrearUsuariosCambioFechaListaVacia();
             }
+
+            const string query = """
+                SELECT COUNT(*)
+                FROM usuarios U
+                LEFT JOIN PV_INVUSRFECHAS A
+                    ON U.nombre = A.usuario
+                    AND A.tipo = @tipo
+                WHERE U.estado = 'A'
+                  AND
+                  (
+                      @filtro IS NULL
+                      OR U.nombre LIKE @filtro
+                      OR U.descripcion LIKE @filtro
+                  );
+
+                SELECT
+                    U.nombre AS usuario,
+                    U.descripcion AS descripcion,
+                    A.tipo AS tipo
+                FROM usuarios U
+                LEFT JOIN PV_INVUSRFECHAS A
+                    ON U.nombre = A.usuario
+                    AND A.tipo = @tipo
+                WHERE U.estado = 'A'
+                  AND
+                  (
+                      @filtro IS NULL
+                      OR U.nombre LIKE @filtro
+                      OR U.descripcion LIKE @filtro
+                  )
+                ORDER BY
+                    A.tipo DESC,
+                    U.nombre
+                OFFSET @pagina ROWS
+                FETCH NEXT @paginacion ROWS ONLY;
+                """;
+
+            var parametros =
+                CrearParametrosPaginacionCambioFecha(
+                    pagina,
+                    paginacion,
+                    filtro,
+                    tipo.Trim());
 
             var result = DbHelper.WithConn(
                 CrearPortalDb(),
                 CodCliente,
                 connection =>
                 {
-                    var parametros = new DynamicParameters();
-                    parametros.Add(
-                        "tipo",
-                        tipo.Trim(),
-                        DbType.String);
-
-                    var clausulaFiltro = CrearClausulaFiltro(
-                        filtro,
-                        parametros);
-
-                    var total = connection.QueryFirstOrDefault<int>(
-                        $"""
-                        SELECT COUNT(*)
-                        FROM usuarios U
-                        LEFT JOIN PV_INVUSRFECHAS A
-                            ON U.nombre = A.usuario
-                            AND A.tipo = @tipo
-                        WHERE U.estado = 'A'
-                        {clausulaFiltro}
-                        """,
-                        parametros);
-
-                    var consulta = new StringBuilder(
-                        $"""
-                        SELECT
-                            U.nombre AS usuario,
-                            U.descripcion AS descripcion,
-                            A.tipo AS tipo
-                        FROM usuarios U
-                        LEFT JOIN PV_INVUSRFECHAS A
-                            ON U.nombre = A.usuario
-                            AND A.tipo = @tipo
-                        WHERE U.estado = 'A'
-                        {clausulaFiltro}
-                        ORDER BY
-                            A.tipo DESC,
-                            U.nombre
-                        """);
-
-                    AgregarPaginacion(
-                        consulta,
-                        parametros,
-                        pagina,
-                        paginacion);
+                    using var resultados =
+                        connection.QueryMultiple(
+                            query,
+                            parametros);
 
                     return new UsuariosCambioFchDataLista
                     {
-                        total = total,
-                        usuarios = connection
-                            .Query<UsuarioaCambioFechaDto>(
-                                consulta.ToString(),
-                                parametros)
-                            .ToList()
+                        total =
+                            resultados.ReadFirst<int>(),
+                        usuarios =
+                            resultados
+                                .Read<
+                                    UsuarioaCambioFechaDto>()
+                                .ToList()
                     };
                 });
 
@@ -517,7 +560,8 @@ namespace Galileo.DataBaseTier
         {
             if (!EsTipoValido(tipo))
             {
-                return new List<UsuarioaCambioFechaDto>();
+                return
+                    new List<UsuarioaCambioFechaDto>();
             }
 
             const string query = """
@@ -532,7 +576,7 @@ namespace Galileo.DataBaseTier
                 WHERE U.estado = 'A'
                 ORDER BY
                     A.tipo DESC,
-                    U.nombre
+                    U.nombre;
                 """;
 
             var result = DbHelper.WithConn(
@@ -581,7 +625,7 @@ namespace Galileo.DataBaseTier
                 (
                     @usuario,
                     @tipo
-                )
+                );
                 """;
 
             var result = DbHelper.ExecuteNonQuery(
@@ -620,7 +664,7 @@ namespace Galileo.DataBaseTier
             const string query = """
                 DELETE FROM PV_INVUSRFECHAS
                 WHERE usuario = @usuario
-                  AND tipo = @tipo
+                  AND tipo = @tipo;
                 """;
 
             var result = DbHelper.ExecuteNonQuery(
@@ -646,11 +690,12 @@ namespace Galileo.DataBaseTier
         /// <param name="parametros">Parámetros del procedimiento.</param>
         /// <param name="mensajeError">Mensaje predeterminado de error.</param>
         /// <returns>Resultado estándar de la operación.</returns>
-        private ErrorDto EjecutarProcedimientoConCodigo(
-            int CodEmpresa,
-            string procedimiento,
-            object parametros,
-            string mensajeError)
+        private ErrorDto
+            EjecutarProcedimientoConCodigo(
+                int CodEmpresa,
+                string procedimiento,
+                object parametros,
+                string mensajeError)
         {
             var result = DbHelper.WithConn<int>(
                 CrearPortalDb(),
@@ -665,7 +710,8 @@ namespace Galileo.DataBaseTier
             if (result.Code != 0)
             {
                 return DbHelper.ErrorResponse(
-                    result.Description ?? mensajeError,
+                    result.Description ??
+                    mensajeError,
                     result.Code.GetValueOrDefault(-1));
             }
 
@@ -677,67 +723,96 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Agrega la paginación parametrizada a una consulta.
+        /// Crea los parámetros para una consulta paginada.
         /// </summary>
-        /// <param name="consulta">Consulta que se modificará.</param>
-        /// <param name="parametros">Parámetros de la consulta.</param>
-        /// <param name="pagina">Registro inicial de la página.</param>
+        /// <param name="pagina">Registro inicial solicitado.</param>
         /// <param name="paginacion">Cantidad de registros solicitados.</param>
-        private static void AgregarPaginacion(
-            StringBuilder consulta,
-            DynamicParameters parametros,
-            int? pagina,
-            int? paginacion)
+        /// <param name="filtro">Filtro por usuario o descripción.</param>
+        /// <param name="usuario">Usuario autorizador opcional.</param>
+        /// <returns>Parámetros normalizados para Dapper.</returns>
+        private static object
+            CrearParametrosPaginacion(
+                int? pagina,
+                int? paginacion,
+                string? filtro,
+                string? usuario = null)
         {
-            if (!pagina.HasValue ||
-                !paginacion.HasValue ||
-                pagina.Value < 0 ||
-                paginacion.Value <= 0)
+            return new
             {
-                return;
-            }
-
-            consulta.Append(
-                " OFFSET @pagina ROWS FETCH NEXT @paginacion ROWS ONLY");
-
-            parametros.Add(
-                "pagina",
-                pagina.Value,
-                DbType.Int32);
-
-            parametros.Add(
-                "paginacion",
-                paginacion.Value,
-                DbType.Int32);
+                pagina =
+                    NormalizarPagina(pagina),
+                paginacion =
+                    NormalizarPaginacion(paginacion),
+                filtro =
+                    NormalizarFiltro(filtro),
+                usuario
+            };
         }
 
         /// <summary>
-        /// Crea el filtro parametrizado por usuario o descripción.
+        /// Crea los parámetros para consultar permisos de cambio de fecha.
         /// </summary>
-        /// <param name="filtro">Texto que se utilizará como filtro.</param>
-        /// <param name="parametros">Parámetros de la consulta.</param>
-        /// <returns>Cláusula SQL fija para aplicar el filtro.</returns>
-        private static string CrearClausulaFiltro(
-            string? filtro,
-            DynamicParameters parametros)
+        /// <param name="pagina">Registro inicial solicitado.</param>
+        /// <param name="paginacion">Cantidad de registros solicitados.</param>
+        /// <param name="filtro">Filtro por usuario o descripción.</param>
+        /// <param name="tipo">Tipo de movimiento.</param>
+        /// <returns>Parámetros normalizados para Dapper.</returns>
+        private static object
+            CrearParametrosPaginacionCambioFecha(
+                int? pagina,
+                int? paginacion,
+                string? filtro,
+                string tipo)
         {
-            if (string.IsNullOrWhiteSpace(filtro))
+            return new
             {
-                return string.Empty;
-            }
+                pagina =
+                    NormalizarPagina(pagina),
+                paginacion =
+                    NormalizarPaginacion(paginacion),
+                filtro =
+                    NormalizarFiltro(filtro),
+                tipo
+            };
+        }
 
-            parametros.Add(
-                "filtro",
-                $"%{filtro.Trim()}%",
-                DbType.String);
+        /// <summary>
+        /// Normaliza el registro inicial para la paginación.
+        /// </summary>
+        /// <param name="pagina">Registro inicial recibido.</param>
+        /// <returns>Registro inicial válido.</returns>
+        private static int NormalizarPagina(
+            int? pagina)
+        {
+            return pagina.GetValueOrDefault() < 0
+                ? 0
+                : pagina.GetValueOrDefault();
+        }
 
-            return """
-                 AND
-                 (
-                     U.nombre LIKE @filtro
-                     OR U.descripcion LIKE @filtro
-                 )
-                """;
+        /// <summary>
+        /// Normaliza la cantidad de registros solicitados.
+        /// </summary>
+        /// <param name="paginacion">Cantidad recibida.</param>
+        /// <returns>Cantidad válida de registros.</returns>
+        private static int NormalizarPaginacion(
+            int? paginacion)
+        {
+            return paginacion.GetValueOrDefault() > 0
+                ? paginacion.GetValueOrDefault()
+                : PaginacionPredeterminada;
+        }
+
+        /// <summary>
+        /// Normaliza el filtro utilizado por las consultas.
+        /// </summary>
+        /// <param name="filtro">Filtro recibido.</param>
+        /// <returns>Filtro para LIKE o null cuando está vacío.</returns>
+        private static string? NormalizarFiltro(
+            string? filtro)
+        {
+            return string.IsNullOrWhiteSpace(filtro)
+                ? null
+                : $"%{filtro.Trim()}%";
         }
 
         /// <summary>
@@ -745,8 +820,9 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="request">Datos que se validarán.</param>
         /// <returns>Error de validación o null cuando los datos son válidos.</returns>
-        private static ErrorDto? ValidarUsuarioCargo(
-            UsuarioaCargoDto? request)
+        private static ErrorDto?
+            ValidarUsuarioCargo(
+                UsuarioaCargoDto? request)
         {
             if (request is null)
             {
@@ -755,14 +831,16 @@ namespace Galileo.DataBaseTier
                     CodigoValidacion);
             }
 
-            if (string.IsNullOrWhiteSpace(request.autorizador))
+            if (string.IsNullOrWhiteSpace(
+                request.autorizador))
             {
                 return DbHelper.ErrorResponse(
-                    "El usuario autorizador es requerido.",
+                    MensajeUsuarioAutorizadorRequerido,
                     CodigoValidacion);
             }
 
-            return string.IsNullOrWhiteSpace(request.usuario)
+            return string.IsNullOrWhiteSpace(
+                request.usuario)
                 ? DbHelper.ErrorResponse(
                     "El usuario asignado es requerido.",
                     CodigoValidacion)
@@ -774,8 +852,9 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="request">Datos que se validarán.</param>
         /// <returns>Error de validación o null cuando los datos son válidos.</returns>
-        private static ErrorDto? ValidarCambioFecha(
-            UsuarioaCambioFechaDto? request)
+        private static ErrorDto?
+            ValidarCambioFecha(
+                UsuarioaCambioFechaDto? request)
         {
             if (request is null)
             {
@@ -784,7 +863,8 @@ namespace Galileo.DataBaseTier
                     CodigoValidacion);
             }
 
-            if (string.IsNullOrWhiteSpace(request.usuario))
+            if (string.IsNullOrWhiteSpace(
+                request.usuario))
             {
                 return DbHelper.ErrorResponse(
                     "El usuario es requerido.",
@@ -803,7 +883,8 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="tipo">Tipo de movimiento.</param>
         /// <returns>True cuando corresponde a entrada, salida o traslado.</returns>
-        private static bool EsTipoValido(string? tipo)
+        private static bool EsTipoValido(
+            string? tipo)
         {
             if (string.IsNullOrWhiteSpace(tipo))
             {
@@ -822,14 +903,16 @@ namespace Galileo.DataBaseTier
         /// <param name="result">Resultado de la ejecución.</param>
         /// <param name="mensajeError">Mensaje predeterminado de error.</param>
         /// <returns>Respuesta estándar de la operación.</returns>
-        private static ErrorDto CrearRespuestaOperacion(
-            ErrorDto result,
-            string mensajeError)
+        private static ErrorDto
+            CrearRespuestaOperacion(
+                ErrorDto result,
+                string mensajeError)
         {
             return result.Code == 0
                 ? DbHelper.OkResponse("Ok")
                 : DbHelper.ErrorResponse(
-                    result.Description ?? mensajeError,
+                    result.Description ??
+                    mensajeError,
                     result.Code.GetValueOrDefault(-1));
         }
 
@@ -852,7 +935,8 @@ namespace Galileo.DataBaseTier
             return new AutorizadorDataLista
             {
                 total = 0,
-                autorizadores = new List<AutorizadorDto>()
+                autorizadores =
+                    new List<AutorizadorDto>()
             };
         }
 
@@ -866,7 +950,8 @@ namespace Galileo.DataBaseTier
             return new UsuariosACargoDataLista
             {
                 total = 0,
-                usuarios = new List<UsuarioaCargoDto>()
+                usuarios =
+                    new List<UsuarioaCargoDto>()
             };
         }
 
