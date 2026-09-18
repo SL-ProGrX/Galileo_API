@@ -34,7 +34,7 @@ namespace Galileo.BusinessLogic
 
         public ErrorDto Autorizador_Eliminar(int CodEmpresa, AutorizadorDto request)
         {
-            return _db.Autorizador_Eliminar(CodEmpresa, request.Usuario);
+            return _db.Autorizador_Eliminar(CodEmpresa, request.usuario);
         }
 
         public ErrorDto<UsuariosACargoDataLista> UsuariosACargoAut_Obtener(int CodCliente, string usuario, int? pagina, int? paginacion, string? filtro)
