@@ -86,6 +86,10 @@ appsettings.Development.json.backup
 **/Publish/
 
 /Galileo_API.Tests
+!/Galileo_API.Tests/
+!/Galileo_API.Tests/**
+/Galileo_API.Tests/bin/
+/Galileo_API.Tests/obj/
 Galileo_API/Galileo_API.csproj
 Galileo_API/Galileo_API.csproj.Backup.tmp
 AGENTS.md
