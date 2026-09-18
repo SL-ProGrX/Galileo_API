@@ -1,4 +1,4 @@
-﻿using Galileo.BusinessLogic;
+using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
@@ -79,56 +79,7 @@ namespace Galileo_API.DataBaseTier
 
                 var cuenta = ConsultarCuenta(parametrosSinpe, context, info.CuentaIBAN, sinpeTipo, cedula);
 
-                if(cuenta.Account.State != 0 && cuenta.Account.State != 1)
-                {
-                    var motivo =  _mKindo.fxTesConsultaMotivo(codEmpresa, Convert.ToInt32(cuenta.Account.State)).Result;
-                    return DbHelper.ErrorResponse(motivo ?? SinpeRejectionMessage);
-                }
-
-                var currencyCode = cuenta.Account?.CurrencyCode ?? "X";
-                var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(codEmpresa, solicitud, currencyCode);
-                if (valOrigen.Code == -1)
-                {
-                    return DbHelper.ErrorResponse(valOrigen.Description);
-                }
-                if (!cuenta.IsSuccessful)
-                {
-                    var err = cuenta.Errors;
-                    if (err != null && err.Length > 0)
-                    {
-                        ok.Code = err[0].Code;
-                        ok.Description = err[0].Message;
-                    }
-
-                    return ok;
-                }
-
-                // Estados 0/1: OK; otros: rechazo con motivo
-                var estado = (cuenta.Account?.State ?? 0);
-
-                if (cuenta.Account == null || string.IsNullOrWhiteSpace(cuenta.Account.HolderId))
-                {
-                    return DbHelper.ErrorResponse("No se pudo validar el titular de la cuenta IBAN.");
-                }
-
-                /**
-                 * Codigo temporal para valdiacion SINPE 
-                **/
-                if (cuenta.Account.HolderId == "06-0378-0859")
-                {
-                    cuenta.Account.HolderId = cedula;
-                }
-                /**
-                 * fin de codigo temporal
-                **/
-
-                if (cedula.Replace("-", "") != cuenta.Account.HolderId.Replace("-", ""))
-                {
-                    return DbHelper.ErrorResponse("La cuenta IBAN no pertenece a la Cedula");
-                }
-
-
-                return ConstruirRespuestaEstado(codEmpresa, estado, info, cuenta);
+                return ValidarCuenta(codEmpresa, solicitud, cedula, info, cuenta, ok);
             }
             catch (Exception ex)
             {
@@ -140,6 +91,40 @@ namespace Galileo_API.DataBaseTier
         /// Verifica la disponibilidad del servicio SINPE una sola vez por lote (cachea el positivo).
         /// Devuelve un error si no está disponible, o null si está OK.
         /// </summary>
+        private ErrorDto ValidarCuenta(int codEmpresa, string solicitud, string cedula, vInfoSinpe info, Galileo.Models.KindoSinpe.ResAccountInfo cuenta, ErrorDto ok)
+        {
+            if (cuenta.Account?.State is not (0 or 1))
+            {
+                var motivo = _mKindo.fxTesConsultaMotivo(codEmpresa, cuenta.Account?.State ?? 0).Result;
+                return DbHelper.ErrorResponse(motivo ?? SinpeRejectionMessage);
+            }
+
+            var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(codEmpresa, solicitud, cuenta.Account?.CurrencyCode ?? "X");
+            if (valOrigen.Code == -1)
+                return DbHelper.ErrorResponse(valOrigen.Description);
+
+            if (!cuenta.IsSuccessful)
+            {
+                var err = cuenta.Errors;
+                if (err != null && err.Length > 0)
+                {
+                    ok.Code = err[0].Code;
+                    ok.Description = err[0].Message;
+                }
+                return ok;
+            }
+
+            if (cuenta.Account == null || string.IsNullOrWhiteSpace(cuenta.Account.HolderId))
+                return DbHelper.ErrorResponse("No se pudo validar el titular de la cuenta IBAN.");
+
+            if (cuenta.Account.HolderId == "06-0378-0859")
+                cuenta.Account.HolderId = cedula;
+
+            if (cedula.Replace("-", "") != cuenta.Account.HolderId.Replace("-", ""))
+                return DbHelper.ErrorResponse("La cuenta IBAN no pertenece a la Cedula");
+
+            return ConstruirRespuestaEstado(codEmpresa, cuenta.Account.State ?? 0, info, cuenta);
+        }
         private ErrorDto VerificarServicioDisponible(string uriConn, ReqBase context)
         {
             if (_servicioDisponibleLote == true)
@@ -459,36 +444,9 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
 
                 var resp = send(uri, req);
 
-                var hasErrors = resp?.Errors?.Length > 0;
-
-                // Manejo de errores del proveedor (guarda ID rechazo si viene)
-                if (hasErrors)
-                    fxGuardaID_RespuestaSinpe(parametros.codEmpresa, resp.Errors[0].Code, parametros.nSolicitud.ToString(), codReferencia);
-
-                if (resp == null || !resp.IsSuccessful)
-                {
-                    var code = resp?.Errors != null && resp.Errors.Length > 0 ? resp.Errors[0].Code : -1;
-                    var msg = resp?.Errors != null && resp.Errors.Length > 0 ? resp.Errors[0].Message : "Error al enviar solicitud a SINPE.";
-
-                    // Movimientos en tránsito
-                    _mKindo.RegistraMovTransito(parametros.codEmpresa, codReferencia, context.UserCode, canal, resp, solicitud);
-
-                    return new ErrorDto<RespuestaRegistro>
-                    {
-                        Code = -1,
-                        Description = "Error al enviar solicitud",
-                        Result = new RespuestaRegistro
-                        {
-                            MotivoError = code,
-                            CodigoReferencia = "",
-                            MotivoErrorInterno = msg
-                        }
-                    };
-                }
-                else
-                {
-                    _mKindo.RegistraMovTransito(parametros.codEmpresa, codReferencia, context.UserCode, canal, resp, solicitud);
-                }
+                var errorRespuesta = ProcesarRespuestaProveedor(parametros, context, solicitud, resp, canal, codReferencia);
+                if (errorRespuesta != null)
+                    return errorRespuesta;
 
                 // Registrar respuesta en BD
                 var actualizado = registrarCuenta(parametros.codEmpresa, parametros.nSolicitud, resp);
@@ -516,7 +474,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                     }
                 };
             }
-            catch(Exception ex)
+            catch
             {
                 return new ErrorDto<RespuestaRegistro>
                 {
@@ -529,6 +487,33 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
 
         #endregion
 
+        private ErrorDto<RespuestaRegistro>? ProcesarRespuestaProveedor(Parametros parametros, ReqBase context, dynamic solicitud, dynamic resp, int canal, string codReferencia)
+        {
+            if (resp?.Errors?.Length > 0)
+                fxGuardaID_RespuestaSinpe(parametros.codEmpresa, resp.Errors[0].Code, parametros.nSolicitud.ToString(), codReferencia);
+
+            if (resp != null && resp.IsSuccessful)
+            {
+                _mKindo.RegistraMovTransito(parametros.codEmpresa, codReferencia, context.UserCode, canal, resp, solicitud);
+                return null;
+            }
+
+            var code = resp?.Errors != null && resp.Errors.Length > 0 ? resp.Errors[0].Code : -1;
+            var msg = resp?.Errors != null && resp.Errors.Length > 0 ? resp.Errors[0].Message : "Error al enviar solicitud a SINPE.";
+            _mKindo.RegistraMovTransito(parametros.codEmpresa, codReferencia, context.UserCode, canal, resp, solicitud);
+
+            return new ErrorDto<RespuestaRegistro>
+            {
+                Code = -1,
+                Description = "Error al enviar solicitud",
+                Result = new RespuestaRegistro
+                {
+                    MotivoError = code,
+                    CodigoReferencia = "",
+                    MotivoErrorInterno = msg
+                }
+            };
+        }
         #region Utilidades / Persistencia
 
         private void fxGuardaID_RespuestaSinpe(int codEmpresa, int codigo, string nSolicitud, string? referenciaSinpe = null)
