@@ -1,4 +1,5 @@
-﻿using Galileo.Models;
+﻿using Dapper;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Galileo.Models.Security;
