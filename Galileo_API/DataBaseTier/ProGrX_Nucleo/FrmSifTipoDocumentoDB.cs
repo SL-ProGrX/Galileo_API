@@ -178,7 +178,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
 
         /// <summary>
-        /// Busca el archivo en las carpetas preferidas y, si no aparece, en todo el árbol
+        /// Busca el archivo en las carpetas preferidas y, si no aparece, en el árbol
         /// del repositorio de reportes. Devuelve null si no existe.
         /// </summary>
         /// <param name="CodEmpresa"></param>
