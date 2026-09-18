@@ -128,7 +128,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
             CrSeguimientoTramitesRecepcionRangoPlazoRequest request)
             => _db.Cr_SeguimientoTramites_Recepcion_RangoPlazo_Obtener(codEmpresa, request);
 
-        public ErrorDto<decimal> Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(
+        public static ErrorDto<decimal> Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(
             CrSeguimientoTramitesRecepcionCuotaRequest request)
             => FrmCrSeguimientoTramitesDb.Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(request);
         /// <summary>

@@ -7,7 +7,7 @@ using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
-    public class FrmCrComisionesCatalogoDB
+    public class FrmCrComisionesCatalogoDB 
     {
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _bitacora;
