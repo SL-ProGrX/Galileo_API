@@ -242,7 +242,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         {
             foreach (var item in lista.Where(x => string.Equals(x.tipo, "CTA", StringComparison.OrdinalIgnoreCase)))
             {
-                item.valorCuenta = mCntLinkDB.fxgCntCuentaFormato(codEmpresa, false, item.valor, 0);
+                item.valorCuenta = mCntLinkDB.fxgCntCuentaFormato(codEmpresa, true, item.valor, 0);
                 item.cuentaDesc = mCntLinkDB.fxgCntCuentaDesc(codEmpresa, item.valor, codContabilidad);
             }
         }
