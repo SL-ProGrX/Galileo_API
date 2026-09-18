@@ -125,7 +125,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<decimal> Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(
             int codEmpresa,
             [FromQuery] CrSeguimientoTramitesRecepcionCuotaRequest request)
-            => _bl.Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(request);
+            => FrmCrSeguimientoTramitesBl.Cr_SeguimientoTramites_Recepcion_Cuota_Calcular(request);
         [HttpGet("Cr_SeguimientoTramites_Recepcion_Banco_Cuentas_Obtener")]
         public ErrorDto<List<CrSeguimientoTramitesOpcionItem>>
             Cr_SeguimientoTramites_Recepcion_Banco_Cuentas_Obtener(

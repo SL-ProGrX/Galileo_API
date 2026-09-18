@@ -13,6 +13,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             int codEmpresa,
             string? codigo)
         {
+            
             string linea = Cr_SeguimientoTramites_Filtro_Normalizar(codigo, 10);
             if (string.IsNullOrWhiteSpace(linea))
             {
