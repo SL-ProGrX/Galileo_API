@@ -254,7 +254,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     string tag = movimiento == MovimientoRecepcion
                         ? tags.TagRecepcion
                         : tags.TagDevolucion;
-                    string observacion = movimiento == MovimientoRecepcion
+                    string notas = movimiento == MovimientoRecepcion
                         ? "Recibida la documentacion del Beneficio"
                         : "Devolucion de la documentacion del Beneficio";
                     int aplicados = 0;
@@ -300,7 +300,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                                 Codigo = registro.cod_beneficio,
                                 Tag = tag,
                                 Usuario = request.usuario.Trim(),
-                                Observacion = observacion,
+                                Notas = notas,
                                 Documento = registro.consec.ToString(),
                                 Modulo,
                                 Llave_01 = registro.cod_beneficio,

@@ -28,9 +28,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             string tag = movimiento == MovimientoRecepcion
                 ? tags.tag_recepcion
                 : tags.tag_devolucion;
-            string observacion = movimiento == MovimientoRecepcion
-                ? "Recibida la documentacion de la afiliacion"
-                : "Devolucion de la documentacion de la afiliacion";
+            string notas = movimiento == MovimientoRecepcion
+                ? "Recibida la documentación de la afiliación"
+                : "Devolución de la documentación de la afiliación";
             var afiliaciones = request.afiliaciones
                 .GroupBy(item => new
                 {
@@ -55,7 +55,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     afiliacion,
                     request.usuario,
                     tag,
-                    observacion);
+                    notas);
                 aplicados++;
             }
 
@@ -99,7 +99,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     item.consec,
                     movimiento)
                 ?? throw new InvalidOperationException(
-                    $"La cedula {cedula} y boleta {item.consec} ya no cumplen el estado requerido.");
+                    $"La cédula {cedula} y boleta {item.consec} ya no cumplen el estado requerido.");
         }
 
         /// <summary>
@@ -124,7 +124,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             parametros.Add("Codigo", afiliacion.cedula);
             parametros.Add("Tag", tag);
             parametros.Add("Usuario", usuario.Trim());
-            parametros.Add("Observacion", observacion);
+            parametros.Add("Notas", observacion);
             parametros.Add("Documento", afiliacion.consec.ToString());
             parametros.Add("Modulo", Modulo);
             parametros.Add("Llave_01", afiliacion.cedula);
