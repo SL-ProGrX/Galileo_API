@@ -6,7 +6,7 @@ using Galileo.Models.Security;
 using System.Globalization;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
-{
+{ 
     /// <summary>
     /// Manejo del Archivo Especial (plantilla de reporte personalizada) del tipo de documento.
     /// Equivale a btnImagenes_Click del VB6, pero además deposita el archivo en el

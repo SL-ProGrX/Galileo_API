@@ -4,7 +4,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Galileo.Models;
 
-namespace Galileo.BusinessLogic.ProGrX_Nucleo
+namespace Galileo.BusinessLogic.ProGrX_Nucleo 
 {
     public class FrmSifTipoDocumentoBL(IConfiguration config)
     {

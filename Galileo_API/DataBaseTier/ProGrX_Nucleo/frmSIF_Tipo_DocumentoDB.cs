@@ -1,12 +1,11 @@
-﻿using Dapper;
-using Galileo.Models;
+﻿using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
-{
+{ 
     public partial class FrmSifTipoDocumentoDB
     {
         private readonly IConfiguration _config;
