@@ -801,11 +801,13 @@ WHERE REFERENCIA_SINPE = @referencia;";
                                     @Origen
                                 )";
 
+                var cedulaFormateada = formateoCedula(request.identificacion);
+
                 if (new[] { "21", "31", "22", "2222", "83", "84", "24" }.Contains(request.codigoServicio.ToString().Trim()))
                 {
                     var valida = connection.QueryFirstOrDefault<decimal>(query, new
                     {
-                        Cedula = request.identificacion.Trim().Replace("-", ""),
+                        Cedula = cedulaFormateada,
                         MontoSolicitado = request.monto,
                         CodServicio = request.codigoServicio,
                         Origen = "CGPWEB",
