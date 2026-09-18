@@ -1,4 +1,4 @@
-﻿using CoreInterno;
+using CoreInterno;
 using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
@@ -2347,7 +2347,7 @@ WHERE COD_REFERENCIA = @codReferencia;";
             DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, Query, parametros);
         }
 
-        private string formateoCedula(string cedula)
+        private static string formateoCedula(string cedula)
         {
             if (string.IsNullOrWhiteSpace(cedula))
             {
