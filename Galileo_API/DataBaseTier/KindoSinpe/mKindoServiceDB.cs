@@ -8,6 +8,7 @@ using Galileo.Models.TES;
 using Galileo_API.Controllers.WFCSinpe;
 using Galileo_API.DataBaseTier.ProGrX.Bancos;
 using Microsoft.Data.SqlClient;
+using Org.BouncyCastle.Asn1.Ocsp;
 using System.Data;
 using System.Globalization;
 using System.Net;
@@ -180,8 +181,7 @@ FROM dbo.fxSinpe_ValidaCredito(
         private CoreInterno.CL_ResultadoValidacion[] ValidaTransacciones(
             int codEmpresa,
             ValidaTransRequest request,
-            string sqlFunctionName,
-            bool normalizarId)
+            string sqlFunctionName)
         {
             if (string.IsNullOrWhiteSpace(sqlFunctionName) ||
                 !FuncionesSinpeSql.TryGetValue(sqlFunctionName, out var query))
@@ -196,13 +196,11 @@ FROM dbo.fxSinpe_ValidaCredito(
 
             foreach (var t in request.Transacciones)
             {
-                var identificacion = normalizarId
-                    ? (t.Identificacion ?? "").Trim().Replace("-", "").Replace(" ", "")
-                    : t.Identificacion;
+                var cedulaFormateada = formateoCedula(t.Identificacion);
 
                 var valida = connection.QueryFirstOrDefault<dynamic>(query, new
                 {
-                    IDENTIFICACION = identificacion,
+                    IDENTIFICACION = cedulaFormateada,
                     CUENTAIBAN = t.CuentaIBAN,
                     CODIGO_MONEDA = t.CodigoMoneda,
                     CODIGO_SERVICIO = t.CodigoServicio,
@@ -722,13 +720,15 @@ WHERE REFERENCIA_SINPE = @referencia;";
                 else
                     tipoMovimiento = 1;
 
+                var cedulaFormateada = formateoCedula(Identificacion);
+
                 var query = $@"SELECT dbo.fxSINPE_ValidaCuenta(@CUENTA, @TRANSAC_TIPO, @CEDULA , @MONEDA)";
 
                 var valida = connection.QueryFirstOrDefault<int>(query, new
                 {
                     CUENTA = CuentaIBAN,
                     TRANSAC_TIPO = tipoMovimiento,
-                    CEDULA = Identificacion.Replace("-", "").Replace(" ", ""),
+                    CEDULA = cedulaFormateada,
                     MONEDA = CodigoMoneda
                 });
 
@@ -834,14 +834,14 @@ WHERE REFERENCIA_SINPE = @referencia;";
         public CoreInterno.CL_ResultadoValidacion[] ValidaDebitos(int CodEmpresa, ValidaTransRequest request)
         {
             return Safe(
-                () => ValidaTransacciones(CodEmpresa, request, "fxSinpe_ValidaDebito", normalizarId: true),
+                () => ValidaTransacciones(CodEmpresa, request, "fxSinpe_ValidaDebito"),
                 ErrorValidacionArray);
         }
 
         public CoreInterno.CL_ResultadoValidacion[] ValidaCreditos(int CodEmpresa, ValidaTransRequest request)
         {
             return Safe(
-                () => ValidaTransacciones(CodEmpresa, request, "fxSinpe_ValidaCredito", normalizarId: false),
+                () => ValidaTransacciones(CodEmpresa, request, "fxSinpe_ValidaCredito"),
                 ErrorValidacionArray);
         }
 
@@ -1065,6 +1065,8 @@ WHERE REFERENCIA_SINPE = @referencia;";
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
+                var cedulaFormateada = formateoCedula(Request.identificacion);
+
                 var query = $@"exec sp_Sinpe_SaldoDisponible
                                         @Identificacion ,
 	                                    @CuentaIBAN ,
@@ -1073,7 +1075,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
 
                 var result = connection.QueryFirstOrDefault<dynamic>(query, new
                 {
-                    Identificacion = Request.identificacion,
+                    Identificacion = cedulaFormateada,
                     CuentaIBAN = Request.cuentaIBAN,
                     MontoSolicitado = Request.monto,
                     CodigoServicio = Request.codigoServicio
