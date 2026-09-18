@@ -207,11 +207,50 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string base_calculo { get; set; } = string.Empty;
         public int comite_id { get; set; }
         public bool muestra_vencimiento { get; set; }
+        /// <summary>
+        /// Instituciones.DEDUCCION_PLANILLA del socio. El VB6 habilita o deshabilita
+        /// chkDeducPlanilla con este dato en txtCedula_LostFocus.
+        /// </summary>
+        public bool deduce_planilla_institucion { get; set; }
+        /// <summary>
+        /// fxCreditoExcedente del VB6: la línea es la registrada en EXC_PARAMETROS '05'.
+        /// </summary>
+        public bool credito_excedente { get; set; }
+        /// <summary>
+        /// fxExcedenteDisponible del VB6: monto a proponer cuando la línea es de excedentes.
+        /// </summary>
+        public decimal monto_excedente { get; set; }
         public List<CrSeguimientoTramitesOpcionItem> destinos { get; set; } = new();
         public List<CrSeguimientoTramitesOpcionItem> garantias { get; set; } = new();
         public List<CrSeguimientoTramitesOpcionItem> recursos { get; set; } = new();
         public List<CrSeguimientoTramitesOpcionItem> bancos { get; set; } = new();
         public List<CrSeguimientoTramitesOpcionItem> estados { get; set; } = new();
+    }
+
+    public class CrSeguimientoTramitesRecepcionRangosRequest
+    {
+        public string codigo { get; set; } = string.Empty;
+        [JsonRequired]
+        public decimal monto { get; set; }
+        public string destino { get; set; } = string.Empty;
+        public string garantia { get; set; } = string.Empty;
+        /// <summary>
+        /// Puntos de bonificación de la operación. El VB6 los resta a la tasa del rango.
+        /// </summary>
+        [JsonRequired]
+        public decimal tasa_pts_bono { get; set; }
+    }
+
+    public class CrSeguimientoTramitesRecepcionRangosData
+    {
+        public decimal plazo_sugerido { get; set; }
+        public decimal tasa_sugerida { get; set; }
+    }
+
+    internal sealed class CrSeguimientoTramitesRecepcionRangosRaw
+    {
+        public decimal plazo { get; set; }
+        public decimal tasa { get; set; }
     }
 
     public class CrSeguimientoTramitesRecepcionGarantiaContextoRequest
@@ -272,6 +311,8 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string cod_divisa { get; set; } = string.Empty;
         public string base_calculo { get; set; } = string.Empty;
         public int comite_id { get; set; }
+        public int deduccion_planilla { get; set; }
+        public int credito_excedente { get; set; }
     }
 
     internal sealed class CrSeguimientoTramitesRecepcionGarantiaCalculoRaw

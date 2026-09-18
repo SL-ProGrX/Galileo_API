@@ -179,6 +179,14 @@ namespace Galileo.Controllers.ProGrX.Credito
         #endregion
 
         #region aux.giro
+
+        [Authorize]
+        [HttpPost("Cr_TraspasoTes_AuxGiroExc_Autorizar")]
+        public ErrorDto Cr_TraspasoTes_AuxGiroExc_Autorizar(int CodEmpresa, string usuario)
+        {
+            return _BL.Cr_TraspasoTes_AuxGiroExc_Autorizar(CodEmpresa, usuario);
+        }
+
         #endregion
     }
 }

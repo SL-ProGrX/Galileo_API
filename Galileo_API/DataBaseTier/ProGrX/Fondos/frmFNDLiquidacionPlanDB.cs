@@ -1173,7 +1173,7 @@ where F.Cod_Operadora = @CodOperadora
 
                 return DbHelper.CreateOkResponse(row ?? new FndCasosInternosDto());
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<FndCasosInternosDto>(
                     $"Error al consultar casos internos: {ex.Message}");

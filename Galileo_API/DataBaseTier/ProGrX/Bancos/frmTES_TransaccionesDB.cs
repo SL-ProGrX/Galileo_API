@@ -1042,6 +1042,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var q2 = @"delete Tes_Transacciones where nsolicitud = @solicitud";
                 connection.Execute(q2, new { solicitud });
 
+                var q3 = @"UPDATE TES_BANCOS_CIERRES SET CONCILIA_NSOLICITUD = null AND ESTADO = 'T' where CONCILIA_NSOLICITUD = @solicitud";
+                connection.Execute(q3, new { solicitud });
+
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
