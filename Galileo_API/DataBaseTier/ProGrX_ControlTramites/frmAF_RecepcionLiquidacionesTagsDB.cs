@@ -337,8 +337,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
                     string observacion =
                         movimiento == MovimientoRecepcion
-                            ? "Recibida la documentacion de la liquidacion"
-                            : "Devolucion la documentacion de la liquidacion";
+                            ? "Recibida la documentación de la liquidación"
+                            : "Devolución la documentación de la liquidación";
 
                     int aplicados = 0;
 
@@ -412,7 +412,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                             registros_aplicados =
                                 aplicados
                         },
-                        "Proceso concluido con exito.");
+                        "Proceso concluido con éxito.");
                 }
                 catch
                 {
@@ -796,8 +796,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
             if (resultadoRecepcionDevolucion == 4)
             {
-                return "No es posible registrar una recepcion "
-                    + "sin aplicar la devolucion en la boleta "
+                return "No es posible registrar una recepción "
+                    + "sin aplicar la devolución en la boleta "
                     + $"{numeroBoleta}.";
             }
 
