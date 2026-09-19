@@ -1,47 +1,52 @@
 ﻿namespace Galileo.Models.INV
 {
-    public class PaqueteDto
+    public sealed class PaquetesFiltrosDto
     {
-        public int? Cod_Paquete { get; set; }
-        public string Descripcion { get; set; } = string.Empty;
-        public DateTime? Fecha_Crea { get; set; }
-        public string User_Crea { get; set; } = string.Empty;
-        public string? User_Modifica { get; set; } = string.Empty;
-        public DateTime? Fecha_Inicio { get; set; }
-        public string? Notas { get; set; }
-        public DateTime? Fecha_Modifica { get; set; }
-        public DateTime? Fecha_Corte { get; set; }
-        public DateTime? Frecuencia_Horai { get; set; }
-        public DateTime? Frecuencia_Horac { get; set; }
-        public bool? Frecuencia_Lunes { get; set; }
-        public bool? Frecuencia_Martes { get; set; }
-        public bool? Frecuencia_Miercoles { get; set; }
-        public bool? Frecuencia_Jueves { get; set; }
-        public bool? Frecuencia_Viernes { get; set; }
-        public bool? Frecuencia_Sabado { get; set; }
-        public bool? Frecuencia_Domingo { get; set; }
-
+        public int pagina { get; set; } = 0;
+        public int paginacion { get; set; } = 30;
+        public string filtro { get; set; } = string.Empty;
     }
 
-    public class PaqueteDataLista
+    public sealed class PaqueteDto
     {
-        public int Total { get; set; }
-        public List<PaqueteDto> Lista { get; set; } = new List<PaqueteDto>();
+        public int cod_paquete { get; set; } = 0;
+        public string descripcion { get; set; } = string.Empty;
+        public DateTime? fecha_crea { get; set; }
+        public string user_crea { get; set; } = string.Empty;
+        public string user_modifica { get; set; } = string.Empty;
+        public DateTime? fecha_inicio { get; set; }
+        public string notas { get; set; } = string.Empty;
+        public DateTime? fecha_modifica { get; set; }
+        public DateTime? fecha_corte { get; set; }
+        public DateTime? frecuencia_horai { get; set; }
+        public DateTime? frecuencia_horac { get; set; }
+        public bool frecuencia_lunes { get; set; } = false;
+        public bool frecuencia_martes { get; set; } = false;
+        public bool frecuencia_miercoles { get; set; } = false;
+        public bool frecuencia_jueves { get; set; } = false;
+        public bool frecuencia_viernes { get; set; } = false;
+        public bool frecuencia_sabado { get; set; } = false;
+        public bool frecuencia_domingo { get; set; } = false;
     }
 
-    public class PaqueteDetalleDto
+    public sealed class PaqueteDataLista
     {
-        public required int Linea { get; set; }
-        public string Cod_Producto { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
-        public required int Cod_Paquete { get; set; }
-        public required decimal Cantidad { get; set; }
-        public required decimal Porc_Utilidad { get; set; }
-        public required decimal Precio { get; set; }
-        public required decimal Imp_Ventas { get; set; }
-        public required decimal Imp_Consumo { get; set; }
-        public required decimal Total { get; set; }
+        public int total { get; set; } = 0;
+        public List<PaqueteDto> lista { get; set; } = [];
+    }
 
+    public sealed class PaqueteDetalleDto
+    {
+        public int linea { get; set; } = 0;
+        public string cod_producto { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public int cod_paquete { get; set; } = 0;
+        public decimal cantidad { get; set; } = 0;
+        public decimal porc_utilidad { get; set; } = 0;
+        public decimal precio { get; set; } = 0;
+        public decimal imp_ventas { get; set; } = 0;
+        public decimal imp_consumo { get; set; } = 0;
+        public decimal total { get; set; } = 0;
         public string unidad { get; set; } = string.Empty;
     }
 }
