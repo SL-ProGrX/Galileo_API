@@ -17,9 +17,6 @@ namespace Galileo.DataBaseTier
         private const string ErrorObtenerPaquete =
             "Ocurri&oacute; un error al consultar el paquete.";
 
-        private const string ErrorObtenerDetalle =
-            "Ocurri&oacute; un error al consultar el detalle del paquete.";
-
         private const string ErrorActualizarPaquete =
             "Ocurri&oacute; un error al actualizar el paquete.";
 
