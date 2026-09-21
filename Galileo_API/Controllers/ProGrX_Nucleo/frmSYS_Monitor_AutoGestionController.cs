@@ -31,14 +31,14 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
         }
         [Authorize]
         [HttpGet("Sys_Monitor_AutoGestion_Lista_Obtener")]
-        public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Obtener([FromQuery] int CodEmpresa,[FromQuery] string jfiltros,[FromQuery] MonitorAutoGestionBuscarRequest req)
+        public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Obtener([FromQuery] int CodEmpresa, [FromQuery] string jfiltros, [FromQuery] MonitorAutoGestionBuscarRequest req)
         {
             return BL.Sys_Monitor_AutoGestion_Lista_Obtener(CodEmpresa, jfiltros, req);
         }
 
         [Authorize]
         [HttpGet("Sys_Monitor_AutoGestion_Lista_Export")]
-        public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Export([FromQuery] int CodEmpresa,[FromQuery] string jfiltros,[FromQuery] MonitorAutoGestionBuscarRequest req)
+        public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Export([FromQuery] int CodEmpresa, [FromQuery] string jfiltros, [FromQuery] MonitorAutoGestionBuscarRequest req)
         {
             return BL.Sys_Monitor_AutoGestion_Lista_Export(CodEmpresa, jfiltros, req);
         }
@@ -50,7 +50,7 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
         }
         [Authorize]
         [HttpGet("Sys_Monitor_AutoGestion_Resumen_Obtener")]
-        public ErrorDto<MonitorAutoGestionResumenLista> Sys_Monitor_AutoGestion_Resumen_Obtener(int CodEmpresa,string fechaInicio,string fechaFin)
+        public ErrorDto<MonitorAutoGestionResumenLista> Sys_Monitor_AutoGestion_Resumen_Obtener(int CodEmpresa, string fechaInicio, string fechaFin)
         {
             return BL.Sys_Monitor_AutoGestion_Resumen_Obtener(CodEmpresa, fechaInicio, fechaFin);
         }
@@ -85,6 +85,12 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
         public ErrorDto Sys_Monitor_AutoGestion_Adjuntos_Fix(int CodEmpresa)
         {
             return BL.Sys_Monitor_AutoGestion_Adjuntos_Fix(CodEmpresa);
+        }
+        [Authorize]
+        [HttpGet("Sys_Monitor_AutoGestion_Refundiciones_Lista_Obtener")]
+        public ErrorDto<MonitorAutoGestionRefundicionesLista> Sys_Monitor_AutoGestion_Refundiciones_Lista_Obtener(int CodEmpresa, long cod_solicitud)
+        {
+            return BL.Sys_Monitor_AutoGestion_Refundiciones_Lista_Obtener(CodEmpresa, cod_solicitud);
         }
     }
 }
