@@ -18,9 +18,7 @@ namespace Galileo.DataBaseTier
         private const string ErrorInsertarPrecio = "Error al insertar el tipo de precio.";
         private const string ErrorEliminarPrecio = "Error al eliminar el tipo de precio.";
         private const string QueryTotalPrecios = "SELECT COUNT(*) FROM pv_tipos_precios";
-        private const string QueryPreciosBase = @"SELECT cod_precio,
-                                                             descripcion,
-                                                             defecto as activo
+        private const string QueryPreciosBase = @"SELECT cod_precio, descripcion, defecto as activo
                                                       FROM pv_tipos_precios";
         private const string QueryPreciosTodos = "SELECT cod_precio, descripcion, defecto as activo FROM pv_tipos_precios ORDER BY cod_precio";
         private const string QueryActualizarPrecio = "UPDATE pv_tipos_precios SET descripcion = @Descripcion, defecto = @Defecto WHERE cod_precio = @Cod_Precio";
@@ -48,8 +46,8 @@ namespace Galileo.DataBaseTier
         /// <returns>Listado vacío inicializado.</returns>
         private static PreciosDataLista CrearListaVacia() => new()
         {
-            Total = 0,
-            Precios = new List<Precio>()
+            total = 0,
+            precios = new List<Precio>()
         };
 
         /// <summary>
@@ -59,8 +57,8 @@ namespace Galileo.DataBaseTier
         /// <returns>Objeto de parámetros para Dapper.</returns>
         private static object CrearParametrosPrecio(Precio request) => new
         {
-            request.Cod_Precio,
-            request.Descripcion,
+            request.cod_Precio,
+            request.descripcion,
             Defecto = request.activo
         };
 
@@ -139,7 +137,7 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
                 var respuesta = CrearListaVacia();
-                respuesta.Total = connection.QueryFirstOrDefault<int>(QueryTotalPrecios);
+                respuesta.total = connection.QueryFirstOrDefault<int>(QueryTotalPrecios);
 
                 var parametros = new DynamicParameters();
                 var queryBuilder = new StringBuilder(QueryPreciosBase);
@@ -148,7 +146,7 @@ namespace Galileo.DataBaseTier
                 queryBuilder.Append(" ORDER BY cod_precio ");
                 AgregarPaginacion(pagina, paginacion, queryBuilder, parametros);
 
-                respuesta.Precios = connection.Query<Precio>(queryBuilder.ToString(), parametros).ToList();
+                respuesta.precios = connection.Query<Precio>(queryBuilder.ToString(), parametros).ToList();
                 return respuesta;
             });
 
