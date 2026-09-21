@@ -48,6 +48,9 @@
             public string? Res_Codigo { get; set; } = "";
             public string? Notas { get; set; } = "";
             public bool Refunde_Ind { get; set; }
+            public int Refunde_Casos { get; set; }
+            public decimal Refunde_Monto { get; set; }
+            public int Qty_Adjuntos { get; set; }
         }
 
         public class MonitorAutoGestionResumenData
@@ -126,6 +129,23 @@
         public class MonitorAutoGestionExportRequest : MonitorAutoGestionBuscarRequest
         {
             public string formato { get; set; } = "Excel";
+        }
+        public class MonitorAutoGestionRefundicionData
+        {
+            public long Cod_Solicitud { get; set; }
+            public long Id_Solicitud { get; set; }
+            public string Codigo { get; set; } = "";
+            public decimal Saldo { get; set; }
+            public string Cedula { get; set; } = "";
+            public string Nombre { get; set; } = "";
+            public string Linea_Desc { get; set; } = "";
+            public string Garantia_Desc { get; set; } = "";
+        }
+
+        public class MonitorAutoGestionRefundicionesLista
+        {
+            public int total { get; set; }
+            public List<MonitorAutoGestionRefundicionData> lista { get; set; } = [];
         }
     }
 }
