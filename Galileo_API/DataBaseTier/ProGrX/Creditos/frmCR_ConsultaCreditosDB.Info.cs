@@ -1,4 +1,4 @@
-using Dapper;
+﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Galileo.Models;
@@ -107,34 +107,6 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                     liquidacionesSql,
                     parametros).ToList();
 
-                const string contactoSql = @"
-                    SELECT
-                        S.direccion,
-                        RTRIM(ISNULL(Prov.Descripcion, '')) AS provincia,
-                        RTRIM(ISNULL(Cant.Descripcion, '')) AS canton,
-                        RTRIM(ISNULL(Dist.Descripcion, '')) AS distrito,
-                        S.sexo,
-                        S.fecha_nac,
-                        S.estadoCivil,
-                        ISNULL(Ec.Descripcion, '') AS estadocivil_desc,
-                        S.AF_EMAIL AS email_01,
-                        S.EMAIL_02 AS email_02,
-                        S.FACEBOOK,
-                        S.TWITTER,
-                        S.LINKEDIN,
-                        Ep.DESCRIPCION AS estadopersona,
-                        S.FECHAINGRESO,
-                        ISNULL(Nc.DESCRIPCION, '') AS nacionalidad,
-                        DATEDIFF(YEAR, ISNULL(S.FECHA_NAC, dbo.MyGetdate()), dbo.MyGetdate()) AS edad
-                    FROM socios S
-                    LEFT JOIN Provincias Prov ON S.Provincia = Prov.Provincia
-                    LEFT JOIN Cantones Cant ON S.Provincia = Cant.Provincia AND S.Canton = Cant.Canton
-                    LEFT JOIN Distritos Dist ON S.Provincia = Dist.Provincia AND S.Canton = Dist.Canton AND S.distrito = Dist.distrito
-                    LEFT JOIN SYS_ESTADO_CIVIL Ec ON S.EstadoCivil = Ec.Estado_Civil
-                    LEFT JOIN AFI_ESTADOS_PERSONA Ep ON S.ESTADOACTUAL = Ep.COD_ESTADO
-                    LEFT JOIN SYS_NACIONALIDADES Nc ON S.COD_NACIONALIDAD = Nc.COD_NACIONALIDAD
-                    WHERE S.cedula = @Cedula;";
-
                 const string estadoLaboralSql = @"
                     IF COL_LENGTH('dbo.Socios', 'UP') IS NOT NULL
                        AND OBJECT_ID('dbo.uprogramatica') IS NOT NULL
@@ -172,7 +144,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                         WHERE S.cedula = @Cedula;
                     END;";
 
-                info.Contacto = connection.Query<AFPersonaDetalleDto>(contactoSql, parametros).ToList();
+                info.Contacto = CR_ConsultaCreditos_PersonaDetalle_Obtener(connection, cedula.Trim());
                 info.EstadoLaboral = connection.Query<AFPersonaEstadoLaboralDto>(estadoLaboralSql, parametros).ToList();
 
                 var polizas = connection.Query(
