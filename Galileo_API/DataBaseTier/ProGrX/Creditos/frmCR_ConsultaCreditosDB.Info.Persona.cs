@@ -1,8 +1,10 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ProGrX.Credito;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace Galileo.DataBaseTier.ProGrX.Credito
 {
@@ -70,12 +72,10 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         {
             if (d.TryGetValue(key, out var v)) return v;
 
-            foreach (var par in d)
-            {
-                if (string.Equals(par.Key, key, System.StringComparison.OrdinalIgnoreCase))
-                    return par.Value;
-            }
-            return null;
+            return d
+                .Where(par => string.Equals(par.Key, key, StringComparison.OrdinalIgnoreCase))
+                .Select(par => par.Value)
+                .FirstOrDefault();
         }
 
         /// <summary>
@@ -84,23 +84,27 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         /// <param name="v">Valor original de la columna.</param>
         /// <returns>Texto sin espacios al inicio ni al final.</returns>
         private static string Txt(object? v) =>
-            (System.Convert.ToString(v, CultureInfo.InvariantCulture) ?? string.Empty).Trim();
+            (Convert.ToString(v, CultureInfo.InvariantCulture) ?? string.Empty).Trim();
 
         /// <summary>
         /// Convierte el valor a fecha o nulo.
         /// </summary>
         /// <param name="v">Valor original de la columna.</param>
         /// <returns>Fecha o nulo si el valor no es una fecha.</returns>
-        private static System.DateTime? Fec(object? v) =>
-            v is System.DateTime f ? f : (System.DateTime?)null;
+        private static DateTime? Fec(object? v) =>
+            v is DateTime f ? f : null;
 
         /// <summary>
         /// Convierte el valor a entero o cero.
         /// </summary>
         /// <param name="v">Valor original de la columna.</param>
         /// <returns>Entero equivalente o cero si no es convertible.</returns>
-        private static int Num(object? v) =>
-            v is null ? 0 : (int.TryParse(Txt(v), out var n) ? n : 0);
+        private static int Num(object? v)
+        {
+            if (v is null) return 0;
+
+            return int.TryParse(Txt(v), out var n) ? n : 0;
+        }
 
         #endregion
     }
