@@ -55,7 +55,6 @@ namespace Galileo.Controllers
         #region Usuarios A Cargo
 
         [HttpGet("UsuariosACargoAut_Obtener")]
-        // [Authorize]
         public ErrorDto<UsuariosACargoDataLista> UsuariosACargoAut_Obtener(int CodCliente, string usuario, int? pagina, int? paginacion, string? filtro)
         {
             return _bl.UsuariosACargoAut_Obtener(CodCliente, usuario, pagina, paginacion, filtro);

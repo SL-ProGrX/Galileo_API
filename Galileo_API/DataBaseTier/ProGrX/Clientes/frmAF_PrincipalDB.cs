@@ -65,36 +65,52 @@ namespace Galileo.DataBaseTier
                     parameters.Add("@cod_institucion", cod_institucion, DbType.String);
                 }
 
-                using var multi = connection.QueryMultiple(
-                    "spAF_Catalogos_Consulta",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
-
                 Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
-                return new AfCatalogosGeneralesDto
+                AfCatalogosGeneralesDto catalogos;
+                using (var multi = connection.QueryMultiple(
+                    "spAF_Catalogos_Consulta",
+                    parameters,
+                    commandType: CommandType.StoredProcedure))
                 {
-                    EstadoCivil = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    Divisas = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    TiposIdentificacion = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    Profesiones = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    Sectores = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    Sociedades = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    ActividadesEconomicas = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    Paises = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    EstadosPersonaIngreso = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    Nacionalidades = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    NivelAcademico = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    EstadoLaboral = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    ActividadLaboral = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    RelacionParentesco = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    Promotores = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    Instituciones = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    Deductoras = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    Departamentos = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    Secciones = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    Unidad = multi.Read<DropDownListaGenericaModel>().ToList()
-                };
+                    catalogos = new AfCatalogosGeneralesDto
+                    {
+                        EstadoCivil = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        Divisas = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        TiposIdentificacion = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        Profesiones = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        Sectores = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        Sociedades = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        ActividadesEconomicas = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        Paises = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        EstadosPersonaIngreso = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        Nacionalidades = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        NivelAcademico = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        EstadoLaboral = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        ActividadLaboral = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        RelacionParentesco = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        Promotores = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        Instituciones = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        Deductoras = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        Departamentos = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        Secciones = multi.Read<DropDownListaGenericaModel>().ToList(),
+                        Unidad = multi.Read<DropDownListaGenericaModel>().ToList()
+                    };
+                }
+
+                catalogos.Generos = connection.Query<DropDownListaGenericaModel>(
+                    @"SELECT COD_GENERO AS item, DESCRIPCION AS descripcion
+                      FROM SYS_GENEROS
+                      WHERE ACTIVO = 1
+                      ORDER BY DESCRIPCION").ToList();
+
+                catalogos.OrigenRecursos = connection.Query<DropDownListaGenericaModel>(
+                    @"SELECT COD_ORIGEN_RECURSOS AS item, DESCRIPCION AS descripcion
+                      FROM SIF_ORIGEN_RECURSOS
+                      WHERE ACTIVA = 1
+                      ORDER BY DESCRIPCION").ToList();
+
+                return catalogos;
             });
 
             return result.Code == 0
