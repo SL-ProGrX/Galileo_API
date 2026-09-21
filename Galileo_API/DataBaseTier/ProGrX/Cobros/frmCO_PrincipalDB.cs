@@ -296,7 +296,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         END AS documento,
                         CONVERT(varchar(10), rc.prideduc, 120) AS primer_cuota,
                         CONVERT(varchar(10), rc.fecult, 120) AS ultima_cuota,
-                        ISNULL(rc.saldo, 0) AS saldo
+                        ISNULL(rc.saldo, 0) AS saldo,
+                        UPPER(ISNULL(rc.proceso, 'N')) AS proceso
                     FROM reg_creditos rc
                     LEFT JOIN Crd_Garantia_Tipos g
                         ON rc.Garantia = g.Garantia
@@ -304,7 +305,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 ";
 
                 const string sqlMora = @"
-                    EXEC spCbrCobroJudicialInteresesHoy @operacion, @fechaCorte
+                    EXEC spCbrCobroJudicialInteresesHoy @operacion, @fechaCorte, @cobroJudicial
                 ";
 
                 var estado = cn.QueryFirstOrDefault<CoEstadoDto>(
@@ -318,10 +319,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     return response;
                 }
 
+                // Primera llamada: valores estándar (parámetro 0)
                 var mora = cn.QueryFirstOrDefault(sqlMora, new
                 {
                     operacion,
-                    fechaCorte = fecha.ToString("yyyy/MM/dd")
+                    fechaCorte = fecha.ToString("yyyy/MM/dd"),
+                    cobroJudicial = 0
                 });
 
                 if (mora != null)
@@ -332,6 +335,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     estado.principal_atrasado = mora.RegPrincipal ?? 0;
                     estado.cargos = mora.Cargos ?? 0;
                     estado.polizas = mora.Poliza ?? 0;
+
+                    // Si es Cobro Judicial, se hace segunda llamada con parámetro 1
+                    // y se sobreescriben los valores de mora
+                    if (estado.proceso == "J")
+                    {
+                        var moraJudicial = cn.QueryFirstOrDefault(sqlMora, new
+                        {
+                            operacion,
+                            fechaCorte = fecha.ToString("yyyy/MM/dd"),
+                            cobroJudicial = 1
+                        });
+
+                        if (moraJudicial != null)
+                        {
+                            estado.interes_corriente = moraJudicial.RegIntCor ?? 0;
+                            estado.interes_moratorio = moraJudicial.RegIntMor ?? 0;
+                            estado.principal_atrasado = moraJudicial.RegPrincipal ?? 0;
+                            estado.cargos = moraJudicial.Cargos ?? 0;
+                            estado.polizas = moraJudicial.Poliza ?? 0;
+                        }
+                    }
 
                     estado.mora_financiera =
                         estado.interes_corriente +

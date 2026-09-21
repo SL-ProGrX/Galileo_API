@@ -65,6 +65,8 @@
         public decimal total_deuda { get; set; }
         public decimal intereses_hoy { get; set; }
 
+        public string proceso { get; set; } = string.Empty;
+
         public DateTime? fecha_corte { get; set; }
     }
 
