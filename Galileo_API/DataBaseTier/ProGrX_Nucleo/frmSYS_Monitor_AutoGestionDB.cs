@@ -198,33 +198,36 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_solicitud"></param>
-        public ErrorDto<MonitorAutoGestionCasoDetalle> Sys_Monitor_AutoGestion_Caso_Obtener(int CodEmpresa, long cod_solicitud)
+        public ErrorDto<MonitorAutoGestionCasoDetalle>Sys_Monitor_AutoGestion_Caso_Obtener(int CodEmpresa,long cod_solicitud)
         {
             const string sql = @"
         SELECT 
-            COD_SOLICITUD AS Cod_Solicitud,
-            ESTADO_DESC   AS Estado_Desc,
-            ESTADO        AS Estado,
-            GARANTIA_DESC AS Garantia_Desc,
-            CEDULA        AS Cedula,
-            NOMBRE        AS Nombre,
-            CODIGO        AS Codigo,
-            LINEA_DESC    AS Linea_Desc,
-            MONTO         AS Monto,
-            PLAZO         AS Plazo,
-            TASA          AS Tasa,
-            CUOTA         AS Cuota,
-            REGISTRO_FECHA     AS Registro_Fecha,
-            REGISTRO_USUARIO   AS Registro_Usuario,
-            RES_FECHA          AS Res_Fecha,
-            RES_USUARIO        AS Res_Usuario,
-            RES_CODIGO         AS Res_Codigo,
-            NOTAS              AS Notas,
+            COD_SOLICITUD       AS Cod_Solicitud,
+            ESTADO_DESC         AS Estado_Desc,
+            ESTADO              AS Estado,
+            GARANTIA_DESC       AS Garantia_Desc,
+            CEDULA              AS Cedula,
+            NOMBRE              AS Nombre,
+            CODIGO              AS Codigo,
+            LINEA_DESC          AS Linea_Desc,
+            MONTO               AS Monto,
+            PLAZO               AS Plazo,
+            TASA                AS Tasa,
+            CUOTA               AS Cuota,
+            REGISTRO_FECHA      AS Registro_Fecha,
+            REGISTRO_USUARIO    AS Registro_Usuario,
+            RES_FECHA           AS Res_Fecha,
+            RES_USUARIO         AS Res_Usuario,
+            RES_CODIGO          AS Res_Codigo,
+            NOTAS               AS Notas,
             CASE 
-                WHEN ISNULL(REFUNDE_IND,0)=0 THEN CAST(0 AS BIT) 
-                ELSE CAST(1 AS BIT) 
-            END AS Refunde_Ind
-        FROM vCrd_Solicitudes_AutoGestion
+                WHEN ISNULL(REFUNDE_IND, 0) = 0 THEN CAST(0 AS BIT)
+                ELSE CAST(1 AS BIT)
+            END                 AS Refunde_Ind,
+            REFUNDE_CASOS       AS Refunde_Casos,
+            REFUNDE_MONTO       AS Refunde_Monto,
+            QTY_ADJUNTOS        AS Qty_Adjuntos
+        FROM dbo.vCrd_Solicitudes_AutoGestion
         WHERE COD_SOLICITUD = @ID;";
 
             try
@@ -251,11 +254,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             }
             catch (SqlException ex)
             {
-                return DbHelper.CreateErrorResponse<MonitorAutoGestionCasoDetalle>(ex.Message);
+                return DbHelper.CreateErrorResponse<MonitorAutoGestionCasoDetalle>(
+                    ex.Message
+                );
             }
             catch (Exception ex)
             {
-                return DbHelper.CreateErrorResponse<MonitorAutoGestionCasoDetalle>(ex.Message);
+                return DbHelper.CreateErrorResponse<MonitorAutoGestionCasoDetalle>(
+                    ex.Message
+                );
             }
         }
         /// <summary>
@@ -298,31 +305,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return res;
         }
-
         /// <summary>
-        /// Lista adjuntos del caso (solo metadatos).
+        /// Obtiene la lista de adjuntos asociados al caso.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_solicitud"></param>
-        public ErrorDto<MonitorAutoGestionAdjuntosLista> Sys_Monitor_AutoGestion_Adjuntos_Obtener(int CodEmpresa, long cod_solicitud)
+        /// <returns></returns>
+        public ErrorDto<MonitorAutoGestionAdjuntosLista> Sys_Monitor_AutoGestion_Adjuntos_Obtener(int CodEmpresa,long cod_solicitud)
         {
-            const string sql = @"
-                SELECT 
-                    A.ARCHIVO_ID     AS Archivo_Id,
-                    T.DESCRIPCION    AS Tipo_Adjunto,
-                    A.ARCHIVO_NOMBRE AS Archivo_Nombre,
-                    A.ARCHIVO_TIPO   AS Archivo_Tipo
-                FROM CRD_SOLICITUDES_ADJUNTOS A
-                INNER JOIN CRD_ADJUNTOS_TIPOS T ON A.COD_ADJUNTO = T.COD_ADJUNTO
-                WHERE A.TRANSAC_TIPO = 'SOL'
-                  AND A.TRANSAC_CODIGO = @ID
-                ORDER BY A.ARCHIVO_ID ASC;";
-
             var res = DbHelper.WithConn(_portalDB, CodEmpresa, cn =>
             {
                 var lista = cn.Query<MonitorAutoGestionAdjuntoData>(
-                    sql,
-                    new { ID = cod_solicitud },
+                    "spCrd_Solicitud_Adjuntos_Consulta",
+                    new
+                    {
+                        Caso = cod_solicitud
+                    },
+                    commandType: CommandType.StoredProcedure,
                     commandTimeout: 60
                 ).ToList();
 
@@ -338,7 +337,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return new ErrorDto<MonitorAutoGestionAdjuntosLista>
                 {
                     Code = res.Code == 0 ? -1 : res.Code,
-                    Description = string.IsNullOrWhiteSpace(res.Description) ? "Error" : res.Description,
+                    Description = string.IsNullOrWhiteSpace(res.Description)
+                        ? "Error"
+                        : res.Description,
                     Result = new MonitorAutoGestionAdjuntosLista
                     {
                         total = 0,
@@ -354,43 +355,84 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="archivo_id"></param>
-        public ErrorDto<(byte[] buffer, string nombre, string tipo)> Sys_Monitor_AutoGestion_Adjunto_Descargar(int CodEmpresa, long archivo_id)
+        public ErrorDto<(byte[] buffer, string nombre, string tipo)>Sys_Monitor_AutoGestion_Adjunto_Descargar(int CodEmpresa,long archivo_id)
         {
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                cn.Open();
 
-                using var rdr = ExecuteAdjuntoReader(cn, archivo_id);
-
-                if (!rdr.Read())
-                    return DbHelper.CreateErrorResponse<(byte[] buffer, string nombre, string tipo)>("Adjunto no encontrado.", code: 1, result: (Array.Empty<byte>(), "", ""));
-
-                var nombre = ReadNombre(rdr);
-                var tipoFinal = ReadTipoFinal(rdr, ref nombre);
-                var bytes = ReadArchivoBytes(rdr, "ARCHIVO_BIT");
-
-                return DbHelper.CreateOkResponse((bytes, nombre, tipoFinal));
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<(byte[] buffer, string nombre, string tipo)>(ex.Message, result: (Array.Empty<byte>(), "", ""));
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<(byte[] buffer, string nombre, string tipo)>(ex.Message, result: (Array.Empty<byte>(), "", ""));
-            }
-        }
-        private static SqlDataReader ExecuteAdjuntoReader(SqlConnection cn, long archivoId)
-        {
-            const string sql = @"
-            SELECT ARCHIVO_NOMBRE, ARCHIVO_TIPO, ARCHIVO_BIT
+                const string sql = @"
+            SELECT
+                ARCHIVO_NOMBRE,
+                ARCHIVO_TIPO,
+                DATALENGTH(ARCHIVO_BIT) AS ARCHIVO_BYTES
             FROM CRD_SOLICITUDES_ADJUNTOS
             WHERE ARCHIVO_ID = @ID;";
 
+                var row = cn.QueryFirstOrDefault<dynamic>(
+                    sql,
+                    new { ID = archivo_id },
+                    commandTimeout: 60
+                );
+
+                if (row == null)
+                {
+                    return DbHelper.CreateErrorResponse<
+                        (byte[] buffer, string nombre, string tipo)
+                    >(
+                        "Adjunto no encontrado.",
+                        code: 1,
+                        result: (Array.Empty<byte>(), "", "")
+                    );
+                }
+
+                string nombre = Convert.ToString(row.ARCHIVO_NOMBRE)?.Trim() ?? "archivo";
+                string tipo = Convert.ToString(row.ARCHIVO_TIPO)?.Trim() ?? "";
+                long bytes = Convert.ToInt64(row.ARCHIVO_BYTES ?? 0);
+
+                return DbHelper.CreateOkResponse(
+                    (
+                        Array.Empty<byte>(),
+                        $"{nombre} - {bytes} bytes",
+                        tipo
+                    )
+                );
+            }
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<
+                    (byte[] buffer, string nombre, string tipo)
+                >(
+                    ex.Message,
+                    result: (Array.Empty<byte>(), "", "")
+                );
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<
+                    (byte[] buffer, string nombre, string tipo)
+                >(
+                    ex.Message,
+                    result: (Array.Empty<byte>(), "", "")
+                );
+            }
+        }
+        private static SqlDataReader ExecuteAdjuntoReader(
+            SqlConnection cn,
+            long archivoId)
+        {
+            const string sql = @"
+                SELECT ARCHIVO_NOMBRE, ARCHIVO_TIPO, ARCHIVO_BIT
+                FROM CRD_SOLICITUDES_ADJUNTOS
+                WHERE ARCHIVO_ID = @ID;";
+
             var cmd = new SqlCommand(sql, cn);
             cmd.Parameters.Add("@ID", SqlDbType.BigInt).Value = archivoId;
-            return cmd.ExecuteReader(CommandBehavior.SequentialAccess | CommandBehavior.SingleRow);
+
+            return cmd.ExecuteReader(
+                CommandBehavior.SequentialAccess |
+                CommandBehavior.SingleRow
+            );
         }
 
         private static string ReadNombre(IDataRecord rdr)
@@ -545,7 +587,51 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
+        /// <summary>
+        /// Obtiene las operaciones asociadas a la refundición de una solicitud.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="cod_solicitud"></param>
+        /// <returns></returns>
+        public ErrorDto<MonitorAutoGestionRefundicionesLista>Sys_Monitor_AutoGestion_Refundiciones_Lista_Obtener(int CodEmpresa,long cod_solicitud)
+        {
+            var res = DbHelper.WithConn(_portalDB, CodEmpresa, cn =>
+            {
+                var lista = cn.Query<MonitorAutoGestionRefundicionData>(
+                    "spCrd_Solicitud_Refundiciones_List",
+                    new
+                    {
+                        NSolicitud = cod_solicitud
+                    },
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 60
+                ).ToList();
 
+                return new MonitorAutoGestionRefundicionesLista
+                {
+                    total = lista.Count,
+                    lista = lista
+                };
+            });
+
+            if (res.Code != 0 || res.Result == null)
+            {
+                return new ErrorDto<MonitorAutoGestionRefundicionesLista>
+                {
+                    Code = res.Code == 0 ? -1 : res.Code,
+                    Description = string.IsNullOrWhiteSpace(res.Description)
+                        ? "Error"
+                        : res.Description,
+                    Result = new MonitorAutoGestionRefundicionesLista
+                    {
+                        total = 0,
+                        lista = new List<MonitorAutoGestionRefundicionData>()
+                    }
+                };
+            }
+
+            return res;
+        }
         private static (FiltrosLazyLoadData? filtros, ErrorDto<MonitorAutoGestionLista>? error) TryParseFiltros(string jfiltros)
         {
             try
