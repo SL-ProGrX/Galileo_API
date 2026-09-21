@@ -8,10 +8,12 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
     public class FrmAfReportesBl
     {
         private readonly FrmAfReportesDb DbfrmAF_Reportes;
+        private readonly MProGrXAuxiliarDB _AuxiliarDB;
 
         public FrmAfReportesBl(IConfiguration config)
         {
             DbfrmAF_Reportes = new FrmAfReportesDb(config);
+            _AuxiliarDB = new MProGrXAuxiliarDB(config);
         }
 
 
@@ -127,6 +129,16 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
         public ErrorDto AF_Reportes_Seguridad_Guardar(int CodEmpresa, string id_rep, string cod_grupo)
         {
             return DbfrmAF_Reportes.AF_Reportes_Seguridad_Guardar(CodEmpresa, id_rep, cod_grupo);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> CargaGeneros(int CodEmpresa)
+        {
+            return _AuxiliarDB.CargaGeneros(CodEmpresa);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> CargaPaises(int CodEmpresa)
+        {
+            return _AuxiliarDB.CargaPaises(CodEmpresa);
         }
     }
 }

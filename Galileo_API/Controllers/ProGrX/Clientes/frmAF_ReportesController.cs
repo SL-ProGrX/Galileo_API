@@ -178,5 +178,20 @@ namespace Galileo.Controllers
         {
             return BL_AF_Reportes.AF_Reportes_Seguridad_Guardar(CodEmpresa, id_rep, cod_grupo);
         }
+
+
+        [Authorize]
+        [HttpGet("AF_Carga_Generos")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CargaGeneros(int CodEmpresa)
+        {
+            return BL_AF_Reportes.CargaGeneros(CodEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("AF_Carga_Paises")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CargaPaises(int CodEmpresa)
+        {
+            return BL_AF_Reportes.CargaPaises(CodEmpresa);
+        }
     }
 }
