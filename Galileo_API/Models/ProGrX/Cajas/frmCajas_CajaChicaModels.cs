@@ -1,4 +1,4 @@
-﻿namespace Galileo_API.Models.ProGrX.Cajas
+namespace Galileo_API.Models.ProGrX.Cajas
 {
     public class CajasCajaChicaServiciosDto
     {
@@ -59,7 +59,9 @@
 
         // servicio
         public string cod_recaudador { get; set; } = string.Empty; //txtRecaudadorCod.Text
+        public string recaudador { get; set; } = string.Empty; //txtRecaudadorDesc.Text
         public string cod_servicio { get; set; } = string.Empty; //txtServicioCod.Text
+        public string servicio { get; set; } = string.Empty; //txtServicioDesc.Text
 
         // refs/detalle
         public string? nref { get; set; }     // txtNRef.Text  (Mid(...,1,30))
