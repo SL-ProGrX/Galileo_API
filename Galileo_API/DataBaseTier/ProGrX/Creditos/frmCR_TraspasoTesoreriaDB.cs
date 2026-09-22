@@ -261,12 +261,10 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                              R.montoapr, R.monto_girado,
                              isnull(vD.Numero,0) as desem_num, isnull(vD.Monto,0) as desem_monto,
                              (R.monto_girado + isnull(vD.Monto,0)) as total,
-                             case when exists(
-                                select 1 from reg_creditos R2
-                                where R2.cedula = R.cedula and R2.monto_girado = R.monto_girado
-                                  and R2.id_solicitud <> R.id_solicitud
-                                  and R2.tesoreria is not null
-                             ) then 1 else 0 end as duplicado
+                             case when R.TES_SUPERVISION_FECHA is null
+                                  then dbo.fxTesSupervisa(S.cedula, S.nombre, R.monto_girado, 0, 'C')
+                                  else 0
+                             end as duplicado
                       from reg_creditos R
                       inner join Socios S on R.cedula = S.cedula
                       inner join Catalogo C on R.codigo = C.codigo and C.retencion = 'N' and C.poliza = 'N'
@@ -278,6 +276,9 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                         and R.estado in('A','C')
                         and Td.id_solicitud is null
                         and (R.Emitir in('CK','TE','TS') or isnull(vD.Monto,0) > 0)
+                        and (isnull((select valor from CRD_PARAMETROS where cod_parametro = '27'), '') <> 'S'
+                             or isnull(R.ANALISTAS_REVISION,0) = 1
+                             or isnull(R.AUTORIZA_TRANSFERENCIA,0) = 1)
                       order by R.id_solicitud",
                     new { fechaInicio, fechaCorte }).ToList();
 
@@ -449,7 +450,12 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                              R.montoapr,
                              R.monto_girado,
                              isnull(D.Numero,0) as Desembolsos_Numero,
-                             isnull(D.Monto,0) as Desembolsos
+                             isnull(D.Monto,0) as Desembolsos,
+                             (R.monto_girado + isnull(D.Monto,0)) as Total,
+                             case when R.TES_SUPERVISION_FECHA is null
+                                  then dbo.fxTesSupervisa(S.cedula, S.nombre, R.monto_girado, 0, 'C')
+                                  else 0
+                             end as Duplicado
                       from reg_creditos R
                       inner join Socios S on R.cedula = S.cedula
                       inner join Catalogo C on R.codigo = C.codigo and C.retencion = 'N' and C.poliza = 'N'

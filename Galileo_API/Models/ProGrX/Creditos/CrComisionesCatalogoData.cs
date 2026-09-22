@@ -1,6 +1,6 @@
 ﻿namespace Galileo_API.Models.ProGrX.Credito
 {
-    public class CrComisionesCatalogoData
+    public class CrComisionesCatalogoData 
     {
         public string cod_comision { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -37,6 +37,7 @@
     public class CrComisionesCatalogoPorcentajesRequest
     {
         public string cod_comision { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
     }
 
     public class CrComisionesCatalogoPorcentajeGuardarRequest

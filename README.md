@@ -122,3 +122,9 @@ dotnet user-secrets set "ConnectionStrings:BaseConnString" "<valor>"
 
 
 
+
+## 🔐 Pendiente de seguridad: almacenamiento compartido de sesiones
+
+`AuthSessionStore` mantiene actualmente los refresh tokens en memoria del proceso. Esto permite rotación de un solo uso mientras la instancia está activa, pero un reinicio del API o varias instancias pueden invalidar la sesión o impedir que una instancia reconozca la sesión creada por otra.
+
+Antes de habilitar varias instancias o depender de sesiones después de un reinicio, migrar el almacén a Redis o a una base de datos compartida con TTL, rotación atómica de un solo uso, revocación, vinculación por aplicación y almacenamiento únicamente del hash del refresh token. Mantener pruebas de reinicio, concurrencia, reutilización y múltiples instancias.

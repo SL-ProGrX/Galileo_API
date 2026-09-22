@@ -11,7 +11,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
     [Authorize]
     public class FrmCrComisionesCatalogoController : ControllerBase
     {
-        private readonly FrmCrComisionesCatalogoBL _bl;
+        private readonly FrmCrComisionesCatalogoBL _bl; 
 
         public FrmCrComisionesCatalogoController(IConfiguration config)
         {
@@ -30,10 +30,10 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto Cr_ComisionesCatalogo_Eliminar(int codEmpresa, CrComisionesCatalogoEliminarRequest request)
             => _bl.Cr_ComisionesCatalogo_Eliminar(codEmpresa, request);
 
-        [HttpPost("Cr_ComisionesCatalogo_Porcentajes_Obtener")]
+        [HttpGet("Cr_ComisionesCatalogo_Porcentajes_Obtener")]
         public ErrorDto<List<CrComisionesCatalogoPorcentajeData>> Cr_ComisionesCatalogo_Porcentajes_Obtener(
             int codEmpresa,
-            CrComisionesCatalogoPorcentajesRequest request)
+            [FromQuery] CrComisionesCatalogoPorcentajesRequest request)
             => _bl.Cr_ComisionesCatalogo_Porcentajes_Obtener(codEmpresa, request);
 
         [HttpPost("Cr_ComisionesCatalogo_Porcentaje_Guardar")]
@@ -48,10 +48,10 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             CrComisionesCatalogoPorcentajeEliminarRequest request)
             => _bl.Cr_ComisionesCatalogo_Porcentaje_Eliminar(codEmpresa, request);
 
-        [HttpPost("Cr_ComisionesCatalogo_Lineas_Obtener")]
+        [HttpGet("Cr_ComisionesCatalogo_Lineas_Obtener")]
         public ErrorDto<List<CrComisionesCatalogoLineaData>> Cr_ComisionesCatalogo_Lineas_Obtener(
             int codEmpresa,
-            CrComisionesCatalogoLineasRequest request)
+            [FromQuery] CrComisionesCatalogoLineasRequest request)
             => _bl.Cr_ComisionesCatalogo_Lineas_Obtener(codEmpresa, request);
 
         [HttpPost("Cr_ComisionesCatalogo_Linea_Asignar")]

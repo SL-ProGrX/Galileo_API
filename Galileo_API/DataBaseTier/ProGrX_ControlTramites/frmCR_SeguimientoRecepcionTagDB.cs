@@ -746,10 +746,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
             return movimiento == MovimientoRecepcion
                 ? "No es posible registrar consecutivamente "
-                    + "dos recepciones en la operacion "
+                    + "dos recepciones en la operación "
                     + $"{idSolicitud}."
                 : "No es posible registrar consecutivamente "
-                    + "dos devoluciones en la operacion "
+                    + "dos devoluciones en la operación "
                     + $"{idSolicitud}.";
         }
 

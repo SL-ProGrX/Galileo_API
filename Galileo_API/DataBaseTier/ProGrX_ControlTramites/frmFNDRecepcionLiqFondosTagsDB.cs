@@ -329,10 +329,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                             ? tags.tag_recepcion
                             : tags.tag_devolucion;
 
-                    string observacion =
+                    string notas =
                         movimiento == MovimientoRecepcion
-                            ? "Recibida la documentaci&oacute;n de la Liquidaci&oacute;n"
-                            : "Devoluci&oacute;n la documentaci&oacute;n de la Liquidaci&oacute;n";
+                            ? "Recibida la documentación de la liquidación"
+                            : "Devolución de la documentación de la liquidación";
 
                     int aplicados = 0;
 
@@ -373,7 +373,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         if (boleta is null)
                         {
                             throw new InvalidOperationException(
-                                $"No se encontro la liquidacion {consecutivo}.");
+                                $"No se encontró la liquidación {consecutivo}.");
                         }
 
                         string? validacion =
@@ -397,7 +397,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                                 Codigo = boleta.cedula,
                                 Tag = tag,
                                 Usuario = request.usuario.Trim(),
-                                Observacion = observacion,
+                                Notas = notas,
                                 Documento =
                                     consecutivo.ToString(),
                                 Modulo,
@@ -420,7 +420,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         {
                             registros_aplicados = aplicados
                         },
-                        "Proceso concluido con exito.");
+                        "Proceso concluido con éxito.");
                 }
                 catch
                 {

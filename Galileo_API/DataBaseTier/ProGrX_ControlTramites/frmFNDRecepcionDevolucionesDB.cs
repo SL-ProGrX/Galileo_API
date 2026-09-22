@@ -166,7 +166,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 if (contrato is null)
                 {
                     return DbHelper.CreateErrorResponse<FndRecepcionDevolucionesData?>(
-                        "No se encontro un contrato pendiente para los datos indicados.",
+                        "No se encontró un contrato pendiente para los datos indicados.",
                         -2,
                         null);
                 }
@@ -226,7 +226,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     if (string.IsNullOrWhiteSpace(tags.Tag_Devolucion))
                     {
                         throw new InvalidOperationException(
-                            "No se puede realizar el proceso: no esta definida la etiqueta de devolucion.");
+                            "No se puede realizar el proceso: no está definida la etiqueta de devolución.");
                     }
 
                     int aplicados = FND_frmFNDRecepcionDevoluciones_Aplicar_Procesar(
@@ -242,7 +242,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         {
                             Registros_Aplicados = aplicados
                         },
-                        "Proceso concluido con exito.");
+                        "Proceso concluido con éxito.");
                 }
                 catch
                 {
@@ -339,7 +339,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 if (string.IsNullOrWhiteSpace(codPlan) || item.Cod_Contrato <= 0)
                 {
                     throw new InvalidOperationException(
-                        "La lista contiene registros no validos.");
+                        "La lista contiene registros no válidos.");
                 }
 
                 string documento = item.Cod_Contrato.ToString();
@@ -384,7 +384,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     string.IsNullOrWhiteSpace(item.Cod_Plan) ||
                     item.Cod_Contrato <= 0))
             {
-                return "La lista contiene registros no validos.";
+                return "La lista contiene registros no válidos.";
             }
 
             return null;

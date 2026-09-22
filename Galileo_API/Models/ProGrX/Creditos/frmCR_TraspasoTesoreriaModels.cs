@@ -9,7 +9,9 @@
         public decimal montoapr { get; set; }
         public decimal monto_girado { get; set; }
         public decimal desembolsos_numero { get; set; }
-        public string? desembolsos { get; set; }
+        public decimal desembolsos { get; set; }
+        public decimal total { get; set; }
+        public int duplicado { get; set; }
     }
 
     public class RemesaModel

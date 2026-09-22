@@ -163,7 +163,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         {
                             registros_aplicados = aplicados
                         },
-                        "Proceso concluido con exito.");
+                        "Proceso concluido con éxito.");
                 }
                 catch
                 {
