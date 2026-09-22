@@ -58,12 +58,12 @@ namespace Galileo.DataBaseTier
         {
             try
             {
-                /**
-                 * Validacion de documento para poder continuar con el proceso
-                **/
-                var vTipoDoc = string.IsNullOrWhiteSpace(request.tipodoc)
-                    ? throw new InvalidOperationException("El tipo de documento es requerido.")
-                    : request.tipodoc.Trim();
+
+                var vTipoDoc = string.IsNullOrWhiteSpace(request.tipodoc);
+                if(vTipoDoc == false)
+                {
+                    return new ErrorDto { Code = -1, Description = "El tipo de documento es requerido." };
+                }
 
                 var validacion = ValidarAporte(codEmpresa, request);
                 if (validacion.Code != 0)
