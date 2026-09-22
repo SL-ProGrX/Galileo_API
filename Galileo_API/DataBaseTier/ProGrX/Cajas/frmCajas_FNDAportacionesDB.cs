@@ -58,6 +58,9 @@ namespace Galileo.DataBaseTier
         {
             try
             {
+                /**
+                 * Validacion de documento para poder continuar con el proceso
+                **/
                 var vTipoDoc = string.IsNullOrWhiteSpace(request.tipodoc)
                     ? throw new InvalidOperationException("El tipo de documento es requerido.")
                     : request.tipodoc.Trim();
