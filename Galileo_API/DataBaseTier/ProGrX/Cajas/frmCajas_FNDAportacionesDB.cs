@@ -59,12 +59,6 @@ namespace Galileo.DataBaseTier
             try
             {
 
-                var vTipoDoc = string.IsNullOrWhiteSpace(request.tipodoc);
-                if(vTipoDoc == false)
-                {
-                    return new ErrorDto { Code = -1, Description = "El tipo de documento es requerido." };
-                }
-
                 var validacion = ValidarAporte(codEmpresa, request);
                 if (validacion.Code != 0)
                 {
