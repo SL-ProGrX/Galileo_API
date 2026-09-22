@@ -277,7 +277,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
                         and R.tesoreria is null
                         and R.estado in('A','C')
                         and Td.id_solicitud is null
-                        and (R.Emitir in('CK','TE') or isnull(vD.Monto,0) > 0)
+                        and (R.Emitir in('CK','TE','TS') or isnull(vD.Monto,0) > 0)
                       order by R.id_solicitud",
                     new { fechaInicio, fechaCorte }).ToList();
 
