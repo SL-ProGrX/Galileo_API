@@ -709,6 +709,7 @@ namespace Galileo.Models.ProGrX.Credito
         public string? canton { get; set; }
         public string? distrito { get; set; }
         public string? sexo { get; set; }
+        public string? genero_desc { get; set; }
         public DateTime? fecha_nac { get; set; }
         public string? estadocivil { get; set; }
         public string? estadocivil_desc { get; set; }
@@ -719,8 +720,12 @@ namespace Galileo.Models.ProGrX.Credito
         public string? linkedin { get; set; }
         public string? estadopersona { get; set; }
         public DateTime? fechaingreso { get; set; }
+        public string? membresia { get; set; }
         public string? nacionalidad { get; set; }
+        public string? pais_nac { get; set; }
+        public string? pais_residencia { get; set; }
         public int edad { get; set; }
+        public string? edad_full { get; set; }
     }
 
     public class AFPersonaEstadoLaboralDto

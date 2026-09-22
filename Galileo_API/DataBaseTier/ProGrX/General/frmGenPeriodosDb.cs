@@ -102,8 +102,7 @@ namespace Galileo.DataBaseTier
                     return resultado;
                 }
 
-                int lngAnioX, iMesX;
-                ObtenerPeriodoAnterior(periodoDto.Anio ?? 0, periodoDto.Mes ?? 0, out lngAnioX, out iMesX);
+                ObtenerPeriodoSiguiente(periodoDto.Anio ?? 0, periodoDto.Mes ?? 0, out int lngAnioX, out int iMesX);
 
                 var procedure = "[spINVCierrePeriodo]";
                 var values = new
@@ -113,9 +112,9 @@ namespace Galileo.DataBaseTier
                     AnioC = lngAnioX,
                     MesC = iMesX
                 };
-                int res = connection.Execute(procedure, values, commandType: CommandType.StoredProcedure);
+                connection.Execute(procedure, values, commandType: CommandType.StoredProcedure);
 
-                resultado.Code = res;
+                resultado.Code = 0;
                 resultado.Description = "El Cierre del Periodo se Realizó Satisfactoriamente...";
             }
             catch (Exception ex)
@@ -170,6 +169,24 @@ namespace Galileo.DataBaseTier
                 return false;
             }
             return true;
+        }
+
+        /// <summary>
+        /// Calcula el periodo siguiente al indicado, que es el que el SP debe inicializar.
+        /// Equivale al bloque de VB6 previo al exec spINVCierrePeriodo.
+        /// </summary>
+        private static void ObtenerPeriodoSiguiente(int anio, int mes, out int anioSiguiente, out int mesSiguiente)
+        {
+            if (mes == 12)
+            {
+                mesSiguiente = 1;
+                anioSiguiente = anio + 1;
+            }
+            else
+            {
+                mesSiguiente = mes + 1;
+                anioSiguiente = anio;
+            }
         }
 
         private static void ObtenerPeriodoAnterior(int anio, int mes, out int anioAnterior, out int mesAnterior)
