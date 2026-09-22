@@ -4,6 +4,7 @@
     {
         public int Gestion_Id { get; set; }
         public string? Gestion_Estado { get; set; }
+        public string? Gestion_Nota { get; set; }
     }
 
     public class FondosAporteAplicarDto
@@ -28,6 +29,7 @@
         public required int recibodigital { get; set; }
         public required decimal montoautorizado { get; set; }
         public string? gestionestado { get; set; }
+        public List<FndSubCuentasDto> subcuentas { get; set; } = [];
 
     }
 
@@ -49,6 +51,8 @@
     {
         public bool requiere { get; set; }
         public decimal montomaximo { get; set; }
+        public bool modo_autorizacion { get; set; }
+        public bool autorizado { get; set; }
     }
 
     public class FondosGestionRegistroAddDto
@@ -88,6 +92,8 @@
         public decimal inversion { get; set; }
         public int tipo_cdp { get; set; }
         public int caja_valida_concepto { get; set; }
+        public int cuenta_maestra { get; set; }
+        public int permite_mov_cajas { get; set; }
     }
 
     public class FndSubCuentasDto

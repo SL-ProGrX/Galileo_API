@@ -446,7 +446,14 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
 
                 var errorRespuesta = ProcesarRespuestaProveedor(parametros, context, solicitud, resp, canal, codReferencia);
                 if (errorRespuesta != null)
-                    return errorRespuesta;
+                {
+                    return new ErrorDto<RespuestaRegistro>
+                    {
+                        Code = -1,
+                        Description = errorRespuesta.Result.MotivoErrorInterno,
+                        Result = new RespuestaRegistro { MotivoError = -1, CodigoReferencia = resp }
+                    };
+                }
 
                 // Registrar respuesta en BD
                 var actualizado = registrarCuenta(parametros.codEmpresa, parametros.nSolicitud, resp);

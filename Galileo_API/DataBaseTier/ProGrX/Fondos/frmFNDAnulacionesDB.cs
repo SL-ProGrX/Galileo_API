@@ -17,7 +17,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private const string SpGestionRegistro = "spFnd_Gestion_Registro";
         private const string SpGestionEstado = "spFnd_Gestion_Estado";
         private const string SpSeguridadAnulacion = "dbo.spFndSeguridad_ApAnul";
-        private const string SpAplicaAutorizacion = "dbo.spFnd_Autorizaciones_Aplica";
 
         public FrmFndAnulacionesDb(IConfiguration config)
         {
@@ -219,15 +218,29 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             }
 
             var resultado = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
-                EjecutarAnulacion(CodEmpresa, Params, connection));
+                EjecutarAnulacion(CodEmpresa, Params, NormalizarTexto(Accion).ToUpper(), NormalizarTexto(Notas), connection));
 
             return resultado.Code == 0
                 ? resultado.Result ?? DbHelper.CreateErrorResponse<object>("No se obtuvo resultado de anulación.", -1, null)
                 : DbHelper.CreateErrorResponse<object>(resultado.Description ?? "Error al procesar anulación.", resultado.Code ?? -1, null);
         }
 
-        private ErrorDto<object> EjecutarAnulacion(int codEmpresa, FndAnulacionesParams parametros, SqlConnection connection)
+        /// <summary>
+        /// Paridad VB6 frmFNDAnulaciones.cmdAnular: valida, ejecuta spFondos_Anula_Aporte (documento FNC en
+        /// SIF_TRANSACCIONES, asiento y saldo a favor en cajas), aplica subcuentas e imprime el recibo.
+        /// </summary>
+        private ErrorDto<object> EjecutarAnulacion(int codEmpresa, FndAnulacionesParams parametros, string accion, string notas, SqlConnection connection)
         {
+            if (notas.Length < 30)
+            {
+                return DbHelper.CreateErrorResponse<object>("Indique una nota v&aacute;lida para justificar el movimiento!", -2, null);
+            }
+
+            if (accion != AccionCuentaContable && accion != AccionSaldoFavor)
+            {
+                return DbHelper.CreateErrorResponse<object>("Indique la acci&oacute;n a procesar (Cuenta Contable o Saldo a Favor).", -2, null);
+            }
+
             var contrato = ObtenerContratoAnulacion(connection, parametros);
             if (contrato is null)
             {
@@ -240,21 +253,55 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 return DbHelper.CreateErrorResponse<object>(validacion.Description ?? "Error al validar anulación.", validacion.Code ?? -1, null);
             }
 
-            var fecha = DateTime.Now;
-            var proceso = CrearPeriodoProceso(fecha);
-            var distribucion = CalcularDistribucion(parametros.aporte ?? 0m, contrato.aportes, contrato.rendimiento);
-            var recibo = ObtenerConsecutivoRecibo(codEmpresa);
-            if (recibo <= 0)
+            var validacionSubCuentas = ValidarSubCuentas(codEmpresa, parametros);
+            if (validacionSubCuentas.Code != 0)
             {
-                return DbHelper.CreateErrorResponse<object>("No se pudo obtener el consecutivo del documento.", -2, null);
+                return DbHelper.CreateErrorResponse<object>(validacionSubCuentas.Description ?? "Error al validar subcuentas.", validacionSubCuentas.Code ?? -1, null);
             }
 
-            AplicarMovimientoContrato(connection, parametros, distribucion, proceso, recibo);
-            RegistrarBitacoraAnulacion(codEmpresa, parametros, recibo);
-            AplicarSubCuentasSiCorresponde(codEmpresa, connection, parametros, proceso, recibo);
-            AplicarAutorizacionSiCorresponde(codEmpresa, connection, parametros, recibo, validacion.Result);
+            var salida = ObtenerSalidaAnulacion(connection, accion);
+            if (salida is null)
+            {
+                return DbHelper.CreateErrorResponse<object>(
+                    accion == AccionSaldoFavor
+                        ? "No existe una forma de pago de Saldo a Favor activa (SIF_FORMAS_PAGO tipo 'S')."
+                        : "No se especific&oacute; una cuenta v&aacute;lida...",
+                    -2,
+                    null);
+            }
 
-            return ImprimirResultadoAnulacion(codEmpresa, parametros, recibo);
+            var distribucion = CalcularDistribucion(parametros.aporte ?? 0m, contrato.aportes, contrato.rendimiento);
+            var aplica = connection.QueryFirstOrDefault<FndAnulacionesAplicaResultDto>(
+                SpAnulaAporte,
+                new
+                {
+                    Operadora = parametros.operadora,
+                    Plan = NormalizarTexto(parametros.plan),
+                    Contrato = parametros.contrato,
+                    TipoDoc = TipoDocumentoAnulacion,
+                    Aportes = distribucion.Aporte,
+                    Rendimiento = distribucion.Rendimiento,
+                    Usuario = NormalizarTexto(parametros.usuario),
+                    Notas = notas,
+                    AccionTipo = accion,
+                    Cuenta = salida.Cuenta,
+                    SF_Codigo = salida.FormaPago,
+                    Documento = string.Empty,
+                    Deposito = string.Empty,
+                    GestionId = parametros.gestion_id ?? 0
+                },
+                commandType: System.Data.CommandType.StoredProcedure);
+
+            if (aplica is null || aplica.Pass != 1)
+            {
+                return DbHelper.CreateErrorResponse<object>(aplica?.Mensaje ?? "No se pudo aplicar la anulaci&oacute;n.", -2, null);
+            }
+
+            var numDoc = NormalizarTexto(aplica.NumDoc);
+            RegistrarBitacoraAnulacion(codEmpresa, parametros, aplica);
+            AplicarSubCuentasSiCorresponde(connection, parametros, aplica, numDoc);
+
+            return ImprimirResultadoAnulacion(codEmpresa, parametros, numDoc);
         }
 
         private static FndAnulacionesSubCuentasDto? ObtenerContratoAnulacion(SqlConnection connection, FndAnulacionesParams parametros)
@@ -271,6 +318,11 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
         private ErrorDto<bool> ValidarAnulacion(int codEmpresa, FndAnulacionesParams parametros, FndAnulacionesSubCuentasDto contrato, SqlConnection connection)
         {
+            if ((parametros.aporte ?? 0m) <= 0m)
+            {
+                return DbHelper.CreateErrorResponse("No se especific&oacute; el contrato o el monto", -2, false);
+            }
+
             if (parametros.aporte > contrato.aportes + contrato.rendimiento)
             {
                 return DbHelper.CreateErrorResponse("La Anulaci&oacute;n es mayor que el total de los aportes y rendimientos del contrato...", -2, false);
@@ -284,7 +336,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             return ValidarSeguridadAnulacion(parametros, connection);
         }
 
-        private static ErrorDto<bool> ValidarSeguridadAnulacion( FndAnulacionesParams parametros, SqlConnection connection)
+        private static ErrorDto<bool> ValidarSeguridadAnulacion(FndAnulacionesParams parametros, SqlConnection connection)
         {
             var autoriza = connection.QueryFirstOrDefault<int>(
                 SpSeguridadAnulacion,
@@ -301,7 +353,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 return DbHelper.CreateErrorResponse("El Usuario no tiene nivel de Autorizaci&oacute;n para realizar este movimiento!", -2, true);
             }
 
-            if (parametros.aporte > parametros.autoriza_monto)
+            // VB6: si excede el monto autorizado exige una gestion con estado Autorizado (verificado en BD, no en el cliente).
+            if (parametros.aporte > parametros.autoriza_monto && !GestionAutorizada(connection, parametros.gestion_id))
             {
                 return DbHelper.CreateErrorResponse("- Este movimiento requiere AUTORIZACI&Oacute;N, verifique el estado de la misma y/o solicite una!", -2, true);
             }
@@ -309,9 +362,68 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             return DbHelper.CreateOkResponse(true);
         }
 
-        private long ObtenerConsecutivoRecibo(int codEmpresa)
+        private static bool GestionAutorizada(SqlConnection connection, int? gestionId)
         {
-            return new MRecibos(_config).FxDocumentoConsecutivo(codEmpresa, TipoDocumentoAnulacion);
+            if ((gestionId ?? 0) <= 0)
+            {
+                return false;
+            }
+
+            var estado = connection.QueryFirstOrDefault<FndAnulacionesEstadoGestionDto>(
+                SpGestionEstado,
+                new { GestionId = gestionId },
+                commandType: System.Data.CommandType.StoredProcedure);
+
+            return NormalizarTexto(estado?.gestion_estado).StartsWith('A');
+        }
+
+        /// <summary>VB6: el monto por subcuenta no puede exceder aportes + rendimiento y el total debe cuadrar con la anulacion.</summary>
+        private ErrorDto<bool> ValidarSubCuentas(int codEmpresa, FndAnulacionesParams parametros)
+        {
+            if (parametros.aporteLocked != true)
+            {
+                return DbHelper.CreateOkResponse(true);
+            }
+
+            var montos = (parametros.subcuentas ?? new List<FndAnulacionesSubCuentaMontoDto>())
+                .Where(x => x.anulacion > 0m)
+                .ToList();
+            if (montos.Count == 0 || montos.Sum(x => x.anulacion) != parametros.aporte)
+            {
+                return DbHelper.CreateErrorResponse("El desglose de subcuentas debe coincidir con el monto a anular.", -2, false);
+            }
+
+            var actuales = (FND_Anulaciones_SubCuentas_Obtener(codEmpresa, parametros).Result ?? new List<FndAnulacionesSubCuentasDto>())
+                .ToDictionary(x => x.idx);
+            foreach (var monto in montos)
+            {
+                if (!actuales.TryGetValue(monto.idx, out var actual) || monto.anulacion > actual.aportes + actual.rendimiento)
+                {
+                    return DbHelper.CreateErrorResponse($"La Anulaci&oacute;n es mayor al total de los aportes y rendimientos de las subCuentas ({monto.idx})...", -2, false);
+                }
+            }
+
+            return DbHelper.CreateOkResponse(true);
+        }
+
+        /// <summary>VB6 "Valida Salida": C = cuenta del documento FNC, S = forma de pago de saldo a favor.</summary>
+        private static SalidaAnulacion? ObtenerSalidaAnulacion(SqlConnection connection, string accion)
+        {
+            if (accion == AccionSaldoFavor)
+            {
+                return connection.QueryFirstOrDefault<SalidaAnulacion>(@"
+                    SELECT RTRIM(COD_CUENTA) AS Cuenta, RTRIM(COD_FORMA_PAGO) AS FormaPago
+                    FROM SIF_FORMAS_PAGO
+                    WHERE TIPO = 'S' AND Activa = 1;");
+            }
+
+            var cuenta = connection.QueryFirstOrDefault<string>(
+                "SELECT RTRIM(COD_CUENTA) FROM SIF_DOCUMENTOS WHERE TIPO_DOCUMENTO = @TipoDoc;",
+                new { TipoDoc = TipoDocumentoAnulacion });
+
+            return string.IsNullOrWhiteSpace(cuenta)
+                ? null
+                : new SalidaAnulacion { Cuenta = cuenta.Trim(), FormaPago = string.Empty };
         }
 
         private static AnulacionDistribucion CalcularDistribucion(decimal monto, decimal aporteActual, decimal rendimientoActual)
@@ -328,165 +440,97 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             };
         }
 
-        private static void AplicarMovimientoContrato(
+        /// <summary>VB6: detalle y rebajo por subcuenta con Fecha/Proceso/NumDoc devueltos por el SP, en una transaccion.</summary>
+        private static void AplicarSubCuentasSiCorresponde(
             SqlConnection connection,
             FndAnulacionesParams parametros,
-            AnulacionDistribucion distribucion,
-            string proceso,
-            long recibo)
-        {
-            const string updateContrato = @"
-                    UPDATE dbo.Fnd_contratos
-                    SET Aportes = Aportes - @AporteAplicado,
-                        rendimiento = rendimiento - @RendimientoAplicado
-                    WHERE cod_operadora = @Operadora
-                      AND cod_plan = @Plan
-                      AND cod_contrato = @Contrato;";
-
-            connection.Execute(updateContrato, new
-            {
-                AporteAplicado = distribucion.Aporte,
-                RendimientoAplicado = distribucion.Rendimiento,
-                Operadora = parametros.operadora,
-                Plan = parametros.plan,
-                Contrato = parametros.contrato
-            });
-
-            const string insertDetalle = @"
-                    INSERT INTO dbo.fnd_contratos_detalle
-                    (
-                        Cod_operadora,
-                        Cod_plan,
-                        Cod_Contrato,
-                        Fecha,
-                        Monto,
-                        Fecha_Proceso,
-                        Tcon,
-                        Ncon,
-                        cod_concepto,
-                        usuario,
-                        cod_Caja
-                    )
-                    VALUES
-                    (
-                        @Operadora,
-                        @Plan,
-                        @Contrato,
-                        GETDATE(),
-                        @Aporte * -1,
-                        @Proceso,
-                        @TipoComprobante,
-                        @Recibo,
-                        @Concepto,
-                        @Usuario,
-                        ''
-                    );";
-
-            connection.Execute(insertDetalle, new
-            {
-                Operadora = parametros.operadora,
-                Plan = parametros.plan,
-                Contrato = parametros.contrato,
-                Aporte = parametros.aporte,
-                Proceso = proceso,
-                TipoComprobante,
-                Recibo = recibo,
-                Concepto = ConceptoAnulacion,
-                Usuario = parametros.usuario
-            });
-        }
-
-        private void AplicarSubCuentasSiCorresponde(
-            int codEmpresa,
-            SqlConnection connection,
-            FndAnulacionesParams parametros,
-            string proceso,
-            long recibo)
+            FndAnulacionesAplicaResultDto aplica,
+            string numDoc)
         {
             if (parametros.aporteLocked != true)
             {
                 return;
             }
 
-            var subCuentas = FND_Anulaciones_SubCuentas_Obtener(codEmpresa, parametros).Result ?? new List<FndAnulacionesSubCuentasDto>();
-            foreach (var item in subCuentas)
-            {
-                AplicarSubCuenta(connection, parametros, item, proceso, recibo);
-            }
-        }
-
-        private static void AplicarSubCuenta(
-            SqlConnection connection,
-            FndAnulacionesParams parametros,
-            FndAnulacionesSubCuentasDto item,
-            string proceso,
-            long recibo)
-        {
-            var montoSubCuenta = MontoSubCuenta;
-            if (montoSubCuenta <= 0)
+            var montos = (parametros.subcuentas ?? new List<FndAnulacionesSubCuentaMontoDto>())
+                .Where(x => x.anulacion > 0m)
+                .ToList();
+            if (montos.Count == 0)
             {
                 return;
             }
 
-            const string insertDetalle = @"
-                    INSERT INTO dbo.fnd_SubCuentas_detalle
-                    (
-                        Idx,
-                        Cod_operadora,
-                        Cod_plan,
-                        Cod_Contrato,
-                        Fecha,
-                        Monto,
-                        Fecha_Proceso,
-                        Tcon,
-                        Ncon
-                    )
-                    VALUES
-                    (
-                        @Id,
-                        @Operadora,
-                        @Plan,
-                        @Contrato,
-                        GETDATE(),
-                        @Monto * -1,
-                        @Proceso,
-                        @TipoComprobante,
-                        @Recibo
-                    );";
-
-            connection.Execute(insertDetalle, new
+            if (connection.State != System.Data.ConnectionState.Open)
             {
-                Id = item.idx,
-                Operadora = parametros.operadora,
-                Plan = parametros.plan,
-                Contrato = parametros.contrato,
-                Monto = montoSubCuenta,
-                Proceso = proceso,
-                TipoComprobante,
-                Recibo = recibo
-            });
+                connection.Open();
+            }
 
-            var distribucion = CalcularDistribucionSubCuenta(montoSubCuenta, item.aportes, item.rendimiento);
-            const string updateSubCuenta = @"
+            using var transaction = connection.BeginTransaction();
+            foreach (var monto in montos)
+            {
+                AplicarSubCuenta(connection, transaction, parametros, monto, aplica, numDoc);
+            }
+            transaction.Commit();
+        }
+
+        private static void AplicarSubCuenta(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            FndAnulacionesParams parametros,
+            FndAnulacionesSubCuentaMontoDto monto,
+            FndAnulacionesAplicaResultDto aplica,
+            string numDoc)
+        {
+            var llave = new
+            {
+                Id = monto.idx,
+                Operadora = parametros.operadora,
+                Plan = NormalizarTexto(parametros.plan),
+                Contrato = parametros.contrato
+            };
+
+            var actual = connection.QuerySingle<FndAnulacionesSubCuentasDto>(@"
+                    SELECT IdX AS idx, ISNULL(Aportes, 0) AS aportes, ISNULL(rendimiento, 0) AS rendimiento
+                    FROM dbo.Fnd_subCuentas WITH (UPDLOCK)
+                    WHERE cod_operadora = @Operadora AND cod_plan = @Plan AND cod_contrato = @Contrato AND IdX = @Id;",
+                llave, transaction);
+
+            connection.Execute(@"
+                    INSERT INTO dbo.fnd_SubCuentas_detalle (Idx, Cod_operadora, Cod_plan, Cod_Contrato, Fecha, Monto, Fecha_Proceso, Tcon, Ncon)
+                    VALUES (@Id, @Operadora, @Plan, @Contrato, @Fecha, @Monto * -1, @Proceso, @TipoDoc, @NumDoc);",
+                new
+                {
+                    llave.Id,
+                    llave.Operadora,
+                    llave.Plan,
+                    llave.Contrato,
+                    Fecha = aplica.Fecha ?? DateTime.Now,
+                    Monto = monto.anulacion,
+                    aplica.Proceso,
+                    TipoDoc = TipoDocumentoAnulacion,
+                    NumDoc = numDoc
+                },
+                transaction);
+
+            var distribucion = CalcularDistribucionSubCuenta(monto.anulacion, actual.aportes, actual.rendimiento);
+            connection.Execute(@"
                     UPDATE dbo.Fnd_subCuentas
                     SET Aportes = Aportes - @Aporte,
                         rendimiento = rendimiento - @Rendimiento
-                    WHERE cod_operadora = @Operadora
-                      AND cod_plan = @Plan
-                      AND cod_contrato = @Contrato
-                      AND Idx = @Id;";
-
-            connection.Execute(updateSubCuenta, new
-            {
-                Id = item.idx,
-                Operadora = parametros.operadora,
-                Plan = parametros.plan,
-                Contrato = parametros.contrato,
-                Aporte = distribucion.Aporte,
-                Rendimiento = distribucion.Rendimiento
-            });
+                    WHERE cod_operadora = @Operadora AND cod_plan = @Plan AND cod_contrato = @Contrato AND IdX = @Id;",
+                new
+                {
+                    llave.Id,
+                    llave.Operadora,
+                    llave.Plan,
+                    llave.Contrato,
+                    distribucion.Aporte,
+                    distribucion.Rendimiento
+                },
+                transaction);
         }
 
+        /// <summary>VB6 subcuentas: primero aportes, luego rendimiento.</summary>
         private static AnulacionDistribucion CalcularDistribucionSubCuenta(decimal monto, decimal aporteActual, decimal rendimientoActual)
         {
             var sobrante = monto;
@@ -501,64 +545,40 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             };
         }
 
-        private void AplicarAutorizacionSiCorresponde(
-            int codEmpresa,
-            SqlConnection connection,
-            FndAnulacionesParams parametros,
-            long recibo,
-            bool seguridadAplica)
-        {
-            if (!seguridadAplica)
-            {
-                return;
-            }
-
-            var estadoGestion = FND_Anulaciones_SolicitaAutorizacion_Obtener(codEmpresa, parametros).Result;
-            if (estadoGestion is null || estadoGestion.gestion_id <= 0 || !NormalizarTexto(estadoGestion.gestion_estado).StartsWith('A'))
-            {
-                return;
-            }
-
-            connection.Execute(
-                SpAplicaAutorizacion,
-                new
-                {
-                    GestionId = estadoGestion.gestion_id,
-                    TCon = TipoDocumentoAnulacion,
-                    Ncon = recibo,
-                    Usuario = parametros.usuario
-                },
-                commandType: System.Data.CommandType.StoredProcedure);
-        }
-
-        private ErrorDto<object> ImprimirResultadoAnulacion(int codEmpresa, FndAnulacionesParams parametros, long recibo)
+        private ErrorDto<object> ImprimirResultadoAnulacion(int codEmpresa, FndAnulacionesParams parametros, string numDoc)
         {
             var empresaEnlace = new MProGrxMain(_config).EmpresaEnlaceObtener();
             var sysDocVersion = empresaEnlace?.FirstOrDefault()?.SysDocVersion ?? 0;
-            var result = sysDocVersion == 1
+            var result = sysDocVersion == 1 && long.TryParse(numDoc, out var recibo)
                 ? _mFNDFunciones.sbgFNDImprimeRecibo(codEmpresa, recibo, TipoDocumentoAnulacion, parametros.operadora)
                 : new MRecibos(_config).sbImprimeRecibo(
                     codEmpresa,
-                    recibo.ToString(),
+                    numDoc,
                     TipoDocumentoAnulacion,
                     parametros.usuario ?? string.Empty);
 
             if (result.Code == 0)
             {
-                result.Description = $"Anulaci&oacute;n aplicada, con Nota de Cr&eacute;dito # {recibo}";
+                result.Description = $"Anulaci&oacute;n aplicada, con Nota de Cr&eacute;dito # {numDoc}";
+            }
+            else
+            {
+                result.Code = -2;
+                result.Description = $"Anulaci&oacute;n aplicada, con Nota de Cr&eacute;dito # {numDoc}, pero no se pudo generar el recibo: {result.Description}";
             }
 
             return result;
         }
 
-        private void RegistrarBitacoraAnulacion(int codEmpresa, FndAnulacionesParams parametros, long recibo)
+        /// <summary>VB6: Call Bitacora(rs!Movimiento, rs!Mensaje).</summary>
+        private void RegistrarBitacoraAnulacion(int codEmpresa, FndAnulacionesParams parametros, FndAnulacionesAplicaResultDto aplica)
         {
             Bitacora(new BitacoraInsertarDto
             {
                 EmpresaId = codEmpresa,
                 Usuario = NormalizarTexto(parametros.usuario).ToUpper(),
-                DetalleMovimiento = $"NC Ope:{parametros.operadora} Plan:{NormalizarTexto(parametros.plan)} Cont:{parametros.contrato} Monto:{parametros.aporte} Recibo:{recibo}    ",
-                Movimiento = "Registra - WEB",
+                DetalleMovimiento = NormalizarTexto(aplica.Mensaje),
+                Movimiento = string.IsNullOrWhiteSpace(aplica.Movimiento) ? "Registra - WEB" : NormalizarTexto(aplica.Movimiento),
                 Modulo = vModulo
             });
         }
@@ -577,31 +597,40 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         {
             return new
             {
+                // VB6: exec spFnd_Gestion_Registro Cedula, 'N', Operadora, Plan, Contrato, mAutorizaMonto (MntCal), txtAporte (MntSol), Usuario, Nota
                 Cedula = NormalizarTexto(parametros?.cedula),
+                Tipo = TipoGestionAnulacion,
                 Operadora = parametros?.operadora,
                 Plan = NormalizarTexto(parametros?.plan),
                 Contrato = parametros?.contrato,
-                MntSol = parametros?.autoriza_monto ?? 0,
-                MntCal = parametros?.aporte ?? 0,
-                Usuario = NormalizarTexto(parametros?.usuario)
+                MntCal = parametros?.autoriza_monto ?? 0,
+                MntSol = parametros?.aporte ?? 0,
+                Usuario = NormalizarTexto(parametros?.usuario),
+                Nota = NormalizarTexto(parametros?.nota)
             };
         }
 
-        private static string CrearPeriodoProceso(DateTime fecha) => $"{fecha.Year}{fecha.Month:00}";
 
 
-        private const decimal MontoSubCuenta = 0m;
 
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();
 
-        private const string ConceptoAnulacion = "FND002";
         private const string TipoDocumentoAnulacion = "FNC";
-        private const string TipoComprobante = "FNC";
+        private const string AccionCuentaContable = "C";
+        private const string AccionSaldoFavor = "S";
+        private const string SpAnulaAporte = "dbo.spFondos_Anula_Aporte";
+        private const string TipoGestionAnulacion = "N";
 
         private sealed class AnulacionDistribucion
         {
             public decimal Aporte { get; init; }
             public decimal Rendimiento { get; init; }
+        }
+
+        private sealed class SalidaAnulacion
+        {
+            public string Cuenta { get; init; } = string.Empty;
+            public string FormaPago { get; init; } = string.Empty;
         }
     }
 }
