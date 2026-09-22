@@ -118,6 +118,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             return _db.CambiarDeductora(codEmpresa, operacion, deductora);
         }
 
+        public ErrorDto<string> CambiarDeduccionPlanilla(int codEmpresa, int operacion, bool deducePlanilla)
+        {
+            return _db.CambiarDeduccionPlanilla(codEmpresa, operacion, deducePlanilla);
+        }
+
         public ErrorDto<bool> ValidarCongelamiento(int codEmpresa, string cedula, string tipo)
         {
             return _db.ValidarCongelamiento(codEmpresa, cedula, tipo);
