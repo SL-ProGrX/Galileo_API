@@ -8,7 +8,7 @@ using System.Data;
 
 namespace Galileo.DataBaseTier
 {
-    public class FrmCajasFndaportacionesDB
+    public partial class FrmCajasFndaportacionesDB
     {
         private readonly PortalDB _portalDb;
         private readonly MCajas _mCajas;
@@ -58,9 +58,6 @@ namespace Galileo.DataBaseTier
         {
             try
             {
-                var vTipoDoc = string.IsNullOrWhiteSpace(request.tipodoc)
-                    ? throw new InvalidOperationException("El tipo de documento es requerido.")
-                    : request.tipodoc.Trim();
 
                 var validacion = ValidarAporte(codEmpresa, request);
                 if (validacion.Code != 0)
@@ -69,48 +66,7 @@ namespace Galileo.DataBaseTier
                 }
 
                 var codOficina = ObtenerCodigoOficina(codEmpresa, request);
-                var aplica = DbHelper.ExecuteSingleQuery<FondosAporteAplicarResultDto>(
-                    _portalDb,
-                    codEmpresa,
-                    @"EXEC spCajas_Fondos_Abono
-                        @Operadora,
-                        @Plan,
-                        @Contrato,
-                        @TipoDoc,
-                        @Aportes,
-                        @Rendimiento,
-                        @Caja_Codigo,
-                        @Caja_SesionId,
-                        @Caja_Apertura,
-                        @Caja_Tiquete,
-                        @Usuario,
-                        @Caja_Oficina,
-                        @Notas,
-                        @Documento,
-                        @Deposito,
-                        @ReciboDigital,
-                        @GestionId;",
-                    default,
-                    new
-                    {
-                        Operadora = request.operadora,
-                        Plan = request.plan?.Trim(),
-                        Contrato = request.contrato,
-                        TipoDoc = vTipoDoc,
-                        Aportes = request.aporte,
-                        Rendimiento = 0,
-                        Caja_Codigo = request.caja,
-                        Caja_SesionId = request.sesionid,
-                        Caja_Apertura = request.apertura,
-                        Caja_Tiquete = request.tiquete,
-                        Usuario = request.usuario,
-                        Caja_Oficina = string.IsNullOrWhiteSpace(request.oficina) ? codOficina : request.oficina,
-                        Notas = request.notas ?? string.Empty,
-                        Documento = string.Empty,
-                        Deposito = string.Empty,
-                        ReciboDigital = request.recibodigital,
-                        GestionId = request.gestionid
-                    });
+                var aplica = Cajas_FNDAportaciones_Aporte_Registrar(codEmpresa, request, codOficina);
 
                 if (aplica.Code != 0)
                 {
@@ -181,7 +137,7 @@ namespace Galileo.DataBaseTier
                 return new ErrorDto { Code = -1, Description = $"- La apertura ..:{request.apertura} de esta caja ha sido cerrada!" };
             }
 
-            var seguridad = ValidarSeguridadAporte(codEmpresa, request);
+            var seguridad = Cajas_FNDAportaciones_Seguridad_Validar(codEmpresa, request);
             if (seguridad.Code != 0)
             {
                 return seguridad;
@@ -215,44 +171,6 @@ namespace Galileo.DataBaseTier
                     Plan = request.plan,
                     Contrato = request.contrato
                 });
-        }
-
-        private ErrorDto ValidarSeguridadAporte(int codEmpresa, FondosAporteAplicarDto request)
-        {
-            if (_mFndFunciones.fxFndParametro(codEmpresa, "01.1") != "S")
-            {
-                return new ErrorDto { Code = 0, Description = "Ok" };
-            }
-
-            var autoriza = DbHelper.ExecuteSingleQuery<int>(
-                _portalDb,
-                codEmpresa,
-                "EXEC spFndSeguridad_ApAnul @Operadora, @Plan, @Usuario;",
-                0,
-                new
-                {
-                    Operadora = request.operadora,
-                    Plan = request.plan,
-                    Usuario = request.usuario
-                });
-
-            if (autoriza.Code != 0)
-            {
-                return new ErrorDto { Code = autoriza.Code, Description = autoriza.Description };
-            }
-
-            if (autoriza.Result == 0)
-            {
-                return new ErrorDto { Code = -1, Description = "El Usuario no tiene nivel de Autorización para realizar este movimiento!" };
-            }
-
-            var gestionAprobada = request.gestionestado?.Trim().StartsWith("A", StringComparison.OrdinalIgnoreCase) == true;
-            if (request.aporte > request.montoautorizado && (request.gestionid <= 0 || !gestionAprobada))
-            {
-                return new ErrorDto { Code = -1, Description = "- Este movimiento requiere AUTORIZACION, verifique el estado de la misma y/o solicite una!" };
-            }
-
-            return new ErrorDto { Code = 0, Description = "Ok" };
         }
 
         private ErrorDto ValidarTransaccionCajas(int codEmpresa, FondosAporteAplicarDto request)
@@ -325,45 +243,11 @@ namespace Galileo.DataBaseTier
         /// <returns>Resultado de la validacion de autorizacion.</returns>
         public ErrorDto<FondosRequiereAutorizacionDto> Fondos_Aporte_RequiereAutorizacion(int codempresa, string plan, string usuario, decimal aporte)
         {
-            var response = DbHelper.CreateOkResponse<FondosRequiereAutorizacionDto>(default);
-
-            try
+            return Cajas_FNDAportaciones_Autorizacion_Consultar(codempresa, new FondosGestionRegistroAddDto
             {
-                var data = DbHelper.WithConn(
-                    _portalDb,
-                    codempresa,
-                    connection => connection.QueryFirstOrDefault<(int autorizado, decimal monto)>(
-                        "spFnd_Autoriza_Datos",
-                        new { Plan = plan, Usuario = usuario, TipoMov = "A" },
-                        commandType: CommandType.StoredProcedure));
-
-                if (data.Code != 0)
-                {
-                    response.Code = -1;
-                    response.Description = $"error al validar autorización: {data.Description}";
-                    response.Result = null;
-                    return response;
-                }
-
-                var montoMaximo = data.Result.monto;
-                response.Result = new FondosRequiereAutorizacionDto
-                {
-                    requiere = aporte > montoMaximo,
-                    montomaximo = montoMaximo
-                };
-
-                response.Description = response.Result.requiere
-                    ? "el aporte excede el monto permitido. requiere autorización"
-                    : "el aporte está dentro del rango permitido. no requiere autorización";
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = $"error al validar autorización: {ex.Message}";
-                response.Result = null;
-            }
-
-            return response;
+                plan = plan, usuario = usuario, aporte = aporte,
+                contrato = 0, montoautorizado = 0
+            });
         }
 
         /// <summary>
@@ -411,6 +295,14 @@ namespace Galileo.DataBaseTier
 
             try
             {
+                var autorizacion = Cajas_FNDAportaciones_Autorizacion_Consultar(CodEmpresa, request);
+                if (autorizacion.Code != 0 || autorizacion.Result == null)
+                    return DbHelper.CreateErrorResponse<FondosGestionRegistroDto>(autorizacion.Description ?? "No se pudo consultar la autorización.");
+                if (!autorizacion.Result.autorizado || !autorizacion.Result.requiere || request.aporte <= 0)
+                    return DbHelper.CreateErrorResponse<FondosGestionRegistroDto>("El aporte no requiere una gestión o el usuario no está autorizado.");
+                if (string.IsNullOrWhiteSpace(request.nota) || request.nota.Trim().Length < 30)
+                    return DbHelper.CreateErrorResponse<FondosGestionRegistroDto>("La anotación de la gestión debe tener al menos 30 caracteres.");
+
                 const string sql = @"
                     EXEC spFnd_Gestion_Registro
                         @Cedula,
@@ -435,7 +327,7 @@ namespace Galileo.DataBaseTier
                         Operadora = request.operadora,
                         Plan = request.plan,
                         Contrato = request.contrato,
-                        MntSol = request.montoautorizado,
+                        MntSol = autorizacion.Result.montomaximo,
                         MntCal = request.aporte,
                         Usuario = request.usuario,
                         GestionNota = request.nota
@@ -501,6 +393,8 @@ namespace Galileo.DataBaseTier
                     C.aportes,
                     C.inversion,
                     P.tipo_cdp,
+                    ISNULL(P.cuenta_maestra, 0) AS cuenta_maestra,
+                    P.permite_mov_cajas,
                     dbo.fxCajas_Valida_Auxiliar(@CodCaja, 'FND', C.cod_plan) AS caja_valida_concepto
                 FROM fnd_contratos C
                 INNER JOIN socios S
