@@ -2041,8 +2041,10 @@ WHERE COD_EMPRESA = @codEmpresa;";
             string Query = @"SELECT COUNT(COD_REFERENCIA) existe
                              FROM SINPE_MOV_TRANSITO WHERE COD_REFERENCIA = @referencia";
 
-            var existe = conn.Query<int>(Query, new { referencia = cod_referencia }).FirstOrDefault();
+             cod_referencia = resPIN.PINSendingResult.SINPERefNumber ?? cod_referencia;
 
+            var existe = conn.Query<int>(Query, new { referencia = cod_referencia }).FirstOrDefault();
+            
             if (existe > 0)
             {
                 UpdateMovTransito(CodEmpresa, cod_referencia, usuario, canal, resPIN, solicitud);
@@ -2100,7 +2102,7 @@ WHERE COD_EMPRESA = @codEmpresa;";
                                 @ComprobanteInterno,
                                 @RechazoCodigo,
                                 @RechazoDesc,
-                                @Estado,
+                                4,
                                 @Servicio
                             );";
 
