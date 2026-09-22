@@ -18,7 +18,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <summary>
         /// Obtiene cajas disponibles
         /// </summary>
-        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_Apertura_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_Apertura_Obtener(int CodEmpresa, string usuario, bool cierreActivo = false)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -31,7 +31,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                response.Result = ObtenerCajasDisponibles(connection, usuario);
+                response.Result = Cajas_Accesos_Disponibles_Obtener(connection, usuario, cierreActivo);
             }
             catch (Exception ex)
             {
@@ -43,9 +43,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return response;
         }
 
-        private static List<DropDownListaGenericaModel> ObtenerCajasDisponibles(SqlConnection connection, string usuario)
+        /// <summary>Selecciona cajas para acceso normal o cierre según el formulario origen.</summary>
+        private static List<DropDownListaGenericaModel> Cajas_Accesos_Disponibles_Obtener(SqlConnection connection, string usuario, bool cierreActivo)
         {
-            var query = "spCajas_CierreCajasDisponibles";
+            var query = cierreActivo ? "spCajas_CierreCajasDisponibles" : "spCajas_AperturaCajasDisponibles";
 
             return connection.Query(query, new { Usuario = usuario }, commandType: CommandType.StoredProcedure)
                 .Select(row => new DropDownListaGenericaModel
@@ -82,10 +83,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 FROM cajas_usuarios 
                 WHERE usuario = @Usuario 
                   AND cod_caja = @CodCaja
-                  AND (
-                        contrasena = @ClaveCifrada
-                        OR NULLIF(RTRIM(contrasena), '') IS NULL
-                      )";
+                  AND contrasena = @ClaveCifrada";
 
                 int aceptado = connection.ExecuteScalar<int>(sqlValidar, new
                 {

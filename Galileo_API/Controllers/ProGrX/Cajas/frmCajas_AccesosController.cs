@@ -19,9 +19,9 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
 
         [Authorize]
         [HttpGet("Cajas_Apertura_Obtener")]
-        public ErrorDto<List<DropDownListaGenericaModel>> AF_TiposCedulasCajas_Apertura_Obtener_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_TiposCedulasCajas_Apertura_Obtener_Obtener(int CodEmpresa, string usuario, bool cierreActivo = false)
         {
-            return BL_Cajas_Accesos.Cajas_Apertura_Obtener(CodEmpresa, usuario);
+            return BL_Cajas_Accesos.Cajas_Apertura_Obtener(CodEmpresa, usuario, cierreActivo);
         }
 
         [Authorize]

@@ -12,9 +12,9 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
         public FrmCajasAccesosBl(IConfiguration config) => 
             DbfrmCajas_Accesos = new FrmCajasAccesosDb(config);
 
-        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_Apertura_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_Apertura_Obtener(int CodEmpresa, string usuario, bool cierreActivo = false)
         {
-            return DbfrmCajas_Accesos.Cajas_Apertura_Obtener(CodEmpresa, usuario);
+            return DbfrmCajas_Accesos.Cajas_Apertura_Obtener(CodEmpresa, usuario, cierreActivo);
         }
 
         public ErrorDto<CajasAperturaDto> Cajas_AbreCaja(int codEmpresa, string codCaja, string usuario, string clave)
