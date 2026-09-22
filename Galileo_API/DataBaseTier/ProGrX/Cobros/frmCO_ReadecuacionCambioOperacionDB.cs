@@ -1239,17 +1239,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             var hasUsuario = ProcedureHasParams(conn, tx, "dbo.spSIFDocsConsecutivo", TIPO, "@Usuario");
 
-            object? consObj = hasUsuario
-                ? conn.QueryFirstOrDefault<object>(
+            long cons = hasUsuario
+                ? conn.QueryFirstOrDefault<long>(
                     "exec dbo.spSIFDocsConsecutivo @Tipo, @Usuario;",
                     new { Tipo = tipoDoc, Usuario = usuario },
                     tx)
-                : conn.QueryFirstOrDefault<object>(
+                : conn.QueryFirstOrDefault<long>(
                     "exec dbo.spSIFDocsConsecutivo @Tipo;",
                     new { Tipo = tipoDoc },
                     tx);
 
-            var cons = ToInt(consObj);
             if (cons <= 0)
             {
                 return new DocumentoInfo(
