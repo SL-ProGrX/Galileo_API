@@ -2,15 +2,15 @@
 {
     public class Precio
     {
-        public string Cod_Precio { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
+        public string cod_Precio { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
         public required bool activo { get; set; }
         public string omision { get; set; } = string.Empty;
     }
 
     public class PreciosDataLista
     {
-        public int Total { get; set; }
-        public List<Precio> Precios { get; set; } = new List<Precio>();
+        public int total { get; set; }
+        public List<Precio> precios { get; set; } = new List<Precio>();
     }
 }

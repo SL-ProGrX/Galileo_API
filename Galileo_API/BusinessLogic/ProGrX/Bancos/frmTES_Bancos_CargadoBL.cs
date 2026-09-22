@@ -57,7 +57,7 @@ namespace Galileo_API.BusinessLogic
             return await _Db.TES_RegistrosBancosCargados_Aplicar(CodEmpresa, registroLista);
         }
 
-        public ErrorDto TES_RegistrosBancosCargados_Elimina(int CodEmpresa, List<TesBancoCargadoElimina> registroLista)
+        public ErrorDto<List<TesBancoCargadoEliminaResultado>> TES_RegistrosBancosCargados_Elimina(int CodEmpresa, List<TesBancoCargadoElimina> registroLista)
         {
             return _Db.TES_RegistrosBancosCargados_Elimina(CodEmpresa, registroLista);
         }

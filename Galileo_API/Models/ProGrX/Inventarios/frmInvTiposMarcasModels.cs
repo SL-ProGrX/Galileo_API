@@ -2,15 +2,15 @@
 {
     public class MarcasDto
     {
-        public string Cod_Marca { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
-        public required bool Activo { get; set; }
-        public string Estado { get; set; } = string.Empty;
+        public string cod_Marca { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public required bool activo { get; set; }
+        public string estado { get; set; } = string.Empty;
     }
 
     public class MarcasDataLista
     {
-        public int? Total { get; set; }
-        public List<MarcasDto> Marcas { get; set; } = new List<MarcasDto>();
+        public int? total { get; set; }
+        public List<MarcasDto> marcas { get; set; } = new List<MarcasDto>();
     }
 }

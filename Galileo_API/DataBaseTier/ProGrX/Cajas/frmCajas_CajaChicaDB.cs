@@ -1,8 +1,9 @@
-﻿using Dapper;
+using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.Cajas;
+using Galileo_API.DataBaseTier;
 using Microsoft.Data.SqlClient;
 using System.Data;
 
@@ -11,9 +12,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
     public class FrmCajasCajaChicaDB
     {
         private readonly PortalDB _portalDB;
+        private readonly MRecibos _mRecibos;
         public FrmCajasCajaChicaDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
+            _mRecibos = new MRecibos(config);
         }
 
         /// <summary>
@@ -199,6 +202,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
 
+        /// <summary>
+        /// Obtiene el nombre del socio por cédula, equivalente a fxNombre(txtCedula.Text).
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="cedula"></param>
+        /// <returns></returns>
+        public ErrorDto<CajasCajaChicaSociosBusquedaRsDto?> Cajas_CajaChicaSocio_Cedula_Obtener(
+                int codEmpresa,
+                string cedula)
+        {
+            return DbHelper.WithConn(_portalDB, codEmpresa, conn =>
+            {
+                const string sql = @"
+                        SELECT TOP 1
+                            Cedula   AS cedula,
+                            CedulaR  AS cedular,
+                            Nombre   AS nombre
+                        FROM socios
+                        WHERE Cedula = @Cedula;";
+
+                return conn.QueryFirstOrDefault<CajasCajaChicaSociosBusquedaRsDto>(sql, new
+                {
+                    Cedula = cedula?.Trim() ?? string.Empty
+                });
+            });
+        }
         //======= Procesa Cajas_CajaChica_Guardar =======||
 
         /// <summary>
@@ -209,12 +238,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         public ErrorDto<CajasCajaChicaAplicarDbResponseDto> Cajas_CajaChicaRetiro_Aplicar(
                  CajasCajaChicaAplicarDbRequestDto req)
         {
+            if (req == null)
+                return DbHelper.CreateErrorResponse<CajasCajaChicaAplicarDbResponseDto>("La solicitud es requerida.");
+
+            var validacion = ValidarRetiro(req);
+            if (!string.IsNullOrWhiteSpace(validacion))
+                return DbHelper.CreateErrorResponse<CajasCajaChicaAplicarDbResponseDto>(validacion);
+
             return DbHelper.WithConn(_portalDB, req.codempresa, conn =>
             {
                 conn.Open();
                 using var tx = conn.BeginTransaction();
 
+                ValidarAperturaAbierta(conn, tx, req);
+                PrepararDatosAplicacion(conn, tx, req);
+
                 var srv = ObtenerServiciosDatos(conn, tx, req);
+                CompletarDescripcionesServicio(conn, tx, req);
 
                 InsertarSifTransacciones(conn, tx, req, srv);
                 InsertarCajasServiciosTransac(conn, tx, req, srv);
@@ -270,10 +310,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             CajasCajaChicaServiciosDatosRsDto srv)
         {
             // líneas como VB (80 chars)
-            var linea1 = Safe80($"{req.cod_recaudador} - {""}".Trim()); // descripción completa puedes armarla en BL si quieres
+            var linea1 = Safe80($"{req.cod_recaudador} - {req.recaudador}".Trim());
             var linea2 = Safe80($"N.Ref        ..: {req.nref ?? ""}");
             var linea3 = Safe80($"Divisa       ..: {req.cod_divisa}");
-            var linea4 = Safe80($"Concepto/Serv..: {req.cod_servicio}");
+            var linea4 = Safe80($"Concepto/Serv..: {req.cod_servicio} - {req.servicio}");
 
             const string sql = @"
         INSERT INTO SIF_TRANSACCIONES
@@ -469,6 +509,127 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             }, transaction: tx);
         }
 
+        private static string ValidarRetiro(CajasCajaChicaAplicarDbRequestDto req)
+        {
+            var mensajes = new List<string>();
+
+            if (req.monto <= 0)
+                mensajes.Add("- El Monto de la Transacción no es valido!");
+            if (string.IsNullOrWhiteSpace(req.cod_caja))
+                mensajes.Add("- No se ha indicado ninguna caja con Apertura disponible?");
+            if (req.cod_apertura <= 0)
+                mensajes.Add("- No se ha indicado ninguna caja con Apertura disponible?");
+            if (string.IsNullOrWhiteSpace(req.tipo_documento))
+                mensajes.Add("- Debe seleccionar el documento.");
+            if (string.IsNullOrWhiteSpace(req.cod_divisa))
+                mensajes.Add("- Debe seleccionar la divisa.");
+            if (string.IsNullOrWhiteSpace(req.cod_recaudador) || string.IsNullOrWhiteSpace(req.cod_servicio))
+                mensajes.Add("- Debe seleccionar el servicio.");
+            if (req.cod_contabilidad <= 0)
+                mensajes.Add("- No se ha indicado la contabilidad.");
+            if (string.IsNullOrWhiteSpace(req.usuario))
+                mensajes.Add("- No se ha indicado el usuario.");
+
+            return string.Join(Environment.NewLine, mensajes.Distinct());
+        }
+
+        private static void ValidarAperturaAbierta(
+            IDbConnection conn,
+            IDbTransaction tx,
+            CajasCajaChicaAplicarDbRequestDto req)
+        {
+            const string sql = @"
+                SELECT Estado
+                FROM cajas_aperturas_main
+                WHERE cod_caja = @CodCaja
+                  AND cod_apertura = @CodApertura;";
+
+            var estado = conn.QueryFirstOrDefault<string>(
+                sql,
+                new
+                {
+                    CodCaja = req.cod_caja,
+                    CodApertura = req.cod_apertura
+                },
+                transaction: tx);
+
+            if (string.IsNullOrWhiteSpace(estado) || estado.Trim().Equals("C", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException($"- La apertura ..:{req.cod_apertura} de esta caja ha sido cerrada!");
+        }
+
+        private void PrepararDatosAplicacion(
+            IDbConnection conn,
+            IDbTransaction tx,
+            CajasCajaChicaAplicarDbRequestDto req)
+        {
+            req.detalle = MProGrxMain.sbSIFCleanTxtInject(req.detalle);
+            req.nombre = Safe60(req.nombre);
+            req.nref = Safe30(req.nref);
+
+            req.tipo_cambio = ObtenerTipoCambio(conn, tx, req);
+            var factorTipoCambio = (decimal)MProGrxMain.fxSys_Tipo_Cambio_Apl(req.tipo_cambio);
+            req.monto_aplicado = req.monto * factorTipoCambio;
+            req.numdoc = _mRecibos.FxDocumentoConsecutivo(req.codempresa, req.tipo_documento).ToString();
+        }
+
+        private static decimal ObtenerTipoCambio(
+            IDbConnection conn,
+            IDbTransaction tx,
+            CajasCajaChicaAplicarDbRequestDto req)
+        {
+            const string sql = @"
+                SELECT dbo.fxCajas_TipoCambio(
+                    @CodContabilidad,
+                    @CodDivisa,
+                    dbo.MyGetdate(),
+                    'C') AS TipoCambio;";
+
+            var tipoCambio = conn.QueryFirstOrDefault<decimal?>(
+                sql,
+                new
+                {
+                    CodContabilidad = req.cod_contabilidad,
+                    CodDivisa = req.cod_divisa
+                },
+                transaction: tx);
+
+            return tipoCambio ?? 1m;
+        }
+
+        private static void CompletarDescripcionesServicio(
+            IDbConnection conn,
+            IDbTransaction tx,
+            CajasCajaChicaAplicarDbRequestDto req)
+        {
+            if (!string.IsNullOrWhiteSpace(req.recaudador) && !string.IsNullOrWhiteSpace(req.servicio))
+                return;
+
+            const string sql = @"
+                SELECT
+                    S.descripcion AS serviciodesc,
+                    R.descripcion AS recaudadordesc
+                FROM cajas_servicios S
+                INNER JOIN cajas_recaudador R
+                    ON S.cod_recaudador = R.cod_recaudador
+                WHERE S.cod_recaudador = @CodRecaudador
+                  AND S.cod_servicio = @CodServicio;";
+
+            var servicio = conn.QueryFirstOrDefault<CajasCajaChicaServiciosDto>(
+                sql,
+                new
+                {
+                    CodRecaudador = req.cod_recaudador,
+                    CodServicio = req.cod_servicio
+                },
+                transaction: tx);
+
+            req.servicio = string.IsNullOrWhiteSpace(req.servicio)
+                ? servicio?.serviciodesc ?? string.Empty
+                : req.servicio;
+            req.recaudador = string.IsNullOrWhiteSpace(req.recaudador)
+                ? servicio?.recaudadordesc ?? string.Empty
+                : req.recaudador;
+        }
         // helpers de recorte (imitan Mid(...,1,N))
         private static string Safe30(string? s) => (s ?? "").Trim().Length <= 30 ? (s ?? "").Trim() : (s ?? "").Trim().Substring(0, 30);
         private static string Safe60(string? s) => (s ?? "").Trim().Length <= 60 ? (s ?? "").Trim() : (s ?? "").Trim().Substring(0, 60);

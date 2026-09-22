@@ -161,6 +161,17 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [HttpPost("CambiarDeduccionPlanilla")]
+        public ErrorDto<string> CambiarDeduccionPlanilla(int codEmpresa, COCambiarDeduccionPlanillaRequestDto request)
+        {
+            return _bl.CambiarDeduccionPlanilla(
+                codEmpresa,
+                request.operacion,
+                request.deducePlanilla
+            );
+        }
+
+        [Authorize]
         [HttpPost("ValidarCongelamiento")]
         public ErrorDto<bool> ValidarCongelamiento(int codEmpresa, COValidarCongelamientoRequestDto request)
         {

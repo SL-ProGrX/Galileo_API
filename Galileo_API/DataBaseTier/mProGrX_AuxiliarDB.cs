@@ -1,17 +1,18 @@
-﻿using System.Data;
-using System.Globalization;
-using System.Security;
-using System.Text.RegularExpressions;
-using System.Xml.Serialization;
-using Dapper;
-using Humanizer;
-using Newtonsoft.Json;
-using PdfSharp.Pdf;
-using PdfSharp.Pdf.IO;
+﻿using Dapper;
 using Galileo.Models;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
+using Galileo.Models.Security;
+using Humanizer;
+using Newtonsoft.Json;
+using PdfSharp.Pdf;
+using PdfSharp.Pdf.IO;
+using System.Data;
+using System.Globalization;
+using System.Security;
+using System.Text.RegularExpressions;
+using System.Xml.Serialization;
 
 namespace Galileo.DataBaseTier
 {
@@ -543,6 +544,60 @@ FROM {table}
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Carga Géneros/Sexos
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> CargaGeneros(int CodEmpresa)
+        {
+            var result = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = null };
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+
+                const string sql = @"SELECT COD_GENERO AS 'item', DESCRIPCION as 'descripcion'  From SYS_GENEROS  Where ACTIVO = 1 order by DESCRIPCION";
+
+                result.Result = connection.Query<DropDownListaGenericaModel>(sql).ToList();
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = null;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Carga Paises
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> CargaPaises(int CodEmpresa)
+        {
+            var result = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = null };
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+
+                const string sql = @"SELECT RTRIM(cod_Pais) AS 'item', RTRIM(DESCRIPCION) as 'descripcion'  From Paises  Where ACTIVO = 1 order by Omision desc, Descripcion asc";
+
+                result.Result = connection.Query<DropDownListaGenericaModel>(sql).ToList();
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = null;
+            }
+
+            return result;
         }
 
 
