@@ -28,6 +28,7 @@
         public int codInstitucion { get; set; }
 
         public string? deductora { get; set; }
+        public bool deducePlanilla { get; set; }
 
         public string linea { get; set; } = string.Empty;
         public string lineaDescripcion { get; set; } = string.Empty;
@@ -105,6 +106,21 @@
         public DateTime? inicio { get; set; }
         public DateTime? ult_mov { get; set; }
         public string estado { get; set; } = string.Empty;
+    }
+
+    internal sealed class COCobroFiadorDbRow
+    {
+        public int Id_Solicitud { get; set; }
+        public string Codigo { get; set; } = string.Empty;
+        public string Cedula { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public decimal Cuota { get; set; }
+        public decimal Recaudado { get; set; }
+        public decimal Aplicado { get; set; }
+        public decimal Devuelto { get; set; }
+        public DateTime? Inicio { get; set; }
+        public DateTime? ULTMOV { get; set; }
+        public string Estado_Desc { get; set; } = string.Empty;
     }
 
 
@@ -204,6 +220,12 @@
     {
         public required int operacion { get; set; }
         public required int deductora { get; set; }
+    }
+
+    public class COCambiarDeduccionPlanillaRequestDto
+    {
+        public required int operacion { get; set; }
+        public required bool deducePlanilla { get; set; }
     }
 
     public class COValidarCongelamientoRequestDto

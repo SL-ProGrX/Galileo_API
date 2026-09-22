@@ -183,7 +183,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                                 END AS proceso,
 
                                 s.cod_institucion AS codInstitucion,
-                                ISNULL(rc.cod_deductora, s.cod_deductora) AS deductora,
+                                ISNULL(ISNULL(rc.cod_deductora, s.cod_deductora), s.cod_institucion) AS deductora,
+                                CAST(ISNULL(rc.IND_DEDUCE_PLANILLA, 0) AS bit) AS deducePlanilla,
 
                                 c.codigo AS linea,
                                 ISNULL(c.DESCRIPCION_LINEA, c.DESCRIPCION) AS lineaDescripcion,
@@ -529,10 +530,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             EXEC spCbr_Cobro_Fiadores_List @operacion
         ";
 
-                response.Result = cn.Query<COCobroFiadorRowDto>(
+                response.Result = cn.Query<COCobroFiadorDbRow>(
                     sql,
                     new { operacion }
-                ).ToList();
+                ).Select(row => new COCobroFiadorRowDto
+                {
+                    operacion = row.Id_Solicitud,
+                    linea = row.Codigo?.Trim() ?? string.Empty,
+                    cedula = row.Cedula?.Trim() ?? string.Empty,
+                    nombre = row.Nombre?.Trim() ?? string.Empty,
+                    cuota = row.Cuota,
+                    recaudo = row.Recaudado,
+                    aplicado = row.Aplicado,
+                    devuelto = row.Devuelto,
+                    inicio = row.Inicio,
+                    ult_mov = row.ULTMOV,
+                    estado = row.Estado_Desc?.Trim() ?? string.Empty
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -1214,6 +1228,46 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     response.Description = "No se pudo actualizar la deductora.";
                     return response;
                 }
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Cambia el indicador de deducción por planilla de la operación.
+        /// </summary>
+        public ErrorDto<string> CambiarDeduccionPlanilla(int codEmpresa, int operacion, bool deducePlanilla)
+        {
+            var response = new ErrorDto<string>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                const string sql = @"UPDATE reg_creditos
+                                SET IND_DEDUCE_PLANILLA = @deducePlanilla
+                                WHERE id_solicitud = @operacion ";
+
+                var rows = cn.Execute(sql, new
+                {
+                    operacion,
+                    deducePlanilla
+                });
+
+                if (rows == 0)
+                {
+                    response.Code = -1;
+                    response.Description = "No se pudo actualizar la deducción por planilla.";
+                    return response;
+                }
+
+                response.Result = "Deducción por planilla actualizada correctamente.";
             }
             catch (Exception ex)
             {
