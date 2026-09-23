@@ -4,6 +4,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
 using Microsoft.Data.SqlClient;
 using System.Data;
+using System.Globalization;
 
 namespace Galileo.DataBaseTier.ProGrX.Clientes;
 
@@ -38,7 +39,7 @@ public partial class FrmAFCrenunciaDB
         var data = new Dictionary<string, object>(row, StringComparer.OrdinalIgnoreCase);
         string Texto(string key) => Convert.ToString(data.GetValueOrDefault(key))?.Trim() ?? "";
         decimal Numero(string key) => decimal.TryParse(Texto(key), out var value) ? value : 0;
-        DateTime Fecha(string key, DateTime fallback) => DateTime.TryParse(Texto(key), out var value) ? value : fallback;
+        DateTime Fecha(string key, DateTime fallback) => DateTime.TryParse(Texto(key), CultureInfo.InvariantCulture, DateTimeStyles.None, out var value) ? value : fallback;
         var hoy = Fecha("fecha_sistema", DateTime.Today);
         var salario = Numero("SALARIO_MONTO");
         var local = string.IsNullOrEmpty(Texto("SALARIO_DIVISA")) || Texto("SALARIO_DIVISA") == "COL";
@@ -69,14 +70,9 @@ public partial class FrmAFCrenunciaDB
     /// <summary>Registra encabezado, motivos, todos los planes y abonos en una transacción.</summary>
     public ErrorDto<int> AF_CR_Renuncias_Proceso_Guardar(int CodEmpresa, AfRenunciaProceso request)
     {
-        if (request.Reingreso == true)
-        {
-            var validacion = AF_CR_Renuncias_Reingreso_Validar(CodEmpresa, request.Cedula, request.Usuario);
-            if (validacion.Code != 0 || validacion.Result == null)
-                return DbHelper.CreateErrorResponse<int>(validacion.Description ?? "No fue posible validar el reingreso.");
-            if (validacion.Result.Count != 0)
-                return DbHelper.CreateErrorResponse<int>(string.Join(Environment.NewLine, validacion.Result));
-        }
+        var reingresoError = AF_CR_Renuncias_Reingreso_Error(CodEmpresa, request);
+        if (reingresoError != null) return reingresoError;
+
         var globales = new MProGrxMain(_config).sbSifParametrosInicializa(CodEmpresa, request.Usuario);
         if (globales.Code != 0 || globales.Result == null)
             return DbHelper.CreateErrorResponse<int>(globales.Description ?? "No fue posible obtener la oficina titular.");
@@ -105,15 +101,21 @@ public partial class FrmAFCrenunciaDB
         });
     }
 
+    private ErrorDto<int>? AF_CR_Renuncias_Reingreso_Error(int CodEmpresa, AfRenunciaProceso request)
+    {
+        if (request.Reingreso != true) return null;
+
+        var validacion = AF_CR_Renuncias_Reingreso_Validar(CodEmpresa, request.Cedula, request.Usuario);
+        if (validacion.Code != 0 || validacion.Result == null)
+            return DbHelper.CreateErrorResponse<int>(validacion.Description ?? "No fue posible validar el reingreso.");
+        return validacion.Result.Count == 0
+            ? null
+            : DbHelper.CreateErrorResponse<int>(string.Join(Environment.NewLine, validacion.Result));
+    }
+
     private static void AF_CR_Renuncias_Proceso_Validar(SqlConnection connection, SqlTransaction transaction, AfRenunciaProceso r)
     {
-        if (string.IsNullOrWhiteSpace(r.Cedula) || r.IdPromotor.GetValueOrDefault() <= 0 || r.IdCausa.GetValueOrDefault() <= 0)
-            throw new InvalidOperationException("Datos erróneos: verifique persona, ejecutivo y causa.");
-        if (r.Tipo is not ("A" or "P")) throw new InvalidOperationException("El proceso no aplica.");
-        if (r.Documento == "TE" && string.IsNullOrWhiteSpace(r.Cuenta))
-            throw new InvalidOperationException("Debe indicar una cuenta bancaria.");
-        if (r.Tipo == "P" && string.IsNullOrWhiteSpace(r.Boleta))
-            throw new InvalidOperationException("Especifique el número de boleta de acción de personal.");
+        AF_CR_Renuncias_Datos_Validar(r);
         var existe = connection.ExecuteScalar<int>("SELECT COUNT(*) FROM socios WHERE cedula = @Cedula", r, transaction);
         if (existe == 0) throw new InvalidOperationException("La persona no existe.");
         var activa = connection.ExecuteScalar<int>(r.CodRenuncia == 0
@@ -123,13 +125,29 @@ public partial class FrmAFCrenunciaDB
         var estado = connection.ExecuteScalar<string>("SELECT estado FROM AFI_CR_RENUNCIAS WHERE cod_renuncia = @CodRenuncia", r, transaction);
         if (estado == "P") throw new InvalidOperationException("Esta renuncia se encuentra perdida y no puede modificarse.");
         var patronal = connection.ExecuteScalar<string>("SELECT VALOR FROM SIF_PARAMETROS WHERE COD_PARAMETRO = 'PAT_R'", transaction: transaction);
-        if (r.AportePatronal == true && (r.Tipo != "P" || patronal != "S"))
-            throw new InvalidOperationException("La aplicación de aporte patronal no está autorizada.");
+        AF_CR_Renuncias_AportePatronal_Validar(r, patronal);
         r.AporteObrero = true;
         r.Capitalizacion = true;
         r.AhorroExtraordinario = true;
         r.AceptaPatronal = false;
         if (r.Tipo == "A") r.AcFecha = null;
+    }
+
+    private static void AF_CR_Renuncias_Datos_Validar(AfRenunciaProceso r)
+    {
+        if (string.IsNullOrWhiteSpace(r.Cedula) || r.IdPromotor.GetValueOrDefault() <= 0 || r.IdCausa.GetValueOrDefault() <= 0)
+            throw new InvalidOperationException("Datos erróneos: verifique persona, ejecutivo y causa.");
+        if (r.Tipo is not ("A" or "P")) throw new InvalidOperationException("El proceso no aplica.");
+        if (r.Documento == "TE" && string.IsNullOrWhiteSpace(r.Cuenta))
+            throw new InvalidOperationException("Debe indicar una cuenta bancaria.");
+        if (r.Tipo == "P" && string.IsNullOrWhiteSpace(r.Boleta))
+            throw new InvalidOperationException("Especifique el número de boleta de acción de personal.");
+    }
+
+    private static void AF_CR_Renuncias_AportePatronal_Validar(AfRenunciaProceso r, string? patronal)
+    {
+        if (r.AportePatronal == true && (r.Tipo != "P" || patronal != "S"))
+            throw new InvalidOperationException("La aplicación de aporte patronal no está autorizada.");
     }
 
     private static decimal AF_CR_Renuncias_Monto(decimal value) => Math.Round(value, 2, MidpointRounding.ToEven);
