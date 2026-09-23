@@ -1,93 +1,115 @@
-using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [Authorize]
     [ApiController]
-    public class FrmInvTomaFisicaController : ControllerBase
+    public sealed class FrmInvTomaFisicaController : ControllerBase
     {
         private readonly FrmInvTomaFisicaBL _bl;
+
         public FrmInvTomaFisicaController(IConfiguration config)
         {
+            ArgumentNullException.ThrowIfNull(config);
             _bl = new FrmInvTomaFisicaBL(config);
         }
 
-        [HttpGet("TomaFisica_Obtener")]
-        public ErrorDto<List<TomaFisicaDto>> Facturas_Obtener(int CodEmpresa, int Cod_Proveedor, int? pagina, int? paginacion, string? filtro)
+        [HttpGet("INV_TomaFisica_Lista_Obtener")]
+        public ErrorDto<List<TomaFisicaDto>> INV_TomaFisica_Lista_Obtener(
+            int CodEmpresa,
+            string filtros)
         {
-            return _bl.TomaFisica_Obtener(CodEmpresa, Cod_Proveedor, pagina, paginacion, filtro);
+            return _bl.INV_TomaFisica_Lista_Obtener(CodEmpresa, filtros);
         }
 
-        [HttpGet("tomasFisicasDetalle_Obtener")]
-        public ErrorDto<List<TomaFisicaDetalleDto>> tomasFisicasDetalle_Obtener(int CodEmpresa, int Consecutivo, int? pagina, int? paginacion, string? filtro)
+        [HttpGet("INV_TomaFisica_Detalle_Obtener")]
+        public ErrorDto<List<TomaFisicaDetalleDto>> INV_TomaFisica_Detalle_Obtener(
+            int CodEmpresa,
+            string filtros)
         {
-            return _bl.tomasFisicasDetalle_Obtener(CodEmpresa, Consecutivo, pagina, paginacion, filtro);
+            return _bl.INV_TomaFisica_Detalle_Obtener(CodEmpresa, filtros);
         }
 
-        [HttpPost("tomaFisica_Insertar")]
-        public ErrorDto tomaFisica_Insertar(int CodEmpresa, TomaFisicaDto data)
+        [HttpGet("INV_TomaFisica_Consecutivo_Obtener")]
+        public ErrorDto<TomaFisicaDto> INV_TomaFisica_Consecutivo_Obtener(
+            int CodEmpresa,
+            int consecutivo)
         {
-            return _bl.tomaFisica_Insertar(CodEmpresa, data);
+            return _bl.INV_TomaFisica_Consecutivo_Obtener(
+                CodEmpresa,
+                consecutivo);
         }
 
-        [HttpPost("tomaFisicaDetalle_Insertar")]
-        public ErrorDto tomaFisicaDetalle_Insertar(int CodEmpresa, TomaFisicaDetalleDto data)
+        [HttpGet("INV_TomaFisica_Consecutivo_Navegar")]
+        public ErrorDto<TomaFisicaDto> INV_TomaFisica_Consecutivo_Navegar(
+            int CodEmpresa,
+            int consecutivo,
+            string? tipo)
         {
-            return _bl.tomaFisicaDetalle_Insertar(CodEmpresa, data);
+            return _bl.INV_TomaFisica_Consecutivo_Navegar(
+                CodEmpresa,
+                consecutivo,
+                tipo);
         }
 
-        [HttpGet("ConsultaAscDesc")]
-        public ErrorDto<TomaFisicaDto> ConsultaAscDesc(int CodEmpresa, int consecutivo, string tipo)
+        [HttpGet("INV_TomaFisica_Producto_Obtener")]
+        public ErrorDto<TomaFisicaDetalleDto> INV_TomaFisica_Producto_Obtener(
+            int CodEmpresa,
+            string filtros)
         {
-            return _bl.ConsultaAscDesc(CodEmpresa, consecutivo, tipo);
+            return _bl.INV_TomaFisica_Producto_Obtener(CodEmpresa, filtros);
         }
 
-        [HttpGet("tomaFisicaConsecutivo_Obtener")]
-        public ErrorDto<TomaFisicaDto> ProveedorDetalle_Obtener(int CodEmpresa, int consecutivo)
+        [HttpPost("INV_TomaFisica_Guardar")]
+        public ErrorDto<int> INV_TomaFisica_Guardar(
+            int CodEmpresa,
+            TomaFisicaGuardarRequest request)
         {
-            return _bl.tomaFisicaConsecutivo_Obtener(CodEmpresa, consecutivo);
+            return _bl.INV_TomaFisica_Guardar(CodEmpresa, request);
         }
 
-        [HttpPost("actualizarTomaFisica")]
-        public ErrorDto actualizarTomaFisica(int CodEmpresa, TomaFisicaDto request)
+        [HttpDelete("INV_TomaFisica_Eliminar")]
+        public ErrorDto INV_TomaFisica_Eliminar(
+            int CodEmpresa,
+            int consecutivo,
+            string? usuario)
         {
-            return _bl.actualizarTomaFisica(CodEmpresa, request);
+            return _bl.INV_TomaFisica_Eliminar(
+                CodEmpresa,
+                consecutivo,
+                usuario);
         }
 
-        [HttpPost("actualizarTomaFisicaDetalle")]
-        public ErrorDto actualizarTomaFisicaDetalle(int CodEmpresa, TomaFisicaDetalleDto data)
+        [HttpPost("INV_TomaFisica_Barras_Guardar")]
+        public ErrorDto INV_TomaFisica_Barras_Guardar(
+            int CodEmpresa,
+            TomaFisicaDetalleDto linea)
         {
-            return _bl.actualizarTomaFisicaDetalle(CodEmpresa, data);
+            return _bl.INV_TomaFisica_Barras_Guardar(CodEmpresa, linea);
         }
 
-        [HttpDelete("EliminarDetalleTomaFisica")]
-        public ErrorDto EliminarDetalleTomaFisica(int CodEmpresa, int consecutivo, string cod_producto)
+        [HttpPost("INV_TomaFisica_InventarioLogico_Obtener")]
+        public ErrorDto<List<TomaFisicaDetalleDto>>
+            INV_TomaFisica_InventarioLogico_Obtener(
+                int CodEmpresa,
+                TomaFisicaInventarioRequest request)
         {
-            return _bl.EliminarDetalleTomaFisica(CodEmpresa, consecutivo, cod_producto);
+            return _bl.INV_TomaFisica_InventarioLogico_Obtener(
+                CodEmpresa,
+                request);
         }
 
-        [HttpDelete("EliminarTomaFisica")]
-        public ErrorDto EliminarTomaFisica(int CodEmpresa, int consecutivo)
+        [HttpPost("INV_TomaFisica_Comparar")]
+        public ErrorDto<List<TomaFisicaDetalleDto>> INV_TomaFisica_Comparar(
+            int CodEmpresa,
+            TomaFisicaGuardarRequest request)
         {
-            return _bl.EliminarTomaFisica(CodEmpresa, consecutivo);
-        }
-
-        [HttpGet("TomaFisicaProdBarras_Obtener")]
-        public ErrorDto<TomaFisicaDetalleDto> TomaFisicaProdBarras_Obtener(
-            int CodEmpresa, string cod_bodega, string cod_barras, string tipo)
-        {
-            return _bl.TomaFisicaProdBarras_Obtener(CodEmpresa, cod_bodega, cod_barras, tipo);
-        }
-
-        [HttpPost("TomaFisicaBarras_Guardar")]
-        public ErrorDto TomaFisicaBarras_Guardar(int CodEmpresa, TomaFisicaDetalleDto linea)
-        { 
-            return _bl.TomaFisicaBarras_Guardar(CodEmpresa, linea);
+            return _bl.INV_TomaFisica_Comparar(CodEmpresa, request);
         }
     }
 }
