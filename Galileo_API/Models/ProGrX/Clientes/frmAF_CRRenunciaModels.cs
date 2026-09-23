@@ -1,4 +1,4 @@
-﻿namespace Galileo.Models.ProGrX.Clientes
+namespace Galileo.Models.ProGrX.Clientes
 {
     public class AfRenunciasSocios
     {
@@ -188,6 +188,7 @@
         public string Descripcion { get; set; } = string.Empty;
         public decimal Saldo { get; set; }
         public string GarantiaX { get; set; } = string.Empty;
+        public decimal Mora_Intcor { get; set; }
         public decimal INTC { get; set; }
         public decimal INTM { get; set; }
         public decimal Amortiza { get; set; }
