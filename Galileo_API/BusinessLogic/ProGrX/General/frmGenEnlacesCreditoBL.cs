@@ -1,4 +1,5 @@
-﻿using Galileo.DataBaseTier;
+using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.GEN;
 
@@ -7,24 +8,25 @@ namespace Galileo.BusinessLogic
     public class FrmGenEnlacesCreditoBl
     {
         readonly FrmGenEnlacesCreditoDb _db;
+
         public FrmGenEnlacesCreditoBl(IConfiguration config)
         {
             _db = new FrmGenEnlacesCreditoDb(config);
         }
 
-        public ErrorDto<EnlaceCreditoLista> EnlacesCreditoConsultar(int codEmpresa, int? pagina, int? paginacion, string? filtro)
-        {
-            return _db.EnlacesCreditoConsultar(codEmpresa, pagina, paginacion, filtro);
-        }
+        public ErrorDto Gen_EnlacesCredito_Sincronizar(int CodEmpresa)
+            => _db.Gen_EnlacesCredito_Sincronizar(CodEmpresa);
 
-        public ErrorDto<List<CodigoCreditoDto>> CodigoCredito_ObtenerTodos(int codEmpresa, string cod_institucion)
-        {
-            return _db.CodigoCredito_ObtenerTodos(codEmpresa, cod_institucion);
-        }
+        public ErrorDto<GenEnlacesCreditoLista> Gen_EnlacesCreditoLista_Obtener(int CodEmpresa, string jfiltros)
+            => _db.Gen_EnlacesCreditoLista_Obtener(CodEmpresa, DbHelper.DeserializeOrNew<FiltrosLazyLoadData>(jfiltros));
 
-        public ErrorDto EnlaceCredito_Actualizar(EnlaceCreditoDto request)
-        {
-            return _db.EnlaceCredito_Actualizar(request);
-        }
+        public ErrorDto<List<GenEnlacesCreditoData>> Gen_EnlacesCredito_Obtener(int CodEmpresa, string jfiltros)
+            => _db.Gen_EnlacesCredito_Obtener(CodEmpresa, DbHelper.DeserializeOrNew<FiltrosLazyLoadData>(jfiltros));
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Gen_EnlacesCreditoCatalogo_Obtener(int CodEmpresa, int cod_institucion)
+            => _db.Gen_EnlacesCreditoCatalogo_Obtener(CodEmpresa, cod_institucion);
+
+        public ErrorDto Gen_EnlacesCredito_Actualizar(int CodEmpresa, GenEnlacesCreditoData enlace)
+            => _db.Gen_EnlacesCredito_Actualizar(CodEmpresa, enlace);
     }
 }

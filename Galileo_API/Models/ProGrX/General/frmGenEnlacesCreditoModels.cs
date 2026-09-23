@@ -1,22 +1,19 @@
-﻿namespace Galileo.Models.GEN
+namespace Galileo.Models.GEN
 {
-    public class EnlaceCreditoDto
+    /// <summary>
+    /// Fila de enlace institución - línea de crédito.
+    /// Homologado a rs! de sbCargaLsw (frmGenEnlacesCredito).
+    /// </summary>
+    public class GenEnlacesCreditoData
     {
-        public required int CodEmpresa { get; set; }
-        public required int CodInstitucion { get; set; }
-        public string Descripcion { get; set; } = string.Empty;
-        public string CodCredito { get; set; } = string.Empty;
+        public required int cod_institucion { get; set; }
+        public string descripcion { get; set; } = string.Empty;
+        public string cod_credito { get; set; } = string.Empty;
     }
 
-    public class CodigoCreditoDto
+    public class GenEnlacesCreditoLista
     {
-        public string Descripcion { get; set; } = string.Empty;
-        public string Codigo { get; set; } = string.Empty;
-    }
-
-    public class EnlaceCreditoLista
-    {
-        public List<EnlaceCreditoDto> lista { get; set; } = new List<EnlaceCreditoDto>();
         public int total { get; set; }
+        public List<GenEnlacesCreditoData> lista { get; set; } = new List<GenEnlacesCreditoData>();
     }
 }
