@@ -65,7 +65,7 @@ namespace Galileo.Controllers
             return _bl.InvTranPlantilla_Obtener(CodEmpresa, TipoTran, CodBoleta, GeneraUser, GeneraFecha);
         }
 
-        [HttpPost("InvProducLineas_Eliminar")]
+        [HttpDelete("InvProducLineas_Eliminar")]
         public ErrorDto InvProducLineas_Eliminar(int CodEmpresa, string CodBoleta, string TipoTran, int Linea)
         {
             return _bl.InvProducLineas_Eliminar(CodEmpresa, CodBoleta, TipoTran, Linea);
