@@ -14,6 +14,11 @@ public static class ApiHostApplicationBuilderExtensions
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
+        app.MapGet("/health", () => Results.Ok(new
+        {
+            status = "ok",
+            service = "Galileo_API"
+        })).AllowAnonymous();
         return app;
     }
 
