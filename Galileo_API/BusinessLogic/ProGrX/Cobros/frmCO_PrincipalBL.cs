@@ -48,6 +48,13 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             return _db.Historial_Listar(codEmpresa, operacion);
         }
 
+        public ErrorDto<object> Historial_Reimprimir(
+            int codEmpresa,
+            CoHistorialReimpresionRequestDto request)
+        {
+            return _db.Historial_Reimprimir(codEmpresa, request);
+        }
+
         public ErrorDto<List<COGestionDto>> Gestiones_Listar(int codEmpresa, string cedula)
         {
             return _db.Gestiones_Listar(codEmpresa, cedula);
@@ -133,7 +140,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             return _db.ValidarPasoCobroJudicial(codEmpresa, operacion);
         }
 
-        public ErrorDto<string> CobroJudicial_Ejecutar(int codEmpresa, int operacion, string usuario, string notas)
+        public ErrorDto<object> CobroJudicial_Ejecutar(int codEmpresa, int operacion, string usuario, string notas)
         {
             return _db.CobroJudicial_Ejecutar(codEmpresa, operacion, usuario, notas);
         }
