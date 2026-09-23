@@ -26,6 +26,8 @@
         public string genero { get; set; } = string.Empty;
         public string estado_civil { get; set; } = string.Empty;
         public string nacionalidad { get; set; } = string.Empty;
+        public string pais_nac { get; set; } = string.Empty;
+        public string pais_residencia { get; set; } = string.Empty;
 
         public string nacimiento { get; set; } = string.Empty;
         public string email_1 { get; set; } = string.Empty;
@@ -46,6 +48,8 @@
         public string fecha_ingreso { get; set; } = string.Empty;
         public string estado_civil_cod { get; set; } = string.Empty;
         public string cod_nacionalidad { get; set; } = string.Empty;
+        public string pais_nac_cod { get; set; } = string.Empty;
+        public string pais_residencia_cod { get; set; } = string.Empty;
     }
 
     public class CrVerificaDatosConyugeDto
@@ -121,6 +125,8 @@
 
         public string? estado_civil { get; set; }        
         public string? cod_nacionalidad { get; set; }
+        public string? cod_pais_nac { get; set; }
+        public string? cod_pais_residencia { get; set; }
         public string? sexo { get; set; }             
         public string? fecha_nac { get; set; }           
 

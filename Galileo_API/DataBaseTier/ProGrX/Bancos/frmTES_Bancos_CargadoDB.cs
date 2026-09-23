@@ -402,28 +402,65 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             
         }
 
-        public ErrorDto TES_RegistrosBancosCargados_Elimina(int CodEmpresa, List<TesBancoCargadoElimina> lista)
+        public ErrorDto<List<TesBancoCargadoEliminaResultado>> TES_RegistrosBancosCargados_Elimina(int CodEmpresa, List<TesBancoCargadoElimina> lista)
         {
           
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
-                foreach (var item in lista)
+                var resultados = new List<TesBancoCargadoEliminaResultado>();
+                const string querySP = "spTes_Bancos_Mov_Elimina";
+
+                foreach (var lineaId in lista.Select(item => item.linea_id))
                 {
-                    var querySP = "spTes_Bancos_Mov_Elimina";
-                    conn.Execute(querySP, new
+                    var result = conn.QuerySingleOrDefault<TesBancoMovEliminaResult>(querySP, new
                     {
-                        LineaId = item.linea_id
+                        LineaId = lineaId
                     },
                     commandType: CommandType.StoredProcedure);
+
+                    if (result is null)
+                    {
+                        resultados.Add(new TesBancoCargadoEliminaResultado
+                        {
+                            linea_id = Convert.ToInt32(lineaId ?? 0),
+                            result = -1,
+                            mensaje = "El proceso no devolvio resultado."
+                        });
+                        continue;
+                    }
+
+                    var mensaje = !string.IsNullOrWhiteSpace(result.MENSAJE)
+                        ? result.MENSAJE
+                        : result.RESULT switch
+                    {
+                        1 => "Eliminada correctamente.",
+                        -1 => "No encontrada.",
+                        -2 => "No se puede eliminar, documento asociado en depositos.",
+                        _ => $"Resultado desconocido ({result.RESULT})."
+                    };
+
+                    resultados.Add(new TesBancoCargadoEliminaResultado
+                    {
+                        linea_id = result.ID_LINEA,
+                        result = result.RESULT,
+                        mensaje = mensaje
+                    });
                 }
-                return DbHelper.OkResponse("Registro procesado correctamente!");
+                return DbHelper.CreateOkResponse(resultados, "Registros procesados correctamente!");
             }
             catch (Exception ex)
             {
-                return DbHelper.ErrorResponse(ex.Message);
+                return DbHelper.CreateErrorResponse<List<TesBancoCargadoEliminaResultado>>(ex.Message, -1, new());
             }
 
+        }
+
+        private sealed class TesBancoMovEliminaResult
+        {
+            public int ID_LINEA { get; set; }
+            public short RESULT { get; set; }
+            public string? MENSAJE { get; set; }
         }
 
         /// <summary>
@@ -523,7 +560,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     conn, data.LineasId,
                     "spTes_BancosCargado_Mov_DetalleExcluir",
                     id => new { LineaId = id, Usuario = data.Usuario },
-                    "excluida(s)");
+                    "excluida(s)",
+                    successWhenNoResult: true);
             }
             catch (Exception ex)
             {
@@ -575,7 +613,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             List<long> lineasId,
             string spName,
             Func<long, object> parametrosFactory,
-            string verboExito)
+            string verboExito,
+            bool successWhenNoResult = false)
         {
             var errores  = new List<string>();
             var exitosas = 0;
@@ -586,8 +625,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     spName, parametrosFactory(lineaId),
                     commandType: CommandType.StoredProcedure);
 
-                if (result?.Ok == 1) exitosas++;
-                else errores.Add($"Línea {lineaId}: {result?.Mensaje ?? "error desconocido"}");
+                if (result is null && successWhenNoResult)
+                {
+                    exitosas++;
+                    continue;
+                }
+
+                var resultRow = result as IDictionary<string, object>;
+                var ok = ObtenerValorDinamico<int?>(resultRow, "Ok");
+                var mensaje = ObtenerValorDinamico<string>(resultRow, "Mensaje")
+                    ?? ObtenerValorDinamico<string>(resultRow, "descripcion");
+
+                if (ok == 1) exitosas++;
+                else errores.Add($"Línea {lineaId}: {mensaje ?? "error desconocido"}");
             }
 
             if (exitosas == 0)
@@ -598,6 +648,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 : $"{exitosas} de {lineasId.Count} procesada(s). Omitidas: {string.Join(", ", errores)}";
 
             return DbHelper.OkResponse(msg);
+        }
+
+        private static T? ObtenerValorDinamico<T>(IDictionary<string, object>? row, string key)
+        {
+            if (row is null || !row.TryGetValue(key, out var value) || value is null)
+                return default;
+
+            return (T)Convert.ChangeType(value, Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T));
         }
 
         /// <summary>

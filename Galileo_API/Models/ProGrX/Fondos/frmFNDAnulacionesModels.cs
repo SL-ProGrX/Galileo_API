@@ -26,6 +26,29 @@
         public decimal? aporte { get; set; }
         public string? usuario { get; set; }
         public bool? aporteLocked { get; set; }
+        /// <summary>Nota de la solicitud de autorizacion (@Nota de spFnd_Gestion_Registro).</summary>
+        public string? nota { get; set; }
+        /// <summary>Gestion de autorizacion vigente (VB6 txtGestionId), se envia a spFondos_Anula_Aporte.</summary>
+        public int? gestion_id { get; set; }
+        /// <summary>Monto a anular por subcuenta (VB6 vGrid col. 4) cuando el contrato es cuenta maestra.</summary>
+        public List<FndAnulacionesSubCuentaMontoDto>? subcuentas { get; set; }
+    }
+
+    public class FndAnulacionesSubCuentaMontoDto
+    {
+        public int idx { get; set; }
+        public decimal anulacion { get; set; }
+    }
+
+    /// <summary>Resultado de spFondos_Anula_Aporte.</summary>
+    public class FndAnulacionesAplicaResultDto
+    {
+        public int Pass { get; set; }
+        public string? NumDoc { get; set; }
+        public string? Mensaje { get; set; }
+        public string? Movimiento { get; set; }
+        public DateTime? Fecha { get; set; }
+        public string? Proceso { get; set; }
     }
 
     public class FndAnulacionesSubCuentasDto

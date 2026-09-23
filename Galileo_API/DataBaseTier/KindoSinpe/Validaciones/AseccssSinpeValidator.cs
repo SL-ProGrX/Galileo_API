@@ -1,20 +1,14 @@
 ﻿using Dapper;
-using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
-using Galileo.Models.Security;
 using Galileo_API.Controllers.WFCSinpe;
 using Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos;
 using Galileo_API.Models.ProGrX.Bancos;
-using Microsoft.Data.SqlClient;
-using Microsoft.IdentityModel.Tokens;
 using Sinpe_CCD;
 using Sinpe_PIN;
 using Sinpe_TFT;
-using System;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
-using System.Drawing.Printing;
 using System.Text.Json;
 
 namespace Galileo_API.DataBaseTier

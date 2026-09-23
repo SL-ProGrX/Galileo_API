@@ -87,8 +87,13 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResSendingDynamic SendPIN(string UrlCGP_PIN, ReqSendingDynamic pinData)
         {
+            /**
+                    Para pruebas de SINPE
+            string json = JsonConvert.SerializeObject(pinData);
+                    **/
 
-            return mClient.PostJsonAsync<ReqSendingDynamic, ResSendingDynamic, ResSendingDynamic>(
+
+            var resp =  mClient.PostJsonAsync<ReqSendingDynamic, ResSendingDynamic, ResSendingDynamic>(
                    baseUrl: UrlCGP_PIN,
                    endpoint: "/SendTransfer",
                    request: pinData,
@@ -109,6 +114,14 @@ namespace Galileo_API.DataBaseTier
                    },
                    operationName: nameof(SendPIN)
                ).Result;
+
+            /**
+                  Para pruebas de SINPE
+          json = JsonConvert.SerializeObject(resp);
+                  **/
+
+
+            return resp;
         }
         #endregion
 

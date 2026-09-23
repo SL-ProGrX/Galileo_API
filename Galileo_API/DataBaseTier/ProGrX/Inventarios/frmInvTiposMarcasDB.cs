@@ -16,10 +16,7 @@ namespace Galileo.DataBaseTier
         private const string ErrorInsertarMarca = "Error al insertar la marca.";
         private const string ErrorEliminarMarca = "Error al eliminar la marca.";
         private const string QueryTotalMarcas = "SELECT COUNT(*) FROM pv_marcas";
-        private const string QueryMarcasBase = @"SELECT cod_marca,
-                                                             descripcion,
-                                                             activo
-                                                      FROM pv_marcas";
+        private const string QueryMarcasBase = @"SELECT cod_marca, descripcion, activo FROM pv_marcas";
         private const string QueryMarcasTodas = "SELECT cod_marca, descripcion, activo FROM pv_marcas ORDER BY cod_marca";
         private const string QueryActualizarMarca = "UPDATE pv_marcas SET descripcion = @Descripcion, activo = @Activo WHERE Cod_Marca = @Cod_Marca";
         private const string QueryInsertarMarca = "INSERT INTO pv_marcas(cod_marca, descripcion, activo) VALUES(@Cod_Marca, @Descripcion, @Activo)";
@@ -48,8 +45,8 @@ namespace Galileo.DataBaseTier
         /// <returns>Listado vacío inicializado.</returns>
         private static MarcasDataLista CrearListaVacia() => new()
         {
-            Total = 0,
-            Marcas = new List<MarcasDto>()
+            total = 0,
+            marcas = new List<MarcasDto>()
         };
 
         /// <summary>
@@ -59,9 +56,9 @@ namespace Galileo.DataBaseTier
         /// <returns>Objeto de parámetros para Dapper.</returns>
         private static object CrearParametrosMarca(MarcasDto request) => new
         {
-            request.Cod_Marca,
-            request.Descripcion,
-            request.Activo
+            request.cod_Marca,
+            request.descripcion,
+            request.activo
         };
 
         /// <summary>
@@ -83,7 +80,7 @@ namespace Galileo.DataBaseTier
         {
             foreach (MarcasDto dt in marcas)
             {
-                dt.Estado = dt.Activo ? "ACTIVO" : "INACTIVO";
+                dt.estado = dt.activo ? "ACTIVO" : "INACTIVO";
             }
         }
 
@@ -104,7 +101,7 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
                 var respuesta = CrearListaVacia();
-                respuesta.Total = connection.QueryFirstOrDefault<int>(QueryTotalMarcas);
+                respuesta.total = connection.QueryFirstOrDefault<int>(QueryTotalMarcas);
 
                 var parametros = new DynamicParameters();
                 var queryBuilder = new StringBuilder(QueryMarcasBase);
@@ -124,7 +121,7 @@ namespace Galileo.DataBaseTier
                     parametros.Add("Fetch", paginacion.Value);
                 }
 
-                respuesta.Marcas = connection.Query<MarcasDto>(queryBuilder.ToString(), parametros).ToList();
+                respuesta.marcas = connection.Query<MarcasDto>(queryBuilder.ToString(), parametros).ToList();
                 return respuesta;
             });
 

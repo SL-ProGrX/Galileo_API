@@ -53,5 +53,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_Nucleo
         {
             return Db.Sys_Monitor_AutoGestion_Adjuntos_Fix(CodEmpresa);
         }
+        public ErrorDto<MonitorAutoGestionRefundicionesLista>Sys_Monitor_AutoGestion_Refundiciones_Lista_Obtener(int CodEmpresa,long cod_solicitud)
+        {
+            return Db.Sys_Monitor_AutoGestion_Refundiciones_Lista_Obtener( CodEmpresa, cod_solicitud);
+        }
     }
 }

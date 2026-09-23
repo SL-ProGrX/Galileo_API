@@ -1,75 +1,135 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Galileo.BusinessLogic;
+﻿using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [Authorize]
     [ApiController]
-    public class FrmInvPaquetesController : ControllerBase
+    public sealed class FrmInvPaquetesController
+        : ControllerBase
     {
-       private readonly FrmInvPaquetesBL _bl;
+        private readonly FrmInvPaquetesBL _bl;
 
-        public FrmInvPaquetesController(IConfiguration config)
+        public FrmInvPaquetesController(
+            IConfiguration config)
         {
+            ArgumentNullException.ThrowIfNull(config);
             _bl = new FrmInvPaquetesBL(config);
         }
 
-        [HttpGet("Paquetes_Obtener")]
-        public ErrorDto<PaqueteDataLista> Paquetes_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        [HttpGet(
+            "INV_Paquetes_Lista_Obtener")]
+        public ErrorDto<PaqueteDataLista>
+            INV_Paquetes_Lista_Obtener(
+                int CodEmpresa,
+                string filtros)
         {
-            return _bl.Paquetes_Obtener(CodCliente, pagina, paginacion, filtro);
+            return _bl
+                .INV_Paquetes_Lista_Obtener(
+                    CodEmpresa,
+                    filtros);
         }
 
-        [HttpGet("Paquetes_ObtenerTodos")]
-        public ErrorDto<List<PaqueteDto>> Paquetes_ObtenerTodos(int CodEmpresa)
+        [HttpGet(
+            "INV_Paquetes_Todos_Obtener")]
+        public ErrorDto<List<PaqueteDto>>
+            INV_Paquetes_Todos_Obtener(
+                int CodEmpresa)
         {
-            return _bl.Paquetes_ObtenerTodos(CodEmpresa);
+            return _bl
+                .INV_Paquetes_Todos_Obtener(
+                    CodEmpresa);
         }
 
-        [HttpGet("Paquete_Obtener")]
-        public ErrorDto<PaqueteDto> Paquete_Obtener(int CodEmpresa, int Cod_Paquete)
+        [HttpGet(
+            "INV_Paquetes_Encabezado_Obtener")]
+        public ErrorDto<PaqueteDto>
+            INV_Paquetes_Encabezado_Obtener(
+                int CodEmpresa,
+                int codPaquete)
         {
-            return _bl.Paquete_Obtener(CodEmpresa, Cod_Paquete);
+            return _bl
+                .INV_Paquetes_Encabezado_Obtener(
+                    CodEmpresa,
+                    codPaquete);
         }
 
-        [HttpGet("Paquete_ObtenerDetalles")]
-        public ErrorDto<List<PaqueteDetalleDto>> Paquete_ObtenerDetalles(int CodEmpresa, int Cod_Paquete)
+        [HttpGet(
+            "INV_Paquetes_Detalle_Obtener")]
+        public ErrorDto<List<PaqueteDetalleDto>>
+            INV_Paquetes_Detalle_Obtener(
+                int CodEmpresa,
+                int codPaquete)
         {
-            return _bl.Paquete_ObtenerDetalles(CodEmpresa, Cod_Paquete);
+            return _bl
+                .INV_Paquetes_Detalle_Obtener(
+                    CodEmpresa,
+                    codPaquete);
         }
 
-        [HttpPost("Paquete_Insertar")]
-        public ErrorDto Paquete_Insertar(int CodEmpresa, PaqueteDto request)
+        [HttpPost(
+            "INV_Paquetes_Registrar")]
+        public ErrorDto INV_Paquetes_Registrar(
+            int CodEmpresa,
+            PaqueteDto request)
         {
-            return _bl.Paquete_Insertar(CodEmpresa, request);
+            return _bl.INV_Paquetes_Registrar(
+                CodEmpresa,
+                request);
         }
 
-        [HttpPost("Paquete_Actualizar")]
-        public ErrorDto Paquete_Actualizar(int CodEmpresa, PaqueteDto request)
+        [HttpPut(
+            "INV_Paquetes_Actualizar")]
+        public ErrorDto INV_Paquetes_Actualizar(
+            int CodEmpresa,
+            PaqueteDto request)
         {
-            return _bl.Paquete_Actualizar(CodEmpresa, request);
+            return _bl.INV_Paquetes_Actualizar(
+                CodEmpresa,
+                request);
         }
 
-        [HttpPost("PaqueteDetalle_Insertar")]
-        public ErrorDto PaqueteDetalle_Insertar(int CodEmpresa, PaqueteDetalleDto request)
+        [HttpPost(
+            "INV_Paquetes_Detalle_Registrar")]
+        public ErrorDto
+            INV_Paquetes_Detalle_Registrar(
+                int CodEmpresa,
+                PaqueteDetalleDto request)
         {
-            return _bl.PaqueteDetalle_Insertar(CodEmpresa, request);
+            return _bl
+                .INV_Paquetes_Detalle_Registrar(
+                    CodEmpresa,
+                    request);
         }
 
-        [HttpPost("PaqueteDetalle_Actualizar")]
-        public ErrorDto PaqueteDetalle_Actualizar(int CodEmpresa, PaqueteDetalleDto request)
+        [HttpPut(
+            "INV_Paquetes_Detalle_Actualizar")]
+        public ErrorDto
+            INV_Paquetes_Detalle_Actualizar(
+                int CodEmpresa,
+                PaqueteDetalleDto request)
         {
-            return _bl.PaqueteDetalle_Actualizar(CodEmpresa, request);
+            return _bl
+                .INV_Paquetes_Detalle_Actualizar(
+                    CodEmpresa,
+                    request);
         }
 
-        [HttpPost("PaqueteDetalle_Eliminar")]
-        public ErrorDto PaqueteDetalle_Eliminar(int CodEmpresa, PaqueteDetalleDto request)
+        [HttpDelete(
+            "INV_Paquetes_Detalle_Eliminar")]
+        public ErrorDto
+            INV_Paquetes_Detalle_Eliminar(
+                int CodEmpresa,
+                PaqueteDetalleDto request)
         {
-            return _bl.PaqueteDetalle_Eliminar(CodEmpresa, request);
+            return _bl
+                .INV_Paquetes_Detalle_Eliminar(
+                    CodEmpresa,
+                    request);
         }
     }
 }

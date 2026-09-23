@@ -1,4 +1,4 @@
-﻿using Galileo.Models;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX.Cajas;
 using Galileo_API.Models.ProGrX.Cajas;
@@ -60,6 +60,13 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
                 filtroNombre);
         }
 
+        [HttpGet("Cajas_CajaChicaSocio_Cedula_Obtener")]
+        public ErrorDto<CajasCajaChicaSociosBusquedaRsDto?> Cajas_CajaChicaSocio_Cedula_Obtener(int codEmpresa,string cedula)
+        {
+            return _bl.Cajas_CajaChicaSocio_Cedula_Obtener(
+                codEmpresa,
+                cedula);
+        }
         [HttpPost("Cajas_CajaChicaRetiro_Aplicar")]
         public ErrorDto<CajasCajaChicaAplicarDbResponseDto> Cajas_CajaChicaRetiro_Aplicar(CajasCajaChicaAplicarDbRequestDto req)
         {

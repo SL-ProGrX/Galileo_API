@@ -230,4 +230,11 @@
         public string? usuario { get; set; }
         public long? auto_id { get; set; }
     }
+
+    public class TesBancoCargadoEliminaResultado
+    {
+        public int linea_id { get; set; }
+        public short result { get; set; }
+        public string mensaje { get; set; } = string.Empty;
+    }
 }

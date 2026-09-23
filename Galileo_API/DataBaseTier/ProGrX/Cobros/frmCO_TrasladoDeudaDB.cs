@@ -528,12 +528,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 return new ResumenDeudaRow
                 {
-                    interes_corriente = plan.int_cor,
-                    interes_moratorio = plan.int_mor,
+                    interes_corriente = plan.IntCor,
+                    interes_moratorio = plan.IntMor,
                     principal_mora = cabecera.mora_amortiza,
                     interes_pendiente = 0m,
-                    cargos = plan.cargos,
-                    poliza = plan.poliza
+                    cargos = plan.Cargos,
+                    poliza = plan.Poliza
                 };
             }
 
@@ -1448,10 +1448,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         private sealed class PlanPagoCancelacionRow
         {
-            public decimal int_cor { get; set; } = 0m;
-            public decimal int_mor { get; set; } = 0m;
-            public decimal cargos { get; set; } = 0m;
-            public decimal poliza { get; set; } = 0m;
+            public decimal IntCor { get; set; } = 0m;
+            public decimal IntMor { get; set; } = 0m;
+            public decimal Cargos { get; set; } = 0m;
+            public decimal Poliza { get; set; } = 0m;
         }
         private sealed class OficinaContexto
         {

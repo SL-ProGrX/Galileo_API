@@ -69,6 +69,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         genero = S(V(d, "sexo", "Sexo")),
                         estado_civil = S(V(d, "EstadoCivilDesc", "estadocivildesc")),
                         nacionalidad = S(V(d, "Nacionalidad", "nacionalidad")),
+                        pais_nac = S(V(d, "Pais", "pais")),
+                        pais_residencia = S(V(d, "PaisResidencia", "paisresidencia")),
                         nacimiento = S(V(d, "fecha_nac", "Fecha_Nac", "nacimiento")),
                         email_1 = S(V(d, "AF_Email", "af_email")),
                         email_2 = S(V(d, "Email_02", "email_02")),
@@ -83,6 +85,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         distrito_cod = S(V(d, "Distrito", "distrito")),
                         estado_civil_cod = S(V(d, "EstadoCivil", "estadocivil")),
                         cod_nacionalidad = S(V(d, "Cod_Nacionalidad", "COD_NACIONALIDAD", "cod_nacionalidad")),
+                        pais_nac_cod = S(V(d, "Cod_Pais_Nac", "COD_PAIS_NAC", "cod_pais_nac")),
+                        pais_residencia_cod = S(V(d, "COD_PAIS_RESIDENCIA", "Cod_Pais_Residencia", "cod_pais_residencia")),
                         estado_laboral = S(V(d, "EstadoLaboral", "estadolaboral", "ESTADOLABORAL")),
                         nombramiento_fecha = S(V(d, "Nombramiento_Fecha", "nombramiento_fecha")),
                         fecha_ingreso = S(V(d, "FechaIngreso", "fechaingreso", "fecha_ingreso", "FECHAINGRESO")),
@@ -213,6 +217,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             var pEstadoCivil = (req.estado_civil ?? string.Empty).Trim();
             var pCodNacionalidad = (req.cod_nacionalidad ?? string.Empty).Trim();
+            var pCodPaisNac = (req.cod_pais_nac ?? string.Empty).Trim();
+            var pCodPaisResidencia = (req.cod_pais_residencia ?? string.Empty).Trim();
             var pEstadoLaboral = (req.estado_laboral ?? string.Empty).Trim();
 
             var pSexoRaw = (req.sexo ?? string.Empty).Trim().ToUpperInvariant();
@@ -263,7 +269,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     Albacea_cedula = @albacea_cedula,
                     Albacea_nombre = @albacea_nombre,
                     Email_02 = @email_2,
-                    COD_NACIONALIDAD = CASE WHEN @cod_nacionalidad = '' THEN COD_NACIONALIDAD ELSE @cod_nacionalidad END
+                    COD_NACIONALIDAD = CASE WHEN @cod_nacionalidad = '' THEN COD_NACIONALIDAD ELSE @cod_nacionalidad END,
+                    cod_Pais_Nac = CASE WHEN @cod_pais_nac = '' THEN cod_Pais_Nac ELSE @cod_pais_nac END,
+                    cod_Pais_Residencia = CASE WHEN @cod_pais_residencia = '' THEN cod_Pais_Residencia ELSE @cod_pais_residencia END
                 WHERE Cedula = @cedula;";
 
                 conn.Execute(sqlUpdate, new
@@ -290,7 +298,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     notificaciones = pNotificaciones,
                     albacea_cedula = pAlbCed,
                     albacea_nombre = pAlbNom,
-                    cod_nacionalidad = pCodNacionalidad
+                    cod_nacionalidad = pCodNacionalidad,
+                    cod_pais_nac = pCodPaisNac,
+                    cod_pais_residencia = pCodPaisResidencia
                 });
 
                 const string sqlNom = "exec spAFI_Persona_Nombramientos_Add @Cedula, @EstadoLaboral, @Fecha, @Usuario, @Mov";
