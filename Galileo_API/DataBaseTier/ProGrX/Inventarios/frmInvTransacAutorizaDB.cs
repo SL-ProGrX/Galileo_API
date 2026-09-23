@@ -85,10 +85,10 @@ namespace Galileo.DataBaseTier
         {
             var result = DbHelper.WithConn<ErrorDto>(CreatePortalDb(), CodEmpresa, connection =>
             {
-                bool esMancomunado = EsTransaccionMancomunada(connection, request.Tipo);
+                bool esMancomunado = EsTransaccionMancomunada(connection, request.tipo);
                 if (esMancomunado)
                 {
-                    bool usuarioCoincide = UsuarioCoincideEnRequisiciones(connection, request.Autoriza_User);
+                    bool usuarioCoincide = UsuarioCoincideEnRequisiciones(connection, request.autoriza_user);
                     if (usuarioCoincide)
                     {
                         return new ErrorDto
@@ -101,17 +101,17 @@ namespace Galileo.DataBaseTier
 
                 connection.Execute(
                     @"update pv_InvTranSac
-                      set estado = @Estado,
-                          Autoriza_user = @Autoriza_User,
+                      set estado = @estado,
+                          Autoriza_user = @autoriza_user,
                           autoriza_fecha = getdate()
-                      where tipo = @Tipo
-                        and Boleta = @Boleta",
+                      where tipo = @tipo
+                        and Boleta = @boleta",
                     new
                     {
-                        request.Boleta,
-                        request.Tipo,
-                        request.Autoriza_User,
-                        request.Estado
+                        request.boleta,
+                        request.tipo,
+                        request.autoriza_user,
+                        request.estado
                     });
 
                 return new ErrorDto
