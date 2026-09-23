@@ -6,7 +6,7 @@ namespace Galileo.Models.GEN
     /// </summary>
     public class GenEnlacesCreditoData
     {
-        public int cod_institucion { get; set; }
+        public required int cod_institucion { get; set; }
         public string descripcion { get; set; } = string.Empty;
         public string cod_credito { get; set; } = string.Empty;
     }
