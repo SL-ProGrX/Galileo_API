@@ -437,7 +437,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
             try
             {
-                var tipoDoc = MFndFuncionesDb.fxTipoDocumento(NormalizarTexto(filtros.TipoDocumento));
+                var tipoDoc = ResolverTipoDocumentoCodigo(filtros.TipoDocumento);
                 var result = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
                 {
                     ValidarRetiroCaja(connection, tipoDoc, filtros);
@@ -513,9 +513,15 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
         private static void RegistrarRebajosLiquidacion(System.Data.IDbConnection connection, FiltrosRetLiqAplicar filtros)
         {
-            var primero = 1;
+            // VB6: solo filas con monto > 0; @Inicializa = 1 en el primero (limpia TEMPO)
+            var inicializa = 1;
             foreach (var item in filtros.RebajosLista ?? new List<FndRetLiqRebajosData>())
             {
+                if (item.monto <= 0)
+                {
+                    continue;
+                }
+
                 connection.Execute(
                     SpLiquidacionRebajos,
                     new
@@ -527,12 +533,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         Documento = NormalizarTexto(item.documento),
                         Detalle = NormalizarTexto(item.detalle),
                         Monto = item.monto,
-                        filtros.TipoCambio,
-                        vPrimero = primero
+                        TipoCambio = filtros.TipoCambio > 0 ? filtros.TipoCambio : 1m,
+                        Inicializa = inicializa
                     },
                     commandType: System.Data.CommandType.StoredProcedure);
 
-                primero = 0;
+                inicializa = 0;
             }
         }
 
@@ -552,21 +558,22 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     Plan = NormalizarTexto(filtros.Plan),
                     filtros.Contrato,
                     Cedula = NormalizarTexto(filtros.Cedula),
-                    filtros.MontoAplicar,
-                    Tipo = NormalizarTexto(filtros.Tipo),
+                    Monto = filtros.MontoAplicar,
+                    TipoMov = NormalizarTexto(filtros.Tipo),
                     Notas = NormalizarTexto(filtros.Notas),
                     Usuario = NormalizarTexto(filtros.Usuario),
-                    gOficinaTitular = oficinaTitular,
-                    Proceso = NormalizarTexto(filtros.Proceso),
-                    RetCodigo = NormalizarTexto(filtros.RetCodigo),
+                    Oficina = oficinaTitular,
+                    TipoGestion = NormalizarTexto(filtros.Proceso),
+                    RetencionCod = NormalizarTexto(filtros.RetCodigo),
                     filtros.BancoId,
-                    tipoDoc,
-                    CuentaBancaria = NormalizarTexto(filtros.CuentaBancaria),
-                    ProductName = productName,
-                    PagoTercero = pagoTercero ? 1 : 0,
-                    PTTipo = pagoTercero ? NormalizarTexto(filtros.PTTipo) : "N",
-                    PTId = pagoTercero ? NormalizarTexto(filtros.PTId) : string.Empty,
-                    PTNombre = pagoTercero ? NormalizarTexto(filtros.PTNombre) : string.Empty,
+                    BancoTipo = tipoDoc,
+                    BancoCuenta = NormalizarTexto(filtros.CuentaBancaria),
+                    AppName = productName,
+                    LiqGen = (int?)null,
+                    GTAplica = pagoTercero ? (short)1 : (short)0,
+                    GTTipo = pagoTercero ? NormalizarTexto(filtros.PTTipo) : "N",
+                    GTId = pagoTercero ? NormalizarTexto(filtros.PTId) : string.Empty,
+                    GTNombre = pagoTercero ? NormalizarTexto(filtros.PTNombre) : string.Empty,
                     Rebajos = filtros.Rebajos
                 },
                 commandType: System.Data.CommandType.StoredProcedure) ?? new FndRetLiqProcesoData();
@@ -605,5 +612,20 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         }
 
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();
+
+        /// <summary>
+        /// El SP espera código (TE/CK/RC/FD/TS). Angular ya envía código;
+        /// VB6 enviaba descripción y fxTipoDocumento la convertía.
+        /// </summary>
+        private static string ResolverTipoDocumentoCodigo(string? valor)
+        {
+            var v = NormalizarTexto(valor);
+            if (v is "CK" or "TE" or "RC" or "FD" or "TS" or "EF" or "RE" or "ND" or "NC" or "OT" or "CD" or "CP")
+            {
+                return v;
+            }
+
+            return MFndFuncionesDb.fxTipoDocumento(v);
+        }
     }
 }
