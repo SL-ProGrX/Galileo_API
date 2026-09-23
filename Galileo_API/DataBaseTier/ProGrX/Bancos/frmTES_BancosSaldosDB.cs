@@ -190,7 +190,10 @@ FETCH NEXT @fetch ROWS ONLY;";
         /// <param name="Banco"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<TablasListaGenericaModel> TES_BancosSaldos_Historico_Obtener(int CodEmpresa, int Banco, FiltrosLazyLoadData filtros)
+        public ErrorDto<TablasListaGenericaModel> TES_BancosSaldos_Historico_Obtener(
+    int CodEmpresa,
+    int Banco,
+    FiltrosLazyLoadData filtros)
         {
             filtros ??= new FiltrosLazyLoadData();
 
@@ -209,190 +212,119 @@ FETCH NEXT @fetch ROWS ONLY;";
 
             try
             {
-                // --- filtros de fechas ---
+                /* =========================================================
+                   FILTROS DE FECHA
+                   ========================================================= */
+
                 var parametros = filtros.parametros?.ToString() ?? string.Empty;
-                var filtrosFechas = JsonConvert.DeserializeObject<HistoricoFiltros>(parametros)
-                                  ?? new HistoricoFiltros();
+
+                var filtrosFechas =
+                    JsonConvert.DeserializeObject<HistoricoFiltros>(parametros)
+                    ?? new HistoricoFiltros();
 
                 var fechaInicio = filtrosFechas.inicio.Date;
-                var fechaCorte = filtrosFechas.corte.Date.AddDays(1).AddTicks(-1);
+                var fechaCorte = filtrosFechas.corte.Date;
+
                 var filtrarFechas = !filtrosFechas.todas_fechas;
 
-                // --- filtro texto ---
+
+                /* =========================================================
+                   FILTRO GENERAL
+                   ========================================================= */
+
                 var texto = filtros.filtro?.Trim();
-                var hasFiltro = !string.IsNullOrWhiteSpace(texto);
-                var like = hasFiltro ? $"%{texto}%" : null;
 
-                // --- paginación ---
-                var offset = filtros.pagina;       // si esto es pageNumber, abajo te digo ajuste
+                var filtro =
+                    string.IsNullOrWhiteSpace(texto)
+                        ? null
+                        : texto;
+
+
+                /* =========================================================
+                   PAGINACIÓN
+                   ========================================================= */
+
+                var offset = filtros.pagina;
                 var fetch = filtros.paginacion;
-                var usarPaginacion = fetch > 0;
 
-                // --- ORDER BY seguro (whitelist) ---
-                var sortField = (filtros.sortField ?? string.Empty).Trim();
-                var orderByField = sortField switch
+
+                /* =========================================================
+                   ORDENAMIENTO
+                   ========================================================= */
+
+                var sortField =
+                    (filtros.sortField ?? string.Empty)
+                    .Trim()
+                    .ToLower();
+
+                var columna = sortField switch
                 {
-                    "idx" => "idx",
-                    "id_banco" => "id_banco",
-                    "usuario" => "usuario",
-                    "inicio" => "inicio",
-                    "corte" => "corte",
-                    _ => "idx"
+                    "idx" => "IDX",
+                    "id_banco" => "ID_BANCO",
+                    "usuario" => "USUARIO",
+                    "inicio" => "INICIO",
+                    "corte" => "CORTE",
+
+                    _ => "IDX"
                 };
 
-                // Tu código: (sortOrder == 0 ? "DESC" : "ASC")
-                var direction = filtros.sortOrder == 0 ?  "ASC": "DESC";
+                var direccion =
+                    filtros.sortOrder == 0
+                        ? "ASC"
+                        : "DESC";
 
-                // --- COUNT con mismos filtros ---
-                const string sqlCount = @"
-SELECT COUNT(1)
-FROM TES_BANCOS_CIERRES
-WHERE id_banco = @banco
-  AND (
-        @filtro IS NULL
-     OR CAST(id_banco AS NVARCHAR(50)) LIKE @like
-     OR CAST(idx AS NVARCHAR(50)) LIKE @like
-     OR usuario LIKE @like
-  )
-  AND (
-        @filtrarFechas = 0
-     OR (INICIO >= @fechaInicio AND CORTE <= @fechaCorte)
-  );";
 
-                response.Result.total = conn.QuerySingle<int>(sqlCount, new
+                /* =========================================================
+                   PARÁMETROS SP
+                   ========================================================= */
+
+                var parameters = new
                 {
-                    banco = Banco,
-                    filtro = hasFiltro ? texto : null,
-                    like,
-                    filtrarFechas = filtrarFechas ? 1 : 0,
-                    fechaInicio,
-                    fechaCorte
-                });
-
-                // --- LISTA con mismos filtros ---
-                var sqlList = $@"
-                    WITH BaseCierres AS (
-                        SELECT *
-                        FROM TES_BANCOS_CIERRES
-                        WHERE id_banco = @banco
-                          AND (
-                                @filtro IS NULL
-                             OR CAST(id_banco AS NVARCHAR(50)) LIKE @like
-                             OR CAST(idx AS NVARCHAR(50)) LIKE @like
-                             OR usuario LIKE @like
-                          )
-                          AND (
-                                @filtrarFechas = 0
-                             OR (INICIO >= @fechaInicio AND CORTE <= @fechaCorte)
-                          )
-                    ),
-                    PaginaCierres AS (
-                        SELECT *
-                        FROM BaseCierres
-                        ORDER BY {orderByField} {direction}";
-
-                if (usarPaginacion)
-                {
-                    sqlList += @"
-                        OFFSET @offset ROWS
-                        FETCH NEXT @fetch ROWS ONLY";
-                }
-
-                sqlList += $@"
-                        )
-                        SELECT
-                            TBC.idx,
-                            TBC.id_banco,
-                            TBC.inicio,
-                            TBC.corte,
-                            TBC.saldo_inicial,
-                            TBC.total_debitos,
-                            TBC.total_creditos,
-                            TBC.saldo_final,
-                            TBC.ajuste,
-                            TBC.saldo_minimo,
-                            TBC.fecha,
-                            TBC.usuario,
-                            TBC.cheques_pendientes
-                        FROM PaginaCierres TBC
-                        WHERE ISNULL(TBC.cheques_pendientes, 0) <> 0
-
-                        UNION ALL
-
-                        SELECT
-                            TBC.idx,
-                            TBC.id_banco,
-                            TBC.inicio,
-                            TBC.corte,
-                            TBC.saldo_inicial,
-                            TBC.total_debitos,
-                            TBC.total_creditos,
-                            TBC.saldo_final,
-                            TBC.ajuste,
-                            TBC.saldo_minimo,
-                            TBC.fecha,
-                            TBC.usuario,
-                            ISNULL(CKP.cheques_pendientes, 0) AS cheques_pendientes
-                        FROM PaginaCierres TBC
-                        OUTER APPLY (
-                            SELECT ISNULL(SUM(ISNULL(CK.MontoCheques, 0)), 0) AS cheques_pendientes
-                            FROM (
-                                SELECT ISNULL(SUM(TT.MONTO), 0) AS MontoCheques
-                                FROM dbo.TES_TRANSACCIONES TT WITH (NOLOCK)
-                                WHERE TT.ID_BANCO = TBC.id_banco
-                                  AND TT.TIPO = 'CK'
-                                  AND (TT.DOCUMENTO_BANCO IS NULL OR TT.DOCUMENTO_BANCO = '')
-                                  AND (
-                                        TT.ESTADO IN ('I', 'T')
-                                     OR (
-                                            TT.ESTADO = 'A'
-                                        AND CONVERT(DATE, TT.FECHA_EMISION) <> CONVERT(DATE, TT.FECHA_ANULA)
-                                        AND TT.FECHA_ANULA = CONVERT(DATE, TBC.CORTE)
-                                        )
-                                  )
-                                  AND TT.FECHA_EMISION = CONVERT(DATE, TBC.CORTE)
+                    Banco,
+                    Filtro = filtro,
+                    FiltrarFechas = filtrarFechas,
+                    FechaInicio = fechaInicio,
+                    FechaCorte = fechaCorte,
+                    Offset = offset,
+                    Fetch = fetch,
+                    Columna = columna,
+                    Direccion = direccion
+                };
 
 
-                                UNION ALL
+                /* =========================================================
+                   EJECUTAR SP
+                   ========================================================= */
 
-                                SELECT ISNULL(SUM(TT.MONTO), 0) AS MontoCheques
-                                FROM dbo.TES_TRANSACCIONES TT WITH (NOLOCK)
-                                WHERE TT.ID_BANCO = TBC.id_banco
-                                  AND TT.TIPO = 'CK'
-                                  AND (TT.DOCUMENTO_BANCO IS NOT NULL AND TT.DOCUMENTO_BANCO <> '')
-                                  AND TT.FECHA_BANCO >= CONVERT(DATE, TBC.CORTE)
-                                  AND (
-                                        TT.ESTADO IN ('I', 'T')
-                                     OR (
-                                            TT.ESTADO = 'A'
-                                        AND CONVERT(DATE, TT.FECHA_EMISION) <> CONVERT(DATE, TT.FECHA_ANULA)
-                                        AND TT.FECHA_ANULA = CONVERT(DATE, TBC.CORTE)
-                                        )
-                                  )
-                                  AND TT.FECHA_EMISION = CONVERT(DATE, TBC.CORTE)
-                                
-                            ) CK
-                        ) CKP
-                        WHERE ISNULL(TBC.cheques_pendientes, 0) = 0
-                        ORDER BY {orderByField} {direction};";
+                using var multi = conn.QueryMultiple(
+                    "dbo.spTES_W_BancosSaldos_Historico_Obtener",
+                    parameters,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 60
+                );
 
-                response.Result.lista = conn.Query<TesBancosSaldosHistoricoDto>(sqlList, new
-                {
-                    banco = Banco,
-                    filtro = hasFiltro ? texto : null,
-                    like,
-                    filtrarFechas = filtrarFechas ? 1 : 0,
-                    fechaInicio,
-                    fechaCorte,
-                    fechaInicioCheques = fechaCorte,
-                    offset,
-                    fetch
-                }).ToList();
 
+                /* =========================================================
+                   RESULTADO 1: TOTAL
+                   ========================================================= */
+
+                response.Result.total =
+                    multi.ReadSingle<int>();
+
+
+                /* =========================================================
+                   RESULTADO 2: LISTA
+                   ========================================================= */
+
+                response.Result.lista =
+                    multi.Read<TesBancosSaldosHistoricoDto>()
+                         .ToList();
             }
             catch (Exception ex)
             {
-                return DbHelper.CreateErrorResponse<TablasListaGenericaModel>(ex.Message);
+                return DbHelper.CreateErrorResponse<TablasListaGenericaModel>(
+                    ex.Message
+                );
             }
 
             return response;
