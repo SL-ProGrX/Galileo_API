@@ -12,9 +12,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
     public class FrmCOPrincipalDB
     {
         private readonly PortalDB _portalDb;
+        private readonly IConfiguration _config;
 
         public FrmCOPrincipalDB(IConfiguration config)
         {
+            _config = config;
             _portalDb = new PortalDB(config);
         }
 
@@ -429,6 +431,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 const string sql = @"
             SELECT
+                CAST(ROW_NUMBER() OVER (ORDER BY fecha DESC) AS int) AS id,
                 fecha,
                 CASE
                     WHEN tipo = '01' THEN 'Traspaso de deudas'
@@ -446,7 +449,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     ELSE ''
                 END AS transaccion,
                 ISNULL(usuario, '') AS usuario,
-                ISNULL(notas, '') AS notas
+                ISNULL(notas, '') AS notas,
+                ISNULL(saldo, 0) AS saldo,
+                ISNULL(int_cor, 0) + ISNULL(int_mor, 0) AS intereses,
+                ISNULL(cargos, 0) AS cargos,
+                ISNULL(poliza, 0) AS poliza,
+                ISNULL(principal, 0) AS principal,
+                ISNULL(LTRIM(RTRIM(CONVERT(varchar(50), tipo_documento))), '') AS tipo_documento,
+                ISNULL(LTRIM(RTRIM(CONVERT(varchar(50), cod_transaccion))), '') AS cod_transaccion
             FROM cbr_historial
             WHERE id_solicitud = @operacion
             ORDER BY fecha DESC
@@ -1238,6 +1248,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return response;
         }
 
+        public ErrorDto<object> Historial_Reimprimir(
+            int codEmpresa,
+            CoHistorialReimpresionRequestDto request)
+        {
+            var tipoDocumento = request?.tipo_documento?.Trim() ?? string.Empty;
+            var documento = request?.cod_transaccion?.Trim() ?? string.Empty;
+            var usuario = request?.usuario?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(tipoDocumento) ||
+                string.IsNullOrWhiteSpace(documento))
+            {
+                return DbHelper.CreateErrorResponse<object>(
+                    "El registro de historial no tiene un documento para reimprimir.");
+            }
+
+            return new MRecibos(_config).sbImprimeRecibo(
+                codEmpresa,
+                documento,
+                tipoDocumento,
+                usuario,
+                pReImprime: true);
+        }
+
         /// <summary>
         /// Cambia el indicador de deducción por planilla de la operación.
         /// </summary>
@@ -1390,9 +1423,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="usuario"></param>
         /// <param name="notas"></param>
         /// <returns></returns>
-        public ErrorDto<string> CobroJudicial_Ejecutar(int codEmpresa, int operacion, string usuario, string notas)
+        public ErrorDto<object> CobroJudicial_Ejecutar(int codEmpresa, int operacion, string usuario, string notas)
         {
-            var response = new ErrorDto<string>();
+            var response = DbHelper.CreateOkResponse<object>(null);
 
             try
             {
@@ -1433,9 +1466,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     return response;
                 }
 
-                response.Result = string.IsNullOrWhiteSpace(result.NumDoc)
+                var mensaje = string.IsNullOrWhiteSpace(result.NumDoc)
                     ? $"La operación fue enviada a Cobro Judicial. Se generó el asiento CBR{operacion}."
                     : $"La operación fue enviada a Cobro Judicial. Se generó la nota de cobro número {result.NumDoc}.";
+
+                if (string.IsNullOrWhiteSpace(result.NumDoc) ||
+                    string.IsNullOrWhiteSpace(result.TipoDoc))
+                {
+                    response.Description = mensaje;
+                    return response;
+                }
+
+                var reporte = new MRecibos(_config).sbImprimeRecibo(
+                    codEmpresa,
+                    result.NumDoc.Trim(),
+                    result.TipoDoc.Trim(),
+                    usuario);
+
+                reporte.Description = reporte.Code == -1
+                    ? $"{mensaje} No fue posible generar la boleta: {reporte.Description}"
+                    : mensaje;
+
+                return reporte;
             }
             catch (Exception ex)
             {
