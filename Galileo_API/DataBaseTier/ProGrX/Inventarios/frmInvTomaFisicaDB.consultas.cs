@@ -162,8 +162,7 @@ namespace Galileo.DataBaseTier
                     new List<TomaFisicaDetalleDto>());
             }
 
-            string filtro =
-                filtros?.filtro?.Trim() ?? string.Empty;
+            string filtro = (filtros?.filtro ?? string.Empty).Trim();
 
             if (filtro.Length > LongitudFiltroMaxima)
             {
