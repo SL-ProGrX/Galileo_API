@@ -26,7 +26,9 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteListQuery<CargosAdicionalDto>(
                 CreatePortalDb(),
                 CodEmpresa,
-                "select * from CXP_CARGOS order by COD_CARGO");
+                @"SELECT COD_CARGO, DESCRIPCION, COD_CUENTA, ACTIVO, CONTABILIZA
+                  FROM CXP_CARGOS
+                  ORDER BY COD_CARGO");
 
             if (result.Code != 0)
             {
@@ -92,13 +94,18 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodEmpresa,
-                "insert into CXP_CARGOS (COD_CARGO, DESCRIPCION, COD_CUENTA, ACTIVO) values (@COD_CARGO, @DESCRIPCION, @COD_CUENTA, @ACTIVO)",
+                @"INSERT INTO CXP_CARGOS
+                    (COD_CARGO, DESCRIPCION, COD_CUENTA, ACTIVO, CONTABILIZA, REGISTRO_FECHA, REGISTRO_USUARIO)
+                  VALUES
+                    (@COD_CARGO, @DESCRIPCION, @COD_CUENTA, @ACTIVO, @CONTABILIZA, GETDATE(), @USUARIO)",
                 new
                 {
                     COD_CARGO = Info.Cod_Cargo,
                     DESCRIPCION = Info.Descripcion,
                     COD_CUENTA = Info.Cod_Cuenta.Replace("-", ""),
                     ACTIVO = Info.Activo,
+                    CONTABILIZA = Info.Contabiliza,
+                    USUARIO = Info.Usuario,
                 });
 
             return result.Code == 0
@@ -117,12 +124,21 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodEmpresa,
-                "update CXP_CARGOS set DESCRIPCION = @DESCRIPCION, COD_CUENTA = @COD_CUENTA, ACTIVO = @ACTIVO where COD_CARGO = @COD_CARGO",
+                @"UPDATE CXP_CARGOS
+                  SET DESCRIPCION = @DESCRIPCION,
+                      COD_CUENTA = @COD_CUENTA,
+                      ACTIVO = @ACTIVO,
+                      CONTABILIZA = @CONTABILIZA,
+                      MODIFICA_FECHA = GETDATE(),
+                      MODIFICA_USUARIO = @USUARIO
+                  WHERE COD_CARGO = @COD_CARGO",
                 new
                 {
                     DESCRIPCION = Info.Descripcion,
                     COD_CUENTA = Info.Cod_Cuenta.Replace("-", ""),
                     ACTIVO = Info.Activo,
+                    CONTABILIZA = Info.Contabiliza,
+                    USUARIO = Info.Usuario,
                     COD_CARGO = Info.Cod_Cargo,
                 });
 
