@@ -356,7 +356,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     new
                     {
                         Operadora = operadora,
-                        Plan = codigo = NormalizarTexto(codigo),
+                        Plan = NormalizarTexto(codigo),
                         Contrato = contrato,
                         Usuario = NormalizarTexto(usuario)
                     },
