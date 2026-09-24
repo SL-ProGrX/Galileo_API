@@ -478,8 +478,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         {
                             Operadora = param.Operadora,
                             Plan = NormalizarTexto(param.Plan),
-                            PlazoInversion = NormalizarTexto(param.PlazoInversion),
-                            CuponFrecuencia = NormalizarTexto(param.CuponFrecuencia)
+                            PlazoId = NormalizarTexto(param.PlazoInversion),
+                            fCuponId = NormalizarTexto(param.CuponFrecuencia)
                         },
                         commandType: System.Data.CommandType.StoredProcedure));
 

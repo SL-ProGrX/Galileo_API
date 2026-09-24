@@ -169,10 +169,10 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 0m,
                 new
                 {
-                    request.Operadora,
+                    Operadora = request.Operadora,
                     Plan = NormalizarTexto(request.Plan),
-                    request.PlazoInv,
-                    request.CuponId
+                    PlazoId= request.PlazoInv,
+                    fCuponId = request.CuponId
                 });
         }
 
