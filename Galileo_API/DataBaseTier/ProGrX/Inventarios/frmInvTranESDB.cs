@@ -8,6 +8,7 @@ namespace Galileo.DataBaseTier
 {
     public class FrmInvTranEsDB
     {
+        private const string ErrorTipoTransaccionInvalido = "El tipo de transacci&oacute;n no es v&aacute;lido.";
         private readonly IConfiguration _config;
 
         /// <summary>
@@ -174,7 +175,7 @@ namespace Galileo.DataBaseTier
             if (tipo.Length == 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "El tipo de transacci&oacute;n no es v&aacute;lido.",
+                    ErrorTipoTransaccionInvalido,
                     -2,
                     new TranESData());
             }
@@ -236,7 +237,7 @@ namespace Galileo.DataBaseTier
             if (tipo.Length == 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "El tipo de transacci&oacute;n no es v&aacute;lido.",
+                    ErrorTipoTransaccionInvalido,
                     -2,
                     new List<InvProducLineas>());
             }
@@ -313,7 +314,7 @@ namespace Galileo.DataBaseTier
             if (tipo.Length == 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "El tipo de transacci&oacute;n no es v&aacute;lido.",
+                    ErrorTipoTransaccionInvalido,
                     -2,
                     new TranESData());
             }
@@ -378,7 +379,7 @@ namespace Galileo.DataBaseTier
             if (tipo.Length == 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "El tipo de transacci&oacute;n no es v&aacute;lido.",
+                    ErrorTipoTransaccionInvalido,
                     -2,
                     new List<InvTranPlantilla>());
             }
@@ -556,7 +557,7 @@ namespace Galileo.DataBaseTier
             if (tipo.Length == 0)
             {
                 return DbHelper.ErrorResponse(
-                    "El tipo de transacci&oacute;n no es v&aacute;lido.",
+                    ErrorTipoTransaccionInvalido,
                     -2);
             }
 
