@@ -6,72 +6,29 @@ namespace Galileo.BusinessLogic
 {
     public class FrmGenParametrosProBL
     {
-        readonly FrmGenParametrosProDb DbParametrosPro;
+        readonly FrmGenParametrosProDb _db;
 
         public FrmGenParametrosProBL(IConfiguration config)
         {
-            DbParametrosPro = new FrmGenParametrosProDb(config);
+            _db = new FrmGenParametrosProDb(config);
         }
 
-        /// <summary>
-        /// Obtiene los parametros generales
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <returns></returns>
-        public ErrorDto<PvParametrosModDto> Obtener_ParamaterosPro(int CodEmpresa)
-        {
-            return DbParametrosPro.Obtener_ParamaterosPro(CodEmpresa);
-        }
+        public ErrorDto Gen_ParametrosPro_Inicializar(int CodEmpresa)
+            => _db.Gen_ParametrosPro_Inicializar(CodEmpresa);
 
-        /// <summary>
-        /// Actualiza los parametros generales
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="pvParametrosMod"></param>
-        /// <returns></returns>
-        public ErrorDto ParamaterosPro_ActualizaGen(int CodEmpresa, PvParametrosModDto pvParametrosMod)
-        {
-            return DbParametrosPro.ParamaterosPro_ActualizaGen(CodEmpresa, pvParametrosMod);
-        }
+        public ErrorDto<GenParametrosProData?> Gen_ParametrosPro_Obtener(int CodEmpresa)
+            => _db.Gen_ParametrosPro_Obtener(CodEmpresa);
 
-        /// <summary>
-        /// Actualiza los parametros de CxP
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="pvParametrosMod"></param>
-        /// <returns></returns>
-        public ErrorDto ParamaterosPro_ActualizaCxP(int CodEmpresa, PvParametrosModDto pvParametrosMod)
-        {
-            return DbParametrosPro.ParamaterosPro_ActualizaCxP(CodEmpresa, pvParametrosMod);
-        }
+        public ErrorDto Gen_ParametrosProGeneral_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
+            => _db.Gen_ParametrosProGeneral_Actualizar(CodEmpresa, usuario, parametros);
 
-        /// <summary>
-        /// Actualiza los parametros de Inventario
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="pvParametrosMod"></param>
-        /// <returns></returns>
-        public ErrorDto ParamaterosPro_ActualizaInv(int CodEmpresa, PvParametrosModDto pvParametrosMod)
-        {
-            return DbParametrosPro.ParamaterosPro_ActualizaInv(CodEmpresa, pvParametrosMod);
+        public ErrorDto Gen_ParametrosProCxP_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
+            => _db.Gen_ParametrosProCxP_Actualizar(CodEmpresa, usuario, parametros);
 
-        }
+        public ErrorDto Gen_ParametrosProInv_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
+            => _db.Gen_ParametrosProInv_Actualizar(CodEmpresa, usuario, parametros);
 
-        /// <summary>
-        /// Actualiza los parametros de POS
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="pvParametrosMod"></param>
-        /// <returns></returns>
-        public ErrorDto ParamaterosPro_ActualizaPos(int CodEmpresa, PvParametrosModDto pvParametrosMod)
-        {
-            return DbParametrosPro.ParamaterosPro_ActualizaPos(CodEmpresa, pvParametrosMod);
-
-        }
-
-        public ErrorDto ParametrosGen_Insertar(int CodEmpresa)
-        {
-            return DbParametrosPro.ParametrosGen_Insertar(CodEmpresa);
-        }
+        public ErrorDto Gen_ParametrosProPos_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
+            => _db.Gen_ParametrosProPos_Actualizar(CodEmpresa, usuario, parametros);
     }
 }

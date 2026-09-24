@@ -1,30 +1,39 @@
 ﻿namespace Galileo.Models.GEN
 {
-    public class PvParametrosModDto
+    /// <summary>
+    /// Parámetros de los módulos comerciales (pv_parametros_mod).
+    /// Homologado a rs! de sbCargaParGen (frmGenParametrosPro).
+    /// Las claves de autorización POS no se exponen (Regla 20).
+    /// </summary>
+    public class GenParametrosProData
     {
-        public required int COD_PAR { get; set; }
-        public required int CHK_FACTURA_MIN { get; set; }
-        public required int CHK_DESCUENTO_BIFIV { get; set; }
-        public required int CHK_COSTO_ULTCOMP { get; set; }
-        public required int CHK_COSTO_CERO { get; set; }
-        public required int CHK_MODO_ASIENTO { get; set; }
-        public string APLICA_IV_SOBRE { get; set; } = string.Empty;
-        public string CXP_TC_NC { get; set; } = string.Empty;
-        public string CXP_TC_ND { get; set; } = string.Empty;
-        public string CXP_TC_PAGO { get; set; } = string.Empty;
-        public string INV_TC_ENTRADA { get; set; } = string.Empty;
-        public string INV_TC_SALIDA { get; set; } = string.Empty;
-        public string INV_TC_TRASLADO { get; set; } = string.Empty;
-        public string INV_TC_COMPRA { get; set; } = string.Empty;
-        public string POS_TC_FACTURA { get; set; } = string.Empty;
-        public string POS_TC_RECIBO { get; set; } = string.Empty;
-        public string POS_REI_USER { get; set; } = string.Empty;
-        public string POS_REI_CLAVE { get; set; } = string.Empty;
-        public string POS_CP_USER { get; set; } = string.Empty;
-        public string POS_CP_CLAVE { get; set; } = string.Empty;
-        public decimal? TC_COMPRA { get; set; }
-        public decimal? TC_VENTA { get; set; }
-        public Nullable<DateTime> TC_FECHA { get; set; }
-        public string TC_USUARIO { get; set; } = string.Empty;
+        // General
+        public int chk_factura_min { get; set; }
+        public int chk_descuento_bifiv { get; set; }
+        public int chk_costo_ultcomp { get; set; }
+        public int chk_costo_cero { get; set; }
+        public int chk_modo_asiento { get; set; }
+        public string aplica_iv_sobre { get; set; } = "SB";
+
+        // CxP
+        public string cxp_tc_nc { get; set; } = string.Empty;
+        public string cxp_tc_nd { get; set; } = string.Empty;
+        public string cxp_tc_pago { get; set; } = string.Empty;
+
+        // Inv / Compras
+        public string inv_tc_entrada { get; set; } = string.Empty;
+        public string inv_tc_salida { get; set; } = string.Empty;
+        public string inv_tc_traslado { get; set; } = string.Empty;
+        public string inv_tc_compra { get; set; } = string.Empty;
+
+        // POS
+        public string pos_tc_factura { get; set; } = string.Empty;
+        public string pos_tc_recibo { get; set; } = string.Empty;
+        public string pos_rei_user { get; set; } = string.Empty;
+        public string pos_cp_user { get; set; } = string.Empty;
+
+        // Tipos de Cambio
+        public decimal tc_compra { get; set; }
+        public decimal tc_venta { get; set; }
     }
 }
