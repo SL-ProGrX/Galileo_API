@@ -1,4 +1,6 @@
-﻿namespace Galileo.Models.GEN
+﻿using System.Text.Json.Serialization;
+
+namespace Galileo.Models.GEN
 {
     /// <summary>
     /// Parámetros de los módulos comerciales (pv_parametros_mod).
@@ -8,10 +10,15 @@
     public class GenParametrosProData
     {
         // General
+        [JsonRequired]
         public int chk_factura_min { get; set; }
+        [JsonRequired]
         public int chk_descuento_bifiv { get; set; }
+        [JsonRequired]
         public int chk_costo_ultcomp { get; set; }
+        [JsonRequired]
         public int chk_costo_cero { get; set; }
+        [JsonRequired]
         public int chk_modo_asiento { get; set; }
         public string aplica_iv_sobre { get; set; } = "SB";
 
@@ -33,7 +40,9 @@
         public string pos_cp_user { get; set; } = string.Empty;
 
         // Tipos de Cambio
+        [JsonRequired]
         public decimal tc_compra { get; set; }
+        [JsonRequired]
         public decimal tc_venta { get; set; }
     }
 }

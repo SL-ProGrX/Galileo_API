@@ -12,6 +12,8 @@ namespace Galileo.DataBaseTier
         private readonly int vModulo = 34; // vModulo del Form_Load VB6
 
         private const string MsgActualizado = "Parámetros actualizados satisfactoriamente.";
+        private const string MsgParametrosRequeridos = "Los parámetros son requeridos.";
+        private const string MsgTipoCambioInvalido = "Debe seleccionar un tipo de cambio válido en todos los campos.";
         private static readonly string[] TiposCambio = { "V", "C", "R" };
 
         public FrmGenParametrosProDb(IConfiguration config)
@@ -137,7 +139,7 @@ FROM pv_parametros_mod;";
         public ErrorDto Gen_ParametrosProGeneral_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
         {
             if (parametros == null)
-                return ErrorDatos("Los parámetros son requeridos.");
+                return ErrorDatos(MsgParametrosRequeridos);
 
             const string sql = @"
 UPDATE pv_parametros_mod SET
@@ -168,10 +170,10 @@ UPDATE pv_parametros_mod SET
         public ErrorDto Gen_ParametrosProCxP_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
         {
             if (parametros == null)
-                return ErrorDatos("Los parámetros son requeridos.");
+                return ErrorDatos(MsgParametrosRequeridos);
 
             if (!SonTiposCambioValidos(parametros.cxp_tc_nc, parametros.cxp_tc_nd, parametros.cxp_tc_pago))
-                return ErrorDatos("Debe seleccionar un tipo de cambio válido en todos los campos.");
+                return ErrorDatos(MsgTipoCambioInvalido);
 
             const string sql = @"
 UPDATE pv_parametros_mod SET
@@ -195,11 +197,11 @@ UPDATE pv_parametros_mod SET
         public ErrorDto Gen_ParametrosProInv_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
         {
             if (parametros == null)
-                return ErrorDatos("Los parámetros son requeridos.");
+                return ErrorDatos(MsgParametrosRequeridos);
 
             if (!SonTiposCambioValidos(parametros.inv_tc_entrada, parametros.inv_tc_salida,
                                        parametros.inv_tc_traslado, parametros.inv_tc_compra))
-                return ErrorDatos("Debe seleccionar un tipo de cambio válido en todos los campos.");
+                return ErrorDatos(MsgTipoCambioInvalido);
 
             const string sql = @"
 UPDATE pv_parametros_mod SET
@@ -226,10 +228,10 @@ UPDATE pv_parametros_mod SET
         public ErrorDto Gen_ParametrosProPos_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
         {
             if (parametros == null)
-                return ErrorDatos("Los parámetros son requeridos.");
+                return ErrorDatos(MsgParametrosRequeridos);
 
             if (!SonTiposCambioValidos(parametros.pos_tc_factura, parametros.pos_tc_recibo))
-                return ErrorDatos("Debe seleccionar un tipo de cambio válido en todos los campos.");
+                return ErrorDatos(MsgTipoCambioInvalido);
 
             const string sql = @"
 UPDATE pv_parametros_mod SET
