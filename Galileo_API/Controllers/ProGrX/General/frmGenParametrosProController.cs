@@ -1,48 +1,57 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Galileo.BusinessLogic;
+﻿using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.GEN;
-
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo.Controllers
 {
     [Route("api/frmGenParametrosPro")]
     [ApiController]
+    [Authorize]
     public class FrmGenParametrosProController : ControllerBase
     {
+        private readonly FrmGenParametrosProBL _bl;
 
-        readonly FrmGenParametrosProBL _bl;
         public FrmGenParametrosProController(IConfiguration config)
         {
             _bl = new FrmGenParametrosProBL(config);
         }
 
-        [HttpGet("Obtener_ParamaterosPro")]
-        public ErrorDto<PvParametrosModDto> Obtener_ParamaterosPro(int CodEmpresa)
+        [HttpPost("Gen_ParametrosPro_Inicializar")]
+        public ErrorDto Gen_ParametrosPro_Inicializar(int CodEmpresa)
         {
-            return _bl.Obtener_ParamaterosPro(CodEmpresa);
-        }
-        [HttpPost("ParamaterosPro_ActualizaGen")]
-        public ErrorDto ParamaterosPro_ActualizaGen(int CodEmpresa, PvParametrosModDto info)
-        {
-            return _bl.ParamaterosPro_ActualizaGen(CodEmpresa, info);
-        }
-        [HttpPost("ParamaterosPro_ActualizaCxP")]
-        public ErrorDto ParamaterosPro_ActualizaCxP(int CodEmpresa, PvParametrosModDto info)
-        {
-            return _bl.ParamaterosPro_ActualizaCxP(CodEmpresa, info);
+            return _bl.Gen_ParametrosPro_Inicializar(CodEmpresa);
         }
 
-        [HttpPost("ParamaterosPro_ActualizaInv")]
-        public ErrorDto ParamaterosPro_ActualizaInv(int CodEmpresa, PvParametrosModDto info)
+        [HttpGet("Gen_ParametrosPro_Obtener")]
+        public ErrorDto<GenParametrosProData?> Gen_ParametrosPro_Obtener(int CodEmpresa)
         {
-            return _bl.ParamaterosPro_ActualizaInv(CodEmpresa, info);
+            return _bl.Gen_ParametrosPro_Obtener(CodEmpresa);
         }
 
-        [HttpPost("ParamaterosPro_ActualizaPos")]
-        public ErrorDto ParamaterosPro_ActualizaPos(int CodEmpresa, PvParametrosModDto info)
+        [HttpPut("Gen_ParametrosProGeneral_Actualizar")]
+        public ErrorDto Gen_ParametrosProGeneral_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
         {
-            return _bl.ParamaterosPro_ActualizaPos(CodEmpresa, info);
+            return _bl.Gen_ParametrosProGeneral_Actualizar(CodEmpresa, usuario, parametros);
+        }
+
+        [HttpPut("Gen_ParametrosProCxP_Actualizar")]
+        public ErrorDto Gen_ParametrosProCxP_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
+        {
+            return _bl.Gen_ParametrosProCxP_Actualizar(CodEmpresa, usuario, parametros);
+        }
+
+        [HttpPut("Gen_ParametrosProInv_Actualizar")]
+        public ErrorDto Gen_ParametrosProInv_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
+        {
+            return _bl.Gen_ParametrosProInv_Actualizar(CodEmpresa, usuario, parametros);
+        }
+
+        [HttpPut("Gen_ParametrosProPos_Actualizar")]
+        public ErrorDto Gen_ParametrosProPos_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
+        {
+            return _bl.Gen_ParametrosProPos_Actualizar(CodEmpresa, usuario, parametros);
         }
     }
 }
