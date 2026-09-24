@@ -237,9 +237,9 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             var procesaBoleta = new FrmInvTransacProcesaDB(_config);
             procesaBoleta.InvTransacProcesa_SP(CodCliente, new InvTransacProcesa
             {
-                Tipo = "S",
-                Boleta = ultimaBoleta,
-                Usuario = usuario
+                tipo = "S",
+                boleta = ultimaBoleta,
+                usuario = usuario
             });
         }
 
