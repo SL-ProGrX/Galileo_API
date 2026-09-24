@@ -9,7 +9,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
     public partial class FrmFndContratosDB
     {
 
-        private const string SpValidaEstados = "spFND_ValidaEstados";
+        private const string SqlValidaEstados = "EXEC dbo.spFND_ValidaEstados @CodPlan, @Operadora, @Cedula;";
         private const string SpInversionTasasCondiciones = "spFnd_Inversion_Tasas_Condiciones";
         private const string SpTrdDocumentosIns = "spTrdDocumentosIns";
 
@@ -38,7 +38,10 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private const string SqlMontosMinimosPlan = @"
                     SELECT PLAZO_MINIMO * CASE WHEN PLAZO_TIPO = 'M' THEN 30 ELSE 1 END AS Plazo_Minimo,
                            MONTO_MINIMO,
-                           INVERSION_MINIMO
+                           INVERSION_MINIMO,
+                           CUENTA_MAESTRA,
+                           TIPO_CDP,
+                           WEB_VENCE
                     FROM dbo.fnd_Planes
                     WHERE cod_operadora = @Operadora
                       AND cod_plan = @CodPlan;";
@@ -625,9 +628,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
             var encontrado = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
                 connection.QueryFirstOrDefault<int>(
-                    SpValidaEstados,
-                    parametros,
-                    commandType: System.Data.CommandType.StoredProcedure));
+                    SqlValidaEstados,
+                    parametros));
 
             if (encontrado.Code == 0 && encontrado.Result == 0)
             {
@@ -758,12 +760,17 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 mensajes.Add($" - El Plazo no cumple con el plazo mínimo permitido ({valida.Result.plazo_minimo})...\n");
             }
 
-            if (contrato.tipo_deduc == "M" && contrato.monto < valida.Result.monto_minimo)
+            var validaMontoMinimo = contrato.tipo_deduc == "M" && valida.Result.cuenta_maestra != 1;
+            var validaInversionMinima = contrato.tipo_deduc == "M" &&
+                valida.Result.tipo_cdp == 1 &&
+                !valida.Result.web_vence.HasValue;
+
+            if (validaMontoMinimo && contrato.monto < valida.Result.monto_minimo)
             {
                 mensajes.Add(" - El monto es menor al mínimo permitido...");
             }
 
-            if (contrato.tipo_deduc == "M" && contrato.inversion < valida.Result.inversion_minimo)
+            if (validaInversionMinima && contrato.inversion < valida.Result.inversion_minimo)
             {
                 mensajes.Add(" - El monto de la INVERSIÓN es menor al mínimo permitido...");
             }
@@ -989,6 +996,17 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// Indica si la tasa debe calcularse mediante función SQL.
         /// </summary>
         private static bool DebeUsarTasaCalculada(bool chkCuponPaga, int tipoCdp) => !chkCuponPaga || tipoCdp == 1;
+
+        private static int? NormalizarCuponFrecuenciaId(string? valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor) ||
+                string.Equals(valor.Trim(), "Null", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            return int.TryParse(valor.Trim(), out var id) ? id : null;
+        }
 
 
         #endregion

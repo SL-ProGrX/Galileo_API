@@ -68,6 +68,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                            cod_moneda,
                            PAGO_CUPONES,
                            TASA_MARGEN_NEGOCIACION,
+                           BASE_CALCULO,
                            dbo.MyGetDate() AS FechaServidor,
                            TIPO_DEDUC,
                            PORC_DEDUC,
@@ -114,15 +115,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     WHERE cod_contrato = @contrato
                       AND cod_operadora = @operadora
                       AND cod_plan = @cod_plan;";
-
-        private const string SqlTasaPlus = @"
-                    SELECT tasa_base,
-                           UTILIZA_TBP,
-                           TIPO_CDP,
-                           dbo.fxFNDTasaPlus(cod_operadora, cod_plan, @plazo) AS PlusTasa
-                    FROM dbo.fnd_planes
-                    WHERE cod_operadora = @operadora
-                      AND cod_plan = @plan;";
 
         private const string SqlSociosTotal = @"
                     SELECT COUNT(cedula)
@@ -363,10 +355,10 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     SpContratoNotificaEmail,
                     new
                     {
-                        operadora,
-                        codigo = NormalizarTexto(codigo),
-                        contrato,
-                        usuario = NormalizarTexto(usuario)
+                        Operadora = operadora,
+                        Plan = codigo = NormalizarTexto(codigo),
+                        Contrato = contrato,
+                        Usuario = NormalizarTexto(usuario)
                     },
                     commandType: System.Data.CommandType.StoredProcedure));
 
@@ -414,19 +406,19 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     {
                         pCuponPaga = "1";
                         pCuponFrecuencia = contrato.cupon_frecuencia ?? string.Empty;
-                        pCuponFrecuenciaId = contrato.idcupon_frecuencia ?? "Null";
+                        pCuponFrecuenciaId = NormalizarCuponFrecuenciaId(contrato.idcupon_frecuencia);
                     }
                     else
                     {
                         pCuponPaga = "0";
                         pCuponFrecuencia = "N";
-                        pCuponFrecuenciaId = "Null";
+                        pCuponFrecuenciaId = null;
                     }
                 }
                 else
                 {
                     pCuponFrecuencia = "N";
-                    pCuponFrecuenciaId = "Null";
+                    pCuponFrecuenciaId = null;
                     // pPlazoInversionId = "Null"; // Removed useless assignment
                     pCuponPaga = "0";
                 }
@@ -443,10 +435,10 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                             SpCdpCupones,
                             new
                             {
-                                contrato.cod_operadora,
-                                cod_plan = NormalizarTexto(contrato.cod_plan),
-                                contrato.cod_contrato,
-                                usuario = NormalizarTexto(usuario)
+                                Operadora = contrato.cod_operadora,
+                                Plan = NormalizarTexto(contrato.cod_plan),
+                                Contrato = contrato.cod_contrato,
+                                Usuario = NormalizarTexto(usuario)
                             },
                             commandType: System.Data.CommandType.StoredProcedure);
 
@@ -508,7 +500,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
                 connection.QueryFirstOrDefault<int>(
                     SpCuponFrecuenciaMeses,
-                    new { CuponFrecuencia = NormalizarTexto(CuponFrecuencia) },
+                    new { fCuponId = NormalizarTexto(CuponFrecuencia) },
                     commandType: System.Data.CommandType.StoredProcedure));
 
             return new ErrorDto<int>
@@ -534,7 +526,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     SpCuponFrecuencia,
                     new
                     {
-                        plazo_id = NormalizarTexto(plazo_id),
+                        PlazoId = NormalizarTexto(plazo_id),
                         plan = NormalizarTexto(plan)
                     },
                     commandType: System.Data.CommandType.StoredProcedure)
@@ -580,42 +572,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             var tipoPlazo = NormalizarTexto(cboPlazo).ToUpperInvariant();
             int plazo = tipoPlazo == "D" ? (int)result.Result.PLAZO_DIAS : (int)result.Result.PLAZO_MESES;
             return DbHelper.CreateOkResponse(plazo);
-        }
-
-        /// <summary>
-        /// Obtiene la tasa adicional aplicable según plazo, tipo, plan y operadora.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <param name="xPlazo">Plazo solicitado.</param>
-        /// <param name="xTipo">Tipo de plazo.</param>
-        /// <param name="xPlan">Código del plan.</param>
-        /// <param name="xOperadora">Código de operadora.</param>
-        /// <returns>Tasa adicional calculada.</returns>
-        public ErrorDto<decimal> Fnd_Contratos_fxTasaPtsAdd(int CodEmpresa, long xPlazo, string xTipo, string xPlan, string xOperadora)
-        {
-            var plazo = string.Equals(NormalizarTexto(xTipo), "M", StringComparison.OrdinalIgnoreCase)
-                ? xPlazo * 30
-                : xPlazo;
-
-            var result = DbHelper.ExecuteSingleQuery<dynamic>(
-                CreatePortalDb(),
-                CodEmpresa,
-                SqlTasaPlus,
-                default,
-                new
-                {
-                    operadora = NormalizarTexto(xOperadora),
-                    plan = NormalizarTexto(xPlan),
-                    plazo
-                });
-
-            if (result.Code != 0)
-            {
-                return DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener tasa plus.", result.Code.GetValueOrDefault(-1), 0m);
-            }
-
-            decimal tasa = result.Result is null ? 0m : Convert.ToDecimal(result.Result.PlusTasa);
-            return DbHelper.CreateOkResponse(tasa);
         }
 
         /// <summary>
