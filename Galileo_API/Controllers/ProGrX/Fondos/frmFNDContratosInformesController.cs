@@ -41,6 +41,15 @@ namespace Galileo.Controllers.ProGrX.Fondos
             return _bl.Fnd_ContratosInformes_Email_Enviar(CodEmpresa, operadora, plan, contrato, usuario);
         }
 
+
+        [Authorize]
+        [HttpGet("Fnd_ContratosInformes_CuentaSinpe_Obtener")]
+        public ErrorDto<FndContratosInformesSinpe> Fnd_ContratosInformes_CuentaSinpe_Obtener(
+            int CodEmpresa,
+            string cedula)
+        {
+            return _bl.Fnd_ContratosInformes_CuentaSinpe_Obtener(CodEmpresa, cedula);
+        }
         [Authorize]
         [HttpGet("Fnd_ContratosInformes_Retiros_Obtener")]
         public ErrorDto<FndContratosInformesLiquidacionesLista> Fnd_ContratosInformes_Retiros_Obtener(
@@ -54,3 +63,5 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
     }
 }
+
+

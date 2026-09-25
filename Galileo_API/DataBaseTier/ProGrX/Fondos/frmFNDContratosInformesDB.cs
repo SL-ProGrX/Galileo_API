@@ -9,6 +9,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
     {
         private const string SpContratoConsulta = "spFnd_Contrato_Consulta";
         private const string SpContratoNotificaEmail = "spFnd_Contrato_Notifica_Email";
+        private const string SpContratoCuentaSinpeConsulta = "spSys_Contrato_Cuenta_Ahorros_Consulta";
 
         private const string SqlRetirosTotal = @"
                     SELECT COUNT(consec)
@@ -147,9 +148,31 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             return DbHelper.CreateOkResponse(result.Result ?? new FndContratosInformesLiquidacionesLista());
         }
 
+
+        public ErrorDto<FndContratosInformesSinpe> Fnd_ContratosInformes_CuentaSinpe_Obtener(
+            int CodEmpresa,
+            string cedula)
+        {
+            var result = DbHelper.WithConn(_portalDB, CodEmpresa, connection =>
+                connection.QueryFirstOrDefault<FndContratosInformesSinpe>(
+                    SpContratoCuentaSinpeConsulta,
+                    new { Cedula = NormalizarTexto(cedula) },
+                    commandType: System.Data.CommandType.StoredProcedure));
+
+            if (result.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    result.Description ?? "Error al consultar cuenta SINPE.",
+                    result.Code.GetValueOrDefault(-1),
+                    new FndContratosInformesSinpe());
+            }
+
+            return DbHelper.CreateOkResponse(result.Result ?? new FndContratosInformesSinpe());
+        }
         private static string NormalizarTexto(string? value)
         {
             return value?.Trim() ?? string.Empty;
         }
     }
 }
+

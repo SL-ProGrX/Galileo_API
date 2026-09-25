@@ -36,6 +36,13 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
             return _db.Fnd_ContratosInformes_Email_Enviar(CodEmpresa, operadora, plan, contrato, usuario);
         }
 
+
+        public ErrorDto<FndContratosInformesSinpe> Fnd_ContratosInformes_CuentaSinpe_Obtener(
+            int CodEmpresa,
+            string cedula)
+        {
+            return _db.Fnd_ContratosInformes_CuentaSinpe_Obtener(CodEmpresa, cedula);
+        }
         public ErrorDto<FndContratosInformesLiquidacionesLista> Fnd_ContratosInformes_Retiros_Obtener(
             int CodEmpresa,
             int operadora,
@@ -48,3 +55,4 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
         }
     }
 }
+
