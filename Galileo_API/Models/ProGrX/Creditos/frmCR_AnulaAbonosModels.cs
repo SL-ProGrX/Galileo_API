@@ -91,6 +91,11 @@ namespace Galileo_API.Models.ProGrX.Creditos
         [System.Text.Json.Serialization.JsonRequired]
         public decimal poliza { get; set; }
         public List<int> id_seq_movimientos { get; set; } = [];
+
+        // frmCC_DocCuentas: vAseDocCuenta, vAseDocDeposito y vAseDocDetalle
+        public string cuenta_documento { get; set; } = string.Empty;
+        public string referencia_documento { get; set; } = string.Empty;
+        public string detalle_documento { get; set; } = string.Empty;
     }
 
     public class CrAnulaAbonosProcesarResponse
