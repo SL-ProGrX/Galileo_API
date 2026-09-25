@@ -2,47 +2,47 @@ namespace Galileo.Models.INV
 {
     public class TranReversionData
     {
-        public string Boleta { get; set; } = string.Empty;
-        public string Tipo { get; set; } = string.Empty;
-        public string Cod_Entsal { get; set; } = string.Empty;
-        public string Causa { get; set; } = string.Empty;
-        public string Estado { get; set; } = string.Empty;
-        public bool Plantilla { get; set; } = false;
-        public string Documento { get; set; } = string.Empty;
-        public string Notas { get; set; } = string.Empty;
-        public DateTime Fecha { get; set; }
-        public string Genera_User { get; set; } = string.Empty;
-        public DateTime Genera_Fecha { get; set; }
-        public string Autoriza_User { get; set; } = string.Empty;
-        public DateTime Autoriza_Fecha { get; set; }
-        public string Procesa_User { get; set; } = string.Empty;
-        public DateTime Procesa_Fecha { get; set; }
-        public float Total { get; set; }
-        public string Asiento_Numero { get; set; } = string.Empty;
+        public string boleta { get; set; } = string.Empty;
+        public string tipo { get; set; } = string.Empty;
+        public string cod_entsal { get; set; } = string.Empty;
+        public string causa { get; set; } = string.Empty;
+        public string estado { get; set; } = string.Empty;
+        public bool plantilla { get; set; } = false;
+        public string documento { get; set; } = string.Empty;
+        public string notas { get; set; } = string.Empty;
+        public DateTime? fecha { get; set; }
+        public string genera_user { get; set; } = string.Empty;
+        public DateTime? genera_fecha { get; set; }
+        public string autoriza_user { get; set; } = string.Empty;
+        public DateTime? autoriza_fecha { get; set; }
+        public string procesa_user { get; set; } = string.Empty;
+        public DateTime? procesa_fecha { get; set; }
+        public decimal total { get; set; } = 0m;
+        public string asiento_numero { get; set; } = string.Empty;
     }
 
     public class TranReversionInsert
     {
-        public string Boleta { get; set; } = string.Empty;
-        public string Tipo { get; set; } = string.Empty;
-        public string Cod_Entsal { get; set; } = string.Empty;
-        public string Fecha { get; set; } = string.Empty;
-        public string Notas { get; set; } = string.Empty;
-        public string User { get; set; } = string.Empty;
+        public string boleta { get; set; } = string.Empty;
+        public string tipo { get; set; } = string.Empty;
+        public string cod_entsal { get; set; } = string.Empty;
+        public DateTime? fecha { get; set; }
+        public string notas { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
     }
 
     public class InvProducReversion
     {
-        public int linea { get; set; }
-        public string Cod_Producto { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
-        public float Cantidad { get; set; }
-        public string Cod_Bodega { get; set; } = string.Empty;
-        public string Bodega { get; set; } = string.Empty;
-        public string? Cod_Bodega_Destino { get; set; } = string.Empty;
-        public string? BodegaD { get; set; } = string.Empty;
-        public float Precio { get; set; }
-        public float Total { get; set; }
-        public float Despacho { get; set; }
+        public int linea { get; set; } = 0;
+        public string cod_producto { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public decimal cantidad { get; set; } = 0m;
+        public string cod_bodega { get; set; } = string.Empty;
+        public string bodega { get; set; } = string.Empty;
+        public string cod_bodega_destino { get; set; } = string.Empty;
+        public string bodega_d { get; set; } = string.Empty;
+        public decimal precio { get; set; } = 0m;
+        public decimal total { get; set; } = 0m;
+        public decimal despacho { get; set; } = 0m;
     }
 }
