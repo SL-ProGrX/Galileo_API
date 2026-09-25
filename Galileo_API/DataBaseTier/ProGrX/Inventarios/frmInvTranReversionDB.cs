@@ -14,12 +14,35 @@ namespace Galileo.DataBaseTier
         private const string TipoEntrada = "E";
         private const string TipoSalida = "S";
         private const string TipoTraslado = "T";
+        private const string MensajeTipoTransaccionInvalido =
+            "El tipo de transacci&oacute;n no es v&aacute;lido.";
 
         private readonly PortalDB _portalDb;
         private readonly MProGrXAuxiliarDB _auxiliarDb;
 
         /// <summary>
-        /// Inicializa el acceso a datos del formulario de reversión de inventario.
+        /// Agrupa los datos necesarios para afectar el inventario.
+        /// </summary>
+        private sealed class InvTranReversionAfectacionContext
+        {
+            public int cod_empresa { get; init; } = 0;
+
+            public IEnumerable<InvProducReversion> productos { get; init; } =
+                [];
+
+            public string boleta_inversa { get; init; } = string.Empty;
+
+            public string tipo_inverso { get; init; } = string.Empty;
+
+            public string origen { get; init; } = string.Empty;
+
+            public string fecha_movimiento { get; init; } = string.Empty;
+
+            public string usuario { get; init; } = string.Empty;
+        }
+
+        /// <summary>
+        /// Inicializa el acceso a datos del formulario de reversión.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
         public FrmInvTranReversionDB(IConfiguration config)
@@ -43,7 +66,9 @@ namespace Galileo.DataBaseTier
             string TipoTran)
         {
             string boleta = CodBoleta?.Trim() ?? string.Empty;
-            string tipo = TipoTran?.Trim().ToUpperInvariant() ?? string.Empty;
+            string tipo =
+                TipoTran?.Trim().ToUpperInvariant() ??
+                string.Empty;
 
             if (string.IsNullOrWhiteSpace(boleta))
             {
@@ -56,7 +81,7 @@ namespace Galileo.DataBaseTier
             if (!INV_TranReversion_Tipo_Validar(tipo))
             {
                 return DbHelper.CreateErrorResponse(
-                    "El tipo de transacci&oacute;n no es v&aacute;lido.",
+                    MensajeTipoTransaccionInvalido,
                     CodigoValidacion,
                     new TranReversionData());
             }
@@ -66,7 +91,8 @@ namespace Galileo.DataBaseTier
                     X.boleta,
                     X.tipo,
                     X.cod_entsal,
-                    RTRIM(C.cod_entsal) + ' - ' + RTRIM(C.descripcion) AS causa,
+                    RTRIM(C.cod_entsal) + ' - ' +
+                        RTRIM(C.descripcion) AS causa,
                     X.estado,
                     ISNULL(X.plantilla, 0) AS plantilla,
                     ISNULL(X.documento, '') AS documento,
@@ -119,23 +145,27 @@ namespace Galileo.DataBaseTier
                 INV_TranReversion_EstadoDescripcion_Obtener(
                     respuesta.Result.estado);
 
-            return DbHelper.CreateOkResponse(respuesta.Result);
+            return DbHelper.CreateOkResponse(
+                respuesta.Result);
         }
 
         /// <summary>
-        /// Obtiene los productos asociados con una transacción de inventario.
+        /// Obtiene los productos asociados con una transacción.
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="CodBoleta">Código de la boleta.</param>
         /// <param name="TipoTran">Tipo de transacción.</param>
-        /// <returns>Productos de la transacción.</returns>
-        public ErrorDto<List<InvProducReversion>> InvProducLineas_Obtener(
-            int CodEmpresa,
-            string CodBoleta,
-            string TipoTran)
+        /// <returns>Productos asociados con la transacción.</returns>
+        public ErrorDto<List<InvProducReversion>>
+            InvProducLineas_Obtener(
+                int CodEmpresa,
+                string CodBoleta,
+                string TipoTran)
         {
             string boleta = CodBoleta?.Trim() ?? string.Empty;
-            string tipo = TipoTran?.Trim().ToUpperInvariant() ?? string.Empty;
+            string tipo =
+                TipoTran?.Trim().ToUpperInvariant() ??
+                string.Empty;
 
             if (string.IsNullOrWhiteSpace(boleta))
             {
@@ -148,7 +178,7 @@ namespace Galileo.DataBaseTier
             if (!INV_TranReversion_Tipo_Validar(tipo))
             {
                 return DbHelper.CreateErrorResponse(
-                    "El tipo de transacci&oacute;n no es v&aacute;lido.",
+                    MensajeTipoTransaccionInvalido,
                     CodigoValidacion,
                     new List<InvProducReversion>());
             }
@@ -161,10 +191,15 @@ namespace Galileo.DataBaseTier
                     ISNULL(D.cantidad, 0) AS cantidad,
                     RTRIM(D.cod_bodega) AS cod_bodega,
                     RTRIM(B.descripcion) AS bodega,
-                    RTRIM(ISNULL(D.cod_bodega_destino, '')) AS cod_bodega_destino,
-                    RTRIM(ISNULL(X.descripcion, '')) AS bodega_d,
+                    RTRIM(
+                        ISNULL(D.cod_bodega_destino, '')
+                    ) AS cod_bodega_destino,
+                    RTRIM(
+                        ISNULL(X.descripcion, '')
+                    ) AS bodega_d,
                     ISNULL(D.precio, 0) AS precio,
-                    ISNULL(D.cantidad, 0) * ISNULL(D.precio, 0) AS total,
+                    ISNULL(D.cantidad, 0) *
+                        ISNULL(D.precio, 0) AS total,
                     ISNULL(D.despacho, 0) AS despacho
                 FROM PV_INVTRADET D
                 INNER JOIN pv_productos P
@@ -191,7 +226,8 @@ namespace Galileo.DataBaseTier
 
             return respuesta.Code == 0
                 ? DbHelper.CreateOkResponse(
-                    respuesta.Result ?? new List<InvProducReversion>())
+                    respuesta.Result ??
+                    new List<InvProducReversion>())
                 : DbHelper.CreateErrorResponse(
                     respuesta.Description ??
                     "Ocurri&oacute; un error al consultar los productos de la transacci&oacute;n.",
@@ -200,26 +236,29 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Obtiene la boleta anterior o siguiente para el tipo de transacción.
+        /// Obtiene la boleta anterior o siguiente.
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="scrollValue">Dirección de navegación.</param>
         /// <param name="CodBoleta">Boleta actual.</param>
         /// <param name="TipoTran">Tipo de transacción.</param>
         /// <returns>Boleta encontrada.</returns>
-        public ErrorDto<TranReversionData> InvTranReversion_scroll(
-            int CodEmpresa,
-            int scrollValue,
-            string? CodBoleta,
-            string TipoTran)
+        public ErrorDto<TranReversionData>
+            InvTranReversion_scroll(
+                int CodEmpresa,
+                int scrollValue,
+                string? CodBoleta,
+                string TipoTran)
         {
             string boleta = CodBoleta?.Trim() ?? string.Empty;
-            string tipo = TipoTran?.Trim().ToUpperInvariant() ?? string.Empty;
+            string tipo =
+                TipoTran?.Trim().ToUpperInvariant() ??
+                string.Empty;
 
             if (!INV_TranReversion_Tipo_Validar(tipo))
             {
                 return DbHelper.CreateErrorResponse(
-                    "El tipo de transacci&oacute;n no es v&aacute;lido.",
+                    MensajeTipoTransaccionInvalido,
                     CodigoValidacion,
                     new TranReversionData());
             }
@@ -272,39 +311,46 @@ namespace Galileo.DataBaseTier
             }
 
             return DbHelper.CreateOkResponse(
-                respuesta.Result ?? new TranReversionData());
+                respuesta.Result ??
+                new TranReversionData());
         }
 
         /// <summary>
         /// Genera la transacción inversa y afecta el inventario.
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="request">Datos necesarios para generar la reversión.</param>
+        /// <param name="request">Datos necesarios para la reversión.</param>
         /// <returns>Resultado de la reversión.</returns>
         public ErrorDto InvTranReversion_Insertar(
             int CodEmpresa,
             TranReversionInsert request)
         {
-            ErrorDto validacion = INV_TranReversion_Request_Validar(request);
+            ErrorDto validacion =
+                INV_TranReversion_Request_Validar(request);
+
             if (validacion.Code != 0)
             {
                 return validacion;
             }
 
             string boletaOriginal = request.boleta.Trim();
-            string tipoOriginal = request.tipo.Trim().ToUpperInvariant();
-            string codEntsal = request.cod_entsal.Trim();
+            string tipoOriginal =
+                request.tipo.Trim().ToUpperInvariant();
             string usuario = request.usuario.Trim();
-            DateTime fechaReversion = request.fecha!.Value;
+            DateTime fechaReversion =
+                request.fecha.GetValueOrDefault();
 
             (string tipoInverso, string origen) =
-                INV_TranReversion_DatosInversos_Obtener(tipoOriginal);
+                INV_TranReversion_DatosInversos_Obtener(
+                    tipoOriginal);
 
             string fechaPeriodo = fechaReversion.ToString(
                 "yyyyMMdd HH:mm:ss",
                 CultureInfo.InvariantCulture);
 
-            if (!_auxiliarDb.fxInvPeriodos(CodEmpresa, fechaPeriodo))
+            if (!_auxiliarDb.fxInvPeriodos(
+                    CodEmpresa,
+                    fechaPeriodo))
             {
                 return DbHelper.ErrorResponse(
                     "El per&iacute;odo en el que desea realizar el movimiento se encuentra cerrado.",
@@ -316,10 +362,11 @@ namespace Galileo.DataBaseTier
                 CodEmpresa,
                 connection =>
                 {
-                    string estado = INV_TranReversion_Estado_Obtener(
-                        connection,
-                        tipoOriginal,
-                        boletaOriginal);
+                    string estado =
+                        INV_TranReversion_Estado_Obtener(
+                            connection,
+                            tipoOriginal,
+                            boletaOriginal);
 
                     if (string.IsNullOrWhiteSpace(estado))
                     {
@@ -347,18 +394,13 @@ namespace Galileo.DataBaseTier
                         connection,
                         boletaInversa,
                         tipoInverso,
-                        codEntsal,
-                        boletaOriginal,
-                        request.notas,
-                        usuario,
-                        fechaReversion);
+                        request);
 
                     INV_TranReversion_Detalle_Insertar(
                         connection,
                         boletaInversa,
                         tipoInverso,
-                        tipoOriginal,
-                        boletaOriginal);
+                        request);
 
                     List<InvProducReversion> productos =
                         INV_TranReversion_ProductosProcesar_Obtener(
@@ -374,17 +416,27 @@ namespace Galileo.DataBaseTier
                     }
 
                     DateTime fechaAfectacion =
-                        fechaReversion.Date.Add(DateTime.Now.TimeOfDay);
+                        fechaReversion.Date.Add(
+                            DateTime.Now.TimeOfDay);
+
+                    var contexto =
+                        new InvTranReversionAfectacionContext
+                        {
+                            cod_empresa = CodEmpresa,
+                            productos = productos,
+                            boleta_inversa = boletaInversa,
+                            tipo_inverso = tipoInverso,
+                            origen = origen,
+                            fecha_movimiento =
+                                fechaAfectacion.ToString(
+                                    "yyyyMMdd HH:mm:ss",
+                                    CultureInfo.InvariantCulture),
+                            usuario = usuario
+                        };
 
                     ErrorDto afectacion =
                         INV_TranReversion_Inventario_Afectar(
-                            CodEmpresa,
-                            productos,
-                            boletaInversa,
-                            tipoInverso,
-                            origen,
-                            fechaAfectacion,
-                            usuario);
+                            contexto);
 
                     if (afectacion.Code != 0)
                     {
@@ -417,8 +469,9 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="request">Datos de la reversión.</param>
         /// <returns>Resultado de la validación.</returns>
-        private static ErrorDto INV_TranReversion_Request_Validar(
-            TranReversionInsert request)
+        private static ErrorDto
+            INV_TranReversion_Request_Validar(
+                TranReversionInsert request)
         {
             if (string.IsNullOrWhiteSpace(request.boleta))
             {
@@ -427,13 +480,14 @@ namespace Galileo.DataBaseTier
                     CodigoValidacion);
             }
 
-            string tipo = request.tipo?.Trim().ToUpperInvariant() ??
-                          string.Empty;
+            string tipo =
+                request.tipo?.Trim().ToUpperInvariant() ??
+                string.Empty;
 
             if (!INV_TranReversion_Tipo_Validar(tipo))
             {
                 return DbHelper.ErrorResponse(
-                    "El tipo de transacci&oacute;n no es v&aacute;lido.",
+                    MensajeTipoTransaccionInvalido,
                     CodigoValidacion);
             }
 
@@ -462,22 +516,27 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Valida los tipos de transacción admitidos por el formulario.
+        /// Valida los tipos de transacción admitidos.
         /// </summary>
         /// <param name="tipo">Tipo de transacción.</param>
         /// <returns>True cuando el tipo es válido.</returns>
-        private static bool INV_TranReversion_Tipo_Validar(string tipo)
+        private static bool INV_TranReversion_Tipo_Validar(
+            string tipo)
         {
-            return tipo is TipoEntrada or TipoSalida or TipoTraslado;
+            return tipo is
+                TipoEntrada or
+                TipoSalida or
+                TipoTraslado;
         }
 
         /// <summary>
-        /// Obtiene el tipo inverso y el origen de la nueva transacción.
+        /// Obtiene el tipo inverso y el origen del movimiento.
         /// </summary>
-        /// <param name="tipoOriginal">Tipo original de la transacción.</param>
+        /// <param name="tipoOriginal">Tipo original.</param>
         /// <returns>Tipo inverso y origen.</returns>
         private static (string tipoInverso, string origen)
-            INV_TranReversion_DatosInversos_Obtener(string tipoOriginal)
+            INV_TranReversion_DatosInversos_Obtener(
+                string tipoOriginal)
         {
             return tipoOriginal switch
             {
@@ -493,8 +552,9 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="estado">Código del estado.</param>
         /// <returns>Descripción del estado.</returns>
-        private static string INV_TranReversion_EstadoDescripcion_Obtener(
-            string? estado)
+        private static string
+            INV_TranReversion_EstadoDescripcion_Obtener(
+                string? estado)
         {
             return estado?.Trim().ToUpperInvariant() switch
             {
@@ -525,13 +585,16 @@ namespace Galileo.DataBaseTier
                   AND boleta = @boleta;
                 """;
 
-            return connection.QueryFirstOrDefault<string>(
-                       query,
-                       new
-                       {
-                           tipo,
-                           boleta
-                       })?.Trim() ?? string.Empty;
+            return connection
+                       .QueryFirstOrDefault<string>(
+                           query,
+                           new
+                           {
+                               tipo,
+                               boleta
+                           })
+                       ?.Trim() ??
+                   string.Empty;
         }
 
         /// <summary>
@@ -540,25 +603,33 @@ namespace Galileo.DataBaseTier
         /// <param name="connection">Conexión activa.</param>
         /// <param name="tipoInverso">Tipo inverso.</param>
         /// <returns>Boleta con formato de diez dígitos.</returns>
-        private static string INV_TranReversion_Consecutivo_Obtener(
-            IDbConnection connection,
-            string tipoInverso)
+        private static string
+            INV_TranReversion_Consecutivo_Obtener(
+                IDbConnection connection,
+                string tipoInverso)
         {
             const string query = """
-                SELECT ISNULL(MAX(CONVERT(decimal(18, 0), boleta)), 0) + 1
+                SELECT
+                    ISNULL(
+                        MAX(CONVERT(decimal(18, 0), boleta)),
+                        0
+                    ) + 1
                 FROM pv_InvTranSac
                 WHERE tipo = @tipoInverso;
                 """;
 
-            decimal consecutivo = connection.QueryFirstOrDefault<decimal>(
-                query,
-                new
-                {
-                    tipoInverso
-                });
+            decimal consecutivo =
+                connection.QueryFirstOrDefault<decimal>(
+                    query,
+                    new
+                    {
+                        tipoInverso
+                    });
 
             return consecutivo
-                .ToString("0", CultureInfo.InvariantCulture)
+                .ToString(
+                    "0",
+                    CultureInfo.InvariantCulture)
                 .PadLeft(10, '0');
         }
 
@@ -568,20 +639,13 @@ namespace Galileo.DataBaseTier
         /// <param name="connection">Conexión activa.</param>
         /// <param name="boletaInversa">Nueva boleta.</param>
         /// <param name="tipoInverso">Tipo inverso.</param>
-        /// <param name="codEntsal">Causa de entrada o salida.</param>
-        /// <param name="boletaOriginal">Boleta original.</param>
-        /// <param name="notas">Notas de la reversión.</param>
-        /// <param name="usuario">Usuario que genera la reversión.</param>
-        /// <param name="fecha">Fecha de la reversión.</param>
-        private static void INV_TranReversion_Encabezado_Insertar(
-            IDbConnection connection,
-            string boletaInversa,
-            string tipoInverso,
-            string codEntsal,
-            string boletaOriginal,
-            string? notas,
-            string usuario,
-            DateTime fecha)
+        /// <param name="request">Datos de la reversión.</param>
+        private static void
+            INV_TranReversion_Encabezado_Insertar(
+                IDbConnection connection,
+                string boletaInversa,
+                string tipoInverso,
+                TranReversionInsert request)
         {
             const string query = """
                 INSERT INTO pv_InvTranSac
@@ -628,28 +692,29 @@ namespace Galileo.DataBaseTier
                 {
                     boletaInversa,
                     tipoInverso,
-                    codEntsal,
-                    documento = $"Rev.{boletaOriginal}",
-                    notas = notas?.Trim() ?? string.Empty,
-                    usuario,
-                    fecha
+                    codEntsal = request.cod_entsal.Trim(),
+                    documento =
+                        $"Rev.{request.boleta.Trim()}",
+                    notas =
+                        request.notas?.Trim() ??
+                        string.Empty,
+                    usuario = request.usuario.Trim(),
+                    fecha = request.fecha.GetValueOrDefault()
                 });
         }
 
         /// <summary>
-        /// Copia el detalle original a la nueva transacción inversa.
+        /// Copia el detalle original a la transacción inversa.
         /// </summary>
         /// <param name="connection">Conexión activa.</param>
         /// <param name="boletaInversa">Nueva boleta.</param>
         /// <param name="tipoInverso">Tipo inverso.</param>
-        /// <param name="tipoOriginal">Tipo original.</param>
-        /// <param name="boletaOriginal">Boleta original.</param>
+        /// <param name="request">Datos de la reversión.</param>
         private static void INV_TranReversion_Detalle_Insertar(
             IDbConnection connection,
             string boletaInversa,
             string tipoInverso,
-            string tipoOriginal,
-            string boletaOriginal)
+            TranReversionInsert request)
         {
             string query = tipoInverso == TipoTraslado
                 ? """
@@ -713,8 +778,11 @@ namespace Galileo.DataBaseTier
                 {
                     boletaInversa,
                     tipoInverso,
-                    tipoOriginal,
-                    boletaOriginal
+                    tipoOriginal =
+                        request.tipo
+                            .Trim()
+                            .ToUpperInvariant(),
+                    boletaOriginal = request.boleta.Trim()
                 });
         }
 
@@ -737,8 +805,9 @@ namespace Galileo.DataBaseTier
                     RTRIM(cod_producto) AS cod_producto,
                     ISNULL(cantidad, 0) AS cantidad,
                     RTRIM(cod_bodega) AS cod_bodega,
-                    RTRIM(ISNULL(cod_bodega_destino, ''))
-                        AS cod_bodega_destino,
+                    RTRIM(
+                        ISNULL(cod_bodega_destino, '')
+                    ) AS cod_bodega_destino,
                     ISNULL(precio, 0) AS precio
                 FROM pv_invTraDet
                 WHERE tipo = @tipoInverso
@@ -746,7 +815,8 @@ namespace Galileo.DataBaseTier
                 ORDER BY linea;
                 """;
 
-            return connection.Query<InvProducReversion>(
+            return connection
+                .Query<InvProducReversion>(
                     query,
                     new
                     {
@@ -757,57 +827,38 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Afecta el inventario mediante el auxiliar compartido del sistema.
+        /// Afecta el inventario mediante el auxiliar compartido.
         /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
-        /// <param name="productos">Productos que deben procesarse.</param>
-        /// <param name="boletaInversa">Nueva boleta.</param>
-        /// <param name="tipoInverso">Tipo inverso.</param>
-        /// <param name="origen">Origen descriptivo del movimiento.</param>
-        /// <param name="fecha">Fecha de afectación.</param>
-        /// <param name="usuario">Usuario que realiza la reversión.</param>
+        /// <param name="contexto">Datos comunes de la afectación.</param>
         /// <returns>Resultado de la afectación.</returns>
-        private ErrorDto INV_TranReversion_Inventario_Afectar(
-            int CodEmpresa,
-            IEnumerable<InvProducReversion> productos,
-            string boletaInversa,
-            string tipoInverso,
-            string origen,
-            DateTime fecha,
-            string usuario)
+        private ErrorDto
+            INV_TranReversion_Inventario_Afectar(
+                InvTranReversionAfectacionContext contexto)
         {
-            string fechaMovimiento = fecha.ToString(
-                "yyyyMMdd HH:mm:ss",
-                CultureInfo.InvariantCulture);
-
-            foreach (InvProducReversion producto in productos)
+            foreach (
+                InvProducReversion producto
+                in contexto.productos)
             {
-                if (tipoInverso == TipoTraslado)
+                if (contexto.tipo_inverso == TipoTraslado)
                 {
-                    ErrorDto salida = INV_TranReversion_Producto_Afectar(
-                        CodEmpresa,
-                        producto,
-                        producto.cod_bodega,
-                        boletaInversa,
-                        origen,
-                        fechaMovimiento,
-                        TipoSalida,
-                        usuario);
+                    ErrorDto salida =
+                        INV_TranReversion_Producto_Afectar(
+                            contexto,
+                            producto,
+                            producto.cod_bodega,
+                            TipoSalida);
 
                     if (salida.Code != 0)
                     {
                         return salida;
                     }
 
-                    ErrorDto entrada = INV_TranReversion_Producto_Afectar(
-                        CodEmpresa,
-                        producto,
-                        producto.cod_bodega_destino,
-                        boletaInversa,
-                        origen,
-                        fechaMovimiento,
-                        TipoEntrada,
-                        usuario);
+                    ErrorDto entrada =
+                        INV_TranReversion_Producto_Afectar(
+                            contexto,
+                            producto,
+                            producto.cod_bodega_destino,
+                            TipoEntrada);
 
                     if (entrada.Code != 0)
                     {
@@ -817,15 +868,12 @@ namespace Galileo.DataBaseTier
                     continue;
                 }
 
-                ErrorDto afectacion = INV_TranReversion_Producto_Afectar(
-                    CodEmpresa,
-                    producto,
-                    producto.cod_bodega,
-                    boletaInversa,
-                    origen,
-                    fechaMovimiento,
-                    tipoInverso,
-                    usuario);
+                ErrorDto afectacion =
+                    INV_TranReversion_Producto_Afectar(
+                        contexto,
+                        producto,
+                        producto.cod_bodega,
+                        contexto.tipo_inverso);
 
                 if (afectacion.Code != 0)
                 {
@@ -837,26 +885,19 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Afecta un producto reutilizando el método compartido sbInvInventario.
+        /// Afecta un producto mediante sbInvInventario.
         /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="contexto">Datos comunes de la afectación.</param>
         /// <param name="producto">Producto que debe procesarse.</param>
         /// <param name="codBodega">Bodega que debe afectarse.</param>
-        /// <param name="boletaInversa">Nueva boleta.</param>
-        /// <param name="origen">Origen del movimiento.</param>
-        /// <param name="fecha">Fecha de afectación.</param>
         /// <param name="tipoMovimiento">Entrada o salida.</param>
-        /// <param name="usuario">Usuario que realiza la reversión.</param>
         /// <returns>Resultado de la afectación.</returns>
-        private ErrorDto INV_TranReversion_Producto_Afectar(
-            int CodEmpresa,
-            InvProducReversion producto,
-            string codBodega,
-            string boletaInversa,
-            string origen,
-            string fecha,
-            string tipoMovimiento,
-            string usuario)
+        private ErrorDto
+            INV_TranReversion_Producto_Afectar(
+                InvTranReversionAfectacionContext contexto,
+                InvProducReversion producto,
+                string codBodega,
+                string tipoMovimiento)
         {
             if (string.IsNullOrWhiteSpace(codBodega))
             {
@@ -865,24 +906,25 @@ namespace Galileo.DataBaseTier
                     CodigoValidacion);
             }
 
-            var inventarioRequest = new CompraInventarioDto
-            {
-                CodProducto = producto.cod_producto,
-                Cantidad = producto.cantidad,
-                CodBodega = codBodega,
-                CodTipo = boletaInversa,
-                Origen = origen,
-                Fecha = fecha,
-                Precio = producto.precio,
-                ImpConsumo = 0m,
-                ImpVentas = 0m,
-                TipoMov = tipoMovimiento,
-                Usuario = usuario
-            };
+            var inventarioRequest =
+                new CompraInventarioDto
+                {
+                    CodProducto = producto.cod_producto,
+                    Cantidad = producto.cantidad,
+                    CodBodega = codBodega.Trim(),
+                    CodTipo = contexto.boleta_inversa,
+                    Origen = contexto.origen,
+                    Fecha = contexto.fecha_movimiento,
+                    Precio = producto.precio,
+                    ImpConsumo = 0m,
+                    ImpVentas = 0m,
+                    TipoMov = tipoMovimiento,
+                    Usuario = contexto.usuario
+                };
 
             ErrorDto respuesta =
                 _auxiliarDb.sbInvInventario(
-                    CodEmpresa,
+                    contexto.cod_empresa,
                     inventarioRequest);
 
             return respuesta.Code == 0
