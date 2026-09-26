@@ -60,7 +60,7 @@ namespace Galileo.DataBaseTier
         /// <param name="CodBoleta">Código de la boleta.</param>
         /// <param name="TipoTran">Tipo de transacción.</param>
         /// <returns>Información de la transacción.</returns>
-        public ErrorDto<TranReversionData> InvTranReversion_Obtener(
+        public ErrorDto<TranESData> InvTranReversion_Obtener(
             int CodEmpresa,
             string CodBoleta,
             string TipoTran)
@@ -75,7 +75,7 @@ namespace Galileo.DataBaseTier
                 return DbHelper.CreateErrorResponse(
                     "El c&oacute;digo de la boleta es requerido.",
                     CodigoValidacion,
-                    new TranReversionData());
+                    new TranESData());
             }
 
             if (!INV_TranReversion_Tipo_Validar(tipo))
@@ -83,7 +83,7 @@ namespace Galileo.DataBaseTier
                 return DbHelper.CreateErrorResponse(
                     MensajeTipoTransaccionInvalido,
                     CodigoValidacion,
-                    new TranReversionData());
+                    new TranESData());
             }
 
             const string query = """
@@ -113,12 +113,12 @@ namespace Galileo.DataBaseTier
                   AND X.tipo = @tipo;
                 """;
 
-            ErrorDto<TranReversionData?> respuesta =
+            ErrorDto<TranESData?> respuesta =
                 DbHelper.ExecuteSingleQuery(
                     _portalDb,
                     CodEmpresa,
                     query,
-                    default(TranReversionData),
+                    default(TranESData),
                     new
                     {
                         boleta,
@@ -131,13 +131,13 @@ namespace Galileo.DataBaseTier
                     respuesta.Description ??
                     "Ocurri&oacute; un error al consultar la transacci&oacute;n.",
                     respuesta.Code.GetValueOrDefault(-1),
-                    new TranReversionData());
+                    new TranESData());
             }
 
             if (respuesta.Result is null)
             {
                 return DbHelper.CreateOkResponse(
-                    new TranReversionData(),
+                    new TranESData(),
                     "No se encontr&oacute; la boleta solicitada.");
             }
 
@@ -243,7 +243,7 @@ namespace Galileo.DataBaseTier
         /// <param name="CodBoleta">Boleta actual.</param>
         /// <param name="TipoTran">Tipo de transacción.</param>
         /// <returns>Boleta encontrada.</returns>
-        public ErrorDto<TranReversionData>
+        public ErrorDto<TranESData>
             InvTranReversion_scroll(
                 int CodEmpresa,
                 int scrollValue,
@@ -260,7 +260,7 @@ namespace Galileo.DataBaseTier
                 return DbHelper.CreateErrorResponse(
                     MensajeTipoTransaccionInvalido,
                     CodigoValidacion,
-                    new TranReversionData());
+                    new TranESData());
             }
 
             if (scrollValue is not 0 and not 1)
@@ -268,7 +268,7 @@ namespace Galileo.DataBaseTier
                 return DbHelper.CreateErrorResponse(
                     "La direcci&oacute;n de navegaci&oacute;n no es v&aacute;lida.",
                     CodigoValidacion,
-                    new TranReversionData());
+                    new TranESData());
             }
 
             string query = scrollValue == 1
@@ -289,12 +289,12 @@ namespace Galileo.DataBaseTier
                   ORDER BY boleta DESC;
                   """;
 
-            ErrorDto<TranReversionData?> respuesta =
+            ErrorDto<TranESData?> respuesta =
                 DbHelper.ExecuteSingleQuery(
                     _portalDb,
                     CodEmpresa,
                     query,
-                    default(TranReversionData),
+                    default(TranESData),
                     new
                     {
                         tipo,
@@ -307,12 +307,12 @@ namespace Galileo.DataBaseTier
                     respuesta.Description ??
                     "Ocurri&oacute; un error al navegar entre las boletas.",
                     respuesta.Code.GetValueOrDefault(-1),
-                    new TranReversionData());
+                    new TranESData());
             }
 
             return DbHelper.CreateOkResponse(
                 respuesta.Result ??
-                new TranReversionData());
+                new TranESData());
         }
 
         /// <summary>
