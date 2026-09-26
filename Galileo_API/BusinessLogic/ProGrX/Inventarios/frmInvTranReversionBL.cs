@@ -13,7 +13,7 @@ namespace Galileo.BusinessLogic
             _db = new FrmInvTranReversionDB(config);
         }
 
-        public ErrorDto<TranReversionData> InvTranReversion_Obtener(int CodEmpresa, string CodBoleta, string TipoTran)
+        public ErrorDto<TranESData> InvTranReversion_Obtener(int CodEmpresa, string CodBoleta, string TipoTran)
         {
             return _db.InvTranReversion_Obtener(CodEmpresa, CodBoleta, TipoTran);
         }
@@ -23,7 +23,7 @@ namespace Galileo.BusinessLogic
             return _db.InvProducLineas_Obtener(CodEmpresa, CodBoleta, TipoTran);
         }
 
-        public ErrorDto<TranReversionData> InvTranReversion_scroll(int CodEmpresa, int scrollValue, string? CodBoleta, string TipoTran)
+        public ErrorDto<TranESData> InvTranReversion_scroll(int CodEmpresa, int scrollValue, string? CodBoleta, string TipoTran)
         {
             return _db.InvTranReversion_scroll(CodEmpresa, scrollValue, CodBoleta, TipoTran);
         }
