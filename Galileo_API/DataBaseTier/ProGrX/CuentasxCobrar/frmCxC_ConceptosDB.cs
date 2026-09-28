@@ -437,14 +437,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
         private static object? GetCol(IDictionary<string, object> row, string name)
         {
-            foreach (var kv in row)
-            {
-                if (string.Equals(kv.Key, name, StringComparison.OrdinalIgnoreCase))
-                {
-                    return kv.Value is DBNull ? null : kv.Value;
-                }
-            }
-            return null;
+            var value = row
+                .Where(kv => string.Equals(kv.Key, name, StringComparison.OrdinalIgnoreCase))
+                .Select(kv => kv.Value)
+                .FirstOrDefault();
+
+            return value is DBNull ? null : value;
         }
 
         private static string? ToStr(object? value)
