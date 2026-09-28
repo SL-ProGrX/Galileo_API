@@ -130,5 +130,12 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         {
             return _bl.CxcConceptos_Incobrable(codEmpresa, param);
         }
+
+        [Authorize]
+        [HttpGet("CxcConceptos_Incobrable_Consulta")]
+        public ErrorDto<CxcConceptoIncobrableConsultaDto?> CxcConceptos_Incobrable_Consulta(int codEmpresa, [FromQuery] string codConcepto)
+        {
+            return _bl.CxcConceptos_Incobrable_Consulta(codEmpresa, codConcepto);
+        }
     }
 }
