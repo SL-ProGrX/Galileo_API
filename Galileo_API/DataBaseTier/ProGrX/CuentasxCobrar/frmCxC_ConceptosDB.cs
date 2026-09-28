@@ -22,14 +22,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <returns>Lista de conceptos.</returns>
         public ErrorDto<List<CxcConceptoDto>> CxcConceptos_Lista(int codEmpresa)
         {
-            var query = @"SELECT COD_CONCEPTO as Cod_Concepto, DESCRIPCION, COD_CUENTA as Cod_Cuenta, COD_CUENTA_SALIDA as Cod_Cuenta_Salida,
-                                 REQUIERE_CONTRATO as Requiere_Contrato, REQUIERE_DOCUMENTO as Requiere_Documento, GENERA_DESEMBOLSO as Genera_Desembolso,
-                                 PROCESO_DESCUENTO as Proceso_Descuento, ACTIVO, ADELANTO_INFORMATIVO, REGISTRO_FECHA, REGISTRO_USUARIO, PAGADOR_DEFAULT,
-                                 MONTO_MAX, COD_UNIDAD as Cod_Unidad, COD_CENTRO_COSTO as Cod_Centro_Costo, I_INDICADOR as I_Indicador,
-                                 I_CTA_DETERIORO as I_Cta_Deterioro, I_CTA_ESTIMACION as I_Cta_Estimacion, I_CTA_ORDEN_DEBE as I_Cta_Orden_Debe,
-                                 I_CTA_ORDEN_HABER as I_Cta_Orden_Haber, I_CTA_INGRESO as I_Cta_Ingreso, MODIFICA_USUARIO, MODIFICA_FECHA
-                          FROM CxC_Conceptos
-                          ORDER BY COD_CONCEPTO";
+            var query = @"SELECT C.COD_CONCEPTO as Cod_Concepto, C.DESCRIPCION, C.COD_CUENTA as Cod_Cuenta, C.COD_CUENTA_SALIDA as Cod_Cuenta_Salida,
+                                 RTRIM(Cta.COD_DIVISA) as Cod_Divisa,
+                                 C.REQUIERE_CONTRATO as Requiere_Contrato, C.REQUIERE_DOCUMENTO as Requiere_Documento, C.GENERA_DESEMBOLSO as Genera_Desembolso,
+                                 C.PROCESO_DESCUENTO as Proceso_Descuento, C.ACTIVO, C.ADELANTO_INFORMATIVO, C.REGISTRO_FECHA, C.REGISTRO_USUARIO, C.PAGADOR_DEFAULT,
+                                 C.MONTO_MAX, C.COD_UNIDAD as Cod_Unidad, C.COD_CENTRO_COSTO as Cod_Centro_Costo, C.I_INDICADOR as I_Indicador,
+                                 C.I_CTA_DETERIORO as I_Cta_Deterioro, C.I_CTA_ESTIMACION as I_Cta_Estimacion, C.I_CTA_ORDEN_DEBE as I_Cta_Orden_Debe,
+                                 C.I_CTA_ORDEN_HABER as I_Cta_Orden_Haber, C.I_CTA_INGRESO as I_Cta_Ingreso, C.MODIFICA_USUARIO, C.MODIFICA_FECHA
+                          FROM CxC_Conceptos C
+                          OUTER APPLY (
+                              SELECT TOP 1 COD_DIVISA
+                              FROM CntX_Cuentas
+                              WHERE COD_CUENTA = C.COD_CUENTA
+                          ) Cta
+                          ORDER BY C.COD_CONCEPTO";
             return DbHelper.ExecuteListQuery<CxcConceptoDto>(_portalDb, codEmpresa, query);
         }
 
@@ -389,6 +395,64 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 conn.Execute(sp, parameters, commandType: System.Data.CommandType.StoredProcedure);
                 return true;
             });
+        }
+
+        /// <summary>
+        /// Consulta la configuración de incobrables de un concepto (spCxC_Concepto_Incobrable_Consulta).
+        /// </summary>
+        public ErrorDto<CxcConceptoIncobrableConsultaDto?> CxcConceptos_Incobrable_Consulta(int codEmpresa, string codConcepto)
+        {
+            const string sp = "spCxC_Concepto_Incobrable_Consulta";
+
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var row = conn.QueryFirstOrDefault(sp, new { Concepto = codConcepto }, commandType: System.Data.CommandType.StoredProcedure);
+                if (row == null)
+                {
+                    return null;
+                }
+
+                // Mapear columnas del SP (nombres VB6) a DTO limpio para JSON
+                var dict = (IDictionary<string, object>)row;
+                return new CxcConceptoIncobrableConsultaDto
+                {
+                    I_Indicador = ToShort(GetCol(dict, "I_Indicador")),
+                    Cod_Unidad = ToStr(GetCol(dict, "Cod_Unidad")),
+                    Unidad_Desc = ToStr(GetCol(dict, "Unidad_Desc")),
+                    Cod_Centro_Costo = ToStr(GetCol(dict, "Cod_Centro_Costo")),
+                    Centro_Desc = ToStr(GetCol(dict, "Centro_Desc")),
+                    Cta_Deterioro_Mask = ToStr(GetCol(dict, "CTA_DETERIORO_MASK")),
+                    Cta_Deterioro_Desc = ToStr(GetCol(dict, "CTA_DETERIORO_DESC")),
+                    Cta_Estimacion_Mask = ToStr(GetCol(dict, "CTA_ESTIMACION_MASK")),
+                    Cta_Estimacion_Desc = ToStr(GetCol(dict, "CTA_ESTIMACION_DESC")),
+                    Cta_Ingreso_Mask = ToStr(GetCol(dict, "CTA_INGRESO_MASK")),
+                    Cta_Ingreso_Desc = ToStr(GetCol(dict, "CTA_INGRESO_DESC")),
+                    Cta_Orden_Debe_Mask = ToStr(GetCol(dict, "CTA_ORDEN_DEBE_MASK")),
+                    Cta_Orden_Debe_Desc = ToStr(GetCol(dict, "CTA_ORDEN_DEBE_DESC")),
+                    Cta_Orden_Haber_Mask = ToStr(GetCol(dict, "CTA_ORDEN_HABER_MASK")),
+                    Cta_Orden_Haber_Desc = ToStr(GetCol(dict, "CTA_ORDEN_HABER_DESC")),
+                };
+            });
+        }
+
+        private static object? GetCol(IDictionary<string, object> row, string name)
+        {
+            var value = row
+                .Where(kv => string.Equals(kv.Key, name, StringComparison.OrdinalIgnoreCase))
+                .Select(kv => kv.Value)
+                .FirstOrDefault();
+
+            return value is DBNull ? null : value;
+        }
+
+        private static string? ToStr(object? value)
+            => value == null ? string.Empty : Convert.ToString(value) ?? string.Empty;
+
+        private static short ToShort(object? value)
+        {
+            if (value == null) return 0;
+            try { return Convert.ToInt16(value); }
+            catch { return 0; }
         }
     }
 }
