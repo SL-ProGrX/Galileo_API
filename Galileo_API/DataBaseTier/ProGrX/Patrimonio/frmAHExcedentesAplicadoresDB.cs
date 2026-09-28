@@ -132,10 +132,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
         }
 
         /// <summary>
@@ -210,10 +206,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                     "Aplicador eliminado correctamente.");
             }
             catch (SqlException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-            catch (Exception ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
