@@ -1,78 +1,163 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
+using Newtonsoft.Json;
 
 namespace Galileo.BusinessLogic
 {
-    public class FrmInvTomaFisicaBL
+    public sealed class FrmInvTomaFisicaBL
     {
+        private const int CodigoValidacion = -2;
+
         private readonly FrmInvTomaFisicaDB _db;
 
         public FrmInvTomaFisicaBL(IConfiguration config)
         {
+            ArgumentNullException.ThrowIfNull(config);
             _db = new FrmInvTomaFisicaDB(config);
         }
 
-        public ErrorDto<List<TomaFisicaDto>> TomaFisica_Obtener(int CodEmpresa, int Cod_Proveedor, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<List<TomaFisicaDto>> INV_TomaFisica_Lista_Obtener(
+            int CodEmpresa,
+            string filtros)
         {
-            return _db.TomaFisica_Obtener(CodEmpresa, Cod_Proveedor, pagina, paginacion, filtro);
+            if (!INV_TomaFisica_Filtros_Deserializar(
+                filtros,
+                out TomaFisicaListaFiltros? request))
+            {
+                return INV_TomaFisica_Error_Crear(
+                    "Los filtros de consulta no son v&aacute;lidos.",
+                    new List<TomaFisicaDto>());
+            }
+
+            return _db.INV_TomaFisica_Lista_Obtener(CodEmpresa, request);
         }
 
-        public ErrorDto<List<TomaFisicaDetalleDto>> tomasFisicasDetalle_Obtener(int CodEmpresa, int Cod_Proveedor, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<List<TomaFisicaDetalleDto>> INV_TomaFisica_Detalle_Obtener(
+            int CodEmpresa,
+            string filtros)
         {
-            return _db.tomasFisicasDetalle_Obtener(CodEmpresa, Cod_Proveedor, pagina, paginacion, filtro);
+            if (!INV_TomaFisica_Filtros_Deserializar(
+                filtros,
+                out TomaFisicaDetalleFiltros? request))
+            {
+                return INV_TomaFisica_Error_Crear(
+                    "Los filtros de consulta no son v&aacute;lidos.",
+                    new List<TomaFisicaDetalleDto>());
+            }
+
+            return _db.INV_TomaFisica_Detalle_Obtener(CodEmpresa, request);
         }
 
-        public ErrorDto tomaFisica_Insertar(int CodEmpresa, TomaFisicaDto data)
+        public ErrorDto<TomaFisicaDto> INV_TomaFisica_Consecutivo_Obtener(
+            int CodEmpresa,
+            int consecutivo)
         {
-            return _db.tomaFisica_Insertar(CodEmpresa, data);
+            return _db.INV_TomaFisica_Consecutivo_Obtener(
+                CodEmpresa,
+                consecutivo);
         }
 
-        public ErrorDto tomaFisicaDetalle_Insertar(int CodEmpresa, TomaFisicaDetalleDto data)
+        public ErrorDto<TomaFisicaDto> INV_TomaFisica_Consecutivo_Navegar(
+            int CodEmpresa,
+            int consecutivo,
+            string? tipo)
         {
-            return _db.tomaFisicaDetalle_Insertar(CodEmpresa, data);
+            return _db.INV_TomaFisica_Consecutivo_Navegar(
+                CodEmpresa,
+                consecutivo,
+                tipo);
         }
 
-        public ErrorDto<TomaFisicaDto> ConsultaAscDesc(int CodEmpresa, int consecutivo, string tipo)
+        public ErrorDto<TomaFisicaDetalleDto> INV_TomaFisica_Producto_Obtener(
+            int CodEmpresa,
+            string filtros)
         {
-            return _db.ConsultaAscDesc(CodEmpresa, consecutivo, tipo);
+            if (!INV_TomaFisica_Filtros_Deserializar(
+                filtros,
+                out TomaFisicaProductoRequest? request))
+            {
+                return INV_TomaFisica_Error_Crear(
+                    "Los filtros de b&uacute;squeda no son v&aacute;lidos.",
+                    new TomaFisicaDetalleDto());
+            }
+
+            return _db.INV_TomaFisica_Producto_Obtener(CodEmpresa, request);
         }
 
-        public ErrorDto<TomaFisicaDto> tomaFisicaConsecutivo_Obtener(int CodEmpresa, int consecutivo)
+        public ErrorDto<int> INV_TomaFisica_Guardar(
+            int CodEmpresa,
+            TomaFisicaGuardarRequest request)
         {
-            return _db.tomaFisicaConsecutivo_Obtener(CodEmpresa, consecutivo);
+            return _db.INV_TomaFisica_Guardar(CodEmpresa, request);
         }
 
-        public ErrorDto actualizarTomaFisica(int CodEmpresa, TomaFisicaDto request)
+        public ErrorDto INV_TomaFisica_Eliminar(
+            int CodEmpresa,
+            int consecutivo,
+            string? usuario)
         {
-            return _db.actualizarTomaFisica(CodEmpresa, request);
+            return _db.INV_TomaFisica_Eliminar(
+                CodEmpresa,
+                consecutivo,
+                usuario);
         }
 
-        public ErrorDto actualizarTomaFisicaDetalle(int CodEmpresa, TomaFisicaDetalleDto data)
+        public ErrorDto INV_TomaFisica_Barras_Guardar(
+            int CodEmpresa,
+            TomaFisicaDetalleDto linea)
         {
-            return _db.actualizarTomaFisicaDetalle(CodEmpresa, data);
+            return _db.INV_TomaFisica_Barras_Guardar(CodEmpresa, linea);
         }
 
-        public ErrorDto EliminarDetalleTomaFisica(int CodEmpresa, int consecutivo, string cod_producto)
+        public ErrorDto<List<TomaFisicaDetalleDto>>
+            INV_TomaFisica_InventarioLogico_Obtener(
+                int CodEmpresa,
+                TomaFisicaInventarioRequest request)
         {
-            return _db.EliminarDetalleTomaFisica(CodEmpresa, consecutivo, cod_producto);
+            return _db.INV_TomaFisica_InventarioLogico_Obtener(
+                CodEmpresa,
+                request);
         }
 
-        public ErrorDto EliminarTomaFisica(int CodEmpresa, int consecutivo)
+        public ErrorDto<List<TomaFisicaDetalleDto>> INV_TomaFisica_Comparar(
+            int CodEmpresa,
+            TomaFisicaGuardarRequest request)
         {
-            return _db.EliminarTomaFisica(CodEmpresa, consecutivo);
+            return _db.INV_TomaFisica_Comparar(CodEmpresa, request);
         }
 
-        public ErrorDto<TomaFisicaDetalleDto> TomaFisicaProdBarras_Obtener(
-            int CodEmpresa, string cod_bodega, string cod_barras, string tipo)
+        private static bool INV_TomaFisica_Filtros_Deserializar<T>(
+            string filtros,
+            out T? request)
+            where T : class
         {
-            return _db.TomaFisicaProdBarras_Obtener(CodEmpresa, cod_bodega, cod_barras, tipo);
+            request = null;
+
+            if (string.IsNullOrWhiteSpace(filtros))
+            {
+                return false;
+            }
+
+            try
+            {
+                request = JsonConvert.DeserializeObject<T>(filtros);
+                return request is not null;
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
         }
 
-        public ErrorDto TomaFisicaBarras_Guardar(int CodEmpresa, TomaFisicaDetalleDto linea)
+        private static ErrorDto<T> INV_TomaFisica_Error_Crear<T>(
+            string descripcion,
+            T resultado)
         {
-            return _db.TomaFisicaBarras_Guardar(CodEmpresa, linea);
+            return DbHelper.CreateErrorResponse(
+                descripcion,
+                CodigoValidacion,
+                resultado);
         }
-
     }
 }

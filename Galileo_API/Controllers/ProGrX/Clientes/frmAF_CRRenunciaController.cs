@@ -186,5 +186,20 @@ namespace Galileo.Controllers.ProGrX.Clientes
         {
             return _bl.AF_CR_Renuncias_Abono_Insertar(CodEmpresa, request);
         }
+
+        [Authorize]
+        [HttpGet("AF_CR_Renuncias_Configuracion_Obtener")]
+        public ErrorDto<AfRenunciaConfiguracion> AF_CR_Renuncias_Configuracion_Obtener(int CodEmpresa, string usuario) =>
+            _bl.AF_CR_Renuncias_Configuracion_Obtener(CodEmpresa, usuario);
+
+        [Authorize]
+        [HttpGet("AF_CR_Renuncias_Reingreso_Validar")]
+        public ErrorDto<List<string>> AF_CR_Renuncias_Reingreso_Validar(int CodEmpresa, string cedula, string usuario) =>
+            _bl.AF_CR_Renuncias_Reingreso_Validar(CodEmpresa, cedula, usuario);
+
+        [Authorize]
+        [HttpPost("AF_CR_Renuncias_Proceso_Guardar")]
+        public ErrorDto<int> AF_CR_Renuncias_Proceso_Guardar(int CodEmpresa, [FromBody] AfRenunciaProceso request) =>
+            _bl.AF_CR_Renuncias_Proceso_Guardar(CodEmpresa, request);
     }
 }

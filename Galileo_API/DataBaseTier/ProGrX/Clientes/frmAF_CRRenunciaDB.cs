@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
@@ -6,7 +6,7 @@ using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX.Clientes
 {
-    public class FrmAFCrenunciaDB
+    public partial class FrmAFCrenunciaDB
     {
         private readonly IConfiguration _config;
 
@@ -606,8 +606,11 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <returns></returns>
         public ErrorDto<int> AF_CR_Renuncias_Liquidacion_Guarda(int CodEmpresa, AfRenunciaLiquidacion request)
         {
-            return EjecutarOperacion(CodEmpresa, connection =>
-            {
+            return EjecutarOperacion(CodEmpresa, connection => AF_CR_Renuncias_Liquidacion_Guarda_Ejecutar(connection, request, null), 0);
+        }
+
+        private static int AF_CR_Renuncias_Liquidacion_Guarda_Ejecutar(SqlConnection connection, AfRenunciaLiquidacion request, SqlTransaction? transaction)
+        {
                 var parameters = new DynamicParameters();
 
                 parameters.Add("@Codigo", request.CodRenuncia);
@@ -631,7 +634,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 parameters.Add("@Documento", request.Documento);
                 parameters.Add("@Banco", request.Banco);
                 parameters.Add("@Cuenta", request.Cuenta);
-                parameters.Add("@CodPlan", request.CodPlan);
+                parameters.Add("@CodPlan", string.IsNullOrWhiteSpace(request.CodPlan) ? null : request.CodPlan);
                 parameters.Add("@TotalNeto", request.TotalNeto);
                 parameters.Add("@Disponible", request.Disponible);
                 parameters.Add("@RetenerMonto", request.RetenerMonto);
@@ -639,13 +642,13 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 parameters.Add("@Boleta", request.Boleta);
                 parameters.Add("@Equipo", request.Equipo);
                 parameters.Add("@Version", request.Version);
-                parameters.Add("@IdDocumento", request.IdDocumento);
+                parameters.Add("@IdDocumento", request.Tipo == "A" ? (int?)null : request.IdDocumento);
 
                 return connection.QuerySingle<int>(
                     "spAFI_Renuncia_Liquidacion_Guarda",
                     parameters,
-                    commandType: System.Data.CommandType.StoredProcedure);
-            }, 0);
+                    transaction: transaction, commandType: System.Data.CommandType.StoredProcedure);
+
         }
 
 
@@ -657,8 +660,11 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto<bool> AF_CR_Renuncias_Plan_Insertar(int CodEmpresa, AfRenunciaPlan request)
         {
-            return EjecutarOperacionBool(CodEmpresa, connection =>
-            {
+            return EjecutarOperacionBool(CodEmpresa, connection => AF_CR_Renuncias_Plan_Insertar_Ejecutar(connection, request, null));
+        }
+
+        private static void AF_CR_Renuncias_Plan_Insertar_Ejecutar(SqlConnection connection, AfRenunciaPlan request, SqlTransaction? transaction)
+        {
                 var query = @"INSERT INTO AFI_CR_RENUNCIAS_PLANES
             (COD_RENUNCIA, COD_CONTRATO, COD_OPERADORA, COD_PLAN, DISPONIBLE, MULTA, REND_PENDIENTE, LIQ_FND, APORTES, RENDIMIENTOS, COD_DIVISA, TIPO_CAMBIO, MARCADA)
             VALUES (@CodRenuncia, @CodContrato, @CodOperadora, @CodPlan, @Disponible, @Multa, @RendPendiente, 0, @Aportes, @Rendimientos, @CodDivisa, @TipoCambio, @Marcada)";
@@ -677,8 +683,8 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     request.CodDivisa,
                     request.TipoCambio,
                     Marcada = request.Marcada ? 1 : 0
-                });
-            });
+                }, transaction);
+
         }
 
 
@@ -690,14 +696,17 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto<bool> AF_CR_Renuncias_Abono_Insertar(int CodEmpresa, AfRenunciaAbono request)
         {
-            return EjecutarOperacionBool(CodEmpresa, connection =>
-            {
+            return EjecutarOperacionBool(CodEmpresa, connection => AF_CR_Renuncias_Abono_Insertar_Ejecutar(connection, request, null));
+        }
+
+        private static void AF_CR_Renuncias_Abono_Insertar_Ejecutar(SqlConnection connection, AfRenunciaAbono request, SqlTransaction? transaction)
+        {
                 var query = @"INSERT INTO AFI_CR_RENUNCIAS_ABONOS
             (COD_RENUNCIA, ID_SOLICITUD, CODIGO, ABONO, SALDO, CARGOS, MORA_INTC, MORA_INTM, MORA_PRIN, COD_DIVISA, TIPO_CAMBIO, TIPO, GARANTIA, MARCADO)
             VALUES (@CodRenuncia, @IdSolicitud, @Codigo, @Abono, @Saldo, @Cargos, @MoraIntC, @MoraIntM, @MoraPrin, @CodDivisa, @TipoCambio, @Tipo, @Garantia, 1)";
 
-                connection.Execute(query, request);
-            });
+                connection.Execute(query, request, transaction);
+
         }
     }
 }

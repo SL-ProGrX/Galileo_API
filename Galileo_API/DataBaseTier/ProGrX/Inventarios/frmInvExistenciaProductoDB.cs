@@ -1,19 +1,37 @@
 using Dapper;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
-using Newtonsoft.Json;
+using System.Data;
 using System.Globalization;
 
 namespace Galileo.DataBaseTier
 {
     public class FrmInvExistenciaProductoDB
     {
+        private const string SpInvProcesoProd = "[spINVProcesoProd]";
+        private const int SpMuestra = 1;
+
+        private const string ErrorConsultarExistencia =
+            "Ocurri&oacute; un error al consultar la existencia del producto.";
+
+        private const string ErrorFechaServidor =
+            "Error al obtener fecha del servidor.";
+
+        private const string QueryFechaServidor =
+            "SELECT dbo.MyGetdate() AS Fecha";
+
+        private const string QueryBodegas = """
+            SELECT
+                B.cod_bodega,
+                B.descripcion
+            FROM pv_bodegas B
+            ORDER BY B.cod_bodega
+            """;
+
         private readonly IConfiguration _config;
 
-        #region Constructor y helpers
-
         /// <summary>
-        /// Inicializa una nueva instancia de la clase <see cref="FrmInvExistenciaProductoDB"/>.
+        /// Inicializa una nueva instancia de <see cref="FrmInvExistenciaProductoDB"/>.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
         public FrmInvExistenciaProductoDB(IConfiguration config)
@@ -22,78 +40,100 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Crea una instancia de <see cref="PortalDB"/> usando la configuración actual.
+        /// Crea una instancia de <see cref="PortalDB"/> con la configuración actual.
         /// </summary>
-        /// <returns>Instancia de acceso a configuración de base de datos.</returns>
+        /// <returns>Acceso a configuración de base de datos.</returns>
         private PortalDB CreatePortalDb() => new(_config);
 
         /// <summary>
-        /// Convierte el filtro JSON en un objeto tipado.
+        /// Obtiene la fecha del servidor (fxFechaServidor del VB6, usado en Form_Load).
         /// </summary>
-        /// <param name="filtroString">Filtro serializado en JSON.</param>
-        /// <returns>Objeto de filtros inicializado.</returns>
-        private static ExistenciaProductoFiltros ObtenerFiltros(string filtroString)
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <returns>Fecha del servidor en Description con formato yyyy-MM-dd HH:mm:ss.</returns>
+        public ErrorDto INV_ExistenciaProducto_FechaServidor_Obtener(int CodEmpresa)
         {
-            return JsonConvert.DeserializeObject<ExistenciaProductoFiltros>(filtroString) ?? new ExistenciaProductoFiltros();
+            var result = DbHelper.ExecuteSingleQuery<DateTime>(
+                CreatePortalDb(),
+                CodEmpresa,
+                QueryFechaServidor,
+                default);
+
+            return result.Code == 0
+                ? DbHelper.OkResponse(result.Result.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture))
+                : DbHelper.ErrorResponse(result.Description ?? ErrorFechaServidor, result.Code.GetValueOrDefault(-1));
         }
 
         /// <summary>
-        /// Valida y normaliza una fecha del filtro.
+        /// Obtiene la existencia al corte del producto en cada bodega y el total general.
+        /// Equivale a btnBuscar_Click (Index 0) de frmInvExistenciaProducto en VB6.
         /// </summary>
-        /// <param name="valor">Valor de fecha recibido.</param>
-        /// <param name="nombreCampo">Nombre del campo para el mensaje de error.</param>
-        /// <returns>Fecha normalizada en formato yyyy-MM-dd.</returns>
-        /// <exception cref="FormatException">Se lanza cuando la fecha no tiene un formato válido.</exception>
-        private static string NormalizarFecha(string? valor, string nombreCampo)
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="consulta">Producto, fecha de corte (yyyy-MM-dd) y usuario.</param>
+        /// <returns>Existencias por bodega y total.</returns>
+        public ErrorDto<InvExistenciaProductoResultadoDto> INV_ExistenciaProducto_Consultar(
+            int CodEmpresa,
+            InvExistenciaProductoConsulta consulta)
         {
-            if (!DateTimeOffset.TryParse(valor, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTimeOffset fecha))
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                throw new FormatException($"El valor de '{nombreCampo}' no tiene un formato válido.");
-            }
+                var bodegas = connection
+                    .Query<InvExistenciaProductoBodegaDto>(QueryBodegas)
+                    .ToList();
 
-            return fecha.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                foreach (var bodega in bodegas)
+                {
+                    bodega.existencia = INV_ExistenciaProducto_Bodega_Existencia_Obtener(
+                        connection,
+                        consulta,
+                        bodega.cod_bodega);
+                }
+
+                return new InvExistenciaProductoResultadoDto
+                {
+                    bodegas = bodegas,
+                    total_existencia = bodegas.Sum(b => b.existencia)
+                };
+            });
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new InvExistenciaProductoResultadoDto())
+                : DbHelper.CreateErrorResponse(
+                    result.Description ?? ErrorConsultarExistencia,
+                    result.Code.GetValueOrDefault(-1),
+                    new InvExistenciaProductoResultadoDto());
         }
 
-        #endregion
-
-        #region Consultas
-
         /// <summary>
-        /// Obtiene la existencia del producto por bodega.
+        /// Calcula la existencia del producto en una bodega a la fecha de corte (fxInvProcesoProd del VB6).
+        /// Si el SP falla retorna 0, igual que el manejo de error del VB6.
         /// </summary>
-        /// <param name="CodCliente">Código de la empresa cliente.</param>
-        /// <param name="filtroString">Filtro serializado en JSON.</param>
-        /// <returns>Listado de existencias por bodega.</returns>
-        public ErrorDto<List<ExistenciaProductoDto>> existenciaProducto_Obtener(int CodCliente, string filtroString)
+        /// <param name="connection">Conexión activa.</param>
+        /// <param name="consulta">Producto, fecha de corte y usuario.</param>
+        /// <param name="codBodega">Código de la bodega.</param>
+        /// <returns>Existencia calculada.</returns>
+        private static decimal INV_ExistenciaProducto_Bodega_Existencia_Obtener(
+            IDbConnection connection,
+            InvExistenciaProductoConsulta consulta,
+            string codBodega)
         {
             try
             {
-                var filtros = ObtenerFiltros(filtroString);
-
-                _ = NormalizarFecha(filtros.fecha_inicio, "fecha_inicio");
-                _ = NormalizarFecha(filtros.fecha_corte, "fecha_corte");
-
-                return DbHelper.ExecuteListQuery<ExistenciaProductoDto>(
-                    CreatePortalDb(),
-                    CodCliente,
-                    @"SELECT b.Cod_Bodega AS Bodega,
-                             b.Descripcion AS Descripcion,
-                             SUM(ip.existencia_inicial + ip.entradas - ip.salidas) AS Existencia
-                      FROM pv_bodegas b
-                      JOIN pv_inventario_proceso ip ON b.Cod_Bodega = ip.cod_bodega
-                      WHERE ip.cod_producto = @CodProducto
-                      GROUP BY b.COD_BODEGA, b.DESCRIPCION",
+                return connection.QueryFirstOrDefault<decimal>(
+                    SpInvProcesoProd,
                     new
                     {
-                        CodProducto = filtros.cod_Producto
-                    });
+                        CodProd = consulta.cod_producto.Trim(),
+                        Bodega = codBodega,
+                        Fecha = consulta.fecha_corte,
+                        Usuario = consulta.usuario,
+                        Muestra = SpMuestra,
+                    },
+                    commandType: CommandType.StoredProcedure);
             }
-            catch (Exception ex)
+            catch
             {
-                return DbHelper.CreateErrorResponse(ex.Message, -1, new List<ExistenciaProductoDto>());
+                return 0;
             }
         }
-
-        #endregion
     }
 }

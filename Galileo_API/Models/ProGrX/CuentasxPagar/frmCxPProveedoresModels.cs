@@ -51,6 +51,7 @@
         public string Banco_Desc { get; set; } = string.Empty;
         public bool Web_Auto_Gestion { get; set; } = false;
         public bool Web_Ferias { get; set; } = false;
+        public string HaciendaTipoRegimen { get; set; } = "T";
         public Nullable<DateTime> registro_fecha { get; set; }
         public string registro_Usuario { get; set; } = string.Empty;
         public Nullable<DateTime> fecha_vencimiento { get; set; }

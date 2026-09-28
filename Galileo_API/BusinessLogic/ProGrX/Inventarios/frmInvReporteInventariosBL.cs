@@ -1,6 +1,6 @@
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.INV;
 
 namespace Galileo.BusinessLogic
 {
@@ -8,20 +8,43 @@ namespace Galileo.BusinessLogic
     {
         private readonly FrmInvReporteInventariosDB _db;
 
-        public FrmInvReporteInventariosBL(IConfiguration config)
+        public FrmInvReporteInventariosBL(
+            IConfiguration config)
         {
-            _db = new FrmInvReporteInventariosDB(config);
+            _db = new FrmInvReporteInventariosDB(
+                config);
         }
 
-        public ErrorDto<List<LineasInvMCdto>> Obtener_Lineas(int CodEmpresa)
+        public ErrorDto<
+            List<DropDownListaGenericaModel<string>>>
+            INV_ReporteInventarios_Bodegas_Obtener(
+                int CodEmpresa)
         {
-            return _db.Obtener_Lineas(CodEmpresa);
+            return _db
+                .INV_ReporteInventarios_Bodegas_Obtener(
+                    CodEmpresa);
         }
 
-        public ErrorDto<List<BodegaReporteInvMCdto>> Obtener_Bodegas(int CodEmpresa)
+        public ErrorDto<
+            List<DropDownListaGenericaModel<int>>>
+            INV_ReporteInventarios_Lineas_Obtener(
+                int CodEmpresa)
         {
-            return _db.Obtener_Bodegas(CodEmpresa);
+            return _db
+                .INV_ReporteInventarios_Lineas_Obtener(
+                    CodEmpresa);
         }
 
+        public ErrorDto<
+            List<DropDownListaGenericaModel<int>>>
+            INV_ReporteInventarios_Sublineas_Obtener(
+                int CodEmpresa,
+                int CodLinea)
+        {
+            return _db
+                .INV_ReporteInventarios_Sublineas_Obtener(
+                    CodEmpresa,
+                    CodLinea);
+        }
     }
 }

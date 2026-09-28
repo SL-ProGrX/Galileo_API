@@ -91,7 +91,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             return EjecutarDropdownCalculadora(
                 CodEmpresa,
                 "spFnd_Cupon_Frecuencia",
-                new { Plazo, CodPlan = NormalizarTexto(CodPlan) });
+                new { PlazoId = Plazo, Plan = NormalizarTexto(CodPlan) });
         }
 
         /// <summary>
@@ -169,10 +169,10 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 0m,
                 new
                 {
-                    request.Operadora,
+                    Operadora = request.Operadora,
                     Plan = NormalizarTexto(request.Plan),
-                    request.PlazoInv,
-                    request.CuponId
+                    PlazoId= request.PlazoInv,
+                    fCuponId = request.CuponId
                 });
         }
 

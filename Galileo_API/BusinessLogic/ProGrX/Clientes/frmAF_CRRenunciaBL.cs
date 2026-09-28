@@ -133,5 +133,14 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
         {
             return _db.AF_CR_Renuncias_Abono_Insertar(CodEmpresa, request);
         }
+
+        public ErrorDto<AfRenunciaConfiguracion> AF_CR_Renuncias_Configuracion_Obtener(int CodEmpresa, string usuario) =>
+            _db.AF_CR_Renuncias_Configuracion_Obtener(CodEmpresa, usuario);
+
+        public ErrorDto<List<string>> AF_CR_Renuncias_Reingreso_Validar(int CodEmpresa, string cedula, string usuario) =>
+            _db.AF_CR_Renuncias_Reingreso_Validar(CodEmpresa, cedula, usuario);
+
+        public ErrorDto<int> AF_CR_Renuncias_Proceso_Guardar(int CodEmpresa, AfRenunciaProceso request) =>
+            _db.AF_CR_Renuncias_Proceso_Guardar(CodEmpresa, request);
     }
 }

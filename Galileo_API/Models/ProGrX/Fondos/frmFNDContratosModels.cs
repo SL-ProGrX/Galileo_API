@@ -328,6 +328,7 @@ namespace Galileo.Models.ProGrX.Fondos
         public int? planPermiteGT { get; set; }
         public string? cod_moneda { get; set; }
         public decimal tasa_margen_negociacion { get; set; }
+        public int? base_calculo { get; set; }
         public DateTime? fechaServidor { get; set; } 
         public int subcuentasmax { get; set; }
     }
@@ -354,6 +355,9 @@ namespace Galileo.Models.ProGrX.Fondos
         public int? plazo_minimo { get; set; }
         public int? monto_minimo { get; set; }
         public int? inversion_minimo { get; set; }
+        public int? cuenta_maestra { get; set; }
+        public int? tipo_cdp { get; set; }
+        public DateTime? web_vence { get; set; }
     }
 
     public class FndContratosLiquidacionesListaData

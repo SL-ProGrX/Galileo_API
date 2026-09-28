@@ -44,9 +44,9 @@ namespace Galileo.DataBaseTier
                     "spINVTranProcesa",
                     new
                     {
-                        Tipo = request.Tipo,
-                        Boleta = request.Boleta,
-                        Usuario = request.Usuario
+                        Tipo = request.tipo,
+                        Boleta = request.boleta,
+                        Usuario = request.usuario
                     },
                     commandType: CommandType.StoredProcedure);
 

@@ -59,6 +59,15 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [HttpPost("Historial_Reimprimir")]
+        public ErrorDto<object> Historial_Reimprimir(
+            int codEmpresa,
+            CoHistorialReimpresionRequestDto request)
+        {
+            return _bl.Historial_Reimprimir(codEmpresa, request);
+        }
+
+        [Authorize]
         [HttpGet("Gestiones_Listar")]
         public ErrorDto<List<COGestionDto>> Gestiones_Listar(int codEmpresa, string cedula)
         {
@@ -188,7 +197,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
 
         [Authorize]
         [HttpPost("CobroJudicial_Ejecutar")]
-        public ErrorDto<string> CobroJudicial_Ejecutar(int codEmpresa, CobroJudicialRequestDto request)
+        public ErrorDto<object> CobroJudicial_Ejecutar(int codEmpresa, CobroJudicialRequestDto request)
         {
             return _bl.CobroJudicial_Ejecutar(
                 codEmpresa,

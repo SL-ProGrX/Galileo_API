@@ -2,65 +2,65 @@ namespace Galileo.Models.INV
 {
     public class TranRequisicionData
     {
-        public required int Cod_Requisicion { get; set; }
-        public string Cod_Entsal { get; set; } = string.Empty;
-        public string Estado { get; set; } = string.Empty;
-        public string Genera_User { get; set; } = string.Empty;
-        public DateTime? Genera_Fecha { get; set; }
-        public string Autoriza_User { get; set; } = string.Empty;
-        public DateTime? Autoriza_Fecha { get; set; }
-        public string Documento { get; set; } = string.Empty;
-        public string Notas { get; set; } = string.Empty;
-        public bool Plantilla { get; set; } = false;
-        public string Causa { get; set; } = string.Empty;
+        public int cod_requisicion { get; set; } = 0;
+        public string cod_entsal { get; set; } = string.Empty;
+        public string estado { get; set; } = string.Empty;
+        public string genera_user { get; set; } = string.Empty;
+        public DateTime? genera_fecha { get; set; }
+        public string autoriza_user { get; set; } = string.Empty;
+        public DateTime? autoriza_fecha { get; set; }
+        public string documento { get; set; } = string.Empty;
+        public string notas { get; set; } = string.Empty;
+        public bool plantilla { get; set; } = false;
+        public string causa { get; set; } = string.Empty;
+        public decimal total { get; set; } = 0m;
         public string cod_unidad { get; set; } = string.Empty;
-
         public string procesa_user { get; set; } = string.Empty;
-        public string procesa_fecha { get; set; } = string.Empty;
+        public DateTime? procesa_fecha { get; set; }
         public string recibe_user { get; set; } = string.Empty;
         public string responsable_activo { get; set; } = string.Empty;
     }
 
     public class InvReqProduc
     {
-        public required int Linea { get; set; }
-        public string Cod_Producto { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
-        public required float Cantidad { get; set; }
-        public required float Costo { get; set; }
-        public required float Total { get; set; }
-        public  required float Despacho { get; set; }
-        public string Cod_Bodega { get; set; } = string.Empty;
-        public string Bodega { get; set; } = string.Empty;
+        public int linea { get; set; } = 0;
+        public string cod_producto { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public decimal cantidad { get; set; } = 0m;
+        public decimal costo { get; set; } = 0m;
+        public decimal costo_registrado { get; set; } = 0m;
+        public decimal total { get; set; } = 0m;
+        public decimal despacho { get; set; } = 0m;
+        public string cod_bodega { get; set; } = string.Empty;
+        public string bodega { get; set; } = string.Empty;
         public string numero_placa { get; set; } = string.Empty;
         public int? id_control { get; set; }
-
-        public required float solicitado { get; set; }
+        public decimal solicitado { get; set; } = 0m;
     }
 
     public class InvRequsUsuarioRecibe
     {
-        public string? usuario { get; set; }
-        public string? nombre { get; set; }
-        public string? identificacion { get; set; }
+        public string usuario { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string identificacion { get; set; } = string.Empty;
     }
 
-    public class  InvRequesicionesActivosLista
+    public class InvRequesicionesActivosLista
     {
-        public int total { get; set; }
-        public List<InvRequesicionesActivosData> lista { get; set; } = new List<InvRequesicionesActivosData>();
-
+        public int total { get; set; } = 0;
+        public List<InvRequesicionesActivosData> lista { get; set; } = [];
     }
 
     public class InvRequesicionesActivosData
     {
-        public int id_control { get; set; }
+        public int id_control { get; set; } = 0;
         public string cod_producto { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public string cod_bodega { get; set; } = string.Empty;
-        public int cantidad { get; set; }
-        public float costo { get; set; }
-        public float total { get; set; }
+        public decimal cantidad { get; set; } = 0m;
+        public decimal costo { get; set; } = 0m;
+        public decimal costo_unitario { get; set; } = 0m;
+        public decimal total { get; set; } = 0m;
         public string cabys { get; set; } = string.Empty;
         public string cod_barras { get; set; } = string.Empty;
         public string numero_placa { get; set; } = string.Empty;
