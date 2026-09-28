@@ -18,7 +18,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("InvTranReversion_Obtener")]
-        public ErrorDto<TranReversionData> InvTranReversion_Obtener(int CodEmpresa, string CodBoleta, string TipoTran)
+        public ErrorDto<TranESData> InvTranReversion_Obtener(int CodEmpresa, string CodBoleta, string TipoTran)
         {
             return _bl.InvTranReversion_Obtener(CodEmpresa, CodBoleta, TipoTran);
         }
@@ -30,7 +30,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("InvTranReversion_scroll")]
-        public ErrorDto<TranReversionData> InvTranReversion_scroll(int CodEmpresa, int scrollValue, string? CodBoleta, string TipoTran)
+        public ErrorDto<TranESData> InvTranReversion_scroll(int CodEmpresa, int scrollValue, string? CodBoleta, string TipoTran)
         {
             return _bl.InvTranReversion_scroll(CodEmpresa, scrollValue, CodBoleta, TipoTran);
         }
