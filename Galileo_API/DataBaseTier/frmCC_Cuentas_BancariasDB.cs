@@ -186,9 +186,9 @@ namespace Galileo.DataBaseTier
                 data.Cod_Divisa,
                 data.Destino,
                 data.Cuenta_Interna,
-                Cuenta_Interbanca = Convert.ToInt32(data.Cuenta_Interbanca),
-                Cuenta_Default    = Convert.ToInt32(data.Cuenta_Default),
-                Activa            = Convert.ToInt32(data.Activa),
+                data.Cuenta_Interbanca,
+                data.Cuenta_Default,
+                data.Activa,
                 data.Modulo,
                 data.Registro_Usuario,
                 data.Registro_Fecha,
@@ -263,9 +263,9 @@ namespace Galileo.DataBaseTier
                 data.Modulo,
                 data.Destino,
                 data.Cuenta_Interna,
-                Cuenta_Interbanca = Convert.ToInt32(data.Cuenta_Interbanca),
-                Cuenta_Default    = Convert.ToInt32(data.Cuenta_Default),
-                Activa            = Convert.ToInt32(data.Activa),
+                data.Cuenta_Interbanca,
+                data.Cuenta_Default,
+                data.Activa,
                 data.Registro_Usuario
             };
 
