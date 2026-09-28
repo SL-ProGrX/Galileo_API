@@ -1,193 +1,455 @@
-﻿using Dapper;
+﻿using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
-using System.Data;
 
 namespace Galileo.DataBaseTier
 {
-    public class FrmInvUnidadesConvDB
+    public sealed class FrmInvUnidadesConvDb
     {
-        private readonly IConfiguration _config;
+        private const int CodigoValidacion = -2;
 
-        #region Constructor y helpers
+        private const string MensajeEmpresaRequerida =
+            "El c&oacute;digo de la empresa es requerido.";
 
-        /// <summary>
-        /// Inicializa una nueva instancia de la clase <see cref="FrmInvUnidadesConvDB"/>.
-        /// </summary>
-        /// <param name="config">Configuración de la aplicación.</param>
-        public FrmInvUnidadesConvDB(IConfiguration config)
+        private const string MensajeUnidadRequerida =
+            "El c&oacute;digo de la unidad es requerido.";
+
+        private const string MensajeUnidadDestinoRequerida =
+            "El c&oacute;digo de la unidad equivalente es requerido.";
+
+        private const string MensajeSolicitudRequerida =
+            "La informaci&oacute;n de la conversi&oacute;n es requerida.";
+
+        private const string MensajeUnidadesIguales =
+            "La unidad equivalente debe ser diferente de la unidad base.";
+
+        private const string MensajeFactorInvalido =
+            "El factor de conversi&oacute;n debe ser mayor que cero.";
+
+        private const string MensajeConversionNoEncontrada =
+            "No se encontr&oacute; la conversi&oacute;n de unidades indicada.";
+
+        private const string MensajeUnidadesError =
+            "Ocurri&oacute; un error al consultar las unidades de medida.";
+
+        private const string MensajeConversionesError =
+            "Ocurri&oacute; un error al consultar las conversiones de unidades.";
+
+        private const string MensajeGuardarError =
+            "Ocurri&oacute; un error al guardar la conversi&oacute;n de unidades.";
+
+        private const string MensajeEliminarError =
+            "Ocurri&oacute; un error al eliminar la conversi&oacute;n de unidades.";
+
+        private const string MensajeGuardarExito =
+            "Conversi&oacute;n de unidades guardada correctamente.";
+
+        private const string MensajeEliminarExito =
+            "Conversi&oacute;n de unidades eliminada correctamente.";
+
+        private readonly PortalDB _portalDb;
+
+        public FrmInvUnidadesConvDb(
+            IConfiguration config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+            ArgumentNullException.ThrowIfNull(config);
+            _portalDb = new PortalDB(config);
         }
 
         /// <summary>
-        /// Crea una instancia de <see cref="PortalDB"/> usando la configuración actual.
+        /// Obtiene las unidades de medida disponibles.
         /// </summary>
-        /// <returns>Instancia de acceso a configuración de base de datos.</returns>
-        private PortalDB CreatePortalDb() => new(_config);
-
-        /// <summary>
-        /// Crea una respuesta vacía para el listado de equivalencias de unidades.
-        /// </summary>
-        /// <returns>Listado vacío inicializado.</returns>
-        private static UnidadesConvLista CrearListaVacia() => new()
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <returns>Listado de unidades de medida.</returns>
+        public ErrorDto<
+            List<DropDownListaGenericaModel<string>>>
+            INV_UnidadesConv_Unidades_Obtener(
+                int CodEmpresa)
         {
-            total = 0,
-            lista = new List<UnidadMedicionConvData>()
-        };
+            var lista =
+                new List<
+                    DropDownListaGenericaModel<string>>();
 
-        /// <summary>
-        /// Crea una respuesta estándar para operaciones no query.
-        /// </summary>
-        /// <param name="result">Resultado devuelto por <see cref="DbHelper"/>.</param>
-        /// <param name="successMessage">Mensaje de éxito.</param>
-        /// <param name="errorMessage">Mensaje de error.</param>
-        /// <returns>Respuesta estándar para operaciones no query.</returns>
-        private static ErrorDto CrearRespuestaNonQuery(ErrorDto result, string successMessage, string errorMessage)
-        {
-            return result.Code == 0
-                ? DbHelper.OkResponse(successMessage)
-                : DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1));
-        }
-
-        /// <summary>
-        /// Valida si una equivalencia entre unidades ya existe.
-        /// </summary>
-        /// <param name="connection">Conexión activa.</param>
-        /// <param name="equivalencia">Datos de la equivalencia.</param>
-        /// <returns>Cantidad de registros encontrados.</returns>
-        private static int ContarEquivalencia(IDbConnection connection, UnidadMedicionConvData equivalencia)
-        {
-            return connection.ExecuteScalar<int>(
-                @"SELECT COUNT(*)
-                  FROM PV_UNIDADES_CONV
-                  WHERE COD_UNIDAD = @cod_unidad
-                    AND COD_UNIDAD_D = @cod_unidad_d",
-                new
-                {
-                    equivalencia.cod_unidad,
-                    equivalencia.cod_unidad_d
-                });
-        }
-
-        #endregion
-
-        #region Consultas
-
-        /// <summary>
-        /// Obtiene la lista de unidades activas.
-        /// </summary>
-        /// <param name="CodCliente">Código de la empresa cliente.</param>
-        /// <returns>Listado de unidades activas.</returns>
-        public ErrorDto<List<UnidadMedicionConv>> UnidadMedicion_Obtener(int CodCliente)
-        {
-            return DbHelper.ExecuteListQuery<UnidadMedicionConv>(
-                CreatePortalDb(),
-                CodCliente,
-                "SELECT COD_UNIDAD AS ITEM, DESCRIPCION FROM PV_UNIDADES WHERE ACTIVO = 1");
-        }
-
-        /// <summary>
-        /// Obtiene la lista de equivalencias entre unidades de medida según la unidad base especificada.
-        /// </summary>
-        /// <param name="CodCliente">Código de la empresa cliente.</param>
-        /// <param name="cod_unidad">Unidad base.</param>
-        /// <returns>Listado de equivalencias.</returns>
-        public ErrorDto<UnidadesConvLista> UnidadConvLista_Obtener(int CodCliente, string cod_unidad)
-        {
-            var result = DbHelper.ExecuteListQuery<UnidadMedicionConvData>(
-                CreatePortalDb(),
-                CodCliente,
-                "SELECT * FROM PV_UNIDADES_CONV WHERE COD_UNIDAD = @cod_unidad",
-                new { cod_unidad });
-
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(new UnidadesConvLista
-                {
-                    total = result.Result?.Count ?? 0,
-                    lista = result.Result ?? new List<UnidadMedicionConvData>()
-                })
-                : DbHelper.CreateErrorResponse(
-                    result.Description ?? "Error al obtener equivalencias de unidades.",
-                    result.Code.GetValueOrDefault(-1),
-                    CrearListaVacia());
-        }
-
-        #endregion
-
-        #region Mantenimiento
-
-        /// <summary>
-        /// Guarda o actualiza una equivalencia entre unidades de medida.
-        /// </summary>
-        /// <param name="CodCliente">Código de la empresa cliente.</param>
-        /// <param name="equivalencia">Datos de la equivalencia.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto UnidadConv_Guardar(int CodCliente, UnidadMedicionConvData equivalencia)
-        {
-            var result = DbHelper.WithConn<bool>(CreatePortalDb(), CodCliente, connection =>
+            if (CodEmpresa <= 0)
             {
-                int count = ContarEquivalencia(connection, equivalencia);
+                return DbHelper.CreateErrorResponse(
+                    MensajeEmpresaRequerida,
+                    CodigoValidacion,
+                    lista);
+            }
 
-                if (count > 0)
-                {
-                    connection.Execute(
-                        @"UPDATE PV_UNIDADES_CONV
-                          SET FACTOR = @factor
-                          WHERE COD_UNIDAD = @cod_unidad
-                            AND COD_UNIDAD_D = @cod_unidad_d",
-                        new
-                        {
-                            equivalencia.factor,
-                            equivalencia.cod_unidad,
-                            equivalencia.cod_unidad_d
-                        });
-                }
-                else
-                {
-                    connection.Execute(
-                        @"INSERT INTO PV_UNIDADES_CONV (COD_UNIDAD, COD_UNIDAD_D, FACTOR)
-                          VALUES (@cod_unidad, @cod_unidad_d, @factor)",
-                        new
-                        {
-                            equivalencia.cod_unidad,
-                            equivalencia.cod_unidad_d,
-                            equivalencia.factor
-                        });
-                }
+            const string query = """
+                SELECT
+                    RTRIM(COD_UNIDAD) AS item,
+                    RTRIM(DESCRIPCION) AS descripcion
+                FROM PV_UNIDADES
+                ORDER BY COD_UNIDAD;
+                """;
 
-                return true;
-            });
+            var resultado =
+                DbHelper.ExecuteListQuery<
+                    DropDownListaGenericaModel<string>>(
+                        _portalDb,
+                        CodEmpresa,
+                        query);
 
-            return result.Code == 0 && result.Result
-                ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al guardar la equivalencia de unidades.", result.Code.GetValueOrDefault(-1));
+            return INV_UnidadesConv_Lista_Resultado_Procesar(
+                resultado,
+                MensajeUnidadesError);
         }
 
         /// <summary>
-        /// Elimina una equivalencia entre unidades de medida según la unidad base y la unidad destino especificadas.
+        /// Obtiene las conversiones registradas para una unidad base.
         /// </summary>
-        /// <param name="CodCliente">Código de la empresa cliente.</param>
-        /// <param name="cod_unidad">Unidad base.</param>
-        /// <param name="cod_unidad_d">Unidad destino.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto UnidadConv_Eliminar(int CodCliente, string cod_unidad, string cod_unidad_d)
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="CodUnidad">Código de la unidad base.</param>
+        /// <returns>Listado de conversiones de la unidad.</returns>
+        public ErrorDto<UnidadesConvLista>
+            INV_UnidadesConv_Lista_Obtener(
+                int CodEmpresa,
+                string CodUnidad)
         {
-            var result = DbHelper.ExecuteNonQuery(
-                CreatePortalDb(),
-                CodCliente,
-                @"DELETE FROM PV_UNIDADES_CONV
-                  WHERE COD_UNIDAD = @cod_unidad
-                    AND COD_UNIDAD_D = @cod_unidad_d",
-                new
-                {
-                    cod_unidad,
-                    cod_unidad_d
-                });
+            var listaVacia =
+                INV_UnidadesConv_Lista_Vacia_Crear();
 
-            return CrearRespuestaNonQuery(result, "Ok", "Error al eliminar la equivalencia de unidades.");
+            if (CodEmpresa <= 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    MensajeEmpresaRequerida,
+                    CodigoValidacion,
+                    listaVacia);
+            }
+
+            string codUnidad =
+                CodUnidad?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(codUnidad))
+            {
+                return DbHelper.CreateErrorResponse(
+                    MensajeUnidadRequerida,
+                    CodigoValidacion,
+                    listaVacia);
+            }
+
+            const string query = """
+                SELECT
+                    RTRIM(COD_UNIDAD) AS cod_unidad,
+                    RTRIM(COD_UNIDAD_D) AS cod_unidad_d,
+                    ISNULL(FACTOR, 0) AS factor
+                FROM PV_UNIDADES_CONV
+                WHERE COD_UNIDAD = @CodUnidad
+                ORDER BY COD_UNIDAD_D;
+                """;
+
+            var resultado =
+                DbHelper.ExecuteListQuery<
+                    UnidadMedicionConvData>(
+                        _portalDb,
+                        CodEmpresa,
+                        query,
+                        new
+                        {
+                            CodUnidad = codUnidad
+                        });
+
+            if (resultado.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    INV_UnidadesConv_Error_Descripcion_Crear(
+                        MensajeConversionesError,
+                        resultado.Description),
+                    resultado.Code.GetValueOrDefault(-1),
+                    listaVacia);
+            }
+
+            var conversiones =
+                resultado.Result ??
+                new List<UnidadMedicionConvData>();
+
+            return DbHelper.CreateOkResponse(
+                new UnidadesConvLista
+                {
+                    total = conversiones.Count,
+                    lista = conversiones
+                });
         }
 
-        #endregion
+        /// <summary>
+        /// Registra o actualiza una conversión de unidades.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="equivalencia">Información de la conversión.</param>
+        /// <returns>Resultado del guardado.</returns>
+        public ErrorDto INV_UnidadesConv_Guardar(
+            int CodEmpresa,
+            UnidadMedicionConvData? equivalencia)
+        {
+            ErrorDto? validacion =
+                INV_UnidadesConv_Equivalencia_Validar(
+                    CodEmpresa,
+                    equivalencia);
+
+            if (validacion is not null)
+            {
+                return validacion;
+            }
+
+            string codUnidad =
+                equivalencia.cod_unidad.Trim();
+
+            string codUnidadDestino =
+                equivalencia.cod_unidad_d.Trim();
+
+            const string query = """
+                IF EXISTS
+                (
+                    SELECT 1
+                    FROM PV_UNIDADES_CONV
+                    WHERE COD_UNIDAD = @CodUnidad
+                      AND COD_UNIDAD_D = @CodUnidadDestino
+                )
+                BEGIN
+                    UPDATE PV_UNIDADES_CONV
+                    SET FACTOR = @Factor
+                    WHERE COD_UNIDAD = @CodUnidad
+                      AND COD_UNIDAD_D = @CodUnidadDestino;
+                END
+                ELSE
+                BEGIN
+                    INSERT INTO PV_UNIDADES_CONV
+                    (
+                        COD_UNIDAD,
+                        COD_UNIDAD_D,
+                        FACTOR
+                    )
+                    VALUES
+                    (
+                        @CodUnidad,
+                        @CodUnidadDestino,
+                        @Factor
+                    );
+                END;
+                """;
+
+            var resultado =
+                DbHelper.ExecuteNonQuery(
+                    _portalDb,
+                    CodEmpresa,
+                    query,
+                    new
+                    {
+                        CodUnidad = codUnidad,
+                        CodUnidadDestino =
+                            codUnidadDestino,
+                        Factor = equivalencia.factor
+                    });
+
+            return INV_UnidadesConv_NonQuery_Resultado_Procesar(
+                resultado,
+                MensajeGuardarExito,
+                MensajeGuardarError);
+        }
+
+        /// <summary>
+        /// Elimina una conversión de unidades.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="CodUnidad">Código de la unidad base.</param>
+        /// <param name="CodUnidadDestino">Código de la unidad equivalente.</param>
+        /// <returns>Resultado de la eliminación.</returns>
+        public ErrorDto INV_UnidadesConv_Eliminar(
+            int CodEmpresa,
+            string CodUnidad,
+            string CodUnidadDestino)
+        {
+            ErrorDto? validacion =
+                INV_UnidadesConv_Codigos_Validar(
+                    CodEmpresa,
+                    CodUnidad,
+                    CodUnidadDestino);
+
+            if (validacion is not null)
+            {
+                return validacion;
+            }
+
+            const string query = """
+                DELETE FROM PV_UNIDADES_CONV
+                WHERE COD_UNIDAD = @CodUnidad
+                  AND COD_UNIDAD_D = @CodUnidadDestino;
+                """;
+
+            var resultado =
+                DbHelper.ExecuteNonQueryWithResult(
+                    _portalDb,
+                    CodEmpresa,
+                    query,
+                    new
+                    {
+                        CodUnidad = CodUnidad.Trim(),
+                        CodUnidadDestino =
+                            CodUnidadDestino.Trim()
+                    });
+
+            if (resultado.Code != 0)
+            {
+                return DbHelper.ErrorResponse(
+                    INV_UnidadesConv_Error_Descripcion_Crear(
+                        MensajeEliminarError,
+                        resultado.Description),
+                    resultado.Code.GetValueOrDefault(-1));
+            }
+
+            if (resultado.Result <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeConversionNoEncontrada,
+                    CodigoValidacion);
+            }
+
+            return DbHelper.OkResponse(
+                MensajeEliminarExito);
+        }
+
+        private static ErrorDto?
+            INV_UnidadesConv_Equivalencia_Validar(
+                int CodEmpresa,
+                UnidadMedicionConvData? equivalencia)
+        {
+            if (CodEmpresa <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeEmpresaRequerida,
+                    CodigoValidacion);
+            }
+
+            if (equivalencia is null)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeSolicitudRequerida,
+                    CodigoValidacion);
+            }
+
+            ErrorDto? validacion =
+                INV_UnidadesConv_Codigos_Validar(
+                    CodEmpresa,
+                    equivalencia.cod_unidad,
+                    equivalencia.cod_unidad_d);
+
+            if (validacion is not null)
+            {
+                return validacion;
+            }
+
+            if (string.Equals(
+                equivalencia.cod_unidad.Trim(),
+                equivalencia.cod_unidad_d.Trim(),
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeUnidadesIguales,
+                    CodigoValidacion);
+            }
+
+            if (equivalencia.factor <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeFactorInvalido,
+                    CodigoValidacion);
+            }
+
+            return null;
+        }
+
+        private static ErrorDto?
+            INV_UnidadesConv_Codigos_Validar(
+                int CodEmpresa,
+                string? CodUnidad,
+                string? CodUnidadDestino)
+        {
+            if (CodEmpresa <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeEmpresaRequerida,
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(CodUnidad))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeUnidadRequerida,
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                CodUnidadDestino))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeUnidadDestinoRequerida,
+                    CodigoValidacion);
+            }
+
+            return null;
+        }
+
+        private static ErrorDto<List<T>>
+            INV_UnidadesConv_Lista_Resultado_Procesar<T>(
+                ErrorDto<List<T>> resultado,
+                string mensajeError)
+        {
+            if (resultado.Code == 0)
+            {
+                return DbHelper.CreateOkResponse(
+                    resultado.Result ??
+                    new List<T>());
+            }
+
+            return DbHelper.CreateErrorResponse(
+                INV_UnidadesConv_Error_Descripcion_Crear(
+                    mensajeError,
+                    resultado.Description),
+                resultado.Code.GetValueOrDefault(-1),
+                new List<T>());
+        }
+
+        private static ErrorDto
+            INV_UnidadesConv_NonQuery_Resultado_Procesar(
+                ErrorDto resultado,
+                string mensajeExito,
+                string mensajeError)
+        {
+            if (resultado.Code == 0)
+            {
+                return DbHelper.OkResponse(
+                    mensajeExito);
+            }
+
+            return DbHelper.ErrorResponse(
+                INV_UnidadesConv_Error_Descripcion_Crear(
+                    mensajeError,
+                    resultado.Description),
+                resultado.Code.GetValueOrDefault(-1));
+        }
+
+        private static UnidadesConvLista
+            INV_UnidadesConv_Lista_Vacia_Crear()
+        {
+            return new UnidadesConvLista
+            {
+                total = 0,
+                lista =
+                    new List<UnidadMedicionConvData>()
+            };
+        }
+
+        private static string
+            INV_UnidadesConv_Error_Descripcion_Crear(
+                string mensaje,
+                string? detalle)
+        {
+            return string.IsNullOrWhiteSpace(detalle)
+                ? mensaje
+                : $"{mensaje} {detalle}";
+        }
     }
 }
