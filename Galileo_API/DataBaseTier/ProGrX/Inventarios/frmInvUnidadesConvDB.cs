@@ -137,8 +137,7 @@ namespace Galileo.DataBaseTier
                     RTRIM(COD_UNIDAD_D) AS cod_unidad_d,
                     ISNULL(FACTOR, 0) AS factor
                 FROM PV_UNIDADES_CONV
-                WHERE COD_UNIDAD = @CodUnidad
-                ORDER BY COD_UNIDAD_D;
+                WHERE COD_UNIDAD = @CodUnidad;
                 """;
 
             var resultado =
