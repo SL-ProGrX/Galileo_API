@@ -1,30 +1,62 @@
-using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
+using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.INV;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo.Controllers
 {
-    [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
-    public class FrmInvReporteInventariosController : ControllerBase
+    [Route("api/[controller]")]
+    public class FrmInvReporteInventariosController
+        : ControllerBase
     {
         private readonly FrmInvReporteInventariosBL _bl;
-        public FrmInvReporteInventariosController(IConfiguration config)
+
+        public FrmInvReporteInventariosController(
+            IConfiguration config)
         {
-            _bl = new FrmInvReporteInventariosBL(config);
+            _bl = new FrmInvReporteInventariosBL(
+                config);
         }
 
-        [HttpGet("Obtener_Bodegas")]
-        public ErrorDto<List<BodegaReporteInvMCdto>> Obtener_Bodegas(int CodEmpresa)
+        [HttpGet(
+            "INV_ReporteInventarios_Bodegas_Obtener")]
+        public ErrorDto<
+            List<DropDownListaGenericaModel<string>>>
+            INV_ReporteInventarios_Bodegas_Obtener(
+                int CodEmpresa)
         {
-            return _bl.Obtener_Bodegas(CodEmpresa);
+            return _bl
+                .INV_ReporteInventarios_Bodegas_Obtener(
+                    CodEmpresa);
         }
 
-        [HttpGet("Obtener_Lineas")]
-        public ErrorDto<List<LineasInvMCdto>> Obtener_Lineas(int CodEmpresa)
+        [HttpGet(
+            "INV_ReporteInventarios_Lineas_Obtener")]
+        public ErrorDto<
+            List<DropDownListaGenericaModel<int>>>
+            INV_ReporteInventarios_Lineas_Obtener(
+                int CodEmpresa)
         {
-            return _bl.Obtener_Lineas(CodEmpresa);
+            return _bl
+                .INV_ReporteInventarios_Lineas_Obtener(
+                    CodEmpresa);
+        }
+
+        [HttpGet(
+            "INV_ReporteInventarios_Sublineas_Obtener")]
+        public ErrorDto<
+            List<DropDownListaGenericaModel<int>>>
+            INV_ReporteInventarios_Sublineas_Obtener(
+                int CodEmpresa,
+                int CodLinea)
+        {
+            return _bl
+                .INV_ReporteInventarios_Sublineas_Obtener(
+                    CodEmpresa,
+                    CodLinea);
         }
     }
 }
