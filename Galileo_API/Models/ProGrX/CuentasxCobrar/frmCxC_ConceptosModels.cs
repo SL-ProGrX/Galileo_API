@@ -6,6 +6,8 @@
         public string Descripcion { get; set; } = string.Empty;
         public string? Cod_Cuenta { get; set; }
         public string? Cod_Cuenta_Salida { get; set; }
+        /// <summary>Divisa derivada de CntX_Cuentas (solo lectura; no se persiste en CxC_Conceptos).</summary>
+        public string? Cod_Divisa { get; set; }
         public short Requiere_Contrato { get; set; }
         public short Requiere_Documento { get; set; }
         public short Genera_Desembolso { get; set; }
@@ -111,5 +113,27 @@
         public string Cta_Ingreso { get; set; } = string.Empty;
         public string Cta_Orden_Debe { get; set; } = string.Empty;
         public string Cta_Orden_Haber { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Resultado de spCxC_Concepto_Incobrable_Consulta (campos alineados al VB6).
+    /// </summary>
+    public class CxcConceptoIncobrableConsultaDto
+    {
+        public short I_Indicador { get; set; }
+        public string? Cod_Unidad { get; set; }
+        public string? Unidad_Desc { get; set; }
+        public string? Cod_Centro_Costo { get; set; }
+        public string? Centro_Desc { get; set; }
+        public string? Cta_Deterioro_Mask { get; set; }
+        public string? Cta_Deterioro_Desc { get; set; }
+        public string? Cta_Estimacion_Mask { get; set; }
+        public string? Cta_Estimacion_Desc { get; set; }
+        public string? Cta_Ingreso_Mask { get; set; }
+        public string? Cta_Ingreso_Desc { get; set; }
+        public string? Cta_Orden_Debe_Mask { get; set; }
+        public string? Cta_Orden_Debe_Desc { get; set; }
+        public string? Cta_Orden_Haber_Mask { get; set; }
+        public string? Cta_Orden_Haber_Desc { get; set; }
     }
 }

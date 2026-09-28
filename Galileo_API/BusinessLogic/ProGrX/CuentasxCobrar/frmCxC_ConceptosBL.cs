@@ -62,5 +62,8 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
 
         public ErrorDto<bool> CxcConceptos_Incobrable(int codEmpresa, CxcConceptoIncobrableParams param)
             => _db.CxcConceptos_Incobrable(codEmpresa, param);
+
+        public ErrorDto<CxcConceptoIncobrableConsultaDto?> CxcConceptos_Incobrable_Consulta(int codEmpresa, string codConcepto)
+            => _db.CxcConceptos_Incobrable_Consulta(codEmpresa, codConcepto);
     }
 }
