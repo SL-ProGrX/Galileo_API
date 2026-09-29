@@ -44,7 +44,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
                     .Result;
                 var usuario = filtro.usuario.Trim().ToUpperInvariant();
                 var esUsuarioEspecial =
-                    mTesoreria.TES_EmisionDocumento_UsuarioEsEspecial(connection, usuario);
+                    MTesoreria.TES_EmisionDocumento_UsuarioEsEspecial(connection, usuario);
 
                
                 using var resultados = connection.QueryMultiple(
@@ -54,8 +54,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
                         top = Math.Max(filtro.cantidad, 0),
                         filtro.tipoDoc,
                         filtro.banco,
-                        minimo = (esUsuarioEspecial == true || rangos.solInicio == 0) ? 0 : rangos.solInicio,
-                        maximo = (esUsuarioEspecial == true || rangos.solInicio == 0) ? 999999999 : rangos.solCorte,
+                        minimo = (esUsuarioEspecial || rangos.solInicio == 0) ? 0 : rangos.solInicio,
+                        maximo = (esUsuarioEspecial || rangos.solInicio == 0) ? 999999999 : rangos.solCorte,
                         fechaInicio =  rangos.fechaInicio,
                         fechaCorte = rangos.fechaCorte,
                         usuario,
@@ -106,7 +106,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
             {
                 var usuario = filtro.usuario.Trim().ToUpperInvariant();
                 var esUsuarioEspecial =
-                    mTesoreria.TES_EmisionDocumento_UsuarioEsEspecial(connection, usuario);
+                    MTesoreria.TES_EmisionDocumento_UsuarioEsEspecial(connection, usuario);
 
                 return connection.Query<int>(
                     SolicitudesIdsSql,

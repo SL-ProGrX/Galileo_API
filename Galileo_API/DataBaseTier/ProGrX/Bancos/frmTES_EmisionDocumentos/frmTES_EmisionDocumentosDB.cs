@@ -224,7 +224,7 @@ Where Estado='P' And Tipo = @tipoDoc and ID_Banco = @banco";
                     .Result;
 
                 var usuario = filtro.usuario.ToUpperInvariant();
-                var esUsuarioEspecial = mTesoreria.TES_EmisionDocumento_UsuarioEsEspecial(conn, usuario);
+                var esUsuarioEspecial = MTesoreria.TES_EmisionDocumento_UsuarioEsEspecial(conn, usuario);
 
                 var query = TES_EmisionDocumento_Solicitudes_BuildQuery(filtro, esUsuarioEspecial);
 

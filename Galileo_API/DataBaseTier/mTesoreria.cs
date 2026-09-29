@@ -150,12 +150,10 @@ namespace Galileo.DataBaseTier
                         , new { usuario }).ToList();
 
                     // valido si banco especial existe en result, si no lo agrego 
-                    foreach (var banco in bancosEspeciales)
+                    foreach (var banco in bancosEspeciales.Where(banco =>
+                                 !resp.Result.Any(b => b.item == banco.item)))
                     {
-                        if (!resp.Result.Any(b => b.item == banco.item))
-                        {
-                            resp.Result.Add(banco);
-                        }
+                        resp.Result.Add(banco);
                     }
                 }
             }
@@ -230,12 +228,10 @@ namespace Galileo.DataBaseTier
                                 , new { banco = Banco, usuario = Usuario }).ToList();
 
                     // valido si banco especial existe en result, si no lo agrego 
-                    foreach (var documento in docEspeciales)
+                    foreach (var documento in docEspeciales.Where(documento =>
+                                 !resp.Result.Any(b => b.item == documento.item)))
                     {
-                        if (!resp.Result.Any(b => b.item == documento.item))
-                        {
-                            resp.Result.Add(documento);
-                        }
+                        resp.Result.Add(documento);
                     }
                 }
 
@@ -1338,7 +1334,7 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Valida si el usuario tiene solicitudes autorizadas de forma especial pendientes.
         /// </summary>
-        public bool TES_EmisionDocumento_UsuarioEsEspecial(SqlConnection conn, string usuario)
+        public static bool TES_EmisionDocumento_UsuarioEsEspecial(SqlConnection conn, string usuario)
         {
             const string query = @"
                 select count(t.USUARIO_AUTORIZA_ESPECIAL)

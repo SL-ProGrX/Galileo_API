@@ -171,7 +171,6 @@ namespace Galileo.DataBaseTier
             {
                 var cuentaOld = data.DataKey.Split("-");
                  cuentaOldCtn = cuentaOld[1].Trim();
-                string cuentaOldBn = cuentaOld[2].Trim();
             }
             catch (Exception)
             {
