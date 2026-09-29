@@ -1,244 +1,196 @@
-﻿using Dapper;
+using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.GEN;
 using Microsoft.Data.SqlClient;
-using System.Data;
 
 namespace Galileo.DataBaseTier
 {
     public class FrmGenEnlacesCreditoDb
     {
-        private readonly IConfiguration _config;
+        private readonly PortalDB _portalDB;
 
         public FrmGenEnlacesCreditoDb(IConfiguration config)
         {
-            _config = config;
+            _portalDB = new PortalDB(config);
         }
 
-        public ErrorDto<EnlaceCreditoLista> EnlacesCreditoConsultar(int codEmpresa, int? pagina, int? paginacion, string? filtro)
+        // ==========================
+        // Helpers
+        // ==========================
+
+        private const string SqlEnlacesSelect = @"
+SELECT
+    I.cod_institucion,
+    I.descripcion,
+    ISNULL(P.cod_credito, '') AS cod_credito
+";
+
+        private const string SqlEnlacesFrom = @"
+FROM instituciones I
+INNER JOIN PV_PARINSTITUCIONES P
+    ON I.cod_institucion = P.cod_institucion
+WHERE
+    (@filtro IS NULL)
+ OR (CONVERT(varchar(20), I.cod_institucion) LIKE @like)
+ OR (I.descripcion LIKE @like)
+ OR (P.cod_credito LIKE @like)
+";
+
+        private static (string? filtro, string? like) BuildFiltroLike(FiltrosLazyLoadData? filtros)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var datos = new ErrorDto<EnlaceCreditoLista>
+            var texto = filtros?.filtro?.Trim();
+            if (string.IsNullOrWhiteSpace(texto))
+                return (null, null);
+
+            return (texto, $"%{texto}%");
+        }
+
+        private static (string sortField, string sortOrder) ResolveSort(FiltrosLazyLoadData? filtros)
+        {
+            // ORDER BY seguro (whitelist)
+            string sortField = (filtros?.sortField ?? "").Trim().ToLowerInvariant() switch
             {
-                Result = new EnlaceCreditoLista { total = 0 }
+                "descripcion" => "I.descripcion",
+                "cod_credito" => "P.cod_credito",
+                _ => "I.cod_institucion"
             };
 
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
-                ConsultarEnlacesCredito(connection, ref datos, pagina, paginacion, filtro);
-            }
-            catch (Exception ex)
-            {
-                datos.Code = -1;
-                datos.Description = ex.Message;
-            }
-            return datos;
+            string sortOrder = filtros?.sortOrder == 0 ? "DESC" : "ASC";
+            return (sortField, sortOrder);
         }
 
-        private static void ConsultarEnlacesCredito(
-            SqlConnection connection,
-            ref ErrorDto<EnlaceCreditoLista> datos,
-            int? pagina,
-            int? paginacion,
-            string? filtro)
+        private static List<GenEnlacesCreditoData> QueryEnlaces(
+            SqlConnection conn,
+            FiltrosLazyLoadData? filtros,
+            bool usarPaginacion,
+            out int total)
         {
-            // Normalizamos el filtro a NULL o "%valor%"
-            string? filtroParam = string.IsNullOrWhiteSpace(filtro)
-                ? null
-                : $"%{filtro}%";
+            var (filtro, like) = BuildFiltroLike(filtros);
+            var (sortField, sortOrder) = ResolveSort(filtros);
 
-            // 1) Total de registros (query fija, sin SQL dinámico)
-            const string countQuery = @"
-                SELECT COUNT(I.cod_institucion)
-                FROM instituciones I
-                INNER JOIN PV_PARINSTITUCIONES P
-                    ON I.cod_institucion = P.cod_institucion
-                WHERE (@Filtro IS NULL
-                    OR I.descripcion     LIKE @Filtro
-                    OR I.cod_institucion LIKE @Filtro
-                    OR P.cod_credito     LIKE @Filtro);";
+            const string sqlCount = "SELECT COUNT(1) " + SqlEnlacesFrom + ";";
+            total = conn.QuerySingle<int>(sqlCount, new { filtro, like });
 
-            var totalResult = connection.ExecuteScalar<int>(
-                countQuery,
-                new { Filtro = filtroParam });
+            var sqlList = SqlEnlacesSelect + SqlEnlacesFrom + $"\nORDER BY {sortField} {sortOrder}";
 
-            if (datos.Result != null)
-            {
-                datos.Result.total = totalResult;
-            }
+            int offset = filtros?.pagina ?? 0;
+            int fetch = filtros?.paginacion ?? 0;
 
-            // 2) Lista (con o sin paginación) — queries fijas
-            if (pagina.HasValue && paginacion.HasValue)
-            {
-                const string selectPagedQuery = @"
-                    SELECT 
-                        I.cod_institucion as codInstitucion,
-                        I.descripcion,
-                        P.cod_credito     as codCredito
-                    FROM instituciones I
-                    INNER JOIN PV_PARINSTITUCIONES P
-                        ON I.cod_institucion = P.cod_institucion
-                    WHERE (@Filtro IS NULL
-                        OR I.descripcion     LIKE @Filtro
-                        OR I.cod_institucion LIKE @Filtro
-                        OR P.cod_credito     LIKE @Filtro)
-                    ORDER BY I.cod_institucion
-                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+            sqlList += usarPaginacion && fetch > 0
+                ? "\nOFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;"
+                : ";";
 
-                var selectParams = new
-                {
-                    Filtro = filtroParam,
-                    Offset = pagina.Value,
-                    PageSize = paginacion.Value
-                };
-
-                if (datos.Result != null)
-                {
-                    datos.Result.lista = connection
-                        .Query<EnlaceCreditoDto>(selectPagedQuery, selectParams)
-                        .ToList();
-                }
-            }
-            else
-            {
-                const string selectAllQuery = @"
-                    SELECT 
-                        I.cod_institucion as codInstitucion,
-                        I.descripcion,
-                        P.cod_credito     as codCredito
-                    FROM instituciones I
-                    INNER JOIN PV_PARINSTITUCIONES P
-                        ON I.cod_institucion = P.cod_institucion
-                    WHERE (@Filtro IS NULL
-                        OR I.descripcion     LIKE @Filtro
-                        OR I.cod_institucion LIKE @Filtro
-                        OR P.cod_credito     LIKE @Filtro)
-                    ORDER BY I.cod_institucion;";
-
-                var selectParams = new
-                {
-                    Filtro = filtroParam
-                };
-
-                if (datos.Result != null)
-                {
-                    datos.Result.lista = connection
-                        .Query<EnlaceCreditoDto>(selectAllQuery, selectParams)
-                        .ToList();
-                }
-            }
+            return conn.Query<GenEnlacesCreditoData>(sqlList, new { filtro, like, offset, fetch }).ToList();
         }
 
-        public ErrorDto<List<CodigoCreditoDto>> CodigoCredito_ObtenerTodos(int codEmpresa, string cod_institucion)
-        {
-            var seguridadPortal = new SeguridadPortalDb(_config);
-            var pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(codEmpresa);
-            var codInstitucion = NormalizeRequiredText(cod_institucion, nameof(cod_institucion), 20);
+        // ==========================
+        // Públicos
+        // ==========================
 
-            var resp = new ErrorDto<List<CodigoCreditoDto>>();
+        /// <summary>
+        /// Registra en PV_PARINSTITUCIONES las instituciones nuevas o no configuradas.
+        /// Equivale al INSERT del Form_Load de frmGenEnlacesCredito.
+        /// </summary>
+        public ErrorDto Gen_EnlacesCredito_Sincronizar(int CodEmpresa)
+        {
+            const string sql = @"
+INSERT INTO PV_PARINSTITUCIONES (COD_INSTITUCION, COD_CREDITO)
+SELECT I.COD_INSTITUCION, ''
+FROM INSTITUCIONES I
+WHERE NOT EXISTS (SELECT 1 FROM PV_PARINSTITUCIONES P WHERE P.COD_INSTITUCION = I.COD_INSTITUCION);";
+
+            return DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, sql);
+        }
+
+        /// <summary>
+        /// Obtiene la lista paginada de enlaces institución - crédito.
+        /// Equivale a sbCargaLsw de frmGenEnlacesCredito.
+        /// </summary>
+        public ErrorDto<GenEnlacesCreditoLista> Gen_EnlacesCreditoLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
             try
             {
-                using var connectionCore = CreateCoreConnection(pgxClienteDto);
+                bool usarPaginacion = (filtros?.paginacion ?? 0) > 0;
+                var lista = QueryEnlaces(conn, filtros, usarPaginacion, out int total);
 
-                const string query = "SELECT CODIGO, DESCRIPCION FROM CATALOGO WHERE COD_INSTITUCION = @cod_institucion";
-
-                var parameters = new DynamicParameters();
-                parameters.Add("cod_institucion", codInstitucion, DbType.String);
-
-                resp.Result = connectionCore.Query<CodigoCreditoDto>(query, parameters).ToList();
-                resp.Code = 0;
-                resp.Description = "Ok";
+                return DbHelper.CreateOkResponse(new GenEnlacesCreditoLista { total = total, lista = lista });
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = null;
+                return DbHelper.CreateErrorResponse<GenEnlacesCreditoLista>(ex.Message);
             }
-
-            return resp;
         }
 
-        public ErrorDto EnlaceCredito_Actualizar(EnlaceCreditoDto request)
+        /// <summary>
+        /// Obtiene los enlaces sin paginación (exportación a PDF y Excel).
+        /// </summary>
+        public ErrorDto<List<GenEnlacesCreditoData>> Gen_EnlacesCredito_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var seguridadPortal = new SeguridadPortalDb(_config);
-            var pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(request.CodEmpresa);
-
-            var resp = new ErrorDto();
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
             try
             {
-                
-                var codCredito = NormalizeRequiredText(request.CodCredito, nameof(request.CodCredito), 50);
-
-                using var connectionCore = CreateCoreConnection(pgxClienteDto);
-
-                const string query = @"
-                    UPDATE PV_PARINSTITUCIONES 
-                    SET cod_credito = @cod_credito 
-                    WHERE cod_institucion = @cod_institucion";
-
-                var parameters = new DynamicParameters();
-                parameters.Add("cod_credito", codCredito, DbType.String);
-                parameters.Add("cod_institucion", request.CodInstitucion, DbType.Int32);
-
-                resp.Code = connectionCore.Execute(query, parameters);
-                resp.Description = "Ok";
+                var lista = QueryEnlaces(conn, filtros, usarPaginacion: false, out _);
+                return DbHelper.CreateOkResponse(lista);
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                return DbHelper.CreateErrorResponse<List<GenEnlacesCreditoData>>(ex.Message);
             }
-
-            return resp;
         }
 
-        private static string NormalizeRequiredText(string? value, string paramName, int maxLength = 50)
+        /// <summary>
+        /// Obtiene las líneas de crédito del catálogo para una institución.
+        /// Equivale a la búsqueda F4 de txtCodCredito.
+        /// catalogo.cod_institucion es varchar (ver frmCR_CatalogoCreditosDB), por lo que se
+        /// compara de forma segura para no depender de ceros a la izquierda ni del tipo.
+        /// </summary>
+        public ErrorDto<List<DropDownListaGenericaModel>> Gen_EnlacesCreditoCatalogo_Obtener(int CodEmpresa, int cod_institucion)
         {
-            var normalized = (value ?? string.Empty).Trim();
+            const string sql = @"
+SELECT codigo AS item, descripcion
+FROM catalogo
+WHERE TRY_CAST(cod_institucion AS int) = @cod_institucion
+ORDER BY descripcion;";
 
-            if (string.IsNullOrWhiteSpace(normalized))
-                throw new ArgumentException($"{paramName} es requerido.", paramName);
-
-            if (normalized.Length > maxLength)
-                throw new ArgumentException($"{paramName} no es válido.", paramName);
-
-            return normalized;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, sql, new { cod_institucion });
         }
 
-        private static SqlConnection CreateCoreConnection(PgxClienteDto pgxClienteDto)
+        /// <summary>
+        /// Actualiza la línea de crédito asignada a una institución.
+        /// Equivale al Enter de txtCodCredito (permite código vacío, igual que VB6).
+        /// </summary>
+        public ErrorDto Gen_EnlacesCredito_Actualizar(int CodEmpresa, GenEnlacesCreditoData enlace)
         {
-            if (pgxClienteDto == null)
-                throw new InvalidOperationException("No se encontró la configuración PGX del cliente.");
+            if (enlace == null)
+                return DbHelper.ErrorResponse("El enlace es requerido.", -2);
 
-            var server = (pgxClienteDto.PGX_CORE_SERVER ?? string.Empty).Trim();
-            var database = (pgxClienteDto.PGX_CORE_DB ?? string.Empty).Trim();
-            var user = (pgxClienteDto.PGX_CORE_USER ?? string.Empty).Trim();
-            var secret = (pgxClienteDto.PGX_CORE_KEY ?? string.Empty).Trim();
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-            if (string.IsNullOrWhiteSpace(server) ||
-                string.IsNullOrWhiteSpace(database) ||
-                string.IsNullOrWhiteSpace(user) ||
-                string.IsNullOrWhiteSpace(secret))
+            try
             {
-                throw new InvalidOperationException("La configuración PGX del cliente está incompleta.");
+                const string sql = @"
+UPDATE PV_PARINSTITUCIONES
+SET cod_credito = @cod_credito
+WHERE cod_institucion = @cod_institucion;";
+
+                int filas = conn.Execute(sql, new
+                {
+                    cod_credito = (enlace.cod_credito ?? string.Empty).Trim(),
+                    enlace.cod_institucion
+                });
+
+                return filas == 0
+                    ? DbHelper.ErrorResponse($"La institución {enlace.cod_institucion} no existe en los enlaces.", -2)
+                    : DbHelper.OkResponse("Enlace actualizado correctamente.");
             }
-
-            var csb = new SqlConnectionStringBuilder
+            catch (Exception ex)
             {
-                DataSource = server,
-                InitialCatalog = database,
-                IntegratedSecurity = false,
-                UserID = user,
-                Password = secret
-            };
-
-            return new SqlConnection(csb.ConnectionString);
+                return DbHelper.ErrorResponse(ex.Message);
+            }
         }
-
     }
 }

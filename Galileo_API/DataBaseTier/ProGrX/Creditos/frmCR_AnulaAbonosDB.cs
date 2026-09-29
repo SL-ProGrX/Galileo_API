@@ -15,9 +15,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private readonly MProGrxMain _mProGrx;
         private readonly MSecurityMainDb _bitacora;
         private readonly MAfilicacionDB _mAfiliacion;
+        private readonly MCntLinkDB _mCntLinkDb;
+        private readonly FrmCcDocCuentasDb _docCuentasDb;
         private const int VModulo = 3;
         private const string TipoDocumento = "ND";
         private const string Concepto = "CRD008";
+        private const string MensajeCuentaNoEspecificada =
+            "No se puede realizar movimiento porque no se especificó una cuenta contable válida para esta operación.";
 
         public FrmCrAnulaAbonosDB(IConfiguration config)
         {
@@ -26,6 +30,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             _mProGrx = new MProGrxMain(config);
             _bitacora = new MSecurityMainDb(config);
             _mAfiliacion = new MAfilicacionDB(config);
+            _mCntLinkDb = new MCntLinkDB(config);
+            _docCuentasDb = new FrmCcDocCuentasDb(config);
         }
 
         /// <summary>
@@ -158,7 +164,7 @@ select isnull(dbo.fxCrd_Operacion_Anula_Cta_Recomendada(@idSolicitud, @montoAmor
                 if (!OperacionPermiteAnulacion(conn, tx, operacion.codigo))
                     return DbHelper.CreateErrorResponse("No se pueden realizar este tipo de movimientos a recaudos de ahorros extraordinarios, debe aplicarlos directamente al plan de ahorros de la persona.", -2, response);
 
-                var destino = ResolverCuentaDestino(conn, tx, codEmpresa, request.accion);
+                var destino = ResolverCuentaDestino(conn, tx, codEmpresa, request);
                 if (!destino.es_valido)
                     return DbHelper.CreateErrorResponse(destino.mensaje_error, -2, response);
 
@@ -362,9 +368,9 @@ where R.estado in('A','C')
                 tx) != 0;
         }
 
-        private CuentaDestino ResolverCuentaDestino(SqlConnection conn, SqlTransaction tx, int codEmpresa, string accion)
+        private CuentaDestino ResolverCuentaDestino(SqlConnection conn, SqlTransaction tx, int codEmpresa, CrAnulaAbonosProcesarRequest request)
         {
-            if (string.Equals((accion ?? "S").Trim(), "S", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals((request.accion ?? "S").Trim(), "S", StringComparison.OrdinalIgnoreCase))
             {
                 var saldoFavor = conn.QueryFirstOrDefault<(string cod_forma_pago, string cod_cuenta)>(@"
 select top 1
@@ -379,9 +385,33 @@ where TIPO = 'S' and Activa = 1;", transaction: tx);
                 return CuentaDestino.SaldoFavor(saldoFavor.cod_cuenta, saldoFavor.cod_forma_pago);
             }
 
+            return ResolverCuentaDocumento(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// fxDocumentoCuenta: usa la cuenta capturada en frmCC_DocCuentas cuando el documento la exige;
+        /// si no la exige, usa la cuenta configurada del documento.
+        /// </summary>
+        /// <param name="codEmpresa">Empresa donde se registra el proceso.</param>
+        /// <param name="request">Datos de anulación con la cuenta capturada.</param>
+        /// <returns>Cuenta contable destino o motivo de rechazo.</returns>
+        private CuentaDestino ResolverCuentaDocumento(int codEmpresa, CrAnulaAbonosProcesarRequest request)
+        {
+            var cuentaCapturada = (request.cuenta_documento ?? string.Empty).Trim();
+            if (cuentaCapturada.Length > 0)
+            {
+                return _mCntLinkDb.fxgCntCuentaValida(codEmpresa, cuentaCapturada)
+                    ? CuentaDestino.Contable(cuentaCapturada)
+                    : CuentaDestino.Invalida("La cuenta contable indicada no es válida o no acepta movimientos.");
+            }
+
+            var verificacion = _docCuentasDb.CC_DocCuentas_Documento_Verificar(codEmpresa, TipoDocumento);
+            if (verificacion.Result?.verificar == true)
+                return CuentaDestino.Invalida(MensajeCuentaNoEspecificada);
+
             string cuenta = _mRecibos.FxDocumentoCuenta(codEmpresa, TipoDocumento).Trim();
             return string.IsNullOrWhiteSpace(cuenta)
-                ? CuentaDestino.Invalida("No se puede realizar movimiento porque no se especificó una cuenta contable válida para esta operación.")
+                ? CuentaDestino.Invalida(MensajeCuentaNoEspecificada)
                 : CuentaDestino.Contable(cuenta);
         }
 
@@ -398,7 +428,9 @@ where TIPO = 'S' and Activa = 1;", transaction: tx);
             var request = contexto.Request;
             var operacion = contexto.Operacion;
             var ctas = contexto.Ctas;
-            var detalle = (request.notas ?? string.Empty).Trim();
+            var detalle = string.IsNullOrWhiteSpace(request.detalle_documento)
+                ? (request.notas ?? string.Empty).Trim()
+                : request.detalle_documento.Trim();
             contexto.Conn.Execute(@"
 insert SIF_TRANSACCIONES(
     COD_TRANSACCION,TIPO_DOCUMENTO,REGISTRO_FECHA,REGISTRO_USUARIO,Cliente_IDENTIFICACION,CLIENTE_NOMBRE,
@@ -406,7 +438,7 @@ insert SIF_TRANSACCIONES(
     linea1,linea2,linea3,linea4,linea5,linea6,linea7,linea8,linea9,linea10,linea11,detalle)
 values(
     @numDocumento,@tipoDocumento,dbo.MyGetdate(),@usuario,@cedula,@nombre,
-    @concepto,@montoTotal,'P',@idSolicitud,@codigo,'',@oficina,
+    @concepto,@montoTotal,'P',@idSolicitud,@codigo,@referencia03,@oficina,
     @linea1,@linea2,@linea3,@linea4,@linea5,@linea6,@linea7,@linea8,@linea9,@linea10,@linea11,@detalle);", new
             {
                 numDocumento = contexto.NumDocumento,
@@ -418,6 +450,7 @@ values(
                 montoTotal = contexto.MontoTotal,
                 idSolicitud = request.id_solicitud.ToString(),
                 operacion.codigo,
+                referencia03 = (request.referencia_documento ?? string.Empty).Trim(),
                 oficina = contexto.OficinaTitular,
                 linea1 = $"Saldo Actual      {ctas.Saldo:N2}",
                 linea2 = $"Interes Corriente {request.int_corriente * -1:N2}",
@@ -458,7 +491,7 @@ exec spSIFDocsAsiento
     @cuenta,
     @idSolicitud,
     @codigo,
-    '';", new
+    @referencia;", new
             {
                 tipoDocumento = TipoDocumento,
                 numDocumento = contexto.NumDocumento,
@@ -470,7 +503,8 @@ exec spSIFDocsAsiento
                 codCentroCosto = ctas.Cod_Centro_Costo,
                 cuenta,
                 idSolicitud = ctas.ID_SOLICITUD,
-                codigo = ctas.Codigo
+                codigo = ctas.Codigo,
+                referencia = (contexto.Request.referencia_documento ?? string.Empty).Trim()
             }, contexto.Tx);
         }
 

@@ -614,7 +614,72 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 };
             }
 
-            const string sql = @"EXEC spCBR_Incobrables_Traslado @IdSolicitud, @Usuario, @Notas;";
+            const string sql = @"
+                DECLARE @DocumentoAnterior VARCHAR(30) = ISNULL((
+                    SELECT TOP 1 RTRIM(ISNULL(Cod_Transaccion, ''))
+                    FROM CBR_INCOBRABLES
+                    WHERE Id_Solicitud = @IdSolicitud
+                      AND Estado = 'A'
+                    ORDER BY Cod_Incobrable DESC
+                ), '');
+
+                BEGIN TRY
+                    EXEC spCBR_Incobrables_Traslado @IdSolicitud, @Usuario, @Notas;
+                END TRY
+                BEGIN CATCH
+                    DECLARE @NumeroError INT = ERROR_NUMBER();
+                    DECLARE @MensajeError NVARCHAR(4000) = ERROR_MESSAGE();
+
+                    /*
+                       El procedimiento confirma el traslado antes de sincronizar CxC.
+                       La versión actual de spCxC_CuentaIntereses puede intentar asignar
+                       NULL a Dias_Mora cuando Fecha_Corte es NULL. Si ocurre exactamente
+                       ese error posterior, se normalizan solo los movimientos de la cuenta
+                       vinculada al nuevo incobrable y se recupera el documento confirmado
+                       para que la aplicación pueda emitir la boleta.
+                    */
+                    IF @NumeroError = 515
+                       AND @MensajeError LIKE '%DIAS_MORA%'
+                       AND EXISTS (
+                        SELECT 1
+                        FROM CBR_INCOBRABLES
+                        WHERE Id_Solicitud = @IdSolicitud
+                          AND Estado = 'A'
+                          AND RTRIM(ISNULL(Tipo_Documento, '')) <> ''
+                          AND RTRIM(ISNULL(Cod_Transaccion, '')) <> ''
+                          AND RTRIM(ISNULL(Cod_Transaccion, '')) <> @DocumentoAnterior
+                    )
+                    BEGIN
+                        UPDATE M
+                        SET Dias_Mora = CASE
+                            WHEN M.Fecha_Corte IS NULL THEN 0
+                            WHEN DATEDIFF(DAY, M.Fecha_Corte, dbo.MyGetdate()) <= 0 THEN 0
+                            ELSE DATEDIFF(DAY, M.Fecha_Corte, dbo.MyGetdate())
+                        END
+                        FROM CXC_CUENTAS_MOV M
+                        INNER JOIN CBR_INCOBRABLES I
+                            ON I.CXC_OPERACION = M.OPERACION
+                        WHERE I.Id_Solicitud = @IdSolicitud
+                          AND I.Estado = 'A'
+                          AND RTRIM(ISNULL(I.Cod_Transaccion, '')) <> @DocumentoAnterior
+                          AND M.Estado = 'A';
+
+                        SELECT TOP 1
+                            RTRIM(Tipo_Documento) AS TipoDoc,
+                            RTRIM(Cod_Transaccion) AS NumDoc
+                        FROM CBR_INCOBRABLES
+                        WHERE Id_Solicitud = @IdSolicitud
+                          AND Estado = 'A'
+                          AND RTRIM(ISNULL(Tipo_Documento, '')) <> ''
+                          AND RTRIM(ISNULL(Cod_Transaccion, '')) <> ''
+                          AND RTRIM(ISNULL(Cod_Transaccion, '')) <> @DocumentoAnterior
+                        ORDER BY Cod_Incobrable DESC;
+                    END
+                    ELSE
+                    BEGIN
+                        THROW;
+                    END
+                END CATCH;";
 
             return EjecutarProcesoIncobrable(
                 codEmpresa,
@@ -683,7 +748,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 };
             }
 
-            const string sql = @"EXEC spCBR_Incobrables_Reversa @IdSolicitud, @Recargo, @Usuario, @Notas;";
+            const string sql = @"
+                IF OBJECT_ID('dbo.spCBR_Incobrables_Reversa', 'P') IS NULL
+                BEGIN
+                    THROW 50001,
+                        'La base de datos no tiene instalado el procedimiento spCBR_Incobrables_Reversa requerido para reversar el incobrable.',
+                        1;
+                END;
+
+                EXEC spCBR_Incobrables_Reversa @IdSolicitud, @Recargo, @Usuario, @Notas;";
 
             return EjecutarProcesoIncobrable(
                 codEmpresa,

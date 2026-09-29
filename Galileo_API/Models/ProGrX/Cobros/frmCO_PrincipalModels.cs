@@ -73,10 +73,25 @@
 
     public class CoHistorialDto
     {
+        public int id { get; set; }
         public DateTime? fecha { get; set; }
         public string transaccion { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
         public string notas { get; set; } = string.Empty;
+        public decimal saldo { get; set; }
+        public decimal intereses { get; set; }
+        public decimal cargos { get; set; }
+        public decimal poliza { get; set; }
+        public decimal principal { get; set; }
+        public string tipo_documento { get; set; } = string.Empty;
+        public string cod_transaccion { get; set; } = string.Empty;
+    }
+
+    public class CoHistorialReimpresionRequestDto
+    {
+        public string tipo_documento { get; set; } = string.Empty;
+        public string cod_transaccion { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
     }
 
     public class COGestionDto

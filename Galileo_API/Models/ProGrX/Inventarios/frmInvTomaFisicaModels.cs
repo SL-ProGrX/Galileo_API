@@ -1,37 +1,79 @@
 namespace Galileo.Models.INV
 {
-    public class TomaFisicaDto
+    public sealed class TomaFisicaDto
     {
-        public required int consecutivo { get; set; }
-        public string Cod_Bodega { get; set; } = string.Empty;
+        public int consecutivo { get; set; } = 0;
+        public string cod_bodega { get; set; } = string.Empty;
+        public string bodega { get; set; } = string.Empty;
         public string notas { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
-        public DateTime? Fecha_Crea { get; set; }
-        public string User_Crea { get; set; } = string.Empty;
-        public DateTime? Fecha_Inicio { get; set; }
-        public DateTime? Fecha_Corte { get; set; }
-        public DateTime? Fecha_Aplica { get; set; }
-        public string User_Aplica { get; set; } = string.Empty;
-        public string Tipo_Asiento { get; set; } = string.Empty;
-        public string Num_Asiento { get; set; } = string.Empty;
-        public DateTime? Fecha_Asiento { get; set; }
-        public string Causa_Entrada { get; set; } = string.Empty;
-        public string Causa_Salida { get; set; } = string.Empty;
-        public required int Cod_Proveedor_Entrada { get; set; }
-        public required int Cod_Entradag { get; set; }
-        public required int Cod_Salidag { get; set; }
+        public DateTime? fecha_crea { get; set; }
+        public string user_crea { get; set; } = string.Empty;
+        public DateTime? fecha_inicio { get; set; }
+        public DateTime? fecha_corte { get; set; }
+        public DateTime? fecha_aplica { get; set; }
+        public string user_aplica { get; set; } = string.Empty;
+        public string tipo_asiento { get; set; } = string.Empty;
+        public string num_asiento { get; set; } = string.Empty;
+        public DateTime? fecha_asiento { get; set; }
+        public string causa_entrada { get; set; } = string.Empty;
+        public string causa_salida { get; set; } = string.Empty;
+        public int cod_proveedor_entrada { get; set; } = 0;
+        public int cod_entradag { get; set; } = 0;
+        public int cod_salidag { get; set; } = 0;
     }
 
-    public class TomaFisicaDetalleDto
+    public sealed class TomaFisicaDetalleDto
     {
-        public required int consecutivo { get; set; }
-        public string Cod_Bodega { get; set; } = string.Empty;
+        public int consecutivo { get; set; } = 0;
+        public string cod_bodega { get; set; } = string.Empty;
         public string bodega { get; set; } = string.Empty;
-        public string Cod_Producto { get; set; } = string.Empty;
-        public required int Existencia_Logica { get; set; }
-        public required int Existencia_Fisica { get; set; }
-        public string Ubicacion { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
+        public string cod_producto { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public string tipo { get; set; } = string.Empty;
+        public string ubicacion { get; set; } = string.Empty;
+        public decimal existencia_logica { get; set; } = 0m;
+        public decimal existencia_fisica { get; set; } = 0m;
+        public decimal diferencia { get; set; } = 0m;
+    }
+
+    public sealed class TomaFisicaListaFiltros
+    {
+        public int pagina { get; set; } = 0;
+        public int paginacion { get; set; } = 30;
+        public string filtro { get; set; } = string.Empty;
+        public string sortField { get; set; } = "consecutivo";
+        public int sortOrder { get; set; } = -1;
+    }
+
+    public sealed class TomaFisicaDetalleFiltros
+    {
+        public int consecutivo { get; set; } = 0;
+        public int pagina { get; set; } = 0;
+        public int paginacion { get; set; } = 30;
+        public string filtro { get; set; } = string.Empty;
+    }
+
+    public sealed class TomaFisicaGuardarRequest
+    {
+        public TomaFisicaDto toma { get; set; } = new();
+        public List<TomaFisicaDetalleDto> detalle { get; set; } = [];
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public sealed class TomaFisicaInventarioRequest
+    {
+        public int consecutivo { get; set; } = 0;
+        public string cod_bodega { get; set; } = string.Empty;
+        public DateTime? fecha_corte { get; set; }
+        public string usuario { get; set; } = string.Empty;
+        public List<string>? cod_productos { get; set; }
+    }
+
+    public sealed class TomaFisicaProductoRequest
+    {
+        public string cod_bodega { get; set; } = string.Empty;
+        public string codigo { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
     }
 }

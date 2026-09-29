@@ -14,7 +14,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private readonly MProGrxMain _mProGrxMain;
         private string pCuponFrecuencia = "";
         private string pCuponPaga = "";
-        private string pCuponFrecuenciaId = "";
+        private int? pCuponFrecuenciaId;
 
         public FrmFndContratosDB(IConfiguration config)
         {

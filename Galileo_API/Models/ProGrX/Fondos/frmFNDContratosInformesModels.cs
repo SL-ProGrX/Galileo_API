@@ -23,4 +23,12 @@ namespace Galileo.Models.ProGrX.Fondos
     {
         public int consec { get; set; }
     }
+    public class FndContratosInformesSinpe
+    {
+        public int cod_operadora { get; set; }
+        public string? cod_plan { get; set; }
+        public int cod_contrato { get; set; }
+        public string? divisa_desc { get; set; }
+        public string? codigo_contrato { get; set; }
+    }
 }

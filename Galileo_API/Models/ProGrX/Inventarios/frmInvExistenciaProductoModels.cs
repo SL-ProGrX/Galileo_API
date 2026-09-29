@@ -1,31 +1,31 @@
 namespace Galileo.Models.INV
 {
-    public class ExistenciaProductoDto
+    /// <summary>
+    /// Existencia del producto en una bodega. Homologado a rs!cod_bodega / rs!descripcion del VB6.
+    /// </summary>
+    public class InvExistenciaProductoBodegaDto
     {
-        public string Bodega { get; set; } = string.Empty;
-        public string Descripcion { get; set; } = string.Empty;
-        public int Existencia { get; set; } = 0;
+        public string cod_bodega { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public decimal existencia { get; set; }
     }
 
-    public class ExistenciaProductoFiltros
+    /// <summary>
+    /// Resultado de la consulta: existencias por bodega y total general.
+    /// </summary>
+    public class InvExistenciaProductoResultadoDto
     {
-        public string? beneficio_id { get; set; }
-        public string? beneficiario_nombre { get; set; }
-        public string? solicita_id { get; set; }
-        public string? solicita_nombre { get; set; }
-        public string? estado_persona { get; set; }
-        public string? institucion { get; set; }
-        public string? usuario_registra { get; set; }
-        public string? usuario_autoriza { get; set; }
-        public string? unidad { get; set; }
-        public string? oficina { get; set; }
-        public string? estado { get; set; }
-        public string? fecha { get; set; }
-        public string? fecha_inicio { get; set; }
-        public string? fecha_corte { get; set; }
-        public string? Bodega { get; set; }
-        public string Tipo { get; set; } = string.Empty;
-        public string? cod_Bodega { get; set; }
-        public string? cod_Producto { get; set; }
+        public List<InvExistenciaProductoBodegaDto> bodegas { get; set; } = [];
+        public decimal total_existencia { get; set; }
+    }
+
+    /// <summary>
+    /// Datos de consulta de existencia al corte.
+    /// </summary>
+    public class InvExistenciaProductoConsulta
+    {
+        public string cod_producto { get; set; } = string.Empty;
+        public string fecha_corte { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
     }
 }

@@ -485,6 +485,7 @@ namespace Galileo.DataBaseTier
                             cod_Banco = @Cod_Banco,
                             web_auto_gestion = @Gestion,
                             web_ferias = @Ferias,
+                            HaciendaTipoRegimen = @HaciendaTipoRegimen,
                             modifica_fecha = GETDATE(),
                             modifica_usuario = @user_modifica
                       WHERE cod_proveedor = @Cod_Proveedor",
@@ -517,6 +518,7 @@ namespace Galileo.DataBaseTier
                         request.Cod_Banco,
                         Gestion = gestion,
                         Ferias = ferias,
+                        request.HaciendaTipoRegimen,
                         request.user_modifica,
                         request.Cod_Proveedor
                     });
@@ -561,15 +563,15 @@ namespace Galileo.DataBaseTier
                             estado, contacto_ventas, contacto_compras, telefono, telefono_ext, fax, fax_ext,
                             email, email_02, aptopostal, direccion, credito_plazo, credito_monto,
                             descuento_porc, saldo, cod_cuenta, cedJur, Nit_Codigo, Nit_Nombre,
-                            cod_divisa, saldo_divisa_real, cod_banco, web_auto_gestion, web_ferias, registro_fecha,
-                            registro_usuario)
+                            cod_divisa, saldo_divisa_real, cod_banco, web_auto_gestion, web_ferias,
+                            HaciendaTipoRegimen, registro_fecha, registro_usuario)
                       VALUES(
                             @Cod_Proveedor, @Tipo, @Cod_Clasificacion, @Descripcion, @Cod_Alter, @Observacion,
                             @Estado, @Contacto_Ventas, @Contacto_Compras, @Telefono, @Telefono_Ext, @Fax, @Fax_Ext,
                             @Email, @Email_02, @Aptopostal, @Direccion, @Credito_Plazo, @Credito_Monto,
                             @Descuento_Porc, @Saldo, @Cod_Cuenta, @Cedjur, @Nit_Codigo, @Nit_Nombre,
-                            @Cod_Divisa, @Saldo_Divisa_Real, @Cod_Banco, @Web_Auto_Gestion, @Web_Ferias, GETDATE(),
-                            @Registro_Usuario)",
+                            @Cod_Divisa, @Saldo_Divisa_Real, @Cod_Banco, @Web_Auto_Gestion, @Web_Ferias,
+                            @HaciendaTipoRegimen, GETDATE(), @Registro_Usuario)",
                     new
                     {
                         Cod_Proveedor = siguiente,
@@ -602,6 +604,7 @@ namespace Galileo.DataBaseTier
                         request.Cod_Banco,
                         request.Web_Auto_Gestion,
                         request.Web_Ferias,
+                        request.HaciendaTipoRegimen,
                         request.registro_Usuario
                     });
 
