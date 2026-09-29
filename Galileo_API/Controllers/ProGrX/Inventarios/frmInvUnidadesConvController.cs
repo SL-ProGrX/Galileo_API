@@ -1,43 +1,75 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Galileo.BusinessLogic;
+﻿using Galileo.BusinessLogic;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo.Controllers
 {
-    [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
-    public class FrmInvUnidadesConvController : ControllerBase
+    [Route("api/[controller]")]
+    public sealed class FrmInvUnidadesConvController
+        : ControllerBase
     {
-        private readonly FrmInvUnidadesConvBL _bl;
+        private readonly FrmInvUnidadesConvBl _bl;
 
-        public FrmInvUnidadesConvController(IConfiguration config)
+        public FrmInvUnidadesConvController(
+            IConfiguration config)
         {
-            _bl = new FrmInvUnidadesConvBL(config);
+            _bl = new FrmInvUnidadesConvBl(
+                config);
         }
 
-        [HttpGet("UnidadMedicion_Obtener")]
-        public ErrorDto<List<UnidadMedicionConv>> UnidadMedicion_Obtener(int CodCliente)
+        [HttpGet(
+            "INV_UnidadesConv_Unidades_Obtener")]
+        public ErrorDto<
+            List<DropDownListaGenericaModel<string>>>
+            INV_UnidadesConv_Unidades_Obtener(
+                int CodEmpresa)
         {
-            return _bl.UnidadMedicion_Obtener(CodCliente);
+            return _bl
+                .INV_UnidadesConv_Unidades_Obtener(
+                    CodEmpresa);
         }
 
-        [HttpGet("UnidadConvLista_Obtener")]
-        public ErrorDto<UnidadesConvLista> UnidadConvLista_Obtener(int CodCliente, string cod_unidad)
+        [HttpGet(
+            "INV_UnidadesConv_Lista_Obtener")]
+        public ErrorDto<UnidadesConvLista>
+            INV_UnidadesConv_Lista_Obtener(
+                int CodEmpresa,
+                string CodUnidad)
         {
-            return _bl.UnidadConvLista_Obtener(CodCliente, cod_unidad);
+            return _bl
+                .INV_UnidadesConv_Lista_Obtener(
+                    CodEmpresa,
+                    CodUnidad);
         }
 
-        [HttpPost("UnidadConv_Guardar")]
-        public ErrorDto UnidadConv_Guardar(int CodCliente, UnidadMedicionConvData equivalencia)
+        [HttpPost(
+            "INV_UnidadesConv_Guardar")]
+        public ErrorDto INV_UnidadesConv_Guardar(
+            int CodEmpresa,
+            [FromBody]
+            UnidadMedicionConvData equivalencia)
         {
-            return _bl.UnidadConv_Guardar(CodCliente, equivalencia);
+            return _bl.INV_UnidadesConv_Guardar(
+                CodEmpresa,
+                equivalencia);
         }
 
-        [HttpDelete("UnidadConv_Eliminar")]
-        public ErrorDto UnidadConv_Eliminar(int CodCliente, string cod_unidad, string cod_unidad_d)
+        [HttpDelete(
+            "INV_UnidadesConv_Eliminar")]
+        public ErrorDto INV_UnidadesConv_Eliminar(
+            int CodEmpresa,
+            string CodUnidad,
+            string CodUnidadDestino)
         {
-            return _bl.UnidadConv_Eliminar(CodCliente, cod_unidad, cod_unidad_d);
+            return _bl.INV_UnidadesConv_Eliminar(
+                CodEmpresa,
+                CodUnidad,
+                CodUnidadDestino);
         }
     }
 }
