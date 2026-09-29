@@ -185,14 +185,10 @@ namespace Galileo.DataBaseTier.ProGrX
                     }
                 }
 
-                var validacion = connection.QueryFirstOrDefault<ColaboradorClaveValidaRow>(
-                    "spRH_Portal_Clave_Valida",
-                    new
-                    {
-                        EmpleadoId = request.EmpleadoId.Trim(),
-                        Clave = request.Clave
-                    },
-                    commandType: CommandType.StoredProcedure);
+                var validacion = ConsultarClave(
+                    connection,
+                    request.EmpleadoId.Trim(),
+                    request.Clave);
 
                 if (validacion?.Existe != 1)
                 {
@@ -338,10 +334,7 @@ namespace Galileo.DataBaseTier.ProGrX
                             result);
                     }
 
-                    var validacion = connection.QueryFirstOrDefault<ColaboradorClaveValidaRow>(
-                        "spRH_Portal_Clave_Valida",
-                        new { EmpleadoId = empleadoId, Clave = request.Clave },
-                        commandType: CommandType.StoredProcedure);
+                    var validacion = ConsultarClave(connection, empleadoId, request.Clave);
 
                     if (validacion?.Existe != 1)
                     {
@@ -438,30 +431,8 @@ namespace Galileo.DataBaseTier.ProGrX
                     "FROM vRH_Boleta_Pago_List WHERE Empleado_Id = @EmpleadoId " +
                     "ORDER BY Fecha_Corte DESC",
                     parametros),
-                "vacaciones" => (
-                    "SELECT Boleta_Id AS boletaId, Motivo AS motivo, " +
-                    "Fecha_Salida AS fechaSalida, Fecha_Entrada AS fechaEntrada, " +
-                    "Dias_Disfrutados AS dias, Estado_Transaccion AS estado, " +
-                    "Registro_Usuario AS usuario, Registro_Fecha AS fecha " +
-                    "FROM vRH_Boleta_Vacaciones WHERE Empleado_Id = @EmpleadoId " +
-                    "ORDER BY Boleta_VAC DESC",
-                    parametros),
-                "incapacidades" => (
-                    "SELECT Boleta_Id AS boletaId, Motivo AS motivo, " +
-                    "Fecha_Salida AS fechaSalida, Fecha_Entrada AS fechaEntrada, " +
-                    "Dias AS dias, Estado_Transaccion AS estado, " +
-                    "Registro_Usuario AS usuario, Registro_Fecha AS fecha " +
-                    "FROM vRH_Boleta_Incapacidades WHERE Empleado_Id = @EmpleadoId " +
-                    "ORDER BY Boleta_ID DESC",
-                    parametros),
-                "permisos" => (
-                    "SELECT Boleta_Id AS boletaId, Motivo AS motivo, " +
-                    "Hora_Inicio AS horaInicio, Hora_Corte AS horaCorte, " +
-                    "Hrs_Total AS horas, Estado_Transaccion AS estado, " +
-                    "Registro_Usuario AS usuario, Registro_Fecha AS fecha " +
-                    "FROM vRH_Boleta_Permisos WHERE Empleado_Id = @EmpleadoId " +
-                    "ORDER BY Boleta_ID DESC",
-                    parametros),
+                "vacaciones" or "incapacidades" or "permisos" =>
+                    CrearConsultaBoleta(request.Opcion, parametros),
                 "accionesPersonal" => (
                     "SELECT Cod_Accion AS codAccion, Fecha_Accion AS fechaAccion, " +
                     "TipoAccionDesc AS tipoAccion, Salario_Actual AS salarioActual, " +
@@ -494,6 +465,39 @@ namespace Galileo.DataBaseTier.ProGrX
                 "traslados" => CrearConsultaTraslados(request, parametros),
                 _ => (string.Empty, parametros)
             };
+        }
+
+        private static (string Sql, object Parametros) CrearConsultaBoleta(
+            string opcion,
+            object parametros)
+        {
+            var configuracion = opcion switch
+            {
+                "vacaciones" => (
+                    Vista: "vRH_Boleta_Vacaciones",
+                    Fechas: "Fecha_Salida AS fechaSalida, Fecha_Entrada AS fechaEntrada",
+                    Cantidad: "Dias_Disfrutados AS dias",
+                    Orden: "Boleta_VAC"),
+                "incapacidades" => (
+                    Vista: "vRH_Boleta_Incapacidades",
+                    Fechas: "Fecha_Salida AS fechaSalida, Fecha_Entrada AS fechaEntrada",
+                    Cantidad: "Dias AS dias",
+                    Orden: "Boleta_ID"),
+                _ => (
+                    Vista: "vRH_Boleta_Permisos",
+                    Fechas: "Hora_Inicio AS horaInicio, Hora_Corte AS horaCorte",
+                    Cantidad: "Hrs_Total AS horas",
+                    Orden: "Boleta_ID")
+            };
+
+            return (
+                "SELECT Boleta_Id AS boletaId, Motivo AS motivo, " +
+                configuracion.Fechas + ", " + configuracion.Cantidad +
+                ", Estado_Transaccion AS estado, " +
+                "Registro_Usuario AS usuario, Registro_Fecha AS fecha " +
+                $"FROM {configuracion.Vista} WHERE Empleado_Id = @EmpleadoId " +
+                $"ORDER BY {configuracion.Orden} DESC",
+                parametros);
         }
 
         private static (string Sql, object Parametros) CrearConsultaAutorizaciones(
@@ -619,6 +623,17 @@ namespace Galileo.DataBaseTier.ProGrX
             return connection.QueryFirstOrDefault<ColaboradorVinculoRow>(
                 SpRhPortalVinculado,
                 new { Usuario = usuario.Trim() },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        private static ColaboradorClaveValidaRow? ConsultarClave(
+            IDbConnection connection,
+            string empleadoId,
+            string clave)
+        {
+            return connection.QueryFirstOrDefault<ColaboradorClaveValidaRow>(
+                "spRH_Portal_Clave_Valida",
+                new { EmpleadoId = empleadoId, Clave = clave },
                 commandType: CommandType.StoredProcedure);
         }
 
