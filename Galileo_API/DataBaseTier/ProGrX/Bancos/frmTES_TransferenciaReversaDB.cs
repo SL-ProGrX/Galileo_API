@@ -41,7 +41,30 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGestion(int CodEmpresa, string usuario, string gestion)
         {
-            return mTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            var listaBanco = mTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
+
+            if (listaBanco.Code != 0 || listaBanco.Result == null)
+            {
+                return listaBanco;
+            }
+
+            const string querySinpe = @"
+                        select id_banco as item, descripcion
+                                from Tes_Bancos
+                                where Estado = 'A'
+                                  AND (
+                                      TS_APLICA = 1
+                                      OR (SINPE_INTERNA = 1 AND SINPE_EMPRESA is not null)
+                                  )";
+
+            var listaSINPE = conn.Query<DropDownListaGenericaModel>(querySinpe).ToList();
+
+            var bancosSinpe = listaSINPE.Select(sinpe => sinpe.item).ToHashSet();
+            listaBanco.Result.RemoveAll(banco => bancosSinpe.Contains(banco.item));
+
+            return listaBanco;
+
         }
 
         /// <summary>
@@ -400,6 +423,94 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 const string query = $@"select * from vTes_TE_Reversion_Det where id_reversion = @id_reversion ";
 
                 return conn.Query<TransferenciaDetalleModel>(query, new { id_reversion }).ToList();
+            });
+        }
+
+        /// <summary>
+        /// Metodo para obtener las reversas SINPE según los criterios especificados.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="id_banco"></param>
+        /// <param name="fechaInicio"></param>
+        /// <param name="fechaFin"></param>
+        /// <returns></returns>
+        public ErrorDto<List<TesReversionSinpeData>> TES_TransferenciaConsultaSinpe_Obtener(
+            int CodEmpresa,
+            string id_banco,
+            DateTime fechaInicio,
+            DateTime fechaFin)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+            try
+            {
+                var ini = fechaInicio.Date;
+                var fin = fechaFin.Date.AddDays(1).AddTicks(-1);
+
+                const string query = @"
+                            SELECT
+                                id_reversion,
+                                AUTORIZA AS autorizado,
+                                USUARIO_REVERSA AS user_genera,
+                                FECHA_REVERSA AS fecha_genera,
+                                observaciones,
+                                ndocumento AS documento,
+                                id_banco,
+                                'TS' AS tipo
+                            FROM TES_SINPE_REVERSA
+                            WHERE id_banco = @id_banco
+                              AND FECHA_REVERSA BETWEEN @ini AND @fin;";
+
+                var result = conn.Query<TesReversionSinpeData>(query, new
+                {
+                    id_banco,
+                    ini,
+                    fin
+                }).ToList();
+
+                return DbHelper.CreateOkResponse(result);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<List<TesReversionSinpeData>>(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Obtiene los detalles de una reversa SINPE específica.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="id_reversion"></param>
+        /// <returns></returns>
+        public ErrorDto<List<TransferenciaSinpeDetalleModel>> TES_TransferenciaReversaSinpe_Detalle(int CodEmpresa, string id_reversion)
+        {
+            return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
+            {
+                const string query = @"
+SELECT
+    d.NSOLICITUD AS nsolicitud,
+    d.CEDULA AS cedula,
+    d.NOMBRE AS nombre,
+    d.MONTO AS monto,
+    d.DIVISA AS divisa,
+    d.ESTADO_SINPE AS estado_sinpe,
+    d.ID_RECHAZO AS id_rechazo,
+    sm.DESCRIPCION AS rechazo_desc,
+    d.ESTADO_REVERSA AS estado_reversa,
+    d.FONDO_APLICADO AS fondo_aplicado,
+    d.NSOLICITUD_REVERSADA AS nsolicitud_reversada,
+    t.FECHA_EMISION AS fecha_emision,
+    t.CTA_AHORROS AS cta_ahorros,
+    t.NDOCUMENTO AS ndocumento,
+    t.REFERENCIA_SINPE AS cod_referencia
+FROM TES_SINPE_REVERSADET d
+LEFT JOIN TES_TRANSACCIONES t
+    ON d.NSOLICITUD = t.NSOLICITUD
+LEFT JOIN SINPE_MOTIVOS sm
+    ON d.ID_RECHAZO = sm.COD_MOTIVO
+WHERE d.ID_REVERSION = @id_reversion";
+
+                return conn.Query<TransferenciaSinpeDetalleModel>(query, new { id_reversion }).ToList();
             });
         }
 

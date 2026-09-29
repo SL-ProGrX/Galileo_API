@@ -390,26 +390,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 C.registro_usuario
               FROM SYS_CUENTAS_BANCARIAS C
               INNER JOIN TES_BANCOS_GRUPOS B ON C.cod_banco = B.cod_grupo
-              WHERE STUFF(
-                        REPLACE(REPLACE(LTRIM(RTRIM(C.Identificacion)), '-', ''), ' ', ''),
-                        1,
-                        PATINDEX(
-                            '%[^0]%',
-                            REPLACE(REPLACE(LTRIM(RTRIM(C.Identificacion)), '-', ''), ' ', '')
-                        ) - 1,
-                        ''
-                    )
-                    =
-                    STUFF(
-                        REPLACE(REPLACE(LTRIM(RTRIM(@cedula)), '-', ''), ' ', ''),
-                        1,
-                        PATINDEX(
-                            '%[^0]%',
-                            REPLACE(REPLACE(LTRIM(RTRIM(@cedula)), '-', ''), ' ', '')
-                        ) - 1,
-                        ''
-                    )
-                AND C.modulo = 'Pol'",
+              WHERE LTRIM(RTRIM(C.Identificacion)) = LTRIM(RTRIM(@cedula))
+                AND C.Modulo = 'Pol'",
                     new { cedula }
                 ).ToList();
             }
@@ -579,17 +561,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             {
                 using var cn = new SqlConnection(connString);
 
-                var data = cn.Query(
+                // VB6: exec spCrd_SGT_Bancos + sbCbo_Llena_New (columnas IdX / ItmX)
+                var data = cn.Query<BancoComboRow>(
                         "spCrd_SGT_Bancos",
                         new { Usuario = usuario },
                         commandType: CommandType.StoredProcedure
                     );
 
-                                    response.Result = data.Select(x => new DropDownListaGenericaModel
-                                    {
-                                        item = x.IDX,
-                                        descripcion = x.ITMX
-                                    }).ToList();
+                response.Result = data.Select(x => new DropDownListaGenericaModel
+                {
+                    item = x.IdX,
+                    descripcion = (x.ItmX ?? string.Empty).Trim()
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -599,6 +582,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             }
 
             return response;
+        }
+
+        private sealed class BancoComboRow
+        {
+            public object? IdX { get; set; }
+            public string? ItmX { get; set; }
         }
 
         /// <summary>

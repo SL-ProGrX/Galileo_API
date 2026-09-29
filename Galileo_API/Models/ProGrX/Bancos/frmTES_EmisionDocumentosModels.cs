@@ -47,6 +47,7 @@ namespace Galileo.Models.TES
         public string? firmas { get; set; } = string.Empty;
         public bool? pass { get; set; }
         public string? estadoSinpe { get; set; }
+        public string? msjError { get; set; } = string.Empty;
         public int? id_banco { get; set; }
         public string? documento_banco { get; set; } = string.Empty;
     }
