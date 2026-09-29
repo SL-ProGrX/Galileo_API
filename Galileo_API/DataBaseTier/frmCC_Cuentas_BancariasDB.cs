@@ -156,11 +156,28 @@ namespace Galileo.DataBaseTier
         /// </summary>
         public ErrorDto CuentaBancaria_Actualizar(int CodEmpresa, SysCuentasBancariasDto data)
         {
+            var resp = DbHelper.CreateOkResponse();
+
             var validacionSinpe = ValidarCuentaIbanSinpe(CodEmpresa, data);
+
+            string cuentaOldCtn = string.Empty;
+
             if (validacionSinpe.Code == -1)
             {
                 return validacionSinpe;
             }
+
+            try
+            {
+                var cuentaOld = data.DataKey.Split("-");
+                 cuentaOldCtn = cuentaOld[1].Trim();
+            }
+            catch (Exception)
+            {
+                resp.Code = -1;
+                resp.Description = "Algunos Valores no validos ( CEDULA, CUENTA, GRUPO BANCARIO ) ";
+            }
+            
 
             const string sql = @"
                 UPDATE SYS_CUENTAS_BANCARIAS SET 
@@ -175,27 +192,28 @@ namespace Galileo.DataBaseTier
                     Modulo           = @Modulo,
                     registro_usuario = @Registro_Usuario,
                     registro_fecha   = @Registro_Fecha
-                WHERE CUENTA_INTERNA = @Cuenta_Interna
-                  AND Identificacion = @Identificacion;";
+                WHERE CUENTA_INTERNA = @Cuenta_Interna_Old
+                  AND TRIM(Identificacion) = TRIM(@Identificacion);";
 
             // Normalizo flags numéricos igual que antes (Convert.ToInt32)
             var parameters = new
             {
-                data.Cod_Banco,
-                data.Tipo,
-                data.Cod_Divisa,
-                data.Destino,
-                data.Cuenta_Interna,
-                data.Cuenta_Interbanca,
-                data.Cuenta_Default,
-                data.Activa,
-                data.Modulo,
-                data.Registro_Usuario,
-                data.Registro_Fecha,
-                data.Identificacion
+                Cod_Banco = data.Cod_Banco,
+                Tipo = data.Tipo,
+                Cod_Divisa = data.Cod_Divisa,
+                Destino = data.Destino,
+                Cuenta_Interna = data.Cuenta_Interna,
+                Cuenta_Interbanca = data.Cuenta_Interbanca,
+                Cuenta_Default = data.Cuenta_Default,
+                Activa = data.Activa,
+                Modulo = data.Modulo,
+                Registro_Usuario = data.Registro_Usuario,
+                Registro_Fecha = data.Registro_Fecha,
+                Identificacion = data.Identificacion,
+                Cuenta_Interna_Old = cuentaOldCtn
             };
 
-            var resp = DbHelper.CreateOkResponse();
+          
 
             try
             {
@@ -289,6 +307,11 @@ namespace Galileo.DataBaseTier
 
         private ErrorDto ValidarCuentaIbanSinpe(int CodEmpresa, SysCuentasBancariasDto data)
         {
+            if(data.Cod_Banco == "INT")
+            {
+                return DbHelper.CreateOkResponse();
+            }
+
             if (!data.Cuenta_Interbanca)
             {
                 return DbHelper.CreateOkResponse();

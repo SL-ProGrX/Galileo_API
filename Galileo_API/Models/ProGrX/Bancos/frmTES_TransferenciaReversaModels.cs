@@ -77,6 +77,37 @@
         public string? tipo { get; set; }
     }
 
+    public class TesReversionSinpeData
+    {
+        public int id_reversion { get; set; }
+        public string? autorizado { get; set; }
+        public string? user_genera { get; set; }
+        public Nullable<DateTime> fecha_genera { get; set; }
+        public string? observaciones { get; set; }
+        public string? documento { get; set; }
+        public int id_banco { get; set; }
+        public string? tipo { get; set; }
+    }
+
+    public class TransferenciaSinpeDetalleModel
+    {
+        public int? nsolicitud { get; set; }
+        public string? cedula { get; set; }
+        public string? nombre { get; set; }
+        public float? monto { get; set; }
+        public string? divisa { get; set; }
+        public bool? estado_sinpe { get; set; }
+        public int? id_rechazo { get; set; }
+        public string? rechazo_desc { get; set; }
+        public bool estado_reversa { get; set; }
+        public string? fondo_aplicado { get; set; }
+        public int? nsolicitud_reversada { get; set; }
+        public Nullable<DateTime> fecha_emision { get; set; }
+        public string? cta_ahorros { get; set; }
+        public string? ndocumento { get; set; }
+        public string? cod_referencia { get; set; }
+    }
+
     public class TesReversaSinpeRequest
     {
         public int codEmpresa { get; set; } = 0;
