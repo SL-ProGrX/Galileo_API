@@ -8,6 +8,9 @@ namespace Galileo.DataBaseTier.ProGrX
     public class FrmDsbColaboradorDB
     {
         private const string SpRhPortalVinculado = "spRH_Portal_Vinculado";
+        private static readonly byte[] FirmaJpeg = [0xFF, 0xD8, 0xFF];
+        private static readonly byte[] FirmaPng = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+        private static readonly byte[] FirmaBmp = [0x42, 0x4D];
 
         private readonly PortalDB _portalDb;
 
@@ -680,38 +683,24 @@ namespace Galileo.DataBaseTier.ProGrX
 
         private static string DetectarFotoContentType(byte[] foto)
         {
-            if (foto.Length >= 3
-                && foto[0] == 0xFF
-                && foto[1] == 0xD8
-                && foto[2] == 0xFF)
+            if (foto.AsSpan().StartsWith(FirmaJpeg))
             {
                 return "image/jpeg";
             }
 
-            if (foto.Length >= 8
-                && foto[0] == 0x89
-                && foto[1] == 0x50
-                && foto[2] == 0x4E
-                && foto[3] == 0x47
-                && foto[4] == 0x0D
-                && foto[5] == 0x0A
-                && foto[6] == 0x1A
-                && foto[7] == 0x0A)
+            if (foto.AsSpan().StartsWith(FirmaPng))
             {
                 return "image/png";
             }
 
             if (foto.Length >= 6
-                && foto[0] == 0x47
-                && foto[1] == 0x49
-                && foto[2] == 0x46
-                && foto[3] == 0x38
+                && foto.AsSpan().StartsWith("GIF8"u8)
                 && foto[5] == 0x61)
             {
                 return "image/gif";
             }
 
-            if (foto.Length >= 2 && foto[0] == 0x42 && foto[1] == 0x4D)
+            if (foto.AsSpan().StartsWith(FirmaBmp))
             {
                 return "image/bmp";
             }
