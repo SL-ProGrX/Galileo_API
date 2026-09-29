@@ -72,6 +72,22 @@ namespace Galileo_API.Controllers
             return _TransferenciaReversaBL.TES_TransferenciaReversa_Detalle(CodEmpresa, id_reversion);
         }
 
+        [HttpGet("TES_TransferenciaConsultaSinpe_Obtener")]
+        public ErrorDto<List<TesReversionSinpeData>> TES_TransferenciaConsultaSinpe_Obtener(
+            int CodEmpresa,
+            string id_banco,
+            DateTime fechaInicio,
+            DateTime fechaFin)
+        {
+            return _TransferenciaReversaBL.TES_TransferenciaConsultaSinpe_Obtener(CodEmpresa, id_banco, fechaInicio, fechaFin);
+        }
+
+        [HttpGet("TES_TransferenciaReversaSinpe_Detalle")]
+        public ErrorDto<List<TransferenciaSinpeDetalleModel>> TES_TransferenciaReversaSinpe_Detalle(int CodEmpresa, string id_reversion)
+        {
+            return _TransferenciaReversaBL.TES_TransferenciaReversaSinpe_Detalle(CodEmpresa, id_reversion);
+        }
+
         [HttpGet("TES_TransferenciaRevSinpe_Obtener")]
         public ErrorDto<List<TransferenciaSolicitudData>> TES_TransferenciaRevSinpe_Obtener(string reversa)
         {

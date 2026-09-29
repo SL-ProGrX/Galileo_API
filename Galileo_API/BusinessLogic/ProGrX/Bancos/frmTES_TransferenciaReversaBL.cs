@@ -59,6 +59,20 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             return _TransferenciaReversaDB.TES_TransferenciaReversa_Detalle(CodEmpresa, id_reversion);
         }
 
+        public ErrorDto<List<TesReversionSinpeData>> TES_TransferenciaConsultaSinpe_Obtener(
+            int CodEmpresa,
+            string id_banco,
+            DateTime fechaInicio,
+            DateTime fechaFin)
+        {
+            return _TransferenciaReversaDB.TES_TransferenciaConsultaSinpe_Obtener(CodEmpresa, id_banco, fechaInicio, fechaFin);
+        }
+
+        public ErrorDto<List<TransferenciaSinpeDetalleModel>> TES_TransferenciaReversaSinpe_Detalle(int CodEmpresa, string id_reversion)
+        {
+            return _TransferenciaReversaDB.TES_TransferenciaReversaSinpe_Detalle(CodEmpresa, id_reversion);
+        }
+
         public ErrorDto<List<TransferenciaSolicitudData>> TES_TransferenciaRevSinpe_Obtener(string reversa)
         {
             var solicitaData = JsonConvert.DeserializeObject<TesReversaSinpeRequest>(reversa) ?? new TesReversaSinpeRequest();

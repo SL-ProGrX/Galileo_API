@@ -98,7 +98,15 @@ DEALLOCATE solicitudes_cursor;";
                         END AS duplicado,
                         dbo.fxTes_Cuenta_Verifica(T.id_banco,T.codigo,T.cta_ahorros) AS Cta_Verifica,
                         T.Detalle1 + T.detalle2 AS Detalle, ISNULL(T.cod_App,'') AS AppId,
-                        IIF(T.user_hold IS NULL, 0, 1) AS Bloqueo, S.ESTADOACTUAL
+                        IIF(T.user_hold IS NULL, 0, 1) AS Bloqueo, S.ESTADOACTUAL,
+                        CASE
+		                    WHEN UPPER(T.Tipo) = 'TE'
+		                         AND dbo.fxTes_Cuentas_Bancarias_Pass(
+		                             T.ID_BANCO,
+		                             T.CTA_AHORROS) = 0
+		   	                 THEN dbo.fxTes_W_Cuentas_Bancarias_Pass_Mensaje(T.ID_BANCO , T.CTA_AHORROS )
+	                         ELSE null
+	                     END as validaCuenta
                     FROM Tes_Transacciones T
                     LEFT JOIN Tes_Bancos B ON T.id_banco = B.id_banco
                     LEFT JOIN Socios S
