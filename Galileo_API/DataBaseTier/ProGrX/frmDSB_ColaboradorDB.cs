@@ -22,21 +22,15 @@ namespace Galileo.DataBaseTier.ProGrX
         {
             var result = new ColaboradorVinculoData();
 
-            if (string.IsNullOrWhiteSpace(usuario))
+            if (ValidarUsuario(usuario, result, "El usuario autenticado es requerido.")
+                is { } errorUsuario)
             {
-                return DbHelper.CreateErrorResponse(
-                    "El usuario autenticado es requerido.",
-                    -1,
-                    result);
+                return errorUsuario;
             }
 
             try
             {
-                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
-                var vinculacion = connection.QueryFirstOrDefault<ColaboradorVinculoRow>(
-                    SpRhPortalVinculado,
-                    new { Usuario = usuario.Trim() },
-                    commandType: CommandType.StoredProcedure);
+                var vinculacion = ObtenerVinculacion(CodEmpresa, usuario);
                 var empleadoId = vinculacion?.Empleado_ID;
 
                 return DbHelper.CreateOkResponse(new ColaboradorVinculoData
@@ -49,10 +43,7 @@ namespace Galileo.DataBaseTier.ProGrX
             }
             catch (Exception ex)
             {
-                return DbHelper.CreateErrorResponse<ColaboradorVinculoData>(
-                    ex.Message,
-                    -1,
-                    result);
+                return CrearError(ex, result);
             }
         }
 
@@ -63,21 +54,16 @@ namespace Galileo.DataBaseTier.ProGrX
         {
             var result = new ColaboradorPerfilData();
 
-            if (string.IsNullOrWhiteSpace(usuario))
+            if (ValidarUsuario(usuario, result, "El usuario autenticado es requerido.")
+                is { } errorUsuario)
             {
-                return DbHelper.CreateErrorResponse(
-                    "El usuario autenticado es requerido.",
-                    -1,
-                    result);
+                return errorUsuario;
             }
 
             try
             {
                 using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
-                var vinculacion = connection.QueryFirstOrDefault<ColaboradorVinculoRow>(
-                    SpRhPortalVinculado,
-                    new { Usuario = usuario.Trim() },
-                    commandType: CommandType.StoredProcedure);
+                var vinculacion = ObtenerVinculacion(connection, usuario);
                 var empleadoId = vinculacion?.Empleado_ID?.Trim();
 
                 if (string.IsNullOrWhiteSpace(empleadoId))
@@ -102,10 +88,7 @@ namespace Galileo.DataBaseTier.ProGrX
             }
             catch (Exception ex)
             {
-                return DbHelper.CreateErrorResponse<ColaboradorPerfilData>(
-                    ex.Message,
-                    -1,
-                    result);
+                return CrearError(ex, result);
             }
         }
 
@@ -161,10 +144,7 @@ namespace Galileo.DataBaseTier.ProGrX
             }
             catch (Exception ex)
             {
-                return DbHelper.CreateErrorResponse<List<ColaboradorEmpleadoOpcionData>>(
-                    ex.Message,
-                    -1,
-                    result);
+                return CrearError(ex, result);
             }
         }
 
@@ -175,19 +155,32 @@ namespace Galileo.DataBaseTier.ProGrX
         {
             var result = new ColaboradorAccesoData();
 
-            if (string.IsNullOrWhiteSpace(usuario) || usuario.Length > 30)
+            if (ValidarUsuario(
+                usuario,
+                result,
+                "El usuario autenticado no es válido.",
+                30) is { } errorUsuario)
+            {
+                return errorUsuario;
+            }
+
+            if (request is null)
             {
                 return DbHelper.CreateErrorResponse(
-                    "El usuario autenticado no es válido.",
+                    "Seleccione un empleado e ingrese una clave válida.",
                     -1,
                     result);
             }
 
-            if (request is null
-                || string.IsNullOrWhiteSpace(request.EmpleadoId)
-                || request.EmpleadoId.Length > 20
-                || string.IsNullOrEmpty(request.Clave)
-                || request.Clave.Length > 100)
+            if (ValidarEmpleadoId(
+                request.EmpleadoId,
+                result,
+                "Seleccione un empleado e ingrese una clave válida.") is { } errorEmpleadoId)
+            {
+                return errorEmpleadoId;
+            }
+
+            if (string.IsNullOrEmpty(request.Clave) || request.Clave.Length > 100)
             {
                 return DbHelper.CreateErrorResponse(
                     "Seleccione un empleado e ingrese una clave válida.",
@@ -201,10 +194,7 @@ namespace Galileo.DataBaseTier.ProGrX
 
                 if (request.Vincular)
                 {
-                    var vinculacionActual = connection.QueryFirstOrDefault<ColaboradorVinculoRow>(
-                        SpRhPortalVinculado,
-                        new { Usuario = usuario.Trim() },
-                        commandType: CommandType.StoredProcedure);
+                    var vinculacionActual = ObtenerVinculacion(connection, usuario);
 
                     if (!string.IsNullOrWhiteSpace(vinculacionActual?.Empleado_ID))
                     {
@@ -270,10 +260,7 @@ namespace Galileo.DataBaseTier.ProGrX
             }
             catch (Exception ex)
             {
-                return DbHelper.CreateErrorResponse<ColaboradorAccesoData>(
-                    ex.Message,
-                    -1,
-                    result);
+                return CrearError(ex, result);
             }
         }
 
@@ -284,19 +271,32 @@ namespace Galileo.DataBaseTier.ProGrX
         {
             var result = new ColaboradorClaveReestableceData();
 
-            if (string.IsNullOrWhiteSpace(usuario) || usuario.Length > 30)
+            if (ValidarUsuario(
+                usuario,
+                result,
+                "El usuario autenticado no es válido.",
+                30) is { } errorUsuario)
+            {
+                return errorUsuario;
+            }
+
+            if (request is null)
             {
                 return DbHelper.CreateErrorResponse(
-                    "El usuario autenticado no es válido.",
+                    "Seleccione un empleado e ingrese el correo registrado.",
                     -1,
                     result);
             }
 
-            if (request is null
-                || string.IsNullOrWhiteSpace(request.EmpleadoId)
-                || request.EmpleadoId.Length > 20
-                || string.IsNullOrWhiteSpace(request.Email)
-                || request.Email.Length > 100)
+            if (ValidarEmpleadoId(
+                request.EmpleadoId,
+                result,
+                "Seleccione un empleado e ingrese el correo registrado.") is { } errorEmpleadoId)
+            {
+                return errorEmpleadoId;
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Email) || request.Email.Length > 100)
             {
                 return DbHelper.CreateErrorResponse(
                     "Seleccione un empleado e ingrese el correo registrado.",
@@ -327,10 +327,7 @@ namespace Galileo.DataBaseTier.ProGrX
             }
             catch (Exception ex)
             {
-                return DbHelper.CreateErrorResponse<ColaboradorClaveReestableceData>(
-                    ex.Message,
-                    -1,
-                    result);
+                return CrearError(ex, result);
             }
         }
 
@@ -341,18 +338,32 @@ namespace Galileo.DataBaseTier.ProGrX
         {
             var result = new List<Dictionary<string, object?>>();
 
-            if (string.IsNullOrWhiteSpace(usuario) || usuario.Length > 30)
+            if (ValidarUsuario(
+                usuario,
+                result,
+                "El usuario autenticado no es válido.",
+                30) is { } errorUsuario)
+            {
+                return errorUsuario;
+            }
+
+            if (request is null)
             {
                 return DbHelper.CreateErrorResponse(
-                    "El usuario autenticado no es válido.",
+                    "Seleccione un colaborador válido.",
                     -1,
                     result);
             }
 
-            if (request is null
-                || string.IsNullOrWhiteSpace(request.EmpleadoId)
-                || request.EmpleadoId.Length > 20
-                || request.Clave?.Length > 100)
+            if (ValidarEmpleadoId(
+                request.EmpleadoId,
+                result,
+                "Seleccione un colaborador válido.") is { } errorEmpleadoId)
+            {
+                return errorEmpleadoId;
+            }
+
+            if (request.Clave?.Length > 100)
             {
                 return DbHelper.CreateErrorResponse(
                     "Seleccione un colaborador válido.",
@@ -365,10 +376,7 @@ namespace Galileo.DataBaseTier.ProGrX
                 using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
                 var empleadoId = request.EmpleadoId.Trim();
 
-                var vinculacion = connection.QueryFirstOrDefault<ColaboradorVinculoRow>(
-                    SpRhPortalVinculado,
-                    new { Usuario = usuario.Trim() },
-                    commandType: CommandType.StoredProcedure);
+                var vinculacion = ObtenerVinculacion(connection, usuario);
                 var empleadoVinculado = vinculacion?.Empleado_ID?.Trim();
 
                 if (!string.IsNullOrWhiteSpace(empleadoVinculado))
@@ -441,10 +449,7 @@ namespace Galileo.DataBaseTier.ProGrX
             }
             catch (Exception ex)
             {
-                return DbHelper.CreateErrorResponse<List<Dictionary<string, object?>>>(
-                    ex.Message,
-                    -1,
-                    result);
+                return CrearError(ex, result);
             }
         }
 
@@ -625,6 +630,57 @@ namespace Galileo.DataBaseTier.ProGrX
             };
         }
 
+        private static ErrorDto<T>? ValidarUsuario<T>(
+            string? usuario,
+            T result,
+            string mensaje,
+            int? longitudMaxima = null)
+        {
+            if (string.IsNullOrWhiteSpace(usuario)
+                || (longitudMaxima.HasValue && usuario.Length > longitudMaxima.Value))
+            {
+                return DbHelper.CreateErrorResponse(mensaje, -1, result);
+            }
+
+            return null;
+        }
+
+        private ColaboradorVinculoRow? ObtenerVinculacion(
+            int codEmpresa,
+            string usuario)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+            return ObtenerVinculacion(connection, usuario);
+        }
+
+        private static ErrorDto<T>? ValidarEmpleadoId<T>(
+            string? empleadoId,
+            T result,
+            string mensaje)
+        {
+            if (string.IsNullOrWhiteSpace(empleadoId) || empleadoId.Length > 20)
+            {
+                return DbHelper.CreateErrorResponse(mensaje, -1, result);
+            }
+
+            return null;
+        }
+
+        private static ColaboradorVinculoRow? ObtenerVinculacion(
+            IDbConnection connection,
+            string usuario)
+        {
+            return connection.QueryFirstOrDefault<ColaboradorVinculoRow>(
+                SpRhPortalVinculado,
+                new { Usuario = usuario.Trim() },
+                commandType: CommandType.StoredProcedure);
+        }
+
+        private static ErrorDto<T> CrearError<T>(Exception ex, T result)
+        {
+            return DbHelper.CreateErrorResponse(ex.Message, -1, result);
+        }
+
         private static ColaboradorPerfilData? CargarPerfil(
             System.Data.IDbConnection connection,
             string empleadoId,
@@ -633,14 +689,7 @@ namespace Galileo.DataBaseTier.ProGrX
         {
             var perfil = connection.QueryFirstOrDefault<ColaboradorPerfilRow>(
                 "spRH_Portal_Empleado_Load",
-                new
-                {
-                    EmpleadoId = empleadoId,
-                    Usuario = usuario.Trim(),
-                    AppName = "ProGrX_WEB",
-                    AppVersion = NormalizarAppVersion(appVersion),
-                    Equipo = "WEB"
-                },
+                CrearParametrosAuditoria(empleadoId, usuario, appVersion),
                 commandType: CommandType.StoredProcedure);
 
             if (perfil is null)
