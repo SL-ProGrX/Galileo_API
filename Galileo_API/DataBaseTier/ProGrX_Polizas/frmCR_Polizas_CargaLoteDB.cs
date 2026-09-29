@@ -172,20 +172,30 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     new List<DropDownListaGenericaModel>());
             }
 
-            var basePeriodo = globalesDto.Result.GlngFechaCR; // long yyyymm
+            // VB6: GLOBALES.glngFechaCR (yyyymm). GlngFechaCR es decimal en globales.
+            var periodo = (long)globalesDto.Result.GlngFechaCR;
+
+            if (periodo <= 0)
+            {
+                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(
+                    "No fue posible obtener la fecha de proceso de crédito (glngFechaCR).",
+                    -1,
+                    new List<DropDownListaGenericaModel>());
+            }
 
             var lista = new List<DropDownListaGenericaModel>(capacity: 7);
 
-            var periodo = basePeriodo;
+            // VB6: base + 6 siguientes; Text = glngFechaCR
             for (var i = 0; i < 7; i++)
             {
+                var periodoTexto = periodo.ToString();
                 lista.Add(new DropDownListaGenericaModel
                 {
-                    item = periodo,
-                    descripcion = periodo.ToString()
+                    item = periodoTexto,
+                    descripcion = periodoTexto
                 });
 
-                periodo = FechaProcesoSiguiente((long)periodo);
+                periodo = FechaProcesoSiguiente(periodo);
             }
 
             return DbHelper.CreateOkResponse(lista);
