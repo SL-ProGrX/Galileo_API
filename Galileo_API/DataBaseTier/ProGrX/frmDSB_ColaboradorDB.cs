@@ -155,37 +155,17 @@ namespace Galileo.DataBaseTier.ProGrX
         {
             var result = new ColaboradorAccesoData();
 
-            if (ValidarUsuario(
+            if (ValidarSolicitudUsuario(
                 usuario,
                 result,
-                "El usuario autenticado no es válido.",
-                30) is { } errorUsuario)
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || string.IsNullOrEmpty(request.Clave)
+                    || request.Clave.Length > 100,
+                "Seleccione un empleado e ingrese una clave válida.") is { } errorValidacion)
             {
-                return errorUsuario;
-            }
-
-            if (request is null)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "Seleccione un empleado e ingrese una clave válida.",
-                    -1,
-                    result);
-            }
-
-            if (ValidarEmpleadoId(
-                request.EmpleadoId,
-                result,
-                "Seleccione un empleado e ingrese una clave válida.") is { } errorEmpleadoId)
-            {
-                return errorEmpleadoId;
-            }
-
-            if (string.IsNullOrEmpty(request.Clave) || request.Clave.Length > 100)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "Seleccione un empleado e ingrese una clave válida.",
-                    -1,
-                    result);
+                return errorValidacion;
             }
 
             try
@@ -271,37 +251,17 @@ namespace Galileo.DataBaseTier.ProGrX
         {
             var result = new ColaboradorClaveReestableceData();
 
-            if (ValidarUsuario(
+            if (ValidarSolicitudUsuario(
                 usuario,
                 result,
-                "El usuario autenticado no es válido.",
-                30) is { } errorUsuario)
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || string.IsNullOrWhiteSpace(request.Email)
+                    || request.Email.Length > 100,
+                "Seleccione un empleado e ingrese el correo registrado.") is { } errorValidacion)
             {
-                return errorUsuario;
-            }
-
-            if (request is null)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "Seleccione un empleado e ingrese el correo registrado.",
-                    -1,
-                    result);
-            }
-
-            if (ValidarEmpleadoId(
-                request.EmpleadoId,
-                result,
-                "Seleccione un empleado e ingrese el correo registrado.") is { } errorEmpleadoId)
-            {
-                return errorEmpleadoId;
-            }
-
-            if (string.IsNullOrWhiteSpace(request.Email) || request.Email.Length > 100)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "Seleccione un empleado e ingrese el correo registrado.",
-                    -1,
-                    result);
+                return errorValidacion;
             }
 
             try
@@ -338,37 +298,16 @@ namespace Galileo.DataBaseTier.ProGrX
         {
             var result = new List<Dictionary<string, object?>>();
 
-            if (ValidarUsuario(
+            if (ValidarSolicitudUsuario(
                 usuario,
                 result,
-                "El usuario autenticado no es válido.",
-                30) is { } errorUsuario)
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.Clave?.Length > 100,
+                "Seleccione un colaborador válido.") is { } errorValidacion)
             {
-                return errorUsuario;
-            }
-
-            if (request is null)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "Seleccione un colaborador válido.",
-                    -1,
-                    result);
-            }
-
-            if (ValidarEmpleadoId(
-                request.EmpleadoId,
-                result,
-                "Seleccione un colaborador válido.") is { } errorEmpleadoId)
-            {
-                return errorEmpleadoId;
-            }
-
-            if (request.Clave?.Length > 100)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "Seleccione un colaborador válido.",
-                    -1,
-                    result);
+                return errorValidacion;
             }
 
             try
@@ -645,25 +584,32 @@ namespace Galileo.DataBaseTier.ProGrX
             return null;
         }
 
+        private static ErrorDto<T>? ValidarSolicitudUsuario<T>(
+            string? usuario,
+            T result,
+            Func<bool> solicitudInvalida,
+            string mensajeSolicitud)
+        {
+            if (ValidarUsuario(
+                usuario,
+                result,
+                "El usuario autenticado no es válido.",
+                30) is { } errorUsuario)
+            {
+                return errorUsuario;
+            }
+
+            return solicitudInvalida()
+                ? DbHelper.CreateErrorResponse(mensajeSolicitud, -1, result)
+                : null;
+        }
+
         private ColaboradorVinculoRow? ObtenerVinculacion(
             int codEmpresa,
             string usuario)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
             return ObtenerVinculacion(connection, usuario);
-        }
-
-        private static ErrorDto<T>? ValidarEmpleadoId<T>(
-            string? empleadoId,
-            T result,
-            string mensaje)
-        {
-            if (string.IsNullOrWhiteSpace(empleadoId) || empleadoId.Length > 20)
-            {
-                return DbHelper.CreateErrorResponse(mensaje, -1, result);
-            }
-
-            return null;
         }
 
         private static ColaboradorVinculoRow? ObtenerVinculacion(
