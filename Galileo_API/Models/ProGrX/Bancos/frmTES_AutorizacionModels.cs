@@ -63,6 +63,8 @@ namespace Galileo.Models.TES
         public string? appid { get; set; } = string.Empty;
         public bool bloqueo { get; set; }
         public string? estadoactual { get; set; } = string.Empty;
+
+        public string? validaCuenta { get; set; } = string.Empty;
     }
 
     public class TesAutorizaParametros
