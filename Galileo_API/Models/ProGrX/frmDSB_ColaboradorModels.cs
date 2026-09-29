@@ -35,7 +35,7 @@ namespace Galileo.Models.ProGrX
     {
         public string EmpleadoId { get; set; } = string.Empty;
         public string Clave { get; set; } = string.Empty;
-        public bool Vincular { get; set; }
+        public bool Vincular { get; set; } = false;
         public string AppVersion { get; set; } = string.Empty;
     }
 
