@@ -87,6 +87,8 @@ namespace Galileo_API.Models.ProGrX.Credito
         public required bool ind_edad_pension_for { get; set; }
         public required bool mov_sinpe { get; set; }
         public required int mov_sinpe_tipos { get; set; } = 3;
+        public bool sinpe_proc_enlinea { get; set; }
+        public bool sinpe_proc_interno { get; set; }
         public required bool cph1 { get; set; }
         public required bool cph2 { get; set; }
         public required bool cph3 { get; set; }

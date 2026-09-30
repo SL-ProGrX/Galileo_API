@@ -81,7 +81,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     ISNULL(giro_minimo, 0) AS giro_minimo,
                     ISNULL(auto_gestion_tipo, 'C') AS auto_gestion_tipo,
                     ISNULL(refunde_auto, 0) AS refunde_auto,
-                    ISNULL(refunde_aumenta_base, 0) AS refunde_aumenta_base
+                    ISNULL(refunde_aumenta_base, 0) AS refunde_aumenta_base,
+                    ISNULL(MOV_SINPE, 0) AS mov_sinpe,
+                    ISNULL(MOV_SINPE_TIPOS, 3) AS mov_sinpe_tipos,
+                    ISNULL(SINPE_PROC_ENLINEA, 0) AS sinpe_proc_enlinea,
+                    ISNULL(SINPE_PROC_INTERNO, 0) AS sinpe_proc_interno
                 FROM catalogo
                 WHERE (@SoloAutoGestion = 0 OR website = 1)
                 ORDER BY codigo;";
