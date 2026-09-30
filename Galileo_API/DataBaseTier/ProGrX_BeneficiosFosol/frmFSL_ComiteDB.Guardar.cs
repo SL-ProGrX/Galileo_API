@@ -1,160 +1,637 @@
-using Dapper;
-using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
-using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 {
-    public partial class FrmFslComiteDB
+    public sealed partial class FrmFslComiteDB
     {
         /// <summary>
-        /// Guarda un comité (inserta si no existe, o actualiza si ya existe).
+        /// Registra un nuevo comit&eacute; de FOSOL.
         /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="comite">Datos del comité.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto Comite_Guardar(int CodCliente, FslComitesDto comite)
+        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="request">Informaci&oacute;n del comit&eacute;.</param>
+        /// <returns>Resultado del registro.</returns>
+        public ErrorDto FSL_Comite_Comite_Registrar(
+            int CodEmpresa,
+            FslComiteGuardarRequest request)
         {
-            using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente);
-            try
+            var validacion =
+                FSL_Comite_Comite_Request_Validar(
+                    request);
+
+            if (validacion != null)
             {
-                return Comite_Existe(connection, comite.cod_comite)
-                    ? FslComites_Actualizar(connection, comite)
-                    : FslComites_Insertar(connection, comite);
+                return validacion;
             }
-            catch (Exception ex)
+
+            const string sql = """
+                INSERT INTO FSL_COMITES
+                (
+                    COD_COMITE,
+                    DESCRIPCION,
+                    NUMERO_RESOLUTORES,
+                    ACTIVO,
+                    REGISTRO_FECHA,
+                    REGISTRO_USUARIO
+                )
+                SELECT
+                    @cod_comite,
+                    @descripcion,
+                    @numero_resolutores,
+                    @activo,
+                    GETDATE(),
+                    @usuario
+                WHERE NOT EXISTS
+                (
+                    SELECT 1
+                    FROM FSL_COMITES
+                    WHERE COD_COMITE = @cod_comite
+                );
+                """;
+
+            var codComite =
+                request.cod_comite.Trim();
+
+            var response =
+                DbHelper.ExecuteNonQueryWithResult(
+                    _portalDb,
+                    CodEmpresa,
+                    sql,
+                    new
+                    {
+                        cod_comite = codComite,
+                        descripcion =
+                            request.descripcion.Trim(),
+                        request.numero_resolutores,
+                        request.activo,
+                        usuario =
+                            request.usuario.Trim()
+                    });
+
+            var error =
+                FSL_Comite_Operacion_Resultado_Validar(
+                    response,
+                    "Ocurri&oacute; un error al registrar el comit&eacute;.",
+                    "El c&oacute;digo del comit&eacute; ya existe.");
+
+            if (error != null)
             {
-                return DbHelper.ErrorResponse(ex.Message);
+                return error;
             }
-        }
 
-        private static bool Comite_Existe(SqlConnection connection, string cod_comite)
-        {
-            const string sql = "SELECT COUNT(*) FROM FSL_COMITES WHERE COD_COMITE = @cod_comite";
-            return connection.QueryFirstOrDefault<int>(sql, new { cod_comite }) > 0;
-        }
+            FSL_Comite_Bitacora_Registrar(
+                CodEmpresa,
+                request.usuario,
+                "Registra",
+                $"Comité de FOSOL Id.:{codComite}");
 
-        private static ErrorDto FslComites_Insertar(SqlConnection connection, FslComitesDto comite)
-        {
-            const string sql = @"INSERT FSL_COMITES (COD_COMITE, Descripcion, Numero_Resolutores, Activo, registro_fecha, registro_usuario)
-                                 VALUES (@cod_comite, @descripcion, @numero_resolutores, @activo, GETDATE(), @registro_usuario)";
-            connection.Execute(sql, new
-            {
-                comite.cod_comite,
-                comite.descripcion,
-                comite.numero_resolutores,
-                activo = comite.activo ? 1 : 0,
-                comite.registro_usuario
-            });
-            return new ErrorDto { Code = 0 };
-        }
-
-        private static ErrorDto FslComites_Actualizar(SqlConnection connection, FslComitesDto comite)
-        {
-            const string sql = @"UPDATE FSL_COMITES SET Descripcion = @descripcion, Numero_Resolutores = @numero_resolutores, ACTIVO = @activo
-                                 WHERE COD_COMITE = @cod_comite";
-            connection.Execute(sql, new
-            {
-                comite.descripcion,
-                comite.numero_resolutores,
-                activo = comite.activo ? 1 : 0,
-                comite.cod_comite
-            });
-            return new ErrorDto { Code = 0 };
+            return DbHelper.OkResponse(
+                "Comit&eacute; registrado correctamente.");
         }
 
         /// <summary>
-        /// Elimina un comité.
+        /// Actualiza un comit&eacute; existente.
         /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="comite">Código del comité.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto FslComites_Eliminar(int CodCliente, string comite)
+        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="request">Informaci&oacute;n del comit&eacute;.</param>
+        /// <returns>Resultado de la actualizaci&oacute;n.</returns>
+        public ErrorDto FSL_Comite_Comite_Actualizar(
+            int CodEmpresa,
+            FslComiteGuardarRequest request)
         {
-            const string sql = "DELETE FROM FSL_COMITES WHERE COD_COMITE = @comite";
-            return DbHelper.ExecuteNonQuery(CreatePortalDb(), CodCliente, sql, new { comite });
+            var validacion =
+                FSL_Comite_Comite_Request_Validar(
+                    request);
+
+            if (validacion != null)
+            {
+                return validacion;
+            }
+
+            const string sql = """
+                UPDATE FSL_COMITES
+                SET DESCRIPCION = @descripcion,
+                    NUMERO_RESOLUTORES =
+                        @numero_resolutores,
+                    ACTIVO = @activo
+                WHERE COD_COMITE = @cod_comite;
+                """;
+
+            var codComite =
+                request.cod_comite.Trim();
+
+            var response =
+                DbHelper.ExecuteNonQueryWithResult(
+                    _portalDb,
+                    CodEmpresa,
+                    sql,
+                    new
+                    {
+                        cod_comite = codComite,
+                        descripcion =
+                            request.descripcion.Trim(),
+                        request.numero_resolutores,
+                        request.activo
+                    });
+
+            var error =
+                FSL_Comite_Operacion_Resultado_Validar(
+                    response,
+                    "Ocurri&oacute; un error al actualizar el comit&eacute;.",
+                    "El comit&eacute; indicado no existe.");
+
+            if (error != null)
+            {
+                return error;
+            }
+
+            FSL_Comite_Bitacora_Registrar(
+                CodEmpresa,
+                request.usuario,
+                "Modifica",
+                $"Comité de FOSOL Id.:{codComite}");
+
+            return DbHelper.OkResponse(
+                "Comit&eacute; actualizado correctamente.");
         }
 
         /// <summary>
-        /// Guarda un miembro de comité (inserta si no existe, o actualiza si ya existe).
+        /// Elimina un comit&eacute; de FOSOL.
         /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="miembro">Datos del miembro.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto ComiteMiembro_Guardar(int CodCliente, FslMiembrosComitesDto miembro)
+        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="codComite">C&oacute;digo del comit&eacute;.</param>
+        /// <param name="usuario">Usuario responsable.</param>
+        /// <returns>Resultado de la eliminaci&oacute;n.</returns>
+        public ErrorDto FSL_Comite_Comite_Eliminar(
+            int CodEmpresa,
+            string codComite,
+            string usuario)
         {
-            using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente);
-            try
+            var validacion =
+                FSL_Comite_Eliminar_Validar(
+                    codComite,
+                    usuario);
+
+            if (validacion != null)
             {
-                return MiembroComite_Existe(connection, miembro.cod_comite, miembro.cedula)
-                    ? FslMiembrosComite_Actualizar(connection, miembro)
-                    : FslMiembrosComite_Insertar(connection, miembro);
+                return validacion;
             }
-            catch (Exception ex)
+
+            const string sql = """
+                DELETE FROM FSL_COMITES
+                WHERE COD_COMITE = @codComite;
+                """;
+
+            var codigo = codComite.Trim();
+
+            var response =
+                DbHelper.ExecuteNonQueryWithResult(
+                    _portalDb,
+                    CodEmpresa,
+                    sql,
+                    new
+                    {
+                        codComite = codigo
+                    });
+
+            var error =
+                FSL_Comite_Operacion_Resultado_Validar(
+                    response,
+                    "Ocurri&oacute; un error al eliminar el comit&eacute;.",
+                    "El comit&eacute; indicado no existe.");
+
+            if (error != null)
             {
-                return DbHelper.ErrorResponse(ex.Message);
+                return error;
             }
-        }
 
-        private static bool MiembroComite_Existe(SqlConnection connection, string cod_comite, string cedula)
-        {
-            const string sql = "SELECT COUNT(*) FROM FSL_COMITES_MIEMBROS WHERE COD_COMITE = @cod_comite AND CEDULA = @cedula";
-            return connection.QueryFirstOrDefault<int>(sql, new { cod_comite, cedula }) > 0;
-        }
+            FSL_Comite_Bitacora_Registrar(
+                CodEmpresa,
+                usuario,
+                "Elimina",
+                $"Comité de FOSOL Id.:{codigo}");
 
-        private static ErrorDto FslMiembrosComite_Insertar(SqlConnection connection, FslMiembrosComitesDto miembro)
-        {
-            const string sql = @"INSERT FSL_COMITES_MIEMBROS (CEDULA, COD_COMITE, Nombre, USUARIO_VINCULADO, Activo, registro_fecha, registro_usuario)
-                                 VALUES (@cedula, @cod_comite, @nombre, @usuario_Vinculado, @activo, GETDATE(), @registro_Usuario)";
-            connection.Execute(sql, new
-            {
-                miembro.cedula,
-                miembro.cod_comite,
-                miembro.nombre,
-                miembro.usuario_Vinculado,
-                activo = miembro.activo ? 1 : 0,
-                miembro.registro_Usuario
-            });
-            return new ErrorDto { Code = 0 };
-        }
-
-        private static ErrorDto FslMiembrosComite_Actualizar(SqlConnection connection, FslMiembrosComitesDto miembro)
-        {
-            var activo = miembro.activo ? 1 : 0;
-            var sql = activo == 0
-                ? @"UPDATE FSL_COMITES_MIEMBROS
-                    SET Nombre = @nombre, USUARIO_VINCULADO = @usuario_Vinculado, Activo = @activo,
-                        Salida_Fecha = GETDATE(), Salida_Usuario = @salida_usuario
-                    WHERE COD_COMITE = @cod_comite AND CEDULA = @cedula"
-                : @"UPDATE FSL_COMITES_MIEMBROS
-                    SET Nombre = @nombre, USUARIO_VINCULADO = @usuario_Vinculado, Activo = @activo,
-                        Salida_Fecha = NULL, Salida_Usuario = NULL
-                    WHERE COD_COMITE = @cod_comite AND CEDULA = @cedula";
-
-            connection.Execute(sql, new
-            {
-                miembro.nombre,
-                miembro.usuario_Vinculado,
-                activo,
-                miembro.salida_usuario,
-                miembro.cod_comite,
-                miembro.cedula
-            });
-            return new ErrorDto { Code = 0 };
+            return DbHelper.OkResponse(
+                "Comit&eacute; eliminado correctamente.");
         }
 
         /// <summary>
-        /// Elimina un miembro de un comité.
+        /// Registra un nuevo miembro en un comit&eacute;.
         /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="cedula">Cédula del miembro.</param>
-        /// <param name="comite">Código del comité.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto FslMiembrosComite_Eliminar(int CodCliente, string cedula, string comite)
+        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="request">Informaci&oacute;n del miembro.</param>
+        /// <returns>Resultado del registro.</returns>
+        public ErrorDto
+            FSL_Comite_Miembro_Registrar(
+                int CodEmpresa,
+                FslComiteMiembroGuardarRequest request)
         {
-            const string sql = "DELETE FROM FSL_COMITES_MIEMBROS WHERE COD_COMITE = @comite AND CEDULA = @cedula";
-            return DbHelper.ExecuteNonQuery(CreatePortalDb(), CodCliente, sql, new { comite, cedula });
+            var validacion =
+                FSL_Comite_Miembro_Request_Validar(
+                    request);
+
+            if (validacion != null)
+            {
+                return validacion;
+            }
+
+            const string sql = """
+                INSERT INTO FSL_COMITES_MIEMBROS
+                (
+                    CEDULA,
+                    COD_COMITE,
+                    NOMBRE,
+                    USUARIO_VINCULADO,
+                    ACTIVO,
+                    REGISTRO_FECHA,
+                    REGISTRO_USUARIO
+                )
+                SELECT
+                    @cedula,
+                    @cod_comite,
+                    @nombre,
+                    @usuario_vinculado,
+                    @activo,
+                    GETDATE(),
+                    @usuario
+                WHERE EXISTS
+                (
+                    SELECT 1
+                    FROM FSL_COMITES
+                    WHERE COD_COMITE = @cod_comite
+                )
+                AND NOT EXISTS
+                (
+                    SELECT 1
+                    FROM FSL_COMITES_MIEMBROS
+                    WHERE COD_COMITE = @cod_comite
+                      AND CEDULA = @cedula
+                );
+                """;
+
+            var codComite =
+                request.cod_comite.Trim();
+
+            var cedula =
+                request.cedula.Trim();
+
+            var response =
+                DbHelper.ExecuteNonQueryWithResult(
+                    _portalDb,
+                    CodEmpresa,
+                    sql,
+                    new
+                    {
+                        cod_comite = codComite,
+                        cedula,
+                        nombre =
+                            request.nombre.Trim(),
+                        usuario_vinculado =
+                            request.usuario_vinculado
+                                .Trim(),
+                        request.activo,
+                        usuario =
+                            request.usuario.Trim()
+                    });
+
+            var error =
+                FSL_Comite_Operacion_Resultado_Validar(
+                    response,
+                    "Ocurri&oacute; un error al registrar el miembro.",
+                    "El miembro ya existe o el comit&eacute; indicado no est&aacute; disponible.");
+
+            if (error != null)
+            {
+                return error;
+            }
+
+            FSL_Comite_Bitacora_Registrar(
+                CodEmpresa,
+                request.usuario,
+                "Registra",
+                $"Comité Miembro: {codComite}.. Id.:{cedula}");
+
+            return DbHelper.OkResponse(
+                "Miembro registrado correctamente.");
+        }
+
+        /// <summary>
+        /// Actualiza un miembro existente de un comit&eacute;.
+        /// </summary>
+        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="request">Informaci&oacute;n del miembro.</param>
+        /// <returns>Resultado de la actualizaci&oacute;n.</returns>
+        public ErrorDto
+            FSL_Comite_Miembro_Actualizar(
+                int CodEmpresa,
+                FslComiteMiembroGuardarRequest request)
+        {
+            var validacion =
+                FSL_Comite_Miembro_Request_Validar(
+                    request);
+
+            if (validacion != null)
+            {
+                return validacion;
+            }
+
+            const string sql = """
+                UPDATE FSL_COMITES_MIEMBROS
+                SET NOMBRE = @nombre,
+                    USUARIO_VINCULADO =
+                        @usuario_vinculado,
+                    ACTIVO = @activo,
+                    SALIDA_FECHA =
+                        CASE
+                            WHEN @activo = 0
+                            THEN GETDATE()
+                            ELSE SALIDA_FECHA
+                        END,
+                    SALIDA_USUARIO =
+                        CASE
+                            WHEN @activo = 0
+                            THEN @usuario
+                            ELSE SALIDA_USUARIO
+                        END
+                WHERE COD_COMITE = @cod_comite
+                  AND CEDULA = @cedula;
+                """;
+
+            var codComite =
+                request.cod_comite.Trim();
+
+            var cedula =
+                request.cedula.Trim();
+
+            var response =
+                DbHelper.ExecuteNonQueryWithResult(
+                    _portalDb,
+                    CodEmpresa,
+                    sql,
+                    new
+                    {
+                        cod_comite = codComite,
+                        cedula,
+                        nombre =
+                            request.nombre.Trim(),
+                        usuario_vinculado =
+                            request.usuario_vinculado
+                                .Trim(),
+                        request.activo,
+                        usuario =
+                            request.usuario.Trim()
+                    });
+
+            var error =
+                FSL_Comite_Operacion_Resultado_Validar(
+                    response,
+                    "Ocurri&oacute; un error al actualizar el miembro.",
+                    "El miembro indicado no existe en el comit&eacute;.");
+
+            if (error != null)
+            {
+                return error;
+            }
+
+            FSL_Comite_Bitacora_Registrar(
+                CodEmpresa,
+                request.usuario,
+                "Modifica",
+                $"Comité Miembro: {codComite}.. Id.:{cedula}");
+
+            return DbHelper.OkResponse(
+                "Miembro actualizado correctamente.");
+        }
+
+        /// <summary>
+        /// Elimina un miembro de un comit&eacute;.
+        /// </summary>
+        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="codComite">C&oacute;digo del comit&eacute;.</param>
+        /// <param name="cedula">C&eacute;dula del miembro.</param>
+        /// <param name="usuario">Usuario responsable.</param>
+        /// <returns>Resultado de la eliminaci&oacute;n.</returns>
+        public ErrorDto FSL_Comite_Miembro_Eliminar(
+            int CodEmpresa,
+            string codComite,
+            string cedula,
+            string usuario)
+        {
+            var validacion =
+                FSL_Comite_Miembro_Eliminar_Validar(
+                    codComite,
+                    cedula,
+                    usuario);
+
+            if (validacion != null)
+            {
+                return validacion;
+            }
+
+            const string sql = """
+                DELETE FROM FSL_COMITES_MIEMBROS
+                WHERE COD_COMITE = @codComite
+                  AND CEDULA = @cedula;
+                """;
+
+            var codigo = codComite.Trim();
+            var identificacion = cedula.Trim();
+
+            var response =
+                DbHelper.ExecuteNonQueryWithResult(
+                    _portalDb,
+                    CodEmpresa,
+                    sql,
+                    new
+                    {
+                        codComite = codigo,
+                        cedula = identificacion
+                    });
+
+            var error =
+                FSL_Comite_Operacion_Resultado_Validar(
+                    response,
+                    "Ocurri&oacute; un error al eliminar el miembro.",
+                    "El miembro indicado no existe en el comit&eacute;.");
+
+            if (error != null)
+            {
+                return error;
+            }
+
+            FSL_Comite_Bitacora_Registrar(
+                CodEmpresa,
+                usuario,
+                "Elimina",
+                $"Comité Miembro: {codigo} .. Id.:{identificacion}");
+
+            return DbHelper.OkResponse(
+                "Miembro eliminado correctamente.");
+        }
+
+        /// <summary>
+        /// Valida la informaci&oacute;n requerida de un comit&eacute;.
+        /// </summary>
+        /// <param name="request">Informaci&oacute;n recibida.</param>
+        /// <returns>Error de validaci&oacute;n o null.</returns>
+        private static ErrorDto?
+            FSL_Comite_Comite_Request_Validar(
+                FslComiteGuardarRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(
+                request);
+
+            if (string.IsNullOrWhiteSpace(
+                request.cod_comite))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeComiteRequerido,
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                request.usuario))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeUsuarioRequerido,
+                    CodigoValidacion);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Valida la informaci&oacute;n requerida de un miembro.
+        /// </summary>
+        /// <param name="request">Informaci&oacute;n recibida.</param>
+        /// <returns>Error de validaci&oacute;n o null.</returns>
+        private static ErrorDto?
+            FSL_Comite_Miembro_Request_Validar(
+                FslComiteMiembroGuardarRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(
+                request);
+
+            if (string.IsNullOrWhiteSpace(
+                request.cod_comite))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeComiteRequerido,
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                request.cedula))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeCedulaRequerida,
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                request.usuario))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeUsuarioRequerido,
+                    CodigoValidacion);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Valida los datos requeridos para eliminar un comit&eacute;.
+        /// </summary>
+        /// <param name="codComite">C&oacute;digo del comit&eacute;.</param>
+        /// <param name="usuario">Usuario responsable.</param>
+        /// <returns>Error de validaci&oacute;n o null.</returns>
+        private static ErrorDto?
+            FSL_Comite_Eliminar_Validar(
+                string codComite,
+                string usuario)
+        {
+            if (string.IsNullOrWhiteSpace(
+                codComite))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeComiteRequerido,
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                usuario))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeUsuarioRequerido,
+                    CodigoValidacion);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Valida los datos requeridos para eliminar un miembro.
+        /// </summary>
+        /// <param name="codComite">C&oacute;digo del comit&eacute;.</param>
+        /// <param name="cedula">C&eacute;dula del miembro.</param>
+        /// <param name="usuario">Usuario responsable.</param>
+        /// <returns>Error de validaci&oacute;n o null.</returns>
+        private static ErrorDto?
+            FSL_Comite_Miembro_Eliminar_Validar(
+                string codComite,
+                string cedula,
+                string usuario)
+        {
+            var validacion =
+                FSL_Comite_Eliminar_Validar(
+                    codComite,
+                    usuario);
+
+            if (validacion != null)
+            {
+                return validacion;
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                cedula))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeCedulaRequerida,
+                    CodigoValidacion);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Convierte el resultado de una operaci&oacute;n SQL en
+        /// una respuesta de error cuando corresponda.
+        /// </summary>
+        /// <param name="response">Resultado de la operaci&oacute;n.</param>
+        /// <param name="mensajeError">Mensaje para errores del API.</param>
+        /// <param name="mensajeSinCambios">Mensaje cuando no hubo cambios.</param>
+        /// <returns>Error o null cuando la operaci&oacute;n fue correcta.</returns>
+        private static ErrorDto?
+            FSL_Comite_Operacion_Resultado_Validar(
+                ErrorDto<int> response,
+                string mensajeError,
+                string mensajeSinCambios)
+        {
+            if (response.Code != 0)
+            {
+                return DbHelper.ErrorResponse(
+                    response.Description ??
+                    mensajeError);
+            }
+
+            if (response.Result <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    mensajeSinCambios,
+                    CodigoValidacion);
+            }
+
+            return null;
         }
     }
 }
