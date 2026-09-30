@@ -500,22 +500,28 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             FSL_RemesasPago_Tesoreria_Detalle_Crear(
                 connection,
                 transaction,
-                solicitud,
-                cuentaBanco,
-                expediente.total_sobrante,
-                "H",
-                1,
-                configuracion.unidad);
+                new FslTesoreriaDetalleCrear
+                {
+                    solicitud = solicitud,
+                    cuenta = cuentaBanco,
+                    monto = expediente.total_sobrante,
+                    debe_haber = "H",
+                    linea = 1,
+                    unidad = configuracion.unidad
+                });
 
             FSL_RemesasPago_Tesoreria_Detalle_Crear(
                 connection,
                 transaction,
-                solicitud,
-                configuracion.cuenta,
-                expediente.total_sobrante,
-                "D",
-                2,
-                configuracion.unidad);
+                new FslTesoreriaDetalleCrear
+                {
+                    solicitud = solicitud,
+                    cuenta = configuracion.cuenta,
+                    monto = expediente.total_sobrante,
+                    debe_haber = "D",
+                    linea = 2,
+                    unidad = configuracion.unidad
+                });
 
             const string sqlExpediente = """
                 UPDATE FSL_EXPEDIENTES
@@ -704,50 +710,48 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Registra una línea del detalle contable de tesorería.
+        /// Registra una l&iacute;nea del detalle contable de tesorer&iacute;a.
         /// </summary>
+        /// <param name="connection">Conexi&oacute;n activa.</param>
+        /// <param name="transaction">Transacci&oacute;n vigente.</param>
+        /// <param name="request">Informaci&oacute;n del detalle contable.</param>
         private static void
             FSL_RemesasPago_Tesoreria_Detalle_Crear(
                 SqlConnection connection,
                 SqlTransaction transaction,
-                long solicitud,
-                string cuenta,
-                decimal monto,
-                string debeHaber,
-                int linea,
-                string unidad)
+                FslTesoreriaDetalleCrear request)
         {
             const string sql = """
-                INSERT INTO TES_TRANS_ASIENTO
-                (
-                    NSOLICITUD,
-                    CUENTA_CONTABLE,
-                    MONTO,
-                    DEBEHABER,
-                    LINEA,
-                    COD_UNIDAD
-                )
-                VALUES
-                (
-                    @solicitud,
-                    @cuenta,
-                    @monto,
-                    @debeHaber,
-                    @linea,
-                    @unidad
-                );
-                """;
+            INSERT INTO TES_TRANS_ASIENTO
+            (
+                NSOLICITUD,
+                CUENTA_CONTABLE,
+                MONTO,
+                DEBEHABER,
+                LINEA,
+                COD_UNIDAD
+            )
+            VALUES
+            (
+                @solicitud,
+                @cuenta,
+                @monto,
+                @debe_haber,
+                @linea,
+                @unidad
+            );
+            """;
 
             connection.Execute(
                 sql,
                 new
                 {
-                    solicitud,
-                    cuenta = cuenta.Trim(),
-                    monto,
-                    debeHaber,
-                    linea,
-                    unidad
+                    request.solicitud,
+                    cuenta = request.cuenta.Trim(),
+                    request.monto,
+                    request.debe_haber,
+                    request.linea,
+                    request.unidad
                 },
                 transaction);
         }
@@ -816,6 +820,16 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             public string usuario { get; set; } = string.Empty;
             public long cod_remesa { get; set; } = 0;
             public string concepto { get; set; } = string.Empty;
+        }
+
+        private sealed class FslTesoreriaDetalleCrear
+        {
+            public long solicitud { get; set; } = 0;
+            public string cuenta { get; set; } = string.Empty;
+            public decimal monto { get; set; } = 0;
+            public string debe_haber { get; set; } = string.Empty;
+            public int linea { get; set; } = 0;
+            public string unidad { get; set; } = string.Empty;
         }
     }
 }
