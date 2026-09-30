@@ -480,9 +480,9 @@ namespace Galileo.DataBaseTier.ProGrX
                     || string.IsNullOrWhiteSpace(request.EmpleadoId)
                     || request.EmpleadoId.Length > 20
                     || request.Clave?.Length > 100
-                    || request.Inicio == default
-                    || request.Corte == default
-                    || request.Inicio.Date > request.Corte.Date,
+                    || request.Inicio.GetValueOrDefault() == default
+                    || request.Corte.GetValueOrDefault() == default
+                    || request.Inicio.GetValueOrDefault().Date > request.Corte.GetValueOrDefault().Date,
                 "Seleccione un rango de fechas válido.") is { } errorValidacion)
             {
                 return errorValidacion;
@@ -504,8 +504,8 @@ namespace Galileo.DataBaseTier.ProGrX
                     new
                     {
                         EmpleadoId = empleadoId,
-                        Inicio = request.Inicio.Date,
-                        Corte = request.Corte.Date
+                        Inicio = request.Inicio.GetValueOrDefault().Date,
+                        Corte = request.Corte.GetValueOrDefault().Date
                     });
 
                 return DbHelper.CreateOkResponse(dias);
@@ -534,8 +534,8 @@ namespace Galileo.DataBaseTier.ProGrX
                     || string.IsNullOrWhiteSpace(request.Tipo)
                     || request.Tipo.Length > 10
                     || request.Notas?.Length > 1000
-                    || request.Inicio == default
-                    || request.Corte == default
+                    || request.Inicio.GetValueOrDefault() == default
+                    || request.Corte.GetValueOrDefault() == default
                     || !EstadoSolicitudValido(request.Estado),
                 "Los datos de la solicitud no son válidos.") is { } errorValidacion)
             {
@@ -593,7 +593,7 @@ namespace Galileo.DataBaseTier.ProGrX
                     return RegistrarPermisoSolicitud(connection, usuario, empleadoId, tipo, request, detalleTipo, result);
                 }
 
-                if (request.Inicio.Date > request.Corte.Date)
+                if (request.Inicio.GetValueOrDefault().Date > request.Corte.GetValueOrDefault().Date)
                 {
                     return DbHelper.CreateErrorResponse(
                         "Error en rango de fechas.",
@@ -601,8 +601,8 @@ namespace Galileo.DataBaseTier.ProGrX
                         result);
                 }
 
-                var inicio = request.Inicio.Date;
-                var corte = request.Corte.Date.AddDays(1).AddSeconds(-1);
+                var inicio = request.Inicio.GetValueOrDefault().Date;
+                var corte = request.Corte.GetValueOrDefault().Date.AddDays(1).AddSeconds(-1);
 
                 if (request.Opcion == OpcionVacaciones)
                 {
@@ -887,7 +887,7 @@ namespace Galileo.DataBaseTier.ProGrX
             ColaboradorSolicitudTipoDetalleRow detalleTipo,
             ColaboradorSolicitudRegistroData result)
         {
-            if (request.Inicio > request.Corte)
+            if (request.Inicio.GetValueOrDefault() > request.Corte.GetValueOrDefault())
             {
                 return DbHelper.CreateErrorResponse(
                     "Error en rango de horas.",
@@ -895,9 +895,9 @@ namespace Galileo.DataBaseTier.ProGrX
                     result);
             }
 
-                if (request.Horas < 0
+                if (request.Horas.GetValueOrDefault() < 0
                     || detalleTipo.PERMISO_HRS_MAX is null
-                    || request.Horas > detalleTipo.PERMISO_HRS_MAX)
+                    || request.Horas.GetValueOrDefault() > detalleTipo.PERMISO_HRS_MAX)
                 {
                     return DbHelper.CreateErrorResponse(
                         "Las horas de permiso exceden el total permitido.",
@@ -913,10 +913,10 @@ namespace Galileo.DataBaseTier.ProGrX
                         Tipo = tipo,
                         Notas = request.Notas ?? string.Empty,
                         Usuario = usuario.Trim(),
-                        Inicio = request.Inicio,
-                        Corte = request.Corte,
-                        Horas = request.Horas,
-                        PermisoFecha = request.Inicio.Date,
+                        Inicio = request.Inicio.GetValueOrDefault(),
+                        Corte = request.Corte.GetValueOrDefault(),
+                        Horas = request.Horas.GetValueOrDefault(),
+                        PermisoFecha = request.Inicio.GetValueOrDefault().Date,
                         Estado = request.Estado,
                         AutorizaId = (string?)null,
                         AppCod = AppCodProGrX
@@ -937,7 +937,7 @@ namespace Galileo.DataBaseTier.ProGrX
         {
             var (inicio, corte) = periodo;
 
-            if (request.Dias < 0)
+            if (request.Dias.GetValueOrDefault() < 0)
             {
                 return DbHelper.CreateErrorResponse(
                     "Días de vacaciones inválidos.",
@@ -980,9 +980,9 @@ namespace Galileo.DataBaseTier.ProGrX
                         Usuario = usuario.Trim(),
                         Inicio = inicio,
                         Corte = corte,
-                        D_Disfrutados = request.Dias,
+                        D_Disfrutados = request.Dias.GetValueOrDefault(),
                         D_Disponibles = vacaciones?.Dias_Disponibles ?? 0,
-                        LiquidaID = request.LiquidaId,
+                        LiquidaID = request.LiquidaId.GetValueOrDefault(),
                         Estado = request.Estado,
                         AutorizaId = (string?)null,
                         AppCod = AppCodProGrX
@@ -1003,7 +1003,7 @@ namespace Galileo.DataBaseTier.ProGrX
         {
             var (inicio, corte) = periodo;
 
-            if (request.Dias < 0)
+            if (request.Dias.GetValueOrDefault() < 0)
             {
                 return DbHelper.CreateErrorResponse(
                     "Días de incapacidad inválidos.",
@@ -1034,8 +1034,8 @@ namespace Galileo.DataBaseTier.ProGrX
                         Usuario = usuario.Trim(),
                         Inicio = inicio,
                         Corte = corte,
-                        Dias = request.Dias,
-                        Porcentaje = request.PorcentajePatrono,
+                        Dias = request.Dias.GetValueOrDefault(),
+                        Porcentaje = request.PorcentajePatrono.GetValueOrDefault(),
                         Estado = request.Estado,
                         AutorizaId = (string?)null,
                         AppCod = AppCodProGrX

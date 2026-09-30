@@ -119,8 +119,8 @@ namespace Galileo.Models.ProGrX
     {
         public string EmpleadoId { get; set; } = string.Empty;
         public string Clave { get; set; } = string.Empty;
-        public DateTime Inicio { get; set; }
-        public DateTime Corte { get; set; }
+        public DateTime? Inicio { get; set; }
+        public DateTime? Corte { get; set; }
     }
 
     public class ColaboradorSolicitudRegistrarRequest
@@ -130,13 +130,13 @@ namespace Galileo.Models.ProGrX
         public string Opcion { get; set; } = string.Empty;
         public string Tipo { get; set; } = string.Empty;
         public string Notas { get; set; } = string.Empty;
-        public DateTime Inicio { get; set; }
-        public DateTime Corte { get; set; }
-        public int Horas { get; set; }
-        public int Dias { get; set; }
-        public decimal PorcentajePatrono { get; set; }
+        public DateTime? Inicio { get; set; }
+        public DateTime? Corte { get; set; }
+        public int? Horas { get; set; }
+        public int? Dias { get; set; }
+        public decimal? PorcentajePatrono { get; set; }
         public string Estado { get; set; } = "S";
-        public short LiquidaId { get; set; }
+        public short? LiquidaId { get; set; }
     }
 
     public class ColaboradorSolicitudRegistroData
