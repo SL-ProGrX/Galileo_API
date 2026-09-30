@@ -32,8 +32,8 @@ namespace Galileo.Models.FSL
     {
         public long cod_remesa { get; set; } = 0;
         public string usuario { get; set; } = string.Empty;
-        public DateTime fecha_inicio { get; set; }
-        public DateTime fecha_corte { get; set; }
+        public DateTime? fecha_inicio { get; set; }
+        public DateTime? fecha_corte { get; set; }
         public string notas { get; set; } = string.Empty;
     }
 
