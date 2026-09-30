@@ -10,9 +10,9 @@ namespace Galileo.Models.FSL
     {
         public long tesoreria_remesa { get; set; } = 0;
         public string registro_usuario { get; set; } = string.Empty;
-        public DateTime registro_fecha { get; set; }
-        public DateTime fecha_inicio { get; set; }
-        public DateTime fecha_corte { get; set; }
+        public DateTime? registro_fecha { get; set; }
+        public DateTime? fecha_inicio { get; set; }
+        public DateTime? fecha_corte { get; set; }
         public string notas { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
         public string estado_descripcion { get; set; } = string.Empty;
