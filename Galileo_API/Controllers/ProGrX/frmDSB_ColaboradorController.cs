@@ -159,5 +159,65 @@ namespace Galileo.Controllers.ProGrX
 
             return Ok(_bl.Colaborador_Autorizacion_Registrar(CodEmpresa, usuario, request));
         }
+
+        [Authorize]
+        [HttpPost("Colaborador_Solicitud_Configuracion_Obtener")]
+        public ActionResult<ErrorDto<ColaboradorSolicitudConfiguracionData>> Colaborador_Solicitud_Configuracion_Obtener(
+            int CodEmpresa,
+            [FromBody] ColaboradorSolicitudConfiguracionRequest request)
+        {
+            var usuario = User.FindFirst(UserNameClaim)?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return Unauthorized();
+            }
+
+            return Ok(_bl.Colaborador_Solicitud_Configuracion_Obtener(
+                CodEmpresa,
+                usuario,
+                request));
+        }
+
+        [Authorize]
+        [HttpPost("Colaborador_Solicitud_Dias_Obtener")]
+        public ActionResult<ErrorDto<int>> Colaborador_Solicitud_Dias_Obtener(
+            int CodEmpresa,
+            [FromBody] ColaboradorSolicitudDiasRequest request)
+        {
+            var usuario = User.FindFirst(UserNameClaim)?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return Unauthorized();
+            }
+
+            return Ok(_bl.Colaborador_Solicitud_Dias_Obtener(
+                CodEmpresa,
+                usuario,
+                request));
+        }
+
+        [Authorize]
+        [HttpPost("Colaborador_Solicitud_Registrar")]
+        public ActionResult<ErrorDto<ColaboradorSolicitudRegistroData>> Colaborador_Solicitud_Registrar(
+            int CodEmpresa,
+            [FromBody] ColaboradorSolicitudRegistrarRequest request)
+        {
+            var usuario = User.FindFirst(UserNameClaim)?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return Unauthorized();
+            }
+
+            return Ok(_bl.Colaborador_Solicitud_Registrar(
+                CodEmpresa,
+                usuario,
+                request));
+        }
     }
 }
