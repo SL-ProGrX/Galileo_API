@@ -13,6 +13,8 @@ namespace Galileo.DataBaseTier.ProGrX
         private const string OpcionIncapacidades = "incapacidades";
         private const string OpcionPermisos = "permisos";
         private const string AppCodProGrX = "ProGrX";
+        private const string SqlIdentificacionColaborador = "SELECT IDENTIFICACION FROM RH_PERSONAS WHERE EMPLEADO_ID = @EmpleadoId";
+        private const string AccionRecibir = "recibir";
         private static readonly byte[] FirmaJpeg = [0xFF, 0xD8, 0xFF];
         private static readonly byte[] FirmaPng = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
         private static readonly byte[] FirmaBmp = [0x42, 0x4D];
@@ -676,7 +678,7 @@ namespace Galileo.DataBaseTier.ProGrX
                 }
 
                 var identificacion = connection.QueryFirstOrDefault<string>(
-                    "SELECT IDENTIFICACION FROM RH_PERSONAS WHERE EMPLEADO_ID = @EmpleadoId",
+                    SqlIdentificacionColaborador,
                     new { EmpleadoId = empleadoId });
 
                 if (string.IsNullOrWhiteSpace(identificacion))
@@ -835,6 +837,443 @@ namespace Galileo.DataBaseTier.ProGrX
             {
                 return CrearError(ex, false);
             }
+        }
+
+        public ErrorDto<bool> Colaborador_Traslado_Gestionar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorTrasladoGestionRequest request)
+        {
+            if (ValidarSolicitudUsuario(
+                usuario,
+                false,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.Clave?.Length > 100
+                    || string.IsNullOrWhiteSpace(request.BoletaId)
+                    || request.BoletaId.Length > 20
+                    || request.Accion is not (AccionRecibir or "descartar"),
+                "Los datos del traslado no son válidos.") is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+                var errorAcceso = ValidarAccesoColaborador(
+                    connection,
+                    usuario,
+                    empleadoId,
+                    request.Clave);
+
+                if (errorAcceso is not null)
+                {
+                    return DbHelper.CreateErrorResponse(errorAcceso, -2, false);
+                }
+
+                var identificacion = connection.QueryFirstOrDefault<string>(
+                    SqlIdentificacionColaborador,
+                    new { EmpleadoId = empleadoId });
+
+                if (string.IsNullOrWhiteSpace(identificacion))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "No se encontró la identificación del colaborador.",
+                        -3,
+                        false);
+                }
+
+                var boletaId = request.BoletaId.Trim();
+                using var transaction = connection.BeginTransaction();
+                var traslado = connection.QueryFirstOrDefault<ColaboradorTrasladoEstadoRow>(
+                    "SELECT IDENTIFICACION AS IdentificacionOrigen, " +
+                    "IDENTIFICACION_DESTINO AS IdentificacionDestino, ESTADO AS Estado " +
+                    "FROM ACTIVOS_TRASLADOS WITH (UPDLOCK, HOLDLOCK) " +
+                    "WHERE COD_TRASLADO = @BoletaId",
+                    new { BoletaId = boletaId },
+                    transaction);
+
+                var identificacionBoleta = request.Accion == AccionRecibir
+                    ? traslado?.IdentificacionDestino
+                    : traslado?.IdentificacionOrigen;
+
+                if (traslado?.Estado != "S"
+                    || !string.Equals(
+                        identificacionBoleta?.Trim(),
+                        identificacion.Trim(),
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La boleta solicitada no está disponible para este colaborador. Actualice la lista.",
+                        -4,
+                        false);
+                }
+
+                var procedimiento = request.Accion == AccionRecibir
+                    ? "spActivos_Responsable_Cambio_Procesa"
+                    : "spActivos_Responsable_Cambio_Descarta";
+                var parametros = request.Accion == AccionRecibir
+                    ? new { Boleta = boletaId, Usuario = usuario.Trim() }
+                    : (object)new { BoletaId = boletaId, Usuario = usuario.Trim() };
+                var resultado = connection.QueryFirstOrDefault<ColaboradorTrasladoResultadoRow>(
+                    procedimiento,
+                    parametros,
+                    transaction,
+                    commandType: CommandType.StoredProcedure);
+
+                if (resultado?.Pass != 1)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        resultado?.Mensaje ?? "La boleta no pudo procesarse.",
+                        -5,
+                        false);
+                }
+
+                var estadoFinal = connection.QueryFirstOrDefault<string>(
+                    "SELECT ESTADO FROM ACTIVOS_TRASLADOS WHERE COD_TRASLADO = @BoletaId",
+                    new { BoletaId = boletaId },
+                    transaction);
+                var estadoEsperado = request.Accion == AccionRecibir ? "P" : "D";
+
+                if (estadoFinal != estadoEsperado)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La boleta no cambió de estado. Actualice la lista.",
+                        -6,
+                        false);
+                }
+
+                transaction.Commit();
+                _securityMainDb.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = usuario.Trim(),
+                    Movimiento = request.Accion == AccionRecibir ? "Procesa" : "Descarta",
+                    DetalleMovimiento = "Boleta de Cambio Responsable: " + boletaId,
+                    Modulo = 36
+                });
+
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, false);
+            }
+        }
+
+        public ErrorDto<ColaboradorTrasladoConfiguracionData> Colaborador_Traslado_Configuracion_Obtener(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorTrasladoAccesoRequest request)
+        {
+            var result = new ColaboradorTrasladoConfiguracionData();
+
+            if (ValidarSolicitudUsuario(
+                usuario,
+                result,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.Clave?.Length > 100
+                    || request.FiltroDestino?.Length > 100,
+                "Los datos de consulta del traslado no son válidos.") is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+                var errorAcceso = ValidarAccesoColaborador(
+                    connection,
+                    usuario,
+                    empleadoId,
+                    request.Clave);
+
+                if (errorAcceso is not null)
+                {
+                    return DbHelper.CreateErrorResponse(errorAcceso, -2, result);
+                }
+
+                var identificacion = connection.QueryFirstOrDefault<string>(
+                    SqlIdentificacionColaborador,
+                    new { EmpleadoId = empleadoId });
+
+                if (string.IsNullOrWhiteSpace(identificacion))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "No se encontró la identificación del colaborador.",
+                        -3,
+                        result);
+                }
+
+                var filtro = request.FiltroDestino?.Trim() ?? string.Empty;
+                result.Motivos = connection.Query<ColaboradorTrasladoOpcionData>(
+                    "SELECT RTRIM(COD_MOTIVO) AS Codigo, RTRIM(Descripcion) AS Descripcion " +
+                    "FROM ACTIVOS_TRASLADOS_MOTIVOS WHERE ACTIVO = 1 ORDER BY COD_MOTIVO")
+                    .ToList();
+                result.Destinatarios = connection.Query<ColaboradorTrasladoOpcionData>(
+                    "SELECT TOP (50) IDENTIFICACION AS Codigo, Nombre AS Descripcion " +
+                    "FROM ACTIVOS_PERSONAS " +
+                    "WHERE IDENTIFICACION <> @Identificacion " +
+                    "AND (@Filtro = '' OR IDENTIFICACION LIKE @Busqueda OR Nombre LIKE @Busqueda) " +
+                    "ORDER BY Nombre",
+                    new
+                    {
+                        Identificacion = identificacion.Trim(),
+                        Filtro = filtro,
+                        Busqueda = $"%{filtro}%"
+                    }).ToList();
+                result.Placas = connection.Query<ColaboradorTrasladoPlacaRow>(
+                    "spActivos_Responsable_Cambio_Consulta_Placas",
+                    new
+                    {
+                        BoletaId = string.Empty,
+                        Identificacion = identificacion.Trim(),
+                        Usuario = usuario.Trim(),
+                        ModoRecepcion = 0
+                    },
+                    commandType: CommandType.StoredProcedure)
+                    .Select(placa => new ColaboradorTrasladoPlacaData
+                    {
+                        NumPlaca = placa.NUM_PLACA?.Trim() ?? string.Empty,
+                        Descripcion = placa.Descripcion?.Trim() ?? string.Empty,
+                        DepreciacionAc = placa.DEPRECIACION_AC,
+                        DepreciacionMes = placa.DEPRECIACION_MES,
+                        ValorLibros = placa.VALOR_LIBROS,
+                        Asignado = placa.asignado == 1
+                    }).ToList();
+
+                return DbHelper.CreateOkResponse(result);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, result);
+            }
+        }
+
+        public ErrorDto<ColaboradorTrasladoRegistroData> Colaborador_Traslado_Registrar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorTrasladoRegistrarRequest request)
+        {
+            var result = new ColaboradorTrasladoRegistroData();
+
+            if (ValidarSolicitudUsuario(
+                usuario,
+                result,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.Clave?.Length > 100
+                    || string.IsNullOrWhiteSpace(request.MotivoId)
+                    || request.MotivoId.Length > 10
+                    || string.IsNullOrWhiteSpace(request.DestinoId)
+                    || request.DestinoId.Length > 20
+                    || string.IsNullOrWhiteSpace(request.Notas)
+                    || request.Notas.Trim().Length < 10
+                    || request.Notas.Length > 1000
+                    || request.Placas is null
+                    || request.Placas.Count == 0
+                    || request.Placas.Any(placa => string.IsNullOrWhiteSpace(placa)
+                        || placa.Length > 30),
+                "Los datos del traslado no son válidos.") is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+                var errorAcceso = ValidarAccesoColaborador(
+                    connection,
+                    usuario,
+                    empleadoId,
+                    request.Clave);
+
+                if (errorAcceso is not null)
+                {
+                    return DbHelper.CreateErrorResponse(errorAcceso, -2, result);
+                }
+
+                var identificacion = connection.QueryFirstOrDefault<string>(
+                    SqlIdentificacionColaborador,
+                    new { EmpleadoId = empleadoId });
+                var destinoId = request.DestinoId.Trim();
+
+                if (string.IsNullOrWhiteSpace(identificacion)
+                    || string.Equals(identificacion.Trim(), destinoId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "Seleccione un responsable destino distinto al actual.",
+                        -3,
+                        result);
+                }
+
+                var motivoDisponible = connection.QueryFirstOrDefault<int>(
+                    "SELECT COUNT(1) FROM ACTIVOS_TRASLADOS_MOTIVOS " +
+                    "WHERE COD_MOTIVO = @MotivoId AND ACTIVO = 1",
+                    new { MotivoId = request.MotivoId.Trim() }) == 1;
+                var destinoDisponible = connection.QueryFirstOrDefault<int>(
+                    "SELECT COUNT(1) FROM vActivos_Personas WHERE IDENTIFICACION = @DestinoId",
+                    new { DestinoId = destinoId }) == 1;
+
+                if (!motivoDisponible || !destinoDisponible)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "El motivo o el responsable destino ya no está disponible.",
+                        -4,
+                        result);
+                }
+
+                var placas = request.Placas
+                    .Select(placa => placa.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                var placasDisponibles = connection.Query<ColaboradorTrasladoPlacaRow>(
+                    "spActivos_Responsable_Cambio_Consulta_Placas",
+                    new
+                    {
+                        BoletaId = string.Empty,
+                        Identificacion = identificacion.Trim(),
+                        Usuario = usuario.Trim(),
+                        ModoRecepcion = 0
+                    },
+                    commandType: CommandType.StoredProcedure)
+                    .Select(placa => placa.NUM_PLACA?.Trim() ?? string.Empty)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                if (placas.Count != request.Placas.Count
+                    || placas.Any(placa => !placasDisponibles.Contains(placa)))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La selección de placas ya no está disponible. Actualice la lista.",
+                        -5,
+                        result);
+                }
+
+                return GuardarBoletaTraslado(
+                    CodEmpresa, connection, usuario, identificacion, request, placas, result);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, result);
+            }
+        }
+
+        private ErrorDto<ColaboradorTrasladoRegistroData> GuardarBoletaTraslado(
+            int CodEmpresa,
+            IDbConnection connection,
+            string usuario,
+            string identificacion,
+            ColaboradorTrasladoRegistrarRequest request,
+            List<string> placas,
+            ColaboradorTrasladoRegistroData result)
+        {
+            var destinoId = request.DestinoId.Trim();
+            using var transaction = connection.BeginTransaction();
+            var placasDelResponsable = connection.QueryFirst<int>(
+                "SELECT COUNT(1) FROM ACTIVOS_PRINCIPAL WITH (UPDLOCK, HOLDLOCK) " +
+                "WHERE NUM_PLACA IN @Placas AND IDENTIFICACION = @Identificacion",
+                new
+                {
+                    Placas = placas,
+                    Identificacion = identificacion.Trim()
+                },
+                transaction);
+
+            if (placasDelResponsable != placas.Count)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Una o más placas ya no pertenecen al colaborador. Actualice la lista.",
+                    -5,
+                    result);
+            }
+
+            var fechaAplicacion = connection.QueryFirst<DateTime>(
+                "SELECT CAST(GETDATE() AS date)",
+                transaction: transaction);
+            var boleta = connection.QueryFirstOrDefault<ColaboradorTrasladoResultadoRow>(
+                "spActivos_Responsable_Cambio_Boleta_Add",
+                new
+                {
+                    BoletaId = string.Empty,
+                    MotivoId = request.MotivoId.Trim(),
+                    Notas = request.Notas.Trim(),
+                    A_Id = identificacion.Trim(),
+                    N_Id = destinoId,
+                    Usuario = usuario.Trim(),
+                    FechaAplicacion = fechaAplicacion
+                },
+                transaction,
+                commandType: CommandType.StoredProcedure);
+
+            if (boleta?.Pass != 1 || string.IsNullOrWhiteSpace(boleta.Boleta))
+            {
+                return DbHelper.CreateErrorResponse(
+                    boleta?.Mensaje ?? "No fue posible registrar la boleta.",
+                    -6,
+                    result);
+            }
+
+            var boletaId = boleta.Boleta.Trim();
+
+            for (var index = 0; index < placas.Count; index++)
+            {
+                var detalle = connection.QueryFirstOrDefault<ColaboradorTrasladoResultadoRow>(
+                    "spActivos_Responsable_Cambio_Boleta_Placas",
+                    new
+                    {
+                        BoletaId = boletaId,
+                        Placa = placas[index],
+                        Usuario = usuario.Trim(),
+                        Inicial = index == 0 ? 1 : 0
+                    },
+                    transaction,
+                    commandType: CommandType.StoredProcedure);
+
+                if (detalle?.Pass != 1)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        detalle?.Mensaje ?? "No fue posible agregar una placa a la boleta.",
+                        -7,
+                        result);
+                }
+            }
+
+            var placasRegistradas = connection.QueryFirst<int>(
+                "SELECT COUNT(1) FROM ACTIVOS_TRASLADO_RESPONSABLES " +
+                "WHERE COD_TRASLADO = @BoletaId",
+                new { BoletaId = boletaId },
+                transaction);
+
+            if (placasRegistradas != placas.Count)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "No se registraron todas las placas. La boleta no se guardó.",
+                    -8,
+                    result);
+            }
+
+            transaction.Commit();
+            _securityMainDb.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = usuario.Trim(),
+                Movimiento = "Registra",
+                DetalleMovimiento = "Boleta de Cambio Responsable: " + boletaId,
+                Modulo = 36
+            });
+
+            return DbHelper.CreateOkResponse(new ColaboradorTrasladoRegistroData
+            {
+                BoletaId = boletaId
+            });
         }
 
         private static ErrorDto<bool>? ValidarAccesoAutorizador(
@@ -1281,7 +1720,9 @@ namespace Galileo.DataBaseTier.ProGrX
                 : "Identificacion = @Identificacion";
 
             return (
-                "SELECT Cod_Traslado AS codTraslado, Estado_Desc AS estado, " +
+                "SELECT V.Cod_Traslado AS codTraslado, Estado_Desc AS estado, " +
+                "(SELECT T.ESTADO FROM ACTIVOS_TRASLADOS T " +
+                "WHERE T.COD_TRASLADO = V.Cod_Traslado) AS estadoCodigo, " +
                 "Registro_Fecha AS fecha, Registro_Usuario AS usuario, " +
                 "Identificacion AS identificacionOrigen, Persona AS personaOrigen, " +
                 "Departamento AS departamentoOrigen, Seccion AS seccionOrigen, " +
@@ -1291,7 +1732,7 @@ namespace Galileo.DataBaseTier.ProGrX
                 "Seccion_Destino AS seccionDestino, Motivo AS motivo, " +
                 "PROCESADO_FECHA AS procesadoFecha, " +
                 "PROCESADO_USUARIO AS procesadoUsuario " +
-                $"FROM vActivos_Traslados_Boletas WHERE {filtro} " +
+                $"FROM vActivos_Traslados_Boletas V WHERE {filtro} " +
                 "ORDER BY Registro_Fecha DESC",
                 parametros);
         }
@@ -1519,5 +1960,29 @@ namespace Galileo.DataBaseTier.ProGrX
     internal sealed class ColaboradorSolicitudRegistroRow
     {
         public string? BoletaId { get; set; }
+    }
+
+    internal sealed class ColaboradorTrasladoEstadoRow
+    {
+        public string? IdentificacionOrigen { get; set; }
+        public string? IdentificacionDestino { get; set; }
+        public string? Estado { get; set; }
+    }
+
+    internal sealed class ColaboradorTrasladoResultadoRow
+    {
+        public short Pass { get; set; }
+        public string? Mensaje { get; set; }
+        public string? Boleta { get; set; }
+    }
+
+    internal sealed class ColaboradorTrasladoPlacaRow
+    {
+        public short asignado { get; set; }
+        public string? NUM_PLACA { get; set; }
+        public string? Descripcion { get; set; }
+        public decimal DEPRECIACION_AC { get; set; }
+        public decimal DEPRECIACION_MES { get; set; }
+        public decimal VALOR_LIBROS { get; set; }
     }
 }

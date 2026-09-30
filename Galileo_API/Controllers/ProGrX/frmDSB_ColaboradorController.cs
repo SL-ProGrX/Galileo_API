@@ -161,6 +161,57 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [HttpPost("Colaborador_Traslado_Gestionar")]
+        public ActionResult<ErrorDto<bool>> Colaborador_Traslado_Gestionar(
+            int CodEmpresa,
+            [FromBody] ColaboradorTrasladoGestionRequest request)
+        {
+            var usuario = User.FindFirst(UserNameClaim)?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return Unauthorized();
+            }
+
+            return Ok(_bl.Colaborador_Traslado_Gestionar(CodEmpresa, usuario, request));
+        }
+
+        [Authorize]
+        [HttpPost("Colaborador_Traslado_Configuracion_Obtener")]
+        public ActionResult<ErrorDto<ColaboradorTrasladoConfiguracionData>> Colaborador_Traslado_Configuracion_Obtener(
+            int CodEmpresa,
+            [FromBody] ColaboradorTrasladoAccesoRequest request)
+        {
+            var usuario = User.FindFirst(UserNameClaim)?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return Unauthorized();
+            }
+
+            return Ok(_bl.Colaborador_Traslado_Configuracion_Obtener(CodEmpresa, usuario, request));
+        }
+
+        [Authorize]
+        [HttpPost("Colaborador_Traslado_Registrar")]
+        public ActionResult<ErrorDto<ColaboradorTrasladoRegistroData>> Colaborador_Traslado_Registrar(
+            int CodEmpresa,
+            [FromBody] ColaboradorTrasladoRegistrarRequest request)
+        {
+            var usuario = User.FindFirst(UserNameClaim)?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return Unauthorized();
+            }
+
+            return Ok(_bl.Colaborador_Traslado_Registrar(CodEmpresa, usuario, request));
+        }
+
+        [Authorize]
         [HttpPost("Colaborador_Solicitud_Configuracion_Obtener")]
         public ActionResult<ErrorDto<ColaboradorSolicitudConfiguracionData>> Colaborador_Solicitud_Configuracion_Obtener(
             int CodEmpresa,

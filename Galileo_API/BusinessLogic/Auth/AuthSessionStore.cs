@@ -93,14 +93,19 @@ public sealed class AuthSessionStore
         }
     }
 
-    public ChallengeState CreateChallenge(AuthUserDto user, string application, IReadOnlyCollection<string> methods)
+    public ChallengeState CreateChallenge(
+        AuthUserDto user,
+        string application,
+        IReadOnlyCollection<string> methods,
+        string purpose = "mfa")
     {
         var challenge = new ChallengeState(
             CreateOpaqueToken(),
             user,
             application,
             methods,
-            DateTime.UtcNow.AddMinutes(5));
+            DateTime.UtcNow.AddMinutes(5),
+            purpose);
 
         lock (_sync)
         {
@@ -190,7 +195,8 @@ public sealed class AuthSessionStore
         AuthUserDto User,
         string Application,
         IReadOnlyCollection<string> Methods,
-        DateTime ExpiresAtUtc)
+        DateTime ExpiresAtUtc,
+        string Purpose)
     {
         public bool Consumed { get; set; }
         public int Attempts { get; set; }

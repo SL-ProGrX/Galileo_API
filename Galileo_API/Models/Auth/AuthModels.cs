@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Galileo.Models;
 
 namespace Galileo.Models.Auth;
 
@@ -24,14 +25,25 @@ public sealed class AuthUserDto
 public sealed class AuthResponseDto
 {
     public string Status { get; init; } = string.Empty;
+    public string? Detail { get; init; }
     public string? AccessToken { get; init; }
     public DateTime? ExpiresAtUtc { get; init; }
     public AuthUserDto? User { get; init; }
     public string? ChallengeToken { get; init; }
     public DateTime? ChallengeExpiresAtUtc { get; init; }
     public IReadOnlyCollection<string> Methods { get; init; } = Array.Empty<string>();
+    public string? PasswordExpiryNotice { get; init; }
+    public ParametrosObtenerDto? PasswordPolicy { get; init; }
     [JsonIgnore]
     public string? RefreshToken { get; init; }
+}
+
+public sealed class PasswordChangeRequest
+{
+    public string ChallengeToken { get; set; } = string.Empty;
+    public string PassViejo { get; set; } = string.Empty;
+    public string NuevaContrasena { get; set; } = string.Empty;
+    public string Confirmacion { get; set; } = string.Empty;
 }
 
 public sealed class MfaVerifyRequest
