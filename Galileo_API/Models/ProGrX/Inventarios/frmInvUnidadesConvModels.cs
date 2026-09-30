@@ -1,11 +1,5 @@
 ﻿namespace Galileo.Models.INV
 {
-    public class UnidadMedicionConv
-    {
-        public string item { get; set; } = string.Empty;
-        public string descripcion { get; set; } = string.Empty;
-    }
-
     public class UnidadesConvLista
     {
         public int total { get; set; }
@@ -16,6 +10,7 @@
     {
         public string cod_unidad { get; set; } = string.Empty;
         public string cod_unidad_d { get; set; } = string.Empty;
-        public float factor { get; set; } = 0;
+        public string descripcion { get; set; } = string.Empty;
+        public decimal factor { get; set; } = 0;
     }
 }

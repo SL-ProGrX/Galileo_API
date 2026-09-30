@@ -1,36 +1,60 @@
 ﻿using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
 
 namespace Galileo.BusinessLogic
 {
-    public class FrmInvUnidadesConvBL
+    public sealed class FrmInvUnidadesConvBl
     {
-        private readonly FrmInvUnidadesConvDB _db;
+        private readonly FrmInvUnidadesConvDb _db;
 
-        public FrmInvUnidadesConvBL(IConfiguration config)
+        public FrmInvUnidadesConvBl(
+            IConfiguration config)
         {
-            _db = new FrmInvUnidadesConvDB(config);
+            _db = new FrmInvUnidadesConvDb(
+                config);
         }
 
-        public ErrorDto<List<UnidadMedicionConv>> UnidadMedicion_Obtener(int CodCliente)
+        public ErrorDto<
+            List<DropDownListaGenericaModel<string>>>
+            INV_UnidadesConv_Unidades_Obtener(
+                int CodEmpresa)
         {
-            return _db.UnidadMedicion_Obtener(CodCliente);
+            return _db
+                .INV_UnidadesConv_Unidades_Obtener(
+                    CodEmpresa);
         }
 
-        public ErrorDto<UnidadesConvLista> UnidadConvLista_Obtener(int CodCliente, string cod_unidad)
+        public ErrorDto<UnidadesConvLista>
+            INV_UnidadesConv_Lista_Obtener(
+                int CodEmpresa,
+                string CodUnidad)
         {
-            return _db.UnidadConvLista_Obtener(CodCliente, cod_unidad);
+            return _db
+                .INV_UnidadesConv_Lista_Obtener(
+                    CodEmpresa,
+                    CodUnidad);
         }
 
-        public ErrorDto UnidadConv_Guardar(int CodCliente, UnidadMedicionConvData equivalencia)
+        public ErrorDto INV_UnidadesConv_Guardar(
+            int CodEmpresa,
+            UnidadMedicionConvData equivalencia)
         {
-            return _db.UnidadConv_Guardar(CodCliente, equivalencia);
+            return _db.INV_UnidadesConv_Guardar(
+                CodEmpresa,
+                equivalencia);
         }
 
-        public ErrorDto UnidadConv_Eliminar(int CodCliente, string cod_unidad, string cod_unidad_d)
+        public ErrorDto INV_UnidadesConv_Eliminar(
+            int CodEmpresa,
+            string CodUnidad,
+            string CodUnidadDestino)
         {
-            return _db.UnidadConv_Eliminar(CodCliente, cod_unidad, cod_unidad_d);
+            return _db.INV_UnidadesConv_Eliminar(
+                CodEmpresa,
+                CodUnidad,
+                CodUnidadDestino);
         }
     }
 }

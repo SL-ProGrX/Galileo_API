@@ -107,7 +107,7 @@ namespace Galileo.DataBaseTier
                     Cargos_Flotante_Monto = connection.QueryFirstOrDefault<int>(
                         @"SELECT count(*)
                           FROM cxP_cargosPer C
-                          INNER JOIN cxp_cargos T ON C.cod_Cargo = T.cod_Cargo
+                          INNER JOIN cxp_cargos T ON C.cod_Cargo = T.cod_Cargo AND T.Contabiliza = 1
                           INNER JOIN cxp_proveedores P ON C.cod_Proveedor = P.cod_Proveedor
                           WHERE C.Tipo = 'M'
                             AND C.concepto NOT IN('*** PAGO ANTICIPADO ***')
@@ -119,7 +119,7 @@ namespace Galileo.DataBaseTier
                         @"SELECT count(*)
                           FROM cxp_PagoProvCargos Car
                           INNER JOIN CXP_CARGOSPER Per ON Car.COD_PROVEEDOR = Per.COD_PROVEEDOR AND Car.ID = Per.ID
-                          INNER JOIN cxp_Cargos T ON Car.cod_Cargo = T.cod_Cargo
+                          INNER JOIN cxp_Cargos T ON Car.cod_Cargo = T.cod_Cargo AND T.Contabiliza = 1
                           INNER JOIN cxp_proveedores P ON Car.cod_Proveedor = P.cod_Proveedor
                           WHERE Per.TIPO = 'P'
                             AND Car.TIPO_PROCESO = 'F'
@@ -130,7 +130,7 @@ namespace Galileo.DataBaseTier
                     Cargos_Directos_Factura = connection.QueryFirstOrDefault<int>(
                         @"SELECT count(*)
                           FROM cxp_PagoProvCargos Car
-                          INNER JOIN cxp_Cargos T ON Car.cod_Cargo = T.cod_Cargo
+                          INNER JOIN cxp_Cargos T ON Car.cod_Cargo = T.cod_Cargo AND T.Contabiliza = 1
                           INNER JOIN cxp_proveedores P ON Car.cod_Proveedor = P.cod_Proveedor
                           WHERE Car.TIPO_PROCESO = 'D'
                             AND Car.Asiento_Fecha IS NULL
@@ -469,7 +469,7 @@ namespace Galileo.DataBaseTier
                                     T.descripcion + '.. ID: ' + CONVERT(VARCHAR(10), C.[ID]) + '.. Prov: ' + CONVERT(VARCHAR(10), C.COD_PROVEEDOR) AS AsientoDesc,
                                     CONVERT(VARCHAR(10), P.COD_PROVEEDOR) + '..' + P.Descripcion AS Referencia
                              FROM cxP_cargosPer C
-                             INNER JOIN cxp_cargos T ON C.cod_Cargo = T.cod_Cargo
+                             INNER JOIN cxp_cargos T ON C.cod_Cargo = T.cod_Cargo AND T.Contabiliza = 1
                              INNER JOIN cxp_proveedores P ON C.cod_Proveedor = P.cod_Proveedor
                              WHERE C.Tipo = 'M'
                                AND C.concepto NOT IN ('*** PAGO ANTICIPADO ***')
@@ -486,7 +486,7 @@ namespace Galileo.DataBaseTier
                                     T.descripcion AS Cargo, T.cod_cuenta AS CtaCargo, P.cod_cuenta AS CtaProveedor
                              FROM cxp_PagoProvCargos Car
                              INNER JOIN CXP_CARGOSPER Per ON Car.COD_PROVEEDOR = Per.COD_PROVEEDOR AND Car.ID = Per.ID
-                             INNER JOIN cxp_Cargos T ON Car.cod_Cargo = T.cod_Cargo
+                             INNER JOIN cxp_Cargos T ON Car.cod_Cargo = T.cod_Cargo AND T.Contabiliza = 1
                              INNER JOIN cxp_proveedores P ON Car.cod_Proveedor = P.cod_Proveedor
                              INNER JOIN CXP_PAGOPROV Pg ON Pg.COD_PROVEEDOR = Car.COD_PROVEEDOR AND Pg.COD_FACTURA = Car.COD_FACTURA AND Pg.NPAGO = Car.NPAGO
                              WHERE Per.TIPO = 'P'
@@ -502,7 +502,7 @@ namespace Galileo.DataBaseTier
                                     T.descripcion AS Detalle, T.cod_cuenta AS CtaCargo, P.cod_cuenta AS CtaProveedor,
                                     CONVERT(VARCHAR(10), P.COD_PROVEEDOR) + '..' + P.Descripcion AS Referencia
                              FROM cxp_PagoProvCargos Car
-                             INNER JOIN cxp_Cargos T ON Car.cod_Cargo = T.cod_Cargo
+                             INNER JOIN cxp_Cargos T ON Car.cod_Cargo = T.cod_Cargo AND T.Contabiliza = 1
                              INNER JOIN cxp_proveedores P ON Car.cod_Proveedor = P.cod_Proveedor
                              WHERE Car.TIPO_PROCESO = 'D'
                                AND Car.Asiento_Fecha IS NULL
@@ -519,7 +519,7 @@ namespace Galileo.DataBaseTier
                              FROM CXP_PAGOPROV Pg
                              INNER JOIN cxp_PagoProvCargos Car ON Pg.COD_PROVEEDOR = Car.COD_PROVEEDOR AND Pg.COD_FACTURA = Car.COD_FACTURA AND Pg.NPAGO = Car.NPAGO AND ISNULL(Car.ID, 0) > 0
                              INNER JOIN cxp_proveedores P ON Car.cod_Proveedor = P.cod_Proveedor
-                             INNER JOIN cxp_Cargos T ON Car.cod_Cargo = T.cod_Cargo
+                             INNER JOIN cxp_Cargos T ON Car.cod_Cargo = T.cod_Cargo AND T.Contabiliza = 1
                              INNER JOIN CXP_ANTICIPOS At ON PG.COD_PROVEEDOR = At.COD_PROVEEDOR AND At.ID_CARGO = Car.ID
                              WHERE Pg.TIPO_CANCELACION = 'C'
                                AND Car.ASIENTO_FECHA IS NULL
