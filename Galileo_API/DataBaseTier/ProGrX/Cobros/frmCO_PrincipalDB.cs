@@ -186,7 +186,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                                 s.cod_institucion AS codInstitucion,
                                 ISNULL(ISNULL(rc.cod_deductora, s.cod_deductora), s.cod_institucion) AS deductora,
-                                CAST(ISNULL(rc.IND_DEDUCE_PLANILLA, 0) AS bit) AS deducePlanilla,
+                                CASE
+                                    WHEN UPPER(ISNULL(rc.IND_DEDUCE_PLANILLA, 'N')) = 'S' THEN CAST(1 AS bit)
+                                    ELSE CAST(0 AS bit)
+                                END AS deducePlanilla,
 
                                 c.codigo AS linea,
                                 ISNULL(c.DESCRIPCION_LINEA, c.DESCRIPCION) AS lineaDescripcion,
@@ -307,8 +310,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     WHERE rc.id_solicitud = @operacion
                 ";
 
-                const string sqlMora = @"
+                const string sqlMoraBase = @"
+                    EXEC spCbrCobroJudicialInteresesHoy @operacion, @fechaCorte
+                ";
+
+                const string sqlMoraCobroJudicial = @"
                     EXEC spCbrCobroJudicialInteresesHoy @operacion, @fechaCorte, @cobroJudicial
+                ";
+
+                const string sqlFirmaMora = @"
+                    SELECT CASE WHEN COUNT(*) >= 3 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END
+                    FROM sys.parameters
+                    WHERE object_id = OBJECT_ID('dbo.spCbrCobroJudicialInteresesHoy', 'P')
                 ";
 
                 var estado = cn.QueryFirstOrDefault<CoEstadoDto>(
@@ -322,13 +335,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     return response;
                 }
 
-                // Primera llamada: valores estándar (parámetro 0)
-                var mora = cn.QueryFirstOrDefault(sqlMora, new
+                var admiteIndicadorCobroJudicial = cn.QuerySingle<bool>(sqlFirmaMora);
+                var sqlMora = admiteIndicadorCobroJudicial
+                    ? sqlMoraCobroJudicial
+                    : sqlMoraBase;
+
+                DynamicParameters CrearParametrosMora(int? cobroJudicial = null)
                 {
-                    operacion,
-                    fechaCorte = fecha.ToString("yyyy/MM/dd"),
-                    cobroJudicial = 0
-                });
+                    var parametros = new DynamicParameters();
+                    parametros.Add("operacion", operacion);
+                    parametros.Add("fechaCorte", fecha.ToString("yyyy/MM/dd"));
+
+                    if (cobroJudicial.HasValue)
+                    {
+                        parametros.Add("cobroJudicial", cobroJudicial.Value);
+                    }
+
+                    return parametros;
+                }
+
+                // La firma nueva recibe el indicador; la anterior sólo operación y fecha.
+                var mora = cn.QueryFirstOrDefault(
+                    sqlMora,
+                    CrearParametrosMora(admiteIndicadorCobroJudicial ? 0 : null));
 
                 if (mora != null)
                 {
@@ -341,14 +370,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                     // Si es Cobro Judicial, se hace segunda llamada con parámetro 1
                     // y se sobreescriben los valores de mora
-                    if (estado.proceso == "J")
+                    if (estado.proceso == "J" && admiteIndicadorCobroJudicial)
                     {
-                        var moraJudicial = cn.QueryFirstOrDefault(sqlMora, new
-                        {
-                            operacion,
-                            fechaCorte = fecha.ToString("yyyy/MM/dd"),
-                            cobroJudicial = 1
-                        });
+                        var moraJudicial = cn.QueryFirstOrDefault(
+                            sqlMoraCobroJudicial,
+                            CrearParametrosMora(1));
 
                         if (moraJudicial != null)
                         {
@@ -1284,7 +1310,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
                 const string sql = @"UPDATE reg_creditos
-                                SET IND_DEDUCE_PLANILLA = @deducePlanilla
+                                SET IND_DEDUCE_PLANILLA = CASE WHEN @deducePlanilla = 1 THEN 'S' ELSE 'N' END
                                 WHERE id_solicitud = @operacion ";
 
                 var rows = cn.Execute(sql, new

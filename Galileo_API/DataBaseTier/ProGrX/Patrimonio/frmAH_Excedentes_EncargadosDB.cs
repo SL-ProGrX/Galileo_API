@@ -94,7 +94,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                         Mov = "A",
                         A_Usuario = usuario,
                         Email = encargado.email,
-                        Activo = encargado.activo ? 1 : 0
+                        Activo = encargado.activo == true ? 1 : 0
                     },
                     commandType: CommandType.StoredProcedure);
 

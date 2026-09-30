@@ -1,52 +1,68 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX_Beneficios;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo_API.Controllers.ProGrX_Beneficios
 {
-    /// <summary>
-    /// Endpoints del Pago de Productos de Beneficios (frmAF_BeneProdPago).
-    /// </summary>
     [Route("api/frmAF_BeneProdPago")]
     [ApiController]
+    [Authorize]
     public class FrmAfBeneProdPagoController : ControllerBase
     {
         private readonly FrmAfBeneProdPagoBL _bl;
 
-        public FrmAfBeneProdPagoController(IConfiguration config)
+        public FrmAfBeneProdPagoController(
+            IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
-
-            _bl = new FrmAfBeneProdPagoBL(config);
+            _bl = new FrmAfBeneProdPagoBL(
+                config ??
+                throw new ArgumentNullException(nameof(config)));
         }
 
-        /// <summary>Lista de productos asignados pendientes de entrega.</summary>
-        [Authorize]
-        [HttpGet("AfiBeneProdAsgLista_Obtener")]
-        public ErrorDto<AfiBeneProdAsgDataList> AfiBeneProdAsgLista_Obtener(int CodCliente, string cod_beneficio, int? pagina, int? paginacion, string? filtro)
-            => _bl.AfiBeneProdAsgLista_Obtener(CodCliente, cod_beneficio, pagina, paginacion, filtro);
+        [HttpGet("AF_BeneProdPago_Beneficios_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            AF_BeneProdPago_Beneficios_Obtener(
+                int CodEmpresa)
+        {
+            return _bl.AF_BeneProdPago_Beneficios_Obtener(
+                CodEmpresa);
+        }
 
-        /// <summary>Beneficios con productos asignados pendientes de pago.</summary>
-        [Authorize]
-        [HttpGet("AfiBeneficios_Obtener")]
-        public ErrorDto<List<AfiBeneProdData>> AfiBeneficios_Obtener(int CodCliente)
-            => _bl.AfiBeneficios_Obtener(CodCliente);
+        [HttpGet("AF_BeneProdPago_Lista_Obtener")]
+        public ErrorDto<AfiBeneProdAsgDataList>
+            AF_BeneProdPago_Lista_Obtener(
+                int CodEmpresa,
+                string filtros)
+        {
+            return _bl.AF_BeneProdPago_Lista_Obtener(
+                CodEmpresa,
+                filtros);
+        }
 
-        /// <summary>Detalle de productos asignados a un beneficio y consecutivo.</summary>
-        [Authorize]
-        [HttpGet("AfiBeneProdAsg_Obtener")]
-        public ErrorDto<List<AfiBeneProdAsgData>> AfiBeneProdAsg_Obtener(int CodCliente, string consec, string cod_beneficio)
-            => _bl.AfiBeneProdAsg_Obtener(CodCliente, consec, cod_beneficio);
+        [HttpGet("AF_BeneProdPago_Detalle_Obtener")]
+        public ErrorDto<List<AfiBeneProdDetalleData>>
+            AF_BeneProdPago_Detalle_Obtener(
+                int CodEmpresa,
+                int consec,
+                string cod_beneficio)
+        {
+            return _bl.AF_BeneProdPago_Detalle_Obtener(
+                CodEmpresa,
+                consec,
+                cod_beneficio);
+        }
 
-        /// <summary>Procesa la entrega de productos de beneficios.</summary>
-        [Authorize]
-        [HttpPost("AfiBeneOtorga_Actualiza")]
-        public ErrorDto AfiBeneOtorga_Actualiza(int CodCliente, [FromBody] string beneficio)
-            => _bl.AfiBeneOtorga_Actualiza(CodCliente, beneficio);
+        [HttpPut("AF_BeneProdPago_Entrega_Procesar")]
+        public ErrorDto AF_BeneProdPago_Entrega_Procesar(
+            int CodEmpresa,
+            AfiBeneProdPagoEntregaRequest request)
+        {
+            return _bl.AF_BeneProdPago_Entrega_Procesar(
+                CodEmpresa,
+                request);
+        }
     }
 }

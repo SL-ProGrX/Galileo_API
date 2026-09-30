@@ -44,8 +44,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
                     .Result;
                 var usuario = filtro.usuario.Trim().ToUpperInvariant();
                 var esUsuarioEspecial =
-                    TES_EmisionDocumento_UsuarioEsEspecial(connection, usuario);
+                    MTesoreria.TES_EmisionDocumento_UsuarioEsEspecial(connection, usuario);
 
+               
                 using var resultados = connection.QueryMultiple(
                     SolicitudesPaginaSql,
                     new
@@ -53,9 +54,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
                         top = Math.Max(filtro.cantidad, 0),
                         filtro.tipoDoc,
                         filtro.banco,
-                        minimo = rangos.solInicio,
-                        maximo = rangos.solCorte,
-                        fechaInicio = rangos.fechaInicio,
+                        minimo = (esUsuarioEspecial || rangos.solInicio == 0) ? 0 : rangos.solInicio,
+                        maximo = (esUsuarioEspecial || rangos.solInicio == 0) ? 999999999 : rangos.solCorte,
+                        fechaInicio =  rangos.fechaInicio,
                         fechaCorte = rangos.fechaCorte,
                         usuario,
                         especial = esUsuarioEspecial,
@@ -65,6 +66,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
                         filas
                     });
 
+               
+
                 var resumen = resultados
                     .ReadSingle<TesSolicitudesPaginaResumen>();
                 var totalFiltrado = resultados.ReadSingle<int>();
@@ -72,17 +75,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
                     .Read<TesSolicitudPaginaData>()
                     .ToList();
 
+
                 return new TesEmisionDocumentoSolicitudesPaginaResult
                 {
                     lista = TES_EmisionDocumento_Solicitudes_Pagina_Formatear(
-                        solicitudes,
-                        filtro,
-                        consecutivoInterno),
+                       solicitudes,
+                       filtro,
+                       consecutivoInterno),
                     total = resumen.total,
                     totalFiltrado = totalFiltrado,
                     montoTotal = resumen.monto_total,
                     tieneRestricciones = resumen.tiene_restricciones
                 };
+
             });
         }
 
@@ -101,7 +106,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
             {
                 var usuario = filtro.usuario.Trim().ToUpperInvariant();
                 var esUsuarioEspecial =
-                    TES_EmisionDocumento_UsuarioEsEspecial(connection, usuario);
+                    MTesoreria.TES_EmisionDocumento_UsuarioEsEspecial(connection, usuario);
 
                 return connection.Query<int>(
                     SolicitudesIdsSql,
@@ -184,7 +189,9 @@ WHERE t.Estado = 'P'
   AND t.fecha_hold IS NULL
   AND
   (
-      (@especial = 1 AND UPPER(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario)
+      (@especial = 1 AND UPPER(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
+      AND t.Tipo = @tipoDoc
+          AND t.Id_Banco = @banco)
       OR
       (
           @especial = 0
@@ -220,7 +227,9 @@ WHERE t.Estado = 'P'
   AND t.fecha_hold IS NULL
   AND
   (
-      (@especial = 1 AND UPPER(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario)
+      (@especial = 1 AND UPPER(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
+      AND t.Tipo = @tipoDoc
+          AND t.Id_Banco = @banco)
       OR
       (
           @especial = 0
@@ -268,7 +277,8 @@ FROM #SolicitudesVisuales;
 
 SELECT q.*,
        CAST(q.id_rechazo AS varchar(10)) + ' - ' + sm.descripcion AS estadoSinpe,
-       dbo.fxTes_Cuentas_Bancarias_Pass(q.Id_Banco, q.Cta_Ahorros) AS Pass
+       dbo.fxTes_Cuentas_Bancarias_Pass(q.Id_Banco, q.Cta_Ahorros) AS Pass,
+       dbo.fxTes_W_Cuentas_Bancarias_Pass_Mensaje(q.Id_Banco, q.Cta_Ahorros) as msjError
 FROM #SolicitudesVisuales AS q
 LEFT JOIN SINPE_MOTIVOS AS sm
     ON sm.cod_motivo = q.id_rechazo
@@ -282,6 +292,8 @@ FETCH NEXT @filas ROWS ONLY;
             public int total { get; set; } = 0;
             public decimal monto_total { get; set; } = 0;
             public bool tiene_restricciones { get; set; } = false;
+
+            public string msjError { get; set; } = string.Empty;
         }
 
         private sealed class TesSolicitudPaginaData : TesSolicitudesGenData
@@ -289,6 +301,14 @@ FETCH NEXT @filas ROWS ONLY;
             public int orden_te { get; set; } = 0;
             public int orden_ts { get; set; } = 0;
             public int orden_visible { get; set; } = 0;
+        }
+
+        private sealed class TesEmiteSolicitudEspecial
+        {
+            public long nsolicitud { get; set; } = 0;
+            public string tipoDoc { get; set; } = string.Empty;
+            public string banco { get; set; } = string.Empty;
+            public int docInterno { get; set; } = 0;
         }
     }
 }
