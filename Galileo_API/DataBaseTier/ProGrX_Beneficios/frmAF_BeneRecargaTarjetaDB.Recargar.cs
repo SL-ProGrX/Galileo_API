@@ -3,37 +3,54 @@ using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 using Microsoft.Data.SqlClient;
-using Newtonsoft.Json;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
     public partial class FrmAfBeneRecargaTarjetaDB
     {
         /// <summary>
-        /// Recarga las tarjetas de regalo: genera la tesorería por proveedor, actualiza pagos, otorgamientos,
-        /// crea el detalle contable, actualiza el estado de la tarjeta y cierra la remesa.
+        /// Recarga las tarjetas de regalo y cierra la remesa.
         /// </summary>
         /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="tarjetas">JSON con la remesa, usuario y tarjetas a recargar.</param>
+        /// <param name="request">Remesa, usuario y tarjetas que serán procesadas.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto AfiTarjetasRegalo_Recargar(int CodCliente, string tarjetas)
+        public ErrorDto AfiTarjetasRegalo_Recargar(
+            int CodCliente,
+            AfiBeneTarjetasRecargaData request)
         {
-            var info = JsonConvert.DeserializeObject<AfiBeneTarjetasRecargaData>(tarjetas) ?? new AfiBeneTarjetasRecargaData();
+            using var connection = DbHelper.OpenConnection(
+                CreatePortalDb(),
+                CodCliente);
 
-            using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente);
             try
             {
-                var vToken = ObtenerToken(connection, CodCliente, info.usuario);
+                var token = ObtenerToken(
+                    connection,
+                    CodCliente,
+                    request.usuario);
 
-                foreach (var item in info.tarjetas)
+                foreach (var tarjeta in request.tarjetas)
                 {
-                    ProcesarRecargaTarjeta(connection, CodCliente, info, item, vToken);
+                    ProcesarRecargaTarjeta(
+                        connection,
+                        CodCliente,
+                        request,
+                        tarjeta,
+                        token);
                 }
 
-                const string sqlRemesa = "UPDATE AFI_BENE_TARJETAS_REMESAS SET Estado = 'C' WHERE cod_remesa_tr = @cod_remesa_tr";
-                connection.Execute(sqlRemesa, new { info.cod_remesa_tr });
+                const string sql = """
+                UPDATE AFI_BENE_TARJETAS_REMESAS
+                SET ESTADO = 'C'
+                WHERE COD_REMESA_TR = @cod_remesa_tr
+                """;
 
-                return new ErrorDto { Code = 0 };
+                connection.Execute(
+                    sql,
+                    new { request.cod_remesa_tr });
+
+                return DbHelper.OkResponse(
+                    "La recarga fue procesada correctamente.");
             }
             catch (Exception ex)
             {
