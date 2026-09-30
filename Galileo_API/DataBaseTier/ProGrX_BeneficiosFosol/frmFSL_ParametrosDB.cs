@@ -382,156 +382,198 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         {
             var valorAjustado = valor.Trim();
 
-            switch (tipo)
+            return tipo switch
             {
-                case "DEC":
-                    if (!FSL_Parametros_Decimal_Convertir(
+                "DEC" or "NUM" or "POR" =>
+                    FSL_Parametros_Valor_Numerico_Validar(
                         valorAjustado,
-                        out var decimalValor))
-                    {
-                        return (
-                            false,
-                            string.Empty,
-                            MensajeValorInvalido);
-                    }
+                        tipo),
 
-                    return (
-                        true,
-                        decimalValor.ToString(
-                            CultureInfo.InvariantCulture),
-                        string.Empty);
-
-                case "NUM":
-                    if (!FSL_Parametros_Decimal_Convertir(
-                            valorAjustado,
-                            out var numeroValor) ||
-                        numeroValor < long.MinValue ||
-                        numeroValor > long.MaxValue)
-                    {
-                        return (
-                            false,
-                            string.Empty,
-                            MensajeValorInvalido);
-                    }
-
-                    return (
-                        true,
-                        Convert.ToInt64(numeroValor)
-                            .ToString(CultureInfo.InvariantCulture),
-                        string.Empty);
-
-                case "POR":
-                    if (!FSL_Parametros_Decimal_Convertir(
+                "CTA" or "CHR" or "PSN" =>
+                    FSL_Parametros_Valor_Texto_Validar(
+                        CodCliente,
                         valorAjustado,
-                        out var porcentajeValor))
-                    {
-                        return (
-                            false,
-                            string.Empty,
-                            "El valor indicado no es v&aacute;lido; suministre un porcentaje.");
-                    }
+                        tipo),
 
+                "DTS" =>
+                    FSL_Parametros_Valor_Fecha_Validar(
+                        valorAjustado),
+
+                _ => (
+                    true,
+                    valorAjustado,
+                    string.Empty)
+            };
+        }
+
+        /// <summary>
+        /// Valida parámetros numéricos, decimales y porcentuales.
+        /// </summary>
+        /// <param name="valor">Valor recibido.</param>
+        /// <param name="tipo">Tipo numérico configurado.</param>
+        /// <returns>Resultado de la validación y valor ajustado.</returns>
+        private static (
+            bool esValido,
+            string valor,
+            string mensaje)
+            FSL_Parametros_Valor_Numerico_Validar(
+                string valor,
+                string tipo)
+        {
+            if (!FSL_Parametros_Decimal_Convertir(
+                valor,
+                out var numero))
+            {
+                var mensaje = tipo == "POR"
+                    ? "El valor indicado no es v&aacute;lido; suministre un porcentaje."
+                    : MensajeValorInvalido;
+
+                return (
+                    false,
+                    string.Empty,
+                    mensaje);
+            }
+
+            if (tipo == "NUM")
+            {
+                if (numero < long.MinValue ||
+                    numero > long.MaxValue)
+                {
                     return (
-                        true,
-                        porcentajeValor.ToString(
-                            CultureInfo.InvariantCulture),
-                        string.Empty);
+                        false,
+                        string.Empty,
+                        MensajeValorInvalido);
+                }
 
-                case "CTA":
-                    var cuenta = _cntLinkDb.fxgCntCuentaFormato(
+                return (
+                    true,
+                    Convert.ToInt64(numero)
+                        .ToString(
+                            CultureInfo.InvariantCulture),
+                    string.Empty);
+            }
+
+            return (
+                true,
+                numero.ToString(
+                    CultureInfo.InvariantCulture),
+                string.Empty);
+        }
+
+        /// <summary>
+        /// Valida parámetros de cuenta contable, caracteres y respuestas S/N.
+        /// </summary>
+        /// <param name="CodCliente">Código de empresa.</param>
+        /// <param name="valor">Valor recibido.</param>
+        /// <param name="tipo">Tipo de parámetro configurado.</param>
+        /// <returns>Resultado de la validación y valor ajustado.</returns>
+        private (
+            bool esValido,
+            string valor,
+            string mensaje)
+            FSL_Parametros_Valor_Texto_Validar(
+                int CodCliente,
+                string valor,
+                string tipo)
+        {
+            if (tipo == "CTA")
+            {
+                var cuenta =
+                    _cntLinkDb.fxgCntCuentaFormato(
                         CodCliente,
                         false,
-                        valorAjustado,
+                        valor,
                         0);
 
-                    if (string.IsNullOrWhiteSpace(cuenta) ||
-                        !_cntLinkDb.fxgCntCuentaValida(
-                            CodCliente,
-                            cuenta))
-                    {
-                        return (
-                            false,
-                            string.Empty,
-                            "La cuenta indicada no es v&aacute;lida; presione F4 para buscar en el cat&aacute;logo.");
-                    }
-
+                if (string.IsNullOrWhiteSpace(cuenta) ||
+                    !_cntLinkDb.fxgCntCuentaValida(
+                        CodCliente,
+                        cuenta))
+                {
                     return (
+                        false,
+                        string.Empty,
+                        "La cuenta indicada no es v&aacute;lida; presione F4 para buscar en el cat&aacute;logo.");
+                }
+
+                return (
+                    true,
+                    cuenta,
+                    string.Empty);
+            }
+
+            if (tipo == "CHR")
+            {
+                return valor.Contains('\'')
+                    ? (
+                        false,
+                        string.Empty,
+                        "El valor indicado contiene caracteres no v&aacute;lidos.")
+                    : (
                         true,
-                        cuenta,
+                        valor,
                         string.Empty);
+            }
 
-                case "CHR":
-                    if (valorAjustado.Contains('\''))
-                    {
-                        return (
-                            false,
-                            string.Empty,
-                            "El valor indicado contiene caracteres no v&aacute;lidos.");
-                    }
+            if (valor.Length > 0)
+            {
+                var respuesta =
+                    char.ToUpperInvariant(valor[0]);
 
-                    return (
-                        true,
-                        valorAjustado,
-                        string.Empty);
-
-                case "PSN":
-                    if (valorAjustado.Length == 0)
-                    {
-                        return (
-                            false,
-                            string.Empty,
-                            "El valor indicado no es v&aacute;lido; indique S o N.");
-                    }
-
-                    var respuesta = char.ToUpperInvariant(
-                        valorAjustado[0]);
-
-                    if (respuesta != 'S' && respuesta != 'N')
-                    {
-                        return (
-                            false,
-                            string.Empty,
-                            "El valor indicado no es v&aacute;lido; indique S o N.");
-                    }
-
+                if (respuesta == 'S' ||
+                    respuesta == 'N')
+                {
                     return (
                         true,
                         respuesta.ToString(),
                         string.Empty);
-
-                case "DTS":
-                    var cultura = CultureInfo.GetCultureInfo("es-CR");
-
-                    if (!DateTime.TryParse(
-                            valorAjustado,
-                            cultura,
-                            DateTimeStyles.None,
-                            out var fecha) &&
-                        !DateTime.TryParse(
-                            valorAjustado,
-                            CultureInfo.InvariantCulture,
-                            DateTimeStyles.None,
-                            out fecha))
-                    {
-                        return (
-                            false,
-                            string.Empty,
-                            "La fecha indicada no es v&aacute;lida.");
-                    }
-
-                    return (
-                        true,
-                        fecha.ToString(
-                            "yyyy/MM/dd",
-                            CultureInfo.InvariantCulture),
-                        string.Empty);
-
-                default:
-                    return (
-                        true,
-                        valorAjustado,
-                        string.Empty);
+                }
             }
+
+            return (
+                false,
+                string.Empty,
+                "El valor indicado no es v&aacute;lido; indique S o N.");
+        }
+
+        /// <summary>
+        /// Valida y ajusta un parámetro de fecha.
+        /// </summary>
+        /// <param name="valor">Fecha recibida.</param>
+        /// <returns>Resultado de la validación y fecha ajustada.</returns>
+        private static (
+            bool esValido,
+            string valor,
+            string mensaje)
+            FSL_Parametros_Valor_Fecha_Validar(
+                string valor)
+        {
+            var cultura =
+                CultureInfo.GetCultureInfo("es-CR");
+
+            if (!DateTime.TryParse(
+                    valor,
+                    cultura,
+                    DateTimeStyles.None,
+                    out var fecha) &&
+                !DateTime.TryParse(
+                    valor,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out fecha))
+            {
+                return (
+                    false,
+                    string.Empty,
+                    "La fecha indicada no es v&aacute;lida.");
+            }
+
+            return (
+                true,
+                fecha.ToString(
+                    "yyyy/MM/dd",
+                    CultureInfo.InvariantCulture),
+                string.Empty);
         }
 
         /// <summary>
