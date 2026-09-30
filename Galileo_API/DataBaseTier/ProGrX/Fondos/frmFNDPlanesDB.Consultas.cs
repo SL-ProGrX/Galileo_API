@@ -49,6 +49,18 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     FROM dbo.vFnd_Planes
                     ORDER BY cod_plan;";
 
+        private const string SqlPlanesLista = @"
+                    SELECT
+                        LTRIM(RTRIM(cod_plan)) AS item,
+                        descripcion,
+                        cod_operadora AS codoperadora,
+                        CAST(CASE WHEN WEB_CREAR = 1 OR WEB_LIQUIDA = 1 OR WEBSITE = 1 THEN 1 ELSE 0 END AS bit) AS auto_gestionable,
+                        CAST(CASE WHEN ESTADO = 'A' THEN 1 ELSE 0 END AS bit) AS activo,
+                        CAST(CASE WHEN TIPO_CDP = 1 THEN 1 ELSE 0 END AS bit) AS certificado_plazo,
+                        CAST(CASE WHEN SINPE_PROC_ENLINEA = 1 OR SINPE_PROC_INTERNO = 1 THEN 1 ELSE 0 END AS bit) AS ts
+                    FROM dbo.FND_Planes
+                    ORDER BY cod_plan;";
+
         private const string SqlHistorialRend = @"
                     SELECT
                         corte,
@@ -77,15 +89,20 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     SpPlanesListas,
                     commandType: CommandType.StoredProcedure);
 
-                return new FndPlanesCombosDto
+                var combos = new FndPlanesCombosDto
                 {
                     TiposPlan = multi.Read<DropDownListaGenericaModel>().ToList(),
                     Grupos = multi.Read<DropDownListaGenericaModel>().ToList(),
                     Divisas = multi.Read<DropDownListaGenericaModel>().ToList(),
                     Operadoras = multi.Read<DropDownListaGenericaModel>().ToList(),
                     Lineas = multi.Read<DropDownListaGenericaModel>().ToList(),
-                    Planes = multi.Read<DropDownListaGenericaModel>().ToList()
+                    Planes = new List<FndPlanListaDto>()
                 };
+
+                _ = multi.Read<DropDownListaGenericaModel>().ToList();
+                combos.Planes = connection.Query<FndPlanListaDto>(SqlPlanesLista).ToList();
+
+                return combos;
             });
 
             return new ErrorDto<FndPlanesCombosDto>
@@ -307,6 +324,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 mov_cajas = false,
                 retiros_cajas = false,
                 giro_terceros = false,
+                sinpe_proc_enlinea = false,
+                sinpe_proc_interno = false,
                 website = false,
                 web_liquida = false,
                 renta_global = false,
