@@ -3,7 +3,6 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Polizas;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 {
@@ -86,28 +85,38 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             CrdPolizaConsultaRequestDto req)
         {
             using var conn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
-            var response = new ErrorDto<CrdPolizaConsultaResponseDto>();
 
             var codPoliza = (req.cod_poliza ?? "").Trim();
 
             if (string.IsNullOrWhiteSpace(codPoliza))
+            {
                 return DbHelper.CreateErrorResponse<CrdPolizaConsultaResponseDto>("Debe indicar la póliza.");
+            }
 
-            // 1️⃣ Obtener tipo
-            string tipoRow = conn.QueryFirstOrDefault<string>(
-                "exec spPolizas_Tipo_Aplicacion @cod_poliza",
-                new { cod_poliza = codPoliza }) ?? string.Empty;
+            // Igual que GridMeta: ExecuteScalar. QueryFirstOrDefault<string> no mapea bien
+            // el resultset del SP y dejaba tipo vacío → "Tipo de póliza no soportado: ".
+            var tipo = (conn.ExecuteScalar<string>(
+                    "exec spPolizas_Tipo_Aplicacion @cod_poliza",
+                    new { cod_poliza = codPoliza }) ?? string.Empty)
+                .Trim()
+                .ToUpperInvariant();
 
-             if (tipoRow == null)
-                return DbHelper.CreateErrorResponse<CrdPolizaConsultaResponseDto>("No se pudo determinar el tipo.");
+            if (string.IsNullOrWhiteSpace(tipo))
+            {
+                return DbHelper.CreateErrorResponse<CrdPolizaConsultaResponseDto>(
+                    "No se pudo determinar el tipo de póliza.");
+            }
 
-            string tipo = tipoRow.Trim().ToUpper();
+            string sql;
+            try
+            {
+                sql = BuildSqlByTipo(tipo, req.analisis);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<CrdPolizaConsultaResponseDto>(ex.Message);
+            }
 
-            // 2️⃣ Determinar SP según tipo + análisis
-            string sql = BuildSqlByTipo(tipo, req.analisis, new Exception($"Tipo de póliza no soportado: {tipo}")
-);
-
-            // 3️⃣ Ejecutar SP principal
             var data = conn.Query(
                 sql,
                 new
@@ -116,32 +125,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     Corte = req.fecha_corte.ToString("yyyy-MM-dd")
                 }).ToList();
 
-            // 4️⃣ Convertir a Dictionary<string, object?>
             var rows = data
                 .Select(r => (IDictionary<string, object>)r)
                 .Select(dict => dict.ToDictionary(
-                    k => k.Key.ToUpperInvariant(),   
+                    k => k.Key.ToUpperInvariant(),
                     v => v.Value,
                     StringComparer.OrdinalIgnoreCase
                 ))
                 .ToList();
 
-            // 5️⃣ Obtener columnas (reutilizamos método anterior)
             var columns = BuildColumnsByTipo(tipo);
 
-            response.Result = new CrdPolizaConsultaResponseDto
+            return DbHelper.CreateOkResponse(new CrdPolizaConsultaResponseDto
             {
                 tipo = tipo,
                 columns = columns,
                 rows = rows,
                 total = rows.Count
-            };
-
-            return response;
+            });
         }
 
 
-        private static string BuildSqlByTipo(string tipo, string analisis, Exception exception)
+        private static string BuildSqlByTipo(string tipo, string analisis)
         {
             bool esCredito = analisis?.StartsWith("C", StringComparison.OrdinalIgnoreCase) == true;
 
@@ -167,7 +172,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 "PINC" or "PINCC" =>
                     "exec spPoliza_Incendio_Cierre_Retencion @Poliza, @Corte, 0, '', 'T'",
 
-                _ => throw exception
+                _ => throw new InvalidOperationException($"Tipo de póliza no soportado: {tipo}")
             };
         }
 
