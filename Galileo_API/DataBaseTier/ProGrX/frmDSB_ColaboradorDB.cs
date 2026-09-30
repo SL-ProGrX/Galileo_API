@@ -1,6 +1,7 @@
 using Dapper;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX;
+using Galileo.Models.Security;
 using System.Data;
 
 namespace Galileo.DataBaseTier.ProGrX
@@ -13,10 +14,12 @@ namespace Galileo.DataBaseTier.ProGrX
         private static readonly byte[] FirmaBmp = [0x42, 0x4D];
 
         private readonly PortalDB _portalDb;
+        private readonly MSecurityMainDb _securityMainDb;
 
         public FrmDsbColaboradorDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
+            _securityMainDb = new MSecurityMainDb(config);
         }
 
         public ErrorDto<ColaboradorVinculoData> Colaborador_Vinculado_Obtener(
@@ -290,6 +293,80 @@ namespace Galileo.DataBaseTier.ProGrX
             }
         }
 
+        public ErrorDto<bool> Colaborador_Clave_Cambia(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorClaveCambiaRequest request)
+        {
+            if (ValidarSolicitudUsuario(
+                usuario,
+                false,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.ClaveActual?.Length > 100
+                    || string.IsNullOrEmpty(request.ClaveNueva)
+                    || request.ClaveNueva.Length is < 3 or > 100,
+                "Seleccione un colaborador e ingrese una clave de 3 a 100 caracteres.")
+                is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+                var empleadoVinculado = ObtenerVinculacion(connection, usuario)?.Empleado_ID?.Trim();
+
+                if (!string.IsNullOrWhiteSpace(empleadoVinculado))
+                {
+                    if (!string.Equals(empleadoVinculado, empleadoId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return DbHelper.CreateErrorResponse(
+                            "El colaborador solicitado no corresponde al usuario vinculado.",
+                            -2,
+                            false);
+                    }
+                }
+                else if (string.IsNullOrEmpty(request.ClaveActual)
+                    || ConsultarClave(connection, empleadoId, request.ClaveActual)?.Existe != 1)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La clave actual del portal no es válida.", -2, false);
+                }
+
+                var existeEmpleado = connection.ExecuteScalar<int>(
+                    "SELECT COUNT(1) FROM RH_PERSONAS WHERE EMPLEADO_ID = @EmpleadoId",
+                    new { EmpleadoId = empleadoId });
+
+                if (existeEmpleado != 1)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "No se encontró el colaborador solicitado.", -3, false);
+                }
+
+                connection.Execute(
+                    "spRH_Portal_Clave_Cambia",
+                    new
+                    {
+                        EmpleadoId = empleadoId,
+                        Clave = request.ClaveNueva,
+                        Usuario = usuario.Trim(),
+                        AppName = "ProGrX_WEB",
+                        AppVersion = NormalizarAppVersion(request.AppVersion),
+                        Equipo = "WEB"
+                    },
+                    commandType: CommandType.StoredProcedure);
+
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, false);
+            }
+        }
+
         public ErrorDto<List<Dictionary<string, object?>>> Colaborador_Menu_Obtener(
             int CodEmpresa,
             string usuario,
@@ -386,6 +463,158 @@ namespace Galileo.DataBaseTier.ProGrX
             {
                 return CrearError(ex, result);
             }
+        }
+
+        public ErrorDto<bool> Colaborador_Autorizacion_Registrar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorAutorizacionRequest request)
+        {
+            if (ValidarSolicitudUsuario(
+                usuario,
+                false,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.Clave?.Length > 100
+                    || string.IsNullOrWhiteSpace(request.BoletaId)
+                    || request.BoletaId.Length > 30
+                    || request.Tipo is not ("P" or "V" or "I")
+                    || request.EstadoActual is not ("S" or "A" or "D")
+                    || request.EstadoNuevo is not ("A" or "D")
+                    || request.EstadoActual == request.EstadoNuevo,
+                "Los datos de autorización no son válidos.") is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+                if (ValidarAccesoAutorizador(connection, usuario, empleadoId, request)
+                    is { } errorAcceso)
+                {
+                    return errorAcceso;
+                }
+
+                string? ConsultarEstado()
+                {
+                    var parametros = new
+                    {
+                        BoletaId = request.BoletaId.Trim(),
+                        AutorizadorId = empleadoId
+                    };
+
+                    return request.Tipo switch
+                    {
+                        "P" => connection.QueryFirstOrDefault<string>(
+                            """
+                            SELECT Estado
+                            FROM vRH_Boleta_Permisos
+                            WHERE Boleta_Id = @BoletaId
+                              AND dbo.fxRH_Autorizador_Valida(Empleado_ID, @AutorizadorId) = 1
+                            """,
+                            parametros),
+                        "V" => connection.QueryFirstOrDefault<string>(
+                            """
+                            SELECT Estado
+                            FROM vRH_Boleta_Vacaciones
+                            WHERE Boleta_Id = @BoletaId
+                              AND dbo.fxRH_Autorizador_Valida(Empleado_ID, @AutorizadorId) = 1
+                            """,
+                            parametros),
+                        _ => connection.QueryFirstOrDefault<string>(
+                            """
+                            SELECT Estado
+                            FROM vRH_Boleta_Incapacidades
+                            WHERE Boleta_Id = @BoletaId
+                              AND dbo.fxRH_Autorizador_Valida(Empleado_ID, @AutorizadorId) = 1
+                            """,
+                            parametros)
+                    };
+                }
+
+                var estado = ConsultarEstado();
+
+                if (estado != request.EstadoActual)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La boleta ya no está disponible en el estado consultado. Actualice la lista.",
+                        -3,
+                        false);
+                }
+
+                connection.Execute(
+                    "spRH_Autorizaciones_Registro",
+                    new
+                    {
+                        AutorizadorId = empleadoId,
+                        Tipo = request.Tipo,
+                        BoletaId = request.BoletaId.Trim(),
+                        Usuario = usuario.Trim(),
+                        Estado = request.EstadoNuevo,
+                        AppCod = "ProGrX"
+                    },
+                    commandType: CommandType.StoredProcedure);
+
+                var estadoRegistrado = ConsultarEstado();
+
+                if (estadoRegistrado != request.EstadoNuevo)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La boleta no cambió de estado. Revise la nómina y actualice la lista.",
+                        -4,
+                        false);
+                }
+
+                _securityMainDb.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = usuario.Trim(),
+                    Movimiento = "Aplica",
+                    DetalleMovimiento =
+                        $"{(request.EstadoNuevo == "A" ? "Autoriza" : "Deniega")} de Boleta Id:" +
+                        request.BoletaId.Trim() + "..Autorizador Id: " + empleadoId,
+                    Modulo = 23
+                });
+
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, false);
+            }
+        }
+
+        private static ErrorDto<bool>? ValidarAccesoAutorizador(
+            IDbConnection connection,
+            string usuario,
+            string empleadoId,
+            ColaboradorAutorizacionRequest request)
+        {
+            var empleadoVinculado = ObtenerVinculacion(connection, usuario)?.Empleado_ID?.Trim();
+
+            if (!string.IsNullOrWhiteSpace(empleadoVinculado)
+                && !string.Equals(empleadoVinculado, empleadoId, StringComparison.OrdinalIgnoreCase))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "El colaborador solicitado no corresponde al usuario vinculado.",
+                    -2,
+                    false);
+            }
+
+            if (string.IsNullOrWhiteSpace(empleadoVinculado)
+                && (string.IsNullOrEmpty(request.Clave)
+                    || ConsultarClave(connection, empleadoId, request.Clave)?.Existe != 1))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "La clave registrada no es válida.",
+                    -2,
+                    false);
+            }
+
+            return null;
         }
 
         private static (string Sql, object Parametros) CrearConsultaMenu(
