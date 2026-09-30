@@ -1,40 +1,52 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
 using Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Endpoints de los Parámetros de Beneficios Fosol (frmFSL_Parametros).
-    /// </summary>
     [Route("api/frmFSL_Parametros")]
+    [Authorize]
     [ApiController]
-    public class FrmFslParametrosController : ControllerBase
+    public sealed class FrmFslParametrosController : ControllerBase
     {
-        private readonly FrmFslParametrosBL _bl;
+        private readonly FrmFslParametrosBl _bl;
 
-        public FrmFslParametrosController(IConfiguration config)
+        public FrmFslParametrosController(
+            IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
-
-            _bl = new FrmFslParametrosBL(config);
+            ArgumentNullException.ThrowIfNull(config);
+            _bl = new FrmFslParametrosBl(config);
         }
 
-        /// <summary>Lista de parámetros Fosol.</summary>
-        [Authorize]
-        [HttpGet("FslParametros_Obtener")]
-        public ErrorDto<FdlParametrosListaDto> FslParametros_Obtener(int CodCliente, string filtros)
-            => _bl.FslParametros_Obtener(CodCliente, filtros);
+        [HttpPost("FSL_Parametros_Inicializar")]
+        public ErrorDto FSL_Parametros_Inicializar(
+            int CodCliente)
+        {
+            return _bl.FSL_Parametros_Inicializar(
+                CodCliente);
+        }
 
-        /// <summary>Actualiza el valor de un parámetro Fosol.</summary>
-        [Authorize]
-        [HttpPut("FslParametros_Actualizar")]
-        public ErrorDto FslParametros_Actualizar(int CodCliente, [FromBody] FdlParametrosDto parametro)
-            => _bl.FslParametros_Actualizar(CodCliente, parametro);
+        [HttpGet("FSL_Parametros_Lista_Obtener")]
+        public ErrorDto<FslParametrosListaDto>
+            FSL_Parametros_Lista_Obtener(
+                int CodCliente,
+                string filtros)
+        {
+            return _bl.FSL_Parametros_Lista_Obtener(
+                CodCliente,
+                filtros);
+        }
+
+        [HttpPut("FSL_Parametros_Actualizar")]
+        public ErrorDto FSL_Parametros_Actualizar(
+            int CodCliente,
+            FslParametroActualizarRequest request)
+        {
+            return _bl.FSL_Parametros_Actualizar(
+                CodCliente,
+                request);
+        }
     }
 }
