@@ -1,281 +1,821 @@
+using System.Data;
 using Dapper;
-using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
-using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
-using Newtonsoft.Json;
 
 namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 {
-    public partial class FrmFslRemesasPagoDB
+    public sealed partial class FrmFslRemesasPagoDB
     {
         /// <summary>
-        /// Obtiene las remesas cerradas listas para trasladar.
+        /// Obtiene las remesas cerradas disponibles para traslado.
         /// </summary>
         /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <returns>Lista de remesas.</returns>
-        public ErrorDto<List<FslRemesasListaDatos>> FslTraslados_Obtener(int CodEmpresa)
+        /// <returns>Remesas cerradas.</returns>
+        public ErrorDto<List<FslRemesaDto>>
+            FSL_RemesasPago_Traslados_Obtener(
+                int CodEmpresa)
         {
-            return DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-            {
-                const string sql = @"SELECT *, CONCAT(TESORERIA_REMESA, REGISTRO_USUARIO, REGISTRO_FECHA, FECHA_INICIO, FECHA_CORTE) AS DESCRIPCION
-                                     FROM FSL_REMESAS_TESORERIA WHERE estado = 'C' ORDER BY REGISTRO_fecha DESC";
-                return connection.Query<FslRemesasListaDatos>(sql).ToList();
-            });
+            const string sql = """
+                SELECT
+                    R.TESORERIA_REMESA AS tesoreria_remesa,
+                    LTRIM(RTRIM(ISNULL(R.REGISTRO_USUARIO, '')))
+                        AS registro_usuario,
+                    R.REGISTRO_FECHA AS registro_fecha,
+                    R.FECHA_INICIO AS fecha_inicio,
+                    R.FECHA_CORTE AS fecha_corte,
+                    LTRIM(RTRIM(ISNULL(R.NOTAS, ''))) AS notas,
+                    LTRIM(RTRIM(ISNULL(R.ESTADO, ''))) AS estado,
+                    'Remesa Cerrada' AS estado_descripcion,
+                    CONCAT(
+                        RIGHT(
+                            '0000' +
+                            CONVERT(VARCHAR(20), R.TESORERIA_REMESA),
+                            4
+                        ),
+                        '...',
+                        LTRIM(RTRIM(ISNULL(R.REGISTRO_USUARIO, ''))),
+                        '...',
+                        CONVERT(VARCHAR(19), R.REGISTRO_FECHA, 120),
+                        ' I:',
+                        CONVERT(VARCHAR(10), R.FECHA_INICIO, 103),
+                        ' C:',
+                        CONVERT(VARCHAR(10), R.FECHA_CORTE, 103)
+                    ) AS descripcion
+                FROM FSL_REMESAS_TESORERIA R
+                WHERE R.ESTADO = 'C'
+                ORDER BY R.REGISTRO_FECHA DESC;
+                """;
+
+            return DbHelper.ExecuteListQuery<FslRemesaDto>(
+                _portalDb,
+                CodEmpresa,
+                sql);
         }
 
         /// <summary>
-        /// Obtiene los expedientes de una remesa pendientes de traslado a tesorería.
+        /// Obtiene los expedientes pendientes de traslado de una remesa.
         /// </summary>
         /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <param name="fecha_inicio">Fecha inicial.</param>
-        /// <param name="fecha_corte">Fecha de corte.</param>
-        /// <param name="cod_remesa">Código de la remesa.</param>
-        /// <returns>Lista de expedientes.</returns>
-        public ErrorDto<List<FslTrasladoListaData>> FslTrasladoLista_Obtener(int CodEmpresa, string fecha_inicio, string fecha_corte, int cod_remesa)
+        /// <param name="codRemesa">Código de la remesa.</param>
+        /// <returns>Expedientes pendientes de traslado.</returns>
+        public ErrorDto<List<FslExpedienteRemesaDto>>
+            FSL_RemesasPago_TrasladoLista_Obtener(
+                int CodEmpresa,
+                long codRemesa)
         {
-            return DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            if (codRemesa <= 0)
             {
-                const string sql = @"SELECT E.COD_EXPEDIENTE AS cod_expediente, E.CEDULA AS cedula, S.NOMBRE AS nombre,
-                                            E.TOTAL_SOBRANTE AS total_sobrante, E.PRESENTA_CEDULA AS presenta_cedula, E.PRESENTA_NOMBRE AS presenta_nombre
-                                     FROM FSL_EXPEDIENTES E
-                                     INNER JOIN SOCIOS S ON E.CEDULA = S.CEDULA
-                                     WHERE E.RESOLUCION_FECHA BETWEEN @fecha_inicio AND @fecha_corte
-                                       AND E.TESORERIA_REMESA = @cod_remesa AND E.Tipo_Desembolso = 'T'
-                                       AND E.Estado = 'X' AND E.TOTAL_SOBRANTE > 0 AND ISNULL(E.Tesoreria_Solicitud, 0) = 0
-                                     ORDER BY E.CEDULA, S.NOMBRE";
-                return connection.Query<FslTrasladoListaData>(sql, new { fecha_inicio, fecha_corte, cod_remesa }).ToList();
-            });
+                return DbHelper.CreateErrorResponse(
+                    MensajeRemesaRequerida,
+                    CodigoValidacion,
+                    new List<FslExpedienteRemesaDto>());
+            }
+
+            const string sql = """
+                SELECT
+                    CONVERT(VARCHAR(30), E.COD_EXPEDIENTE)
+                        AS cod_expediente,
+                    LTRIM(RTRIM(ISNULL(E.CEDULA, ''))) AS cedula,
+                    LTRIM(RTRIM(ISNULL(S.NOMBRE, ''))) AS nombre,
+                    CAST(ISNULL(E.TOTAL_SOBRANTE, 0) AS DECIMAL(18, 2))
+                        AS total_sobrante,
+                    LTRIM(RTRIM(ISNULL(E.PRESENTA_CEDULA, '')))
+                        AS presenta_cedula,
+                    LTRIM(RTRIM(ISNULL(E.PRESENTA_NOMBRE, '')))
+                        AS presenta_nombre
+                FROM FSL_EXPEDIENTES E
+                INNER JOIN SOCIOS S
+                    ON E.CEDULA = S.CEDULA
+                INNER JOIN FSL_REMESAS_TESORERIA R
+                    ON R.TESORERIA_REMESA =
+                        E.TESORERIA_REMESA
+                WHERE R.TESORERIA_REMESA = @codRemesa
+                  AND R.ESTADO = 'C'
+                  AND E.RESOLUCION_FECHA >= R.FECHA_INICIO
+                  AND E.RESOLUCION_FECHA <
+                      DATEADD(DAY, 1, R.FECHA_CORTE)
+                  AND E.TIPO_DESEMBOLSO = 'T'
+                  AND E.ESTADO = 'X'
+                  AND E.TOTAL_SOBRANTE > 0
+                  AND ISNULL(E.TESORERIA_SOLICITUD, 0) = 0
+                ORDER BY E.CEDULA, S.NOMBRE;
+                """;
+
+            return DbHelper.ExecuteListQuery<
+                FslExpedienteRemesaDto>(
+                    _portalDb,
+                    CodEmpresa,
+                    sql,
+                    new
+                    {
+                        codRemesa
+                    });
         }
 
         /// <summary>
-        /// Aplica el traslado a tesorería de los expedientes de una remesa: genera la solicitud de tesorería,
-        /// crea el detalle contable, actualiza el expediente y cierra la remesa como trasladada.
+        /// Traslada los expedientes seleccionados a tesorería.
         /// </summary>
         /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <param name="traslados">JSON con el traslado y los casos.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto FslTraslado_Aplicar(int CodEmpresa, string traslados)
+        /// <param name="request">Remesa, usuario y expedientes.</param>
+        /// <returns>Resultado del traslado.</returns>
+        public ErrorDto FSL_RemesasPago_Traslado_Aplicar(
+            int CodEmpresa,
+            FslRemesaAplicarRequest request)
         {
-            var traslado = JsonConvert.DeserializeObject<FslTrasladoAplicar>(traslados) ?? new FslTrasladoAplicar();
+            var validacion =
+                FSL_RemesasPago_Aplicar_Request_Validar(
+                    request);
 
-            using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodEmpresa);
+            if (validacion != null)
+            {
+                return validacion;
+            }
+
+            var codigos = request.casos
+                .Select(item =>
+                    item.cod_expediente.Trim())
+                .Where(codigo =>
+                    !string.IsNullOrWhiteSpace(codigo))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (codigos.Count == 0)
+            {
+                return DbHelper.ErrorResponse(
+                    "Debe seleccionar al menos un expediente.",
+                    CodigoValidacion);
+            }
+
+            var configuracion =
+                FSL_RemesasPago_Traslado_Configuracion_Obtener(
+                    CodEmpresa,
+                    request.usuario);
+
+            if (!configuracion.esValida)
+            {
+                return DbHelper.ErrorResponse(
+                    configuracion.mensaje,
+                    CodigoValidacion);
+            }
+
+            List<FslExpedienteRemesaDto> expedientes;
+
+            using var connection =
+                DbHelper.OpenConnection(
+                    _portalDb,
+                    CodEmpresa);
+
             try
             {
-                var config = new TrasladoConfig
-                {
-                    Cuenta = _mBeneficiosDB.fxFSL_Parametros(CodEmpresa, "01"),
-                    Concepto = _mBeneficiosDB.fxFSL_Parametros(CodEmpresa, "05"),
-                    Unidad = _mBeneficiosDB.fxFSL_Parametros(CodEmpresa, "07"),
-                    Token = connection.QueryFirstOrDefault<string>("SELECT TOP 1 id_token FROM tes_tokens WHERE estado = 'A' ORDER BY registro_fecha") ?? string.Empty
-                };
+                connection.Open();
 
-                var casos = 0;
-                foreach (var item in traslado.casos)
+                using var transaction =
+                    connection.BeginTransaction();
+
+                if (!FSL_RemesasPago_Remesa_Cerrada_Existe(
+                    connection,
+                    transaction,
+                    request.cod_remesa))
                 {
-                    ProcesarTrasladoCaso(CodEmpresa, connection, traslado, item, config);
-                    casos++;
+                    transaction.Rollback();
+
+                    return DbHelper.ErrorResponse(
+                        "La remesa indicada no se encuentra disponible para trasladar.",
+                        CodigoValidacion);
                 }
 
-                if (casos > 0)
+                expedientes =
+                    FSL_RemesasPago_Traslado_Casos_Obtener(
+                        connection,
+                        transaction,
+                        request.cod_remesa,
+                        codigos);
+
+                if (expedientes.Count != codigos.Count)
                 {
-                    Bitacora(new BitacoraInsertarDto
+                    transaction.Rollback();
+
+                    return DbHelper.ErrorResponse(
+                        "Uno o m&aacute;s expedientes ya no se encuentran disponibles para trasladar.",
+                        CodigoValidacion);
+                }
+
+                foreach (var expediente in expedientes)
+                {
+                    FSL_RemesasPago_Traslado_Caso_Procesar(
+                        connection,
+                        transaction,
+                        request,
+                        expediente,
+                        configuracion);
+                }
+
+                const string sqlRemesa = """
+                    UPDATE FSL_REMESAS_TESORERIA
+                    SET ESTADO = 'T'
+                    WHERE TESORERIA_REMESA = @cod_remesa
+                      AND ESTADO = 'C';
+                    """;
+
+                connection.Execute(
+                    sqlRemesa,
+                    new
                     {
-                        EmpresaId = CodEmpresa,
-                        Usuario = traslado.usuario.ToUpper(),
-                        DetalleMovimiento = "Carga Remesa Traslado a Tesoreria :" + traslado.codTraslado,
-                        Movimiento = "Aplica - WEB",
-                        Modulo = 7
-                    });
+                        request.cod_remesa
+                    },
+                    transaction);
 
-                    connection.Execute("UPDATE FSL_REMESAS_TESORERIA SET estado = 'T' WHERE TESORERIA_REMESA = @codTraslado",
-                        new { traslado.codTraslado });
-                }
-
-                return DbHelper.OkResponse("Traslado a Tesoreria realizado satisfactoriamente...");
+                transaction.Commit();
             }
             catch (Exception ex)
             {
-                return DbHelper.ErrorResponse(ex.Message);
+                return DbHelper.ErrorResponse(
+                    ex.Message);
             }
+
+            foreach (var expediente in expedientes)
+            {
+                FSL_RemesasPago_Bitacora_Registrar(
+                    CodEmpresa,
+                    request.usuario,
+                    "Registra",
+                    $"Traspaso a Tesoreria - Expediente:{expediente.cod_expediente}");
+            }
+
+            FSL_RemesasPago_Bitacora_Registrar(
+                CodEmpresa,
+                request.usuario,
+                "Aplica",
+                $"Carga Remesa Traslado a Tesoreria : {request.cod_remesa}");
+
+            return DbHelper.OkResponse(
+                "Traslado a Tesorer&iacute;a realizado satisfactoriamente.");
         }
 
         /// <summary>
-        /// Procesa el traslado de un expediente: resuelve el medio de pago, genera la solicitud de tesorería,
-        /// el detalle contable, actualiza el expediente y deja traza.
+        /// Obtiene y valida la configuración necesaria para el traslado.
         /// </summary>
-        private void ProcesarTrasladoCaso(int CodEmpresa, SqlConnection connection, FslTrasladoAplicar traslado, FslTrasladoListaData item, TrasladoConfig config)
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="usuario">Usuario responsable.</param>
+        /// <returns>Configuración del traslado.</returns>
+        private FslTrasladoConfiguracion
+            FSL_RemesasPago_Traslado_Configuracion_Obtener(
+                int CodEmpresa,
+                string usuario)
         {
-            var cuentaAhorros = connection.QueryFirstOrDefault<FslCuentaAhorrosDatos>(
-                "SELECT TOP 1 * FROM cuentas_Ahorros WHERE Tipo = 1 AND cedula = @cedula ORDER BY Prioridad", new { item.cedula });
-
-            string tipo, cuenta, banco;
-            if (cuentaAhorros != null)
-            {
-                tipo = "TE";
-                cuenta = cuentaAhorros.cuenta;
-                banco = cuentaAhorros.id_banco;
-            }
-            else
-            {
-                tipo = "CK";
-                cuenta = string.Empty;
-                banco = _mBeneficiosDB.fxFSL_Parametros(CodEmpresa, "04");
-            }
-
-            var solicitud = fxMaestroTesoreria(CodEmpresa, new TrasladoTesoreriaParams
-            {
-                TipoDocumento = tipo,
-                Banco = int.Parse(banco),
-                Monto = item.total_sobrante,
-                Codigo = item.cod_expediente,
-                Beneficiario = item.nombre,
-                Detalle1 = "Exp.: " + item.cod_expediente,
-                Cuenta = cuenta,
-                Fecha = DateTime.Now,
-                Unidad = config.Unidad,
-                Token = config.Token,
-                Usuario = traslado.usuario,
-                CodTraslado = traslado.codTraslado,
-                Concepto = config.Concepto
-            });
-
-            sbCreaDetalle(CodEmpresa, solicitud, fxTraeCuentaBanco(CodEmpresa, banco), item.total_sobrante, "H", 1, config.Unidad);
-            sbCreaDetalle(CodEmpresa, solicitud, config.Cuenta, item.total_sobrante, "D", 1, config.Unidad);
-
-            connection.Execute(@"UPDATE FSL_EXPEDIENTES
-                                 SET Tesoreria_Solicitud = @solicitud, Tesoreria_Fecha = GETDATE(), Tesoreria_Usuario = @usuario
-                                 WHERE TESORERIA_REMESA = @codTraslado AND cod_expediente = @cod_expediente",
-                new { solicitud, usuario = traslado.usuario, traslado.codTraslado, item.cod_expediente });
-
-            Bitacora(new BitacoraInsertarDto
-            {
-                EmpresaId = CodEmpresa,
-                Usuario = traslado.usuario.ToUpper(),
-                DetalleMovimiento = "Traspaso a Tesoreria - Expediente :" + item.cod_expediente,
-                Movimiento = "Registra - WEB",
-                Modulo = 7
-            });
-        }
-
-        /// <summary>
-        /// Inserta el maestro de la solicitud de tesorería y devuelve su número de solicitud.
-        /// </summary>
-        private long fxMaestroTesoreria(int CodEmpresa, TrasladoTesoreriaParams p)
-        {
-            using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodEmpresa);
-            try
-            {
-                var autoriza = p.TipoDocumento == "CK" ? "S" : "N";
-                var userAutoriza = p.TipoDocumento == "CK" ? p.Usuario : null;
-
-                const string sql = @"INSERT Tes_Transacciones
-                                        (cod_concepto, cod_unidad, id_banco, tipo, codigo, beneficiario, monto, fecha_solicitud,
-                                         estado, estadoi, modulo, submodulo, cta_ahorros, detalle1, detalle2, referencia, op,
-                                         genera, actualiza, user_solicita, autoriza, user_autoriza, fecha_autorizacion,
-                                         ID_TOKEN, REMESA_TIPO, REMESA_ID)
-                                     VALUES
-                                        (@concepto, @unidad, @banco, @tipoDocumento, @codigo, @beneficiario, @monto, @fecha,
-                                         'P', 'P', 'CC', 'C', @cuenta, @detalle1, @detalle2, @referencia, @op,
-                                         'S', 'S', @usuario, @autoriza, @userAutoriza, CASE WHEN @autoriza = 'S' THEN GETDATE() ELSE NULL END,
-                                         @token, 'FSL', @codTraslado)";
-
-                connection.Execute(sql, new
+            var configuracion =
+                new FslTrasladoConfiguracion
                 {
-                    p.Concepto,
-                    p.Unidad,
-                    p.Banco,
-                    p.TipoDocumento,
-                    p.Codigo,
-                    p.Beneficiario,
-                    p.Monto,
-                    p.Fecha,
-                    p.Cuenta,
-                    p.Detalle1,
-                    detalle2 = p.Detalle2,
-                    referencia = 0L,
-                    op = 0L,
-                    p.Usuario,
+                    cuenta =
+                        _mBeneficiosDb.fxFSL_Parametros(
+                            CodEmpresa,
+                            "01"),
+                    banco_cheque =
+                        _mBeneficiosDb.fxFSL_Parametros(
+                            CodEmpresa,
+                            "04"),
+                    concepto =
+                        _mBeneficiosDb.fxFSL_Parametros(
+                            CodEmpresa,
+                            "05"),
+                    unidad =
+                        _mBeneficiosDb.fxFSL_Parametros(
+                            CodEmpresa,
+                            "07")
+                };
+
+            const string sqlToken = """
+                SELECT TOP 1
+                    ID_TOKEN
+                FROM TES_TOKENS
+                WHERE ESTADO = 'A'
+                ORDER BY REGISTRO_FECHA;
+                """;
+
+            var tokenResponse =
+                DbHelper.ExecuteSingleQuery<string>(
+                    _portalDb,
+                    CodEmpresa,
+                    sqlToken,
+                    defaultValue: string.Empty);
+
+            configuracion.token =
+                tokenResponse.Result ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(
+                configuracion.token))
+            {
+                configuracion.token =
+                    _mTesFuncionesDb.fxTesToken(
+                        CodEmpresa,
+                        usuario);
+            }
+
+            configuracion.mensaje =
+                FSL_RemesasPago_Traslado_Configuracion_Mensaje(
+                    configuracion);
+
+            configuracion.esValida =
+                string.IsNullOrWhiteSpace(
+                    configuracion.mensaje);
+
+            return configuracion;
+        }
+
+        /// <summary>
+        /// Obtiene el mensaje de validación de la configuración.
+        /// </summary>
+        /// <param name="configuracion">Configuración del traslado.</param>
+        /// <returns>Mensaje de validación.</returns>
+        private static string
+            FSL_RemesasPago_Traslado_Configuracion_Mensaje(
+                FslTrasladoConfiguracion configuracion)
+        {
+            if (string.IsNullOrWhiteSpace(
+                configuracion.cuenta))
+            {
+                return "No se encuentra configurada la cuenta contable del traslado.";
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                configuracion.banco_cheque) ||
+                !int.TryParse(
+                    configuracion.banco_cheque,
+                    out _))
+            {
+                return "No se encuentra configurado el banco para pagos mediante cheque.";
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                configuracion.concepto))
+            {
+                return "No se encuentra configurado el concepto de tesorer&iacute;a.";
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                configuracion.unidad))
+            {
+                return "No se encuentra configurada la unidad de negocio.";
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                configuracion.token))
+            {
+                return "No fue posible obtener el token de tesorer&iacute;a.";
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Valida que la remesa permanezca cerrada.
+        /// </summary>
+        private static bool
+            FSL_RemesasPago_Remesa_Cerrada_Existe(
+                SqlConnection connection,
+                SqlTransaction transaction,
+                long codRemesa)
+        {
+            const string sql = """
+                SELECT COUNT(*)
+                FROM FSL_REMESAS_TESORERIA
+                WHERE TESORERIA_REMESA = @codRemesa
+                  AND ESTADO = 'C';
+                """;
+
+            return connection.QuerySingle<int>(
+                sql,
+                new
+                {
+                    codRemesa
+                },
+                transaction) > 0;
+        }
+
+        /// <summary>
+        /// Obtiene nuevamente los expedientes seleccionados desde la base de datos.
+        /// </summary>
+        private static List<FslExpedienteRemesaDto>
+            FSL_RemesasPago_Traslado_Casos_Obtener(
+                SqlConnection connection,
+                SqlTransaction transaction,
+                long codRemesa,
+                List<string> codigos)
+        {
+            const string sql = """
+                SELECT
+                    CONVERT(VARCHAR(30), E.COD_EXPEDIENTE)
+                        AS cod_expediente,
+                    LTRIM(RTRIM(ISNULL(E.CEDULA, ''))) AS cedula,
+                    LTRIM(RTRIM(ISNULL(S.NOMBRE, ''))) AS nombre,
+                    CAST(ISNULL(E.TOTAL_SOBRANTE, 0) AS DECIMAL(18, 2))
+                        AS total_sobrante,
+                    LTRIM(RTRIM(ISNULL(E.PRESENTA_CEDULA, '')))
+                        AS presenta_cedula,
+                    LTRIM(RTRIM(ISNULL(E.PRESENTA_NOMBRE, '')))
+                        AS presenta_nombre
+                FROM FSL_EXPEDIENTES E
+                INNER JOIN SOCIOS S
+                    ON E.CEDULA = S.CEDULA
+                INNER JOIN FSL_REMESAS_TESORERIA R
+                    ON R.TESORERIA_REMESA =
+                        E.TESORERIA_REMESA
+                WHERE R.TESORERIA_REMESA = @codRemesa
+                  AND R.ESTADO = 'C'
+                  AND E.COD_EXPEDIENTE IN @codigos
+                  AND E.RESOLUCION_FECHA >= R.FECHA_INICIO
+                  AND E.RESOLUCION_FECHA <
+                      DATEADD(DAY, 1, R.FECHA_CORTE)
+                  AND E.TIPO_DESEMBOLSO = 'T'
+                  AND E.ESTADO = 'X'
+                  AND E.TOTAL_SOBRANTE > 0
+                  AND ISNULL(E.TESORERIA_SOLICITUD, 0) = 0;
+                """;
+
+            return connection
+                .Query<FslExpedienteRemesaDto>(
+                    sql,
+                    new
+                    {
+                        codRemesa,
+                        codigos
+                    },
+                    transaction)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Procesa el traslado a tesorería de un expediente.
+        /// </summary>
+        private void FSL_RemesasPago_Traslado_Caso_Procesar(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            FslRemesaAplicarRequest request,
+            FslExpedienteRemesaDto expediente,
+            FslTrasladoConfiguracion configuracion)
+        {
+            var medioPago =
+                FSL_RemesasPago_MedioPago_Obtener(
+                    connection,
+                    transaction,
+                    expediente.cedula,
+                    configuracion.banco_cheque);
+
+            var solicitud =
+                FSL_RemesasPago_Tesoreria_Maestro_Crear(
+                    connection,
+                    transaction,
+                    new FslTesoreriaCrear
+                    {
+                        tipo_documento =
+                            medioPago.tipo_documento,
+                        banco = medioPago.banco,
+                        monto =
+                            expediente.total_sobrante,
+                        codigo =
+                            expediente.cedula,
+                        beneficiario =
+                            expediente.nombre,
+                        detalle1 = "FOSOL",
+                        detalle2 =
+                            $"Exp.: {expediente.cod_expediente}",
+                        cuenta = medioPago.cuenta,
+                        unidad = configuracion.unidad,
+                        token = configuracion.token,
+                        usuario = request.usuario,
+                        cod_remesa =
+                            request.cod_remesa,
+                        concepto =
+                            configuracion.concepto
+                    });
+
+            var cuentaBanco =
+                FSL_RemesasPago_Banco_Cuenta_Obtener(
+                    connection,
+                    transaction,
+                    medioPago.banco);
+
+            FSL_RemesasPago_Tesoreria_Detalle_Crear(
+                connection,
+                transaction,
+                solicitud,
+                cuentaBanco,
+                expediente.total_sobrante,
+                "H",
+                1,
+                configuracion.unidad);
+
+            FSL_RemesasPago_Tesoreria_Detalle_Crear(
+                connection,
+                transaction,
+                solicitud,
+                configuracion.cuenta,
+                expediente.total_sobrante,
+                "D",
+                2,
+                configuracion.unidad);
+
+            const string sqlExpediente = """
+                UPDATE FSL_EXPEDIENTES
+                SET TESORERIA_SOLICITUD = @solicitud,
+                    TESORERIA_FECHA = GETDATE(),
+                    TESORERIA_USUARIO = @usuario
+                WHERE TESORERIA_REMESA = @cod_remesa
+                  AND COD_EXPEDIENTE = @cod_expediente
+                  AND ISNULL(TESORERIA_SOLICITUD, 0) = 0;
+                """;
+
+            var afectados = connection.Execute(
+                sqlExpediente,
+                new
+                {
+                    solicitud,
+                    usuario = request.usuario,
+                    request.cod_remesa,
+                    expediente.cod_expediente
+                },
+                transaction);
+
+            if (afectados <= 0)
+            {
+                throw new InvalidOperationException(
+                    $"No fue posible actualizar el expediente {expediente.cod_expediente}.");
+            }
+        }
+
+        /// <summary>
+        /// Obtiene el medio de pago del beneficiario.
+        /// </summary>
+        private static FslMedioPago
+            FSL_RemesasPago_MedioPago_Obtener(
+                SqlConnection connection,
+                SqlTransaction transaction,
+                string cedula,
+                string bancoCheque)
+        {
+            const string sql = """
+                SELECT TOP 1
+                    LTRIM(RTRIM(ISNULL(CUENTA, ''))) AS cuenta,
+                    ID_BANCO AS id_banco
+                FROM CUENTAS_AHORROS
+                WHERE TIPO = 1
+                  AND CEDULA = @cedula
+                ORDER BY PRIORIDAD;
+                """;
+
+            var cuenta =
+                connection.QueryFirstOrDefault<
+                    FslCuentaAhorro>(
+                        sql,
+                        new
+                        {
+                            cedula
+                        },
+                        transaction);
+
+            if (cuenta != null)
+            {
+                return new FslMedioPago
+                {
+                    tipo_documento = "TE",
+                    banco = cuenta.id_banco,
+                    cuenta = cuenta.cuenta
+                };
+            }
+
+            return new FslMedioPago
+            {
+                tipo_documento = "CK",
+                banco = int.Parse(
+                    bancoCheque,
+                    System.Globalization.CultureInfo.InvariantCulture),
+                cuenta = string.Empty
+            };
+        }
+
+        /// <summary>
+        /// Registra el maestro de una solicitud de tesorería.
+        /// </summary>
+        private static long
+            FSL_RemesasPago_Tesoreria_Maestro_Crear(
+                SqlConnection connection,
+                SqlTransaction transaction,
+                FslTesoreriaCrear request)
+        {
+            var autoriza =
+                request.tipo_documento == "CK"
+                    ? "S"
+                    : "N";
+
+            var usuarioAutoriza =
+                request.tipo_documento == "CK"
+                    ? request.usuario
+                    : null;
+
+            const string sql = """
+                INSERT INTO TES_TRANSACCIONES
+                (
+                    COD_CONCEPTO,
+                    COD_UNIDAD,
+                    ID_BANCO,
+                    TIPO,
+                    CODIGO,
+                    BENEFICIARIO,
+                    MONTO,
+                    FECHA_SOLICITUD,
+                    ESTADO,
+                    ESTADOI,
+                    MODULO,
+                    SUBMODULO,
+                    CTA_AHORROS,
+                    DETALLE1,
+                    DETALLE2,
+                    REFERENCIA,
+                    OP,
+                    GENERA,
+                    ACTUALIZA,
+                    USER_SOLICITA,
+                    AUTORIZA,
+                    USER_AUTORIZA,
+                    FECHA_AUTORIZACION,
+                    ID_TOKEN,
+                    REMESA_TIPO,
+                    REMESA_ID
+                )
+                OUTPUT INSERTED.NSOLICITUD
+                VALUES
+                (
+                    @concepto,
+                    @unidad,
+                    @banco,
+                    @tipo_documento,
+                    @codigo,
+                    @beneficiario,
+                    @monto,
+                    GETDATE(),
+                    'P',
+                    'P',
+                    'CC',
+                    'C',
+                    @cuenta,
+                    @detalle1,
+                    @detalle2,
+                    0,
+                    0,
+                    'S',
+                    'S',
+                    @usuario,
+                    @autoriza,
+                    @usuarioAutoriza,
+                    CASE
+                        WHEN @autoriza = 'S'
+                        THEN GETDATE()
+                        ELSE NULL
+                    END,
+                    @token,
+                    'FSL',
+                    @cod_remesa
+                );
+                """;
+
+            return connection.QuerySingle<long>(
+                sql,
+                new
+                {
+                    request.concepto,
+                    request.unidad,
+                    request.banco,
+                    request.tipo_documento,
+                    request.codigo,
+                    request.beneficiario,
+                    request.monto,
+                    request.cuenta,
+                    request.detalle1,
+                    request.detalle2,
+                    request.usuario,
                     autoriza,
-                    userAutoriza,
-                    p.Token,
-                    p.CodTraslado
-                });
+                    usuarioAutoriza,
+                    request.token,
+                    request.cod_remesa
+                },
+                transaction);
+        }
 
-                var solicitud = connection.QueryFirstOrDefault<long>("SELECT MAX(nsolicitud) AS Solicitud FROM Tes_Transacciones");
-                var info = connection.QueryFirstOrDefault<FslTesTransaccionesData>(
-                    "SELECT * FROM Tes_Transacciones WHERE nsolicitud = @solicitud", new { solicitud });
+        /// <summary>
+        /// Registra una línea del detalle contable de tesorería.
+        /// </summary>
+        private static void
+            FSL_RemesasPago_Tesoreria_Detalle_Crear(
+                SqlConnection connection,
+                SqlTransaction transaction,
+                long solicitud,
+                string cuenta,
+                decimal monto,
+                string debeHaber,
+                int linea,
+                string unidad)
+        {
+            const string sql = """
+                INSERT INTO TES_TRANS_ASIENTO
+                (
+                    NSOLICITUD,
+                    CUENTA_CONTABLE,
+                    MONTO,
+                    DEBEHABER,
+                    LINEA,
+                    COD_UNIDAD
+                )
+                VALUES
+                (
+                    @solicitud,
+                    @cuenta,
+                    @monto,
+                    @debeHaber,
+                    @linea,
+                    @unidad
+                );
+                """;
 
-                if (info != null && info.codigo == p.Codigo.Trim())
+            connection.Execute(
+                sql,
+                new
                 {
-                    return info.nsolicitud;
-                }
-
-                return connection.QueryFirstOrDefault<long>(
-                    "SELECT MAX(nsolicitud) AS Solicitud FROM Tes_Transacciones WHERE codigo = @codigo", new { codigo = p.Codigo });
-            }
-            catch (Exception)
-            {
-                return 0;
-            }
+                    solicitud,
+                    cuenta = cuenta.Trim(),
+                    monto,
+                    debeHaber,
+                    linea,
+                    unidad
+                },
+                transaction);
         }
 
         /// <summary>
-        /// Inserta una línea de detalle contable de la solicitud de tesorería.
+        /// Obtiene la cuenta contable configurada para un banco.
         /// </summary>
-        private void sbCreaDetalle(int CodEmpresa, long vSolicitud, string vCtaConta, float vMonto, string vDH, int vLinea, string vUnidad)
+        private static string
+            FSL_RemesasPago_Banco_Cuenta_Obtener(
+                SqlConnection connection,
+                SqlTransaction transaction,
+                int banco)
         {
-            using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodEmpresa);
-            try
-            {
-                const string sql = @"INSERT Tes_Trans_Asiento (nsolicitud, cuenta_contable, monto, debehaber, linea, cod_unidad)
-                                     VALUES (@vSolicitud, @cuenta, @vMonto, @vDH, @vLinea, @vUnidad)";
-                connection.Execute(sql, new { vSolicitud, cuenta = vCtaConta.Trim(), vMonto, vDH, vLinea, vUnidad });
-            }
-            catch (Exception)
-            {
-                // El original ignora el error de detalle; se conserva ese comportamiento.
-            }
+            const string sql = """
+                SELECT TOP 1
+                    LTRIM(RTRIM(ISNULL(CTACONTA, '')))
+                FROM TES_BANCOS
+                WHERE ID_BANCO = @banco;
+                """;
+
+            return connection.QueryFirstOrDefault<string>(
+                sql,
+                new
+                {
+                    banco
+                },
+                transaction) ?? "0";
         }
 
-        /// <summary>
-        /// Obtiene la cuenta contable de un banco.
-        /// </summary>
-        private string fxTraeCuentaBanco(int CodEmpresa, string vBanco)
+        private sealed class FslTrasladoConfiguracion
         {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-                connection.QueryFirstOrDefault<string>("SELECT ctaconta FROM tes_bancos WHERE id_banco = @vBanco", new { vBanco }));
-
-            return result.Result ?? "0";
+            public string cuenta { get; set; } = string.Empty;
+            public string banco_cheque { get; set; } = string.Empty;
+            public string concepto { get; set; } = string.Empty;
+            public string unidad { get; set; } = string.Empty;
+            public string token { get; set; } = string.Empty;
+            public bool esValida { get; set; } = false;
+            public string mensaje { get; set; } = string.Empty;
         }
 
-        /// <summary>Configuración base del traslado (parámetros SIF y token).</summary>
-        private sealed class TrasladoConfig
+        private sealed class FslCuentaAhorro
         {
-            public string Cuenta { get; set; } = string.Empty;
-            public string Concepto { get; set; } = string.Empty;
-            public string Unidad { get; set; } = string.Empty;
-            public string Token { get; set; } = string.Empty;
+            public string cuenta { get; set; } = string.Empty;
+            public int id_banco { get; set; } = 0;
         }
 
-        /// <summary>Parámetros para la creación del maestro de tesorería (Regla 31: agrupados en modelo).</summary>
-        private sealed class TrasladoTesoreriaParams
+        private sealed class FslMedioPago
         {
-            public string TipoDocumento { get; set; } = string.Empty;
-            public int Banco { get; set; }
-            public float Monto { get; set; }
-            public string Codigo { get; set; } = string.Empty;
-            public string Beneficiario { get; set; } = string.Empty;
-            public string Detalle1 { get; set; } = string.Empty;
-            public string Detalle2 { get; set; } = string.Empty;
-            public string Cuenta { get; set; } = string.Empty;
-            public DateTime Fecha { get; set; }
-            public string Unidad { get; set; } = string.Empty;
-            public string Token { get; set; } = string.Empty;
-            public string Usuario { get; set; } = string.Empty;
-            public long CodTraslado { get; set; }
-            public string Concepto { get; set; } = string.Empty;
+            public string tipo_documento { get; set; } = string.Empty;
+            public int banco { get; set; } = 0;
+            public string cuenta { get; set; } = string.Empty;
+        }
+
+        private sealed class FslTesoreriaCrear
+        {
+            public string tipo_documento { get; set; } = string.Empty;
+            public int banco { get; set; } = 0;
+            public decimal monto { get; set; } = 0;
+            public string codigo { get; set; } = string.Empty;
+            public string beneficiario { get; set; } = string.Empty;
+            public string detalle1 { get; set; } = string.Empty;
+            public string detalle2 { get; set; } = string.Empty;
+            public string cuenta { get; set; } = string.Empty;
+            public string unidad { get; set; } = string.Empty;
+            public string token { get; set; } = string.Empty;
+            public string usuario { get; set; } = string.Empty;
+            public long cod_remesa { get; set; } = 0;
+            public string concepto { get; set; } = string.Empty;
         }
     }
 }
