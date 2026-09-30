@@ -59,6 +59,14 @@ namespace Galileo.Models.ProGrX
         public bool Cambio { get; set; }
     }
 
+    public class ColaboradorClaveCambiaRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string ClaveActual { get; set; } = string.Empty;
+        public string ClaveNueva { get; set; } = string.Empty;
+        public string AppVersion { get; set; } = string.Empty;
+    }
+
     public class ColaboradorMenuRequest
     {
         public string EmpleadoId { get; set; } = string.Empty;
@@ -69,5 +77,15 @@ namespace Galileo.Models.ProGrX
         public string? Vista { get; set; }
         public DateTime? FechaInicio { get; set; }
         public DateTime? FechaCorte { get; set; }
+    }
+
+    public class ColaboradorAutorizacionRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+        public string Tipo { get; set; } = string.Empty;
+        public string BoletaId { get; set; } = string.Empty;
+        public string EstadoActual { get; set; } = string.Empty;
+        public string EstadoNuevo { get; set; } = string.Empty;
     }
 }

@@ -61,6 +61,14 @@ namespace Galileo.BusinessLogic.ProGrX
                 request);
         }
 
+        public ErrorDto<bool> Colaborador_Clave_Cambia(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorClaveCambiaRequest request)
+        {
+            return _db.Colaborador_Clave_Cambia(CodEmpresa, usuario, request);
+        }
+
         public ErrorDto<List<Dictionary<string, object?>>> Colaborador_Menu_Obtener(
             int CodEmpresa,
             string usuario,
@@ -70,6 +78,14 @@ namespace Galileo.BusinessLogic.ProGrX
                 CodEmpresa,
                 usuario,
                 request);
+        }
+
+        public ErrorDto<bool> Colaborador_Autorizacion_Registrar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorAutorizacionRequest request)
+        {
+            return _db.Colaborador_Autorizacion_Registrar(CodEmpresa, usuario, request);
         }
     }
 }
