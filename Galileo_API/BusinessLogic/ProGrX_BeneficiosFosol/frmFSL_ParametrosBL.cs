@@ -4,29 +4,40 @@ using Galileo.Models.FSL;
 
 namespace Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Lógica de negocio de los Parámetros de Beneficios Fosol (frmFSL_Parametros).
-    /// </summary>
-    public class FrmFslParametrosBL
+    public sealed class FrmFslParametrosBl
     {
-        private readonly FrmFslParametrosDB _db;
+        private readonly FrmFslParametrosDb _db;
 
-        public FrmFslParametrosBL(IConfiguration config)
+        public FrmFslParametrosBl(IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
-
-            _db = new FrmFslParametrosDB(config);
+            ArgumentNullException.ThrowIfNull(config);
+            _db = new FrmFslParametrosDb(config);
         }
 
-        /// <summary>Lista de parámetros Fosol.</summary>
-        public ErrorDto<FdlParametrosListaDto> FslParametros_Obtener(int CodCliente, string filtros)
-            => _db.FslParametros_Obtener(CodCliente, filtros);
+        public ErrorDto FSL_Parametros_Inicializar(
+            int CodCliente)
+        {
+            return _db.FSL_Parametros_Inicializar(
+                CodCliente);
+        }
 
-        /// <summary>Actualiza el valor de un parámetro Fosol.</summary>
-        public ErrorDto FslParametros_Actualizar(int CodCliente, FdlParametrosDto parametro)
-            => _db.FslParametros_Actualizar(CodCliente, parametro);
+        public ErrorDto<FslParametrosListaDto>
+            FSL_Parametros_Lista_Obtener(
+                int CodCliente,
+                string filtros)
+        {
+            return _db.FSL_Parametros_Lista_Obtener(
+                CodCliente,
+                filtros);
+        }
+
+        public ErrorDto FSL_Parametros_Actualizar(
+            int CodCliente,
+            FslParametroActualizarRequest request)
+        {
+            return _db.FSL_Parametros_Actualizar(
+                CodCliente,
+                request);
+        }
     }
 }
