@@ -9,6 +9,10 @@ namespace Galileo.DataBaseTier.ProGrX
     public class FrmDsbColaboradorDB
     {
         private const string SpRhPortalVinculado = "spRH_Portal_Vinculado";
+        private const string OpcionVacaciones = "vacaciones";
+        private const string OpcionIncapacidades = "incapacidades";
+        private const string OpcionPermisos = "permisos";
+        private const string AppCodProGrX = "ProGrX";
         private static readonly byte[] FirmaJpeg = [0xFF, 0xD8, 0xFF];
         private static readonly byte[] FirmaPng = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
         private static readonly byte[] FirmaBmp = [0x42, 0x4D];
@@ -367,6 +371,252 @@ namespace Galileo.DataBaseTier.ProGrX
             }
         }
 
+        public ErrorDto<ColaboradorSolicitudConfiguracionData> Colaborador_Solicitud_Configuracion_Obtener(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorSolicitudConfiguracionRequest request)
+        {
+            var result = new ColaboradorSolicitudConfiguracionData();
+
+            if (ValidarSolicitudUsuario(
+                usuario,
+                result,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.Clave?.Length > 100
+                    || !OpcionSolicitudValida(request.Opcion)
+                    || request.Tipo?.Length > 10,
+                "Los datos de la solicitud no son válidos.") is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+
+                if (ValidarAccesoColaborador(connection, usuario, empleadoId, request.Clave)
+                    is { } errorAcceso)
+                {
+                    return DbHelper.CreateErrorResponse(errorAcceso, -2, result);
+                }
+
+                var fechaActual = connection.QueryFirst<DateTime>(
+                    "SELECT dbo.MyGetdate()");
+                var tipos = ObtenerTiposSolicitud(connection, request.Opcion);
+                var codigoSeleccionado = request.Tipo?.Trim();
+                ColaboradorSolicitudTipoDetalleRow? detalleTipo = null;
+
+                if (!string.IsNullOrWhiteSpace(codigoSeleccionado))
+                {
+                    if (!tipos.Any(tipo => string.Equals(
+                        tipo.Codigo,
+                        codigoSeleccionado,
+                        StringComparison.OrdinalIgnoreCase)))
+                    {
+                        return DbHelper.CreateErrorResponse(
+                            "El tipo de solicitud seleccionado no está disponible.",
+                            -3,
+                            result);
+                    }
+
+                    detalleTipo = ObtenerDetalleTipoSolicitud(
+                        connection,
+                        request.Opcion,
+                        codigoSeleccionado);
+                }
+
+                DateTime? fechaMinima = null;
+                decimal diasDisponibles = 0;
+
+                if (request.Opcion == OpcionVacaciones)
+                {
+                    var vacaciones = connection.QueryFirstOrDefault<ColaboradorVacacionesInfoRow>(
+                        "SELECT Dias_Disponibles, Fecha_Inicio " +
+                        "FROM vRH_Vacaciones_Info WHERE Empleado_Id = @EmpleadoId",
+                        new { EmpleadoId = empleadoId });
+
+                    fechaMinima = vacaciones?.Fecha_Inicio;
+                    diasDisponibles = vacaciones?.Dias_Disponibles ?? 0;
+                }
+                else if (request.Opcion == OpcionIncapacidades)
+                {
+                    fechaMinima = connection.QueryFirstOrDefault<DateTime?>(
+                        "SELECT dbo.fxRH_Nomina_Inicial_Actual(COD_NOMINA) " +
+                        "FROM RH_PERSONAS WHERE EMPLEADO_ID = @EmpleadoId",
+                        new { EmpleadoId = empleadoId });
+                }
+
+                return DbHelper.CreateOkResponse(new ColaboradorSolicitudConfiguracionData
+                {
+                    Tipos = tipos,
+                    FechaActual = fechaActual,
+                    FechaMinima = fechaMinima,
+                    DiasDisponibles = diasDisponibles,
+                    RequiereAutorizacion = detalleTipo is null
+                        || detalleTipo.REQUIERE_AUTORIZACION != 0,
+                    HorasMaximas = detalleTipo?.PERMISO_HRS_MAX,
+                    PermiteLiquidacion = detalleTipo?.PERMITE_LIQUIDACION == 1,
+                    PorcentajePatrono = detalleTipo?.PORC_PATRONO
+                });
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, result);
+            }
+        }
+
+        public ErrorDto<int> Colaborador_Solicitud_Dias_Obtener(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorSolicitudDiasRequest request)
+        {
+            if (ValidarSolicitudUsuario(
+                usuario,
+                0,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.Clave?.Length > 100
+                    || request.Inicio.GetValueOrDefault() == default
+                    || request.Corte.GetValueOrDefault() == default
+                    || request.Inicio.GetValueOrDefault().Date > request.Corte.GetValueOrDefault().Date,
+                "Seleccione un rango de fechas válido.") is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+
+                if (ValidarAccesoColaborador(connection, usuario, empleadoId, request.Clave)
+                    is { } errorAcceso)
+                {
+                    return DbHelper.CreateErrorResponse(errorAcceso, -2, 0);
+                }
+
+                var dias = connection.QueryFirst<int>(
+                    "SELECT dbo.fxRH_Dias_Laborales(@EmpleadoId, @Inicio, @Corte)",
+                    new
+                    {
+                        EmpleadoId = empleadoId,
+                        Inicio = request.Inicio.GetValueOrDefault().Date,
+                        Corte = request.Corte.GetValueOrDefault().Date
+                    });
+
+                return DbHelper.CreateOkResponse(dias);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, 0);
+            }
+        }
+
+        public ErrorDto<ColaboradorSolicitudRegistroData> Colaborador_Solicitud_Registrar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorSolicitudRegistrarRequest request)
+        {
+            var result = new ColaboradorSolicitudRegistroData();
+
+            if (ValidarSolicitudUsuario(
+                usuario,
+                result,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.Clave?.Length > 100
+                    || !OpcionSolicitudValida(request.Opcion)
+                    || string.IsNullOrWhiteSpace(request.Tipo)
+                    || request.Tipo.Length > 10
+                    || request.Notas?.Length > 1000
+                    || request.Inicio.GetValueOrDefault() == default
+                    || request.Corte.GetValueOrDefault() == default
+                    || !EstadoSolicitudValido(request.Estado),
+                "Los datos de la solicitud no son válidos.") is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+                var tipo = request.Tipo.Trim();
+
+                if (ValidarAccesoColaborador(connection, usuario, empleadoId, request.Clave)
+                    is { } errorAcceso)
+                {
+                    return DbHelper.CreateErrorResponse(errorAcceso, -2, result);
+                }
+
+                var tipos = ObtenerTiposSolicitud(connection, request.Opcion);
+
+                if (!tipos.Any(tipoDisponible => string.Equals(
+                    tipoDisponible.Codigo,
+                    tipo,
+                    StringComparison.OrdinalIgnoreCase)))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "El tipo de solicitud seleccionado no está disponible.",
+                        -3,
+                        result);
+                }
+
+                var detalleTipo = ObtenerDetalleTipoSolicitud(
+                    connection,
+                    request.Opcion,
+                    tipo);
+
+                if (detalleTipo is null)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "No se encontró la configuración del tipo de solicitud.",
+                        -4,
+                        result);
+                }
+
+                if (request.Estado == "A" && detalleTipo.REQUIERE_AUTORIZACION != 0)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "Este tipo de solicitud requiere autorización.",
+                        -5,
+                        result);
+                }
+
+                if (request.Opcion == OpcionPermisos)
+                {
+                    return RegistrarPermisoSolicitud(connection, usuario, empleadoId, tipo, request, detalleTipo, result);
+                }
+
+                if (request.Inicio.GetValueOrDefault().Date > request.Corte.GetValueOrDefault().Date)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "Error en rango de fechas.",
+                        -6,
+                        result);
+                }
+
+                var inicio = request.Inicio.GetValueOrDefault().Date;
+                var corte = request.Corte.GetValueOrDefault().Date.AddDays(1).AddSeconds(-1);
+
+                if (request.Opcion == OpcionVacaciones)
+                {
+                    return RegistrarVacacionesSolicitud(connection, usuario, empleadoId, tipo, request, (inicio, corte), result);
+                }
+
+                return RegistrarIncapacidadSolicitud(connection, usuario, empleadoId, tipo, request, (inicio, corte), result);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, result);
+            }
+        }
+
         public ErrorDto<List<Dictionary<string, object?>>> Colaborador_Menu_Obtener(
             int CodEmpresa,
             string usuario,
@@ -554,7 +804,7 @@ namespace Galileo.DataBaseTier.ProGrX
                         BoletaId = request.BoletaId.Trim(),
                         Usuario = usuario.Trim(),
                         Estado = request.EstadoNuevo,
-                        AppCod = "ProGrX"
+                        AppCod = AppCodProGrX
                     },
                     commandType: CommandType.StoredProcedure);
 
@@ -593,28 +843,279 @@ namespace Galileo.DataBaseTier.ProGrX
             string empleadoId,
             ColaboradorAutorizacionRequest request)
         {
+            var mensaje = ValidarAccesoColaborador(
+                connection,
+                usuario,
+                empleadoId,
+                request.Clave);
+
+            return mensaje is null
+                ? null
+                : DbHelper.CreateErrorResponse(mensaje, -2, false);
+        }
+
+        private static string? ValidarAccesoColaborador(
+            IDbConnection connection,
+            string usuario,
+            string empleadoId,
+            string? clave)
+        {
             var empleadoVinculado = ObtenerVinculacion(connection, usuario)?.Empleado_ID?.Trim();
 
             if (!string.IsNullOrWhiteSpace(empleadoVinculado)
                 && !string.Equals(empleadoVinculado, empleadoId, StringComparison.OrdinalIgnoreCase))
             {
-                return DbHelper.CreateErrorResponse(
-                    "El colaborador solicitado no corresponde al usuario vinculado.",
-                    -2,
-                    false);
+                return "El colaborador solicitado no corresponde al usuario vinculado.";
             }
 
             if (string.IsNullOrWhiteSpace(empleadoVinculado)
-                && (string.IsNullOrEmpty(request.Clave)
-                    || ConsultarClave(connection, empleadoId, request.Clave)?.Existe != 1))
+                && (string.IsNullOrEmpty(clave)
+                    || ConsultarClave(connection, empleadoId, clave)?.Existe != 1))
             {
-                return DbHelper.CreateErrorResponse(
-                    "La clave registrada no es válida.",
-                    -2,
-                    false);
+                return "La clave registrada no es válida.";
             }
 
             return null;
+        }
+
+        private static ErrorDto<ColaboradorSolicitudRegistroData> RegistrarPermisoSolicitud(
+            IDbConnection connection,
+            string usuario,
+            string empleadoId,
+            string tipo,
+            ColaboradorSolicitudRegistrarRequest request,
+            ColaboradorSolicitudTipoDetalleRow detalleTipo,
+            ColaboradorSolicitudRegistroData result)
+        {
+            if (request.Inicio.GetValueOrDefault() > request.Corte.GetValueOrDefault())
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Error en rango de horas.",
+                    -6,
+                    result);
+            }
+
+                if (request.Horas.GetValueOrDefault() < 0
+                    || detalleTipo.PERMISO_HRS_MAX is null
+                    || request.Horas.GetValueOrDefault() > detalleTipo.PERMISO_HRS_MAX)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "Las horas de permiso exceden el total permitido.",
+                        -7,
+                        result);
+                }
+
+                var registroPermiso = connection.QueryFirstOrDefault<ColaboradorSolicitudRegistroRow>(
+                    "spRH_Permisos_Registro",
+                    new
+                    {
+                        EmpleadoId = empleadoId,
+                        Tipo = tipo,
+                        Notas = request.Notas ?? string.Empty,
+                        Usuario = usuario.Trim(),
+                        Inicio = request.Inicio.GetValueOrDefault(),
+                        Corte = request.Corte.GetValueOrDefault(),
+                        Horas = request.Horas.GetValueOrDefault(),
+                        PermisoFecha = request.Inicio.GetValueOrDefault().Date,
+                        Estado = request.Estado,
+                        AutorizaId = (string?)null,
+                        AppCod = AppCodProGrX
+                    },
+                    commandType: CommandType.StoredProcedure);
+
+                return ObtenerRespuestaRegistro(registroPermiso, result);
+        }
+
+        private static ErrorDto<ColaboradorSolicitudRegistroData> RegistrarVacacionesSolicitud(
+            IDbConnection connection,
+            string usuario,
+            string empleadoId,
+            string tipo,
+            ColaboradorSolicitudRegistrarRequest request,
+            (DateTime Inicio, DateTime Corte) periodo,
+            ColaboradorSolicitudRegistroData result)
+        {
+            var (inicio, corte) = periodo;
+
+            if (request.Dias.GetValueOrDefault() < 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Días de vacaciones inválidos.",
+                    -7,
+                    result);
+            }
+
+                var nomina = connection.QueryFirstOrDefault<string>(
+                    "SELECT COD_NOMINA FROM RH_PERSONAS WHERE EMPLEADO_ID = @EmpleadoId",
+                    new { EmpleadoId = empleadoId });
+                var fechasValidas = connection.QueryFirstOrDefault<int?>(
+                    "SELECT dbo.fxRH_Vacaciones_Valida(@Nomina, @EmpleadoId, @Inicio, @Corte)",
+                    new
+                    {
+                        Nomina = nomina,
+                        EmpleadoId = empleadoId,
+                        Inicio = inicio,
+                        Corte = corte
+                    });
+
+                if (fechasValidas != 1)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "Existe conflicto de fechas de disfrute con alguna otra boleta procesada o con una Nómina ya ejecutada!",
+                        -8,
+                        result);
+                }
+
+                var vacaciones = connection.QueryFirstOrDefault<ColaboradorVacacionesInfoRow>(
+                    "SELECT Dias_Disponibles FROM vRH_Vacaciones_Info " +
+                    "WHERE Empleado_Id = @EmpleadoId",
+                    new { EmpleadoId = empleadoId });
+                var registroVacaciones = connection.QueryFirstOrDefault<ColaboradorSolicitudRegistroRow>(
+                    "spRH_Vacaciones_Registro",
+                    new
+                    {
+                        EmpleadoId = empleadoId,
+                        Tipo = tipo,
+                        Notas = request.Notas ?? string.Empty,
+                        Usuario = usuario.Trim(),
+                        Inicio = inicio,
+                        Corte = corte,
+                        D_Disfrutados = request.Dias.GetValueOrDefault(),
+                        D_Disponibles = vacaciones?.Dias_Disponibles ?? 0,
+                        LiquidaID = request.LiquidaId.GetValueOrDefault(),
+                        Estado = request.Estado,
+                        AutorizaId = (string?)null,
+                        AppCod = AppCodProGrX
+                    },
+                    commandType: CommandType.StoredProcedure);
+
+                return ObtenerRespuestaRegistro(registroVacaciones, result);
+        }
+
+        private static ErrorDto<ColaboradorSolicitudRegistroData> RegistrarIncapacidadSolicitud(
+            IDbConnection connection,
+            string usuario,
+            string empleadoId,
+            string tipo,
+            ColaboradorSolicitudRegistrarRequest request,
+            (DateTime Inicio, DateTime Corte) periodo,
+            ColaboradorSolicitudRegistroData result)
+        {
+            var (inicio, corte) = periodo;
+
+            if (request.Dias.GetValueOrDefault() < 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Días de incapacidad inválidos.",
+                    -7,
+                    result);
+            }
+
+                var fechaMinima = connection.QueryFirstOrDefault<DateTime?>(
+                    "SELECT dbo.fxRH_Nomina_Inicial_Actual(COD_NOMINA) " +
+                    "FROM RH_PERSONAS WHERE EMPLEADO_ID = @EmpleadoId",
+                    new { EmpleadoId = empleadoId });
+
+                if (fechaMinima.HasValue && inicio < fechaMinima.Value.Date)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La fecha inicial no puede ser anterior al inicio de la nómina.",
+                        -8,
+                        result);
+                }
+
+                var registroIncapacidad = connection.QueryFirstOrDefault<ColaboradorSolicitudRegistroRow>(
+                    "spRH_Incapacidades_Registro",
+                    new
+                    {
+                        EmpleadoId = empleadoId,
+                        Tipo = tipo,
+                        Notas = request.Notas ?? string.Empty,
+                        Usuario = usuario.Trim(),
+                        Inicio = inicio,
+                        Corte = corte,
+                        Dias = request.Dias.GetValueOrDefault(),
+                        Porcentaje = request.PorcentajePatrono.GetValueOrDefault(),
+                        Estado = request.Estado,
+                        AutorizaId = (string?)null,
+                        AppCod = AppCodProGrX
+                    },
+                    commandType: CommandType.StoredProcedure);
+
+                return ObtenerRespuestaRegistro(registroIncapacidad, result);
+        }
+
+        private static bool OpcionSolicitudValida(string? opcion)
+        {
+            return opcion is OpcionVacaciones or OpcionPermisos or OpcionIncapacidades;
+        }
+
+        private static bool EstadoSolicitudValido(string? estado)
+        {
+            return estado is "S" or "A";
+        }
+
+        private static List<ColaboradorSolicitudTipoData> ObtenerTiposSolicitud(
+            IDbConnection connection,
+            string opcion)
+        {
+            var procedimiento = opcion switch
+            {
+                OpcionVacaciones => "spRH_Portal_Vacaciones_Tipos",
+                OpcionPermisos => "spRH_Portal_Permisos_Tipos",
+                _ => "spRH_Portal_Incapacidades_Tipos"
+            };
+
+            return connection.Query<ColaboradorSolicitudTipoRow>(
+                    procedimiento,
+                    commandType: CommandType.StoredProcedure)
+                .Where(tipo => tipo.IdX is not null
+                    && !string.IsNullOrWhiteSpace(tipo.ItmX))
+                .Select(tipo => new ColaboradorSolicitudTipoData
+                {
+                    Codigo = tipo.IdX!.ToString()?.Trim() ?? string.Empty,
+                    Descripcion = tipo.ItmX!.Trim()
+                })
+                .ToList();
+        }
+
+        private static ColaboradorSolicitudTipoDetalleRow? ObtenerDetalleTipoSolicitud(
+            IDbConnection connection,
+            string opcion,
+            string tipo)
+        {
+            return opcion switch
+            {
+                OpcionVacaciones => connection.QueryFirstOrDefault<ColaboradorSolicitudTipoDetalleRow>(
+                    "EXEC spRH_Portal_Vacaciones_Tipos @Tipo",
+                    new { Tipo = tipo }),
+                OpcionPermisos => connection.QueryFirstOrDefault<ColaboradorSolicitudTipoDetalleRow>(
+                    "SELECT REQUIERE_AUTORIZACION, PERMISO_HRS_MAX " +
+                    "FROM RH_PERMISOS_TIPOS WHERE PERMISO_TIPO = @Tipo",
+                    new { Tipo = tipo }),
+                OpcionIncapacidades => connection.QueryFirstOrDefault<ColaboradorSolicitudTipoDetalleRow>(
+                    "EXEC spRH_Portal_Incapacidades_Tipos @Tipo",
+                    new { Tipo = tipo }),
+                _ => null
+            };
+        }
+
+        private static ErrorDto<ColaboradorSolicitudRegistroData> ObtenerRespuestaRegistro(
+            ColaboradorSolicitudRegistroRow? registro,
+            ColaboradorSolicitudRegistroData result)
+        {
+            if (string.IsNullOrWhiteSpace(registro?.BoletaId))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "El procedimiento no devolvió el número de boleta.",
+                    -9,
+                    result);
+            }
+
+            return DbHelper.CreateOkResponse(new ColaboradorSolicitudRegistroData
+            {
+                BoletaId = registro.BoletaId.Trim()
+            });
         }
 
         private static (string Sql, object Parametros) CrearConsultaMenu(
@@ -663,7 +1164,7 @@ namespace Galileo.DataBaseTier.ProGrX
                     "FROM vRH_Boleta_Pago_List WHERE Empleado_Id = @EmpleadoId " +
                     "ORDER BY Fecha_Corte DESC",
                     parametros),
-                "vacaciones" or "incapacidades" or "permisos" =>
+                OpcionVacaciones or OpcionIncapacidades or OpcionPermisos =>
                     CrearConsultaBoleta(request.Opcion, parametros),
                 "accionesPersonal" => (
                     "SELECT Cod_Accion AS codAccion, Fecha_Accion AS fechaAccion, " +
@@ -705,12 +1206,12 @@ namespace Galileo.DataBaseTier.ProGrX
         {
             var configuracion = opcion switch
             {
-                "vacaciones" => (
+                OpcionVacaciones => (
                     Vista: "vRH_Boleta_Vacaciones",
                     Fechas: "Fecha_Salida AS fechaSalida, Fecha_Entrada AS fechaEntrada",
                     Cantidad: "Dias_Disfrutados AS dias",
                     Orden: "Boleta_VAC"),
-                "incapacidades" => (
+                OpcionIncapacidades => (
                     Vista: "vRH_Boleta_Incapacidades",
                     Fechas: "Fecha_Salida AS fechaSalida, Fecha_Entrada AS fechaEntrada",
                     Cantidad: "Dias AS dias",
@@ -993,5 +1494,30 @@ namespace Galileo.DataBaseTier.ProGrX
     internal sealed class ColaboradorClaveReestableceRow
     {
         public int CAMBIO { get; set; }
+    }
+
+    internal sealed class ColaboradorSolicitudTipoRow
+    {
+        public object? IdX { get; set; }
+        public string? ItmX { get; set; }
+    }
+
+    internal sealed class ColaboradorSolicitudTipoDetalleRow
+    {
+        public int REQUIERE_AUTORIZACION { get; set; }
+        public decimal? PERMISO_HRS_MAX { get; set; }
+        public int PERMITE_LIQUIDACION { get; set; }
+        public decimal? PORC_PATRONO { get; set; }
+    }
+
+    internal sealed class ColaboradorVacacionesInfoRow
+    {
+        public decimal? Dias_Disponibles { get; set; }
+        public DateTime? Fecha_Inicio { get; set; }
+    }
+
+    internal sealed class ColaboradorSolicitudRegistroRow
+    {
+        public string? BoletaId { get; set; }
     }
 }
