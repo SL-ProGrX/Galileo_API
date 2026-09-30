@@ -88,7 +88,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         SINPE_PROC_INTERNO = @sinpe_proc_interno,
                         sif_liquida = @sif_liquida,
                         pago_cupones = @pago_cupones,
-                        IndAplicarAMora = @genera_mora,
+                        IndAplicarAMora = @ind_aplicar_amora,
                         web_crear = @web_crear,
                         web_modifica_couta = @web_modifica_couta,
                         tasa_margen_negociacion = @tasa_margen_negociacion,
@@ -152,7 +152,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         @vence_renueva, @codtipoplan,
                         @aplicar_tasa_cont_vencidos, @aplicar_en_procs_contrs_vencidos,
                         @mov_sinpe_tipos, @mov_sinpe, @sif_liquida, @pago_cupones,
-                        @genera_mora, @web_crear, @web_modifica_couta,
+                        @ind_aplicar_amora, @web_crear, @web_modifica_couta,
                         @tasa_margen_negociacion, @vence_notifica, @subcuentas_max,
                         @sinpe_proc_enlinea, @sinpe_proc_interno
                     );";
@@ -385,6 +385,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 dto.web_modifica_couta,
                 dto.tasa_margen_negociacion,
                 dto.vence_notifica,
+                dto.ind_aplicar_amora,
                 dto.subcuentas_max
             };
         }

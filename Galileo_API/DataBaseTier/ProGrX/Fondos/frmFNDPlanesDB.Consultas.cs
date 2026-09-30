@@ -35,6 +35,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     WHERE cod_operadora = @CodOperadora
                       AND cod_plan = @CodPlan;";
 
+        private const string SqlPlanIndAplicarAMora = @"
+                    SELECT ISNULL(IndAplicarAMora, 0)
+                    FROM dbo.FND_Planes
+                    WHERE cod_operadora = @CodOperadora
+                      AND cod_plan = @CodPlan;";
+
         private const string SqlPlanUltimaTasa = @"
                     SELECT TOP 1
                         CORTE,
@@ -192,6 +198,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
                 var ultima = connection.QueryFirstOrDefault<PlanUltimaTasaDto>(SqlPlanUltimaTasa, parametros);
                 AplicarUltimaTasa(plan, ultima);
+                plan.ind_aplicar_amora =
+                    connection.QueryFirstOrDefault<bool?>(SqlPlanIndAplicarAMora, parametros) ?? false;
 
                 return plan;
             });
@@ -365,7 +373,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 aplicar_tasa_cont_vencidos = false,
                 aplicar_en_procs_contrs_vencidos = false,
                 vence_renueva = false,
-                vence_notifica = false
+                vence_notifica = false,
+                ind_aplicar_amora = false
             };
         }
 

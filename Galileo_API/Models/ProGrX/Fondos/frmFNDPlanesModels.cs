@@ -133,6 +133,7 @@
         public required bool aplicar_en_procs_contrs_vencidos { get; set; }
         public required bool vence_renueva { get; set; }
         public required bool vence_notifica { get; set; }
+        public required bool ind_aplicar_amora { get; set; }
         public string vence_accion { get; set; } = "";
         public string? ctaplan { get; set; }
         public string? ctaplandesc { get; set; }
@@ -297,6 +298,7 @@
         public string cod_plan { get; set; } = "";
         public required int cod_operadora { get; set; }
         public string usuario { get; set; } = "";
+        public bool ind_aplicar_amora { get; set; }
         public List<EstadoAsignadoDto> estados { get; set; } = new();
         public List<PlazoAsignadoDto> plazos { get; set; } = new();
     }
