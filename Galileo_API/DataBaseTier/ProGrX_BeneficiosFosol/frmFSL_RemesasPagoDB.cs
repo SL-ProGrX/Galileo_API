@@ -1,7 +1,10 @@
+using System.Data;
+using System.Globalization;
 using Dapper;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
 using Galileo.Models.Security;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 {
@@ -30,17 +33,20 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             ArgumentNullException.ThrowIfNull(config);
 
             _portalDb = new PortalDB(config);
-            _securityMainDb = new MSecurityMainDb(config);
-            _mBeneficiosDb = new MBeneficiosDB(config);
-            _mTesFuncionesDb = new MTesFuncionesDb(config);
+            _securityMainDb =
+                new MSecurityMainDb(config);
+            _mBeneficiosDb =
+                new MBeneficiosDB(config);
+            _mTesFuncionesDb =
+                new MTesFuncionesDb(config);
         }
 
         /// <summary>
-        /// Obtiene una remesa de tesorería por código.
+        /// Obtiene una remesa de tesorer&iacute;a por c&oacute;digo.
         /// </summary>
-        /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <param name="codRemesa">Código de la remesa.</param>
-        /// <returns>Información de la remesa.</returns>
+        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="codRemesa">C&oacute;digo de la remesa.</param>
+        /// <returns>Informaci&oacute;n de la remesa.</returns>
         public ErrorDto<FslRemesaDto?>
             FSL_RemesasPago_Remesa_Obtener(
                 int CodEmpresa,
@@ -48,46 +54,39 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         {
             if (codRemesa <= 0)
             {
-                return DbHelper.CreateErrorResponse<FslRemesaDto?>(
-                    MensajeRemesaRequerida,
-                    CodigoValidacion);
+                return DbHelper.CreateErrorResponse<
+                    FslRemesaDto?>(
+                        MensajeRemesaRequerida,
+                        CodigoValidacion);
             }
 
-            const string sql = """
-                SELECT
-                    R.TESORERIA_REMESA AS tesoreria_remesa,
-                    LTRIM(RTRIM(ISNULL(R.REGISTRO_USUARIO, '')))
-                        AS registro_usuario,
-                    R.REGISTRO_FECHA AS registro_fecha,
-                    R.FECHA_INICIO AS fecha_inicio,
-                    R.FECHA_CORTE AS fecha_corte,
-                    LTRIM(RTRIM(ISNULL(R.NOTAS, ''))) AS notas,
-                    LTRIM(RTRIM(ISNULL(R.ESTADO, ''))) AS estado,
-                    CASE LTRIM(RTRIM(ISNULL(R.ESTADO, '')))
-                        WHEN 'A' THEN 'Remesa Abierta'
-                        WHEN 'C' THEN 'Remesa Cerrada'
-                        WHEN 'T' THEN 'Remesa Trasladada'
-                        ELSE ''
-                    END AS estado_descripcion
-                FROM FSL_REMESAS_TESORERIA R
-                WHERE R.TESORERIA_REMESA = @codRemesa;
-                """;
-
-            return DbHelper.ExecuteSingleQuery<FslRemesaDto>(
+            return DbHelper.WithConn<FslRemesaDto?>(
                 _portalDb,
                 CodEmpresa,
-                sql,
-                defaultValue: null,
-                parameters: new
+                connection =>
                 {
-                    codRemesa
+                    var resultado =
+                        FSL_RemesasPago_Remesas_Consultar(
+                            connection,
+                            new FslRemesasConsulta
+                            {
+                                cod_remesa = codRemesa,
+                                offset = 0,
+                                fetch = 1,
+                                sort_field =
+                                    "tesoreria_remesa",
+                                sort_order = 1
+                            });
+
+                    return resultado.lista
+                        .FirstOrDefault();
                 });
         }
 
         /// <summary>
-        /// Obtiene las remesas de tesorería con filtro y paginación.
+        /// Obtiene las remesas de tesorer&iacute;a con filtro y paginaci&oacute;n.
         /// </summary>
-        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
         /// <param name="filtros">Filtros de la consulta.</param>
         /// <returns>Lista paginada de remesas.</returns>
         public ErrorDto<
@@ -96,148 +95,202 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                 int CodEmpresa,
                 FslRemesasFiltros filtros)
         {
-            ArgumentNullException.ThrowIfNull(filtros);
+            ArgumentNullException.ThrowIfNull(
+                filtros);
 
-            var filtro = filtros.filtro.Trim();
-            var like = string.IsNullOrWhiteSpace(filtro)
-                ? null
-                : $"%{filtro}%";
+            var filtro =
+                filtros.filtro.Trim();
 
-            var offset = Math.Max(filtros.pagina, 0);
-            var fetch = Math.Clamp(
-                filtros.paginacion,
-                1,
-                500);
-
-            var sortField =
-                filtros.sort_field.Trim().ToLowerInvariant()
-                switch
+            var consulta =
+                new FslRemesasConsulta
                 {
-                    "tesoreria_remesa" => "tesoreria_remesa",
-                    "registro_usuario" => "registro_usuario",
-                    "fecha_inicio" => "fecha_inicio",
-                    "fecha_corte" => "fecha_corte",
-                    "estado" => "estado",
-                    _ => "registro_fecha"
+                    like =
+                        string.IsNullOrWhiteSpace(
+                            filtro)
+                            ? null
+                            : $"%{filtro}%",
+                    offset =
+                        Math.Max(
+                            filtros.pagina,
+                            0),
+                    fetch =
+                        Math.Clamp(
+                            filtros.paginacion,
+                            1,
+                            500),
+                    sort_field =
+                        FSL_RemesasPago_Remesas_Orden_Campo_Obtener(
+                            filtros.sort_field),
+                    sort_order =
+                        filtros.sort_order == 1
+                            ? 1
+                            : -1
                 };
 
-            var sortOrder =
-                filtros.sort_order == 1 ? 1 : -1;
+            return DbHelper.WithConn(
+                _portalDb,
+                CodEmpresa,
+                connection =>
+                    FSL_RemesasPago_Remesas_Consultar(
+                        connection,
+                        consulta));
+        }
 
+        /// <summary>
+        /// Ejecuta la consulta centralizada de remesas.
+        /// </summary>
+        /// <param name="connection">Conexi&oacute;n activa.</param>
+        /// <param name="consulta">Par&aacute;metros de consulta.</param>
+        /// <returns>Remesas y cantidad total.</returns>
+        private static
+            FslListaPaginadaDto<FslRemesaDto>
+            FSL_RemesasPago_Remesas_Consultar(
+                SqlConnection connection,
+                FslRemesasConsulta consulta)
+        {
             const string sql = """
                 SELECT COUNT(*)
                 FROM FSL_REMESAS_TESORERIA R
                 WHERE (
+                    @cod_remesa IS NULL
+                    OR R.TESORERIA_REMESA = @cod_remesa
+                )
+                AND (
                     @like IS NULL
-                    OR CONVERT(VARCHAR(30), R.TESORERIA_REMESA) LIKE @like
+                    OR CONVERT(
+                        VARCHAR(30),
+                        R.TESORERIA_REMESA
+                    ) LIKE @like
                     OR R.REGISTRO_USUARIO LIKE @like
-                    OR CONVERT(VARCHAR(10), R.REGISTRO_FECHA, 103) LIKE @like
-                    OR CONVERT(VARCHAR(10), R.FECHA_INICIO, 103) LIKE @like
-                    OR CONVERT(VARCHAR(10), R.FECHA_CORTE, 103) LIKE @like
+                    OR CONVERT(
+                        VARCHAR(10),
+                        R.REGISTRO_FECHA,
+                        103
+                    ) LIKE @like
+                    OR CONVERT(
+                        VARCHAR(10),
+                        R.FECHA_INICIO,
+                        103
+                    ) LIKE @like
+                    OR CONVERT(
+                        VARCHAR(10),
+                        R.FECHA_CORTE,
+                        103
+                    ) LIKE @like
                     OR R.NOTAS LIKE @like
                     OR R.ESTADO LIKE @like
                 );
 
                 SELECT
                     R.TESORERIA_REMESA AS tesoreria_remesa,
-                    LTRIM(RTRIM(ISNULL(R.REGISTRO_USUARIO, '')))
-                        AS registro_usuario,
+                    ISNULL(
+                        R.REGISTRO_USUARIO,
+                        ''
+                    ) AS registro_usuario,
                     R.REGISTRO_FECHA AS registro_fecha,
                     R.FECHA_INICIO AS fecha_inicio,
                     R.FECHA_CORTE AS fecha_corte,
-                    LTRIM(RTRIM(ISNULL(R.NOTAS, ''))) AS notas,
-                    LTRIM(RTRIM(ISNULL(R.ESTADO, ''))) AS estado,
-                    CASE LTRIM(RTRIM(ISNULL(R.ESTADO, '')))
-                        WHEN 'A' THEN 'Remesa Abierta'
-                        WHEN 'C' THEN 'Remesa Cerrada'
-                        WHEN 'T' THEN 'Remesa Trasladada'
-                        ELSE ''
-                    END AS estado_descripcion,
-                    CONCAT(
-                        RIGHT(
-                            '0000' +
-                            CONVERT(VARCHAR(20), R.TESORERIA_REMESA),
-                            4
-                        ),
-                        '...',
-                        LTRIM(RTRIM(ISNULL(R.REGISTRO_USUARIO, ''))),
-                        '...',
-                        CONVERT(VARCHAR(19), R.REGISTRO_FECHA, 120),
-                        ' I:',
-                        CONVERT(VARCHAR(10), R.FECHA_INICIO, 103),
-                        ' C:',
-                        CONVERT(VARCHAR(10), R.FECHA_CORTE, 103)
-                    ) AS descripcion
+                    ISNULL(R.NOTAS, '') AS notas,
+                    ISNULL(R.ESTADO, '') AS estado
                 FROM FSL_REMESAS_TESORERIA R
                 WHERE (
+                    @cod_remesa IS NULL
+                    OR R.TESORERIA_REMESA = @cod_remesa
+                )
+                AND (
                     @like IS NULL
-                    OR CONVERT(VARCHAR(30), R.TESORERIA_REMESA) LIKE @like
+                    OR CONVERT(
+                        VARCHAR(30),
+                        R.TESORERIA_REMESA
+                    ) LIKE @like
                     OR R.REGISTRO_USUARIO LIKE @like
-                    OR CONVERT(VARCHAR(10), R.REGISTRO_FECHA, 103) LIKE @like
-                    OR CONVERT(VARCHAR(10), R.FECHA_INICIO, 103) LIKE @like
-                    OR CONVERT(VARCHAR(10), R.FECHA_CORTE, 103) LIKE @like
+                    OR CONVERT(
+                        VARCHAR(10),
+                        R.REGISTRO_FECHA,
+                        103
+                    ) LIKE @like
+                    OR CONVERT(
+                        VARCHAR(10),
+                        R.FECHA_INICIO,
+                        103
+                    ) LIKE @like
+                    OR CONVERT(
+                        VARCHAR(10),
+                        R.FECHA_CORTE,
+                        103
+                    ) LIKE @like
                     OR R.NOTAS LIKE @like
                     OR R.ESTADO LIKE @like
                 )
                 ORDER BY
                     CASE
-                        WHEN @sortField = 'tesoreria_remesa'
-                         AND @sortOrder = 1
+                        WHEN @sort_field =
+                            'tesoreria_remesa'
+                         AND @sort_order = 1
                         THEN R.TESORERIA_REMESA
                     END ASC,
                     CASE
-                        WHEN @sortField = 'tesoreria_remesa'
-                         AND @sortOrder = -1
+                        WHEN @sort_field =
+                            'tesoreria_remesa'
+                         AND @sort_order = -1
                         THEN R.TESORERIA_REMESA
                     END DESC,
                     CASE
-                        WHEN @sortField = 'registro_usuario'
-                         AND @sortOrder = 1
+                        WHEN @sort_field =
+                            'registro_usuario'
+                         AND @sort_order = 1
                         THEN R.REGISTRO_USUARIO
                     END ASC,
                     CASE
-                        WHEN @sortField = 'registro_usuario'
-                         AND @sortOrder = -1
+                        WHEN @sort_field =
+                            'registro_usuario'
+                         AND @sort_order = -1
                         THEN R.REGISTRO_USUARIO
                     END DESC,
                     CASE
-                        WHEN @sortField = 'registro_fecha'
-                         AND @sortOrder = 1
+                        WHEN @sort_field =
+                            'registro_fecha'
+                         AND @sort_order = 1
                         THEN R.REGISTRO_FECHA
                     END ASC,
                     CASE
-                        WHEN @sortField = 'registro_fecha'
-                         AND @sortOrder = -1
+                        WHEN @sort_field =
+                            'registro_fecha'
+                         AND @sort_order = -1
                         THEN R.REGISTRO_FECHA
                     END DESC,
                     CASE
-                        WHEN @sortField = 'fecha_inicio'
-                         AND @sortOrder = 1
+                        WHEN @sort_field =
+                            'fecha_inicio'
+                         AND @sort_order = 1
                         THEN R.FECHA_INICIO
                     END ASC,
                     CASE
-                        WHEN @sortField = 'fecha_inicio'
-                         AND @sortOrder = -1
+                        WHEN @sort_field =
+                            'fecha_inicio'
+                         AND @sort_order = -1
                         THEN R.FECHA_INICIO
                     END DESC,
                     CASE
-                        WHEN @sortField = 'fecha_corte'
-                         AND @sortOrder = 1
+                        WHEN @sort_field =
+                            'fecha_corte'
+                         AND @sort_order = 1
                         THEN R.FECHA_CORTE
                     END ASC,
                     CASE
-                        WHEN @sortField = 'fecha_corte'
-                         AND @sortOrder = -1
+                        WHEN @sort_field =
+                            'fecha_corte'
+                         AND @sort_order = -1
                         THEN R.FECHA_CORTE
                     END DESC,
                     CASE
-                        WHEN @sortField = 'estado'
-                         AND @sortOrder = 1
+                        WHEN @sort_field = 'estado'
+                         AND @sort_order = 1
                         THEN R.ESTADO
                     END ASC,
                     CASE
-                        WHEN @sortField = 'estado'
-                         AND @sortOrder = -1
+                        WHEN @sort_field = 'estado'
+                         AND @sort_order = -1
                         THEN R.ESTADO
                     END DESC,
                     R.REGISTRO_FECHA DESC
@@ -245,57 +298,196 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                 FETCH NEXT @fetch ROWS ONLY;
                 """;
 
-            return DbHelper.WithConn(
-                _portalDb,
-                CodEmpresa,
-                connection =>
-                {
-                    using var result =
-                        connection.QueryMultiple(
-                            sql,
-                            new
-                            {
-                                like,
-                                sortField,
-                                sortOrder,
-                                offset,
-                                fetch
-                            });
+            if (connection.State !=
+                ConnectionState.Open)
+            {
+                connection.Open();
+            }
 
-                    return new FslListaPaginadaDto<FslRemesaDto>
-                    {
-                        total =
-                            result.ReadFirstOrDefault<int>(),
-                        lista =
-                            result.Read<FslRemesaDto>()
-                                .ToList()
-                    };
-                });
+            using var result =
+                connection.QueryMultiple(
+                    sql,
+                    consulta);
+
+            var total =
+                result.ReadFirstOrDefault<int>();
+
+            var remesas =
+                result.Read<FslRemesaDto>()
+                    .ToList();
+
+            foreach (var remesa in remesas)
+            {
+                FSL_RemesasPago_Remesa_Normalizar(
+                    remesa);
+            }
+
+            return new FslListaPaginadaDto<
+                FslRemesaDto>
+            {
+                total = total,
+                lista = remesas
+            };
         }
 
         /// <summary>
-        /// Registra un movimiento del formulario en la bitácora.
+        /// Normaliza los valores y descripciones de una remesa.
         /// </summary>
-        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="remesa">Remesa consultada.</param>
+        private static void
+            FSL_RemesasPago_Remesa_Normalizar(
+                FslRemesaDto remesa)
+        {
+            remesa.registro_usuario =
+                remesa.registro_usuario.Trim();
+
+            remesa.notas =
+                remesa.notas.Trim();
+
+            remesa.estado =
+                remesa.estado.Trim()
+                    .ToUpperInvariant();
+
+            remesa.estado_descripcion =
+                FSL_RemesasPago_Estado_Descripcion_Obtener(
+                    remesa.estado);
+
+            remesa.descripcion =
+                FSL_RemesasPago_Remesa_Descripcion_Crear(
+                    remesa);
+        }
+
+        /// <summary>
+        /// Obtiene la descripci&oacute;n correspondiente al estado.
+        /// </summary>
+        /// <param name="estado">Estado de la remesa.</param>
+        /// <returns>Descripci&oacute;n del estado.</returns>
+        private static string
+            FSL_RemesasPago_Estado_Descripcion_Obtener(
+                string estado)
+        {
+            return estado switch
+            {
+                "A" => "Remesa Abierta",
+                "C" => "Remesa Cerrada",
+                "T" => "Remesa Trasladada",
+                _ => string.Empty
+            };
+        }
+
+        /// <summary>
+        /// Construye la descripci&oacute;n utilizada en los selectores.
+        /// </summary>
+        /// <param name="remesa">Informaci&oacute;n de la remesa.</param>
+        /// <returns>Descripci&oacute;n para mostrar.</returns>
+        private static string
+            FSL_RemesasPago_Remesa_Descripcion_Crear(
+                FslRemesaDto remesa)
+        {
+            var registroFecha =
+                FSL_RemesasPago_Fecha_Texto_Obtener(
+                    remesa.registro_fecha,
+                    "yyyy-MM-dd HH:mm:ss");
+
+            var fechaInicio =
+                FSL_RemesasPago_Fecha_Texto_Obtener(
+                    remesa.fecha_inicio,
+                    "dd/MM/yyyy");
+
+            var fechaCorte =
+                FSL_RemesasPago_Fecha_Texto_Obtener(
+                    remesa.fecha_corte,
+                    "dd/MM/yyyy");
+
+            return string.Create(
+                CultureInfo.InvariantCulture,
+                $"{remesa.tesoreria_remesa:0000}...{remesa.registro_usuario}...{registroFecha} I:{fechaInicio} C:{fechaCorte}");
+        }
+
+        /// <summary>
+        /// Convierte una fecha opcional en texto.
+        /// </summary>
+        /// <param name="fecha">Fecha a convertir.</param>
+        /// <param name="formato">Formato requerido.</param>
+        /// <returns>Fecha formateada o texto vac&iacute;o.</returns>
+        private static string
+            FSL_RemesasPago_Fecha_Texto_Obtener(
+                DateTime? fecha,
+                string formato)
+        {
+            return fecha?.ToString(
+                formato,
+                CultureInfo.InvariantCulture) ??
+                string.Empty;
+        }
+
+        /// <summary>
+        /// Valida el campo solicitado para ordenar las remesas.
+        /// </summary>
+        /// <param name="sortField">Campo recibido.</param>
+        /// <returns>Campo de ordenamiento permitido.</returns>
+        private static string
+            FSL_RemesasPago_Remesas_Orden_Campo_Obtener(
+                string sortField)
+        {
+            return sortField
+                .Trim()
+                .ToLowerInvariant()
+                switch
+            {
+                "tesoreria_remesa" =>
+                    "tesoreria_remesa",
+                "registro_usuario" =>
+                    "registro_usuario",
+                "fecha_inicio" =>
+                    "fecha_inicio",
+                "fecha_corte" =>
+                    "fecha_corte",
+                "estado" =>
+                    "estado",
+                "estado_descripcion" =>
+                    "estado",
+                _ =>
+                    "registro_fecha"
+            };
+        }
+
+        /// <summary>
+        /// Registra un movimiento del formulario en la bit&aacute;cora.
+        /// </summary>
+        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
         /// <param name="usuario">Usuario responsable.</param>
         /// <param name="movimiento">Movimiento realizado.</param>
         /// <param name="detalle">Detalle del movimiento.</param>
-        private void FSL_RemesasPago_Bitacora_Registrar(
-            int CodEmpresa,
-            string usuario,
-            string movimiento,
-            string detalle)
+        private void
+            FSL_RemesasPago_Bitacora_Registrar(
+                int CodEmpresa,
+                string usuario,
+                string movimiento,
+                string detalle)
         {
             _ = _securityMainDb.Bitacora(
                 new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario =
-                        usuario.Trim().ToUpperInvariant(),
+                        usuario.Trim()
+                            .ToUpperInvariant(),
                     Modulo = ModuloFosol,
                     Movimiento = movimiento,
                     DetalleMovimiento = detalle
                 });
+        }
+
+        private sealed class FslRemesasConsulta
+        {
+            public long? cod_remesa { get; set; }
+            public string? like { get; set; }
+            public int offset { get; set; } = 0;
+            public int fetch { get; set; } = 30;
+            public string sort_field { get; set; } =
+                "registro_fecha";
+            public int sort_order { get; set; } = -1;
         }
     }
 }
