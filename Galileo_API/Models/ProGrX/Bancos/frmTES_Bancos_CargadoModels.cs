@@ -133,6 +133,7 @@
         [Microsoft.AspNetCore.Mvc.ModelBinding.BindRequired]
         public DateTime FechaHasta { get; set; }
 
+        [System.Text.Json.Serialization.JsonRequired]
         public bool FiltraPeriodo { get; set; }
         public DateTime? FechaEmisionPeriodo { get; set; }
     }

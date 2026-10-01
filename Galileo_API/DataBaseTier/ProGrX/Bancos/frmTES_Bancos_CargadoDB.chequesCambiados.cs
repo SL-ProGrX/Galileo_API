@@ -129,12 +129,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         continue;
                     }
 
-                    foreach (var item in resultado)
+                    foreach (var descripcion in resultado
+                        .Where(item => !string.IsNullOrWhiteSpace(item.descripcion)))
                     {
-                        if (!string.IsNullOrWhiteSpace(item.descripcion))
-                        {
-                            mensajes.AppendLine(item.descripcion);
-                        }
+                        mensajes.AppendLine(descripcion.descripcion);
                     }
                 }
 
@@ -190,30 +188,43 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             for (var i = 0; i < request.Cheques.Count; i++)
             {
-                var fila = i + 1;
-                var cheque = request.Cheques[i];
-
-                if (cheque.Fecha is null)
-                    errores.AppendLine($"Fila {fila}: la fecha es obligatoria.");
-
-                if (string.IsNullOrWhiteSpace(cheque.Documento))
-                    errores.AppendLine($"Fila {fila}: el documento es obligatorio.");
-
-                if (string.IsNullOrWhiteSpace(cheque.NumeroCheque))
-                    errores.AppendLine($"Fila {fila}: el número de cheque es obligatorio.");
-
-                if (cheque.Monto is null || cheque.Monto <= 0)
-                    errores.AppendLine($"Fila {fila}: el importe debe ser mayor a 0.");
-
-                if (ObtenerIdBanco(cheque) <= 0)
-                    errores.AppendLine($"Fila {fila}: el id_banco debe contener el código del banco.");
-
-                var tipoMovimiento = cheque.TipoMovimiento?.Trim().ToUpperInvariant();
-                if (tipoMovimiento != "C" && tipoMovimiento != "D")
-                    errores.AppendLine($"Fila {fila}: el tipo debe ser C o D.");
+                ValidarChequeCarga(request.Cheques[i], i + 1, errores);
             }
 
             return errores;
+        }
+
+        private static void ValidarChequeCarga(
+            TesBancosCargadoChequeCambiadoCargaRequest cheque,
+            int fila,
+            StringBuilder errores)
+        {
+            if (cheque.Fecha is null)
+                errores.AppendLine($"Fila {fila}: la fecha es obligatoria.");
+
+            if (string.IsNullOrWhiteSpace(cheque.Documento))
+                errores.AppendLine($"Fila {fila}: el documento es obligatorio.");
+
+            if (string.IsNullOrWhiteSpace(cheque.NumeroCheque))
+                errores.AppendLine($"Fila {fila}: el número de cheque es obligatorio.");
+
+            if (cheque.Monto is null || cheque.Monto <= 0)
+                errores.AppendLine($"Fila {fila}: el importe debe ser mayor a 0.");
+
+            if (ObtenerIdBanco(cheque) <= 0)
+                errores.AppendLine($"Fila {fila}: el id_banco debe contener el código del banco.");
+
+            ValidarTipoMovimientoChequeCarga(cheque, fila, errores);
+        }
+
+        private static void ValidarTipoMovimientoChequeCarga(
+            TesBancosCargadoChequeCambiadoCargaRequest cheque,
+            int fila,
+            StringBuilder errores)
+        {
+            var tipoMovimiento = cheque.TipoMovimiento?.Trim().ToUpperInvariant();
+            if (tipoMovimiento != "C" && tipoMovimiento != "D")
+                errores.AppendLine($"Fila {fila}: el tipo debe ser C o D.");
         }
 
         private static StringBuilder ValidarChequesProceso(

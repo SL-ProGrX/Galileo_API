@@ -298,6 +298,8 @@
         public string cod_plan { get; set; } = "";
         public required int cod_operadora { get; set; }
         public string usuario { get; set; } = "";
+
+        [System.Text.Json.Serialization.JsonRequired]
         public bool ind_aplicar_amora { get; set; }
         public List<EstadoAsignadoDto> estados { get; set; } = new();
         public List<PlazoAsignadoDto> plazos { get; set; } = new();
