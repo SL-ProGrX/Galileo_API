@@ -3,6 +3,7 @@ using Galileo.BusinessLogic;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Data.SqlClient;
 using System.Security.Claims;
 
 namespace Galileo.Controllers
@@ -15,14 +16,17 @@ namespace Galileo.Controllers
     public class LogonController : ControllerBase
     {
         readonly LogonBL logonBL;
+        private readonly ILogger<LogonController> _logger;
 
         /// <summary>
         /// Inicializa una nueva instancia del controlador de logon.
         /// </summary>
         /// <param name="config">Configuración de la aplicación.</param>
-        public LogonController(IConfiguration config)
+        /// <param name="logger">Registrador utilizado por el controlador.</param>
+        public LogonController(IConfiguration config, ILogger<LogonController> logger)
         {
             logonBL = new LogonBL(config);
+            _logger = logger;
         }
 
         /// <summary>
@@ -30,9 +34,20 @@ namespace Galileo.Controllers
         /// </summary>
         /// <returns>Datos de intentos de autenticación.</returns>
         [HttpGet("IntentosObtener")]
-        public IntentosObtenerDto IntentosObtener()
+        public ActionResult<IntentosObtenerDto> IntentosObtener()
         {
-            return logonBL.IntentosObtener();
+            try
+            {
+                return Ok(logonBL.IntentosObtener());
+            }
+            catch (Exception ex) when (ex is SqlException or InvalidOperationException)
+            {
+                _logger.LogError(ex, "No fue posible consultar los límites de intentos de inicio de sesión.");
+                return Problem(
+                    statusCode: StatusCodes.Status503ServiceUnavailable,
+                    title: "No fue posible consultar los límites de intentos de inicio de sesión.",
+                    detail: ex.Message);
+            }
         }
 
         /// <summary>

@@ -30,8 +30,8 @@ namespace Galileo.BusinessLogic
             var result = logonDB.IntentosObtener();
             if (result == null)
             {
-                // Return a default instance or handle as needed
-                return new IntentosObtenerDto();
+                // Igual que VB6 cuando US_PARAMETROS no tiene fila.
+                return new IntentosObtenerDto { KEY_INTENTOS = 3, TIME_LOCK = 15 };
             }
             return result;
         }

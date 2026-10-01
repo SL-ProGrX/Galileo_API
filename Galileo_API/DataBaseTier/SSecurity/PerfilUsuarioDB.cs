@@ -15,7 +15,7 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<PerfilUsuarioDto> UsuarioPerfilConsultar(string usuario)
+        public ErrorDto<PerfilUsuarioDto> UsuarioPerfilConsultar(string usuario, bool propagarError = false)
         {
             var response = new ErrorDto<PerfilUsuarioDto>();
 
@@ -59,6 +59,11 @@ namespace Galileo.DataBaseTier
             }
             catch
             {
+                if (propagarError)
+                {
+                    throw;
+                }
+
                 // No devuelvas ex.Message en producción
                 response.Code = -1;
                 response.Description = "Error interno";
