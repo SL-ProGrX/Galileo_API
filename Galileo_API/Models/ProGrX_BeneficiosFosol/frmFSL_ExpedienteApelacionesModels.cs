@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+
 namespace Galileo.Models.FSL
 {
     public class FslTipoApelacion
@@ -10,7 +11,8 @@ namespace Galileo.Models.FSL
     public class FslApleacionAplicar
     {
         [JsonRequired]
-        public long cod_expediente { get; set; }
+        public long cod_expediente { get; set; } = 0;
+
         public string cod_apelacion { get; set; } = string.Empty;
         public string presentaCedula { get; set; } = string.Empty;
         public string presentaNombre { get; set; } = string.Empty;
@@ -21,13 +23,24 @@ namespace Galileo.Models.FSL
     public class FslResolucionApleacion
     {
         public string cod_comite { get; set; } = string.Empty;
-        public List<FslResolucionDatos> miembros { get; set; } = new List<FslResolucionDatos>();
+
+        public List<FslExpedienteResolucionMiembroRequest> miembros
+        {
+            get;
+            set;
+        } = [];
+
         public string cod_resolucion { get; set; } = string.Empty;
         public string resolucion_notas { get; set; } = string.Empty;
         public string resolucion_usuario { get; set; } = string.Empty;
         public string resolucion_estado { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
-        public long cod_expediente { get; set; }
-        public List<FslApelacionDatos> apelaciones { get; set; } = new List<FslApelacionDatos>();
+        public long cod_expediente { get; set; } = 0;
+
+        public List<FslExpedienteApelacionData> apelaciones
+        {
+            get;
+            set;
+        } = [];
     }
 }

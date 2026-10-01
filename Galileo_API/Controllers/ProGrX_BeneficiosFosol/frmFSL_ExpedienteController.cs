@@ -1,148 +1,199 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
 using Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Endpoints de los Expedientes Fosol (frmFSL_Expediente).
-    /// </summary>
-    [Route("api/frmFSL_Expediente")]
+    [Authorize]
     [ApiController]
-    public class FrmFslExpedienteController : ControllerBase
+    [Route("api/frmFSL_Expediente")]
+    public sealed class FrmFslExpedienteController : ControllerBase
     {
         private readonly FrmFslExpedienteBL _bl;
 
         public FrmFslExpedienteController(IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
-
+            ArgumentNullException.ThrowIfNull(config);
             _bl = new FrmFslExpedienteBL(config);
         }
 
-        /// <summary>Lista de planes activos.</summary>
-        [Authorize]
-        [HttpGet("FslPlanLista_Obtener")]
-        public ErrorDto<List<FslMenusData>> FslPlanLista_Obtener(int CodCliente)
-            => _bl.FslPlanLista_Obtener(CodCliente);
+        [HttpGet("FSL_Expediente_Planes_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            FSL_Expediente_Planes_Obtener(int CodEmpresa)
+            => _bl.FSL_Expediente_Planes_Obtener(CodEmpresa);
 
-        /// <summary>Lista de comités activos.</summary>
-        [Authorize]
-        [HttpGet("FslComiteLista_Obtener")]
-        public ErrorDto<List<FslMenusData>> FslComiteLista_Obtener(int CodCliente)
-            => _bl.FslComiteLista_Obtener(CodCliente);
+        [HttpGet("FSL_Expediente_Comites_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            FSL_Expediente_Comites_Obtener(int CodEmpresa)
+            => _bl.FSL_Expediente_Comites_Obtener(CodEmpresa);
 
-        /// <summary>Lista de enfermedades activas.</summary>
-        [Authorize]
-        [HttpGet("FslEnfermedadesLista_Obtener")]
-        public ErrorDto<List<FslMenusData>> FslEnfermedadesLista_Obtener(int CodCliente)
-            => _bl.FslEnfermedadesLista_Obtener(CodCliente);
+        [HttpGet("FSL_Expediente_Enfermedades_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            FSL_Expediente_Enfermedades_Obtener(int CodEmpresa)
+            => _bl.FSL_Expediente_Enfermedades_Obtener(CodEmpresa);
 
-        /// <summary>Lista de causas de un plan.</summary>
-        [Authorize]
-        [HttpGet("FslCausasLista_Obtener")]
-        public ErrorDto<List<FslMenusData>> FslCausasLista_Obtener(int CodCliente, string cod_plan)
-            => _bl.FslCausasLista_Obtener(CodCliente, cod_plan);
+        [HttpGet("FSL_Expediente_Causas_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            FSL_Expediente_Causas_Obtener(
+                int CodEmpresa,
+                [FromQuery(Name = "cod_plan")] string codPlan)
+            => _bl.FSL_Expediente_Causas_Obtener(
+                CodEmpresa,
+                codPlan);
 
-        /// <summary>Detalle de un expediente.</summary>
-        [Authorize]
-        [HttpGet("FslExpediente_Obtener")]
-        public ErrorDto<FslExpedienteDatos> FslExpediente_Obtener(int CodCliente, int cod_expediente)
-            => _bl.FslExpediente_Obtener(CodCliente, cod_expediente);
+        [HttpGet("FSL_Expediente_Obtener")]
+        public ErrorDto<FslExpedienteDatos>
+            FSL_Expediente_Obtener(
+                int CodEmpresa,
+                [FromQuery(Name = "cod_expediente")] long codExpediente)
+            => _bl.FSL_Expediente_Obtener(
+                CodEmpresa,
+                codExpediente);
 
-        /// <summary>Requisitos de un expediente.</summary>
-        [Authorize]
-        [HttpGet("FslRequisitos_Obtener")]
-        public ErrorDto<List<FslRequisitosExp>> FslRequisitos_Obtener(int CodCliente, int cod_expediente)
-            => _bl.FslRequisitos_Obtener(CodCliente, cod_expediente);
+        [HttpGet("FSL_Expediente_Navegacion_Obtener")]
+        public ErrorDto<long>
+            FSL_Expediente_Navegacion_Obtener(
+                int CodEmpresa,
+                [FromQuery(Name = "cod_expediente")] long codExpediente,
+                bool siguiente)
+            => _bl.FSL_Expediente_Navegacion_Obtener(
+                CodEmpresa,
+                codExpediente,
+                siguiente);
 
-        /// <summary>Operaciones (créditos) de un expediente.</summary>
-        [Authorize]
-        [HttpGet("FslOperaciones_Obtener")]
-        public ErrorDto<List<FslOperacionesDatos>> FslOperaciones_Obtener(int CodCliente, int cod_expediente)
-            => _bl.FslOperaciones_Obtener(CodCliente, cod_expediente);
+        [HttpGet("FSL_Expediente_Requisitos_Obtener")]
+        public ErrorDto<List<FslExpedienteRequisitoData>>
+            FSL_Expediente_Requisitos_Obtener(
+                int CodEmpresa,
+                [FromQuery(Name = "cod_expediente")] long codExpediente)
+            => _bl.FSL_Expediente_Requisitos_Obtener(
+                CodEmpresa,
+                codExpediente);
 
-        /// <summary>Resolución (miembros) de un expediente.</summary>
-        [Authorize]
-        [HttpGet("FslResolucion_Obtener")]
-        public ErrorDto<List<FslResolucionDatos>> FslResolucion_Obtener(int CodCliente, int cod_expediente)
-            => _bl.FslResolucion_Obtener(CodCliente, cod_expediente);
+        [HttpGet("FSL_Expediente_Operaciones_Obtener")]
+        public ErrorDto<List<FslExpedienteOperacionData>>
+            FSL_Expediente_Operaciones_Obtener(
+                int CodEmpresa,
+                [FromQuery(Name = "cod_expediente")] long codExpediente)
+            => _bl.FSL_Expediente_Operaciones_Obtener(
+                CodEmpresa,
+                codExpediente);
 
-        /// <summary>Validaciones de la resolución de un expediente.</summary>
-        [Authorize]
-        [HttpGet("FslResolucionlVal_Obtener")]
-        public ErrorDto<List<FslResolucionValidacionesDatos>> FslResolucionlVal_Obtener(int CodCliente, int cod_expediente)
-            => _bl.FslResolucionlVal_Obtener(CodCliente, cod_expediente);
+        [HttpGet("FSL_Expediente_ResolucionMiembros_Obtener")]
+        public ErrorDto<List<FslExpedienteResolucionMiembroData>>
+            FSL_Expediente_ResolucionMiembros_Obtener(
+                int CodEmpresa,
+                [FromQuery(Name = "cod_expediente")] long codExpediente)
+            => _bl.FSL_Expediente_ResolucionMiembros_Obtener(
+                CodEmpresa,
+                codExpediente);
 
-        /// <summary>Gestiones de un expediente.</summary>
-        [Authorize]
-        [HttpGet("FslExpGestiones_Obtener")]
-        public ErrorDto<List<FslExpGestiones>> FslExpGestiones_Obtener(int CodCliente, int cod_expediente)
-            => _bl.FslExpGestiones_Obtener(CodCliente, cod_expediente);
+        [HttpGet("FSL_Expediente_ResolucionValidaciones_Obtener")]
+        public ErrorDto<FslExpedienteResolucionValidacionesData>
+            FSL_Expediente_ResolucionValidaciones_Obtener(
+                int CodEmpresa,
+                [FromQuery(Name = "cod_expediente")] long codExpediente)
+            => _bl.FSL_Expediente_ResolucionValidaciones_Obtener(
+                CodEmpresa,
+                codExpediente);
 
-        /// <summary>Apelaciones de un expediente.</summary>
-        [Authorize]
-        [HttpGet("FslApelaciones_Obtener")]
-        public ErrorDto<List<FslApelacionDatos>> FslApelaciones_Obtener(int CodCliente, int cod_expediente)
-            => _bl.FslApelaciones_Obtener(CodCliente, cod_expediente);
+        [HttpGet("FSL_Expediente_Gestiones_Obtener")]
+        public ErrorDto<List<FslExpedienteGestionData>>
+            FSL_Expediente_Gestiones_Obtener(
+                int CodEmpresa,
+                [FromQuery(Name = "cod_expediente")] long codExpediente)
+            => _bl.FSL_Expediente_Gestiones_Obtener(
+                CodEmpresa,
+                codExpediente);
 
-        /// <summary>Lista de expedientes.</summary>
-        [Authorize]
-        [HttpGet("FslExpedientesLista_Obtener")]
-        public ErrorDto<FslExpedienteListaData> FslExpedientesLista_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
-            => _bl.FslExpedientesLista_Obtener(CodCliente, pagina, paginacion, filtro);
+        [HttpGet("FSL_Expediente_Apelaciones_Obtener")]
+        public ErrorDto<List<FslExpedienteApelacionData>>
+            FSL_Expediente_Apelaciones_Obtener(
+                int CodEmpresa,
+                [FromQuery(Name = "cod_expediente")] long codExpediente)
+            => _bl.FSL_Expediente_Apelaciones_Obtener(
+                CodEmpresa,
+                codExpediente);
 
-        /// <summary>Valida si un caso ya fue presentado.</summary>
-        [Authorize]
-        [HttpGet("FslExpediente_Valida")]
-        public ErrorDto FslExpediente_Valida(int CodCliente, string cedula, string tipo, string causa)
-            => _bl.FslExpediente_Valida(CodCliente, cedula, tipo, causa);
+        [HttpGet("FSL_Expediente_UsuarioVinculado_Obtener")]
+        public ErrorDto<string>
+            FSL_Expediente_UsuarioVinculado_Obtener(
+                int CodEmpresa,
+                string cedula,
+                [FromQuery(Name = "cod_comite")] string codComite)
+            => _bl.FSL_Expediente_UsuarioVinculado_Obtener(
+                CodEmpresa,
+                cedula,
+                codComite);
 
-        /// <summary>Obtiene el usuario vinculado de un miembro de comité.</summary>
-        [Authorize]
-        [HttpGet("FslUsuarioVinculado_Obtener")]
-        public ErrorDto FslUsuarioVinculado_Obtener(int CodCliente, string cedula, string cod_comite)
-            => _bl.FslUsuarioVinculado_Obtener(CodCliente, cedula, cod_comite);
+        [HttpGet("FSL_Expediente_Registro_Validar")]
+        public ErrorDto
+            FSL_Expediente_Registro_Validar(
+                int CodEmpresa,
+                string cedula,
+                [FromQuery(Name = "cod_plan")] string codPlan,
+                [FromQuery(Name = "cod_causa")] string codCausa)
+            => _bl.FSL_Expediente_Registro_Validar(
+                CodEmpresa,
+                cedula,
+                codPlan,
+                codCausa);
 
-        /// <summary>Inserta un expediente.</summary>
-        [Authorize]
-        [HttpPost("FslExpediente_Insertar")]
-        public ErrorDto FslExpediente_Insertar(int CodCliente, [FromBody] string jsonExp)
-            => _bl.FslExpediente_Insertar(CodCliente, jsonExp);
+        [HttpPost("FSL_Expediente_Insertar")]
+        public ErrorDto<FslExpedienteGuardarResultado>
+            FSL_Expediente_Insertar(
+                int CodEmpresa,
+                [FromBody] FslExpedienteGuardarRequest request)
+            => _bl.FSL_Expediente_Insertar(
+                CodEmpresa,
+                request);
 
-        /// <summary>Valida las credenciales de un miembro del comité.</summary>
-        [Authorize]
-        [HttpPost("FslMiembroValida")]
-        public ErrorDto FslMiembroValida(int CodCliente, [FromBody] FslMiembroValida usuario)
-            => _bl.FslMiembroValida(CodCliente, usuario);
+        [HttpPost("FSL_Expediente_Resolucion_Guardar")]
+        public ErrorDto
+            FSL_Expediente_Resolucion_Guardar(
+                int CodEmpresa,
+                [FromBody] FslExpedienteResolucionGuardarRequest request)
+            => _bl.FSL_Expediente_Resolucion_Guardar(
+                CodEmpresa,
+                request);
 
-        /// <summary>Guarda la resolución de un expediente.</summary>
-        [Authorize]
-        [HttpPost("FslResolucion_Guardar")]
-        public ErrorDto FslResolucion_Guardar(int CodCliente, [FromBody] FslResolucionGuardar resolucion)
-            => _bl.FslResolucion_Guardar(CodCliente, resolucion);
+        [HttpPost("FSL_Expediente_Miembro_Validar")]
+        public ErrorDto
+            FSL_Expediente_Miembro_Validar(
+                int CodEmpresa,
+                [FromBody] FslExpedienteMiembroValidarRequest request)
+            => _bl.FSL_Expediente_Miembro_Validar(
+                CodEmpresa,
+                request);
 
-        /// <summary>Aplica (procesa) un expediente Fosol.</summary>
-        [Authorize]
-        [HttpPost("FslExpediente_Aplicar")]
-        public ErrorDto FslExpediente_Aplicar(int CodCliente, long cod_expediente, string usuario)
-            => _bl.FslExpediente_Aplicar(CodCliente, cod_expediente, usuario);
+        [HttpPost("FSL_Expediente_Aplicar")]
+        public ErrorDto<FslExpedienteAplicarResultado>
+            FSL_Expediente_Aplicar(
+                int CodEmpresa,
+                [FromBody] FslExpedienteAplicarRequest request)
+            => _bl.FSL_Expediente_Aplicar(
+                CodEmpresa,
+                request);
 
-        /// <summary>Actualiza un expediente.</summary>
-        [Authorize]
-        [HttpPut("FslExpediente_Actualizar")]
-        public ErrorDto FslExpediente_Actualizar(int CodCliente, [FromBody] string jsonExp)
-            => _bl.FslExpediente_Actualizar(CodCliente, jsonExp);
+        [HttpPut("FSL_Expediente_Actualizar")]
+        public ErrorDto
+            FSL_Expediente_Actualizar(
+                int CodEmpresa,
+                [FromBody] FslExpedienteGuardarRequest request)
+            => _bl.FSL_Expediente_Actualizar(
+                CodEmpresa,
+                request);
 
-        /// <summary>Actualiza el estado de un requisito del expediente.</summary>
-        [Authorize]
-        [HttpPut("FslExpRequisto_Actualizar")]
-        public ErrorDto FslExpRequisto_Actualizar(int CodCliente, [FromBody] FslExpedienteUpdate requisito)
-            => _bl.FslExpRequisto_Actualizar(CodCliente, requisito);
+        [HttpPut("FSL_Expediente_Requisito_Actualizar")]
+        public ErrorDto
+            FSL_Expediente_Requisito_Actualizar(
+                int CodEmpresa,
+                [FromBody] FslExpedienteRequisitoActualizarRequest request)
+            => _bl.FSL_Expediente_Requisito_Actualizar(
+                CodEmpresa,
+                request);
     }
 }
