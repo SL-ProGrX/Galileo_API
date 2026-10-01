@@ -1,3 +1,4 @@
+using System.Linq;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
 
@@ -690,18 +691,19 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                     string Valor,
                     string Mensaje)> campos)
         {
-            foreach (var campo in campos)
-            {
-                if (string.IsNullOrWhiteSpace(
-                    campo.Valor))
-                {
-                    return DbHelper.ErrorResponse(
-                        campo.Mensaje,
-                        CodigoValidacion);
-                }
-            }
+            string? mensaje =
+                campos
+                    .Where(campo =>
+                        string.IsNullOrWhiteSpace(
+                            campo.Valor))
+                    .Select(campo => campo.Mensaje)
+                    .FirstOrDefault();
 
-            return null;
+            return mensaje == null
+                ? null
+                : DbHelper.ErrorResponse(
+                    mensaje,
+                    CodigoValidacion);
         }
 
         private enum FslComiteOperacionTipo
@@ -735,8 +737,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                 string.Empty;
         }
 
-        private sealed class
-            FslComiteEliminarOperacion
+        private sealed class FslComiteEliminarOperacion
         {
             public string CodComite { get; init; } =
                 string.Empty;
@@ -754,8 +755,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             }
         }
 
-        private sealed class
-            FslComiteOperacionMensajes
+        private sealed class FslComiteOperacionMensajes
         {
             public string Movimiento { get; init; } =
                 string.Empty;
