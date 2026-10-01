@@ -33,6 +33,12 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.Tes_BancosCargadoConceptos_Obtener(CodEmpresa, concepto);
         }
 
+        [HttpGet("Tes_BancosCargadoReporteConceptos_Obtener")]
+        public ErrorDto<List<TesBancoCargadoConceptos>> Tes_BancosCargadoReporteConceptos_Obtener(int CodEmpresa, string? concepto = null)
+        {
+            return _bl.Tes_BancosCargadoReporteConceptos_Obtener(CodEmpresa, concepto);
+        }
+
         [HttpGet("Tes_BancosCargadoCentroUnidades_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroUnidades_Obtener(int CodEmpresa)
         {
@@ -81,6 +87,28 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.TES_ListaDetalleMovimientos_Obtener(CodEmpresa, filtros);
         }
 
+        [HttpGet("TES_BancosCargado_ReporteDetalleMovimientosBancarios_Obtener")]
+        public ErrorDto<List<TesReporteDetalleMovimientosBancariosDto>>
+            TES_BancosCargado_ReporteDetalleMovimientosBancarios_Obtener(
+                int CodEmpresa,
+                [FromQuery] TesReporteDetalleMovimientosRequest request)
+        {
+            return _bl.TES_BancosCargado_ReporteDetalleMovimientosBancarios_Obtener(
+                CodEmpresa,
+                request);
+        }
+
+        [HttpGet("TES_BancosCargado_ReporteDetalleMovimientosRegistrados_Obtener")]
+        public ErrorDto<List<TesReporteDetalleMovimientosRegistradosDto>>
+            TES_BancosCargado_ReporteDetalleMovimientosRegistrados_Obtener(
+                int CodEmpresa,
+                [FromQuery] TesReporteDetalleMovimientosRequest request)
+        {
+            return _bl.TES_BancosCargado_ReporteDetalleMovimientosRegistrados_Obtener(
+                CodEmpresa,
+                request);
+        }
+
         [HttpPost("TES_BancosCargado_DetalleExcluir")]
         public ErrorDto TES_BancosCargado_DetalleExcluir(int CodEmpresa, [FromBody] TesBancosCargadoDetalleExcluirModel data)
         {
@@ -127,6 +155,31 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         {
            
             return _bl.TES_BancosCargado_RevMovConcilia_Aplicar(CodEmpresa, usuario, request);
+        }
+
+        [HttpPost("TES_BancosCargado_ChequesCambiados_Obtener")]
+        public ErrorDto<List<TesBancosCargadoChequeCambiadoDto>>
+            TES_BancosCargado_ChequesCambiados_Obtener(
+                int CodEmpresa,
+                string usuario,
+                [FromBody] TesBancosCargadoChequesCambiadosObtenerRequest request)
+        {
+            return _bl.TES_BancosCargado_ChequesCambiados_Obtener(
+                CodEmpresa,
+                usuario,
+                request);
+        }
+
+        [HttpPost("TES_BancosCargado_ChequesCambiados_Procesar")]
+        public ErrorDto TES_BancosCargado_ChequesCambiados_Procesar(
+            int CodEmpresa,
+            string usuario,
+            [FromBody] TesBancosCargadoChequesCambiadosProcesarRequest request)
+        {
+            return _bl.TES_BancosCargado_ChequesCambiados_Procesar(
+                CodEmpresa,
+                usuario,
+                request);
         }
     }
 }

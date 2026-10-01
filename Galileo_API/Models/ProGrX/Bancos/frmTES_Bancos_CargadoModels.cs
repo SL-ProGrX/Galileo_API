@@ -119,6 +119,52 @@
         public string CodCentroCosto { get; set; } = string.Empty;
     }
 
+    public class TesReporteDetalleMovimientosRequest
+    {
+        public int? IdBanco { get; set; }
+        public string? Estado { get; set; }
+        public string? Ordenacion { get; set; }
+        public string? ListaConceptos { get; set; }
+        public string? TipoMovimiento { get; set; }
+
+        [Microsoft.AspNetCore.Mvc.ModelBinding.BindRequired]
+        public DateTime FechaDesde { get; set; }
+
+        [Microsoft.AspNetCore.Mvc.ModelBinding.BindRequired]
+        public DateTime FechaHasta { get; set; }
+
+        public bool FiltraPeriodo { get; set; }
+        public DateTime? FechaEmisionPeriodo { get; set; }
+    }
+
+    public class TesReporteDetalleMovimientosBancariosDto
+    {
+        public DateTime? fechaTransaccion { get; set; }
+        public string? descripcion { get; set; }
+        public string? documento { get; set; }
+        public decimal montoDebito { get; set; }
+        public decimal montoCredito { get; set; }
+        public long solicitud { get; set; }
+        public string? referencia { get; set; }
+        public string? bancoDescripcion { get; set; }
+        public int idBanco { get; set; }
+        public string? conceptoDescripcion { get; set; }
+        public string? codConcepto { get; set; }
+        public string? estado { get; set; }
+    }
+
+    public class TesReporteDetalleMovimientosRegistradosDto
+    {
+        public long solicitud { get; set; }
+        public string? documento { get; set; }
+        public string? documentoBancario { get; set; }
+        public decimal monto { get; set; }
+        public string? detalle { get; set; }
+        public string? bancoDescripcion { get; set; }
+        public string? usuario { get; set; }
+        public string? estadoSolicitud { get; set; }
+    }
+
     public class TesBancosCargadoRevMovRequest
     {
         [Microsoft.AspNetCore.Mvc.ModelBinding.BindRequired]
@@ -222,6 +268,43 @@
         [System.Text.Json.Serialization.JsonRequired]
         public TesBancosCargadoRevMovDestinoAplicarRequest
             MovimientoDestino { get; set; } = new();
+    }
+
+    public class TesBancosCargadoChequeCambiadoCargaRequest
+    {
+        public DateTime? Fecha { get; set; }
+        public string? Documento { get; set; }
+        public string? NumeroCheque { get; set; }
+        public decimal? Monto { get; set; }
+        public string? Cuenta { get; set; }
+        public short? IdBanco { get; set; }
+        public string? TipoMovimiento { get; set; }
+    }
+
+    public class TesBancosCargadoChequesCambiadosObtenerRequest
+    {
+        [System.Text.Json.Serialization.JsonRequired]
+        public List<TesBancosCargadoChequeCambiadoCargaRequest> Cheques { get; set; } = new();
+    }
+
+    public class TesBancosCargadoChequeCambiadoDto
+    {
+        public DateTime? FechaTransaccion { get; set; }
+        public string? Documento { get; set; }
+        public string? NumeroCheque { get; set; }
+        public decimal Monto { get; set; }
+        public short Id_Banco { get; set; }
+        public string? Descripcion { get; set; }
+        public int Solicitud { get; set; }
+        public string? Usuario { get; set; }
+        public string? Estado { get; set; }
+        public decimal Conciliacion { get; set; }
+    }
+
+    public class TesBancosCargadoChequesCambiadosProcesarRequest
+    {
+        [System.Text.Json.Serialization.JsonRequired]
+        public List<TesBancosCargadoChequeCambiadoDto> Cheques { get; set; } = new();
     }
 
     public class TesBancoCargadoElimina
