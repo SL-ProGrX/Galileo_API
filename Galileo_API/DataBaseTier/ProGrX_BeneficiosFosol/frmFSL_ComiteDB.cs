@@ -228,7 +228,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                     ) AS descripcion
                 FROM FSL_COMITES
                 WHERE ACTIVO = 1
-                ORDER BY COD_COMITE;
+                ORDER BY COD_COMITE DESC;
                 """;
 
             return DbHelper.ExecuteListQuery<
