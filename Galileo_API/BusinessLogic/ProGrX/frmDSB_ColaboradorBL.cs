@@ -88,6 +88,30 @@ namespace Galileo.BusinessLogic.ProGrX
             return _db.Colaborador_Autorizacion_Registrar(CodEmpresa, usuario, request);
         }
 
+        public ErrorDto<bool> Colaborador_Traslado_Gestionar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorTrasladoGestionRequest request)
+        {
+            return _db.Colaborador_Traslado_Gestionar(CodEmpresa, usuario, request);
+        }
+
+        public ErrorDto<ColaboradorTrasladoConfiguracionData> Colaborador_Traslado_Configuracion_Obtener(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorTrasladoAccesoRequest request)
+        {
+            return _db.Colaborador_Traslado_Configuracion_Obtener(CodEmpresa, usuario, request);
+        }
+
+        public ErrorDto<ColaboradorTrasladoRegistroData> Colaborador_Traslado_Registrar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorTrasladoRegistrarRequest request)
+        {
+            return _db.Colaborador_Traslado_Registrar(CodEmpresa, usuario, request);
+        }
+
         public ErrorDto<ColaboradorSolicitudConfiguracionData> Colaborador_Solicitud_Configuracion_Obtener(
             int CodEmpresa,
             string usuario,
