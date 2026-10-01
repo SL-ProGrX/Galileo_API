@@ -52,41 +52,26 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             var codComite =
                 request.cod_comite.Trim();
 
-            var response =
-                DbHelper.ExecuteNonQueryWithResult(
-                    _portalDb,
-                    CodEmpresa,
-                    sql,
-                    new
-                    {
-                        cod_comite = codComite,
-                        descripcion =
-                            request.descripcion.Trim(),
-                        request.numero_resolutores,
-                        request.activo,
-                        usuario =
-                            request.usuario.Trim()
-                    });
-
-            var error =
-                FSL_Comite_Operacion_Resultado_Validar(
-                    response,
-                    "Ocurri&oacute; un error al registrar el comit&eacute;.",
-                    "El c&oacute;digo del comit&eacute; ya existe.");
-
-            if (error != null)
-            {
-                return error;
-            }
-
-            FSL_Comite_Bitacora_Registrar(
+            return FSL_Comite_Operacion_Ejecutar(
                 CodEmpresa,
-                request.usuario,
-                "Registra",
-                $"Comité de FOSOL Id.:{codComite}");
-
-            return DbHelper.OkResponse(
-                "Comit&eacute; registrado correctamente.");
+                new FslComiteOperacion
+                {
+                    Sql = sql,
+                    Parametros =
+                        FSL_Comite_Comite_Parametros_Crear(
+                            request,
+                            codComite),
+                    Usuario = request.usuario,
+                    Movimiento = "Registra",
+                    Detalle =
+                        $"Comité de FOSOL Id.:{codComite}",
+                    MensajeError =
+                        "Ocurri&oacute; un error al registrar el comit&eacute;.",
+                    MensajeSinCambios =
+                        "El c&oacute;digo del comit&eacute; ya existe.",
+                    MensajeExito =
+                        "Comit&eacute; registrado correctamente."
+                });
         }
 
         /// <summary>
@@ -120,39 +105,26 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             var codComite =
                 request.cod_comite.Trim();
 
-            var response =
-                DbHelper.ExecuteNonQueryWithResult(
-                    _portalDb,
-                    CodEmpresa,
-                    sql,
-                    new
-                    {
-                        cod_comite = codComite,
-                        descripcion =
-                            request.descripcion.Trim(),
-                        request.numero_resolutores,
-                        request.activo
-                    });
-
-            var error =
-                FSL_Comite_Operacion_Resultado_Validar(
-                    response,
-                    "Ocurri&oacute; un error al actualizar el comit&eacute;.",
-                    "El comit&eacute; indicado no existe.");
-
-            if (error != null)
-            {
-                return error;
-            }
-
-            FSL_Comite_Bitacora_Registrar(
+            return FSL_Comite_Operacion_Ejecutar(
                 CodEmpresa,
-                request.usuario,
-                "Modifica",
-                $"Comité de FOSOL Id.:{codComite}");
-
-            return DbHelper.OkResponse(
-                "Comit&eacute; actualizado correctamente.");
+                new FslComiteOperacion
+                {
+                    Sql = sql,
+                    Parametros =
+                        FSL_Comite_Comite_Parametros_Crear(
+                            request,
+                            codComite),
+                    Usuario = request.usuario,
+                    Movimiento = "Modifica",
+                    Detalle =
+                        $"Comité de FOSOL Id.:{codComite}",
+                    MensajeError =
+                        "Ocurri&oacute; un error al actualizar el comit&eacute;.",
+                    MensajeSinCambios =
+                        "El comit&eacute; indicado no existe.",
+                    MensajeExito =
+                        "Comit&eacute; actualizado correctamente."
+                });
         }
 
         /// <summary>
@@ -184,35 +156,26 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 
             var codigo = codComite.Trim();
 
-            var response =
-                DbHelper.ExecuteNonQueryWithResult(
-                    _portalDb,
-                    CodEmpresa,
-                    sql,
-                    new
+            return FSL_Comite_Operacion_Ejecutar(
+                CodEmpresa,
+                new FslComiteOperacion
+                {
+                    Sql = sql,
+                    Parametros = new
                     {
                         codComite = codigo
-                    });
-
-            var error =
-                FSL_Comite_Operacion_Resultado_Validar(
-                    response,
-                    "Ocurri&oacute; un error al eliminar el comit&eacute;.",
-                    "El comit&eacute; indicado no existe.");
-
-            if (error != null)
-            {
-                return error;
-            }
-
-            FSL_Comite_Bitacora_Registrar(
-                CodEmpresa,
-                usuario,
-                "Elimina",
-                $"Comité de FOSOL Id.:{codigo}");
-
-            return DbHelper.OkResponse(
-                "Comit&eacute; eliminado correctamente.");
+                    },
+                    Usuario = usuario,
+                    Movimiento = "Elimina",
+                    Detalle =
+                        $"Comité de FOSOL Id.:{codigo}",
+                    MensajeError =
+                        "Ocurri&oacute; un error al eliminar el comit&eacute;.",
+                    MensajeSinCambios =
+                        "El comit&eacute; indicado no existe.",
+                    MensajeExito =
+                        "Comit&eacute; eliminado correctamente."
+                });
         }
 
         /// <summary>
@@ -221,10 +184,9 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
         /// <param name="request">Informaci&oacute;n del miembro.</param>
         /// <returns>Resultado del registro.</returns>
-        public ErrorDto
-            FSL_Comite_Miembro_Registrar(
-                int CodEmpresa,
-                FslComiteMiembroGuardarRequest request)
+        public ErrorDto FSL_Comite_Miembro_Registrar(
+            int CodEmpresa,
+            FslComiteMiembroGuardarRequest request)
         {
             var validacion =
                 FSL_Comite_Miembro_Request_Validar(
@@ -275,44 +237,27 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             var cedula =
                 request.cedula.Trim();
 
-            var response =
-                DbHelper.ExecuteNonQueryWithResult(
-                    _portalDb,
-                    CodEmpresa,
-                    sql,
-                    new
-                    {
-                        cod_comite = codComite,
-                        cedula,
-                        nombre =
-                            request.nombre.Trim(),
-                        usuario_vinculado =
-                            request.usuario_vinculado
-                                .Trim(),
-                        request.activo,
-                        usuario =
-                            request.usuario.Trim()
-                    });
-
-            var error =
-                FSL_Comite_Operacion_Resultado_Validar(
-                    response,
-                    "Ocurri&oacute; un error al registrar el miembro.",
-                    "El miembro ya existe o el comit&eacute; indicado no est&aacute; disponible.");
-
-            if (error != null)
-            {
-                return error;
-            }
-
-            FSL_Comite_Bitacora_Registrar(
+            return FSL_Comite_Operacion_Ejecutar(
                 CodEmpresa,
-                request.usuario,
-                "Registra",
-                $"Comité Miembro: {codComite}.. Id.:{cedula}");
-
-            return DbHelper.OkResponse(
-                "Miembro registrado correctamente.");
+                new FslComiteOperacion
+                {
+                    Sql = sql,
+                    Parametros =
+                        FSL_Comite_Miembro_Parametros_Crear(
+                            request,
+                            codComite,
+                            cedula),
+                    Usuario = request.usuario,
+                    Movimiento = "Registra",
+                    Detalle =
+                        $"Comité Miembro: {codComite}.. Id.:{cedula}",
+                    MensajeError =
+                        "Ocurri&oacute; un error al registrar el miembro.",
+                    MensajeSinCambios =
+                        "El miembro ya existe o el comit&eacute; indicado no est&aacute; disponible.",
+                    MensajeExito =
+                        "Miembro registrado correctamente."
+                });
         }
 
         /// <summary>
@@ -321,10 +266,9 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
         /// <param name="request">Informaci&oacute;n del miembro.</param>
         /// <returns>Resultado de la actualizaci&oacute;n.</returns>
-        public ErrorDto
-            FSL_Comite_Miembro_Actualizar(
-                int CodEmpresa,
-                FslComiteMiembroGuardarRequest request)
+        public ErrorDto FSL_Comite_Miembro_Actualizar(
+            int CodEmpresa,
+            FslComiteMiembroGuardarRequest request)
         {
             var validacion =
                 FSL_Comite_Miembro_Request_Validar(
@@ -363,44 +307,27 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             var cedula =
                 request.cedula.Trim();
 
-            var response =
-                DbHelper.ExecuteNonQueryWithResult(
-                    _portalDb,
-                    CodEmpresa,
-                    sql,
-                    new
-                    {
-                        cod_comite = codComite,
-                        cedula,
-                        nombre =
-                            request.nombre.Trim(),
-                        usuario_vinculado =
-                            request.usuario_vinculado
-                                .Trim(),
-                        request.activo,
-                        usuario =
-                            request.usuario.Trim()
-                    });
-
-            var error =
-                FSL_Comite_Operacion_Resultado_Validar(
-                    response,
-                    "Ocurri&oacute; un error al actualizar el miembro.",
-                    "El miembro indicado no existe en el comit&eacute;.");
-
-            if (error != null)
-            {
-                return error;
-            }
-
-            FSL_Comite_Bitacora_Registrar(
+            return FSL_Comite_Operacion_Ejecutar(
                 CodEmpresa,
-                request.usuario,
-                "Modifica",
-                $"Comité Miembro: {codComite}.. Id.:{cedula}");
-
-            return DbHelper.OkResponse(
-                "Miembro actualizado correctamente.");
+                new FslComiteOperacion
+                {
+                    Sql = sql,
+                    Parametros =
+                        FSL_Comite_Miembro_Parametros_Crear(
+                            request,
+                            codComite,
+                            cedula),
+                    Usuario = request.usuario,
+                    Movimiento = "Modifica",
+                    Detalle =
+                        $"Comité Miembro: {codComite}.. Id.:{cedula}",
+                    MensajeError =
+                        "Ocurri&oacute; un error al actualizar el miembro.",
+                    MensajeSinCambios =
+                        "El miembro indicado no existe en el comit&eacute;.",
+                    MensajeExito =
+                        "Miembro actualizado correctamente."
+                });
         }
 
         /// <summary>
@@ -437,36 +364,119 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             var codigo = codComite.Trim();
             var identificacion = cedula.Trim();
 
+            return FSL_Comite_Operacion_Ejecutar(
+                CodEmpresa,
+                new FslComiteOperacion
+                {
+                    Sql = sql,
+                    Parametros = new
+                    {
+                        codComite = codigo,
+                        cedula = identificacion
+                    },
+                    Usuario = usuario,
+                    Movimiento = "Elimina",
+                    Detalle =
+                        $"Comité Miembro: {codigo} .. Id.:{identificacion}",
+                    MensajeError =
+                        "Ocurri&oacute; un error al eliminar el miembro.",
+                    MensajeSinCambios =
+                        "El miembro indicado no existe en el comit&eacute;.",
+                    MensajeExito =
+                        "Miembro eliminado correctamente."
+                });
+        }
+
+        /// <summary>
+        /// Ejecuta una operaci&oacute;n de mantenimiento y registra
+        /// el movimiento realizado en la bit&aacute;cora.
+        /// </summary>
+        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="operacion">Configuraci&oacute;n de la operaci&oacute;n.</param>
+        /// <returns>Resultado de la operaci&oacute;n.</returns>
+        private ErrorDto FSL_Comite_Operacion_Ejecutar(
+            int CodEmpresa,
+            FslComiteOperacion operacion)
+        {
             var response =
                 DbHelper.ExecuteNonQueryWithResult(
                     _portalDb,
                     CodEmpresa,
-                    sql,
-                    new
-                    {
-                        codComite = codigo,
-                        cedula = identificacion
-                    });
+                    operacion.Sql,
+                    operacion.Parametros);
 
-            var error =
-                FSL_Comite_Operacion_Resultado_Validar(
-                    response,
-                    "Ocurri&oacute; un error al eliminar el miembro.",
-                    "El miembro indicado no existe en el comit&eacute;.");
-
-            if (error != null)
+            if (response.Code != 0)
             {
-                return error;
+                return DbHelper.ErrorResponse(
+                    response.Description ??
+                    operacion.MensajeError);
+            }
+
+            if (response.Result <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    operacion.MensajeSinCambios,
+                    CodigoValidacion);
             }
 
             FSL_Comite_Bitacora_Registrar(
                 CodEmpresa,
-                usuario,
-                "Elimina",
-                $"Comité Miembro: {codigo} .. Id.:{identificacion}");
+                operacion.Usuario,
+                operacion.Movimiento,
+                operacion.Detalle);
 
             return DbHelper.OkResponse(
-                "Miembro eliminado correctamente.");
+                operacion.MensajeExito);
+        }
+
+        /// <summary>
+        /// Crea los par&aacute;metros SQL de un comit&eacute;.
+        /// </summary>
+        /// <param name="request">Informaci&oacute;n del comit&eacute;.</param>
+        /// <param name="codComite">C&oacute;digo normalizado.</param>
+        /// <returns>Par&aacute;metros de la operaci&oacute;n.</returns>
+        private static object
+            FSL_Comite_Comite_Parametros_Crear(
+                FslComiteGuardarRequest request,
+                string codComite)
+        {
+            return new
+            {
+                cod_comite = codComite,
+                descripcion =
+                    request.descripcion.Trim(),
+                request.numero_resolutores,
+                request.activo,
+                usuario =
+                    request.usuario.Trim()
+            };
+        }
+
+        /// <summary>
+        /// Crea los par&aacute;metros SQL de un miembro.
+        /// </summary>
+        /// <param name="request">Informaci&oacute;n del miembro.</param>
+        /// <param name="codComite">C&oacute;digo del comit&eacute; normalizado.</param>
+        /// <param name="cedula">C&eacute;dula normalizada.</param>
+        /// <returns>Par&aacute;metros de la operaci&oacute;n.</returns>
+        private static object
+            FSL_Comite_Miembro_Parametros_Crear(
+                FslComiteMiembroGuardarRequest request,
+                string codComite,
+                string cedula)
+        {
+            return new
+            {
+                cod_comite = codComite,
+                cedula,
+                nombre =
+                    request.nombre.Trim(),
+                usuario_vinculado =
+                    request.usuario_vinculado.Trim(),
+                request.activo,
+                usuario =
+                    request.usuario.Trim()
+            };
         }
 
         /// <summary>
@@ -481,23 +491,15 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             ArgumentNullException.ThrowIfNull(
                 request);
 
-            if (string.IsNullOrWhiteSpace(
-                request.cod_comite))
-            {
-                return DbHelper.ErrorResponse(
-                    MensajeComiteRequerido,
-                    CodigoValidacion);
-            }
-
-            if (string.IsNullOrWhiteSpace(
-                request.usuario))
-            {
-                return DbHelper.ErrorResponse(
-                    MensajeUsuarioRequerido,
-                    CodigoValidacion);
-            }
-
-            return null;
+            return FSL_Comite_Campos_Requeridos_Validar(
+                (
+                    request.cod_comite,
+                    MensajeComiteRequerido
+                ),
+                (
+                    request.usuario,
+                    MensajeUsuarioRequerido
+                ));
         }
 
         /// <summary>
@@ -512,31 +514,19 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             ArgumentNullException.ThrowIfNull(
                 request);
 
-            if (string.IsNullOrWhiteSpace(
-                request.cod_comite))
-            {
-                return DbHelper.ErrorResponse(
-                    MensajeComiteRequerido,
-                    CodigoValidacion);
-            }
-
-            if (string.IsNullOrWhiteSpace(
-                request.cedula))
-            {
-                return DbHelper.ErrorResponse(
-                    MensajeCedulaRequerida,
-                    CodigoValidacion);
-            }
-
-            if (string.IsNullOrWhiteSpace(
-                request.usuario))
-            {
-                return DbHelper.ErrorResponse(
-                    MensajeUsuarioRequerido,
-                    CodigoValidacion);
-            }
-
-            return null;
+            return FSL_Comite_Campos_Requeridos_Validar(
+                (
+                    request.cod_comite,
+                    MensajeComiteRequerido
+                ),
+                (
+                    request.cedula,
+                    MensajeCedulaRequerida
+                ),
+                (
+                    request.usuario,
+                    MensajeUsuarioRequerido
+                ));
         }
 
         /// <summary>
@@ -550,23 +540,15 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                 string codComite,
                 string usuario)
         {
-            if (string.IsNullOrWhiteSpace(
-                codComite))
-            {
-                return DbHelper.ErrorResponse(
-                    MensajeComiteRequerido,
-                    CodigoValidacion);
-            }
-
-            if (string.IsNullOrWhiteSpace(
-                usuario))
-            {
-                return DbHelper.ErrorResponse(
-                    MensajeUsuarioRequerido,
-                    CodigoValidacion);
-            }
-
-            return null;
+            return FSL_Comite_Campos_Requeridos_Validar(
+                (
+                    codComite,
+                    MensajeComiteRequerido
+                ),
+                (
+                    usuario,
+                    MensajeUsuarioRequerido
+                ));
         }
 
         /// <summary>
@@ -582,56 +564,72 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                 string cedula,
                 string usuario)
         {
-            var validacion =
-                FSL_Comite_Eliminar_Validar(
+            return FSL_Comite_Campos_Requeridos_Validar(
+                (
                     codComite,
-                    usuario);
+                    MensajeComiteRequerido
+                ),
+                (
+                    cedula,
+                    MensajeCedulaRequerida
+                ),
+                (
+                    usuario,
+                    MensajeUsuarioRequerido
+                ));
+        }
 
-            if (validacion != null)
+        /// <summary>
+        /// Valida una colecci&oacute;n de campos requeridos.
+        /// </summary>
+        /// <param name="campos">Valores y mensajes de validaci&oacute;n.</param>
+        /// <returns>Error de validaci&oacute;n o null.</returns>
+        private static ErrorDto?
+            FSL_Comite_Campos_Requeridos_Validar(
+                params (
+                    string Valor,
+                    string Mensaje
+                )[] campos)
+        {
+            foreach (var campo in campos)
             {
-                return validacion;
-            }
-
-            if (string.IsNullOrWhiteSpace(
-                cedula))
-            {
-                return DbHelper.ErrorResponse(
-                    MensajeCedulaRequerida,
-                    CodigoValidacion);
+                if (string.IsNullOrWhiteSpace(
+                    campo.Valor))
+                {
+                    return DbHelper.ErrorResponse(
+                        campo.Mensaje,
+                        CodigoValidacion);
+                }
             }
 
             return null;
         }
 
-        /// <summary>
-        /// Convierte el resultado de una operaci&oacute;n SQL en
-        /// una respuesta de error cuando corresponda.
-        /// </summary>
-        /// <param name="response">Resultado de la operaci&oacute;n.</param>
-        /// <param name="mensajeError">Mensaje para errores del API.</param>
-        /// <param name="mensajeSinCambios">Mensaje cuando no hubo cambios.</param>
-        /// <returns>Error o null cuando la operaci&oacute;n fue correcta.</returns>
-        private static ErrorDto?
-            FSL_Comite_Operacion_Resultado_Validar(
-                ErrorDto<int> response,
-                string mensajeError,
-                string mensajeSinCambios)
+        private sealed class FslComiteOperacion
         {
-            if (response.Code != 0)
-            {
-                return DbHelper.ErrorResponse(
-                    response.Description ??
-                    mensajeError);
-            }
+            public string Sql { get; init; } =
+                string.Empty;
 
-            if (response.Result <= 0)
-            {
-                return DbHelper.ErrorResponse(
-                    mensajeSinCambios,
-                    CodigoValidacion);
-            }
+            public object Parametros { get; init; } =
+                new();
 
-            return null;
+            public string Usuario { get; init; } =
+                string.Empty;
+
+            public string Movimiento { get; init; } =
+                string.Empty;
+
+            public string Detalle { get; init; } =
+                string.Empty;
+
+            public string MensajeError { get; init; } =
+                string.Empty;
+
+            public string MensajeSinCambios { get; init; } =
+                string.Empty;
+
+            public string MensajeExito { get; init; } =
+                string.Empty;
         }
     }
 }
