@@ -9,7 +9,8 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
     public sealed partial class FrmFslComiteDB
     {
         private const int ModuloFosol = 22;
-        private const int CodigoValidacion = -2;
+        private const int CodigoValidacion = -2; 
+        private const string CampoActivo = "activo";
 
         private const string MensajeComiteRequerido =
             "El c&oacute;digo del comit&eacute; es requerido.";
@@ -44,7 +45,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             FslListaPaginadaDto<FslComiteDto>>
             FSL_Comite_Comites_Obtener(
                 int CodEmpresa,
-                FslComitesFiltros filtros)
+                FslComitePaginacionFiltros filtros)
         {
             ArgumentNullException.ThrowIfNull(
                 filtros);
@@ -431,13 +432,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene el campo permitido para ordenar comit&eacute;s.
+        /// Obtiene el campo permitido para ordenar comites.
         /// </summary>
         /// <param name="sortField">Campo recibido.</param>
         /// <returns>Campo permitido.</returns>
         private static string
-            FSL_Comite_Comites_Orden_Campo_Obtener(
-                string sortField)
+        FSL_Comite_Comites_Orden_Campo_Obtener(
+        string sortField)
         {
             return sortField
                 .Trim()
@@ -448,8 +449,8 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                     "descripcion",
                 "numero_resolutores" =>
                     "numero_resolutores",
-                "activo" =>
-                    "activo",
+                CampoActivo =>
+                    CampoActivo,
                 _ =>
                     "cod_comite"
             };
@@ -458,8 +459,8 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <summary>
         /// Obtiene el campo permitido para ordenar miembros.
         /// </summary>
-        /// <param name="sortField">Campo recibido.</param>
-        /// <returns>Campo permitido.</returns>
+        /// <param name="sortField"></param>
+        /// <returns></returns>
         private static string
             FSL_Comite_Miembros_Orden_Campo_Obtener(
                 string sortField)
@@ -473,8 +474,8 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                     "nombre",
                 "usuario_vinculado" =>
                     "usuario_vinculado",
-                "activo" =>
-                    "activo",
+                CampoActivo =>
+                    CampoActivo,
                 _ =>
                     "cedula"
             };

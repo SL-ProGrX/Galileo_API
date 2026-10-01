@@ -24,12 +24,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol
         public ErrorDto<
             FslListaPaginadaDto<FslComiteDto>>
             FSL_Comite_Comites_Obtener(
-                int CodEmpresa,
-                string filtros)
+        int CodEmpresa,
+        string filtros)
         {
             if (!FSL_Comite_Filtros_Deserializar(
                 filtros,
-                out FslComitesFiltros request))
+                out FslComitePaginacionFiltros request))
             {
                 return DbHelper.CreateErrorResponse(
                     "Los filtros enviados no son v&aacute;lidos.",

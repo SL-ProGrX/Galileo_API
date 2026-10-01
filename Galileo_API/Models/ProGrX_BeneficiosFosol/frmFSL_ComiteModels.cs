@@ -96,11 +96,6 @@ namespace Galileo.Models.FSL
         public int sort_order { get; set; } = 1;
     }
 
-    public sealed class FslComitesFiltros :
-        FslComitePaginacionFiltros
-    {
-    }
-
     public sealed class FslComiteMiembrosFiltros :
         FslComitePaginacionFiltros
     {
