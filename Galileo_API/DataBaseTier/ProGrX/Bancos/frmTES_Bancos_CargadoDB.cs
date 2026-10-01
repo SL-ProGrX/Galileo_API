@@ -50,35 +50,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <returns></returns>
         public ErrorDto<List<TesBancoCargadoConceptos>> Tes_BancosCargadoConceptos_Obtener(int CodEmpresa, string? concepto = null)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            try
-            {
-                var conceptoTrim = concepto?.Trim();
-                var hasConcepto = !string.IsNullOrWhiteSpace(conceptoTrim);
-
-                const string sql = @"
-                            SELECT
-                                COD_CONCEPTO,
-                                DESCRIPCION,
-                                COD_CUENTA_MASK,
-                                DP_TRAMITE_APL,
-                                CUENTA_DESC
-                            FROM vTes_Conceptos
-                            WHERE AUTO_REGISTRO = 1
-                              AND ESTADO = 'A'
-                              AND (@concepto IS NULL OR COD_CONCEPTO = @concepto);";
-
-                var response = conn.Query<TesBancoCargadoConceptos>(
-                    sql,
-                    new { concepto = hasConcepto ? conceptoTrim : null }
-                ).ToList();
-
-                return DbHelper.CreateOkResponse(response);
-            }
-            catch (Exception ex)
-            {
-               return DbHelper.CreateErrorResponse<List<TesBancoCargadoConceptos>>(ex.Message);
-            }
+            return Tes_BancosCargadoConceptos_Obtener(CodEmpresa, concepto, true);
             
         }
 

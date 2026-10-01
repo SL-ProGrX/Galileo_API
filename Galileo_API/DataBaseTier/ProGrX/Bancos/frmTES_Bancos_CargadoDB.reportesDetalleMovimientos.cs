@@ -83,27 +83,40 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         public ErrorDto<List<TesBancoCargadoConceptos>> Tes_BancosCargadoReporteConceptos_Obtener(int CodEmpresa, string? concepto = null)
         {
+            return Tes_BancosCargadoConceptos_Obtener(CodEmpresa, concepto, false);
+        }
+
+        private ErrorDto<List<TesBancoCargadoConceptos>> Tes_BancosCargadoConceptos_Obtener(
+            int CodEmpresa,
+            string? concepto,
+            bool filtraAutoRegistro)
+        {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
                 var conceptoTrim = concepto?.Trim();
-                var hasConcepto = !string.IsNullOrWhiteSpace(conceptoTrim);
 
                 const string sql = @"
-                            SELECT
-                                COD_CONCEPTO,
-                                DESCRIPCION,
-                                COD_CUENTA_MASK,
-                                DP_TRAMITE_APL,
-                                CUENTA_DESC
-                            FROM vTes_Conceptos
-                            WHERE 
-                               ESTADO = 'A'
-                              AND (@concepto IS NULL OR COD_CONCEPTO = @concepto);";
+                    SELECT
+                        COD_CONCEPTO,
+                        DESCRIPCION,
+                        COD_CUENTA_MASK,
+                        DP_TRAMITE_APL,
+                        CUENTA_DESC
+                    FROM vTes_Conceptos
+                    WHERE ESTADO = 'A'
+                      AND (@filtraAutoRegistro = 0 OR AUTO_REGISTRO = 1)
+                      AND (@concepto IS NULL OR COD_CONCEPTO = @concepto);";
 
                 var response = conn.Query<TesBancoCargadoConceptos>(
                     sql,
-                    new { concepto = hasConcepto ? conceptoTrim : null }
+                    new
+                    {
+                        concepto = string.IsNullOrWhiteSpace(conceptoTrim)
+                            ? null
+                            : conceptoTrim,
+                        filtraAutoRegistro
+                    }
                 ).ToList();
 
                 return DbHelper.CreateOkResponse(response);
