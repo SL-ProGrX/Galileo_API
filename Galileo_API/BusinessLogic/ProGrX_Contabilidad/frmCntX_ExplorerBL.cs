@@ -27,6 +27,15 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.Cntx_TiposAsiento_Obtener(codEmpresa, cod_contabilidad);
         }
 
+        public ErrorDto<List<CntxTipoAsientoDto>> TiposAsiento_Periodo(
+            int codEmpresa,
+            int cod_contabilidad,
+            int anio,
+            int mes)
+        {
+            return _db.Cntx_TiposAsiento_Periodo(codEmpresa, cod_contabilidad, anio, mes);
+        }
+
         public ErrorDto<List<CntxPeriodoDto>> Periodos_Obtener(int codEmpresa, int cod_contabilidad, string estado)
         {
             return _db.Cntx_Periodos_Obtener(codEmpresa, cod_contabilidad, estado);

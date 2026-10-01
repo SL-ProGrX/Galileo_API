@@ -9,16 +9,26 @@ namespace Galileo.Models.AF
 
     public class AfiBeneTarjetasData
     {
+        [JsonRequired]
         public int id_tr { get; set; }
+
         public string cod_producto { get; set; } = string.Empty;
         public string cod_beneficio { get; set; } = string.Empty;
+
+        [JsonRequired]
         public int consec { get; set; }
+
+        [JsonRequired]
         public int id_beneficio { get; set; }
+
         public string cedula { get; set; } = string.Empty;
+
+        [JsonRequired]
         public float monto { get; set; }
-        public Nullable<DateTime> registro_fecha { get; set; }
+
+        public DateTime? registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
-        public Nullable<DateTime> activa_fecha { get; set; }
+        public DateTime? activa_fecha { get; set; }
         public string? activa_usuario { get; set; } = string.Empty;
         public string? no_tarjeta { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;

@@ -18,189 +18,81 @@ namespace Galileo.DataBaseTier
 
         public bool Sys_Portal_Admin_Valid(string Usuario)
         {
-            int resp = 0;
-            try
-            {
-                Usuario = NormalizeUsuario(Usuario);
+            Usuario = NormalizeUsuario(Usuario);
 
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    const string query = "SELECT dbo.fxSEG_Admin_Portal_Autenticate(@Usuario, @Token)";
-                    var values = new
-                    {
-                        Usuario = Usuario,
-                        Token = "#MyMasterK3y#"
-                    };
-                    resp = connection.Query<int>(query, values).FirstOrDefault();
-                }
-                return resp == 1;
-            }
-            catch (Exception ex)
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            const string query = "SELECT dbo.fxSEG_Admin_Portal_Autenticate(@Usuario, @Token)";
+            var values = new
             {
-                _ = ex.Message;
-                return resp == 0;
-            }
-            
+                Usuario,
+                Token = "#MyMasterK3y#"
+            };
+
+            var resultado = connection.Query<int>(query, values).FirstOrDefault();
+            return resultado == 1;
         }
 
         public int UsuarioObtenerKeyAdmin(string Usuario)
         {
-            try
-            {
-                Usuario = NormalizeUsuario(Usuario);
+            Usuario = NormalizeUsuario(Usuario);
 
-                const string sql = "select isnull(key_admin,0) as Admin from us_usuarios where usuario = @Usuario";
-                var values = new
-                {
-                    Usuario
-                };
-
-                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                return connection.Query<int>(sql, values).FirstOrDefault();
-            }
-            catch (Exception ex)
+            const string sql = "select isnull(key_admin,0) as Admin from us_usuarios where usuario = @Usuario";
+            var values = new
             {
-                _ = ex.Message;
-                return -1;
-            }
+                Usuario
+            };
+
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            return connection.Query<int>(sql, values).FirstOrDefault();
         }
 
         public UsAdminClientesDto US_ADMIN_CLIENTES_Obtener(string Usuario, int EmpresaId)
         {
-            
-            try
-            {
-                Usuario = NormalizeUsuario(Usuario);
+            Usuario = NormalizeUsuario(Usuario);
 
-                UsAdminClientesDto Result = new UsAdminClientesDto();
-                const string sql = "spSEG_Admin_Clients_Roles_Load";
-                var values = new
-                {
-                    Usuario = Usuario,
-                    EmpresaId = EmpresaId
-                };
-
-                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                var queryResult = connection.Query<UsAdminClientesDto>(sql, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                if (queryResult != null)
-                {
-                    Result = queryResult;
-                }
-                return Result;
-            }
-            catch (Exception ex)
+            const string sql = "spSEG_Admin_Clients_Roles_Load";
+            var values = new
             {
-                _ = ex.Message;
-                return new UsAdminClientesDto();
-            }
-            
+                Usuario,
+                EmpresaId
+            };
+
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            return connection.Query<UsAdminClientesDto>(sql, values, commandType: CommandType.StoredProcedure).FirstOrDefault()
+                ?? new UsAdminClientesDto();
         }
 
         public UsuarioBloqueoDto UsuarioBloqueoObtener(string Usuario)
         {
-            try
-            {
-                Usuario = NormalizeUsuario(Usuario);
-
-                UsuarioBloqueoDto Result = new UsuarioBloqueoDto();
-                const string sql = "spSEG_Bloqueo";
-                var values = new
-                {
-                    Usuario = Usuario,
-                };
-
-                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                var queryResult = connection.Query<UsuarioBloqueoDto>(sql, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                if (queryResult != null)
-                {
-                    Result = queryResult;
-                    Result.Usuario = Usuario;
-                }
-                else
-                {
-                    Result.Usuario = Usuario;
-                }
-                return Result;
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-                return new UsuarioBloqueoDto();
-            }
-            
-
+            Usuario = NormalizeUsuario(Usuario);
+            const string sql = "spSEG_Bloqueo";
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            var result = connection.QueryFirstOrDefault<UsuarioBloqueoDto>(sql, new { Usuario }, commandType: CommandType.StoredProcedure)
+                ?? throw new InvalidOperationException("spSEG_Bloqueo no devolvió información para el usuario.");
+            result.Usuario = Usuario;
+            return result;
         }
 
         public UsuarioCondicionDto UsuarioCondicionObtener(string Usuario)
         {
-            try
-            {
-                Usuario = NormalizeUsuario(Usuario);
-
-                UsuarioCondicionDto Result = new UsuarioCondicionDto();
-                const string sql = "spSEG_USRCondicion";
-                var values = new
-                {
-                    Usuario = Usuario,
-                };
-
-                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                var queryResult = connection.Query<UsuarioCondicionDto>(sql, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                if (queryResult != null)
-                {
-                    Result = queryResult;
-                    Result.Usuario = Usuario;
-                }
-                else
-                {
-                    Result.Usuario = Usuario;
-                }
-                return Result;
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-                return new UsuarioCondicionDto();
-            }
-            
-
+            Usuario = NormalizeUsuario(Usuario);
+            const string sql = "spSEG_USRCondicion";
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            var result = connection.QueryFirstOrDefault<UsuarioCondicionDto>(sql, new { Usuario }, commandType: CommandType.StoredProcedure)
+                ?? throw new InvalidOperationException("spSEG_USRCondicion no devolvió información para el usuario.");
+            result.Usuario = Usuario;
+            return result;
         }
 
         public UsuarioVencimientoDto UsuarioVencimientoObtener(string Usuario)
         {
-
-            
-            try
-            {
-                Usuario = NormalizeUsuario(Usuario);
-
-                UsuarioVencimientoDto Result = new UsuarioVencimientoDto();
-                const string sql = "spSEG_Vencimiento";
-                var values = new
-                {
-                    Usuario = Usuario,
-                };
-
-                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                var queryResult = connection.Query<UsuarioVencimientoDto>(sql, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                if (queryResult != null)
-                {
-                    Result = queryResult;
-                    Result.Usuario = Usuario;
-                }
-                else
-                {
-                    Result.Usuario = Usuario;
-                }
-                return Result;
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-                return new UsuarioVencimientoDto();
-            }
-            
-
+            Usuario = NormalizeUsuario(Usuario);
+            const string sql = "spSEG_Vencimiento";
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            var result = connection.QueryFirstOrDefault<UsuarioVencimientoDto>(sql, new { Usuario }, commandType: CommandType.StoredProcedure)
+                ?? throw new InvalidOperationException("spSEG_Vencimiento no devolvió información para el usuario.");
+            result.Usuario = Usuario;
+            return result;
         }
 
         public int AppStatusObtener(string AppName, string AppVersion) //PREGUNTAR POR ESTE => (SP BLOQUEADO Y CUAL TABLA DEL DB?)

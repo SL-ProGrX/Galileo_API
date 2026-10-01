@@ -1,57 +1,105 @@
-using System.Text.Json.Serialization;
 namespace Galileo.Models.FSL
 {
-    public class FslComitesDto
+    public sealed class FslComiteDto
     {
-        public string cod_comite { get; set; } = string.Empty;
-        public string descripcion { get; set; } = string.Empty;
-        [JsonRequired]
-        public int numero_resolutores { get; set; }
-        public string registro_usuario { get; set; } = string.Empty;
-        [JsonRequired]
-        public bool activo { get; set; }
+        public string cod_comite { get; set; } =
+            string.Empty;
+
+        public string descripcion { get; set; } =
+            string.Empty;
+
+        public int numero_resolutores { get; set; } = 0;
+
+        public bool activo { get; set; } = false;
+
+        public string registro_usuario { get; set; } =
+            string.Empty;
+
+        public DateTime? registro_fecha { get; set; }
     }
 
-    public class FslComitesDataLista
+    public sealed class FslComiteGuardarRequest
     {
-        public int Total { get; set; }
-        public List<FslComitesDto> Comites { get; set; } = new List<FslComitesDto>();
+        public string cod_comite { get; set; } =
+            string.Empty;
+
+        public string descripcion { get; set; } =
+            string.Empty;
+
+        public int numero_resolutores { get; set; } = 0;
+
+        public bool activo { get; set; } = false;
+
+        public string usuario { get; set; } =
+            string.Empty;
     }
 
-    public class FslMiembrosComitesDto
+    public sealed class FslComiteMiembroDto
     {
-        public string cedula { get; set; } = string.Empty;
-        public string nombre { get; set; } = string.Empty;
-        public string usuario_Vinculado { get; set; } = string.Empty;
-        public string cod_comite { get; set; } = string.Empty;
-        [JsonRequired]
-        public DateTime registro_Fecha { get; set; }
-        [JsonRequired]
-        public DateTime salida_Fecha { get; set; }
-        public string registro_Usuario { get; set; } = string.Empty;
-        public string salida_usuario { get; set; } = string.Empty;
-        [JsonRequired]
-        public bool activo { get; set; }
+        public string cedula { get; set; } =
+            string.Empty;
+
+        public string nombre { get; set; } =
+            string.Empty;
+
+        public string usuario_vinculado { get; set; } =
+            string.Empty;
+
+        public string cod_comite { get; set; } =
+            string.Empty;
+
+        public DateTime? registro_fecha { get; set; }
+
+        public string registro_usuario { get; set; } =
+            string.Empty;
+
+        public DateTime? salida_fecha { get; set; }
+
+        public string salida_usuario { get; set; } =
+            string.Empty;
+
+        public bool activo { get; set; } = false;
     }
 
-    public class FslMiembrosComitesDataLista
+    public sealed class FslComiteMiembroGuardarRequest
     {
-        public int Total { get; set; }
-        public List<FslMiembrosComitesDto> Miembros { get; set; } = new List<FslMiembrosComitesDto>();
+        public string cod_comite { get; set; } =
+            string.Empty;
+
+        public string cedula { get; set; } =
+            string.Empty;
+
+        public string nombre { get; set; } =
+            string.Empty;
+
+        public string usuario_vinculado { get; set; } =
+            string.Empty;
+
+        public bool activo { get; set; } = false;
+
+        public string usuario { get; set; } =
+            string.Empty;
     }
 
-    public class FslComitesActivosData()
+    public class FslComitePaginacionFiltros
     {
-        public string item { get; set; } = string.Empty;
-        public string descripcion { get; set; } = string.Empty;
+        public int pagina { get; set; } = 0;
+
+        public int paginacion { get; set; } = 30;
+
+        public string filtro { get; set; } =
+            string.Empty;
+
+        public string sort_field { get; set; } =
+            string.Empty;
+
+        public int sort_order { get; set; } = 1;
     }
 
-    public class FslComitefiltros
+    public sealed class FslComiteMiembrosFiltros :
+        FslComitePaginacionFiltros
     {
-        public int? pagina { get; set; }
-        public int? paginacion { get; set; }
-        public string? filtro { get; set; }
-
-        public string? comiteSeleccionado { get; set; }
+        public string cod_comite { get; set; } =
+            string.Empty;
     }
 }
