@@ -1,70 +1,136 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
 using Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Endpoints de los Comités Fosol (frmFSL_Comite).
-    /// </summary>
     [Route("api/frmFSL_Comite")]
+    [Authorize]
     [ApiController]
-    public class FrmFslComiteController : ControllerBase
+    public sealed class FrmFslComiteController
+        : ControllerBase
     {
         private readonly FrmFslComiteBL _bl;
 
-        public FrmFslComiteController(IConfiguration config)
+        public FrmFslComiteController(
+            IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            ArgumentNullException.ThrowIfNull(config);
 
             _bl = new FrmFslComiteBL(config);
         }
 
-        /// <summary>Lista de comités.</summary>
-        [Authorize]
-        [HttpGet("FslComites_Obtener")]
-        public ErrorDto<FslComitesDataLista> FslComites_Obtener(int CodCliente, string filtros)
-            => _bl.FslComites_Obtener(CodCliente, filtros);
+        [HttpGet(
+            "FSL_Comite_Comites_Obtener")]
+        public ErrorDto<
+            FslListaPaginadaDto<FslComiteDto>>
+            FSL_Comite_Comites_Obtener(
+                int CodEmpresa,
+                string filtros = "")
+        {
+            return _bl.FSL_Comite_Comites_Obtener(
+                CodEmpresa,
+                filtros);
+        }
 
-        /// <summary>Comités activos.</summary>
-        [Authorize]
-        [HttpGet("FslComitesActivos_Obtener")]
-        public ErrorDto<List<FslComitesActivosData>> FslComitesActivos_Obtener(int CodCliente)
-            => _bl.FslComitesActivos_Obtener(CodCliente);
+        [HttpGet(
+            "FSL_Comite_ComitesActivos_Obtener")]
+        public ErrorDto<
+            List<DropDownListaGenericaModel>>
+            FSL_Comite_ComitesActivos_Obtener(
+                int CodEmpresa)
+        {
+            return _bl
+                .FSL_Comite_ComitesActivos_Obtener(
+                    CodEmpresa);
+        }
 
-        /// <summary>Miembros de un comité.</summary>
-        [Authorize]
-        [HttpGet("FslMiembrosComite_Obtener")]
-        public ErrorDto<FslMiembrosComitesDataLista> FslMiembrosComite_Obtener(int CodCliente, string filtros)
-            => _bl.FslMiembrosComite_Obtener(CodCliente, filtros);
+        [HttpGet(
+            "FSL_Comite_Miembros_Obtener")]
+        public ErrorDto<
+            FslListaPaginadaDto<FslComiteMiembroDto>>
+            FSL_Comite_Miembros_Obtener(
+                int CodEmpresa,
+                string filtros = "")
+        {
+            return _bl.FSL_Comite_Miembros_Obtener(
+                CodEmpresa,
+                filtros);
+        }
 
-        /// <summary>Guarda un comité (inserta o actualiza).</summary>
-        [Authorize]
-        [HttpPost("Comite_Guardar")]
-        public ErrorDto Comite_Guardar(int CodCliente, [FromBody] FslComitesDto comite)
-            => _bl.Comite_Guardar(CodCliente, comite);
+        [HttpPost(
+            "FSL_Comite_Comite_Registrar")]
+        public ErrorDto FSL_Comite_Comite_Registrar(
+            int CodEmpresa,
+            FslComiteGuardarRequest request)
+        {
+            return _bl.FSL_Comite_Comite_Registrar(
+                CodEmpresa,
+                request);
+        }
 
-        /// <summary>Guarda un miembro de comité (inserta o actualiza).</summary>
-        [Authorize]
-        [HttpPost("ComiteMiembro_Guardar")]
-        public ErrorDto ComiteMiembro_Guardar(int CodCliente, [FromBody] FslMiembrosComitesDto miembro)
-            => _bl.ComiteMiembro_Guardar(CodCliente, miembro);
+        [HttpPut(
+            "FSL_Comite_Comite_Actualizar")]
+        public ErrorDto FSL_Comite_Comite_Actualizar(
+            int CodEmpresa,
+            FslComiteGuardarRequest request)
+        {
+            return _bl.FSL_Comite_Comite_Actualizar(
+                CodEmpresa,
+                request);
+        }
 
-        /// <summary>Elimina un comité.</summary>
-        [Authorize]
-        [HttpDelete("FslComites_Eliminar")]
-        public ErrorDto FslComites_Eliminar(int CodCliente, string comite)
-            => _bl.FslComites_Eliminar(CodCliente, comite);
+        [HttpDelete(
+            "FSL_Comite_Comite_Eliminar")]
+        public ErrorDto FSL_Comite_Comite_Eliminar(
+            int CodEmpresa,
+            string codComite,
+            string usuario)
+        {
+            return _bl.FSL_Comite_Comite_Eliminar(
+                CodEmpresa,
+                codComite,
+                usuario);
+        }
 
-        /// <summary>Elimina un miembro de un comité.</summary>
-        [Authorize]
-        [HttpDelete("FslMiembrosComite_Eliminar")]
-        public ErrorDto FslMiembrosComite_Eliminar(int CodCliente, string cedula, string comite)
-            => _bl.FslMiembrosComite_Eliminar(CodCliente, cedula, comite);
+        [HttpPost(
+            "FSL_Comite_Miembro_Registrar")]
+        public ErrorDto FSL_Comite_Miembro_Registrar(
+            int CodEmpresa,
+            FslComiteMiembroGuardarRequest request)
+        {
+            return _bl.FSL_Comite_Miembro_Registrar(
+                CodEmpresa,
+                request);
+        }
+
+        [HttpPut(
+            "FSL_Comite_Miembro_Actualizar")]
+        public ErrorDto FSL_Comite_Miembro_Actualizar(
+            int CodEmpresa,
+            FslComiteMiembroGuardarRequest request)
+        {
+            return _bl.FSL_Comite_Miembro_Actualizar(
+                CodEmpresa,
+                request);
+        }
+
+        [HttpDelete(
+            "FSL_Comite_Miembro_Eliminar")]
+        public ErrorDto FSL_Comite_Miembro_Eliminar(
+            int CodEmpresa,
+            string codComite,
+            string cedula,
+            string usuario)
+        {
+            return _bl.FSL_Comite_Miembro_Eliminar(
+                CodEmpresa,
+                codComite,
+                cedula,
+                usuario);
+        }
     }
 }
