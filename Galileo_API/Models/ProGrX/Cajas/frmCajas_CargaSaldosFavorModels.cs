@@ -98,6 +98,7 @@
         public DateTime? FechaDesde { get; set; }
         public DateTime? FechaHasta { get; set; }
         public string? Documento { get; set; }
+        public string? CedulaOrigen { get; set; }
         public int? IdBanco { get; set; }
         public decimal? MontoInicio { get; set; }
         public decimal? MontoFin { get; set; }
