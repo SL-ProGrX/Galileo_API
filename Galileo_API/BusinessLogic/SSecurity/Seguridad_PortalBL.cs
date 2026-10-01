@@ -31,6 +31,17 @@ namespace Galileo.BusinessLogic
                 accessPortal.Rol_LocalUsers = true;
                 accessPortal.Rol_Permisos = true;
                 accessPortal.Rol_ResetKeys = true;
+
+                accessPortal.ResultMsg = "OK";
+                return accessPortal;
+            }
+
+            // Mantiene el orden de mPGX_Portal: solo una cuenta habilitada para
+            // administración puede consultar los roles de la empresa.
+            if (SecurityDb.UsuarioObtenerKeyAdmin(pUsuario) <= 0)
+            {
+                accessPortal.ResultMsg = "Este usuario no tiene cuenta de administración para el portal!";
+                return accessPortal;
             }
 
             UsAdminClientesDto usAdminClientesDto = SecurityDb.US_ADMIN_CLIENTES_Obtener(pUsuario, EmpresaId);
@@ -54,16 +65,9 @@ namespace Galileo.BusinessLogic
                  usAdminClientesDto.R_LOCAL_GRANTS == 1 ||
                  usAdminClientesDto.R_LOCAL_KEY_RESET == 1);
 
-            if (accessPortal.Admin_Portal ||
-                SecurityDb.UsuarioObtenerKeyAdmin(pUsuario) > 0 ||
-                tienePermisoEmpresa)
-            {
-                accessPortal.ResultMsg = "OK";
-            }
-            else
-            {
-                accessPortal.ResultMsg = "Este usuario no tiene permisos administrativos para la empresa seleccionada!";
-            }
+            accessPortal.ResultMsg = tienePermisoEmpresa
+                ? "OK"
+                : "Este usuario no tiene permisos administrativos para la empresa seleccionada!";
 
             return accessPortal;
 

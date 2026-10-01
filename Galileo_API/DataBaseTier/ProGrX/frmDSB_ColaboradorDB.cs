@@ -1,6 +1,7 @@
 using Dapper;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX;
+using Galileo.Models.Security;
 using System.Data;
 
 namespace Galileo.DataBaseTier.ProGrX
@@ -8,15 +9,23 @@ namespace Galileo.DataBaseTier.ProGrX
     public class FrmDsbColaboradorDB
     {
         private const string SpRhPortalVinculado = "spRH_Portal_Vinculado";
+        private const string OpcionVacaciones = "vacaciones";
+        private const string OpcionIncapacidades = "incapacidades";
+        private const string OpcionPermisos = "permisos";
+        private const string AppCodProGrX = "ProGrX";
+        private const string SqlIdentificacionColaborador = "SELECT IDENTIFICACION FROM RH_PERSONAS WHERE EMPLEADO_ID = @EmpleadoId";
+        private const string AccionRecibir = "recibir";
         private static readonly byte[] FirmaJpeg = [0xFF, 0xD8, 0xFF];
         private static readonly byte[] FirmaPng = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
         private static readonly byte[] FirmaBmp = [0x42, 0x4D];
 
         private readonly PortalDB _portalDb;
+        private readonly MSecurityMainDb _securityMainDb;
 
         public FrmDsbColaboradorDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
+            _securityMainDb = new MSecurityMainDb(config);
         }
 
         public ErrorDto<ColaboradorVinculoData> Colaborador_Vinculado_Obtener(
@@ -290,6 +299,326 @@ namespace Galileo.DataBaseTier.ProGrX
             }
         }
 
+        public ErrorDto<bool> Colaborador_Clave_Cambia(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorClaveCambiaRequest request)
+        {
+            if (ValidarSolicitudUsuario(
+                usuario,
+                false,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.ClaveActual?.Length > 100
+                    || string.IsNullOrEmpty(request.ClaveNueva)
+                    || request.ClaveNueva.Length is < 3 or > 100,
+                "Seleccione un colaborador e ingrese una clave de 3 a 100 caracteres.")
+                is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+                var empleadoVinculado = ObtenerVinculacion(connection, usuario)?.Empleado_ID?.Trim();
+
+                if (!string.IsNullOrWhiteSpace(empleadoVinculado))
+                {
+                    if (!string.Equals(empleadoVinculado, empleadoId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return DbHelper.CreateErrorResponse(
+                            "El colaborador solicitado no corresponde al usuario vinculado.",
+                            -2,
+                            false);
+                    }
+                }
+                else if (string.IsNullOrEmpty(request.ClaveActual)
+                    || ConsultarClave(connection, empleadoId, request.ClaveActual)?.Existe != 1)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La clave actual del portal no es válida.", -2, false);
+                }
+
+                var existeEmpleado = connection.ExecuteScalar<int>(
+                    "SELECT COUNT(1) FROM RH_PERSONAS WHERE EMPLEADO_ID = @EmpleadoId",
+                    new { EmpleadoId = empleadoId });
+
+                if (existeEmpleado != 1)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "No se encontró el colaborador solicitado.", -3, false);
+                }
+
+                connection.Execute(
+                    "spRH_Portal_Clave_Cambia",
+                    new
+                    {
+                        EmpleadoId = empleadoId,
+                        Clave = request.ClaveNueva,
+                        Usuario = usuario.Trim(),
+                        AppName = "ProGrX_WEB",
+                        AppVersion = NormalizarAppVersion(request.AppVersion),
+                        Equipo = "WEB"
+                    },
+                    commandType: CommandType.StoredProcedure);
+
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, false);
+            }
+        }
+
+        public ErrorDto<ColaboradorSolicitudConfiguracionData> Colaborador_Solicitud_Configuracion_Obtener(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorSolicitudConfiguracionRequest request)
+        {
+            var result = new ColaboradorSolicitudConfiguracionData();
+
+            if (ValidarSolicitudUsuario(
+                usuario,
+                result,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.Clave?.Length > 100
+                    || !OpcionSolicitudValida(request.Opcion)
+                    || request.Tipo?.Length > 10,
+                "Los datos de la solicitud no son válidos.") is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+
+                if (ValidarAccesoColaborador(connection, usuario, empleadoId, request.Clave)
+                    is { } errorAcceso)
+                {
+                    return DbHelper.CreateErrorResponse(errorAcceso, -2, result);
+                }
+
+                var fechaActual = connection.QueryFirst<DateTime>(
+                    "SELECT dbo.MyGetdate()");
+                var tipos = ObtenerTiposSolicitud(connection, request.Opcion);
+                var codigoSeleccionado = request.Tipo?.Trim();
+                ColaboradorSolicitudTipoDetalleRow? detalleTipo = null;
+
+                if (!string.IsNullOrWhiteSpace(codigoSeleccionado))
+                {
+                    if (!tipos.Any(tipo => string.Equals(
+                        tipo.Codigo,
+                        codigoSeleccionado,
+                        StringComparison.OrdinalIgnoreCase)))
+                    {
+                        return DbHelper.CreateErrorResponse(
+                            "El tipo de solicitud seleccionado no está disponible.",
+                            -3,
+                            result);
+                    }
+
+                    detalleTipo = ObtenerDetalleTipoSolicitud(
+                        connection,
+                        request.Opcion,
+                        codigoSeleccionado);
+                }
+
+                DateTime? fechaMinima = null;
+                decimal diasDisponibles = 0;
+
+                if (request.Opcion == OpcionVacaciones)
+                {
+                    var vacaciones = connection.QueryFirstOrDefault<ColaboradorVacacionesInfoRow>(
+                        "SELECT Dias_Disponibles, Fecha_Inicio " +
+                        "FROM vRH_Vacaciones_Info WHERE Empleado_Id = @EmpleadoId",
+                        new { EmpleadoId = empleadoId });
+
+                    fechaMinima = vacaciones?.Fecha_Inicio;
+                    diasDisponibles = vacaciones?.Dias_Disponibles ?? 0;
+                }
+                else if (request.Opcion == OpcionIncapacidades)
+                {
+                    fechaMinima = connection.QueryFirstOrDefault<DateTime?>(
+                        "SELECT dbo.fxRH_Nomina_Inicial_Actual(COD_NOMINA) " +
+                        "FROM RH_PERSONAS WHERE EMPLEADO_ID = @EmpleadoId",
+                        new { EmpleadoId = empleadoId });
+                }
+
+                return DbHelper.CreateOkResponse(new ColaboradorSolicitudConfiguracionData
+                {
+                    Tipos = tipos,
+                    FechaActual = fechaActual,
+                    FechaMinima = fechaMinima,
+                    DiasDisponibles = diasDisponibles,
+                    RequiereAutorizacion = detalleTipo is null
+                        || detalleTipo.REQUIERE_AUTORIZACION != 0,
+                    HorasMaximas = detalleTipo?.PERMISO_HRS_MAX,
+                    PermiteLiquidacion = detalleTipo?.PERMITE_LIQUIDACION == 1,
+                    PorcentajePatrono = detalleTipo?.PORC_PATRONO
+                });
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, result);
+            }
+        }
+
+        public ErrorDto<int> Colaborador_Solicitud_Dias_Obtener(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorSolicitudDiasRequest request)
+        {
+            if (ValidarSolicitudUsuario(
+                usuario,
+                0,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.Clave?.Length > 100
+                    || request.Inicio.GetValueOrDefault() == default
+                    || request.Corte.GetValueOrDefault() == default
+                    || request.Inicio.GetValueOrDefault().Date > request.Corte.GetValueOrDefault().Date,
+                "Seleccione un rango de fechas válido.") is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+
+                if (ValidarAccesoColaborador(connection, usuario, empleadoId, request.Clave)
+                    is { } errorAcceso)
+                {
+                    return DbHelper.CreateErrorResponse(errorAcceso, -2, 0);
+                }
+
+                var dias = connection.QueryFirst<int>(
+                    "SELECT dbo.fxRH_Dias_Laborales(@EmpleadoId, @Inicio, @Corte)",
+                    new
+                    {
+                        EmpleadoId = empleadoId,
+                        Inicio = request.Inicio.GetValueOrDefault().Date,
+                        Corte = request.Corte.GetValueOrDefault().Date
+                    });
+
+                return DbHelper.CreateOkResponse(dias);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, 0);
+            }
+        }
+
+        public ErrorDto<ColaboradorSolicitudRegistroData> Colaborador_Solicitud_Registrar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorSolicitudRegistrarRequest request)
+        {
+            var result = new ColaboradorSolicitudRegistroData();
+
+            if (ValidarSolicitudUsuario(
+                usuario,
+                result,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.Clave?.Length > 100
+                    || !OpcionSolicitudValida(request.Opcion)
+                    || string.IsNullOrWhiteSpace(request.Tipo)
+                    || request.Tipo.Length > 10
+                    || request.Notas?.Length > 1000
+                    || request.Inicio.GetValueOrDefault() == default
+                    || request.Corte.GetValueOrDefault() == default
+                    || !EstadoSolicitudValido(request.Estado),
+                "Los datos de la solicitud no son válidos.") is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+                var tipo = request.Tipo.Trim();
+
+                if (ValidarAccesoColaborador(connection, usuario, empleadoId, request.Clave)
+                    is { } errorAcceso)
+                {
+                    return DbHelper.CreateErrorResponse(errorAcceso, -2, result);
+                }
+
+                var tipos = ObtenerTiposSolicitud(connection, request.Opcion);
+
+                if (!tipos.Any(tipoDisponible => string.Equals(
+                    tipoDisponible.Codigo,
+                    tipo,
+                    StringComparison.OrdinalIgnoreCase)))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "El tipo de solicitud seleccionado no está disponible.",
+                        -3,
+                        result);
+                }
+
+                var detalleTipo = ObtenerDetalleTipoSolicitud(
+                    connection,
+                    request.Opcion,
+                    tipo);
+
+                if (detalleTipo is null)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "No se encontró la configuración del tipo de solicitud.",
+                        -4,
+                        result);
+                }
+
+                if (request.Estado == "A" && detalleTipo.REQUIERE_AUTORIZACION != 0)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "Este tipo de solicitud requiere autorización.",
+                        -5,
+                        result);
+                }
+
+                if (request.Opcion == OpcionPermisos)
+                {
+                    return RegistrarPermisoSolicitud(connection, usuario, empleadoId, tipo, request, detalleTipo, result);
+                }
+
+                if (request.Inicio.GetValueOrDefault().Date > request.Corte.GetValueOrDefault().Date)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "Error en rango de fechas.",
+                        -6,
+                        result);
+                }
+
+                var inicio = request.Inicio.GetValueOrDefault().Date;
+                var corte = request.Corte.GetValueOrDefault().Date.AddDays(1).AddSeconds(-1);
+
+                if (request.Opcion == OpcionVacaciones)
+                {
+                    return RegistrarVacacionesSolicitud(connection, usuario, empleadoId, tipo, request, (inicio, corte), result);
+                }
+
+                return RegistrarIncapacidadSolicitud(connection, usuario, empleadoId, tipo, request, (inicio, corte), result);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, result);
+            }
+        }
+
         public ErrorDto<List<Dictionary<string, object?>>> Colaborador_Menu_Obtener(
             int CodEmpresa,
             string usuario,
@@ -349,7 +678,7 @@ namespace Galileo.DataBaseTier.ProGrX
                 }
 
                 var identificacion = connection.QueryFirstOrDefault<string>(
-                    "SELECT IDENTIFICACION FROM RH_PERSONAS WHERE EMPLEADO_ID = @EmpleadoId",
+                    SqlIdentificacionColaborador,
                     new { EmpleadoId = empleadoId });
 
                 if (string.IsNullOrWhiteSpace(identificacion))
@@ -386,6 +715,846 @@ namespace Galileo.DataBaseTier.ProGrX
             {
                 return CrearError(ex, result);
             }
+        }
+
+        public ErrorDto<bool> Colaborador_Autorizacion_Registrar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorAutorizacionRequest request)
+        {
+            if (ValidarSolicitudUsuario(
+                usuario,
+                false,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.Clave?.Length > 100
+                    || string.IsNullOrWhiteSpace(request.BoletaId)
+                    || request.BoletaId.Length > 30
+                    || request.Tipo is not ("P" or "V" or "I")
+                    || request.EstadoActual is not ("S" or "A" or "D")
+                    || request.EstadoNuevo is not ("A" or "D")
+                    || request.EstadoActual == request.EstadoNuevo,
+                "Los datos de autorización no son válidos.") is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+                if (ValidarAccesoAutorizador(connection, usuario, empleadoId, request)
+                    is { } errorAcceso)
+                {
+                    return errorAcceso;
+                }
+
+                string? ConsultarEstado()
+                {
+                    var parametros = new
+                    {
+                        BoletaId = request.BoletaId.Trim(),
+                        AutorizadorId = empleadoId
+                    };
+
+                    return request.Tipo switch
+                    {
+                        "P" => connection.QueryFirstOrDefault<string>(
+                            """
+                            SELECT Estado
+                            FROM vRH_Boleta_Permisos
+                            WHERE Boleta_Id = @BoletaId
+                              AND dbo.fxRH_Autorizador_Valida(Empleado_ID, @AutorizadorId) = 1
+                            """,
+                            parametros),
+                        "V" => connection.QueryFirstOrDefault<string>(
+                            """
+                            SELECT Estado
+                            FROM vRH_Boleta_Vacaciones
+                            WHERE Boleta_Id = @BoletaId
+                              AND dbo.fxRH_Autorizador_Valida(Empleado_ID, @AutorizadorId) = 1
+                            """,
+                            parametros),
+                        _ => connection.QueryFirstOrDefault<string>(
+                            """
+                            SELECT Estado
+                            FROM vRH_Boleta_Incapacidades
+                            WHERE Boleta_Id = @BoletaId
+                              AND dbo.fxRH_Autorizador_Valida(Empleado_ID, @AutorizadorId) = 1
+                            """,
+                            parametros)
+                    };
+                }
+
+                var estado = ConsultarEstado();
+
+                if (estado != request.EstadoActual)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La boleta ya no está disponible en el estado consultado. Actualice la lista.",
+                        -3,
+                        false);
+                }
+
+                connection.Execute(
+                    "spRH_Autorizaciones_Registro",
+                    new
+                    {
+                        AutorizadorId = empleadoId,
+                        Tipo = request.Tipo,
+                        BoletaId = request.BoletaId.Trim(),
+                        Usuario = usuario.Trim(),
+                        Estado = request.EstadoNuevo,
+                        AppCod = AppCodProGrX
+                    },
+                    commandType: CommandType.StoredProcedure);
+
+                var estadoRegistrado = ConsultarEstado();
+
+                if (estadoRegistrado != request.EstadoNuevo)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La boleta no cambió de estado. Revise la nómina y actualice la lista.",
+                        -4,
+                        false);
+                }
+
+                _securityMainDb.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = usuario.Trim(),
+                    Movimiento = "Aplica",
+                    DetalleMovimiento =
+                        $"{(request.EstadoNuevo == "A" ? "Autoriza" : "Deniega")} de Boleta Id:" +
+                        request.BoletaId.Trim() + "..Autorizador Id: " + empleadoId,
+                    Modulo = 23
+                });
+
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, false);
+            }
+        }
+
+        public ErrorDto<bool> Colaborador_Traslado_Gestionar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorTrasladoGestionRequest request)
+        {
+            if (ValidarSolicitudUsuario(
+                usuario,
+                false,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.Clave?.Length > 100
+                    || string.IsNullOrWhiteSpace(request.BoletaId)
+                    || request.BoletaId.Length > 20
+                    || request.Accion is not (AccionRecibir or "descartar"),
+                "Los datos del traslado no son válidos.") is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+                var errorAcceso = ValidarAccesoColaborador(
+                    connection,
+                    usuario,
+                    empleadoId,
+                    request.Clave);
+
+                if (errorAcceso is not null)
+                {
+                    return DbHelper.CreateErrorResponse(errorAcceso, -2, false);
+                }
+
+                var identificacion = connection.QueryFirstOrDefault<string>(
+                    SqlIdentificacionColaborador,
+                    new { EmpleadoId = empleadoId });
+
+                if (string.IsNullOrWhiteSpace(identificacion))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "No se encontró la identificación del colaborador.",
+                        -3,
+                        false);
+                }
+
+                var boletaId = request.BoletaId.Trim();
+                using var transaction = connection.BeginTransaction();
+                var traslado = connection.QueryFirstOrDefault<ColaboradorTrasladoEstadoRow>(
+                    "SELECT IDENTIFICACION AS IdentificacionOrigen, " +
+                    "IDENTIFICACION_DESTINO AS IdentificacionDestino, ESTADO AS Estado " +
+                    "FROM ACTIVOS_TRASLADOS WITH (UPDLOCK, HOLDLOCK) " +
+                    "WHERE COD_TRASLADO = @BoletaId",
+                    new { BoletaId = boletaId },
+                    transaction);
+
+                var identificacionBoleta = request.Accion == AccionRecibir
+                    ? traslado?.IdentificacionDestino
+                    : traslado?.IdentificacionOrigen;
+
+                if (traslado?.Estado != "S"
+                    || !string.Equals(
+                        identificacionBoleta?.Trim(),
+                        identificacion.Trim(),
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La boleta solicitada no está disponible para este colaborador. Actualice la lista.",
+                        -4,
+                        false);
+                }
+
+                var procedimiento = request.Accion == AccionRecibir
+                    ? "spActivos_Responsable_Cambio_Procesa"
+                    : "spActivos_Responsable_Cambio_Descarta";
+                var parametros = request.Accion == AccionRecibir
+                    ? new { Boleta = boletaId, Usuario = usuario.Trim() }
+                    : (object)new { BoletaId = boletaId, Usuario = usuario.Trim() };
+                var resultado = connection.QueryFirstOrDefault<ColaboradorTrasladoResultadoRow>(
+                    procedimiento,
+                    parametros,
+                    transaction,
+                    commandType: CommandType.StoredProcedure);
+
+                if (resultado?.Pass != 1)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        resultado?.Mensaje ?? "La boleta no pudo procesarse.",
+                        -5,
+                        false);
+                }
+
+                var estadoFinal = connection.QueryFirstOrDefault<string>(
+                    "SELECT ESTADO FROM ACTIVOS_TRASLADOS WHERE COD_TRASLADO = @BoletaId",
+                    new { BoletaId = boletaId },
+                    transaction);
+                var estadoEsperado = request.Accion == AccionRecibir ? "P" : "D";
+
+                if (estadoFinal != estadoEsperado)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La boleta no cambió de estado. Actualice la lista.",
+                        -6,
+                        false);
+                }
+
+                transaction.Commit();
+                _securityMainDb.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = usuario.Trim(),
+                    Movimiento = request.Accion == AccionRecibir ? "Procesa" : "Descarta",
+                    DetalleMovimiento = "Boleta de Cambio Responsable: " + boletaId,
+                    Modulo = 36
+                });
+
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, false);
+            }
+        }
+
+        public ErrorDto<ColaboradorTrasladoConfiguracionData> Colaborador_Traslado_Configuracion_Obtener(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorTrasladoAccesoRequest request)
+        {
+            var result = new ColaboradorTrasladoConfiguracionData();
+
+            if (ValidarSolicitudUsuario(
+                usuario,
+                result,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.Clave?.Length > 100
+                    || request.FiltroDestino?.Length > 100,
+                "Los datos de consulta del traslado no son válidos.") is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+                var errorAcceso = ValidarAccesoColaborador(
+                    connection,
+                    usuario,
+                    empleadoId,
+                    request.Clave);
+
+                if (errorAcceso is not null)
+                {
+                    return DbHelper.CreateErrorResponse(errorAcceso, -2, result);
+                }
+
+                var identificacion = connection.QueryFirstOrDefault<string>(
+                    SqlIdentificacionColaborador,
+                    new { EmpleadoId = empleadoId });
+
+                if (string.IsNullOrWhiteSpace(identificacion))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "No se encontró la identificación del colaborador.",
+                        -3,
+                        result);
+                }
+
+                var filtro = request.FiltroDestino?.Trim() ?? string.Empty;
+                result.Motivos = connection.Query<ColaboradorTrasladoOpcionData>(
+                    "SELECT RTRIM(COD_MOTIVO) AS Codigo, RTRIM(Descripcion) AS Descripcion " +
+                    "FROM ACTIVOS_TRASLADOS_MOTIVOS WHERE ACTIVO = 1 ORDER BY COD_MOTIVO")
+                    .ToList();
+                result.Destinatarios = connection.Query<ColaboradorTrasladoOpcionData>(
+                    "SELECT TOP (50) IDENTIFICACION AS Codigo, Nombre AS Descripcion " +
+                    "FROM ACTIVOS_PERSONAS " +
+                    "WHERE IDENTIFICACION <> @Identificacion " +
+                    "AND (@Filtro = '' OR IDENTIFICACION LIKE @Busqueda OR Nombre LIKE @Busqueda) " +
+                    "ORDER BY Nombre",
+                    new
+                    {
+                        Identificacion = identificacion.Trim(),
+                        Filtro = filtro,
+                        Busqueda = $"%{filtro}%"
+                    }).ToList();
+                result.Placas = connection.Query<ColaboradorTrasladoPlacaRow>(
+                    "spActivos_Responsable_Cambio_Consulta_Placas",
+                    new
+                    {
+                        BoletaId = string.Empty,
+                        Identificacion = identificacion.Trim(),
+                        Usuario = usuario.Trim(),
+                        ModoRecepcion = 0
+                    },
+                    commandType: CommandType.StoredProcedure)
+                    .Select(placa => new ColaboradorTrasladoPlacaData
+                    {
+                        NumPlaca = placa.NUM_PLACA?.Trim() ?? string.Empty,
+                        Descripcion = placa.Descripcion?.Trim() ?? string.Empty,
+                        DepreciacionAc = placa.DEPRECIACION_AC,
+                        DepreciacionMes = placa.DEPRECIACION_MES,
+                        ValorLibros = placa.VALOR_LIBROS,
+                        Asignado = placa.asignado == 1
+                    }).ToList();
+
+                return DbHelper.CreateOkResponse(result);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, result);
+            }
+        }
+
+        public ErrorDto<ColaboradorTrasladoRegistroData> Colaborador_Traslado_Registrar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorTrasladoRegistrarRequest request)
+        {
+            var result = new ColaboradorTrasladoRegistroData();
+
+            if (ValidarSolicitudUsuario(
+                usuario,
+                result,
+                () => request is null
+                    || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                    || request.EmpleadoId.Length > 20
+                    || request.Clave?.Length > 100
+                    || string.IsNullOrWhiteSpace(request.MotivoId)
+                    || request.MotivoId.Length > 10
+                    || string.IsNullOrWhiteSpace(request.DestinoId)
+                    || request.DestinoId.Length > 20
+                    || string.IsNullOrWhiteSpace(request.Notas)
+                    || request.Notas.Trim().Length < 10
+                    || request.Notas.Length > 1000
+                    || request.Placas is null
+                    || request.Placas.Count == 0
+                    || request.Placas.Any(placa => string.IsNullOrWhiteSpace(placa)
+                        || placa.Length > 30),
+                "Los datos del traslado no son válidos.") is { } errorValidacion)
+            {
+                return errorValidacion;
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+                var errorAcceso = ValidarAccesoColaborador(
+                    connection,
+                    usuario,
+                    empleadoId,
+                    request.Clave);
+
+                if (errorAcceso is not null)
+                {
+                    return DbHelper.CreateErrorResponse(errorAcceso, -2, result);
+                }
+
+                var identificacion = connection.QueryFirstOrDefault<string>(
+                    SqlIdentificacionColaborador,
+                    new { EmpleadoId = empleadoId });
+                var destinoId = request.DestinoId.Trim();
+
+                if (string.IsNullOrWhiteSpace(identificacion)
+                    || string.Equals(identificacion.Trim(), destinoId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "Seleccione un responsable destino distinto al actual.",
+                        -3,
+                        result);
+                }
+
+                var motivoDisponible = connection.QueryFirstOrDefault<int>(
+                    "SELECT COUNT(1) FROM ACTIVOS_TRASLADOS_MOTIVOS " +
+                    "WHERE COD_MOTIVO = @MotivoId AND ACTIVO = 1",
+                    new { MotivoId = request.MotivoId.Trim() }) == 1;
+                var destinoDisponible = connection.QueryFirstOrDefault<int>(
+                    "SELECT COUNT(1) FROM vActivos_Personas WHERE IDENTIFICACION = @DestinoId",
+                    new { DestinoId = destinoId }) == 1;
+
+                if (!motivoDisponible || !destinoDisponible)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "El motivo o el responsable destino ya no está disponible.",
+                        -4,
+                        result);
+                }
+
+                var placas = request.Placas
+                    .Select(placa => placa.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                var placasDisponibles = connection.Query<ColaboradorTrasladoPlacaRow>(
+                    "spActivos_Responsable_Cambio_Consulta_Placas",
+                    new
+                    {
+                        BoletaId = string.Empty,
+                        Identificacion = identificacion.Trim(),
+                        Usuario = usuario.Trim(),
+                        ModoRecepcion = 0
+                    },
+                    commandType: CommandType.StoredProcedure)
+                    .Select(placa => placa.NUM_PLACA?.Trim() ?? string.Empty)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                if (placas.Count != request.Placas.Count
+                    || placas.Any(placa => !placasDisponibles.Contains(placa)))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La selección de placas ya no está disponible. Actualice la lista.",
+                        -5,
+                        result);
+                }
+
+                return GuardarBoletaTraslado(
+                    CodEmpresa, connection, usuario, identificacion, request, placas, result);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, result);
+            }
+        }
+
+        private ErrorDto<ColaboradorTrasladoRegistroData> GuardarBoletaTraslado(
+            int CodEmpresa,
+            IDbConnection connection,
+            string usuario,
+            string identificacion,
+            ColaboradorTrasladoRegistrarRequest request,
+            List<string> placas,
+            ColaboradorTrasladoRegistroData result)
+        {
+            var destinoId = request.DestinoId.Trim();
+            using var transaction = connection.BeginTransaction();
+            var placasDelResponsable = connection.QueryFirst<int>(
+                "SELECT COUNT(1) FROM ACTIVOS_PRINCIPAL WITH (UPDLOCK, HOLDLOCK) " +
+                "WHERE NUM_PLACA IN @Placas AND IDENTIFICACION = @Identificacion",
+                new
+                {
+                    Placas = placas,
+                    Identificacion = identificacion.Trim()
+                },
+                transaction);
+
+            if (placasDelResponsable != placas.Count)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Una o más placas ya no pertenecen al colaborador. Actualice la lista.",
+                    -5,
+                    result);
+            }
+
+            var fechaAplicacion = connection.QueryFirst<DateTime>(
+                "SELECT CAST(GETDATE() AS date)",
+                transaction: transaction);
+            var boleta = connection.QueryFirstOrDefault<ColaboradorTrasladoResultadoRow>(
+                "spActivos_Responsable_Cambio_Boleta_Add",
+                new
+                {
+                    BoletaId = string.Empty,
+                    MotivoId = request.MotivoId.Trim(),
+                    Notas = request.Notas.Trim(),
+                    A_Id = identificacion.Trim(),
+                    N_Id = destinoId,
+                    Usuario = usuario.Trim(),
+                    FechaAplicacion = fechaAplicacion
+                },
+                transaction,
+                commandType: CommandType.StoredProcedure);
+
+            if (boleta?.Pass != 1 || string.IsNullOrWhiteSpace(boleta.Boleta))
+            {
+                return DbHelper.CreateErrorResponse(
+                    boleta?.Mensaje ?? "No fue posible registrar la boleta.",
+                    -6,
+                    result);
+            }
+
+            var boletaId = boleta.Boleta.Trim();
+
+            for (var index = 0; index < placas.Count; index++)
+            {
+                var detalle = connection.QueryFirstOrDefault<ColaboradorTrasladoResultadoRow>(
+                    "spActivos_Responsable_Cambio_Boleta_Placas",
+                    new
+                    {
+                        BoletaId = boletaId,
+                        Placa = placas[index],
+                        Usuario = usuario.Trim(),
+                        Inicial = index == 0 ? 1 : 0
+                    },
+                    transaction,
+                    commandType: CommandType.StoredProcedure);
+
+                if (detalle?.Pass != 1)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        detalle?.Mensaje ?? "No fue posible agregar una placa a la boleta.",
+                        -7,
+                        result);
+                }
+            }
+
+            var placasRegistradas = connection.QueryFirst<int>(
+                "SELECT COUNT(1) FROM ACTIVOS_TRASLADO_RESPONSABLES " +
+                "WHERE COD_TRASLADO = @BoletaId",
+                new { BoletaId = boletaId },
+                transaction);
+
+            if (placasRegistradas != placas.Count)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "No se registraron todas las placas. La boleta no se guardó.",
+                    -8,
+                    result);
+            }
+
+            transaction.Commit();
+            _securityMainDb.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = usuario.Trim(),
+                Movimiento = "Registra",
+                DetalleMovimiento = "Boleta de Cambio Responsable: " + boletaId,
+                Modulo = 36
+            });
+
+            return DbHelper.CreateOkResponse(new ColaboradorTrasladoRegistroData
+            {
+                BoletaId = boletaId
+            });
+        }
+
+        private static ErrorDto<bool>? ValidarAccesoAutorizador(
+            IDbConnection connection,
+            string usuario,
+            string empleadoId,
+            ColaboradorAutorizacionRequest request)
+        {
+            var mensaje = ValidarAccesoColaborador(
+                connection,
+                usuario,
+                empleadoId,
+                request.Clave);
+
+            return mensaje is null
+                ? null
+                : DbHelper.CreateErrorResponse(mensaje, -2, false);
+        }
+
+        private static string? ValidarAccesoColaborador(
+            IDbConnection connection,
+            string usuario,
+            string empleadoId,
+            string? clave)
+        {
+            var empleadoVinculado = ObtenerVinculacion(connection, usuario)?.Empleado_ID?.Trim();
+
+            if (!string.IsNullOrWhiteSpace(empleadoVinculado)
+                && !string.Equals(empleadoVinculado, empleadoId, StringComparison.OrdinalIgnoreCase))
+            {
+                return "El colaborador solicitado no corresponde al usuario vinculado.";
+            }
+
+            if (string.IsNullOrWhiteSpace(empleadoVinculado)
+                && (string.IsNullOrEmpty(clave)
+                    || ConsultarClave(connection, empleadoId, clave)?.Existe != 1))
+            {
+                return "La clave registrada no es válida.";
+            }
+
+            return null;
+        }
+
+        private static ErrorDto<ColaboradorSolicitudRegistroData> RegistrarPermisoSolicitud(
+            IDbConnection connection,
+            string usuario,
+            string empleadoId,
+            string tipo,
+            ColaboradorSolicitudRegistrarRequest request,
+            ColaboradorSolicitudTipoDetalleRow detalleTipo,
+            ColaboradorSolicitudRegistroData result)
+        {
+            if (request.Inicio.GetValueOrDefault() > request.Corte.GetValueOrDefault())
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Error en rango de horas.",
+                    -6,
+                    result);
+            }
+
+                if (request.Horas.GetValueOrDefault() < 0
+                    || detalleTipo.PERMISO_HRS_MAX is null
+                    || request.Horas.GetValueOrDefault() > detalleTipo.PERMISO_HRS_MAX)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "Las horas de permiso exceden el total permitido.",
+                        -7,
+                        result);
+                }
+
+                var registroPermiso = connection.QueryFirstOrDefault<ColaboradorSolicitudRegistroRow>(
+                    "spRH_Permisos_Registro",
+                    new
+                    {
+                        EmpleadoId = empleadoId,
+                        Tipo = tipo,
+                        Notas = request.Notas ?? string.Empty,
+                        Usuario = usuario.Trim(),
+                        Inicio = request.Inicio.GetValueOrDefault(),
+                        Corte = request.Corte.GetValueOrDefault(),
+                        Horas = request.Horas.GetValueOrDefault(),
+                        PermisoFecha = request.Inicio.GetValueOrDefault().Date,
+                        Estado = request.Estado,
+                        AutorizaId = (string?)null,
+                        AppCod = AppCodProGrX
+                    },
+                    commandType: CommandType.StoredProcedure);
+
+                return ObtenerRespuestaRegistro(registroPermiso, result);
+        }
+
+        private static ErrorDto<ColaboradorSolicitudRegistroData> RegistrarVacacionesSolicitud(
+            IDbConnection connection,
+            string usuario,
+            string empleadoId,
+            string tipo,
+            ColaboradorSolicitudRegistrarRequest request,
+            (DateTime Inicio, DateTime Corte) periodo,
+            ColaboradorSolicitudRegistroData result)
+        {
+            var (inicio, corte) = periodo;
+
+            if (request.Dias.GetValueOrDefault() < 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Días de vacaciones inválidos.",
+                    -7,
+                    result);
+            }
+
+                var nomina = connection.QueryFirstOrDefault<string>(
+                    "SELECT COD_NOMINA FROM RH_PERSONAS WHERE EMPLEADO_ID = @EmpleadoId",
+                    new { EmpleadoId = empleadoId });
+                var fechasValidas = connection.QueryFirstOrDefault<int?>(
+                    "SELECT dbo.fxRH_Vacaciones_Valida(@Nomina, @EmpleadoId, @Inicio, @Corte)",
+                    new
+                    {
+                        Nomina = nomina,
+                        EmpleadoId = empleadoId,
+                        Inicio = inicio,
+                        Corte = corte
+                    });
+
+                if (fechasValidas != 1)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "Existe conflicto de fechas de disfrute con alguna otra boleta procesada o con una Nómina ya ejecutada!",
+                        -8,
+                        result);
+                }
+
+                var vacaciones = connection.QueryFirstOrDefault<ColaboradorVacacionesInfoRow>(
+                    "SELECT Dias_Disponibles FROM vRH_Vacaciones_Info " +
+                    "WHERE Empleado_Id = @EmpleadoId",
+                    new { EmpleadoId = empleadoId });
+                var registroVacaciones = connection.QueryFirstOrDefault<ColaboradorSolicitudRegistroRow>(
+                    "spRH_Vacaciones_Registro",
+                    new
+                    {
+                        EmpleadoId = empleadoId,
+                        Tipo = tipo,
+                        Notas = request.Notas ?? string.Empty,
+                        Usuario = usuario.Trim(),
+                        Inicio = inicio,
+                        Corte = corte,
+                        D_Disfrutados = request.Dias.GetValueOrDefault(),
+                        D_Disponibles = vacaciones?.Dias_Disponibles ?? 0,
+                        LiquidaID = request.LiquidaId.GetValueOrDefault(),
+                        Estado = request.Estado,
+                        AutorizaId = (string?)null,
+                        AppCod = AppCodProGrX
+                    },
+                    commandType: CommandType.StoredProcedure);
+
+                return ObtenerRespuestaRegistro(registroVacaciones, result);
+        }
+
+        private static ErrorDto<ColaboradorSolicitudRegistroData> RegistrarIncapacidadSolicitud(
+            IDbConnection connection,
+            string usuario,
+            string empleadoId,
+            string tipo,
+            ColaboradorSolicitudRegistrarRequest request,
+            (DateTime Inicio, DateTime Corte) periodo,
+            ColaboradorSolicitudRegistroData result)
+        {
+            var (inicio, corte) = periodo;
+
+            if (request.Dias.GetValueOrDefault() < 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Días de incapacidad inválidos.",
+                    -7,
+                    result);
+            }
+
+                var fechaMinima = connection.QueryFirstOrDefault<DateTime?>(
+                    "SELECT dbo.fxRH_Nomina_Inicial_Actual(COD_NOMINA) " +
+                    "FROM RH_PERSONAS WHERE EMPLEADO_ID = @EmpleadoId",
+                    new { EmpleadoId = empleadoId });
+
+                if (fechaMinima.HasValue && inicio < fechaMinima.Value.Date)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La fecha inicial no puede ser anterior al inicio de la nómina.",
+                        -8,
+                        result);
+                }
+
+                var registroIncapacidad = connection.QueryFirstOrDefault<ColaboradorSolicitudRegistroRow>(
+                    "spRH_Incapacidades_Registro",
+                    new
+                    {
+                        EmpleadoId = empleadoId,
+                        Tipo = tipo,
+                        Notas = request.Notas ?? string.Empty,
+                        Usuario = usuario.Trim(),
+                        Inicio = inicio,
+                        Corte = corte,
+                        Dias = request.Dias.GetValueOrDefault(),
+                        Porcentaje = request.PorcentajePatrono.GetValueOrDefault(),
+                        Estado = request.Estado,
+                        AutorizaId = (string?)null,
+                        AppCod = AppCodProGrX
+                    },
+                    commandType: CommandType.StoredProcedure);
+
+                return ObtenerRespuestaRegistro(registroIncapacidad, result);
+        }
+
+        private static bool OpcionSolicitudValida(string? opcion)
+        {
+            return opcion is OpcionVacaciones or OpcionPermisos or OpcionIncapacidades;
+        }
+
+        private static bool EstadoSolicitudValido(string? estado)
+        {
+            return estado is "S" or "A";
+        }
+
+        private static List<ColaboradorSolicitudTipoData> ObtenerTiposSolicitud(
+            IDbConnection connection,
+            string opcion)
+        {
+            var procedimiento = opcion switch
+            {
+                OpcionVacaciones => "spRH_Portal_Vacaciones_Tipos",
+                OpcionPermisos => "spRH_Portal_Permisos_Tipos",
+                _ => "spRH_Portal_Incapacidades_Tipos"
+            };
+
+            return connection.Query<ColaboradorSolicitudTipoRow>(
+                    procedimiento,
+                    commandType: CommandType.StoredProcedure)
+                .Where(tipo => tipo.IdX is not null
+                    && !string.IsNullOrWhiteSpace(tipo.ItmX))
+                .Select(tipo => new ColaboradorSolicitudTipoData
+                {
+                    Codigo = tipo.IdX!.ToString()?.Trim() ?? string.Empty,
+                    Descripcion = tipo.ItmX!.Trim()
+                })
+                .ToList();
+        }
+
+        private static ColaboradorSolicitudTipoDetalleRow? ObtenerDetalleTipoSolicitud(
+            IDbConnection connection,
+            string opcion,
+            string tipo)
+        {
+            return opcion switch
+            {
+                OpcionVacaciones => connection.QueryFirstOrDefault<ColaboradorSolicitudTipoDetalleRow>(
+                    "EXEC spRH_Portal_Vacaciones_Tipos @Tipo",
+                    new { Tipo = tipo }),
+                OpcionPermisos => connection.QueryFirstOrDefault<ColaboradorSolicitudTipoDetalleRow>(
+                    "SELECT REQUIERE_AUTORIZACION, PERMISO_HRS_MAX " +
+                    "FROM RH_PERMISOS_TIPOS WHERE PERMISO_TIPO = @Tipo",
+                    new { Tipo = tipo }),
+                OpcionIncapacidades => connection.QueryFirstOrDefault<ColaboradorSolicitudTipoDetalleRow>(
+                    "EXEC spRH_Portal_Incapacidades_Tipos @Tipo",
+                    new { Tipo = tipo }),
+                _ => null
+            };
+        }
+
+        private static ErrorDto<ColaboradorSolicitudRegistroData> ObtenerRespuestaRegistro(
+            ColaboradorSolicitudRegistroRow? registro,
+            ColaboradorSolicitudRegistroData result)
+        {
+            if (string.IsNullOrWhiteSpace(registro?.BoletaId))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "El procedimiento no devolvió el número de boleta.",
+                    -9,
+                    result);
+            }
+
+            return DbHelper.CreateOkResponse(new ColaboradorSolicitudRegistroData
+            {
+                BoletaId = registro.BoletaId.Trim()
+            });
         }
 
         private static (string Sql, object Parametros) CrearConsultaMenu(
@@ -434,7 +1603,7 @@ namespace Galileo.DataBaseTier.ProGrX
                     "FROM vRH_Boleta_Pago_List WHERE Empleado_Id = @EmpleadoId " +
                     "ORDER BY Fecha_Corte DESC",
                     parametros),
-                "vacaciones" or "incapacidades" or "permisos" =>
+                OpcionVacaciones or OpcionIncapacidades or OpcionPermisos =>
                     CrearConsultaBoleta(request.Opcion, parametros),
                 "accionesPersonal" => (
                     "SELECT Cod_Accion AS codAccion, Fecha_Accion AS fechaAccion, " +
@@ -476,12 +1645,12 @@ namespace Galileo.DataBaseTier.ProGrX
         {
             var configuracion = opcion switch
             {
-                "vacaciones" => (
+                OpcionVacaciones => (
                     Vista: "vRH_Boleta_Vacaciones",
                     Fechas: "Fecha_Salida AS fechaSalida, Fecha_Entrada AS fechaEntrada",
                     Cantidad: "Dias_Disfrutados AS dias",
                     Orden: "Boleta_VAC"),
-                "incapacidades" => (
+                OpcionIncapacidades => (
                     Vista: "vRH_Boleta_Incapacidades",
                     Fechas: "Fecha_Salida AS fechaSalida, Fecha_Entrada AS fechaEntrada",
                     Cantidad: "Dias AS dias",
@@ -551,7 +1720,9 @@ namespace Galileo.DataBaseTier.ProGrX
                 : "Identificacion = @Identificacion";
 
             return (
-                "SELECT Cod_Traslado AS codTraslado, Estado_Desc AS estado, " +
+                "SELECT V.Cod_Traslado AS codTraslado, Estado_Desc AS estado, " +
+                "(SELECT T.ESTADO FROM ACTIVOS_TRASLADOS T " +
+                "WHERE T.COD_TRASLADO = V.Cod_Traslado) AS estadoCodigo, " +
                 "Registro_Fecha AS fecha, Registro_Usuario AS usuario, " +
                 "Identificacion AS identificacionOrigen, Persona AS personaOrigen, " +
                 "Departamento AS departamentoOrigen, Seccion AS seccionOrigen, " +
@@ -561,7 +1732,7 @@ namespace Galileo.DataBaseTier.ProGrX
                 "Seccion_Destino AS seccionDestino, Motivo AS motivo, " +
                 "PROCESADO_FECHA AS procesadoFecha, " +
                 "PROCESADO_USUARIO AS procesadoUsuario " +
-                $"FROM vActivos_Traslados_Boletas WHERE {filtro} " +
+                $"FROM vActivos_Traslados_Boletas V WHERE {filtro} " +
                 "ORDER BY Registro_Fecha DESC",
                 parametros);
         }
@@ -764,5 +1935,54 @@ namespace Galileo.DataBaseTier.ProGrX
     internal sealed class ColaboradorClaveReestableceRow
     {
         public int CAMBIO { get; set; }
+    }
+
+    internal sealed class ColaboradorSolicitudTipoRow
+    {
+        public object? IdX { get; set; }
+        public string? ItmX { get; set; }
+    }
+
+    internal sealed class ColaboradorSolicitudTipoDetalleRow
+    {
+        public int REQUIERE_AUTORIZACION { get; set; }
+        public decimal? PERMISO_HRS_MAX { get; set; }
+        public int PERMITE_LIQUIDACION { get; set; }
+        public decimal? PORC_PATRONO { get; set; }
+    }
+
+    internal sealed class ColaboradorVacacionesInfoRow
+    {
+        public decimal? Dias_Disponibles { get; set; }
+        public DateTime? Fecha_Inicio { get; set; }
+    }
+
+    internal sealed class ColaboradorSolicitudRegistroRow
+    {
+        public string? BoletaId { get; set; }
+    }
+
+    internal sealed class ColaboradorTrasladoEstadoRow
+    {
+        public string? IdentificacionOrigen { get; set; }
+        public string? IdentificacionDestino { get; set; }
+        public string? Estado { get; set; }
+    }
+
+    internal sealed class ColaboradorTrasladoResultadoRow
+    {
+        public short Pass { get; set; }
+        public string? Mensaje { get; set; }
+        public string? Boleta { get; set; }
+    }
+
+    internal sealed class ColaboradorTrasladoPlacaRow
+    {
+        public short asignado { get; set; }
+        public string? NUM_PLACA { get; set; }
+        public string? Descripcion { get; set; }
+        public decimal DEPRECIACION_AC { get; set; }
+        public decimal DEPRECIACION_MES { get; set; }
+        public decimal VALOR_LIBROS { get; set; }
     }
 }

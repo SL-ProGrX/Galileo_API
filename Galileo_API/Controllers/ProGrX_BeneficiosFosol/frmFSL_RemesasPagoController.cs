@@ -1,106 +1,180 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
 using Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Endpoints de Remesas de Pago Fosol (frmFSL_RemesasPago).
-    /// </summary>
     [Route("api/frmFSL_RemesasPago")]
+    [Authorize]
     [ApiController]
-    public class FrmFslRemesasPagoController : ControllerBase
+    public sealed class FrmFslRemesasPagoController
+        : ControllerBase
     {
         private readonly FrmFslRemesasPagoBL _bl;
 
-        public FrmFslRemesasPagoController(IConfiguration config)
+        public FrmFslRemesasPagoController(
+            IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
-
+            ArgumentNullException.ThrowIfNull(config);
             _bl = new FrmFslRemesasPagoBL(config);
         }
 
-        /// <summary>Fechas de una remesa de tesorería.</summary>
-        [Authorize]
-        [HttpGet("FslFechas_Obtener")]
-        public ErrorDto<List<FslRemesasListaDatos>> FslFechas_Obtener(int CodEmpresa, int cod_remesa)
-            => _bl.FslFechas_Obtener(CodEmpresa, cod_remesa);
+        [HttpGet(
+            "FSL_RemesasPago_Remesa_Obtener")]
+        public ErrorDto<FslRemesaDto?>
+            FSL_RemesasPago_Remesa_Obtener(
+                int CodEmpresa,
+                long codRemesa)
+        {
+            return _bl
+                .FSL_RemesasPago_Remesa_Obtener(
+                    CodEmpresa,
+                    codRemesa);
+        }
 
-        /// <summary>Lista de remesas de tesorería.</summary>
-        [Authorize]
-        [HttpGet("FslRemesas_Obtener")]
-        public ErrorDto<FslRemesasLista> FslRemesas_Obtener(int CodEmpresa, string? filtro, int? pagina, int? paginacion)
-            => _bl.FslRemesas_Obtener(CodEmpresa, filtro, pagina, paginacion);
+        [HttpGet(
+            "FSL_RemesasPago_Remesas_Obtener")]
+        public ErrorDto<
+            FslListaPaginadaDto<FslRemesaDto>>
+            FSL_RemesasPago_Remesas_Obtener(
+                int CodEmpresa,
+                string filtros = "")
+        {
+            return _bl
+                .FSL_RemesasPago_Remesas_Obtener(
+                    CodEmpresa,
+                    filtros);
+        }
 
-        /// <summary>Remesas abiertas para cargas.</summary>
-        [Authorize]
-        [HttpGet("FslCargas_Obtener")]
-        public ErrorDto<List<FslRemesasListaDatos>> FslCargas_Obtener(int CodEmpresa)
-            => _bl.FslCargas_Obtener(CodEmpresa);
+        [HttpGet(
+            "FSL_RemesasPago_Cargas_Obtener")]
+        public ErrorDto<List<FslRemesaDto>>
+            FSL_RemesasPago_Cargas_Obtener(
+                int CodEmpresa)
+        {
+            return _bl
+                .FSL_RemesasPago_Cargas_Obtener(
+                    CodEmpresa);
+        }
 
-        /// <summary>Expedientes elegibles para carga.</summary>
-        [Authorize]
-        [HttpGet("FslCargasLista_Obtener")]
-        public ErrorDto<FslCargasLista> FslCargasLista_Obtener(int CodEmpresa, string fecha_inicio, string fecha_corte, string? filtro, int? pagina, int? paginacion)
-            => _bl.FslCargasLista_Obtener(CodEmpresa, fecha_inicio, fecha_corte, filtro, pagina, paginacion);
+        [HttpGet(
+            "FSL_RemesasPago_CargasLista_Obtener")]
+        public ErrorDto<
+            FslListaPaginadaDto<FslExpedienteRemesaDto>>
+            FSL_RemesasPago_CargasLista_Obtener(
+                int CodEmpresa,
+                string filtros = "")
+        {
+            return _bl
+                .FSL_RemesasPago_CargasLista_Obtener(
+                    CodEmpresa,
+                    filtros);
+        }
 
-        /// <summary>Remesas cerradas listas para trasladar.</summary>
-        [Authorize]
-        [HttpGet("FslTraslados_Obtener")]
-        public ErrorDto<List<FslRemesasListaDatos>> FslTraslados_Obtener(int CodEmpresa)
-            => _bl.FslTraslados_Obtener(CodEmpresa);
+        [HttpGet(
+            "FSL_RemesasPago_Traslados_Obtener")]
+        public ErrorDto<List<FslRemesaDto>>
+            FSL_RemesasPago_Traslados_Obtener(
+                int CodEmpresa)
+        {
+            return _bl
+                .FSL_RemesasPago_Traslados_Obtener(
+                    CodEmpresa);
+        }
 
-        /// <summary>Expedientes de una remesa pendientes de traslado.</summary>
-        [Authorize]
-        [HttpGet("FslTrasladoLista_Obtener")]
-        public ErrorDto<List<FslTrasladoListaData>> FslTrasladoLista_Obtener(int CodEmpresa, string fecha_inicio, string fecha_corte, int cod_remesa)
-            => _bl.FslTrasladoLista_Obtener(CodEmpresa, fecha_inicio, fecha_corte, cod_remesa);
+        [HttpGet(
+            "FSL_RemesasPago_TrasladoLista_Obtener")]
+        public ErrorDto<List<FslExpedienteRemesaDto>>
+            FSL_RemesasPago_TrasladoLista_Obtener(
+                int CodEmpresa,
+                long codRemesa)
+        {
+            return _bl
+                .FSL_RemesasPago_TrasladoLista_Obtener(
+                    CodEmpresa,
+                    codRemesa);
+        }
 
-        /// <summary>Inserta una remesa de tesorería.</summary>
-        [Authorize]
-        [HttpPost("FslRemesa_Agregar")]
-        public ErrorDto FslRemesa_Agregar(int CodEmpresa, [FromBody] FslRemesaInsertar remesa)
-            => _bl.FslRemesa_Agregar(CodEmpresa, remesa);
+        [HttpPost(
+            "FSL_RemesasPago_Remesa_Registrar")]
+        public ErrorDto
+            FSL_RemesasPago_Remesa_Registrar(
+                int CodEmpresa,
+                FslRemesaGuardarRequest request)
+        {
+            return _bl
+                .FSL_RemesasPago_Remesa_Registrar(
+                    CodEmpresa,
+                    request);
+        }
 
-        /// <summary>Actualiza una remesa de tesorería.</summary>
-        [Authorize]
-        [HttpPut("FslRemesa_Actualizar")]
-        public ErrorDto FslRemesa_Actualizar(int CodEmpresa, [FromBody] FslRemesaInsertar remesa)
-            => _bl.FslRemesa_Actualizar(CodEmpresa, remesa);
+        [HttpPut(
+            "FSL_RemesasPago_Remesa_Actualizar")]
+        public ErrorDto
+            FSL_RemesasPago_Remesa_Actualizar(
+                int CodEmpresa,
+                FslRemesaGuardarRequest request)
+        {
+            return _bl
+                .FSL_RemesasPago_Remesa_Actualizar(
+                    CodEmpresa,
+                    request);
+        }
 
-        /// <summary>Cierra una remesa de tesorería.</summary>
-        [Authorize]
-        [HttpPost("FslRemesa_Cerrar")]
-        public ErrorDto FslRemesa_Cerrar(int CodEmpresa, int cod_remesa, string usuario)
-            => _bl.FslRemesa_Cerrar(CodEmpresa, cod_remesa, usuario);
+        [HttpDelete(
+            "FSL_RemesasPago_Remesa_Eliminar")]
+        public ErrorDto
+            FSL_RemesasPago_Remesa_Eliminar(
+                int CodEmpresa,
+                long codRemesa,
+                string usuario)
+        {
+            return _bl
+                .FSL_RemesasPago_Remesa_Eliminar(
+                    CodEmpresa,
+                    codRemesa,
+                    usuario);
+        }
 
-        /// <summary>Aplica una remesa a los expedientes seleccionados.</summary>
-        [Authorize]
-        [HttpPost("FslCargas_Aplicar")]
-        public ErrorDto FslCargas_Aplicar(int CodEmpresa, [FromBody] string cargas)
-            => _bl.FslCargas_Aplicar(CodEmpresa, cargas);
+        [HttpPost(
+            "FSL_RemesasPago_Remesa_Cerrar")]
+        public ErrorDto
+            FSL_RemesasPago_Remesa_Cerrar(
+                int CodEmpresa,
+                FslRemesaCerrarRequest request)
+        {
+            return _bl
+                .FSL_RemesasPago_Remesa_Cerrar(
+                    CodEmpresa,
+                    request);
+        }
 
-        /// <summary>Cierra una remesa de cargas.</summary>
-        [Authorize]
-        [HttpPost("FslCargas_Cerrar")]
-        public ErrorDto FslCargas_Cerrar(int CodEmpresa, int cod_remesa, string usuario)
-            => _bl.FslCargas_Cerrar(CodEmpresa, cod_remesa, usuario);
+        [HttpPost(
+            "FSL_RemesasPago_Cargas_Aplicar")]
+        public ErrorDto
+            FSL_RemesasPago_Cargas_Aplicar(
+                int CodEmpresa,
+                FslRemesaAplicarRequest request)
+        {
+            return _bl
+                .FSL_RemesasPago_Cargas_Aplicar(
+                    CodEmpresa,
+                    request);
+        }
 
-        /// <summary>Aplica el traslado a tesorería de los expedientes de una remesa.</summary>
-        [Authorize]
-        [HttpPost("FslTraslado_Aplicar")]
-        public ErrorDto FslTraslado_Aplicar(int CodEmpresa, [FromBody] string traslados)
-            => _bl.FslTraslado_Aplicar(CodEmpresa, traslados);
-
-        /// <summary>Elimina una remesa de tesorería.</summary>
-        [Authorize]
-        [HttpDelete("FslRemesa_Eliminar")]
-        public ErrorDto FslRemesa_Eliminar(int CodEmpresa, int cod_remesa)
-            => _bl.FslRemesa_Eliminar(CodEmpresa, cod_remesa);
+        [HttpPost(
+            "FSL_RemesasPago_Traslado_Aplicar")]
+        public ErrorDto
+            FSL_RemesasPago_Traslado_Aplicar(
+                int CodEmpresa,
+                FslRemesaAplicarRequest request)
+        {
+            return _bl
+                .FSL_RemesasPago_Traslado_Aplicar(
+                    CodEmpresa,
+                    request);
+        }
     }
 }

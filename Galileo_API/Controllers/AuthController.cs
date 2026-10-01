@@ -49,8 +49,22 @@ public sealed class AuthController : ControllerBase
 
         return response.Status switch
         {
-            "invalidCode" => BadRequest(response),
+            "invalidCode" or "invalidChallenge" or "accountBlocked" or "passwordChangeRequired" => Ok(response),
+            "authenticationUnavailable" => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
             _ => Unauthorized(response),
+        };
+    }
+
+    [AllowAnonymous]
+    [HttpPost("SSecurity/Password/Change")]
+    public ActionResult<AuthResponseDto> ChangeExpiredPassword([FromBody] PasswordChangeRequest request)
+    {
+        var response = _auth.CambiarContrasenaVencida(request);
+        return response.Status switch
+        {
+            "passwordChanged" or "passwordChangeFailed" or "invalidChallenge" => Ok(response),
+            "authenticationUnavailable" => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
+            _ => BadRequest(response),
         };
     }
 
@@ -58,7 +72,13 @@ public sealed class AuthController : ControllerBase
     [HttpPost("SSecurity/Mfa/Resend")]
     public async Task<IActionResult> ResendMfa([FromBody] MfaResendRequest request)
     {
-        return await _auth.ResendMfaAsync(request) ? NoContent() : BadRequest();
+        var response = await _auth.ResendMfaAsync(request);
+        return response.Status switch
+        {
+            "mfaResent" => NoContent(),
+            "invalidChallenge" => BadRequest(response),
+            _ => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
+        };
     }
 
     [AllowAnonymous]
@@ -117,7 +137,7 @@ public sealed class AuthController : ControllerBase
 
         return response.Status switch
         {
-            "mfaRequired" => Ok(response),
+            "mfaRequired" or "passwordChangeRequired" or "accountBlocked" => Ok(response),
             "authenticationUnavailable" => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
             _ => Unauthorized(response),
         };

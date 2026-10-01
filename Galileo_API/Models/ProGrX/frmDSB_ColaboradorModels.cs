@@ -59,6 +59,14 @@ namespace Galileo.Models.ProGrX
         public bool Cambio { get; set; }
     }
 
+    public class ColaboradorClaveCambiaRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string ClaveActual { get; set; } = string.Empty;
+        public string ClaveNueva { get; set; } = string.Empty;
+        public string AppVersion { get; set; } = string.Empty;
+    }
+
     public class ColaboradorMenuRequest
     {
         public string EmpleadoId { get; set; } = string.Empty;
@@ -69,5 +77,123 @@ namespace Galileo.Models.ProGrX
         public string? Vista { get; set; }
         public DateTime? FechaInicio { get; set; }
         public DateTime? FechaCorte { get; set; }
+    }
+
+    public class ColaboradorAutorizacionRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+        public string Tipo { get; set; } = string.Empty;
+        public string BoletaId { get; set; } = string.Empty;
+        public string EstadoActual { get; set; } = string.Empty;
+        public string EstadoNuevo { get; set; } = string.Empty;
+    }
+
+    public class ColaboradorTrasladoGestionRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+        public string BoletaId { get; set; } = string.Empty;
+        public string Accion { get; set; } = string.Empty;
+    }
+
+    public class ColaboradorTrasladoAccesoRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+        public string? FiltroDestino { get; set; }
+    }
+
+    public class ColaboradorTrasladoOpcionData
+    {
+        public string Codigo { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+    }
+
+    public class ColaboradorTrasladoPlacaData
+    {
+        public string NumPlaca { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public decimal DepreciacionAc { get; set; }
+        public decimal DepreciacionMes { get; set; }
+        public decimal ValorLibros { get; set; }
+        public bool Asignado { get; set; }
+    }
+
+    public class ColaboradorTrasladoConfiguracionData
+    {
+        public List<ColaboradorTrasladoOpcionData> Motivos { get; set; } = [];
+        public List<ColaboradorTrasladoOpcionData> Destinatarios { get; set; } = [];
+        public List<ColaboradorTrasladoPlacaData> Placas { get; set; } = [];
+    }
+
+    public class ColaboradorTrasladoRegistrarRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+        public string MotivoId { get; set; } = string.Empty;
+        public string DestinoId { get; set; } = string.Empty;
+        public string Notas { get; set; } = string.Empty;
+        public List<string> Placas { get; set; } = [];
+    }
+
+    public class ColaboradorTrasladoRegistroData
+    {
+        public string BoletaId { get; set; } = string.Empty;
+    }
+
+    public class ColaboradorSolicitudConfiguracionRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+        public string Opcion { get; set; } = string.Empty;
+        public string? Tipo { get; set; }
+    }
+
+    public class ColaboradorSolicitudTipoData
+    {
+        public string Codigo { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+    }
+
+    public class ColaboradorSolicitudConfiguracionData
+    {
+        public List<ColaboradorSolicitudTipoData> Tipos { get; set; } = [];
+        public DateTime FechaActual { get; set; }
+        public DateTime? FechaMinima { get; set; }
+        public decimal DiasDisponibles { get; set; }
+        public bool RequiereAutorizacion { get; set; }
+        public decimal? HorasMaximas { get; set; }
+        public bool PermiteLiquidacion { get; set; }
+        public decimal? PorcentajePatrono { get; set; }
+    }
+
+    public class ColaboradorSolicitudDiasRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+        public DateTime? Inicio { get; set; }
+        public DateTime? Corte { get; set; }
+    }
+
+    public class ColaboradorSolicitudRegistrarRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+        public string Opcion { get; set; } = string.Empty;
+        public string Tipo { get; set; } = string.Empty;
+        public string Notas { get; set; } = string.Empty;
+        public DateTime? Inicio { get; set; }
+        public DateTime? Corte { get; set; }
+        public int? Horas { get; set; }
+        public int? Dias { get; set; }
+        public decimal? PorcentajePatrono { get; set; }
+        public string Estado { get; set; } = "S";
+        public short? LiquidaId { get; set; }
+    }
+
+    public class ColaboradorSolicitudRegistroData
+    {
+        public string BoletaId { get; set; } = string.Empty;
     }
 }

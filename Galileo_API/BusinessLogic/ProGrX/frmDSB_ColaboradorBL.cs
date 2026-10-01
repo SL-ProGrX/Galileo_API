@@ -61,12 +61,85 @@ namespace Galileo.BusinessLogic.ProGrX
                 request);
         }
 
+        public ErrorDto<bool> Colaborador_Clave_Cambia(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorClaveCambiaRequest request)
+        {
+            return _db.Colaborador_Clave_Cambia(CodEmpresa, usuario, request);
+        }
+
         public ErrorDto<List<Dictionary<string, object?>>> Colaborador_Menu_Obtener(
             int CodEmpresa,
             string usuario,
             ColaboradorMenuRequest request)
         {
             return _db.Colaborador_Menu_Obtener(
+                CodEmpresa,
+                usuario,
+                request);
+        }
+
+        public ErrorDto<bool> Colaborador_Autorizacion_Registrar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorAutorizacionRequest request)
+        {
+            return _db.Colaborador_Autorizacion_Registrar(CodEmpresa, usuario, request);
+        }
+
+        public ErrorDto<bool> Colaborador_Traslado_Gestionar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorTrasladoGestionRequest request)
+        {
+            return _db.Colaborador_Traslado_Gestionar(CodEmpresa, usuario, request);
+        }
+
+        public ErrorDto<ColaboradorTrasladoConfiguracionData> Colaborador_Traslado_Configuracion_Obtener(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorTrasladoAccesoRequest request)
+        {
+            return _db.Colaborador_Traslado_Configuracion_Obtener(CodEmpresa, usuario, request);
+        }
+
+        public ErrorDto<ColaboradorTrasladoRegistroData> Colaborador_Traslado_Registrar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorTrasladoRegistrarRequest request)
+        {
+            return _db.Colaborador_Traslado_Registrar(CodEmpresa, usuario, request);
+        }
+
+        public ErrorDto<ColaboradorSolicitudConfiguracionData> Colaborador_Solicitud_Configuracion_Obtener(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorSolicitudConfiguracionRequest request)
+        {
+            return _db.Colaborador_Solicitud_Configuracion_Obtener(
+                CodEmpresa,
+                usuario,
+                request);
+        }
+
+        public ErrorDto<int> Colaborador_Solicitud_Dias_Obtener(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorSolicitudDiasRequest request)
+        {
+            return _db.Colaborador_Solicitud_Dias_Obtener(
+                CodEmpresa,
+                usuario,
+                request);
+        }
+
+        public ErrorDto<ColaboradorSolicitudRegistroData> Colaborador_Solicitud_Registrar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorSolicitudRegistrarRequest request)
+        {
+            return _db.Colaborador_Solicitud_Registrar(
                 CodEmpresa,
                 usuario,
                 request);
