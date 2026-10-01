@@ -7,6 +7,8 @@ namespace Galileo.BusinessLogic.Auth;
 
 public sealed class AuthBL
 {
+    private const string InvalidChallengeStatus = "invalidChallenge";
+
     private readonly LogonDB _logonDb;
     private readonly PerfilUsuarioDB _perfilDb;
     private readonly SeguridadPortalDb _seguridadPortalDb;
@@ -150,7 +152,7 @@ public sealed class AuthBL
             !_sessionStore.TryGetChallenge(request.ChallengeToken, AuthApplications.SSecurity, out var challenge) ||
             !string.Equals(challenge.Purpose, "mfa", StringComparison.Ordinal))
         {
-            return new AuthResponseDto { Status = "invalidChallenge" };
+            return new AuthResponseDto { Status = InvalidChallengeStatus };
         }
 
         var validation = _logonDb.TFA_Codigo_Validar(challenge.User.Usuario, request.Codigo.Trim());
@@ -161,7 +163,7 @@ public sealed class AuthBL
 
         if (validation.Code == 3)
         {
-            return new AuthResponseDto { Status = "invalidChallenge" };
+            return new AuthResponseDto { Status = InvalidChallengeStatus };
         }
 
         if (validation.Code != 1)
@@ -172,7 +174,7 @@ public sealed class AuthBL
 
         if (!_sessionStore.TryConsumeChallenge(request.ChallengeToken, AuthApplications.SSecurity, out _))
         {
-            return new AuthResponseDto { Status = "invalidChallenge" };
+            return new AuthResponseDto { Status = InvalidChallengeStatus };
         }
 
         try
@@ -191,7 +193,7 @@ public sealed class AuthBL
             !string.Equals(challenge.Purpose, "mfa", StringComparison.Ordinal) ||
             !challenge.Methods.Contains("MAIL", StringComparer.OrdinalIgnoreCase))
         {
-            return new AuthResponseDto { Status = "invalidChallenge" };
+            return new AuthResponseDto { Status = InvalidChallengeStatus };
         }
 
         try
@@ -222,7 +224,7 @@ public sealed class AuthBL
             !_sessionStore.TryGetChallenge(request.ChallengeToken, AuthApplications.SSecurity, out var challenge) ||
             !string.Equals(challenge.Purpose, "passwordChange", StringComparison.Ordinal))
         {
-            return new AuthResponseDto { Status = "invalidChallenge" };
+            return new AuthResponseDto { Status = InvalidChallengeStatus };
         }
 
         try
