@@ -75,6 +75,53 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
+        /// Obtiene los tipos de asiento disponibles para un período contable.
+        /// Si el procedimiento no retorna registros, utiliza los tipos activos como respaldo.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="cod_contabilidad">Código de la contabilidad seleccionada.</param>
+        /// <param name="anio">Año del período contable activo.</param>
+        /// <param name="mes">Mes del período contable activo.</param>
+        /// <returns>Tipos de asiento que se mostrarán al expandir el nodo Asientos.</returns>
+        public ErrorDto<List<CntxTipoAsientoDto>> Cntx_TiposAsiento_Periodo(
+            int codEmpresa,
+            int cod_contabilidad,
+            int anio,
+            int mes)
+        {
+            var response = DbHelper.CreateOkResponse(new List<CntxTipoAsientoDto>());
+
+            try
+            {
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+
+                response.Result = cn.Query<CntxTipoAsientoDto>(
+                    "EXEC spCntX_Consulta_Asientos_Periodo @cod_contabilidad, @anio, @mes",
+                    new { cod_contabilidad, anio, mes }).ToList();
+
+                if (response.Result.Count == 0)
+                {
+                    const string sql = @"SELECT tipo_asiento,
+                                                descripcion
+                                         FROM CntX_Tipos_Asientos
+                                         WHERE cod_contabilidad = @cod_contabilidad
+                                           AND activo = 1
+                                         ORDER BY descripcion";
+
+                    response.Result = cn.Query<CntxTipoAsientoDto>(
+                        sql,
+                        new { cod_contabilidad }).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<List<CntxTipoAsientoDto>>(ex.Message);
+            }
+
+            return response;
+        }
+
+        /// <summary>
         /// Obtiene periodos
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa activa.</param>
