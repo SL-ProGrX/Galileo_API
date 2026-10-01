@@ -570,6 +570,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         }
 
         /// <summary>
+        /// Método para registrar el asiento asociado al responsable del activo.
+        /// </summary>
+        private void Activos_Main_AsientoResponsable_Registrar(
+            int CodEmpresa,
+            string placa,
+            string usuario)
+        {
+            using var connection = _portalDB.CreateConnection(CodEmpresa);
+
+            const string query = @"EXEC spActivos_AsientoRegistroresponsable @placa, @usuario;";
+
+            connection.Execute(query, new { placa, usuario });
+        }
+
+        /// <summary>
         /// Método para modificar un activo.
         /// </summary>
         public ErrorDto Activos_Main_Modificar(
@@ -659,6 +674,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 if (data.fecha_adquisicion > mFechaUltCierre)
                 {
                     Activos_Main_Depreciacion_Registrar(CodEmpresa, data.num_placa, usuario, 1);
+                    Activos_Main_AsientoResponsable_Registrar(CodEmpresa, data.num_placa, usuario);
                 }
 
                 if (data.depreciacion_acum == 0)

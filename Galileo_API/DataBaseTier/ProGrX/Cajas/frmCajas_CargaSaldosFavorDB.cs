@@ -324,6 +324,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     parameters.Add("Documento", $"%{param.Documento}%");
                 }
 
+                if (!string.IsNullOrWhiteSpace(param.CedulaOrigen))
+                {
+                    sql += " AND Cedula_Origen LIKE @CedulaOrigen";
+                    parameters.Add("CedulaOrigen", $"%{param.CedulaOrigen}%");
+                }
+
                 if (param.IdBanco.HasValue)
                 {
                     sql += " AND Id_Banco = @IdBanco";

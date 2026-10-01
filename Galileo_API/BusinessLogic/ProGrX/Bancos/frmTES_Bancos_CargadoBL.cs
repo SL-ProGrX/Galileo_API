@@ -25,6 +25,11 @@ namespace Galileo_API.BusinessLogic
             return _Db.Tes_BancosCargadoConceptos_Obtener(CodEmpresa, concepto);
         }
 
+        public ErrorDto<List<TesBancoCargadoConceptos>> Tes_BancosCargadoReporteConceptos_Obtener(int CodEmpresa, string? concepto = null)
+        {
+            return _Db.Tes_BancosCargadoReporteConceptos_Obtener(CodEmpresa, concepto);
+        }
+
         public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroUnidades_Obtener(int CodEmpresa)
         {
             return _Db.Tes_BancosCargadoCentroUnidades_Obtener(CodEmpresa);
@@ -69,6 +74,32 @@ namespace Galileo_API.BusinessLogic
         {
             var filtro = JsonConvert.DeserializeObject<TesFiltrosDetalleMovimientoDto>(filtros) ?? new TesFiltrosDetalleMovimientoDto();
             return _Db.TES_ListaDetalleMovimientos_Obtener(CodEmpresa, filtro);
+        }
+
+        /// <summary>
+        /// Obtiene el reporte de movimientos bancarios del tab Detalle de Movimientos.
+        /// </summary>
+        public ErrorDto<List<TesReporteDetalleMovimientosBancariosDto>>
+            TES_BancosCargado_ReporteDetalleMovimientosBancarios_Obtener(
+                int CodEmpresa,
+                TesReporteDetalleMovimientosRequest request)
+        {
+            return _Db.TES_BancosCargado_ReporteDetalleMovimientosBancarios_Obtener(
+                CodEmpresa,
+                request);
+        }
+
+        /// <summary>
+        /// Obtiene el reporte de movimientos registrados del tab Detalle de Movimientos.
+        /// </summary>
+        public ErrorDto<List<TesReporteDetalleMovimientosRegistradosDto>>
+            TES_BancosCargado_ReporteDetalleMovimientosRegistrados_Obtener(
+                int CodEmpresa,
+                TesReporteDetalleMovimientosRequest request)
+        {
+            return _Db.TES_BancosCargado_ReporteDetalleMovimientosRegistrados_Obtener(
+                CodEmpresa,
+                request);
         }
 
         /// <summary>
@@ -128,6 +159,35 @@ namespace Galileo_API.BusinessLogic
             TesBancosCargadoRevMovConciliaAplicarRequest request)
         {
             return _Db.TES_BancosCargado_RevMovConcilia_Aplicar(
+                CodEmpresa,
+                usuario,
+                request);
+        }
+
+        /// <summary>
+        /// Carga las filas base del Excel y obtiene la información asociada a los cheques.
+        /// </summary>
+        public ErrorDto<List<TesBancosCargadoChequeCambiadoDto>>
+            TES_BancosCargado_ChequesCambiados_Obtener(
+                int CodEmpresa,
+                string usuario,
+                TesBancosCargadoChequesCambiadosObtenerRequest request)
+        {
+            return _Db.TES_BancosCargado_ChequesCambiados_Obtener(
+                CodEmpresa,
+                usuario,
+                request);
+        }
+
+        /// <summary>
+        /// Asocia los cheques cambiados con las solicitudes localizadas.
+        /// </summary>
+        public ErrorDto TES_BancosCargado_ChequesCambiados_Procesar(
+            int CodEmpresa,
+            string usuario,
+            TesBancosCargadoChequesCambiadosProcesarRequest request)
+        {
+            return _Db.TES_BancosCargado_ChequesCambiados_Procesar(
                 CodEmpresa,
                 usuario,
                 request);

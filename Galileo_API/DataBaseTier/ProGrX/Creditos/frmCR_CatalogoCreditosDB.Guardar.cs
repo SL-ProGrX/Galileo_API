@@ -167,7 +167,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     IND_NOTIFICA_CLI_CANCELA, IND_MOV_APLICA_BONIF, IND_PAGO_OP_APLICACION,
                     IND_READECUA, IND_MONTO_MAX, ID_REQ_SUPERVISION, MONTO_SUPERVISION,
                     PORC_ANTICIPO_EXT, IND_EDAD_PENSION_EST, IND_EDAD_PENSION_FOR,
-                    MOV_SINPE, MOV_SINPE_TIPOS, Reserva_Aplica, Reserva_Facial_Flat,
+                    MOV_SINPE, MOV_SINPE_TIPOS, SINPE_PROC_ENLINEA, SINPE_PROC_INTERNO,
+                    Reserva_Aplica, Reserva_Facial_Flat,
                     Reserva_Mora_Apl, Reserva_Codigo, Reserva_Monto_Minimo, Revolutiva,
                     Revolutiva_Tope_Retiros, Revolutiva_Estudio, Revolutiva_Plan_Ahorro_Utiliza,
                     Revolutiva_Plan_Ahorro
@@ -191,7 +192,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     @ind_notifica_cli_cancela, @ind_mov_aplica_bonif, @ind_pago_op_aplicacion,
                     @ind_readecua, @ind_monto_max, @id_req_supervision, @monto_supervision,
                     @porc_anticipo_ext, @ind_edad_pension_est, @ind_edad_pension_for,
-                    @mov_sinpe, @mov_sinpe_tipos, @reserva_aplica, @reserva_facial_flat,
+                    @mov_sinpe, @mov_sinpe_tipos, @sinpe_proc_enlinea, @sinpe_proc_interno,
+                    @reserva_aplica, @reserva_facial_flat,
                     @reserva_mora_apl, NULLIF(@reserva_codigo, ''), @reserva_monto_minimo,
                     @revolutiva, @revolutiva_tope_retiros, @revolutiva_estudio,
                     @revolutiva_plan_ahorro_utiliza, NULLIF(@revolutiva_plan_ahorro, '')
@@ -313,6 +315,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     IND_EDAD_PENSION_FOR = @ind_edad_pension_for,
                     MOV_SINPE = @mov_sinpe,
                     MOV_SINPE_TIPOS = @mov_sinpe_tipos,
+                    SINPE_PROC_ENLINEA = @sinpe_proc_enlinea,
+                    SINPE_PROC_INTERNO = @sinpe_proc_interno,
                     Reserva_Aplica = @reserva_aplica,
                     Reserva_Facial_Flat = @reserva_facial_flat,
                     Reserva_Mora_Apl = @reserva_mora_apl,
