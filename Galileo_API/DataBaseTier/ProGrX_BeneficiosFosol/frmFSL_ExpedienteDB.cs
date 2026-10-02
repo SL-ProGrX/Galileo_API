@@ -22,14 +22,12 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         private const string MensajeNotasRequeridas =
             "Las notas del expediente deben contener m&aacute;s de 10 caracteres.";
 
-        private readonly IConfiguration _config;
         private readonly PortalDB _portalDb;
         private readonly string _securityConnectionString;
 
         public FrmFslExpedienteDB(IConfiguration config)
         {
-            _config = config ??
-                throw new ArgumentNullException(nameof(config));
+            ArgumentNullException.ThrowIfNull(config);
 
             _portalDb = new PortalDB(config);
             _securityConnectionString =
