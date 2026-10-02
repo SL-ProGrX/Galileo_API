@@ -7,7 +7,7 @@
         public List<DropDownListaGenericaModel> Divisas { get; set; } = new();
         public List<DropDownListaGenericaModel> Operadoras { get; set; } = new();
         public List<DropDownListaGenericaModel> Lineas { get; set; } = new();
-        public List<DropDownListaGenericaModel> Planes { get; set; } = new();
+        public List<FndPlanListaDto> Planes { get; set; } = new();
     }
 
     public class PlanEstadoDto
@@ -65,6 +65,8 @@
         public required bool garantia_integrada { get; set; }
         public required bool mov_cajas { get; set; }
         public string? mov_sinpe_tipos { get; set; }
+        public required bool sinpe_proc_enlinea { get; set; }
+        public required bool sinpe_proc_interno { get; set; }
         public required bool retiros_cajas { get; set; }
         public required bool giro_terceros { get; set; }
         public required bool website { get; set; }
@@ -131,6 +133,7 @@
         public required bool aplicar_en_procs_contrs_vencidos { get; set; }
         public required bool vence_renueva { get; set; }
         public required bool vence_notifica { get; set; }
+        public required bool ind_aplicar_amora { get; set; }
         public string vence_accion { get; set; } = "";
         public string? ctaplan { get; set; }
         public string? ctaplandesc { get; set; }
@@ -148,6 +151,17 @@
         public string? ctaimpuestodesc { get; set; }
         public string? vence_plan { get; set; }
 
+    }
+
+    public class FndPlanListaDto
+    {
+        public string item { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+        public int codoperadora { get; set; }
+        public bool auto_gestionable { get; set; }
+        public bool activo { get; set; }
+        public bool certificado_plazo { get; set; }
+        public bool ts { get; set; }
     }
 
     public class FndHistorialRendDto
@@ -284,6 +298,9 @@
         public string cod_plan { get; set; } = "";
         public required int cod_operadora { get; set; }
         public string usuario { get; set; } = "";
+
+        [System.Text.Json.Serialization.JsonRequired]
+        public bool ind_aplicar_amora { get; set; }
         public List<EstadoAsignadoDto> estados { get; set; } = new();
         public List<PlazoAsignadoDto> plazos { get; set; } = new();
     }

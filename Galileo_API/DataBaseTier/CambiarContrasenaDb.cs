@@ -121,6 +121,24 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
+        public int CambiarClaveParaAutenticacion(ClaveCambiarDto cambioClave)
+        {
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            var userExists = connection.QueryFirstOrDefault<int>(
+                "SELECT COUNT(1) FROM US_usuarios WHERE Usuario = @Usuario",
+                new { cambioClave.Usuario });
+
+            if (userExists == 0)
+            {
+                return 0;
+            }
+
+            return connection.Execute(
+                "spSEG_Password",
+                cambioClave,
+                commandType: CommandType.StoredProcedure);
+        }
+
 
         public ErrorDto CambiarClave3(ClaveCambiarDto cambioClave)
         {

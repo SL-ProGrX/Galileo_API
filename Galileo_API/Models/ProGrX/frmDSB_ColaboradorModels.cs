@@ -89,6 +89,59 @@ namespace Galileo.Models.ProGrX
         public string EstadoNuevo { get; set; } = string.Empty;
     }
 
+    public class ColaboradorTrasladoGestionRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+        public string BoletaId { get; set; } = string.Empty;
+        public string Accion { get; set; } = string.Empty;
+    }
+
+    public class ColaboradorTrasladoAccesoRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+        public string? FiltroDestino { get; set; }
+    }
+
+    public class ColaboradorTrasladoOpcionData
+    {
+        public string Codigo { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+    }
+
+    public class ColaboradorTrasladoPlacaData
+    {
+        public string NumPlaca { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public decimal DepreciacionAc { get; set; }
+        public decimal DepreciacionMes { get; set; }
+        public decimal ValorLibros { get; set; }
+        public bool Asignado { get; set; }
+    }
+
+    public class ColaboradorTrasladoConfiguracionData
+    {
+        public List<ColaboradorTrasladoOpcionData> Motivos { get; set; } = [];
+        public List<ColaboradorTrasladoOpcionData> Destinatarios { get; set; } = [];
+        public List<ColaboradorTrasladoPlacaData> Placas { get; set; } = [];
+    }
+
+    public class ColaboradorTrasladoRegistrarRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+        public string MotivoId { get; set; } = string.Empty;
+        public string DestinoId { get; set; } = string.Empty;
+        public string Notas { get; set; } = string.Empty;
+        public List<string> Placas { get; set; } = [];
+    }
+
+    public class ColaboradorTrasladoRegistroData
+    {
+        public string BoletaId { get; set; } = string.Empty;
+    }
+
     public class ColaboradorSolicitudConfiguracionRequest
     {
         public string EmpleadoId { get; set; } = string.Empty;

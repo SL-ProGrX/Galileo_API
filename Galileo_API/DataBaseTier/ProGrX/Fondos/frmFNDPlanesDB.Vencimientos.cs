@@ -75,6 +75,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                       AND cod_operadora = @cod_operadora
                       AND plazo = @plazo;";
 
+        private const string SqlUpdatePlanVencimiento = @"
+                    UPDATE dbo.FND_Planes
+                    SET IndAplicarAMora = @ind_aplicar_amora
+                    WHERE cod_plan = @cod_plan
+                      AND cod_operadora = @cod_operadora;";
+
         #region Vencimientos
 
         /// <summary>
@@ -106,6 +112,10 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         plazo.asignado ? SqlInsertPlanPlazo : SqlDeletePlanPlazo,
                         CrearParametrosPlazoVencimiento(usuario, dto, plazo));
                 }
+
+                connection.Execute(
+                    SqlUpdatePlanVencimiento,
+                    CrearParametrosPlanVencimiento(usuario, dto));
 
                 return true;
             });
@@ -147,6 +157,17 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 cod_plan = NormalizarTexto(dto.cod_plan),
                 cod_operadora = dto.cod_operadora,
                 plazo = plazo.plazo,
+                usuario = NormalizarTexto(usuario)
+            };
+        }
+
+        private static object CrearParametrosPlanVencimiento(string usuario, FndPlanesVencimientosGuardarDto dto)
+        {
+            return new
+            {
+                cod_plan = NormalizarTexto(dto.cod_plan),
+                cod_operadora = dto.cod_operadora,
+                dto.ind_aplicar_amora,
                 usuario = NormalizarTexto(usuario)
             };
         }

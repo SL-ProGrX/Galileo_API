@@ -1,136 +1,511 @@
 using Dapper;
-using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
-using Newtonsoft.Json;
+using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Acceso a datos de los Comités Fosol (frmFSL_Comite).
-    /// Consultas aquí; guardado de comités y miembros en el parcial .Guardar.
-    /// </summary>
-    public partial class FrmFslComiteDB
+    public sealed partial class FrmFslComiteDB
     {
-        private readonly IConfiguration _config;
+        private const int ModuloFosol = 22;
+        private const int CodigoValidacion = -2; 
+        private const string CampoActivo = "activo";
 
-        /// <summary>
-        /// Inicializa el acceso a datos con la configuración inyectada.
-        /// </summary>
-        /// <param name="config">Configuración de la aplicación.</param>
-        public FrmFslComiteDB(IConfiguration config)
+        private const string MensajeComiteRequerido =
+            "El c&oacute;digo del comit&eacute; es requerido.";
+
+        private const string MensajeCedulaRequerida =
+            "La c&eacute;dula del miembro es requerida.";
+
+        private const string MensajeUsuarioRequerido =
+            "El usuario es requerido.";
+
+        private readonly PortalDB _portalDb;
+        private readonly MSecurityMainDb _securityMainDb;
+
+        public FrmFslComiteDB(
+            IConfiguration config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+            ArgumentNullException.ThrowIfNull(config);
+
+            _portalDb = new PortalDB(config);
+            _securityMainDb =
+                new MSecurityMainDb(config);
         }
 
         /// <summary>
-        /// Crea una instancia de acceso al portal usando la configuración inyectada.
+        /// Obtiene los comit&eacute;s de FOSOL con filtro,
+        /// ordenamiento y paginaci&oacute;n.
         /// </summary>
-        private PortalDB CreatePortalDb() => new(_config);
-
-        /// <summary>
-        /// Obtiene la lista de comités con paginación y filtro.
-        /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="filtros">JSON con filtro de búsqueda y paginación.</param>
-        /// <returns>Lista de comités y total.</returns>
-        public ErrorDto<FslComitesDataLista> FslComites_Obtener(int CodCliente, string filtros)
+        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="filtros">Filtros de la consulta.</param>
+        /// <returns>Lista paginada de comit&eacute;s.</returns>
+        public ErrorDto<
+            FslListaPaginadaDto<FslComiteDto>>
+            FSL_Comite_Comites_Obtener(
+                int CodEmpresa,
+                FslComitePaginacionFiltros filtros)
         {
-            var filtro = JsonConvert.DeserializeObject<FslComitefiltros>(filtros) ?? new FslComitefiltros();
+            ArgumentNullException.ThrowIfNull(
+                filtros);
 
-            var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
-            {
-                var response = new FslComitesDataLista();
+            var filtro = filtros.filtro.Trim();
 
-                const string sqlCount = "SELECT COUNT(*) FROM FSL_COMITES";
-                response.Total = connection.QueryFirstOrDefault<int>(sqlCount);
+            var like =
+                string.IsNullOrWhiteSpace(filtro)
+                    ? null
+                    : $"%{filtro}%";
 
-                var like = string.IsNullOrWhiteSpace(filtro.filtro) ? null : $"%{filtro.filtro}%";
-                var offset = filtro.pagina ?? 0;
-                var fetch = filtro.paginacion ?? 10;
+            var offset =
+                Math.Max(filtros.pagina, 0);
 
-                const string sql = @"SELECT COD_COMITE AS cod_comite, DESCRIPCION AS descripcion,
-                                            NUMERO_RESOLUTORES AS numero_resolutores, ACTIVO AS activo
-                                     FROM FSL_COMITES
-                                     WHERE (@like IS NULL OR COD_COMITE LIKE @like OR descripcion LIKE @like)
-                                     ORDER BY COD_COMITE
-                                     OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
+            var fetch =
+                Math.Clamp(
+                    filtros.paginacion,
+                    1,
+                    500);
 
-                response.Comites = connection.Query<FslComitesDto>(sql, new { like, offset, fetch }).ToList();
-                return response;
-            });
+            var sortField =
+                FSL_Comite_Comites_Orden_Campo_Obtener(
+                    filtros.sort_field);
 
-            if (result.Code != 0)
-            {
-                return DbHelper.CreateErrorResponse<FslComitesDataLista>("FslComites_Obtener - " + result.Description);
-            }
+            var sortOrder =
+                filtros.sort_order == -1
+                    ? -1
+                    : 1;
 
-            return result;
+            const string sql = """
+                SELECT COUNT(*)
+                FROM FSL_COMITES C
+                WHERE (
+                    @like IS NULL
+                    OR C.COD_COMITE LIKE @like
+                    OR C.DESCRIPCION LIKE @like
+                    OR CONVERT(
+                        VARCHAR(20),
+                        C.NUMERO_RESOLUTORES
+                    ) LIKE @like
+                    OR CASE
+                        WHEN C.ACTIVO = 1
+                        THEN 'ACTIVO'
+                        ELSE 'INACTIVO'
+                    END LIKE @like
+                );
+
+                SELECT
+                    LTRIM(RTRIM(
+                        ISNULL(C.COD_COMITE, '')
+                    )) AS cod_comite,
+                    LTRIM(RTRIM(
+                        ISNULL(C.DESCRIPCION, '')
+                    )) AS descripcion,
+                    ISNULL(
+                        C.NUMERO_RESOLUTORES,
+                        0
+                    ) AS numero_resolutores,
+                    CONVERT(
+                        BIT,
+                        ISNULL(C.ACTIVO, 0)
+                    ) AS activo,
+                    LTRIM(RTRIM(
+                        ISNULL(C.REGISTRO_USUARIO, '')
+                    )) AS registro_usuario,
+                    C.REGISTRO_FECHA AS registro_fecha
+                FROM FSL_COMITES C
+                WHERE (
+                    @like IS NULL
+                    OR C.COD_COMITE LIKE @like
+                    OR C.DESCRIPCION LIKE @like
+                    OR CONVERT(
+                        VARCHAR(20),
+                        C.NUMERO_RESOLUTORES
+                    ) LIKE @like
+                    OR CASE
+                        WHEN C.ACTIVO = 1
+                        THEN 'ACTIVO'
+                        ELSE 'INACTIVO'
+                    END LIKE @like
+                )
+                ORDER BY
+                    CASE
+                        WHEN @sortField = 'cod_comite'
+                         AND @sortOrder = 1
+                        THEN C.COD_COMITE
+                    END ASC,
+                    CASE
+                        WHEN @sortField = 'cod_comite'
+                         AND @sortOrder = -1
+                        THEN C.COD_COMITE
+                    END DESC,
+                    CASE
+                        WHEN @sortField = 'descripcion'
+                         AND @sortOrder = 1
+                        THEN C.DESCRIPCION
+                    END ASC,
+                    CASE
+                        WHEN @sortField = 'descripcion'
+                         AND @sortOrder = -1
+                        THEN C.DESCRIPCION
+                    END DESC,
+                    CASE
+                        WHEN @sortField =
+                            'numero_resolutores'
+                         AND @sortOrder = 1
+                        THEN C.NUMERO_RESOLUTORES
+                    END ASC,
+                    CASE
+                        WHEN @sortField =
+                            'numero_resolutores'
+                         AND @sortOrder = -1
+                        THEN C.NUMERO_RESOLUTORES
+                    END DESC,
+                    CASE
+                        WHEN @sortField = 'activo'
+                         AND @sortOrder = 1
+                        THEN C.ACTIVO
+                    END ASC,
+                    CASE
+                        WHEN @sortField = 'activo'
+                         AND @sortOrder = -1
+                        THEN C.ACTIVO
+                    END DESC,
+                    C.COD_COMITE ASC
+                OFFSET @offset ROWS
+                FETCH NEXT @fetch ROWS ONLY;
+                """;
+
+            return DbHelper.WithConn(
+                _portalDb,
+                CodEmpresa,
+                connection =>
+                {
+                    using var result =
+                        connection.QueryMultiple(
+                            sql,
+                            new
+                            {
+                                like,
+                                sortField,
+                                sortOrder,
+                                offset,
+                                fetch
+                            });
+
+                    return new FslListaPaginadaDto<
+                        FslComiteDto>
+                    {
+                        total =
+                            result.ReadFirstOrDefault<
+                                int>(),
+                        lista =
+                            result.Read<FslComiteDto>()
+                                .ToList()
+                    };
+                });
         }
 
         /// <summary>
-        /// Obtiene los comités activos.
+        /// Obtiene los comit&eacute;s activos para el selector
+        /// de miembros.
         /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <returns>Lista de comités activos.</returns>
-        public ErrorDto<List<FslComitesActivosData>> FslComitesActivos_Obtener(int CodCliente)
+        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <returns>Comit&eacute;s activos.</returns>
+        public ErrorDto<
+            List<DropDownListaGenericaModel>>
+            FSL_Comite_ComitesActivos_Obtener(
+                int CodEmpresa)
         {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
-            {
-                const string sql = @"SELECT COD_COMITE AS item, RTRIM(COD_COMITE) + ' - ' + DESCRIPCION AS descripcion
-                                     FROM FSL_COMITES WHERE ACTIVO = 1";
-                return connection.Query<FslComitesActivosData>(sql).ToList();
-            });
+            const string sql = """
+                SELECT
+                    LTRIM(RTRIM(COD_COMITE)) AS item,
+                    CONCAT(
+                        LTRIM(RTRIM(COD_COMITE)),
+                        ' - ',
+                        LTRIM(RTRIM(
+                            ISNULL(DESCRIPCION, '')
+                        ))
+                    ) AS descripcion
+                FROM FSL_COMITES
+                WHERE ACTIVO = 1
+                ORDER BY COD_COMITE DESC;
+                """;
 
-            if (result.Code != 0)
-            {
-                return DbHelper.CreateErrorResponse<List<FslComitesActivosData>>("FslComitesActivos_Obtener - " + result.Description);
-            }
-
-            return result;
+            return DbHelper.ExecuteListQuery<
+                DropDownListaGenericaModel>(
+                    _portalDb,
+                    CodEmpresa,
+                    sql);
         }
 
         /// <summary>
-        /// Obtiene los miembros de un comité con paginación y filtro.
+        /// Obtiene los miembros de un comit&eacute; con filtro,
+        /// ordenamiento y paginaci&oacute;n.
         /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="filtros">JSON con comité seleccionado, filtro y paginación.</param>
-        /// <returns>Lista de miembros y total.</returns>
-        public ErrorDto<FslMiembrosComitesDataLista> FslMiembrosComite_Obtener(int CodCliente, string filtros)
+        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="filtros">Filtros de la consulta.</param>
+        /// <returns>Lista paginada de miembros.</returns>
+        public ErrorDto<
+            FslListaPaginadaDto<FslComiteMiembroDto>>
+            FSL_Comite_Miembros_Obtener(
+                int CodEmpresa,
+                FslComiteMiembrosFiltros filtros)
         {
-            var filtro = JsonConvert.DeserializeObject<FslComitefiltros>(filtros) ?? new FslComitefiltros();
+            ArgumentNullException.ThrowIfNull(
+                filtros);
 
-            var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
+            var codComite =
+                filtros.cod_comite.Trim();
+
+            if (string.IsNullOrWhiteSpace(
+                codComite))
             {
-                var response = new FslMiembrosComitesDataLista();
-
-                const string sqlCount = "SELECT COUNT(*) FROM FSL_COMITES_MIEMBROS";
-                response.Total = connection.QueryFirstOrDefault<int>(sqlCount);
-
-                var like = string.IsNullOrWhiteSpace(filtro.filtro) ? null : $"%{filtro.filtro}%";
-                var offset = filtro.pagina ?? 0;
-                var fetch = filtro.paginacion ?? 10;
-
-                const string sql = @"SELECT CEDULA AS cedula, COD_COMITE AS cod_comite, NOMBRE AS nombre,
-                                            USUARIO_VINCULADO AS usuario_Vinculado, REGISTRO_FECHA AS registro_Fecha,
-                                            REGISTRO_USUARIO AS registro_Usuario, SALIDA_FECHA AS salida_Fecha, ACTIVO AS activo
-                                     FROM FSL_COMITES_MIEMBROS
-                                     WHERE COD_COMITE = @comiteSeleccionado
-                                       AND (@like IS NULL OR COD_COMITE LIKE @like OR NOMBRE LIKE @like)
-                                     ORDER BY COD_COMITE
-                                     OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
-
-                response.Miembros = connection.Query<FslMiembrosComitesDto>(sql,
-                    new { comiteSeleccionado = filtro.comiteSeleccionado, like, offset, fetch }).ToList();
-                return response;
-            });
-
-            if (result.Code != 0)
-            {
-                return DbHelper.CreateErrorResponse<FslMiembrosComitesDataLista>("FslMiembrosComite_Obtener - " + result.Description);
+                return DbHelper.CreateErrorResponse(
+                    MensajeComiteRequerido,
+                    CodigoValidacion,
+                    new FslListaPaginadaDto<
+                        FslComiteMiembroDto>());
             }
 
-            return result;
+            var filtro = filtros.filtro.Trim();
+
+            var like =
+                string.IsNullOrWhiteSpace(filtro)
+                    ? null
+                    : $"%{filtro}%";
+
+            var offset =
+                Math.Max(filtros.pagina, 0);
+
+            var fetch =
+                Math.Clamp(
+                    filtros.paginacion,
+                    1,
+                    500);
+
+            var sortField =
+                FSL_Comite_Miembros_Orden_Campo_Obtener(
+                    filtros.sort_field);
+
+            var sortOrder =
+                filtros.sort_order == -1
+                    ? -1
+                    : 1;
+
+            const string sql = """
+                SELECT COUNT(*)
+                FROM FSL_COMITES_MIEMBROS M
+                WHERE M.COD_COMITE = @codComite
+                  AND (
+                      @like IS NULL
+                      OR M.CEDULA LIKE @like
+                      OR M.NOMBRE LIKE @like
+                      OR M.USUARIO_VINCULADO LIKE @like
+                      OR M.REGISTRO_USUARIO LIKE @like
+                      OR M.SALIDA_USUARIO LIKE @like
+                      OR CASE
+                          WHEN M.ACTIVO = 1
+                          THEN 'ACTIVO'
+                          ELSE 'INACTIVO'
+                      END LIKE @like
+                  );
+
+                SELECT
+                    LTRIM(RTRIM(
+                        ISNULL(M.CEDULA, '')
+                    )) AS cedula,
+                    LTRIM(RTRIM(
+                        ISNULL(M.NOMBRE, '')
+                    )) AS nombre,
+                    LTRIM(RTRIM(
+                        ISNULL(M.USUARIO_VINCULADO, '')
+                    )) AS usuario_vinculado,
+                    LTRIM(RTRIM(
+                        ISNULL(M.COD_COMITE, '')
+                    )) AS cod_comite,
+                    M.REGISTRO_FECHA AS registro_fecha,
+                    LTRIM(RTRIM(
+                        ISNULL(M.REGISTRO_USUARIO, '')
+                    )) AS registro_usuario,
+                    M.SALIDA_FECHA AS salida_fecha,
+                    LTRIM(RTRIM(
+                        ISNULL(M.SALIDA_USUARIO, '')
+                    )) AS salida_usuario,
+                    CONVERT(
+                        BIT,
+                        ISNULL(M.ACTIVO, 0)
+                    ) AS activo
+                FROM FSL_COMITES_MIEMBROS M
+                WHERE M.COD_COMITE = @codComite
+                  AND (
+                      @like IS NULL
+                      OR M.CEDULA LIKE @like
+                      OR M.NOMBRE LIKE @like
+                      OR M.USUARIO_VINCULADO LIKE @like
+                      OR M.REGISTRO_USUARIO LIKE @like
+                      OR M.SALIDA_USUARIO LIKE @like
+                      OR CASE
+                          WHEN M.ACTIVO = 1
+                          THEN 'ACTIVO'
+                          ELSE 'INACTIVO'
+                      END LIKE @like
+                  )
+                ORDER BY
+                    CASE
+                        WHEN @sortField = 'cedula'
+                         AND @sortOrder = 1
+                        THEN M.CEDULA
+                    END ASC,
+                    CASE
+                        WHEN @sortField = 'cedula'
+                         AND @sortOrder = -1
+                        THEN M.CEDULA
+                    END DESC,
+                    CASE
+                        WHEN @sortField = 'nombre'
+                         AND @sortOrder = 1
+                        THEN M.NOMBRE
+                    END ASC,
+                    CASE
+                        WHEN @sortField = 'nombre'
+                         AND @sortOrder = -1
+                        THEN M.NOMBRE
+                    END DESC,
+                    CASE
+                        WHEN @sortField =
+                            'usuario_vinculado'
+                         AND @sortOrder = 1
+                        THEN M.USUARIO_VINCULADO
+                    END ASC,
+                    CASE
+                        WHEN @sortField =
+                            'usuario_vinculado'
+                         AND @sortOrder = -1
+                        THEN M.USUARIO_VINCULADO
+                    END DESC,
+                    CASE
+                        WHEN @sortField = 'activo'
+                         AND @sortOrder = 1
+                        THEN M.ACTIVO
+                    END ASC,
+                    CASE
+                        WHEN @sortField = 'activo'
+                         AND @sortOrder = -1
+                        THEN M.ACTIVO
+                    END DESC,
+                    M.ACTIVO DESC,
+                    M.CEDULA ASC
+                OFFSET @offset ROWS
+                FETCH NEXT @fetch ROWS ONLY;
+                """;
+
+            return DbHelper.WithConn(
+                _portalDb,
+                CodEmpresa,
+                connection =>
+                {
+                    using var result =
+                        connection.QueryMultiple(
+                            sql,
+                            new
+                            {
+                                codComite,
+                                like,
+                                sortField,
+                                sortOrder,
+                                offset,
+                                fetch
+                            });
+
+                    return new FslListaPaginadaDto<
+                        FslComiteMiembroDto>
+                    {
+                        total =
+                            result.ReadFirstOrDefault<
+                                int>(),
+                        lista =
+                            result
+                                .Read<FslComiteMiembroDto>()
+                                .ToList()
+                    };
+                });
+        }
+
+        /// <summary>
+        /// Obtiene el campo permitido para ordenar comites.
+        /// </summary>
+        /// <param name="sortField">Campo recibido.</param>
+        /// <returns>Campo permitido.</returns>
+        private static string
+        FSL_Comite_Comites_Orden_Campo_Obtener(
+        string sortField)
+        {
+            return sortField
+                .Trim()
+                .ToLowerInvariant()
+                switch
+            {
+                "descripcion" =>
+                    "descripcion",
+                "numero_resolutores" =>
+                    "numero_resolutores",
+                CampoActivo =>
+                    CampoActivo,
+                _ =>
+                    "cod_comite"
+            };
+        }
+
+        /// <summary>
+        /// Obtiene el campo permitido para ordenar miembros.
+        /// </summary>
+        /// <param name="sortField"></param>
+        /// <returns></returns>
+        private static string
+            FSL_Comite_Miembros_Orden_Campo_Obtener(
+                string sortField)
+        {
+            return sortField
+                .Trim()
+                .ToLowerInvariant()
+                switch
+            {
+                "nombre" =>
+                    "nombre",
+                "usuario_vinculado" =>
+                    "usuario_vinculado",
+                CampoActivo =>
+                    CampoActivo,
+                _ =>
+                    "cedula"
+            };
+        }
+
+        /// <summary>
+        /// Registra un movimiento del formulario en la
+        /// bit&aacute;cora general.
+        /// </summary>
+        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="usuario">Usuario responsable.</param>
+        /// <param name="movimiento">Movimiento realizado.</param>
+        /// <param name="detalle">Detalle del movimiento.</param>
+        private void FSL_Comite_Bitacora_Registrar(
+            int CodEmpresa,
+            string usuario,
+            string movimiento,
+            string detalle)
+        {
+            _ = _securityMainDb.Bitacora(
+                new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario =
+                        usuario.Trim()
+                            .ToUpperInvariant(),
+                    Modulo = ModuloFosol,
+                    Movimiento = movimiento,
+                    DetalleMovimiento = detalle
+                });
         }
     }
 }

@@ -539,9 +539,9 @@ WHERE d.ID_REVERSION = @id_reversion";
                     nDocumento = (reversa.documento == " 0") ? null : reversa.documento?.Trim();
                 }
 
-                    
 
-              
+
+
                 const string query = @"
                        SELECT DISTINCT
                             t.nsolicitud,
@@ -561,14 +561,17 @@ WHERE d.ID_REVERSION = @id_reversion";
                             ON s.COD_REFERENCIA = t.REFERENCIA_SINPE
                         WHERE s.RECHAZO_CODIGO > 0 AND s.ESTADO = 3 and t.id_banco = @id_banco
                         AND (@Ndocumento IS NULL OR Ndocumento LIKE @NdocumentoLike)
-                        AND (@NSolicitud IS NULL OR NSOLICITUD LIKE @NSolicitudLike)";
+                        AND (@NSolicitud IS NULL OR NSOLICITUD LIKE @NSolicitudLike)
+                        AND t.NSOLICITUD NOT IN (
+                            SELECT NSOLICITUD FROM  TES_SINPE_REVERSADET
+                        ) ";
 
                 var parameters = new
                 {
                     id_banco = reversa.id_banco,
 
                     Ndocumento = string.IsNullOrWhiteSpace(nDocumento) ? null : nDocumento,
-                    NdocumentoLike = string.IsNullOrWhiteSpace(nDocumento) ? null : $"%{nDocumento}%",
+                    NdocumentoLike = string.IsNullOrWhiteSpace(nDocumento) ? null : $" %{nDocumento}%",
 
                     NSolicitud = string.IsNullOrWhiteSpace(solicitud) ? null : solicitud,
                     NSolicitudLike = string.IsNullOrWhiteSpace(solicitud) ? null : $"%{solicitud}%",

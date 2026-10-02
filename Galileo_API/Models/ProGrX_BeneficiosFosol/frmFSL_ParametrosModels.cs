@@ -1,30 +1,37 @@
-using System.Text.Json.Serialization;
 namespace Galileo.Models.FSL
 {
-    public class FdlParametrosDto
+    public class FslParametroDto
     {
         public string cod_parametro { get; set; } = string.Empty;
         public string detalle { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
         public string valor { get; set; } = string.Empty;
         public string notas { get; set; } = string.Empty;
-        [JsonRequired]
-        public DateTime registro_fecha { get; set; }
+        public DateTime? registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
+        public string valor_descripcion { get; set; } = string.Empty;
     }
 
-    public class FdlParametrosFiltros
+    public class FslParametrosFiltros
     {
-        public int? pagina { get; set; }
-        public int? paginacion { get; set; }
-        public string? filtro { get; set; }
-
-        public string? comiteSeleccionado { get; set; }
+        public int pagina { get; set; } = 0;
+        public int paginacion { get; set; } = 30;
+        public string filtro { get; set; } = string.Empty;
+        public string sort_field { get; set; } = "cod_parametro";
+        public int sort_order { get; set; } = 1;
     }
 
-    public class FdlParametrosListaDto
+    public class FslParametrosListaDto
     {
-        public int Total { get; set; }
-        public List<FdlParametrosDto> Comites { get; set; } = new List<FdlParametrosDto>();
+        public int total { get; set; } = 0;
+        public List<FslParametroDto> parametros { get; set; } =
+            new List<FslParametroDto>();
+    }
+
+    public class FslParametroActualizarRequest
+    {
+        public string cod_parametro { get; set; } = string.Empty;
+        public string valor { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
     }
 }

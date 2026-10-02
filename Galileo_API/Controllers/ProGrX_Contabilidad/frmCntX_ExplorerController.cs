@@ -29,6 +29,16 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.TiposAsiento_Obtener(codEmpresa, cod_contabilidad);
         }
 
+        [HttpGet("TiposAsientoPeriodo")]
+        public ErrorDto<List<CntxTipoAsientoDto>> TiposAsientoPeriodo(
+            int codEmpresa,
+            int cod_contabilidad,
+            int anio,
+            int mes)
+        {
+            return _bl.TiposAsiento_Periodo(codEmpresa, cod_contabilidad, anio, mes);
+        }
+
         [HttpGet("Periodos")]
         public ErrorDto<List<CntxPeriodoDto>> Periodos(int codEmpresa, int cod_contabilidad, string estado) 
         {

@@ -22,6 +22,7 @@
         public decimal saldoFinal { get; set; }
         public decimal saldoMinimo { get; set; }
         public decimal diferencias { get; set; }
+        public decimal dp_cajas { get; set; }
     }
 
     public class TesMonitoreoDocumentosDto

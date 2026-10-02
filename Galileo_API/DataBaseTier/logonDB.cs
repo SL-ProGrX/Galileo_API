@@ -30,23 +30,9 @@ namespace Galileo.DataBaseTier
 
         public IntentosObtenerDto? IntentosObtener()
         {
-            IntentosObtenerDto? resp;
-            try
-            {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
-                {
-
-                    var strSQL = "select KEY_INTENTOS,TIME_LOCK  from US_PARAMETROS";
-
-                    resp = connection.Query<IntentosObtenerDto>(strSQL).FirstOrDefault();
-                }
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-                resp = null;
-            }
-            return resp;
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            const string sql = "select KEY_INTENTOS,TIME_LOCK from US_PARAMETROS";
+            return connection.QueryFirstOrDefault<IntentosObtenerDto>(sql);
         }
 
         public ErrorDto LoginObtener(LoginObtenerDto req)
@@ -182,27 +168,11 @@ namespace Galileo.DataBaseTier
 
         public TfaData TFA_Data_Load(string usuario)
         {
-            TfaData info = new TfaData();
-
-            try
-            {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var procedure = "[sp2FA_Usuario_Cfg]";
-                    var values = new
-                    {
-                        Usuario = usuario,
-
-                    };
-                    info = connection.QueryFirstOrDefault<TfaData?>(procedure, values, commandType: CommandType.StoredProcedure) ?? new TfaData();
-
-                }
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return info;
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            return connection.QueryFirstOrDefault<TfaData?>(
+                "[sp2FA_Usuario_Cfg]",
+                new { Usuario = usuario },
+                commandType: CommandType.StoredProcedure) ?? new TfaData();
         }
 
         public async Task<ErrorDto> TFA_Codigo_EnviarMAIL(string usuario, string email)
@@ -228,7 +198,11 @@ namespace Galileo.DataBaseTier
                     TfaDatosCorreo datos = new TfaDatosCorreo();
                     datos.codigo = codigo2FA;
                     datos.email = email;
-                    await TfaCodigoEmail_Enviar(datos);
+                    var envio = await TfaCodigoEmail_Enviar(datos);
+                    if (envio.Code != 0)
+                    {
+                        return envio;
+                    }
 
                 }
             }
@@ -275,19 +249,20 @@ namespace Galileo.DataBaseTier
             return code.ToString("D6");
         }
 
-        private async Task TfaCodigoEmail_Enviar(TfaDatosCorreo datos)
+        private async Task<ErrorDto> TfaCodigoEmail_Enviar(TfaDatosCorreo datos)
         {
             ErrorDto response = new ErrorDto();
             var eConfigResult = _envioCorreoDB.CorreoConfigCuenta(Notificaciones);
             EnvioCorreoModels? eConfig = null;
-            if (eConfigResult != null && eConfigResult.Code == 0)
+            if (eConfigResult?.Code == 0 && eConfigResult.Result is not null)
             {
                 eConfig = eConfigResult.Result;
             }
             else
             {
-                // Handle error or throw exception as needed
-                return;
+                response.Code = -1;
+                response.Description = eConfigResult?.Description ?? "No fue posible consultar la configuración de correo para 2FA.";
+                return response;
             }
 
             string body = @$"<!DOCTYPE html>
@@ -345,24 +320,23 @@ namespace Galileo.DataBaseTier
 
             List<IFormFile> Attachments = new List<IFormFile>();
 
-            if (sendEmail == "Y")
+            if (sendEmail != "Y")
             {
-                if (eConfig == null)
-                {
-                    // Handle the null case appropriately, e.g., log or throw
-                    return;
-                }
-
-                EmailRequest emailRequest = new EmailRequest();
-
-                emailRequest.To = datos.email;
-                emailRequest.From = eConfig.User;
-                emailRequest.Subject = "System Logic Código de Verificación";
-                emailRequest.Body = body;
-                emailRequest.Attachments = Attachments;
-
-                await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, response);
+                response.Code = -1;
+                response.Description = "El envío de correo para 2FA no está habilitado.";
+                return response;
             }
+
+            EmailRequest emailRequest = new EmailRequest();
+
+            emailRequest.To = datos.email;
+            emailRequest.From = eConfig.User;
+            emailRequest.Subject = "System Logic Código de Verificación";
+            emailRequest.Body = body;
+            emailRequest.Attachments = Attachments;
+
+            await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, response);
+            return response;
         }
     }
 }

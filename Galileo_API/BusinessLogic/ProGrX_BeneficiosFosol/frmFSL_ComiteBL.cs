@@ -1,52 +1,167 @@
+using Galileo.DataBaseTier;
 using Galileo.DataBaseTier.ProGrX_BeneficiosFosol;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
+using Newtonsoft.Json;
 
 namespace Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Lógica de negocio de los Comités Fosol (frmFSL_Comite).
-    /// </summary>
-    public class FrmFslComiteBL
+    public sealed class FrmFslComiteBL
     {
+        private const int CodigoValidacion = -2;
+
         private readonly FrmFslComiteDB _db;
 
-        public FrmFslComiteBL(IConfiguration config)
+        public FrmFslComiteBL(
+            IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            ArgumentNullException.ThrowIfNull(config);
 
             _db = new FrmFslComiteDB(config);
         }
 
-        /// <summary>Lista de comités.</summary>
-        public ErrorDto<FslComitesDataLista> FslComites_Obtener(int CodCliente, string filtros)
-            => _db.FslComites_Obtener(CodCliente, filtros);
+        public ErrorDto<
+            FslListaPaginadaDto<FslComiteDto>>
+            FSL_Comite_Comites_Obtener(
+        int CodEmpresa,
+        string filtros)
+        {
+            if (!FSL_Comite_Filtros_Deserializar(
+                filtros,
+                out FslComitePaginacionFiltros request))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Los filtros enviados no son v&aacute;lidos.",
+                    CodigoValidacion,
+                    new FslListaPaginadaDto<
+                        FslComiteDto>());
+            }
 
-        /// <summary>Comités activos.</summary>
-        public ErrorDto<List<FslComitesActivosData>> FslComitesActivos_Obtener(int CodCliente)
-            => _db.FslComitesActivos_Obtener(CodCliente);
+            return _db.FSL_Comite_Comites_Obtener(
+                CodEmpresa,
+                request);
+        }
 
-        /// <summary>Miembros de un comité.</summary>
-        public ErrorDto<FslMiembrosComitesDataLista> FslMiembrosComite_Obtener(int CodCliente, string filtros)
-            => _db.FslMiembrosComite_Obtener(CodCliente, filtros);
+        public ErrorDto<
+            List<DropDownListaGenericaModel>>
+            FSL_Comite_ComitesActivos_Obtener(
+                int CodEmpresa)
+        {
+            return _db
+                .FSL_Comite_ComitesActivos_Obtener(
+                    CodEmpresa);
+        }
 
-        /// <summary>Guarda un comité (inserta o actualiza).</summary>
-        public ErrorDto Comite_Guardar(int CodCliente, FslComitesDto comite)
-            => _db.Comite_Guardar(CodCliente, comite);
+        public ErrorDto<
+            FslListaPaginadaDto<FslComiteMiembroDto>>
+            FSL_Comite_Miembros_Obtener(
+                int CodEmpresa,
+                string filtros)
+        {
+            if (!FSL_Comite_Filtros_Deserializar(
+                filtros,
+                out FslComiteMiembrosFiltros request))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Los filtros enviados no son v&aacute;lidos.",
+                    CodigoValidacion,
+                    new FslListaPaginadaDto<
+                        FslComiteMiembroDto>());
+            }
 
-        /// <summary>Elimina un comité.</summary>
-        public ErrorDto FslComites_Eliminar(int CodCliente, string comite)
-            => _db.FslComites_Eliminar(CodCliente, comite);
+            return _db.FSL_Comite_Miembros_Obtener(
+                CodEmpresa,
+                request);
+        }
 
-        /// <summary>Guarda un miembro de comité (inserta o actualiza).</summary>
-        public ErrorDto ComiteMiembro_Guardar(int CodCliente, FslMiembrosComitesDto miembro)
-            => _db.ComiteMiembro_Guardar(CodCliente, miembro);
+        public ErrorDto FSL_Comite_Comite_Registrar(
+            int CodEmpresa,
+            FslComiteGuardarRequest request)
+        {
+            return _db.FSL_Comite_Comite_Registrar(
+                CodEmpresa,
+                request);
+        }
 
-        /// <summary>Elimina un miembro de un comité.</summary>
-        public ErrorDto FslMiembrosComite_Eliminar(int CodCliente, string cedula, string comite)
-            => _db.FslMiembrosComite_Eliminar(CodCliente, cedula, comite);
+        public ErrorDto FSL_Comite_Comite_Actualizar(
+            int CodEmpresa,
+            FslComiteGuardarRequest request)
+        {
+            return _db.FSL_Comite_Comite_Actualizar(
+                CodEmpresa,
+                request);
+        }
+
+        public ErrorDto FSL_Comite_Comite_Eliminar(
+            int CodEmpresa,
+            string codComite,
+            string usuario)
+        {
+            return _db.FSL_Comite_Comite_Eliminar(
+                CodEmpresa,
+                codComite,
+                usuario);
+        }
+
+        public ErrorDto FSL_Comite_Miembro_Registrar(
+            int CodEmpresa,
+            FslComiteMiembroGuardarRequest request)
+        {
+            return _db.FSL_Comite_Miembro_Registrar(
+                CodEmpresa,
+                request);
+        }
+
+        public ErrorDto FSL_Comite_Miembro_Actualizar(
+            int CodEmpresa,
+            FslComiteMiembroGuardarRequest request)
+        {
+            return _db.FSL_Comite_Miembro_Actualizar(
+                CodEmpresa,
+                request);
+        }
+
+        public ErrorDto FSL_Comite_Miembro_Eliminar(
+            int CodEmpresa,
+            string codComite,
+            string cedula,
+            string usuario)
+        {
+            return _db.FSL_Comite_Miembro_Eliminar(
+                CodEmpresa,
+                codComite,
+                cedula,
+                usuario);
+        }
+
+        private static bool
+            FSL_Comite_Filtros_Deserializar<T>(
+                string filtros,
+                out T request)
+            where T : new()
+        {
+            request = new T();
+
+            if (string.IsNullOrWhiteSpace(
+                filtros))
+            {
+                return true;
+            }
+
+            try
+            {
+                request =
+                    JsonConvert.DeserializeObject<T>(
+                        filtros) ??
+                    new T();
+
+                return true;
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+        }
     }
 }
