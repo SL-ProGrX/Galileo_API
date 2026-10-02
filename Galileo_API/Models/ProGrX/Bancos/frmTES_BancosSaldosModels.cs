@@ -23,6 +23,7 @@
         public DateTime fecha { get; set; }
         public string usuario { get; set; } = string.Empty;
         public decimal cheques_pendientes { get; set; }
+        public decimal dp_cajas { get; set; } = 0;
     }
 
     public class TesBancosSaldosCierresDto
