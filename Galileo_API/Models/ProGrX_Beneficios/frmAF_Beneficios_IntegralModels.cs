@@ -767,7 +767,7 @@ namespace Galileo.Models.AF
         public string? modifica_monto { get; set; }
         public string? observaciones_monto { get; set; }
 
-        public List<AfiBeneProdData>? productos { get; set; }
+        public List<DropDownListaGenericaModel>? productos { get; set; }
         //Estado Beneficio
         public string? estado { get; set; }
         public string? estadoObservaciones { get; set; }

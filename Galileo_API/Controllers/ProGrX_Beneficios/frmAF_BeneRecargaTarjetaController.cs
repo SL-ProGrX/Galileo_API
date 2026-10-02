@@ -88,26 +88,38 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
         /// <summary>Inserta una tarjeta de regalo.</summary>
         [Authorize]
         [HttpPost("AfiTarjetasRegalo_Insertar")]
-        public ErrorDto AfiTarjetasRegalo_Insertar(int CodCliente, [FromBody] string tarjetas)
-            => _bl.AfiTarjetasRegalo_Insertar(CodCliente, tarjetas);
+        public ErrorDto AfiTarjetasRegalo_Insertar(
+            int CodCliente,
+            [FromBody] AfiBeneTarjetasData tarjeta)
+            => _bl.AfiTarjetasRegalo_Insertar(
+                CodCliente,
+                tarjeta);
 
         /// <summary>Actualiza una tarjeta de regalo.</summary>
         [Authorize]
         [HttpPut("AfiTarjetasRegalo_Actualizar")]
-        public ErrorDto AfiTarjetasRegalo_Actualizar(int CodCliente, [FromBody] string tarjetas)
-            => _bl.AfiTarjetasRegalo_Actualizar(CodCliente, tarjetas);
+        public ErrorDto AfiTarjetasRegalo_Actualizar(
+            int CodCliente,
+            [FromBody] AfiBeneTarjetasData tarjeta)
+            => _bl.AfiTarjetasRegalo_Actualizar(
+                CodCliente,
+                tarjeta);
+
+        /// <summary>Recarga las tarjetas de regalo.</summary>
+        [Authorize]
+        [HttpPost("AfiTarjetasRegalo_Recargar")]
+        public ErrorDto AfiTarjetasRegalo_Recargar(
+            int CodCliente,
+            [FromBody] AfiBeneTarjetasRecargaData request)
+            => _bl.AfiTarjetasRegalo_Recargar(
+                CodCliente,
+                request);
 
         /// <summary>Elimina una tarjeta de regalo.</summary>
         [Authorize]
         [HttpDelete("AfiTarjetasRegalo_Eliminar")]
         public ErrorDto AfiTarjetasRegalo_Eliminar(int CodCliente, int id_tr)
             => _bl.AfiTarjetasRegalo_Eliminar(CodCliente, id_tr);
-
-        /// <summary>Recarga las tarjetas de regalo.</summary>
-        [Authorize]
-        [HttpPost("AfiTarjetasRegalo_Recargar")]
-        public ErrorDto AfiTarjetasRegalo_Recargar(int CodCliente, [FromBody] string tarjetas)
-            => _bl.AfiTarjetasRegalo_Recargar(CodCliente, tarjetas);
 
         /// <summary>Envía por correo la solicitud de pago de recarga de tarjetas.</summary>
         [Authorize]

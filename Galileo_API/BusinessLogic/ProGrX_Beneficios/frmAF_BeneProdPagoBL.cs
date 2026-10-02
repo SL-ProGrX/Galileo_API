@@ -1,40 +1,82 @@
 using Galileo.DataBaseTier.ProGrX_Beneficios;
+using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
+using Newtonsoft.Json;
 
 namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
 {
-    /// <summary>
-    /// Lógica de negocio del Pago de Productos de Beneficios (frmAF_BeneProdPago).
-    /// </summary>
     public class FrmAfBeneProdPagoBL
     {
+        private const int CodigoValidacion = -2;
+        private const string MensajeFiltrosInvalidos =
+            "Los filtros enviados no son v&aacute;lidos.";
+
         private readonly FrmAfBeneProdPagoDB _db;
 
         public FrmAfBeneProdPagoBL(IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
-
-            _db = new FrmAfBeneProdPagoDB(config);
+            _db = new FrmAfBeneProdPagoDB(
+                config ??
+                throw new ArgumentNullException(nameof(config)));
         }
 
-        /// <summary>Lista de productos asignados pendientes de entrega.</summary>
-        public ErrorDto<AfiBeneProdAsgDataList> AfiBeneProdAsgLista_Obtener(int CodCliente, string cod_beneficio, int? pagina, int? paginacion, string? filtro)
-            => _db.AfiBeneProdAsgLista_Obtener(CodCliente, cod_beneficio, pagina, paginacion, filtro);
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            AF_BeneProdPago_Beneficios_Obtener(
+                int CodEmpresa)
+        {
+            return _db.AF_BeneProdPago_Beneficios_Obtener(
+                CodEmpresa);
+        }
 
-        /// <summary>Beneficios con productos asignados pendientes de pago.</summary>
-        public ErrorDto<List<AfiBeneProdData>> AfiBeneficios_Obtener(int CodCliente)
-            => _db.AfiBeneficios_Obtener(CodCliente);
+        public ErrorDto<AfiBeneProdAsgDataList>
+            AF_BeneProdPago_Lista_Obtener(
+                int CodEmpresa,
+                string filtros)
+        {
+            AfiBeneProdPagoListaRequest request;
 
-        /// <summary>Detalle de productos asignados a un beneficio y consecutivo.</summary>
-        public ErrorDto<List<AfiBeneProdAsgData>> AfiBeneProdAsg_Obtener(int CodCliente, string consec, string cod_beneficio)
-            => _db.AfiBeneProdAsg_Obtener(CodCliente, consec, cod_beneficio);
+            try
+            {
+                request =
+                    JsonConvert.DeserializeObject<
+                        AfiBeneProdPagoListaRequest>(filtros)
+                    ?? new AfiBeneProdPagoListaRequest();
+            }
+            catch (JsonException)
+            {
+                return new ErrorDto<AfiBeneProdAsgDataList>
+                {
+                    Code = CodigoValidacion,
+                    Description = MensajeFiltrosInvalidos,
+                    Result = new AfiBeneProdAsgDataList()
+                };
+            }
 
-        /// <summary>Procesa la entrega de productos de beneficios.</summary>
-        public ErrorDto AfiBeneOtorga_Actualiza(int CodCliente, string beneficio)
-            => _db.AfiBeneOtorga_Actualiza(CodCliente, beneficio);
+            return _db.AF_BeneProdPago_Lista_Obtener(
+                CodEmpresa,
+                request);
+        }
+
+        public ErrorDto<List<AfiBeneProdDetalleData>>
+            AF_BeneProdPago_Detalle_Obtener(
+                int CodEmpresa,
+                int consec,
+                string cod_beneficio)
+        {
+            return _db.AF_BeneProdPago_Detalle_Obtener(
+                CodEmpresa,
+                consec,
+                cod_beneficio);
+        }
+
+        public ErrorDto AF_BeneProdPago_Entrega_Procesar(
+            int CodEmpresa,
+            AfiBeneProdPagoEntregaRequest request)
+        {
+            return _db.AF_BeneProdPago_Entrega_Procesar(
+                CodEmpresa,
+                request);
+        }
     }
 }

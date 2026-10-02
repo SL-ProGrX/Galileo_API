@@ -107,6 +107,23 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [HttpPost("Colaborador_Clave_Cambia")]
+        public ActionResult<ErrorDto<bool>> Colaborador_Clave_Cambia(
+            int CodEmpresa,
+            [FromBody] ColaboradorClaveCambiaRequest request)
+        {
+            var usuario = User.FindFirst(UserNameClaim)?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return Unauthorized();
+            }
+
+            return Ok(_bl.Colaborador_Clave_Cambia(CodEmpresa, usuario, request));
+        }
+
+        [Authorize]
         [HttpPost("Colaborador_Menu_Obtener")]
         public ActionResult<ErrorDto<List<Dictionary<string, object?>>>> Colaborador_Menu_Obtener(
             int CodEmpresa,
@@ -121,6 +138,83 @@ namespace Galileo.Controllers.ProGrX
             }
 
             return Ok(_bl.Colaborador_Menu_Obtener(
+                CodEmpresa,
+                usuario,
+                request));
+        }
+
+        [Authorize]
+        [HttpPost("Colaborador_Autorizacion_Registrar")]
+        public ActionResult<ErrorDto<bool>> Colaborador_Autorizacion_Registrar(
+            int CodEmpresa,
+            [FromBody] ColaboradorAutorizacionRequest request)
+        {
+            var usuario = User.FindFirst(UserNameClaim)?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return Unauthorized();
+            }
+
+            return Ok(_bl.Colaborador_Autorizacion_Registrar(CodEmpresa, usuario, request));
+        }
+
+        [Authorize]
+        [HttpPost("Colaborador_Solicitud_Configuracion_Obtener")]
+        public ActionResult<ErrorDto<ColaboradorSolicitudConfiguracionData>> Colaborador_Solicitud_Configuracion_Obtener(
+            int CodEmpresa,
+            [FromBody] ColaboradorSolicitudConfiguracionRequest request)
+        {
+            var usuario = User.FindFirst(UserNameClaim)?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return Unauthorized();
+            }
+
+            return Ok(_bl.Colaborador_Solicitud_Configuracion_Obtener(
+                CodEmpresa,
+                usuario,
+                request));
+        }
+
+        [Authorize]
+        [HttpPost("Colaborador_Solicitud_Dias_Obtener")]
+        public ActionResult<ErrorDto<int>> Colaborador_Solicitud_Dias_Obtener(
+            int CodEmpresa,
+            [FromBody] ColaboradorSolicitudDiasRequest request)
+        {
+            var usuario = User.FindFirst(UserNameClaim)?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return Unauthorized();
+            }
+
+            return Ok(_bl.Colaborador_Solicitud_Dias_Obtener(
+                CodEmpresa,
+                usuario,
+                request));
+        }
+
+        [Authorize]
+        [HttpPost("Colaborador_Solicitud_Registrar")]
+        public ActionResult<ErrorDto<ColaboradorSolicitudRegistroData>> Colaborador_Solicitud_Registrar(
+            int CodEmpresa,
+            [FromBody] ColaboradorSolicitudRegistrarRequest request)
+        {
+            var usuario = User.FindFirst(UserNameClaim)?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return Unauthorized();
+            }
+
+            return Ok(_bl.Colaborador_Solicitud_Registrar(
                 CodEmpresa,
                 usuario,
                 request));

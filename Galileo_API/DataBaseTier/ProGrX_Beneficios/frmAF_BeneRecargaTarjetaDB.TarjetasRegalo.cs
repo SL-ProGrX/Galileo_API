@@ -111,29 +111,50 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// Inserta una tarjeta de regalo.
         /// </summary>
         /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="tarjetas">JSON con los datos de la tarjeta.</param>
+        /// <param name="tarjeta">Datos de la tarjeta que se registrará.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto AfiTarjetasRegalo_Insertar(int CodCliente, string tarjetas)
+        public ErrorDto AfiTarjetasRegalo_Insertar(
+            int CodCliente,
+            AfiBeneTarjetasData tarjeta)
         {
-            var item = JsonConvert.DeserializeObject<AfiBeneTarjetasData>(tarjetas) ?? new AfiBeneTarjetasData();
+            const string sql = """
+            INSERT INTO AFI_BENE_TARJETAS_REGALO (
+                COD_PRODUCTO,
+                REGISTRO_FECHA,
+                REGISTRO_USUARIO,
+                COD_BENEFICIO,
+                ESTADO,
+                NO_TARJETA,
+                MONTO
+            )
+            VALUES (
+                @cod_producto,
+                GETDATE(),
+                @registro_usuario,
+                @cod_beneficio,
+                'P',
+                @no_tarjeta,
+                @monto
+            )
+            """;
 
-            const string sql = @"INSERT AFI_BENE_TARJETAS_REGALO
-                                    (COD_PRODUCTO, REGISTRO_FECHA, REGISTRO_USUARIO, COD_BENEFICIO, ESTADO, NO_TARJETA, MONTO)
-                                 VALUES
-                                    (@cod_producto, GETDATE(), @registro_usuario, @cod_beneficio, 'P', @no_tarjeta, @monto)";
-
-            var result = DbHelper.ExecuteNonQuery(CreatePortalDb(), CodCliente, sql, new
-            {
-                item.cod_producto,
-                item.registro_usuario,
-                item.cod_beneficio,
-                item.no_tarjeta,
-                item.monto
-            });
+            var result = DbHelper.ExecuteNonQuery(
+                CreatePortalDb(),
+                CodCliente,
+                sql,
+                new
+                {
+                    tarjeta.cod_producto,
+                    tarjeta.registro_usuario,
+                    tarjeta.cod_beneficio,
+                    tarjeta.no_tarjeta,
+                    tarjeta.monto
+                });
 
             if (result.Code == 0)
             {
-                result.Description = "Tarjeta registrada correctamente";
+                result.Description =
+                    "Tarjeta registrada correctamente";
             }
 
             return result;
@@ -143,29 +164,38 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// Actualiza una tarjeta de regalo.
         /// </summary>
         /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="tarjetas">JSON con los datos de la tarjeta.</param>
+        /// <param name="tarjeta">Datos actualizados de la tarjeta.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto AfiTarjetasRegalo_Actualizar(int CodCliente, string tarjetas)
+        public ErrorDto AfiTarjetasRegalo_Actualizar(
+            int CodCliente,
+            AfiBeneTarjetasData tarjeta)
         {
-            var item = JsonConvert.DeserializeObject<AfiBeneTarjetasData>(tarjetas) ?? new AfiBeneTarjetasData();
+            const string sql = """
+            UPDATE AFI_BENE_TARJETAS_REGALO
+            SET COD_PRODUCTO = @cod_producto,
+                COD_BENEFICIO = @cod_beneficio,
+                NO_TARJETA = @no_tarjeta,
+                MONTO = @monto
+            WHERE ID_TR = @id_tr
+            """;
 
-            const string sql = @"UPDATE AFI_BENE_TARJETAS_REGALO
-                                 SET COD_PRODUCTO = @cod_producto, COD_BENEFICIO = @cod_beneficio,
-                                     NO_TARJETA = @no_tarjeta, MONTO = @monto
-                                 WHERE ID_TR = @id_tr";
-
-            var result = DbHelper.ExecuteNonQuery(CreatePortalDb(), CodCliente, sql, new
-            {
-                item.cod_producto,
-                item.cod_beneficio,
-                item.no_tarjeta,
-                item.monto,
-                item.id_tr
-            });
+            var result = DbHelper.ExecuteNonQuery(
+                CreatePortalDb(),
+                CodCliente,
+                sql,
+                new
+                {
+                    tarjeta.cod_producto,
+                    tarjeta.cod_beneficio,
+                    tarjeta.no_tarjeta,
+                    tarjeta.monto,
+                    tarjeta.id_tr
+                });
 
             if (result.Code == 0)
             {
-                result.Description = "Tarjeta actualizada correctamente";
+                result.Description =
+                    "Tarjeta actualizada correctamente";
             }
 
             return result;

@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Galileo.BusinessLogic;
 using Galileo.Models;
 using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
@@ -130,6 +131,31 @@ namespace Galileo.DataBaseTier
                 string query = Sql.GetTesBancoCargaCboAccesoGestionByPermiso(permiso);
 
                 resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { usuario }).ToList();
+
+                var esUsuarioEspecial =
+                    TES_EmisionDocumento_UsuarioEsEspecial(connection, usuario);
+
+                if (esUsuarioEspecial)
+                {
+                   
+
+                    var bancosEspeciales = connection.Query<DropDownListaGenericaModel>(
+                        @"select id_banco as item, descripcion
+                            from Tes_Bancos
+                            where Estado = 'A'
+                            AND ID_BANCO IN (
+	                            SELECT DISTINCT t.ID_BANCO FROM Tes_Transacciones t 
+	                            WHERE t.USUARIO_AUTORIZA_ESPECIAL = @usuario AND t.ESTADO = 'P' AND t.USER_AUTORIZA is not null
+                            )"
+                        , new { usuario }).ToList();
+
+                    // valido si banco especial existe en result, si no lo agrego 
+                    foreach (var banco in bancosEspeciales.Where(banco =>
+                                 !resp.Result.Any(b => b.item == banco.item)))
+                    {
+                        resp.Result.Add(banco);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -180,6 +206,35 @@ namespace Galileo.DataBaseTier
                 string query = Sql.GetTesTiposDocsCargaCboAccesoByPermiso(permiso);
 
                 resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { banco = Banco, usuario = Usuario }).ToList();
+
+                var esUsuarioEspecial =
+                   TES_EmisionDocumento_UsuarioEsEspecial(connection, Usuario);
+
+                if (esUsuarioEspecial)
+                {
+
+
+                    var docEspeciales = connection.Query<DropDownListaGenericaModel>(
+                        @"SELECT DISTINCT RTRIM(T.Tipo) + ' - ' + T.descripcion AS ItmY,
+                                   RTRIM(T.Tipo) AS item, RTRIM(T.descripcion) AS descripcion
+                            FROM tes_documentos_ASG A
+                            INNER JOIN Tes_Tipos_Doc T ON A.tipo = T.tipo
+                            WHERE A.id_Banco = @banco AND 
+	                            T.TIPO IN (
+	                              SELECT DISTINCT t.TIPO  FROM Tes_Transacciones t 
+	                                WHERE t.USUARIO_AUTORIZA_ESPECIAL = @usuario AND t.ESTADO = 'P' AND t.USER_AUTORIZA is not null
+	                            )
+                              AND isnull(A.SOLICITA,0) = 1"
+                                , new { banco = Banco, usuario = Usuario }).ToList();
+
+                    // valido si banco especial existe en result, si no lo agrego 
+                    foreach (var documento in docEspeciales.Where(documento =>
+                                 !resp.Result.Any(b => b.item == documento.item)))
+                    {
+                        resp.Result.Add(documento);
+                    }
+                }
+
             }
             catch (Exception ex)
             {
@@ -1276,5 +1331,21 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
+        /// <summary>
+        /// Valida si el usuario tiene solicitudes autorizadas de forma especial pendientes.
+        /// </summary>
+        public static bool TES_EmisionDocumento_UsuarioEsEspecial(SqlConnection conn, string usuario)
+        {
+            const string query = @"
+                select count(t.USUARIO_AUTORIZA_ESPECIAL)
+                from Tes_Transacciones t
+                where upper(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
+                  and t.Estado = 'P'
+                  and t.Autoriza = 'S'
+                  and t.fecha_hold is null";
+
+            var especial = conn.QueryFirstOrDefault<int>(query, new { usuario });
+            return especial > 0;
+        }
     }
 }

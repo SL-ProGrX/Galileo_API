@@ -224,7 +224,7 @@ Where Estado='P' And Tipo = @tipoDoc and ID_Banco = @banco";
                     .Result;
 
                 var usuario = filtro.usuario.ToUpperInvariant();
-                var esUsuarioEspecial = TES_EmisionDocumento_UsuarioEsEspecial(conn, usuario);
+                var esUsuarioEspecial = MTesoreria.TES_EmisionDocumento_UsuarioEsEspecial(conn, usuario);
 
                 var query = TES_EmisionDocumento_Solicitudes_BuildQuery(filtro, esUsuarioEspecial);
 
@@ -253,22 +253,7 @@ Where Estado='P' And Tipo = @tipoDoc and ID_Banco = @banco";
             });
         }
 
-        /// <summary>
-        /// Valida si el usuario tiene solicitudes autorizadas de forma especial pendientes.
-        /// </summary>
-        private static bool TES_EmisionDocumento_UsuarioEsEspecial(SqlConnection conn, string usuario)
-        {
-            const string query = @"
-select count(t.USUARIO_AUTORIZA_ESPECIAL)
-from Tes_Transacciones t
-where upper(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario
-  and t.Estado = 'P'
-  and t.Autoriza = 'S'
-  and t.fecha_hold is null";
-
-            var especial = conn.QueryFirstOrDefault<int>(query, new { usuario });
-            return especial > 0;
-        }
+      
 
         /// <summary>
         /// Formatea los documentos visibles y marca la información complementaria de las solicitudes generadas.
@@ -1589,45 +1574,32 @@ where nsolicitud in ";
         {
             var sb = new StringBuilder();
 
-            string bancoId = transaccionesList.FirstOrDefault()?.id_banco.ToString() ?? "0000";
-            string numCliente = "0000000000";
-            string fecha = DateTime.Now.ToString("ddMMyyyy");
+            string bancoId = transaccionesList.FirstOrDefault()?.id_banco?.ToString(CultureInfo.InvariantCulture) ?? "0000";
+            string fecha = DateTime.Now.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
             decimal montoPlanilla = transaccionesList.Sum(t => t.monto ?? 0);
 
-            string strMontoPlanilla = ((long)Math.Round(montoPlanilla * 100, 0))
-                .ToString("D15", CultureInfo.InvariantCulture);
+            sb.AppendLine("SINPE INTERNO");
+            sb.AppendLine($"Consecutivo\t{bancoConsec.ToString(CultureInfo.InvariantCulture)}");
+            sb.AppendLine($"Fecha\t{fecha}");
+            sb.AppendLine($"Banco\t{bancoId}");
+            sb.AppendLine($"Solicitudes\t{transaccionesList.Count.ToString(CultureInfo.InvariantCulture)}");
+            sb.AppendLine($"Monto total\t{montoPlanilla.ToString("N2", CultureInfo.InvariantCulture)}");
+            sb.AppendLine();
+            sb.AppendLine("Solicitud\tConsecutivo\tFecha\tBanco\tMonto\tEstado\tCuenta\tDocumento\tBeneficiario");
 
-            // Header
-            var header = new StringBuilder(120);
-            header.Append('1');
-            header.Append(numCliente);
-            header.Append(fecha.Substring(0, 2));
-            header.Append(fecha.Substring(2, 2));
-            header.Append(fecha.Substring(4, 4));
-            header.Append(bancoId.PadLeft(12, '0'));
-            header.Append("10000");
-            header.Append(strMontoPlanilla);
-            header.Append("000000000000000000000000");
-
-            sb.AppendLine(header.ToString());
-
-            // Detalles
             foreach (var item in transaccionesList)
             {
-                var detalle = new StringBuilder(200);
-
                 decimal montoItem = item.monto ?? 0;
-
-                detalle.Append('2');
-                detalle.Append(item.nsolicitud.ToString().PadLeft(10, '0'));
-                detalle.Append(bancoId.PadLeft(12, '0'));
-                detalle.Append(((long)Math.Round(montoItem * 100, 0)).ToString("D15", CultureInfo.InvariantCulture));
-                detalle.Append(item.beneficiario.PadRight(50));
-                detalle.Append(item.estado);
-                detalle.Append(item.cta_ahorros.PadLeft(20, '0'));
-                detalle.Append(item.ndocumento.PadLeft(15, '0'));
-
-                sb.AppendLine(detalle.ToString());
+                sb.AppendLine(string.Join('\t',
+                    item.nsolicitud.ToString(CultureInfo.InvariantCulture),
+                    bancoConsec.ToString(CultureInfo.InvariantCulture),
+                    fecha,
+                    bancoId,
+                    montoItem.ToString("N2", CultureInfo.InvariantCulture),
+                    item.estado ?? string.Empty,
+                    item.cta_ahorros ?? string.Empty,
+                    item.ndocumento ?? string.Empty,
+                    item.beneficiario ?? string.Empty));
             }
 
             return MTesFuncionesDb.ArchivoResponse(bancoConsec, "txt", sb);

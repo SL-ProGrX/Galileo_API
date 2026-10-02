@@ -62,20 +62,32 @@ namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
             => _db.AfiTarjetasRemesa_Eliminar(CodCliente, cod_remesa);
 
         /// <summary>Inserta una tarjeta de regalo.</summary>
-        public ErrorDto AfiTarjetasRegalo_Insertar(int CodCliente, string tarjetas)
-            => _db.AfiTarjetasRegalo_Insertar(CodCliente, tarjetas);
+        public ErrorDto AfiTarjetasRegalo_Insertar(
+            int CodCliente,
+            AfiBeneTarjetasData tarjeta)
+            => _db.AfiTarjetasRegalo_Insertar(
+                CodCliente,
+                tarjeta);
 
         /// <summary>Actualiza una tarjeta de regalo.</summary>
-        public ErrorDto AfiTarjetasRegalo_Actualizar(int CodCliente, string tarjetas)
-            => _db.AfiTarjetasRegalo_Actualizar(CodCliente, tarjetas);
+        public ErrorDto AfiTarjetasRegalo_Actualizar(
+            int CodCliente,
+            AfiBeneTarjetasData tarjeta)
+            => _db.AfiTarjetasRegalo_Actualizar(
+                CodCliente,
+                tarjeta);
+
+        /// <summary>Recarga las tarjetas de regalo.</summary>
+        public ErrorDto AfiTarjetasRegalo_Recargar(
+            int CodCliente,
+            AfiBeneTarjetasRecargaData request)
+            => _db.AfiTarjetasRegalo_Recargar(
+                CodCliente,
+                request);
 
         /// <summary>Elimina una tarjeta de regalo.</summary>
         public ErrorDto AfiTarjetasRegalo_Eliminar(int CodCliente, int id_tr)
             => _db.AfiTarjetasRegalo_Eliminar(CodCliente, id_tr);
-
-        /// <summary>Recarga las tarjetas de regalo.</summary>
-        public ErrorDto AfiTarjetasRegalo_Recargar(int CodCliente, string tarjetas)
-            => _db.AfiTarjetasRegalo_Recargar(CodCliente, tarjetas);
 
         /// <summary>Envía por correo la solicitud de pago de recarga de tarjetas.</summary>
         public Task<ErrorDto> AfiTarjetasRegaloRecargadas_Enviar(int CodCliente, DocArchivoBeneRecargaTarjetaDto parametros)
