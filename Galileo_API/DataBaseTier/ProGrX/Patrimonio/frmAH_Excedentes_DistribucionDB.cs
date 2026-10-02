@@ -287,114 +287,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <param name="usuario"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public ErrorDto AH_Excedentes_Distribucion_Monto_Guardar(int CodEmpresa,string usuario,AHExcMontoDto dto)
+        public ErrorDto AH_Excedentes_Distribucion_Monto_Guardar(int CodEmpresa,string usuario, AHExcMontoDto? dto)
         {
-            usuario = (usuario ?? string.Empty).Trim();
-
-            if (string.IsNullOrWhiteSpace(usuario))
-            {
-                return new ErrorDto
-                {
-                    Code = -2,
-                    Description = "Debe indicar el usuario del sistema."
-                };
-            }
-
-            if (dto is null)
-            {
-                return new ErrorDto
-                {
-                    Code = -2,
-                    Description = "Debe indicar la información a guardar."
-                };
-            }
-
-            dto.periodo = (dto.periodo ?? string.Empty).Trim();
-            dto.corte = (dto.corte ?? string.Empty).Trim();
-            dto.tipo = (dto.tipo ?? string.Empty).Trim().ToUpperInvariant();
-            dto.baseCalculo =
-                (dto.baseCalculo ?? string.Empty).Trim().ToUpperInvariant();
-            dto.justificacion =
-                (dto.justificacion ?? string.Empty).Trim();
-
-            if (string.IsNullOrWhiteSpace(dto.periodo))
-            {
-                return new ErrorDto
-                {
-                    Code = -2,
-                    Description = "Debe indicar el período."
-                };
-            }
-
-            if (string.IsNullOrWhiteSpace(dto.corte))
-            {
-                return new ErrorDto
-                {
-                    Code = -2,
-                    Description = "Debe indicar el corte."
-                };
-            }
-
-            if (string.IsNullOrWhiteSpace(dto.tipo))
-            {
-                return new ErrorDto
-                {
-                    Code = -2,
-                    Description = "Debe indicar el tipo de distribución."
-                };
-            }
-
-            if (string.IsNullOrWhiteSpace(dto.baseCalculo))
-            {
-                return new ErrorDto
-                {
-                    Code = -2,
-                    Description = "Debe indicar la base de cálculo."
-                };
-            }
-
-            using var conn = DbHelper.OpenConnection(
-                _portalDB,
-                CodEmpresa);
-
-            try
-            {
-                const string sql = """
-                    EXEC spExc_Montos_Distribucion_Tabla_Add
-                        @Periodo,
-                        @Movimiento,
-                        @Usuario,
-                        @Corte,
-                        @Tipo,
-                        @BaseCalculo,
-                        @Monto,
-                        @Porcentaje,
-                        @Justificacion;
-                    """;
-
-                conn.Execute(
-                    sql,
-                    new
-                    {
-                        Periodo = dto.periodo,
-                        Movimiento = "A",
-                        Usuario = usuario,
-                        Corte = ObtenerCorteFinDia(dto.corte),
-                        Tipo = dto.tipo,
-                        BaseCalculo = dto.baseCalculo,
-                        Monto = dto.monto,
-                        Porcentaje = dto.porcentaje,
-                        Justificacion =
-                            LimitarTexto(dto.justificacion, 200)
-                    });
-
-                return DbHelper.OkResponse(
-                    "Registro guardado correctamente.");
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
+            return ProcesarMontoDistribucion(CodEmpresa,usuario, dto, "A");
         }
 
         /// <summary>
@@ -404,68 +299,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <param name="usuario"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public ErrorDto AH_Excedentes_Distribucion_Monto_Eliminar(int CodEmpresa,string usuario,AHExcMontoDto dto)
+        public ErrorDto AH_Excedentes_Distribucion_Monto_Eliminar(int CodEmpresa, string usuario,AHExcMontoDto? dto)
         {
-            usuario = (usuario ?? string.Empty).Trim();
+            return ProcesarMontoDistribucion(CodEmpresa, usuario, dto,"B");
+        }
 
-            if (string.IsNullOrWhiteSpace(usuario))
+        private ErrorDto ProcesarMontoDistribucion(int CodEmpresa, string usuario, AHExcMontoDto? dto,string movimiento)
+        {
+            ErrorDto? validacion = PrepararMontoDistribucion(
+                usuario,
+                dto,
+                out string usuarioNormalizado);
+
+            if (validacion is not null)
             {
-                return new ErrorDto
-                {
-                    Code = -2,
-                    Description = "Debe indicar el usuario del sistema."
-                };
-            }
-
-            if (dto is null)
-            {
-                return new ErrorDto
-                {
-                    Code = -2,
-                    Description = "Debe indicar la información a eliminar."
-                };
-            }
-
-            dto.periodo = (dto.periodo ?? string.Empty).Trim();
-            dto.corte = (dto.corte ?? string.Empty).Trim();
-            dto.tipo = (dto.tipo ?? string.Empty).Trim().ToUpperInvariant();
-            dto.baseCalculo = (dto.baseCalculo ?? string.Empty).Trim().ToUpperInvariant();
-            dto.justificacion = (dto.justificacion ?? string.Empty).Trim();
-
-            if (string.IsNullOrWhiteSpace(dto.periodo))
-            {
-                return new ErrorDto
-                {
-                    Code = -2,
-                    Description = "Debe indicar el período."
-                };
-            }
-
-            if (string.IsNullOrWhiteSpace(dto.corte))
-            {
-                return new ErrorDto
-                {
-                    Code = -2,
-                    Description = "Debe indicar el corte."
-                };
-            }
-
-            if (string.IsNullOrWhiteSpace(dto.tipo))
-            {
-                return new ErrorDto
-                {
-                    Code = -2,
-                    Description = "Debe indicar el tipo de distribución."
-                };
-            }
-
-            if (string.IsNullOrWhiteSpace(dto.baseCalculo))
-            {
-                return new ErrorDto
-                {
-                    Code = -2,
-                    Description = "Debe indicar la base de cálculo."
-                };
+                return validacion;
             }
 
             using var conn = DbHelper.OpenConnection(
@@ -491,24 +339,100 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                     sql,
                     new
                     {
-                        Periodo = dto.periodo,
-                        Movimiento = "B",
-                        Usuario = usuario,
+                        Periodo = dto!.periodo,
+                        Movimiento = movimiento,
+                        Usuario = usuarioNormalizado,
                         Corte = ObtenerCorteFinDia(dto.corte),
                         Tipo = dto.tipo,
                         BaseCalculo = dto.baseCalculo,
                         Monto = dto.monto,
                         Porcentaje = dto.porcentaje,
-                        Justificacion = LimitarTexto(dto.justificacion, 200)
+                        Justificacion =
+                            LimitarTexto(dto.justificacion, 200)
                     });
 
-                return DbHelper.OkResponse(
-                    "Registro eliminado correctamente.");
+                string mensaje = movimiento == "A"
+                    ? "Registro guardado correctamente."
+                    : "Registro eliminado correctamente.";
+
+                return DbHelper.OkResponse(mensaje);
             }
             catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
+        }
+
+        private static ErrorDto? PrepararMontoDistribucion(string usuario,AHExcMontoDto? dto,out string usuarioNormalizado)
+        {
+            usuarioNormalizado =
+                (usuario ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(usuarioNormalizado))
+            {
+                return CrearErrorValidacion(
+                    "Debe indicar el usuario del sistema.");
+            }
+
+            if (dto is null)
+            {
+                return CrearErrorValidacion(
+                    "Debe indicar la información del movimiento.");
+            }
+
+            dto.periodo =
+                (dto.periodo ?? string.Empty).Trim();
+
+            dto.corte =
+                (dto.corte ?? string.Empty).Trim();
+
+            dto.tipo =
+                (dto.tipo ?? string.Empty)
+                    .Trim()
+                    .ToUpperInvariant();
+
+            dto.baseCalculo =
+                (dto.baseCalculo ?? string.Empty)
+                    .Trim()
+                    .ToUpperInvariant();
+
+            dto.justificacion =
+                (dto.justificacion ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(dto.periodo))
+            {
+                return CrearErrorValidacion(
+                    "Debe indicar el período.");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.corte))
+            {
+                return CrearErrorValidacion(
+                    "Debe indicar el corte.");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.tipo))
+            {
+                return CrearErrorValidacion(
+                    "Debe indicar el tipo de distribución.");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.baseCalculo))
+            {
+                return CrearErrorValidacion(
+                    "Debe indicar la base de cálculo.");
+            }
+
+            return null;
+        }
+
+        private static ErrorDto CrearErrorValidacion(string descripcion)
+        {
+            return new ErrorDto
+            {
+                Code = -2,
+                Description = descripcion
+            };
         }
 
         private static string ObtenerCorteFinDia(string corte)

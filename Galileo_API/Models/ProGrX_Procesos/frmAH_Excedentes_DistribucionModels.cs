@@ -6,8 +6,8 @@
         public string corte { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
         public string baseCalculo { get; set; } = string.Empty;
-        public decimal porcentaje { get; set; }
-        public decimal monto { get; set; }
+        public decimal? porcentaje { get; set; }
+        public decimal? monto { get; set; }
         public string justificacion { get; set; } = string.Empty;
     }
 
