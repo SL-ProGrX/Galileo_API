@@ -171,7 +171,7 @@ namespace Galileo.DataBaseTier
                 CreatePortalDb(),
                 CodEmpresa,
                 @"SELECT 'Factura' AS Tipo,
-                         cod_factura AS Transacccion,
+                         cod_factura AS Transaccion,
                          creacion_fecha AS Fecha,
                          Creacion_User AS Usuario,
                          Total AS Monto,
@@ -183,7 +183,7 @@ namespace Galileo.DataBaseTier
                     AND dbo.fxCxP_AsientoBalanceado('factura', COD_PROVEEDOR, COD_FACTURA) = 0
                   UNION
                   SELECT 'Factura' AS Tipo,
-                         cod_factura AS Transacccion,
+                         cod_factura AS Transaccion,
                          Anula_fecha AS Fecha,
                          Anula_User AS Usuario,
                          Total AS Monto,

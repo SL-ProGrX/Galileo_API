@@ -14,6 +14,7 @@ namespace Galileo.DataBaseTier
 
         /// <summary>
         /// Obtiene el listado de bancos autorizados para cuentas por pagar.
+        /// Equivalente VB6 sbInicializa (SELECT con join a Tes_Bancos).
         /// </summary>
         /// <param name="CodCliente">Código de la empresa cliente.</param>
         /// <returns>Lista de bancos autorizados.</returns>
@@ -22,11 +23,15 @@ namespace Galileo.DataBaseTier
             return DbHelper.ExecuteListQuery<BancosAutorizadosDto>(
                 CreatePortalDb(),
                 CodCliente,
-                "spObtenerTodosBancosAutorizados");
+                @"select X.id_banco, B.descripcion, X.cheques, X.transferencias
+                  from CxP_Bancos_Autorizados X
+                  inner join Tes_Bancos B on X.id_banco = B.id_Banco
+                  order by B.id_banco");
         }
 
         /// <summary>
         /// Inserta en la tabla de bancos autorizados los bancos de tesorería que aún no han sido registrados.
+        /// Equivalente VB6 sbInicializa (INSERT faltantes desde Tes_Bancos).
         /// </summary>
         /// <param name="Usuario">Usuario que registra la operación.</param>
         /// <param name="CodCliente">Código de la empresa cliente.</param>
@@ -49,6 +54,7 @@ namespace Galileo.DataBaseTier
 
         /// <summary>
         /// Actualiza la autorización de transferencias para un banco.
+        /// Equivalente VB6 vGrid_ButtonClicked Col=4.
         /// </summary>
         /// <param name="BancoId">Identificador del banco.</param>
         /// <param name="Valor">Valor de autorización a aplicar.</param>
@@ -59,7 +65,9 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodCliente,
-                "spActualizarBancoAutorizacionTransferencia",
+                @"update CxP_Bancos_Autorizados
+                  set transferencias = @Valor
+                  where id_Banco = @BancoId",
                 new
                 {
                     Valor,
@@ -73,6 +81,7 @@ namespace Galileo.DataBaseTier
 
         /// <summary>
         /// Actualiza la autorización de cheques para un banco.
+        /// Equivalente VB6 vGrid_ButtonClicked Col=3.
         /// </summary>
         /// <param name="BancoId">Identificador del banco.</param>
         /// <param name="Valor">Valor de autorización a aplicar.</param>
@@ -83,7 +92,9 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodCliente,
-                "spActualizarBancoAutorizacionCheques",
+                @"update CxP_Bancos_Autorizados
+                  set cheques = @Valor
+                  where id_Banco = @BancoId",
                 new
                 {
                     Valor,
