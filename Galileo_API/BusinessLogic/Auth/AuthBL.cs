@@ -2,12 +2,17 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.Auth;
 using Microsoft.Data.SqlClient;
+using System.Net;
 
 namespace Galileo.BusinessLogic.Auth;
 
 public sealed class AuthBL
 {
     private const string InvalidChallengeStatus = "invalidChallenge";
+    private const string InvalidCodeStatus = "invalidCode";
+    private const string AuthenticationUnavailableStatus = "authenticationUnavailable";
+    private const string PasswordChangeFailedStatus = "passwordChangeFailed";
+    private const string PolicyLookupFailureMessage = "No fue posible consultar las políticas de contraseña.";
 
     private readonly LogonDB _logonDb;
     private readonly PerfilUsuarioDB _perfilDb;
@@ -16,6 +21,7 @@ public sealed class AuthBL
     private readonly AccessTokenService _accessTokenService;
     private readonly AuthSessionStore _sessionStore;
     private readonly JwtDto _jwtSettings;
+    private readonly string _galileoAppName;
 
     public AuthBL(
         IConfiguration configuration,
@@ -29,6 +35,7 @@ public sealed class AuthBL
         _accessTokenService = accessTokenService;
         _sessionStore = sessionStore;
         _jwtSettings = configuration.GetSection("Jwt").Get<JwtDto>() ?? new JwtDto();
+        _galileoAppName = configuration["AppSettings:GalileoAppName"] ?? "Galileo";
     }
 
     public async Task<AuthResponseDto> LoginAsync(AuthLoginRequest request, string application)
@@ -54,6 +61,178 @@ public sealed class AuthBL
         {
             return AuthenticationUnavailable(ex.Message);
         }
+    }
+
+    public AuthResponseDto PreInicializarGalileo(string username, string appVersion)
+    {
+        if (string.IsNullOrWhiteSpace(username) ||
+            string.IsNullOrWhiteSpace(appVersion) ||
+            appVersion.Length > 50)
+        {
+            return new AuthResponseDto
+            {
+                Status = AuthenticationUnavailableStatus,
+                Detail = "No fue posible validar los datos de inicialización de Galileo.",
+            };
+        }
+
+        username = username.Trim();
+        try
+        {
+            return ValidarUsuarioYAplicacionGalileo(username, appVersion);
+        }
+        catch (Exception ex) when (ex is SqlException or InvalidOperationException or ArgumentException)
+        {
+            return AuthenticationUnavailable(ex.Message);
+        }
+    }
+
+    public AuthResponseDto InicializarGalileo(
+        string username,
+        GalileoSecurityInitializeRequest request,
+        Guid deviceId,
+        string remoteIp)
+    {
+        if (string.IsNullOrWhiteSpace(username) ||
+            request is null ||
+            request.EmpresaId <= 0 ||
+            string.IsNullOrWhiteSpace(request.AppVersion) ||
+            request.AppVersion.Length > 50 ||
+            deviceId == Guid.Empty ||
+            !IPAddress.TryParse(remoteIp, out var parsedIp))
+        {
+            return new AuthResponseDto
+            {
+                Status = AuthenticationUnavailableStatus,
+                Detail = "No fue posible validar los datos de inicialización de Galileo.",
+            };
+        }
+
+        username = username.Trim();
+        var ipAddress = parsedIp.IsIPv4MappedToIPv6
+            ? parsedIp.MapToIPv4().ToString()
+            : parsedIp.ToString();
+
+        try
+        {
+            var empresas = _logonDb.ClientesObtener(username);
+            if (empresas.Code < 0 || empresas.Result is null)
+            {
+                throw new InvalidOperationException(
+                    empresas.Description ?? "No fue posible consultar las empresas del usuario.");
+            }
+
+            var tieneAccesoEmpresa = empresas.Result.Any(empresa =>
+                (int.TryParse(empresa.Cod_Empresa, out var codEmpresa) && codEmpresa == request.EmpresaId) ||
+                (int.TryParse(empresa.CodEmpresa, out codEmpresa) && codEmpresa == request.EmpresaId));
+            if (!tieneAccesoEmpresa)
+            {
+                return new AuthResponseDto
+                {
+                    Status = "accessDenied",
+                    Detail = "El usuario no tiene acceso a la empresa seleccionada.",
+                };
+            }
+
+            var seguridad = ValidarUsuarioYAplicacionGalileo(username, request.AppVersion);
+            if (seguridad.Status != "ready")
+            {
+                return seguridad;
+            }
+
+            var accessLimit = _seguridadPortalDb.RegistrarDispositivoWeb(
+                request.EmpresaId,
+                username,
+                deviceId,
+                ipAddress,
+                request.AppVersion);
+            if (accessLimit.Indicador != 1)
+            {
+                return new AuthResponseDto
+                {
+                    Status = "accessDenied",
+                    Detail = $"Limitación de acceso: {accessLimit.Notas}",
+                    PasswordExpiryNotice = seguridad.PasswordExpiryNotice,
+                };
+            }
+
+            return new AuthResponseDto
+            {
+                Status = "ready",
+                AppStatus = seguridad.AppStatus,
+                PasswordExpiryNotice = seguridad.PasswordExpiryNotice,
+            };
+        }
+        catch (Exception ex) when (ex is SqlException or InvalidOperationException or ArgumentException)
+        {
+            return AuthenticationUnavailable(ex.Message);
+        }
+    }
+
+    private AuthResponseDto ValidarUsuarioYAplicacionGalileo(string username, string appVersion)
+    {
+        var bloqueo = _seguridadPortalDb.UsuarioBloqueoObtener(username);
+        if (bloqueo.Bloqueo == 1)
+        {
+            return new AuthResponseDto
+            {
+                Status = "accountBlocked",
+                Detail = "Su contraseña se encuentra bloqueada. Espere el desbloqueo automático o comuníquese con su administrador de sistemas.",
+            };
+        }
+
+        var condicion = _seguridadPortalDb.UsuarioCondicionObtener(username);
+        if (condicion.KEY_RENEW_SESION == 1)
+        {
+            return new AuthResponseDto
+            {
+                Status = "passwordChangeRequired",
+                Detail = "Debe renovar su contraseña para continuar.",
+            };
+        }
+
+        var vencimiento = _seguridadPortalDb.UsuarioVencimientoObtener(username);
+        if (vencimiento.Vencida == 1)
+        {
+            return new AuthResponseDto
+            {
+                Status = "passwordChangeRequired",
+                Detail = "Su contraseña ya se encuentra vencida. Debe cambiarla para continuar.",
+            };
+        }
+
+        var passwordExpiryNotice = vencimiento.Renovacion == 1
+            ? CrearAvisoVencimiento(vencimiento.Dias)
+            : null;
+        var appStatus = _seguridadPortalDb.AppStatusCompletoObtener(_galileoAppName, appVersion);
+        if (appStatus.Pasa != 1)
+        {
+            return new AuthResponseDto
+            {
+                Status = "applicationBlocked",
+                Detail = $"El sistema: {_galileoAppName} versión [{appVersion}] no tiene acceso. Nota: {appStatus.Notas}",
+                PasswordExpiryNotice = passwordExpiryNotice,
+            };
+        }
+
+        return new AuthResponseDto
+        {
+            Status = "ready",
+            AppStatus = appStatus.Version_Status,
+            PasswordExpiryNotice = passwordExpiryNotice,
+        };
+    }
+
+    private static string CrearAvisoVencimiento(int dias)
+    {
+        var periodo = dias switch
+        {
+            0 => "hoy (0 días)",
+            1 => "en 1 día",
+            _ => $"en {dias} días",
+        };
+
+        return $"Su contraseña vence {periodo}. Cámbiela antes de que caduque.";
     }
 
     private AuthResponseDto? ValidateCredentials(string username, string password)
@@ -169,7 +348,7 @@ public sealed class AuthBL
         if (validation.Code != 1)
         {
             _sessionStore.RegisterChallengeFailure(request.ChallengeToken, AuthApplications.SSecurity);
-            return new AuthResponseDto { Status = "invalidCode" };
+            return new AuthResponseDto { Status = InvalidCodeStatus };
         }
 
         if (!_sessionStore.TryConsumeChallenge(request.ChallengeToken, AuthApplications.SSecurity, out _))
@@ -232,7 +411,7 @@ public sealed class AuthBL
             var passwordParameters = _cambiarContrasenaDb.ParametrosObtener();
             if (passwordParameters.Code < 0 || passwordParameters.Result is null)
             {
-                throw new InvalidOperationException(passwordParameters.Description ?? "No fue posible consultar las políticas de contraseña.");
+                throw new InvalidOperationException(passwordParameters.Description ?? PolicyLookupFailureMessage);
             }
 
             var policy = passwordParameters.Result;
@@ -240,12 +419,28 @@ public sealed class AuthBL
             {
                 return new AuthResponseDto
                 {
-                    Status = "passwordChangeFailed",
+                    Status = PasswordChangeFailedStatus,
                     Detail = $"La nueva contraseña debe tener entre {policy.key_lenmin} y {policy.key_lenmax} caracteres y cumplir los requisitos de complejidad configurados.",
                 };
             }
 
             var encodedNewPassword = EncodeLegacyPassword(request.NuevaContrasena);
+            var encodedCurrentPassword = EncodeLegacyPassword(request.PassViejo);
+            var credentialsError = ValidateCredentials(challenge.User.Usuario, encodedCurrentPassword);
+            if (credentialsError is not null)
+            {
+                if (credentialsError.Status == AuthenticationUnavailableStatus)
+                {
+                    return credentialsError;
+                }
+
+                _sessionStore.RegisterChallengeFailure(request.ChallengeToken, AuthApplications.SSecurity);
+                return new AuthResponseDto
+                {
+                    Status = PasswordChangeFailedStatus,
+                    Detail = "La contraseña actual no corresponde a la cuenta.",
+                };
+            }
 
             var history = _cambiarContrasenaDb.KeyHistoryObtener(
                 challenge.User.Usuario,
@@ -260,26 +455,26 @@ public sealed class AuthBL
                 _sessionStore.RegisterChallengeFailure(request.ChallengeToken, AuthApplications.SSecurity);
                 return new AuthResponseDto
                 {
-                    Status = "passwordChangeFailed",
+                    Status = PasswordChangeFailedStatus,
                     Detail = "No puede reutilizar una de sus contraseñas recientes.",
                 };
             }
 
-            var rowsAffected = _cambiarContrasenaDb.CambiarClaveParaAutenticacion(new ClaveCambiarDto
+            var passwordChanged = _cambiarContrasenaDb.CambiarClaveParaAutenticacion(new ClaveCambiarDto
             {
                 Cliente = 1,
                 Usuario = challenge.User.Usuario,
-                PassViejo = request.PassViejo,
+                PassViejo = encodedCurrentPassword,
                 PassNuevo = encodedNewPassword,
-                Renueva = 1,
+                Renueva = 0,
             });
 
-            if (rowsAffected <= 0)
+            if (!passwordChanged)
             {
                 _sessionStore.RegisterChallengeFailure(request.ChallengeToken, AuthApplications.SSecurity);
                 return new AuthResponseDto
                 {
-                    Status = "passwordChangeFailed",
+                    Status = PasswordChangeFailedStatus,
                     Detail = "No fue posible cambiar la contraseña. Verifique la contraseña actual y las políticas de seguridad.",
                 };
             }
@@ -291,6 +486,121 @@ public sealed class AuthBL
         {
             return AuthenticationUnavailable(ex.Message);
         }
+    }
+
+    public AuthResponseDto ObtenerPoliticaRecuperacionGalileo(GalileoPasswordRecoveryTokenRequest request)
+    {
+        if (request is null || string.IsNullOrWhiteSpace(request.Usuario) ||
+            string.IsNullOrWhiteSpace(request.Token) || request.Usuario.Length > 50 || request.Token.Length > 256)
+        {
+            return new AuthResponseDto { Status = InvalidCodeStatus };
+        }
+
+        try
+        {
+            var usuario = request.Usuario.Trim();
+            var tokenStatus = _cambiarContrasenaDb.ValidarTokenParaRecuperacion(usuario, request.Token.Trim());
+            if (tokenStatus != 1)
+            {
+                return new AuthResponseDto { Status = tokenStatus == -1 ? "expiredCode" : InvalidCodeStatus };
+            }
+
+            var parameters = _cambiarContrasenaDb.ParametrosObtener();
+            if (parameters.Code < 0 || parameters.Result is null)
+            {
+                throw new InvalidOperationException(parameters.Description ?? PolicyLookupFailureMessage);
+            }
+
+            return new AuthResponseDto { Status = "recoveryReady", PasswordPolicy = parameters.Result };
+        }
+        catch (Exception ex) when (ex is SqlException or InvalidOperationException)
+        {
+            return AuthenticationUnavailable(ex.Message);
+        }
+    }
+
+    public AuthResponseDto RecuperarContrasenaGalileo(GalileoPasswordRecoveryRequest request)
+    {
+        if (request is null || TieneDatosRecuperacionInvalidos(request))
+        {
+            return new AuthResponseDto { Status = PasswordChangeFailedStatus, Detail = "Verifique el usuario, el token y la nueva contraseña." };
+        }
+
+        var usuario = request.Usuario.Trim();
+        var token = request.Token.Trim();
+        try
+        {
+            var tokenStatus = _cambiarContrasenaDb.ValidarTokenParaRecuperacion(usuario, token);
+            if (tokenStatus != 1)
+            {
+                return new AuthResponseDto { Status = tokenStatus == -1 ? "expiredCode" : InvalidCodeStatus };
+            }
+
+            var parameters = _cambiarContrasenaDb.ParametrosObtener();
+            if (parameters.Code < 0 || parameters.Result is null)
+            {
+                throw new InvalidOperationException(parameters.Description ?? PolicyLookupFailureMessage);
+            }
+
+            var policy = parameters.Result;
+            if (!CumplePoliticasContrasena(request.NuevaContrasena, policy))
+            {
+                return new AuthResponseDto
+                {
+                    Status = PasswordChangeFailedStatus,
+                    Detail = $"La nueva contraseña debe tener entre {policy.key_lenmin} y {policy.key_lenmax} caracteres y cumplir los requisitos de complejidad configurados.",
+                };
+            }
+
+            var encodedNewPassword = EncodeLegacyPassword(request.NuevaContrasena);
+            var history = _cambiarContrasenaDb.KeyHistoryObtener(usuario, Math.Max(0, policy.key_history));
+            if (history.Code < 0 || history.Result is null)
+            {
+                throw new InvalidOperationException(history.Description ?? "No fue posible consultar el historial de contraseñas.");
+            }
+
+            if (history.Result.Contains(encodedNewPassword, StringComparer.OrdinalIgnoreCase))
+            {
+                return new AuthResponseDto
+                {
+                    Status = PasswordChangeFailedStatus,
+                    Detail = "No puede reutilizar una de sus contraseñas recientes.",
+                };
+            }
+
+            var changeStatus = _cambiarContrasenaDb.CambiarClaveParaRecuperacion(new ClaveCambiarDto
+            {
+                Cliente = 1,
+                Usuario = usuario,
+                PassViejo = string.Empty,
+                PassNuevo = encodedNewPassword,
+                Renueva = 0,
+            }, token);
+            return new AuthResponseDto
+            {
+                Status = changeStatus switch
+                {
+                    1 => "passwordChanged",
+                    -1 => "expiredCode",
+                    _ => InvalidCodeStatus,
+                },
+            };
+        }
+        catch (Exception ex) when (ex is SqlException or InvalidOperationException)
+        {
+            return AuthenticationUnavailable(ex.Message);
+        }
+    }
+
+    private static bool TieneDatosRecuperacionInvalidos(GalileoPasswordRecoveryRequest request)
+    {
+        return string.IsNullOrWhiteSpace(request.Usuario) ||
+            string.IsNullOrWhiteSpace(request.Token) ||
+            string.IsNullOrWhiteSpace(request.NuevaContrasena) ||
+            string.IsNullOrWhiteSpace(request.Confirmacion) ||
+            request.Usuario.Length > 50 || request.Token.Length > 256 ||
+            request.NuevaContrasena.Length > 256 || request.Confirmacion.Length > 256 ||
+            !string.Equals(request.NuevaContrasena, request.Confirmacion, StringComparison.Ordinal);
     }
 
     private static bool CumplePoliticasContrasena(string password, ParametrosObtenerDto policy)
@@ -307,7 +617,7 @@ public sealed class AuthBL
 
     private static string EncodeLegacyPassword(string password)
     {
-        // Mantiene compatibilidad con UtilitiesService.generateFixedHash, usado por VB6.
+        // Mantiene compatibilidad con UtilitiesService.generateFixedHash del login de Galileo.
         var digits = new System.Text.StringBuilder();
         for (var index = password.Length - 1; index >= 0; index--)
         {
@@ -334,7 +644,7 @@ public sealed class AuthBL
         }
 
         var result = new System.Text.StringBuilder();
-        for (var index = 0; index < transformed.Length; index += 2)
+        for (var index = 0; index < transformed.Length; index++)
         {
             var length = Math.Min(2, transformed.Length - index);
             if (int.TryParse(transformed.ToString(index, length), out var characterCode) &&
@@ -366,7 +676,7 @@ public sealed class AuthBL
             var passwordParameters = _cambiarContrasenaDb.ParametrosObtener();
             if (passwordParameters.Code < 0 || passwordParameters.Result is null)
             {
-                throw new InvalidOperationException(passwordParameters.Description ?? "No fue posible consultar las políticas de contraseña.");
+                throw new InvalidOperationException(passwordParameters.Description ?? PolicyLookupFailureMessage);
             }
 
             var challenge = _sessionStore.CreateChallenge(
@@ -390,7 +700,6 @@ public sealed class AuthBL
         var response = CreateAuthenticatedResponse(user, AuthApplications.SSecurity, authenticationMethod);
         if (vencimiento.Renovacion == 1)
         {
-            var periodo = vencimiento.Dias == 0 ? "hasta hoy" : $"en {vencimiento.Dias} día(s)";
             response = new AuthResponseDto
             {
                 Status = response.Status,
@@ -398,7 +707,7 @@ public sealed class AuthBL
                 ExpiresAtUtc = response.ExpiresAtUtc,
                 User = response.User,
                 RefreshToken = response.RefreshToken,
-                PasswordExpiryNotice = $"Su contraseña está próxima a vencer ({periodo}). Cámbiela antes de que caduque.",
+                PasswordExpiryNotice = CrearAvisoVencimiento(vencimiento.Dias),
             };
         }
 
@@ -449,7 +758,7 @@ public sealed class AuthBL
     {
         return new AuthResponseDto
         {
-            Status = "authenticationUnavailable",
+            Status = AuthenticationUnavailableStatus,
             Detail = string.IsNullOrWhiteSpace(detail)
                 ? "No fue posible completar la autenticación."
                 : detail,
