@@ -1,89 +1,312 @@
 using Dapper;
-using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
 using Microsoft.Data.SqlClient;
-using Newtonsoft.Json;
 using System.Data;
 
 namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Acceso a datos de las Apelaciones de Expediente Fosol (frmFSL_ExpedienteApelaciones).
-    /// </summary>
-    public partial class FrmFslExpedienteApelacionesDB
+    public sealed class FrmFslExpedienteApelacionesDb
     {
-        private readonly IConfiguration _config;
+        private const int CodigoValidacion = -2;
 
-        /// <summary>
-        /// Inicializa el acceso a datos con la configuración inyectada.
-        /// </summary>
-        /// <param name="config">Configuración de la aplicación.</param>
-        public FrmFslExpedienteApelacionesDB(IConfiguration config)
+        private const string EstadoRechazado = "R";
+        private const string EstadoAplicado = "X";
+        private const string ResolucionPendiente = "P";
+        private const string ResolucionAprobada = "A";
+        private const string ResolucionRechazada = "R";
+
+        private const string MensajeExpedienteRequerido =
+            "El c&oacute;digo del expediente es requerido.";
+
+        private const string MensajeExpedienteNoExiste =
+            "El expediente indicado no existe.";
+
+        private const string MensajeTipoApelacionRequerido =
+            "El tipo de apelaci&oacute;n es requerido.";
+
+        private const string MensajeUsuarioRequerido =
+            "El usuario es requerido.";
+
+        private const string MensajeApelacionPendiente =
+            "Ya se encuentra registrada una apelaci&oacute;n pendiente de resoluci&oacute;n para este expediente.";
+
+        private const string MensajeExpedienteNoRechazado =
+            "El expediente no se encuentra rechazado para registrar una apelaci&oacute;n.";
+
+        private const string MensajeExpedienteAplicado =
+            "Este expediente se encuentra aplicado y no se puede cambiar la resoluci&oacute;n.";
+
+        private const string MensajeSinApelacionPendiente =
+            "No existe ninguna apelaci&oacute;n pendiente de resoluci&oacute;n.";
+
+        private const string MensajeNotasResolucion =
+            "Debe indicar una nota v&aacute;lida para la resoluci&oacute;n.";
+
+        private readonly PortalDB _portalDb;
+        private readonly FrmFslExpedienteDB _expedienteDb;
+
+        public FrmFslExpedienteApelacionesDb(
+            IConfiguration config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+            ArgumentNullException.ThrowIfNull(config);
+
+            _portalDb = new PortalDB(config);
+            _expedienteDb =
+                new FrmFslExpedienteDB(config);
         }
 
         /// <summary>
-        /// Crea una instancia de acceso al portal usando la configuración inyectada.
+        /// Obtiene el encabezado del expediente seleccionado.
         /// </summary>
-        private PortalDB CreatePortalDb() => new(_config);
+        /// <param name="CodEmpresa">
+        /// C&oacute;digo de empresa.
+        /// </param>
+        /// <param name="codExpediente">
+        /// C&oacute;digo del expediente.
+        /// </param>
+        /// <returns>
+        /// Informaci&oacute;n general del expediente.
+        /// </returns>
+        public ErrorDto<FslExpedienteDatos>
+            FSL_ExpedienteApelaciones_Expediente_Obtener(
+                int CodEmpresa,
+                long codExpediente)
+        {
+            return _expedienteDb.FSL_Expediente_Obtener(
+                CodEmpresa,
+                codExpediente);
+        }
 
         /// <summary>
-        /// Obtiene los tipos de apelación activos.
+        /// Obtiene los tipos de apelaci&oacute;n activos.
         /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <returns>Lista de tipos de apelación.</returns>
-        public ErrorDto<List<FslTipoApelacion>> FslTipoApelacion_Obtener(int CodCliente)
+        /// <param name="CodEmpresa">
+        /// C&oacute;digo de empresa.
+        /// </param>
+        /// <returns>
+        /// Tipos de apelaci&oacute;n disponibles.
+        /// </returns>
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            FSL_ExpedienteApelaciones_Catalogo_Obtener(
+                int CodEmpresa)
         {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
-            {
-                const string sql = @"SELECT cod_apelacion AS item, RTRIM(cod_apelacion) + ' - ' + DESCRIPCION AS descripcion
-                                     FROM FSL_TIPOS_APELACIONES WHERE ACTIVA = 1";
-                return connection.Query<FslTipoApelacion>(sql).ToList();
-            });
+            const string sql = """
+                SELECT
+                    RTRIM(COD_APELACION) AS item,
+                    RTRIM(COD_APELACION) + ' - ' +
+                    RTRIM(ISNULL(DESCRIPCION, ''))
+                        AS descripcion
+                FROM FSL_TIPOS_APELACIONES
+                WHERE ACTIVA = 1
+                ORDER BY COD_APELACION;
+                """;
 
-            if (result.Code != 0)
+            return DbHelper.ExecuteListQuery<
+                DropDownListaGenericaModel>(
+                    _portalDb,
+                    CodEmpresa,
+                    sql);
+        }
+
+        /// <summary>
+        /// Obtiene el hist&oacute;rico de apelaciones del expediente.
+        /// </summary>
+        /// <param name="CodEmpresa">
+        /// C&oacute;digo de empresa.
+        /// </param>
+        /// <param name="codExpediente">
+        /// C&oacute;digo del expediente.
+        /// </param>
+        /// <returns>
+        /// Apelaciones registradas.
+        /// </returns>
+        public ErrorDto<List<FslExpedienteApelacionData>>
+            FSL_ExpedienteApelaciones_Historico_Obtener(
+                int CodEmpresa,
+                long codExpediente)
+        {
+            if (codExpediente <= 0)
             {
-                return DbHelper.CreateErrorResponse<List<FslTipoApelacion>>("FslTipoApelacion_Obtener - " + result.Description);
+                return DbHelper.CreateErrorResponse(
+                    MensajeExpedienteRequerido,
+                    CodigoValidacion,
+                    new List<
+                        FslExpedienteApelacionData>());
             }
 
-            return result;
+            return _expedienteDb
+                .FSL_Expediente_Apelaciones_Obtener(
+                    CodEmpresa,
+                    codExpediente);
         }
 
         /// <summary>
-        /// Registra una apelación al expediente, validando que no exista una pendiente.
+        /// Obtiene los miembros del comit&eacute; asociado al expediente.
         /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="expediente">Datos de la apelación.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto FslApelacion_Aplicar(int CodCliente, FslApleacionAplicar expediente)
+        /// <param name="CodEmpresa">
+        /// C&oacute;digo de empresa.
+        /// </param>
+        /// <param name="codExpediente">
+        /// C&oacute;digo del expediente.
+        /// </param>
+        /// <returns>
+        /// Miembros activos del comit&eacute;.
+        /// </returns>
+        public ErrorDto<
+            List<FslExpedienteResolucionMiembroData>>
+            FSL_ExpedienteApelaciones_Miembros_Obtener(
+                int CodEmpresa,
+                long codExpediente)
         {
-            using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente);
+            if (codExpediente <= 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    MensajeExpedienteRequerido,
+                    CodigoValidacion,
+                    new List<
+                        FslExpedienteResolucionMiembroData>());
+            }
+
+            return _expedienteDb
+                .FSL_Expediente_ResolucionMiembros_Obtener(
+                    CodEmpresa,
+                    codExpediente);
+        }
+
+        /// <summary>
+        /// Obtiene el usuario vinculado al miembro del comit&eacute;.
+        /// </summary>
+        /// <param name="CodEmpresa">
+        /// C&oacute;digo de empresa.
+        /// </param>
+        /// <param name="cedula">
+        /// Identificaci&oacute;n del miembro.
+        /// </param>
+        /// <param name="codComite">
+        /// C&oacute;digo del comit&eacute;.
+        /// </param>
+        /// <returns>
+        /// Usuario vinculado.
+        /// </returns>
+        public ErrorDto<string>
+            FSL_ExpedienteApelaciones_UsuarioVinculado_Obtener(
+                int CodEmpresa,
+                string cedula,
+                string codComite)
+        {
+            return _expedienteDb
+                .FSL_Expediente_UsuarioVinculado_Obtener(
+                    CodEmpresa,
+                    cedula,
+                    codComite);
+        }
+
+        /// <summary>
+        /// Valida las credenciales de un miembro del comit&eacute;.
+        /// </summary>
+        /// <param name="CodEmpresa">
+        /// C&oacute;digo de empresa.
+        /// </param>
+        /// <param name="request">
+        /// Credenciales del miembro.
+        /// </param>
+        /// <returns>
+        /// Resultado de la validaci&oacute;n.
+        /// </returns>
+        public ErrorDto
+            FSL_ExpedienteApelaciones_Miembro_Validar(
+                int CodEmpresa,
+                FslExpedienteMiembroValidarRequest? request)
+        {
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse(
+                    "Las credenciales del miembro son requeridas.",
+                    CodigoValidacion);
+            }
+
+            return _expedienteDb
+                .FSL_Expediente_Miembro_Validar(
+                    CodEmpresa,
+                    request);
+        }
+
+        /// <summary>
+        /// Registra una nueva apelaci&oacute;n para el expediente.
+        /// </summary>
+        /// <param name="CodEmpresa">
+        /// C&oacute;digo de empresa.
+        /// </param>
+        /// <param name="request">
+        /// Informaci&oacute;n de la apelaci&oacute;n.
+        /// </param>
+        /// <returns>
+        /// Resultado del registro.
+        /// </returns>
+        public ErrorDto
+            FSL_ExpedienteApelaciones_Apelacion_Agregar(
+                int CodEmpresa,
+                FslExpedienteApelacionAgregarRequest? request)
+        {
+            var validacion =
+                FSL_ExpedienteApelaciones_Apelacion_Validar(
+                    request);
+
+            if (validacion is not null)
+            {
+                return validacion;
+            }
+
             try
             {
-                const string sqlLinea = @"SELECT ISNULL(MAX(Linea), 0) AS Linea FROM FSL_EXPEDIENTES_APELACIONES
-                                          WHERE cod_Expediente = @cod_expediente AND resolucion = 'P'";
-                var linea = connection.QueryFirstOrDefault<int>(sqlLinea, new { expediente.cod_expediente });
+                using var connection =
+                    DbHelper.OpenConnection(
+                        _portalDb,
+                        CodEmpresa);
 
-                if (linea > 0)
+                connection.Open();
+
+                var estado =
+                    FSL_ExpedienteApelaciones_Estado_Obtener(
+                        connection,
+                        request!.cod_expediente);
+
+                var estadoValidacion =
+                    FSL_ExpedienteApelaciones_Estado_Validar(
+                        estado);
+
+                if (estadoValidacion is not null)
                 {
-                    return DbHelper.ErrorResponse("Ya se encuentra registrada una apelación (Pendiente de Resolución) a este expediente, verifique!");
+                    return estadoValidacion;
                 }
 
-                var res = connection.Query<int>("[spFSL_ApelacionRegistra]", new
-                {
-                    Expediente = expediente.cod_expediente,
-                    tipo = expediente.cod_apelacion,
-                    PresentaCedula = expediente.presentaCedula,
-                    PresentaNombre = expediente.presentaNombre,
-                    PresentaNotas = expediente.presentaNotas,
-                    Usuario = expediente.usuario
-                }, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                connection.Execute(
+                    "[spFSL_ApelacionRegistra]",
+                    new
+                    {
+                        Expediente =
+                            request.cod_expediente,
+                        Tipo =
+                            request.cod_apelacion.Trim(),
+                        PresentaCedula =
+                            request.presenta_identificacion
+                                .Trim(),
+                        PresentaNombre =
+                            request.presenta_nombre.Trim(),
+                        PresentaNotas =
+                            request.notas.Trim(),
+                        Usuario =
+                            request.usuario
+                                .Trim()
+                                .ToUpperInvariant()
+                    },
+                    commandType:
+                        CommandType.StoredProcedure);
 
-                return res == 0
-                    ? DbHelper.ErrorResponse("No fue posible aplicar la operación")
-                    : new ErrorDto { Code = 0 };
+                return DbHelper.OkResponse(
+                    "Apelaci&oacute;n registrada satisfactoriamente.");
             }
             catch (Exception ex)
             {
@@ -92,35 +315,45 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Aplica la resolución de una apelación: valida el número de resolutores, actualiza expediente
-        /// y apelación, y reasigna los miembros del comité.
+        /// Guarda la resoluci&oacute;n de la apelaci&oacute;n pendiente.
         /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="apelacion">JSON con la resolución.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto FslResolucionApelacion_Aplicar(int CodCliente, string apelacion)
+        /// <param name="CodEmpresa">
+        /// C&oacute;digo de empresa.
+        /// </param>
+        /// <param name="request">
+        /// Datos de la resoluci&oacute;n.
+        /// </param>
+        /// <returns>
+        /// Resultado de la actualizaci&oacute;n.
+        /// </returns>
+        public ErrorDto
+            FSL_ExpedienteApelaciones_Resolucion_Guardar(
+                int CodEmpresa,
+                FslExpedienteApelacionResolucionGuardarRequest?
+                    request)
         {
-            var expediente = JsonConvert.DeserializeObject<FslResolucionApleacion>(apelacion) ?? new FslResolucionApleacion();
+            var validacion =
+                FSL_ExpedienteApelaciones_Resolucion_Validar(
+                    request);
 
-            using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente);
+            if (validacion is not null)
+            {
+                return validacion;
+            }
+
             try
             {
-                var numResolutores = connection.QueryFirstOrDefault<int>(
-                    "SELECT NUMERO_RESOLUTORES FROM FSL_Comites WHERE cod_Comite = @cod_comite", new { expediente.cod_comite });
+                using var connection =
+                    DbHelper.OpenConnection(
+                        _portalDb,
+                        CodEmpresa);
 
-                if (expediente.miembros.Count < numResolutores)
-                {
-                    return DbHelper.ErrorResponse($"Debe de indicar al menos ({numResolutores}) miembros del comité VALIDADOS! que den la resolución!");
-                }
+                connection.Open();
 
-                var linea = connection.QueryFirstOrDefault<int>(
-                    "SELECT ISNULL(MAX(Linea), 0) AS Linea FROM FSL_EXPEDIENTES_APELACIONES WHERE cod_Expediente = @cod_expediente AND resolucion = 'P'",
-                    new { expediente.cod_expediente });
-
-                ActualizarResolucionExpediente(connection, expediente, linea);
-                ReasignarComite(connection, expediente, linea);
-
-                return DbHelper.OkResponse("Expediente actualizado satisfactoriamente...");
+                return
+                    FSL_ExpedienteApelaciones_Resolucion_Ejecutar(
+                        connection,
+                        request!);
             }
             catch (Exception ex)
             {
@@ -128,45 +361,504 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             }
         }
 
-        /// <summary>
-        /// Actualiza el estado del expediente y los datos de resolución de la apelación.
-        /// </summary>
-        private static void ActualizarResolucionExpediente(SqlConnection connection, FslResolucionApleacion expediente, int linea)
+        private static ErrorDto
+            FSL_ExpedienteApelaciones_Resolucion_Ejecutar(
+                SqlConnection connection,
+                FslExpedienteApelacionResolucionGuardarRequest
+                    request)
         {
-            connection.Execute(@"UPDATE FSL_EXPEDIENTES SET RESOLUCION_ESTADO = @estado, ESTADO = @resolucion_estado
-                                 WHERE COD_EXPEDIENTE = @cod_expediente",
-                new { expediente.estado, expediente.resolucion_estado, expediente.cod_expediente });
+            using var transaction =
+                connection.BeginTransaction();
 
-            connection.Execute(@"UPDATE FSL_EXPEDIENTES_APELACIONES
-                                 SET RESOLUCION_NOTAS = @resolucion_notas, RESOLUCION = @cod_resolucion,
-                                     RESOLUCION_FECHA = GETDATE(), RESOLUCION_USUARIO = @resolucion_usuario
-                                 WHERE COD_EXPEDIENTE = @cod_expediente AND Linea = @linea",
-                new { expediente.resolucion_notas, expediente.cod_resolucion, expediente.resolucion_usuario, expediente.cod_expediente, linea });
+            var contexto =
+                FSL_ExpedienteApelaciones_Resolucion_Contexto_Obtener(
+                    connection,
+                    transaction,
+                    request.cod_expediente);
+
+            var contextoValidacion =
+                FSL_ExpedienteApelaciones_Resolucion_Contexto_Validar(
+                    contexto);
+
+            if (contextoValidacion is not null)
+            {
+                return contextoValidacion;
+            }
+
+            var cedulas =
+                FSL_ExpedienteApelaciones_Cedulas_Normalizar(
+                    request.miembros);
+
+            var miembrosValidos =
+                FSL_ExpedienteApelaciones_Miembros_Validos_Obtener(
+                    connection,
+                    transaction,
+                    contexto!.cod_comite,
+                    cedulas);
+
+            if (miembrosValidos.Count <
+                contexto.numero_resolutores)
+            {
+                return DbHelper.ErrorResponse(
+                    $"Debe indicar al menos ({contexto.numero_resolutores}) " +
+                    "miembros del comit&eacute; validados que den la resoluci&oacute;n.",
+                    CodigoValidacion);
+            }
+
+            FSL_ExpedienteApelaciones_Resolucion_Actualizar(
+                connection,
+                transaction,
+                request,
+                contexto.linea);
+
+            FSL_ExpedienteApelaciones_Comite_Reasignar(
+                connection,
+                transaction,
+                request,
+                contexto,
+                miembrosValidos);
+
+            transaction.Commit();
+
+            return DbHelper.OkResponse(
+                "Expediente actualizado satisfactoriamente.");
         }
 
-        /// <summary>
-        /// Reasigna los miembros del comité a la apelación del expediente.
-        /// </summary>
-        private static void ReasignarComite(SqlConnection connection, FslResolucionApleacion expediente, int linea)
+        private static FslExpedienteApelacionEstadoData?
+            FSL_ExpedienteApelaciones_Estado_Obtener(
+                SqlConnection connection,
+                long codExpediente)
         {
-            connection.Execute("DELETE FSL_EXPEDIENTE_COMITE WHERE COD_EXPEDIENTE = @cod_expediente", new { expediente.cod_expediente });
+            const string sql = """
+                SELECT
+                    RTRIM(ISNULL(Ex.ESTADO, '')) AS estado,
+                    ISNULL(
+                        (
+                            SELECT MAX(Ea.LINEA)
+                            FROM FSL_EXPEDIENTES_APELACIONES Ea
+                            WHERE Ea.COD_EXPEDIENTE =
+                                Ex.COD_EXPEDIENTE
+                              AND Ea.RESOLUCION =
+                                @resolucion_pendiente
+                        ),
+                        0
+                    ) AS linea
+                FROM FSL_EXPEDIENTES Ex
+                WHERE Ex.COD_EXPEDIENTE =
+                    @cod_expediente;
+                """;
 
-            const string sqlInsert = @"INSERT FSL_EXPEDIENTES_APELACIONES_COMITE
-                                        (LINEA, COD_EXPEDIENTE, COD_COMITE, CEDULA, ASIGNA_FECHA, ASIGNA_USUARIO)
-                                       VALUES
-                                        (@linea, @cod_expediente, @cod_comite, @cedula, GETDATE(), @resolucion_usuario)";
+            return connection.QueryFirstOrDefault<
+                FslExpedienteApelacionEstadoData>(
+                    sql,
+                    new
+                    {
+                        cod_expediente = codExpediente,
+                        resolucion_pendiente =
+                            ResolucionPendiente
+                    });
+        }
 
-            foreach (var item in expediente.miembros)
+        private static FslExpedienteApelacionResolucionContextoData?
+            FSL_ExpedienteApelaciones_Resolucion_Contexto_Obtener(
+                SqlConnection connection,
+                SqlTransaction transaction,
+                long codExpediente)
+        {
+            const string sql = """
+                SELECT
+                    RTRIM(ISNULL(Ex.ESTADO, '')) AS estado,
+                    RTRIM(ISNULL(Ex.COD_COMITE, ''))
+                        AS cod_comite,
+                    ISNULL(Co.NUMERO_RESOLUTORES, 0)
+                        AS numero_resolutores,
+                    ISNULL(
+                        (
+                            SELECT MAX(Ea.LINEA)
+                            FROM FSL_EXPEDIENTES_APELACIONES Ea
+                            WHERE Ea.COD_EXPEDIENTE =
+                                Ex.COD_EXPEDIENTE
+                              AND Ea.RESOLUCION =
+                                @resolucion_pendiente
+                        ),
+                        0
+                    ) AS linea
+                FROM FSL_EXPEDIENTES Ex
+                LEFT JOIN FSL_COMITES Co
+                    ON Ex.COD_COMITE = Co.COD_COMITE
+                WHERE Ex.COD_EXPEDIENTE =
+                    @cod_expediente;
+                """;
+
+            return connection.QueryFirstOrDefault<
+                FslExpedienteApelacionResolucionContextoData>(
+                    sql,
+                    new
+                    {
+                        cod_expediente = codExpediente,
+                        resolucion_pendiente =
+                            ResolucionPendiente
+                    },
+                    transaction);
+        }
+
+        private static List<string>
+            FSL_ExpedienteApelaciones_Miembros_Validos_Obtener(
+                SqlConnection connection,
+                SqlTransaction transaction,
+                string codComite,
+                List<string> cedulas)
+        {
+            if (cedulas.Count == 0)
             {
-                connection.Execute(sqlInsert, new
-                {
-                    linea,
-                    expediente.cod_expediente,
-                    expediente.cod_comite,
-                    item.cedula,
-                    expediente.resolucion_usuario
-                });
+                return [];
             }
+
+            const string sql = """
+                SELECT DISTINCT
+                    RTRIM(CEDULA)
+                FROM FSL_COMITES_MIEMBROS
+                WHERE COD_COMITE = @cod_comite
+                  AND ACTIVO = 1
+                  AND CEDULA IN @cedulas;
+                """;
+
+            return connection.Query<string>(
+                    sql,
+                    new
+                    {
+                        cod_comite = codComite,
+                        cedulas
+                    },
+                    transaction)
+                .ToList();
+        }
+
+        private static void
+            FSL_ExpedienteApelaciones_Resolucion_Actualizar(
+                SqlConnection connection,
+                SqlTransaction transaction,
+                FslExpedienteApelacionResolucionGuardarRequest
+                    request,
+                int linea)
+        {
+            const string sqlExpediente = """
+                UPDATE FSL_EXPEDIENTES
+                SET
+                    RESOLUCION_ESTADO = @resolucion,
+                    ESTADO = @resolucion
+                WHERE COD_EXPEDIENTE = @cod_expediente;
+                """;
+
+            connection.Execute(
+                sqlExpediente,
+                new
+                {
+                    resolucion =
+                        request.resolucion.Trim(),
+                    request.cod_expediente
+                },
+                transaction);
+
+            const string sqlApelacion = """
+                UPDATE FSL_EXPEDIENTES_APELACIONES
+                SET
+                    RESOLUCION_NOTAS =
+                        @resolucion_notas,
+                    RESOLUCION = @resolucion,
+                    RESOLUCION_FECHA = GETDATE(),
+                    RESOLUCION_USUARIO =
+                        @resolucion_usuario
+                WHERE COD_EXPEDIENTE =
+                    @cod_expediente
+                  AND LINEA = @linea;
+                """;
+
+            connection.Execute(
+                sqlApelacion,
+                new
+                {
+                    resolucion_notas =
+                        request.resolucion_notas.Trim(),
+                    resolucion =
+                        request.resolucion.Trim(),
+                    resolucion_usuario =
+                        request.resolucion_usuario
+                            .Trim()
+                            .ToUpperInvariant(),
+                    request.cod_expediente,
+                    linea
+                },
+                transaction);
+        }
+
+        private static void
+            FSL_ExpedienteApelaciones_Comite_Reasignar(
+                SqlConnection connection,
+                SqlTransaction transaction,
+                FslExpedienteApelacionResolucionGuardarRequest
+                    request,
+                FslExpedienteApelacionResolucionContextoData
+                    contexto,
+                List<string> miembros)
+        {
+            const string sqlEliminar = """
+                DELETE FROM
+                    FSL_EXPEDIENTES_APELACIONES_COMITE
+                WHERE COD_EXPEDIENTE =
+                    @cod_expediente;
+                """;
+
+            connection.Execute(
+                sqlEliminar,
+                new
+                {
+                    request.cod_expediente
+                },
+                transaction);
+
+            const string sqlInsertar = """
+                INSERT INTO
+                    FSL_EXPEDIENTES_APELACIONES_COMITE
+                    (
+                        LINEA,
+                        COD_EXPEDIENTE,
+                        COD_COMITE,
+                        CEDULA,
+                        ASIGNA_FECHA,
+                        ASIGNA_USUARIO
+                    )
+                VALUES
+                    (
+                        @linea,
+                        @cod_expediente,
+                        @cod_comite,
+                        @cedula,
+                        GETDATE(),
+                        @asigna_usuario
+                    );
+                """;
+
+            foreach (var cedula in miembros)
+            {
+                connection.Execute(
+                    sqlInsertar,
+                    new
+                    {
+                        contexto.linea,
+                        request.cod_expediente,
+                        contexto.cod_comite,
+                        cedula,
+                        asigna_usuario =
+                            request.resolucion_usuario
+                                .Trim()
+                                .ToUpperInvariant()
+                    },
+                    transaction);
+            }
+        }
+
+        private static List<string>
+            FSL_ExpedienteApelaciones_Cedulas_Normalizar(
+                IEnumerable<
+                    FslExpedienteResolucionMiembroRequest>
+                    miembros)
+        {
+            return miembros
+                .Select(miembro =>
+                    miembro.cedula?.Trim() ??
+                    string.Empty)
+                .Where(cedula =>
+                    !string.IsNullOrWhiteSpace(cedula))
+                .Distinct(
+                    StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static ErrorDto?
+            FSL_ExpedienteApelaciones_Apelacion_Validar(
+                FslExpedienteApelacionAgregarRequest?
+                    request)
+        {
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse(
+                    "La informaci&oacute;n de la apelaci&oacute;n es requerida.",
+                    CodigoValidacion);
+            }
+
+            if (request.cod_expediente <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeExpedienteRequerido,
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                request.cod_apelacion))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeTipoApelacionRequerido,
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                request.usuario))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeUsuarioRequerido,
+                    CodigoValidacion);
+            }
+
+            return null;
+        }
+
+        private static ErrorDto?
+            FSL_ExpedienteApelaciones_Estado_Validar(
+                FslExpedienteApelacionEstadoData?
+                    estado)
+        {
+            if (estado is null)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeExpedienteNoExiste,
+                    CodigoValidacion);
+            }
+
+            if (!string.Equals(
+                estado.estado,
+                EstadoRechazado,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeExpedienteNoRechazado,
+                    CodigoValidacion);
+            }
+
+            if (estado.linea > 0)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeApelacionPendiente,
+                    CodigoValidacion);
+            }
+
+            return null;
+        }
+
+        private static ErrorDto?
+            FSL_ExpedienteApelaciones_Resolucion_Validar(
+                FslExpedienteApelacionResolucionGuardarRequest?
+                    request)
+        {
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse(
+                    "La informaci&oacute;n de la resoluci&oacute;n es requerida.",
+                    CodigoValidacion);
+            }
+
+            if (request.cod_expediente <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeExpedienteRequerido,
+                    CodigoValidacion);
+            }
+
+            if (!FSL_ExpedienteApelaciones_Resolucion_EsValida(
+                request.resolucion))
+            {
+                return DbHelper.ErrorResponse(
+                    "La resoluci&oacute;n indicada no es v&aacute;lida.",
+                    CodigoValidacion);
+            }
+
+            if (request.resolucion_notas.Trim().Length < 10)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeNotasResolucion,
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                request.resolucion_usuario))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeUsuarioRequerido,
+                    CodigoValidacion);
+            }
+
+            return null;
+        }
+
+        private static ErrorDto?
+            FSL_ExpedienteApelaciones_Resolucion_Contexto_Validar(
+                FslExpedienteApelacionResolucionContextoData?
+                    contexto)
+        {
+            if (contexto is null)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeExpedienteNoExiste,
+                    CodigoValidacion);
+            }
+
+            if (string.Equals(
+                contexto.estado,
+                EstadoAplicado,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeExpedienteAplicado,
+                    CodigoValidacion);
+            }
+
+            if (contexto.linea <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeSinApelacionPendiente,
+                    CodigoValidacion);
+            }
+
+            return null;
+        }
+
+        private static bool
+            FSL_ExpedienteApelaciones_Resolucion_EsValida(
+                string resolucion)
+        {
+            var valor = resolucion.Trim();
+
+            return string.Equals(
+                       valor,
+                       ResolucionAprobada,
+                       StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(
+                       valor,
+                       ResolucionRechazada,
+                       StringComparison.OrdinalIgnoreCase);
+        }
+
+        private sealed class
+            FslExpedienteApelacionEstadoData
+        {
+            public string estado { get; set; } =
+                string.Empty;
+
+            public int linea { get; set; } = 0;
+        }
+
+        private sealed class
+            FslExpedienteApelacionResolucionContextoData
+        {
+            public string estado { get; set; } =
+                string.Empty;
+
+            public string cod_comite { get; set; } =
+                string.Empty;
+
+            public int numero_resolutores { get; set; } = 0;
+
+            public int linea { get; set; } = 0;
         }
     }
 }
