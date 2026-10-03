@@ -199,15 +199,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                     Result = new ExcPendientesDto()
                 };
             }
-            catch (Exception ex)
-            {
-                return new ErrorDto<ExcPendientesDto>
-                {
-                    Code = -1,
-                    Description = ex.Message,
-                    Result = new ExcPendientesDto()
-                };
-            }
         }
 
         /// <summary>
