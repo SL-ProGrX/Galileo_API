@@ -59,7 +59,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto AH_Excedentes_Pago_Separar_Casos_Aplicar( int CodEmpresa, ExcSepararCasosRequestDto? request)
+        public ErrorDto AH_Excedentes_Pago_Separar_Casos_Aplicar(int CodEmpresa, ExcSepararCasosRequestDto? request)
         {
             if (request is null)
             {
@@ -67,8 +67,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                     "Debe indicar la información del proceso.");
             }
 
+            int periodoId = request.PeriodoId.GetValueOrDefault();
+            short paso = request.Paso.GetValueOrDefault();
+            short enviarSinpe = request.EnviarSinpe.GetValueOrDefault();
+
             ErrorDto? validacion = ValidarPeriodoUsuario(
-                request.PeriodoId,
+                periodoId,
                 request.Usuario,
                 out string usuario);
 
@@ -78,8 +82,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
             }
 
             validacion = ValidarPasoSeparacion(
-                request.Paso,
-                request.EnviarSinpe);
+                paso,
+                enviarSinpe);
 
             if (validacion is not null)
             {
@@ -88,9 +92,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 
             var parametros = new
             {
-                pPeriodoId = request.PeriodoId,
-                pEnviarSinpe = request.EnviarSinpe,
-                pPaso = request.Paso,
+                pPeriodoId = periodoId,
+                pEnviarSinpe = enviarSinpe,
+                pPaso = paso,
                 pUsuario = usuario
             };
 
@@ -98,7 +102,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                 CodEmpresa,
                 "spExc_ASECCSS_SepararCasos",
                 parametros,
-                ObtenerMensajeSeparacion(request.Paso));
+                ObtenerMensajeSeparacion(paso));
         }
 
         /// <summary>
@@ -107,7 +111,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto AH_Excedentes_Pago_Casos_Especiales_Aplicar(int CodEmpresa, ExcCasosEspecialesRequestDto? request)
+        public ErrorDto AH_Excedentes_Pago_Casos_Especiales_Aplicar(int CodEmpresa,ExcCasosEspecialesRequestDto? request)
         {
             if (request is null)
             {
@@ -115,8 +119,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                     "Debe indicar la información del proceso.");
             }
 
+            int periodoId = request.PeriodoId.GetValueOrDefault();
+
             ErrorDto? validacion = ValidarPeriodoUsuario(
-                request.PeriodoId,
+                periodoId,
                 request.Usuario,
                 out string usuario);
 
@@ -127,7 +133,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 
             var parametros = new
             {
-                pPeriodoId = request.PeriodoId,
+                pPeriodoId = periodoId,
                 pUsuario = usuario
             };
 
@@ -214,9 +220,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                 return CrearErrorValidacion(
                     "Debe indicar la información del proceso.");
             }
-
+            int periodoId = request.PeriodoId.GetValueOrDefault();
             ErrorDto? validacion = ValidarPeriodoUsuario(
-                request.PeriodoId,
+                periodoId,
                 request.Usuario,
                 out string usuario);
 
@@ -231,7 +237,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 
             var parametros = new
             {
-                pPeriodoId = request.PeriodoId,
+                pPeriodoId = periodoId,
                 pOficina = oficina,
                 pUsuario = usuario
             };
@@ -256,9 +262,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                 return CrearErrorValidacion(
                     "Debe indicar la información del proceso.");
             }
-
+            int periodoId = request.PeriodoId.GetValueOrDefault();
             ErrorDto? validacion = ValidarPeriodoUsuario(
-                request.PeriodoId,
+                periodoId,
                 request.Usuario,
                 out string usuario);
 
@@ -277,7 +283,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 
             var parametros = new
             {
-                pPeriodoId = request.PeriodoId,
+                pPeriodoId = periodoId,
                 pOperadora = operadora,
                 pUsuario = usuario,
                 pConcepto = concepto
@@ -303,9 +309,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                 return CrearErrorValidacion(
                     "Debe indicar la información del proceso.");
             }
-
+            int periodoId = request.PeriodoId.GetValueOrDefault();
             ErrorDto? validacion = ValidarPeriodoUsuario(
-                request.PeriodoId,
+                periodoId,
                 request.Usuario,
                 out string usuario);
 
@@ -316,7 +322,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 
             var parametros = new
             {
-                pPeriodoId = request.PeriodoId,
+                pPeriodoId = periodoId,
                 pUsuario = usuario
             };
 
@@ -431,7 +437,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
             };
         }
 
-        private static ErrorDto? CrearContextoCuentasInternas(ExcAcreditarCuentasInternasRequestDto? request, out CuentasInternasContexto contexto)
+        private static ErrorDto? CrearContextoCuentasInternas(ExcAcreditarCuentasInternasRequestDto? request,out CuentasInternasContexto contexto)
         {
             contexto = new CuentasInternasContexto();
 
@@ -441,8 +447,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                     "Debe indicar la información del proceso.");
             }
 
+            int periodoId = request.PeriodoId.GetValueOrDefault();
+            int top = request.Top;
+
             ErrorDto? validacion = ValidarPeriodoUsuario(
-                request.PeriodoId,
+                periodoId,
                 request.Usuario,
                 out string usuario);
 
@@ -451,7 +460,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
                 return validacion;
             }
 
-            if (request.Top <= 0)
+            if (top <= 0)
             {
                 return CrearErrorValidacion(
                     "El tamaño del lote debe ser mayor a cero.");
@@ -459,10 +468,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
 
             contexto = new CuentasInternasContexto
             {
-                PeriodoId = request.PeriodoId,
-                Top = request.Top,
+                PeriodoId = periodoId,
+                Top = top,
                 Usuario = usuario,
-                NumDoc = $"Exc_[{request.PeriodoId}]_TI"
+                NumDoc = $"Exc_[{periodoId}]_TI"
             };
 
             return null;
