@@ -16,7 +16,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         private const string PlanSinpe = "SINPE";
         private const string OficinaDefault = "AOC";
         private const int OperadoraDefault = 1;
-
+        private const string DEBE_INDICAR = "Debe indicar la información del proceso.";
         private readonly PortalDB _portalDB;
 
         public FrmAHExcedentesPagoDB(IConfiguration config)
@@ -64,7 +64,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
             if (request is null)
             {
                 return CrearErrorValidacion(
-                    "Debe indicar la información del proceso.");
+                    DEBE_INDICAR);
             }
 
             int periodoId = request.PeriodoId.GetValueOrDefault();
@@ -116,7 +116,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
             if (request is null)
             {
                 return CrearErrorValidacion(
-                    "Debe indicar la información del proceso.");
+                    DEBE_INDICAR);
             }
 
             int periodoId = request.PeriodoId.GetValueOrDefault();
@@ -218,7 +218,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
             if (request is null)
             {
                 return CrearErrorValidacion(
-                    "Debe indicar la información del proceso.");
+                    DEBE_INDICAR);
             }
             int periodoId = request.PeriodoId.GetValueOrDefault();
             ErrorDto? validacion = ValidarPeriodoUsuario(
@@ -260,7 +260,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
             if (request is null)
             {
                 return CrearErrorValidacion(
-                    "Debe indicar la información del proceso.");
+                    DEBE_INDICAR);
             }
             int periodoId = request.PeriodoId.GetValueOrDefault();
             ErrorDto? validacion = ValidarPeriodoUsuario(
@@ -307,7 +307,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
             if (request is null)
             {
                 return CrearErrorValidacion(
-                    "Debe indicar la información del proceso.");
+                    DEBE_INDICAR);
             }
             int periodoId = request.PeriodoId.GetValueOrDefault();
             ErrorDto? validacion = ValidarPeriodoUsuario(
@@ -444,7 +444,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
             if (request is null)
             {
                 return CrearErrorValidacion(
-                    "Debe indicar la información del proceso.");
+                    DEBE_INDICAR);
             }
 
             int periodoId = request.PeriodoId.GetValueOrDefault();
