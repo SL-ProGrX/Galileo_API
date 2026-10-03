@@ -2,6 +2,7 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models;
+using Galileo.Models.Auth;
 using System.Data;
 
 namespace Galileo.DataBaseTier
@@ -117,6 +118,49 @@ namespace Galileo.DataBaseTier
             }
             return Result;
 
+        }
+
+        public AppStatusDto AppStatusCompletoObtener(string AppName, string AppVersion)
+        {
+            const string sql = "spSEG_App_Status";
+            var values = new
+            {
+                AppName,
+                AppVersion
+            };
+
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            return connection.QueryFirstOrDefault<AppStatusDto>(
+                sql,
+                values,
+                commandType: CommandType.StoredProcedure)
+                ?? throw new InvalidOperationException("spSEG_App_Status no devolvió información para Galileo Web.");
+        }
+
+        public WebAccessResultDto RegistrarDispositivoWeb(
+            int EmpresaId,
+            string Usuario,
+            Guid DeviceId,
+            string IpAddress,
+            string AppVersion)
+        {
+            Usuario = NormalizeUsuario(Usuario);
+            const string sql = "spSEG_Web_Access_Limit";
+            var values = new
+            {
+                Empresa = EmpresaId,
+                Usuario,
+                DeviceId,
+                IpAddress,
+                AppVersion
+            };
+
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            return connection.QueryFirstOrDefault<WebAccessResultDto>(
+                sql,
+                values,
+                commandType: CommandType.StoredProcedure)
+                ?? throw new InvalidOperationException("spSEG_Web_Access_Limit no devolvió información.");
         }
 
         public int sbWebApps_Sincroniza_Paso1y3(int Paso, int? Empresa, string? Cedula)

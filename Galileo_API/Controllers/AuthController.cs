@@ -13,6 +13,10 @@ public sealed class AuthController : ControllerBase
 {
     private const string GalileoRefreshCookie = "pgx_galileo_refresh";
     private const string SSecurityRefreshCookie = "pgx_ssecurity_refresh";
+    private const string GalileoDeviceCookie = "pgx_galileo_device";
+    private const string AuthenticationUnavailableStatus = "authenticationUnavailable";
+    private const string PasswordChangeRequiredStatus = "passwordChangeRequired";
+    private const string AccountBlockedStatus = "accountBlocked";
     private readonly AuthBL _auth;
     private readonly int _refreshTokenDays;
 
@@ -36,6 +40,96 @@ public sealed class AuthController : ControllerBase
         return await Login(request, AuthApplications.SSecurity);
     }
 
+    [Authorize]
+    [HttpPost("Galileo/PreInitialize")]
+    public ActionResult<AuthResponseDto> PreInitializeGalileo([FromBody] GalileoSecurityPreInitializeRequest request)
+    {
+        if (!string.Equals(User.FindFirst("app")?.Value, AuthApplications.Galileo, StringComparison.OrdinalIgnoreCase))
+        {
+            return Forbid();
+        }
+
+        var username = User.FindFirst("UserName")?.Value;
+        if (string.IsNullOrWhiteSpace(username) ||
+            request is null ||
+            string.IsNullOrWhiteSpace(request.AppVersion) ||
+            request.AppVersion.Length > 50)
+        {
+            return BadRequest(new AuthResponseDto
+            {
+                Status = AuthenticationUnavailableStatus,
+                Detail = "La solicitud de preinicialización de Galileo no es válida.",
+            });
+        }
+
+        var response = _auth.PreInicializarGalileo(username, request.AppVersion);
+        return response.Status switch
+        {
+            "ready" or PasswordChangeRequiredStatus or AccountBlockedStatus or "applicationBlocked" => Ok(response),
+            AuthenticationUnavailableStatus => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
+            _ => BadRequest(response),
+        };
+    }
+
+    [Authorize]
+    [HttpPost("Galileo/Initialize")]
+    public ActionResult<AuthResponseDto> InitializeGalileo([FromBody] GalileoSecurityInitializeRequest request)
+    {
+        if (!string.Equals(User.FindFirst("app")?.Value, AuthApplications.Galileo, StringComparison.OrdinalIgnoreCase))
+        {
+            return Forbid();
+        }
+
+        var username = User.FindFirst("UserName")?.Value;
+        if (string.IsNullOrWhiteSpace(username) ||
+            request is null ||
+            request.EmpresaId <= 0 ||
+            string.IsNullOrWhiteSpace(request.AppVersion) ||
+            request.AppVersion.Length > 50)
+        {
+            return BadRequest(new AuthResponseDto
+            {
+                Status = AuthenticationUnavailableStatus,
+                Detail = "La solicitud de inicialización de Galileo no es válida.",
+            });
+        }
+
+        var remoteIp = HttpContext.Connection.RemoteIpAddress;
+        if (remoteIp is null)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new AuthResponseDto
+            {
+                Status = AuthenticationUnavailableStatus,
+                Detail = "No fue posible identificar la dirección IP de origen.",
+            });
+        }
+
+        var deviceCookie = Request.Cookies[GalileoDeviceCookie];
+        var deviceId = Guid.TryParse(deviceCookie, out var registeredDeviceId)
+            ? registeredDeviceId
+            : Guid.NewGuid();
+        var response = _auth.InicializarGalileo(
+            username,
+            request,
+            deviceId,
+            remoteIp.ToString());
+
+        if (response.Status is "ready" or PasswordChangeRequiredStatus)
+        {
+            Response.Cookies.Append(
+                GalileoDeviceCookie,
+                deviceId.ToString("D"),
+                DeviceCookieOptions());
+        }
+
+        return response.Status switch
+        {
+            "ready" or PasswordChangeRequiredStatus or AccountBlockedStatus or "applicationBlocked" or "accessDenied" => Ok(response),
+            AuthenticationUnavailableStatus => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
+            _ => BadRequest(response),
+        };
+    }
+
     [AllowAnonymous]
     [HttpPost("SSecurity/Mfa/Verify")]
     public ActionResult<AuthResponseDto> VerifyMfa([FromBody] MfaVerifyRequest request)
@@ -49,8 +143,8 @@ public sealed class AuthController : ControllerBase
 
         return response.Status switch
         {
-            "invalidCode" or "invalidChallenge" or "accountBlocked" or "passwordChangeRequired" => Ok(response),
-            "authenticationUnavailable" => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
+            "invalidCode" or "invalidChallenge" or AccountBlockedStatus or PasswordChangeRequiredStatus => Ok(response),
+            AuthenticationUnavailableStatus => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
             _ => Unauthorized(response),
         };
     }
@@ -63,9 +157,29 @@ public sealed class AuthController : ControllerBase
         return response.Status switch
         {
             "passwordChanged" or "passwordChangeFailed" or "invalidChallenge" => Ok(response),
-            "authenticationUnavailable" => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
+            AuthenticationUnavailableStatus => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
             _ => BadRequest(response),
         };
+    }
+
+    [AllowAnonymous]
+    [HttpPost("Galileo/Password/Recovery/Policy")]
+    public ActionResult<AuthResponseDto> GalileoRecoveryPolicy([FromBody] GalileoPasswordRecoveryTokenRequest request)
+    {
+        var response = _auth.ObtenerPoliticaRecuperacionGalileo(request);
+        return response.Status == AuthenticationUnavailableStatus
+            ? StatusCode(StatusCodes.Status503ServiceUnavailable, response)
+            : Ok(response);
+    }
+
+    [AllowAnonymous]
+    [HttpPost("Galileo/Password/Recovery/Change")]
+    public ActionResult<AuthResponseDto> GalileoRecoveryChange([FromBody] GalileoPasswordRecoveryRequest request)
+    {
+        var response = _auth.RecuperarContrasenaGalileo(request);
+        return response.Status == AuthenticationUnavailableStatus
+            ? StatusCode(StatusCodes.Status503ServiceUnavailable, response)
+            : Ok(response);
     }
 
     [AllowAnonymous]
@@ -137,8 +251,8 @@ public sealed class AuthController : ControllerBase
 
         return response.Status switch
         {
-            "mfaRequired" or "passwordChangeRequired" or "accountBlocked" => Ok(response),
-            "authenticationUnavailable" => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
+            "mfaRequired" or PasswordChangeRequiredStatus or AccountBlockedStatus => Ok(response),
+            AuthenticationUnavailableStatus => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
             _ => Unauthorized(response),
         };
     }
@@ -163,6 +277,19 @@ public sealed class AuthController : ControllerBase
             IsEssential = true,
             Path = "/api/Auth",
             MaxAge = TimeSpan.FromDays(_refreshTokenDays),
+        };
+    }
+
+    private CookieOptions DeviceCookieOptions()
+    {
+        return new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Lax,
+            IsEssential = true,
+            Path = "/api/Auth",
+            MaxAge = TimeSpan.FromDays(365),
         };
     }
 
