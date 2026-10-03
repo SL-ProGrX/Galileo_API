@@ -21,6 +21,15 @@ namespace Galileo.Models.ProGrX
         public string? FotoContentType { get; set; }
     }
 
+    public class ColaboradorFotoCambiaRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+        public string FotoBase64 { get; set; } = string.Empty;
+        public bool Quitar { get; set; } = false;
+        public string AppVersion { get; set; } = string.Empty;
+    }
+
     public class ColaboradorEmpleadoOpcionData
     {
         public string Id { get; set; } = string.Empty;
@@ -95,6 +104,25 @@ namespace Galileo.Models.ProGrX
         public string Clave { get; set; } = string.Empty;
         public string BoletaId { get; set; } = string.Empty;
         public string Accion { get; set; } = string.Empty;
+    }
+
+    public class ColaboradorReporteRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+        public string Opcion { get; set; } = string.Empty;
+        public string BoletaId { get; set; } = string.Empty;
+        public string CodNomina { get; set; } = string.Empty;
+        public int? NominaNum { get; set; }
+        public string NombreEmpresa { get; set; } = string.Empty;
+        public string AppVersion { get; set; } = string.Empty;
+    }
+
+    public class ColaboradorTrasladoDetalleRequest
+    {
+        public string EmpleadoId { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+        public string BoletaId { get; set; } = string.Empty;
     }
 
     public class ColaboradorTrasladoAccesoRequest
