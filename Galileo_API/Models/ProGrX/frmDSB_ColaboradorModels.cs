@@ -26,7 +26,7 @@ namespace Galileo.Models.ProGrX
         public string EmpleadoId { get; set; } = string.Empty;
         public string Clave { get; set; } = string.Empty;
         public string FotoBase64 { get; set; } = string.Empty;
-        public bool Quitar { get; set; }
+        public bool Quitar { get; set; } = false;
         public string AppVersion { get; set; } = string.Empty;
     }
 
