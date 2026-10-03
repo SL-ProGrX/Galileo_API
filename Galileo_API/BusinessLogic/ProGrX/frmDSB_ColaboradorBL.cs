@@ -31,6 +31,14 @@ namespace Galileo.BusinessLogic.ProGrX
                 AppVersion);
         }
 
+        public ErrorDto<bool> Colaborador_Foto_Cambia(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorFotoCambiaRequest request)
+        {
+            return _db.Colaborador_Foto_Cambia(CodEmpresa, usuario, request);
+        }
+
         public ErrorDto<List<ColaboradorEmpleadoOpcionData>> Colaborador_Consulta_Id(
             int CodEmpresa,
             string Identificacion,
@@ -110,6 +118,30 @@ namespace Galileo.BusinessLogic.ProGrX
             ColaboradorTrasladoRegistrarRequest request)
         {
             return _db.Colaborador_Traslado_Registrar(CodEmpresa, usuario, request);
+        }
+
+        public ErrorDto<List<ColaboradorTrasladoPlacaData>> Colaborador_Traslado_Detalle_Obtener(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorTrasladoDetalleRequest request)
+        {
+            return _db.Colaborador_Traslado_Detalle_Obtener(CodEmpresa, usuario, request);
+        }
+
+        public ErrorDto<bool> Colaborador_Reporte_Validar(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorReporteRequest request)
+        {
+            return _db.Colaborador_Reporte_Validar(CodEmpresa, usuario, request);
+        }
+
+        public ErrorDto<bool> Colaborador_Reporte_Bitacora(
+            int CodEmpresa,
+            string usuario,
+            ColaboradorReporteRequest request)
+        {
+            return _db.Colaborador_Reporte_Bitacora(CodEmpresa, usuario, request);
         }
 
         public ErrorDto<ColaboradorSolicitudConfiguracionData> Colaborador_Solicitud_Configuracion_Obtener(

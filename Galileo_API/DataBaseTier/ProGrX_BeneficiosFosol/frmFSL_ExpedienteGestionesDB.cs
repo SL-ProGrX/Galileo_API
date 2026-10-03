@@ -1,5 +1,6 @@
 using Dapper;
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
 using System.Data;
@@ -7,73 +8,227 @@ using System.Data;
 namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 {
     /// <summary>
-    /// Acceso a datos de las Gestiones de Expediente Fosol (frmFSL_ExpedienteGestiones).
+    /// Acceso a datos de las gestiones de expedientes FOSOL.
     /// </summary>
-    public partial class FrmFslExpedienteGestionesDB
+    public sealed class FrmFslExpedienteGestionesDB
     {
-        private readonly IConfiguration _config;
+        private const int CodigoValidacion = -2;
+
+        private const string MensajeExpedienteRequerido =
+            "El c&oacute;digo del expediente es requerido.";
+
+        private const string MensajeGestionRequerida =
+            "El tipo de gesti&oacute;n es requerido.";
+
+        private const string MensajeUsuarioRequerido =
+            "El usuario es requerido.";
+
+        private readonly PortalDB _portalDb;
+        private readonly FrmFslExpedienteDB _expedienteDb;
 
         /// <summary>
-        /// Inicializa el acceso a datos con la configuración inyectada.
+        /// Inicializa el acceso a datos del formulario.
         /// </summary>
-        /// <param name="config">Configuración de la aplicación.</param>
-        public FrmFslExpedienteGestionesDB(IConfiguration config)
+        /// <param name="config">
+        /// Configuraci&oacute;n de la aplicaci&oacute;n.
+        /// </param>
+        public FrmFslExpedienteGestionesDB(
+            IConfiguration config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+            ArgumentNullException.ThrowIfNull(config);
+
+            _portalDb = new PortalDB(config);
+            _expedienteDb =
+                new FrmFslExpedienteDB(config);
         }
 
         /// <summary>
-        /// Crea una instancia de acceso al portal usando la configuración inyectada.
+        /// Obtiene el encabezado del expediente seleccionado.
         /// </summary>
-        private PortalDB CreatePortalDb() => new(_config);
+        /// <param name="CodEmpresa">
+        /// C&oacute;digo de empresa.
+        /// </param>
+        /// <param name="codExpediente">
+        /// C&oacute;digo del expediente.
+        /// </param>
+        /// <returns>
+        /// Informaci&oacute;n general del expediente.
+        /// </returns>
+        public ErrorDto<FslExpedienteDatos>
+            FSL_ExpedienteGestiones_Expediente_Obtener(
+                int CodEmpresa,
+                long codExpediente)
+        {
+            return _expedienteDb.FSL_Expediente_Obtener(
+                CodEmpresa,
+                codExpediente);
+        }
 
         /// <summary>
-        /// Obtiene los tipos de gestión activos.
+        /// Obtiene los tipos de gesti&oacute;n activos.
         /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <returns>Lista de tipos de gestión.</returns>
-        public ErrorDto<List<FslGestionesListaDatos>> FslGestiones_Obtener(int CodCliente)
+        /// <param name="CodEmpresa">
+        /// C&oacute;digo de empresa.
+        /// </param>
+        /// <returns>
+        /// Tipos de gesti&oacute;n disponibles.
+        /// </returns>
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            FSL_ExpedienteGestiones_Catalogo_Obtener(
+                int CodEmpresa)
         {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
-            {
-                const string sql = @"SELECT cod_gestion AS item, RTRIM(cod_gestion) + ' - ' + DESCRIPCION AS descripcion
-                                     FROM FSL_TIPOS_GESTIONES WHERE ACTIVA = 1";
-                return connection.Query<FslGestionesListaDatos>(sql).ToList();
-            });
+            const string sql = """
+                SELECT
+                    RTRIM(COD_GESTION) AS item,
+                    RTRIM(COD_GESTION) + ' - ' +
+                    RTRIM(ISNULL(DESCRIPCION, ''))
+                        AS descripcion
+                FROM FSL_TIPOS_GESTIONES
+                WHERE ACTIVA = 1;
+                """;
 
-            if (result.Code != 0)
+            return DbHelper.ExecuteListQuery<
+                DropDownListaGenericaModel>(
+                    _portalDb,
+                    CodEmpresa,
+                    sql);
+        }
+
+        /// <summary>
+        /// Obtiene el hist&oacute;rico de gestiones del expediente.
+        /// </summary>
+        /// <param name="CodEmpresa">
+        /// C&oacute;digo de empresa.
+        /// </param>
+        /// <param name="codExpediente">
+        /// C&oacute;digo del expediente.
+        /// </param>
+        /// <returns>
+        /// Gestiones registradas en el expediente.
+        /// </returns>
+        public ErrorDto<List<FslExpedienteGestionData>>
+            FSL_ExpedienteGestiones_Historico_Obtener(
+                int CodEmpresa,
+                long codExpediente)
+        {
+            if (codExpediente <= 0)
             {
-                return DbHelper.CreateErrorResponse<List<FslGestionesListaDatos>>("FslGestiones_Obtener - " + result.Description);
+                return DbHelper.CreateErrorResponse(
+                    MensajeExpedienteRequerido,
+                    CodigoValidacion,
+                    new List<
+                        FslExpedienteGestionData>());
             }
 
-            return result;
+            return _expedienteDb
+                .FSL_Expediente_Gestiones_Obtener(
+                    CodEmpresa,
+                    codExpediente);
         }
 
         /// <summary>
-        /// Registra una gestión de expediente mediante SP.
+        /// Registra una gesti&oacute;n en el expediente.
         /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="gestion">Datos de la gestión.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto FslGestion_Agregar(int CodCliente, FslGestionAgregar gestion)
+        /// <param name="CodEmpresa">
+        /// C&oacute;digo de empresa.
+        /// </param>
+        /// <param name="request">
+        /// Informaci&oacute;n de la gesti&oacute;n.
+        /// </param>
+        /// <returns>
+        /// Resultado del registro.
+        /// </returns>
+        public ErrorDto
+            FSL_ExpedienteGestiones_Gestion_Agregar(
+                int CodEmpresa,
+                FslExpedienteGestionAgregarRequest?
+                    request)
         {
-            using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente);
+            var validacion =
+                FSL_ExpedienteGestiones_Gestion_Validar(
+                    request);
+
+            if (validacion is not null)
+            {
+                return validacion;
+            }
+
+            var solicitud = request!;
+
             try
             {
-                connection.Execute("[spFSL_GestionRegistra]", new
-                {
-                    Expediente = gestion.cod_expediente,
-                    Tipo = gestion.cod_gestion,
-                    Notas = gestion.notas,
-                    Usuario = gestion.usuario
-                }, commandType: CommandType.StoredProcedure);
+                using var connection =
+                    DbHelper.OpenConnection(
+                        _portalDb,
+                        CodEmpresa);
 
-                return new ErrorDto { Code = 0 };
+                connection.Open();
+
+                connection.Execute(
+                    "[spFSL_GestionRegistra]",
+                    new
+                    {
+                        Expediente =
+                            solicitud.cod_expediente,
+                        Tipo =
+                            solicitud.cod_gestion.Trim(),
+                        Notas =
+                            solicitud.notas?.Trim() ??
+                            string.Empty,
+                        Usuario =
+                            solicitud.usuario
+                                .Trim()
+                                .ToUpperInvariant()
+                    },
+                    commandType:
+                        CommandType.StoredProcedure);
+
+                return DbHelper.OkResponse(
+                    "Gesti&oacute;n registrada correctamente.");
             }
             catch (Exception ex)
             {
-                return DbHelper.ErrorResponse(ex.Message);
+                return DbHelper.ErrorResponse(
+                    ex.Message);
             }
+        }
+
+        private static ErrorDto?
+            FSL_ExpedienteGestiones_Gestion_Validar(
+                FslExpedienteGestionAgregarRequest?
+                    request)
+        {
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse(
+                    "La informaci&oacute;n de la gesti&oacute;n es requerida.",
+                    CodigoValidacion);
+            }
+
+            if (request.cod_expediente <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeExpedienteRequerido,
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                request.cod_gestion))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeGestionRequerida,
+                    CodigoValidacion);
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                request.usuario))
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeUsuarioRequerido,
+                    CodigoValidacion);
+            }
+
+            return null;
         }
     }
 }

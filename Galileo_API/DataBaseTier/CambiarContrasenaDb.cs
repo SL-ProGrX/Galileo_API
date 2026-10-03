@@ -3,12 +3,15 @@ using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using System.Data;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Galileo.DataBaseTier
 {
     public class CambiarContrasenaDB
     {
         private const string connectionStringName = "DefaultConnString";
+        private const string changePasswordProcedureName = "spSEG_Password";
 
         private readonly IConfiguration _config;
 
@@ -63,7 +66,8 @@ namespace Galileo.DataBaseTier
                                 SELECT TOP (@TopQuantity) [KEYSEC]
                                 FROM US_KEYHISTORY KH
                                 INNER JOIN US_usuarios U ON KH.IDKEYSEC = U.USERID
-                                WHERE U.USUARIO = @Usuario";
+                                WHERE U.USUARIO = @Usuario
+                                ORDER BY KH.ID DESC";
 
                     response.Result = connection.Query<string>(strSQL, new { TopQuantity = topQuantity, Usuario }).ToList();
                 }
@@ -98,10 +102,13 @@ namespace Galileo.DataBaseTier
                     }
 
                     // Execute the stored procedure to change the password
-                    int rowsAffected = connection.Execute(
-                        "spSEG_Password", cambioClave, commandType: CommandType.StoredProcedure);
+                    connection.Execute(
+                        changePasswordProcedureName, cambioClave, commandType: CommandType.StoredProcedure);
+                    var latestPassword = connection.QueryFirstOrDefault<string>(
+                        "SELECT TOP (1) KH.KEYSEC FROM US_KEYHISTORY KH INNER JOIN US_usuarios U ON KH.IDKEYSEC = U.USERID WHERE U.USUARIO = @Usuario ORDER BY KH.ID DESC",
+                        new { cambioClave.Usuario });
 
-                    if (rowsAffected > 0)
+                    if (string.Equals(latestPassword?.Trim(), cambioClave.PassNuevo.Trim(), StringComparison.Ordinal))
                     {
                         resp.Code = 0;
                         resp.Description = "La clave de acceso ha sido cambiada exitosamente.";
@@ -121,7 +128,7 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        public int CambiarClaveParaAutenticacion(ClaveCambiarDto cambioClave)
+        public bool CambiarClaveParaAutenticacion(ClaveCambiarDto cambioClave)
         {
             using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
             var userExists = connection.QueryFirstOrDefault<int>(
@@ -130,13 +137,73 @@ namespace Galileo.DataBaseTier
 
             if (userExists == 0)
             {
+                return false;
+            }
+
+            connection.Execute(
+                changePasswordProcedureName,
+                cambioClave,
+                commandType: CommandType.StoredProcedure);
+            var latestPassword = connection.QueryFirstOrDefault<string>(
+                "SELECT TOP (1) KH.KEYSEC FROM US_KEYHISTORY KH INNER JOIN US_usuarios U ON KH.IDKEYSEC = U.USERID WHERE U.USUARIO = @Usuario ORDER BY KH.ID DESC",
+                new { cambioClave.Usuario });
+            return string.Equals(latestPassword?.Trim(), cambioClave.PassNuevo.Trim(), StringComparison.Ordinal);
+        }
+
+        public int ValidarTokenParaRecuperacion(string usuario, string token)
+        {
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            return connection.QuerySingle<int>(
+                "SELECT dbo.fxSEG_Token_Valida(@Usuario, @Token)",
+                new { Usuario = usuario, Token = token });
+        }
+
+        public int CambiarClaveParaRecuperacion(ClaveCambiarDto cambioClave, string token)
+        {
+            using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+            var usuario = cambioClave.Usuario.Trim();
+            var tokenHash = SHA256.HashData(Encoding.UTF8.GetBytes($"{usuario.ToUpperInvariant()}\0{token}"));
+
+            var tokenStatus = connection.QuerySingle<int>(
+                "SELECT dbo.fxSEG_Token_Valida(@Usuario, @Token)",
+                new { Usuario = usuario, Token = token },
+                transaction);
+            if (tokenStatus != 1)
+            {
+                return tokenStatus;
+            }
+
+            var used = connection.QuerySingle<int>(
+                "SELECT COUNT(1) FROM dbo.SEG_PASSWORD_RECOVERY_USED WITH (UPDLOCK, HOLDLOCK) WHERE USUARIO = @Usuario AND TOKEN_HASH = @TokenHash",
+                new { Usuario = usuario, TokenHash = tokenHash },
+                transaction);
+            if (used > 0)
+            {
                 return 0;
             }
 
-            return connection.Execute(
-                "spSEG_Password",
+            connection.Execute(
+                changePasswordProcedureName,
                 cambioClave,
+                transaction,
                 commandType: CommandType.StoredProcedure);
+            var latestPassword = connection.QueryFirstOrDefault<string>(
+                "SELECT TOP (1) KH.KEYSEC FROM US_KEYHISTORY KH INNER JOIN US_usuarios U ON KH.IDKEYSEC = U.USERID WHERE U.USUARIO = @Usuario ORDER BY KH.ID DESC",
+                new { Usuario = usuario },
+                transaction);
+            if (!string.Equals(latestPassword?.Trim(), cambioClave.PassNuevo.Trim(), StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("El procedimiento no confirmó el cambio de contraseña.");
+            }
+
+            connection.Execute(
+                "INSERT INTO dbo.SEG_PASSWORD_RECOVERY_USED (USUARIO, TOKEN_HASH) VALUES (@Usuario, @TokenHash)",
+                new { Usuario = usuario, TokenHash = tokenHash },
+                transaction);
+            transaction.Commit();
+            return 1;
         }
 
 
@@ -148,7 +215,7 @@ namespace Galileo.DataBaseTier
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
-                    resp.Code = connection.QueryFirst<int>("spSEG_Password", cambioClave, commandType: CommandType.StoredProcedure);
+                    resp.Code = connection.QueryFirst<int>(changePasswordProcedureName, cambioClave, commandType: CommandType.StoredProcedure);
                     resp.Description = "La clave de acceso ha sido cambiada.";
                 }
             }

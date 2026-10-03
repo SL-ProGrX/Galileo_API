@@ -1,104 +1,174 @@
 using Galileo.DataBaseTier.ProGrX_BeneficiosFosol;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
 
 namespace Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Lógica de negocio de los Expedientes Fosol (frmFSL_Expediente).
-    /// </summary>
-    public class FrmFslExpedienteBL
+    public sealed class FrmFslExpedienteBL
     {
         private readonly FrmFslExpedienteDB _db;
 
         public FrmFslExpedienteBL(IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
-
+            ArgumentNullException.ThrowIfNull(config);
             _db = new FrmFslExpedienteDB(config);
         }
 
-        /// <summary>Lista de planes activos.</summary>
-        public ErrorDto<List<FslMenusData>> FslPlanLista_Obtener(int CodCliente)
-            => _db.FslPlanLista_Obtener(CodCliente);
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            FSL_Expediente_Planes_Obtener(int CodEmpresa)
+            => _db.FSL_Expediente_Planes_Obtener(CodEmpresa);
 
-        /// <summary>Lista de comités activos.</summary>
-        public ErrorDto<List<FslMenusData>> FslComiteLista_Obtener(int CodCliente)
-            => _db.FslComiteLista_Obtener(CodCliente);
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            FSL_Expediente_Comites_Obtener(int CodEmpresa)
+            => _db.FSL_Expediente_Comites_Obtener(CodEmpresa);
 
-        /// <summary>Lista de enfermedades activas.</summary>
-        public ErrorDto<List<FslMenusData>> FslEnfermedadesLista_Obtener(int CodCliente)
-            => _db.FslEnfermedadesLista_Obtener(CodCliente);
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            FSL_Expediente_Enfermedades_Obtener(int CodEmpresa)
+            => _db.FSL_Expediente_Enfermedades_Obtener(CodEmpresa);
 
-        /// <summary>Lista de causas de un plan.</summary>
-        public ErrorDto<List<FslMenusData>> FslCausasLista_Obtener(int CodCliente, string cod_plan)
-            => _db.FslCausasLista_Obtener(CodCliente, cod_plan);
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            FSL_Expediente_Causas_Obtener(
+                int CodEmpresa,
+                string codPlan)
+            => _db.FSL_Expediente_Causas_Obtener(
+                CodEmpresa,
+                codPlan);
 
-        /// <summary>Detalle de un expediente.</summary>
-        public ErrorDto<FslExpedienteDatos> FslExpediente_Obtener(int CodCliente, int cod_expediente)
-            => _db.FslExpediente_Obtener(CodCliente, cod_expediente);
+        public ErrorDto<FslExpedienteDatos>
+            FSL_Expediente_Obtener(
+                int CodEmpresa,
+                long codExpediente)
+            => _db.FSL_Expediente_Obtener(
+                CodEmpresa,
+                codExpediente);
 
-        /// <summary>Requisitos de un expediente.</summary>
-        public ErrorDto<List<FslRequisitosExp>> FslRequisitos_Obtener(int CodCliente, int cod_expediente)
-            => _db.FslRequisitos_Obtener(CodCliente, cod_expediente);
+        public ErrorDto<long>
+            FSL_Expediente_Navegacion_Obtener(
+                int CodEmpresa,
+                long codExpediente,
+                bool siguiente)
+            => _db.FSL_Expediente_Navegacion_Obtener(
+                CodEmpresa,
+                codExpediente,
+                siguiente);
 
-        /// <summary>Operaciones (créditos) de un expediente.</summary>
-        public ErrorDto<List<FslOperacionesDatos>> FslOperaciones_Obtener(int CodCliente, int cod_expediente)
-            => _db.FslOperaciones_Obtener(CodCliente, cod_expediente);
+        public ErrorDto<List<FslExpedienteRequisitoData>>
+            FSL_Expediente_Requisitos_Obtener(
+                int CodEmpresa,
+                long codExpediente)
+            => _db.FSL_Expediente_Requisitos_Obtener(
+                CodEmpresa,
+                codExpediente);
 
-        /// <summary>Resolución (miembros) de un expediente.</summary>
-        public ErrorDto<List<FslResolucionDatos>> FslResolucion_Obtener(int CodCliente, int cod_expediente)
-            => _db.FslResolucion_Obtener(CodCliente, cod_expediente);
+        public ErrorDto<List<FslExpedienteOperacionData>>
+            FSL_Expediente_Operaciones_Obtener(
+                int CodEmpresa,
+                long codExpediente)
+            => _db.FSL_Expediente_Operaciones_Obtener(
+                CodEmpresa,
+                codExpediente);
 
-        /// <summary>Validaciones de la resolución de un expediente.</summary>
-        public ErrorDto<List<FslResolucionValidacionesDatos>> FslResolucionlVal_Obtener(int CodCliente, int cod_expediente)
-            => _db.FslResolucionlVal_Obtener(CodCliente, cod_expediente);
+        public ErrorDto<List<FslExpedienteResolucionMiembroData>>
+            FSL_Expediente_ResolucionMiembros_Obtener(
+                int CodEmpresa,
+                long codExpediente)
+            => _db.FSL_Expediente_ResolucionMiembros_Obtener(
+                CodEmpresa,
+                codExpediente);
 
-        /// <summary>Gestiones de un expediente.</summary>
-        public ErrorDto<List<FslExpGestiones>> FslExpGestiones_Obtener(int CodCliente, int cod_expediente)
-            => _db.FslExpGestiones_Obtener(CodCliente, cod_expediente);
+        public ErrorDto<FslExpedienteResolucionValidacionesData>
+            FSL_Expediente_ResolucionValidaciones_Obtener(
+                int CodEmpresa,
+                long codExpediente)
+            => _db.FSL_Expediente_ResolucionValidaciones_Obtener(
+                CodEmpresa,
+                codExpediente);
 
-        /// <summary>Apelaciones de un expediente.</summary>
-        public ErrorDto<List<FslApelacionDatos>> FslApelaciones_Obtener(int CodCliente, int cod_expediente)
-            => _db.FslApelaciones_Obtener(CodCliente, cod_expediente);
+        public ErrorDto<List<FslExpedienteGestionData>>
+            FSL_Expediente_Gestiones_Obtener(
+                int CodEmpresa,
+                long codExpediente)
+            => _db.FSL_Expediente_Gestiones_Obtener(
+                CodEmpresa,
+                codExpediente);
 
-        /// <summary>Lista de expedientes.</summary>
-        public ErrorDto<FslExpedienteListaData> FslExpedientesLista_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
-            => _db.FslExpedientesLista_Obtener(CodCliente, pagina, paginacion, filtro);
+        public ErrorDto<List<FslExpedienteApelacionData>>
+            FSL_Expediente_Apelaciones_Obtener(
+                int CodEmpresa,
+                long codExpediente)
+            => _db.FSL_Expediente_Apelaciones_Obtener(
+                CodEmpresa,
+                codExpediente);
 
-        /// <summary>Valida si un caso ya fue presentado.</summary>
-        public ErrorDto FslExpediente_Valida(int CodCliente, string cedula, string tipo, string causa)
-            => _db.FslExpediente_Valida(CodCliente, cedula, tipo, causa);
+        public ErrorDto<string>
+            FSL_Expediente_UsuarioVinculado_Obtener(
+                int CodEmpresa,
+                string cedula,
+                string codComite)
+            => _db.FSL_Expediente_UsuarioVinculado_Obtener(
+                CodEmpresa,
+                cedula,
+                codComite);
 
-        /// <summary>Obtiene el usuario vinculado de un miembro de comité.</summary>
-        public ErrorDto FslUsuarioVinculado_Obtener(int CodCliente, string cedula, string cod_comite)
-            => _db.FslUsuarioVinculado_Obtener(CodCliente, cedula, cod_comite);
+        public ErrorDto
+            FSL_Expediente_Registro_Validar(
+                int CodEmpresa,
+                string cedula,
+                string codPlan,
+                string codCausa)
+            => _db.FSL_Expediente_Registro_Validar(
+                CodEmpresa,
+                cedula,
+                codPlan,
+                codCausa);
 
-        /// <summary>Inserta un expediente.</summary>
-        public ErrorDto FslExpediente_Insertar(int CodCliente, string jsonExp)
-            => _db.FslExpediente_Insertar(CodCliente, jsonExp);
+        public ErrorDto<FslExpedienteGuardarResultado>
+            FSL_Expediente_Insertar(
+                int CodEmpresa,
+                FslExpedienteGuardarRequest request)
+            => _db.FSL_Expediente_Insertar(
+                CodEmpresa,
+                request);
 
-        /// <summary>Actualiza un expediente.</summary>
-        public ErrorDto FslExpediente_Actualizar(int CodCliente, string jsonExp)
-            => _db.FslExpediente_Actualizar(CodCliente, jsonExp);
+        public ErrorDto
+            FSL_Expediente_Actualizar(
+                int CodEmpresa,
+                FslExpedienteGuardarRequest request)
+            => _db.FSL_Expediente_Actualizar(
+                CodEmpresa,
+                request);
 
-        /// <summary>Actualiza el estado de un requisito del expediente.</summary>
-        public ErrorDto FslExpRequisto_Actualizar(int CodCliente, FslExpedienteUpdate requisito)
-            => _db.FslExpRequisto_Actualizar(CodCliente, requisito);
+        public ErrorDto
+            FSL_Expediente_Requisito_Actualizar(
+                int CodEmpresa,
+                FslExpedienteRequisitoActualizarRequest request)
+            => _db.FSL_Expediente_Requisito_Actualizar(
+                CodEmpresa,
+                request);
 
-        /// <summary>Guarda la resolución de un expediente.</summary>
-        public ErrorDto FslResolucion_Guardar(int CodCliente, FslResolucionGuardar resolucion)
-            => _db.FslResolucion_Guardar(CodCliente, resolucion);
+        public ErrorDto
+            FSL_Expediente_Resolucion_Guardar(
+                int CodEmpresa,
+                FslExpedienteResolucionGuardarRequest request)
+            => _db.FSL_Expediente_Resolucion_Guardar(
+                CodEmpresa,
+                request);
 
-        /// <summary>Valida las credenciales de un miembro del comité.</summary>
-        public ErrorDto FslMiembroValida(int CodCliente, FslMiembroValida usuario)
-            => _db.FslMiembroValida(CodCliente, usuario);
+        public ErrorDto
+            FSL_Expediente_Miembro_Validar(
+                int CodEmpresa,
+                FslExpedienteMiembroValidarRequest request)
+            => _db.FSL_Expediente_Miembro_Validar(
+                CodEmpresa,
+                request);
 
-        /// <summary>Aplica (procesa) un expediente Fosol.</summary>
-        public ErrorDto FslExpediente_Aplicar(int CodCliente, long cod_expediente, string usuario)
-            => _db.FslExpediente_Aplicar(CodCliente, cod_expediente, usuario);
+        public ErrorDto<FslExpedienteAplicarResultado>
+            FSL_Expediente_Aplicar(
+                int CodEmpresa,
+                FslExpedienteAplicarRequest request)
+            => _db.FSL_Expediente_Aplicar(
+                CodEmpresa,
+                request);
     }
 }

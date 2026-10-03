@@ -1,32 +1,67 @@
 using Galileo.DataBaseTier.ProGrX_BeneficiosFosol;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
 
 namespace Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Lógica de negocio de las Gestiones de Expediente Fosol (frmFSL_ExpedienteGestiones).
-    /// </summary>
-    public class FrmFslExpedienteGestionesBL
+    public sealed class FrmFslExpedienteGestionesBL
     {
         private readonly FrmFslExpedienteGestionesDB _db;
 
-        public FrmFslExpedienteGestionesBL(IConfiguration config)
+        public FrmFslExpedienteGestionesBL(
+            IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            ArgumentNullException.ThrowIfNull(config);
 
-            _db = new FrmFslExpedienteGestionesDB(config);
+            _db =
+                new FrmFslExpedienteGestionesDB(
+                    config);
         }
 
-        /// <summary>Tipos de gestión activos.</summary>
-        public ErrorDto<List<FslGestionesListaDatos>> FslGestiones_Obtener(int CodCliente)
-            => _db.FslGestiones_Obtener(CodCliente);
+        public ErrorDto<FslExpedienteDatos>
+            FSL_ExpedienteGestiones_Expediente_Obtener(
+                int CodEmpresa,
+                long codExpediente)
+        {
+            return _db
+                .FSL_ExpedienteGestiones_Expediente_Obtener(
+                    CodEmpresa,
+                    codExpediente);
+        }
 
-        /// <summary>Registra una gestión de expediente.</summary>
-        public ErrorDto FslGestion_Agregar(int CodCliente, FslGestionAgregar gestion)
-            => _db.FslGestion_Agregar(CodCliente, gestion);
+        public ErrorDto<
+            List<DropDownListaGenericaModel>>
+            FSL_ExpedienteGestiones_Catalogo_Obtener(
+                int CodEmpresa)
+        {
+            return _db
+                .FSL_ExpedienteGestiones_Catalogo_Obtener(
+                    CodEmpresa);
+        }
+
+        public ErrorDto<
+            List<FslExpedienteGestionData>>
+            FSL_ExpedienteGestiones_Historico_Obtener(
+                int CodEmpresa,
+                long codExpediente)
+        {
+            return _db
+                .FSL_ExpedienteGestiones_Historico_Obtener(
+                    CodEmpresa,
+                    codExpediente);
+        }
+
+        public ErrorDto
+            FSL_ExpedienteGestiones_Gestion_Agregar(
+                int CodEmpresa,
+                FslExpedienteGestionAgregarRequest?
+                    request)
+        {
+            return _db
+                .FSL_ExpedienteGestiones_Gestion_Agregar(
+                    CodEmpresa,
+                    request);
+        }
     }
 }

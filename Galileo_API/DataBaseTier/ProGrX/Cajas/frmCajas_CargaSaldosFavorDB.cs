@@ -39,12 +39,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CargaSaldosFavor_Retenciones_Obtener(int codEmpresa)
         {
             const string query = @"
-                select
-                    rtrim(RETENCION_CODIGO) as item,
-                    rtrim(DESCRIPCION) as descripcion
-                from FND_RETENCION_CONCEPTOS
-                where ACTIVO = 1
-                order by DESCRIPCION";
+                SELECT 
+                          RTRIM(C.cod_servicio)     AS item,
+                          CONCAT(RTRIM(C.descripcion), ' | ', RTRIM(C.cod_recaudador), ' | ', C.COD_CUENTA ) AS descripcion      
+                    FROM dbo.CAJAS_SERVICIOS C WHERE C.ACTIVO = 1
+                    ORDER BY C.cod_recaudador ASC";
 
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 _portalDb,
