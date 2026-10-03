@@ -12,10 +12,14 @@ namespace Galileo.DataBaseTier.ProGrX
         private const string OpcionVacaciones = "vacaciones";
         private const string OpcionIncapacidades = "incapacidades";
         private const string OpcionPermisos = "permisos";
+        private const string OpcionBoletasPago = "boletasPago";
+        private const string OpcionTraslados = "traslados";
         private const string AppCodProGrX = "ProGrX";
+        private const string AppNameWeb = "ProGrX_WEB";
         private const string SqlIdentificacionColaborador = "SELECT IDENTIFICACION FROM RH_PERSONAS WHERE EMPLEADO_ID = @EmpleadoId";
         private const string AccionRecibir = "recibir";
         private static readonly byte[] FirmaJpeg = [0xFF, 0xD8, 0xFF];
+        private static readonly byte[] FirmaJpegFin = [0xFF, 0xD9];
         private static readonly byte[] FirmaPng = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
         private static readonly byte[] FirmaBmp = [0x42, 0x4D];
 
@@ -101,6 +105,97 @@ namespace Galileo.DataBaseTier.ProGrX
             catch (Exception ex)
             {
                 return CrearError(ex, result);
+            }
+        }
+
+        public ErrorDto<bool> Colaborador_Foto_Cambia(
+            int codEmpresa,
+            string usuario,
+            ColaboradorFotoCambiaRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(usuario)
+                || request is null
+                || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                || request.EmpleadoId.Length > 20
+                || request.FotoBase64 is null
+                || (!request.Quitar && string.IsNullOrWhiteSpace(request.FotoBase64))
+                || (request.Quitar && !string.IsNullOrEmpty(request.FotoBase64))
+                || request.FotoBase64.Length > 1_400_000)
+            {
+                return DbHelper.CreateErrorResponse("La foto seleccionada no es válida.", -2, false);
+            }
+
+            byte[]? foto = null;
+            if (!request.Quitar)
+            {
+                try
+                {
+                    foto = Convert.FromBase64String(request.FotoBase64);
+                }
+                catch (FormatException)
+                {
+                    return DbHelper.CreateErrorResponse("El archivo de imagen no es válido.", -2, false);
+                }
+
+                if (foto.Length < 4
+                    || foto.Length > 1_000_000
+                    || !foto.AsSpan().StartsWith(FirmaJpeg)
+                    || !foto.AsSpan().EndsWith(FirmaJpegFin))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La foto debe ser una imagen JPEG menor de 1 MB.",
+                        -2,
+                        false);
+                }
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+                var errorAcceso = ValidarAccesoColaborador(
+                    connection,
+                    usuario,
+                    empleadoId,
+                    request.Clave);
+
+                if (errorAcceso is not null)
+                {
+                    return DbHelper.CreateErrorResponse(errorAcceso, -3, false);
+                }
+
+                var filasActualizadas = request.Quitar
+                    ? connection.Execute(
+                        "UPDATE dbo.RH_PERSONAS SET FOTO = NULL WHERE EMPLEADO_ID = @EmpleadoId",
+                        new { EmpleadoId = empleadoId })
+                    : connection.Execute(
+                        "UPDATE dbo.RH_PERSONAS SET FOTO = @Foto WHERE EMPLEADO_ID = @EmpleadoId",
+                        new { Foto = foto, EmpleadoId = empleadoId });
+
+                if (filasActualizadas != 1)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "No fue posible actualizar la foto del colaborador.",
+                        -4,
+                        false);
+                }
+
+                _securityMainDb.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = codEmpresa,
+                    Usuario = usuario.Trim(),
+                    Movimiento = "Actualiza",
+                    DetalleMovimiento = (request.Quitar
+                        ? "Quita foto oficial del colaborador: "
+                        : "Actualiza foto oficial del colaborador: ") + empleadoId,
+                    Modulo = 23
+                });
+
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, false);
             }
         }
 
@@ -282,7 +377,7 @@ namespace Galileo.DataBaseTier.ProGrX
                         EmpleadoId = request.EmpleadoId.Trim(),
                         Email = request.Email,
                         Usuario = usuario.Trim(),
-                        AppName = "ProGrX_WEB",
+                        AppName = AppNameWeb,
                         AppVersion = NormalizarAppVersion(request.AppVersion),
                         Equipo = "WEB"
                     },
@@ -359,7 +454,7 @@ namespace Galileo.DataBaseTier.ProGrX
                         EmpleadoId = empleadoId,
                         Clave = request.ClaveNueva,
                         Usuario = usuario.Trim(),
-                        AppName = "ProGrX_WEB",
+                        AppName = AppNameWeb,
                         AppVersion = NormalizarAppVersion(request.AppVersion),
                         Equipo = "WEB"
                     },
@@ -1276,6 +1371,198 @@ namespace Galileo.DataBaseTier.ProGrX
             });
         }
 
+        public ErrorDto<bool> Colaborador_Reporte_Validar(
+            int codEmpresa,
+            string usuario,
+            ColaboradorReporteRequest request)
+        {
+            if (SolicitudReporteInvalida(usuario, request))
+            {
+                return DbHelper.CreateErrorResponse("La boleta solicitada no es válida.", -2, false);
+            }
+
+            var sql = request.Opcion switch
+            {
+                OpcionBoletasPago => "SELECT TOP (1) 1 FROM dbo.vRH_Nomina_Boleta_Encabezado " +
+                    "WHERE EMPLEADO_ID = @EmpleadoId AND COD_NOMINA = @CodNomina AND NOMINA_NUM = @NominaNum",
+                "vacaciones" => "SELECT TOP (1) 1 FROM dbo.vRH_Boleta_Vacaciones " +
+                    "WHERE EMPLEADO_ID = @EmpleadoId AND BOLETA_ID = @BoletaId",
+                "incapacidades" => "SELECT TOP (1) 1 FROM dbo.vRH_Boleta_Incapacidades " +
+                    "WHERE EMPLEADO_ID = @EmpleadoId AND BOLETA_ID = @BoletaId",
+                "permisos" => "SELECT TOP (1) 1 FROM dbo.vRH_Boleta_Permisos " +
+                    "WHERE EMPLEADO_ID = @EmpleadoId AND BOLETA_ID = @BoletaId",
+                "accionesPersonal" => "SELECT TOP (1) 1 FROM dbo.vRH_Accion_Personal " +
+                    "WHERE EMPLEADO_ID = @EmpleadoId AND COD_ACCION = @BoletaId",
+                OpcionTraslados => "SELECT TOP (1) 1 FROM ACTIVOS_TRASLADOS " +
+                    "WHERE COD_TRASLADO = @BoletaId AND " +
+                    "(IDENTIFICACION = @Identificacion OR IDENTIFICACION_DESTINO = @Identificacion)",
+                _ => null
+            };
+
+            if (sql is null
+                || (request.Opcion == OpcionBoletasPago
+                    && (string.IsNullOrWhiteSpace(request.CodNomina) || request.NominaNum is null or <= 0))
+                || (request.Opcion != OpcionBoletasPago && string.IsNullOrWhiteSpace(request.BoletaId)))
+            {
+                return DbHelper.CreateErrorResponse("La boleta solicitada no es válida.", -2, false);
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                var empleadoId = request.EmpleadoId.Trim();
+                var errorAcceso = ValidarAccesoColaborador(connection, usuario, empleadoId, request.Clave);
+                if (errorAcceso is not null)
+                {
+                    return DbHelper.CreateErrorResponse(errorAcceso, -2, false);
+                }
+
+                var identificacion = request.Opcion == OpcionTraslados
+                    ? connection.QueryFirstOrDefault<string>(
+                        SqlIdentificacionColaborador,
+                        new { EmpleadoId = empleadoId })?.Trim()
+                    : null;
+
+                if (request.Opcion == OpcionTraslados && string.IsNullOrWhiteSpace(identificacion))
+                {
+                    return DbHelper.CreateErrorResponse("No se encontró el colaborador.", -3, false);
+                }
+
+                var existe = connection.QueryFirstOrDefault<int?>(sql, new
+                {
+                    EmpleadoId = empleadoId,
+                    BoletaId = request.BoletaId.Trim(),
+                    CodNomina = request.CodNomina.Trim(),
+                    request.NominaNum,
+                    Identificacion = identificacion
+                });
+
+                return existe == 1
+                    ? DbHelper.CreateOkResponse(true)
+                    : DbHelper.CreateErrorResponse(
+                        "La boleta no está disponible para este colaborador.", -3, false);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, false);
+            }
+        }
+
+        private static bool SolicitudReporteInvalida(
+            string usuario,
+            ColaboradorReporteRequest? request)
+        {
+            return string.IsNullOrWhiteSpace(usuario) || request is null
+                || string.IsNullOrWhiteSpace(request.EmpleadoId)
+                || request.EmpleadoId.Length > 20
+                || request.Clave?.Length > 100
+                || request.BoletaId is null or { Length: > 30 }
+                || request.CodNomina is null or { Length: > 20 };
+        }
+
+        public ErrorDto<List<ColaboradorTrasladoPlacaData>> Colaborador_Traslado_Detalle_Obtener(
+            int codEmpresa,
+            string usuario,
+            ColaboradorTrasladoDetalleRequest request)
+        {
+            var result = new List<ColaboradorTrasladoPlacaData>();
+            var validacion = Colaborador_Reporte_Validar(codEmpresa, usuario,
+                new ColaboradorReporteRequest
+                {
+                    EmpleadoId = request.EmpleadoId,
+                    Clave = request.Clave,
+                    Opcion = OpcionTraslados,
+                    BoletaId = request.BoletaId
+                });
+
+            if (validacion.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    validacion.Description ?? "No fue posible validar la boleta.",
+                    validacion.Code ?? -1,
+                    result);
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                var identificacion = connection.QueryFirst<string>(
+                    SqlIdentificacionColaborador,
+                    new { EmpleadoId = request.EmpleadoId.Trim() });
+                var placas = connection.Query<ColaboradorTrasladoPlacaRow>(
+                    "spActivos_Responsable_Cambio_Consulta_Placas",
+                    new
+                    {
+                        BoletaId = request.BoletaId.Trim(),
+                        Identificacion = identificacion.Trim(),
+                        Usuario = usuario.Trim(),
+                        ModoRecepcion = 1
+                    },
+                    commandType: CommandType.StoredProcedure);
+
+                result = placas.Select(placa => new ColaboradorTrasladoPlacaData
+                {
+                    NumPlaca = placa.NUM_PLACA?.Trim() ?? string.Empty,
+                    Descripcion = placa.Descripcion?.Trim() ?? string.Empty,
+                    DepreciacionAc = placa.DEPRECIACION_AC,
+                    DepreciacionMes = placa.DEPRECIACION_MES,
+                    ValorLibros = placa.VALOR_LIBROS
+                }).ToList();
+
+                return DbHelper.CreateOkResponse(result);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, result);
+            }
+        }
+
+        public ErrorDto<bool> Colaborador_Reporte_Bitacora(
+            int codEmpresa,
+            string usuario,
+            ColaboradorReporteRequest request)
+        {
+            var accion = request.Opcion switch
+            {
+                OpcionBoletasPago => "10",
+                "vacaciones" => "11",
+                "permisos" => "12",
+                "incapacidades" => "13",
+                "accionesPersonal" => "14",
+                _ => null
+            };
+
+            if (accion is null)
+            {
+                return DbHelper.CreateErrorResponse("El tipo de boleta no es válido.", -2, false);
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                connection.Execute(
+                    "EXEC spRH_Portal_Bitacora @Accion, @EmpleadoId, @Usuario, " +
+                    "@Detalle, @AppName, @AppVersion, @Equipo",
+                    new
+                    {
+                        Accion = accion,
+                        EmpleadoId = request.EmpleadoId.Trim(),
+                        Usuario = usuario.Trim(),
+                        Detalle = request.Opcion == OpcionBoletasPago
+                            ? $"Nomina Id: {request.NominaNum}"
+                            : $"Boleta Id: {request.BoletaId.Trim()}",
+                        AppName = AppNameWeb,
+                        AppVersion = NormalizarAppVersion(request.AppVersion),
+                        Equipo = "WEB"
+                    });
+                return DbHelper.CreateOkResponse(true);
+            }
+            catch (Exception ex)
+            {
+                return CrearError(ex, false);
+            }
+        }
+
         private static ErrorDto<bool>? ValidarAccesoAutorizador(
             IDbConnection connection,
             string usuario,
@@ -1594,7 +1881,7 @@ namespace Galileo.DataBaseTier.ProGrX
                 "tarjetas" => (
                     "EXEC spAFI_PersonaTarjetas_Consulta @ClienteCod, @Cedula, @Token",
                     new { parametros.ClienteCod, Cedula = identificacion, Token = string.Empty }),
-                "boletasPago" => (
+                OpcionBoletasPago => (
                     "SELECT TOP 50 Nomina_Num AS nominaNum, NPago_Mes AS nPagoMes, " +
                     "COD_NOMINA AS codNomina, Fecha_Inicio AS fechaInicio, " +
                     "Fecha_Corte AS fechaCorte, SALARIO_ORDINARIO AS salarioOrdinario, " +
@@ -1634,7 +1921,7 @@ namespace Galileo.DataBaseTier.ProGrX
                     "WHERE Estado = 'A' AND Identificacion = @Identificacion " +
                     "ORDER BY Tipo_Activo, Num_Placa",
                     parametros),
-                "traslados" => CrearConsultaTraslados(request, parametros),
+                OpcionTraslados => CrearConsultaTraslados(request, parametros),
                 _ => (string.Empty, parametros)
             };
         }
@@ -1888,7 +2175,7 @@ namespace Galileo.DataBaseTier.ProGrX
             {
                 EmpleadoId = empleadoId,
                 Usuario = usuario.Trim(),
-                AppName = "ProGrX_WEB",
+                AppName = AppNameWeb,
                 AppVersion = NormalizarAppVersion(appVersion),
                 Equipo = "WEB"
             };
