@@ -79,7 +79,7 @@ public sealed class AuthSessionResponse
 
 public sealed class GalileoSecurityInitializeRequest
 {
-    public int EmpresaId { get; set; }
+    public required int EmpresaId { get; set; }
     public string AppVersion { get; set; } = string.Empty;
 }
 
