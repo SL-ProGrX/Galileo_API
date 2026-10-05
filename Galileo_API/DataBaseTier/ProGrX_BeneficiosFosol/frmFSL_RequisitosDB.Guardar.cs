@@ -31,71 +31,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             int CodEmpresa,
             FslRequisitoGuardarRequest request)
         {
-            ArgumentNullException.ThrowIfNull(request);
-
-            var validacion =
-                FSL_Requisitos_Requisito_Validar(request);
-
-            if (!string.IsNullOrEmpty(validacion))
-            {
-                return DbHelper.ErrorResponse(
-                    validacion,
-                    CodigoValidacion);
-            }
-
-            var codigo = request.cod_requisito
-                .Trim()
-                .ToUpperInvariant();
-
-            var descripcion = request.descripcion.Trim();
-            var usuario = request.usuario.Trim();
-
-            const string sql = """
-                INSERT INTO FSL_REQUISITOS
-                (
-                    COD_REQUISITO,
-                    DESCRIPCION,
-                    ACTIVO,
-                    REGISTRO_FECHA,
-                    REGISTRO_USUARIO
-                )
-                SELECT
-                    @codigo,
-                    @descripcion,
-                    @activo,
-                    GETDATE(),
-                    @usuario
-                WHERE NOT EXISTS
-                (
-                    SELECT 1
-                    FROM FSL_REQUISITOS
-                    WHERE COD_REQUISITO = @codigo
-                );
-                """;
-
-            var operacion = new FslRequisitoOperacion
-            {
-                Sql = sql,
-                Parametros = new
-                {
-                    codigo,
-                    descripcion,
-                    activo = request.activo ? 1 : 0,
-                    usuario
-                },
-                Usuario = usuario,
-                Movimiento = "Registra",
-                Detalle =
-                    $"Requisitos (Lista) Id.:{codigo}",
-                MensajeExito =
-                    "Requisito registrado correctamente.",
-                MensajeSinCambios =
-                    "El requisito indicado ya existe."
-            };
-
-            return FSL_Requisitos_Operacion_Ejecutar(
+            return FSL_Requisitos_Requisito_Guardar(
                 CodEmpresa,
-                operacion);
+                request,
+                true);
         }
 
         /// <summary>
@@ -114,55 +53,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             int CodEmpresa,
             FslRequisitoGuardarRequest request)
         {
-            ArgumentNullException.ThrowIfNull(request);
-
-            var validacion =
-                FSL_Requisitos_Requisito_Validar(request);
-
-            if (!string.IsNullOrEmpty(validacion))
-            {
-                return DbHelper.ErrorResponse(
-                    validacion,
-                    CodigoValidacion);
-            }
-
-            var codigo = request.cod_requisito
-                .Trim()
-                .ToUpperInvariant();
-
-            var descripcion = request.descripcion.Trim();
-            var usuario = request.usuario.Trim();
-
-            const string sql = """
-                UPDATE FSL_REQUISITOS
-                SET
-                    DESCRIPCION = @descripcion,
-                    ACTIVO = @activo
-                WHERE COD_REQUISITO = @codigo;
-                """;
-
-            var operacion = new FslRequisitoOperacion
-            {
-                Sql = sql,
-                Parametros = new
-                {
-                    codigo,
-                    descripcion,
-                    activo = request.activo ? 1 : 0
-                },
-                Usuario = usuario,
-                Movimiento = "Modifica",
-                Detalle =
-                    $"Requisitos (Lista) Id.:{codigo}",
-                MensajeExito =
-                    "Requisito actualizado correctamente.",
-                MensajeSinCambios =
-                    "No se encontr&oacute; el requisito indicado."
-            };
-
-            return FSL_Requisitos_Operacion_Ejecutar(
+            return FSL_Requisitos_Requisito_Guardar(
                 CodEmpresa,
-                operacion);
+                request,
+                false);
         }
 
         /// <summary>
@@ -191,17 +85,15 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 
             var usuarioRegistro = usuario.Trim();
 
-            if (string.IsNullOrWhiteSpace(codigo))
-            {
-                return DbHelper.ErrorResponse(
-                    MensajeCodigoRequerido,
-                    CodigoValidacion);
-            }
+            var validacion =
+                FSL_Requisitos_CodigoUsuario_Validar(
+                    codigo,
+                    usuarioRegistro);
 
-            if (string.IsNullOrWhiteSpace(usuarioRegistro))
+            if (!string.IsNullOrEmpty(validacion))
             {
                 return DbHelper.ErrorResponse(
-                    MensajeUsuarioRequerido,
+                    validacion,
                     CodigoValidacion);
             }
 
@@ -210,23 +102,21 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                 WHERE COD_REQUISITO = @codigo;
                 """;
 
-            var operacion = new FslRequisitoOperacion
-            {
-                Sql = sql,
-                Parametros = new { codigo },
-                Usuario = usuarioRegistro,
-                Movimiento = "Elimina",
-                Detalle =
-                    $"Requisitos (Lista) Id.:{codigo}",
-                MensajeExito =
-                    "Requisito eliminado correctamente.",
-                MensajeSinCambios =
-                    "No se encontr&oacute; el requisito indicado."
-            };
-
             return FSL_Requisitos_Operacion_Ejecutar(
                 CodEmpresa,
-                operacion);
+                new FslRequisitoOperacion
+                {
+                    Sql = sql,
+                    Parametros = new { codigo },
+                    Usuario = usuarioRegistro,
+                    Movimiento = "Elimina",
+                    Detalle =
+                        $"Requisitos (Lista) Id.:{codigo}",
+                    MensajeExito =
+                        "Requisito eliminado correctamente.",
+                    MensajeSinCambios =
+                        "No se encontr&oacute; el requisito indicado."
+                });
         }
 
         /// <summary>
@@ -364,7 +254,8 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                     "Ocurri&oacute; un error al actualizar la asignaci&oacute;n.");
             }
 
-            var movimiento = response.Result ?? string.Empty;
+            var movimiento =
+                response.Result ?? string.Empty;
 
             if (string.IsNullOrWhiteSpace(movimiento))
             {
@@ -382,6 +273,111 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 
             return DbHelper.OkResponse(
                 "Asignaci&oacute;n actualizada correctamente.");
+        }
+
+        /// <summary>
+        /// Ejecuta el registro o la actualizaci&oacute;n de un
+        /// requisito.
+        /// </summary>
+        /// <param name="CodEmpresa">
+        /// C&oacute;digo de empresa.
+        /// </param>
+        /// <param name="request">
+        /// Informaci&oacute;n del requisito.
+        /// </param>
+        /// <param name="registrar">
+        /// Indica si corresponde registrar o actualizar.
+        /// </param>
+        /// <returns>
+        /// Resultado de la operaci&oacute;n.
+        /// </returns>
+        private ErrorDto FSL_Requisitos_Requisito_Guardar(
+            int CodEmpresa,
+            FslRequisitoGuardarRequest request,
+            bool registrar)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            var validacion =
+                FSL_Requisitos_Requisito_Validar(request);
+
+            if (!string.IsNullOrEmpty(validacion))
+            {
+                return DbHelper.ErrorResponse(
+                    validacion,
+                    CodigoValidacion);
+            }
+
+            var datos =
+                FSL_Requisitos_Requisito_Datos_Obtener(
+                    request);
+
+            const string sql = """
+                IF @registrar = 1
+                BEGIN
+                    INSERT INTO FSL_REQUISITOS
+                    (
+                        COD_REQUISITO,
+                        DESCRIPCION,
+                        ACTIVO,
+                        REGISTRO_FECHA,
+                        REGISTRO_USUARIO
+                    )
+                    SELECT
+                        @codigo,
+                        @descripcion,
+                        @activo,
+                        GETDATE(),
+                        @usuario
+                    WHERE NOT EXISTS
+                    (
+                        SELECT 1
+                        FROM FSL_REQUISITOS
+                        WHERE COD_REQUISITO = @codigo
+                    );
+                END
+                ELSE
+                BEGIN
+                    UPDATE FSL_REQUISITOS
+                    SET DESCRIPCION = @descripcion,
+                        ACTIVO = @activo
+                    WHERE COD_REQUISITO = @codigo;
+                END;
+                """;
+
+            var movimiento =
+                registrar ? "Registra" : "Modifica";
+
+            var mensajeExito = registrar
+                ? "Requisito registrado correctamente."
+                : "Requisito actualizado correctamente.";
+
+            var mensajeSinCambios = registrar
+                ? "El requisito indicado ya existe."
+                : "No se encontr&oacute; el requisito indicado.";
+
+            return FSL_Requisitos_Operacion_Ejecutar(
+                CodEmpresa,
+                new FslRequisitoOperacion
+                {
+                    Sql = sql,
+                    Parametros = new
+                    {
+                        registrar = registrar ? 1 : 0,
+                        codigo = datos.Codigo,
+                        descripcion = datos.Descripcion,
+                        activo = datos.Activo ? 1 : 0,
+                        usuario = datos.Usuario
+                    },
+                    Usuario = datos.Usuario,
+                    Movimiento = movimiento,
+                    Detalle =
+                        "Requisitos (Lista) Id.:" +
+                        datos.Codigo,
+                    MensajeExito = mensajeExito,
+                    MensajeSinCambios =
+                        mensajeSinCambios
+                });
         }
 
         /// <summary>
@@ -433,6 +429,31 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
+        /// Obtiene los datos normalizados de un requisito.
+        /// </summary>
+        /// <param name="request">
+        /// Informaci&oacute;n original.
+        /// </param>
+        /// <returns>
+        /// Informaci&oacute;n preparada para persistencia.
+        /// </returns>
+        private static FslRequisitoDatos
+            FSL_Requisitos_Requisito_Datos_Obtener(
+                FslRequisitoGuardarRequest request)
+        {
+            return new FslRequisitoDatos
+            {
+                Codigo = request.cod_requisito
+                    .Trim()
+                    .ToUpperInvariant(),
+                Descripcion =
+                    request.descripcion.Trim(),
+                Activo = request.activo,
+                Usuario = request.usuario.Trim()
+            };
+        }
+
+        /// <summary>
         /// Valida los datos requeridos para registrar o
         /// actualizar un requisito.
         /// </summary>
@@ -447,20 +468,14 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                 FslRequisitoGuardarRequest request)
         {
             if (string.IsNullOrWhiteSpace(
-                request.cod_requisito))
-            {
-                return MensajeCodigoRequerido;
-            }
-
-            if (string.IsNullOrWhiteSpace(
                 request.descripcion))
             {
                 return MensajeDescripcionRequerida;
             }
 
-            return string.IsNullOrWhiteSpace(request.usuario)
-                ? MensajeUsuarioRequerido
-                : string.Empty;
+            return FSL_Requisitos_CodigoUsuario_Validar(
+                request.cod_requisito,
+                request.usuario);
         }
 
         /// <summary>
@@ -487,25 +502,72 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                 return MensajeCausaRequerida;
             }
 
-            if (string.IsNullOrWhiteSpace(
-                request.cod_requisito))
+            return FSL_Requisitos_CodigoUsuario_Validar(
+                request.cod_requisito,
+                request.usuario);
+        }
+
+        /// <summary>
+        /// Valida el c&oacute;digo del requisito y el usuario.
+        /// </summary>
+        /// <param name="codigo">
+        /// C&oacute;digo del requisito.
+        /// </param>
+        /// <param name="usuario">
+        /// Usuario responsable.
+        /// </param>
+        /// <returns>
+        /// Mensaje de validaci&oacute;n o una cadena vac&iacute;a.
+        /// </returns>
+        private static string
+            FSL_Requisitos_CodigoUsuario_Validar(
+                string codigo,
+                string usuario)
+        {
+            if (string.IsNullOrWhiteSpace(codigo))
             {
                 return MensajeCodigoRequerido;
             }
 
-            return string.IsNullOrWhiteSpace(request.usuario)
+            return string.IsNullOrWhiteSpace(usuario)
                 ? MensajeUsuarioRequerido
                 : string.Empty;
         }
 
+        private sealed class FslRequisitoDatos
+        {
+            public string Codigo { get; init; } =
+                string.Empty;
+
+            public string Descripcion { get; init; } =
+                string.Empty;
+
+            public bool Activo { get; init; } = false;
+
+            public string Usuario { get; init; } =
+                string.Empty;
+        }
+
         private sealed class FslRequisitoOperacion
         {
-            public string Sql { get; init; } = string.Empty;
-            public object Parametros { get; init; } = new();
-            public string Usuario { get; init; } = string.Empty;
-            public string Movimiento { get; init; } = string.Empty;
-            public string Detalle { get; init; } = string.Empty;
-            public string MensajeExito { get; init; } = string.Empty;
+            public string Sql { get; init; } =
+                string.Empty;
+
+            public object Parametros { get; init; } =
+                new();
+
+            public string Usuario { get; init; } =
+                string.Empty;
+
+            public string Movimiento { get; init; } =
+                string.Empty;
+
+            public string Detalle { get; init; } =
+                string.Empty;
+
+            public string MensajeExito { get; init; } =
+                string.Empty;
+
             public string MensajeSinCambios { get; init; } =
                 string.Empty;
         }
