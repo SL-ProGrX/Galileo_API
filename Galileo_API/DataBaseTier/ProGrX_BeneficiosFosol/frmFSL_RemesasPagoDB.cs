@@ -42,11 +42,11 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene una remesa de tesorer&iacute;a por c&oacute;digo.
+        /// Obtiene una remesa de tesorer&#237;a por c&#243;digo.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <param name="codRemesa">C&oacute;digo de la remesa.</param>
-        /// <returns>Informaci&oacute;n de la remesa.</returns>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <param name="codRemesa">C&#243;digo de la remesa.</param>
+        /// <returns>Informaci&#243;n de la remesa.</returns>
         public ErrorDto<FslRemesaDto?>
             FSL_RemesasPago_Remesa_Obtener(
                 int CodEmpresa,
@@ -84,9 +84,9 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene las remesas de tesorer&iacute;a con filtro y paginaci&oacute;n.
+        /// Obtiene las remesas de tesorer&#237;a con filtro y paginaci&#243;n.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
         /// <param name="filtros">Filtros de la consulta.</param>
         /// <returns>Lista paginada de remesas.</returns>
         public ErrorDto<
@@ -139,8 +139,8 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <summary>
         /// Ejecuta la consulta centralizada de remesas.
         /// </summary>
-        /// <param name="connection">Conexi&oacute;n activa.</param>
-        /// <param name="consulta">Par&aacute;metros de consulta.</param>
+        /// <param name="connection">Conexi&#243;n activa.</param>
+        /// <param name="consulta">Par&#225;metros de consulta.</param>
         /// <returns>Remesas y cantidad total.</returns>
         private static
             FslListaPaginadaDto<FslRemesaDto>
@@ -358,10 +358,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene la descripci&oacute;n correspondiente al estado.
+        /// Obtiene la descripci&#243;n correspondiente al estado.
         /// </summary>
         /// <param name="estado">Estado de la remesa.</param>
-        /// <returns>Descripci&oacute;n del estado.</returns>
+        /// <returns>Descripci&#243;n del estado.</returns>
         private static string
             FSL_RemesasPago_Estado_Descripcion_Obtener(
                 string estado)
@@ -376,10 +376,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Construye la descripci&oacute;n utilizada en los selectores.
+        /// Construye la descripci&#243;n utilizada en los selectores.
         /// </summary>
-        /// <param name="remesa">Informaci&oacute;n de la remesa.</param>
-        /// <returns>Descripci&oacute;n para mostrar.</returns>
+        /// <param name="remesa">Informaci&#243;n de la remesa.</param>
+        /// <returns>Descripci&#243;n para mostrar.</returns>
         private static string
             FSL_RemesasPago_Remesa_Descripcion_Crear(
                 FslRemesaDto remesa)
@@ -409,7 +409,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// </summary>
         /// <param name="fecha">Fecha a convertir.</param>
         /// <param name="formato">Formato requerido.</param>
-        /// <returns>Fecha formateada o texto vac&iacute;o.</returns>
+        /// <returns>Fecha formateada o texto vac&#237;o.</returns>
         private static string
             FSL_RemesasPago_Fecha_Texto_Obtener(
                 DateTime? fecha,
@@ -453,9 +453,9 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Registra un movimiento del formulario en la bit&aacute;cora.
+        /// Registra un movimiento del formulario en la bit&#225;cora.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
         /// <param name="usuario">Usuario responsable.</param>
         /// <param name="movimiento">Movimiento realizado.</param>
         /// <param name="detalle">Detalle del movimiento.</param>

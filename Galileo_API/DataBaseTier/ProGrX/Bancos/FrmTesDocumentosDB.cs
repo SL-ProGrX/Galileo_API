@@ -106,6 +106,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// Obtener lista de tipos de asientos para documentos
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="contabilidad">Contabilidad asociada a la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TES_DocumentosTiposAsientos_Obtener(int CodEmpresa, int contabilidad)
         {
@@ -297,6 +298,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto TES_Documentos_Eliminar(int CodEmpresa, string tipo,string usuario)
         {
@@ -348,6 +350,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// Guardar o actualizar un concepto de anulación de documentos
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <param name="tipo"></param>
         /// <param name="concepto"></param>
         /// <returns></returns>
@@ -406,6 +409,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="id_conceptos"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto TES_DocAnulaConcepto_Eliminar(int CodEmpresa, int id_conceptos, string usuario)
         {

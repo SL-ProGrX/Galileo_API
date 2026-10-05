@@ -78,7 +78,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
         /// <summary>
         /// Secciones / Unidad de Trabajo
-        ///
+        /// </summary>
 
         public ErrorDto<List<DropDownListaGenericaModel>> Crd_PolizasReportes_Secciones_Obtener(int codEmpresa, string usuario, int codContabilidad, string? departamentoCodigo)
         {
@@ -766,8 +766,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <summary>
         /// Obtiene el nombre del reporte y el título del reporte a partir del código de reporte seleccionado por el usuario y si la póliza es prendaria o no. Esta función utiliza una estructura de switch para determinar el nombre y título del reporte según el código de reporte (R001, R002 o R003) y si la póliza es prendaria (Prendaria = 1) o no (Prendaria = 0). El nombre del reporte se utiliza para cargar el archivo de reporte correspondiente en Crystal Reports, mientras que el título del reporte se muestra en la parte superior del reporte generado para proporcionar contexto al usuario sobre el contenido del mismo.
         /// </summary>
-        /// <param name="codigoReporte"></param>
-        /// <param name="prendaria"></param>
+        /// <param name="codigoReporte">Código asociado a la operación.</param>
+        /// <param name="prendaria">Valor de entrada utilizado por la operación.</param>
+        ///
         /// <returns></returns>
         private static (string ReporteNombre, string ReporteTitulo) ObtenerDatosReporte(string codigoReporte, int prendaria)
         {

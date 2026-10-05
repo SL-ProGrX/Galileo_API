@@ -697,8 +697,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// Inserta o actualiza la configuración de un informe.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="reporte"></param>
+        /// <param name="request">Solicitud con los datos de entrada de la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto CR_Reportes_Config_Reportes_Guardar(int CodEmpresa, CrReportesConfigReporteGuardarRequest request)
         {

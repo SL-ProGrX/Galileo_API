@@ -31,10 +31,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 
         /// <summary>
         /// Obtiene los requisitos con filtro, ordenamiento y
-        /// paginaci&oacute;n.
+        /// paginaci&#243;n.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// C&#243;digo de empresa.
         /// </param>
         /// <param name="filtros">
         /// Filtros de la consulta.
@@ -158,10 +158,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 
         /// <summary>
         /// Obtiene los planes activos disponibles para la
-        /// asignaci&oacute;n de requisitos.
+        /// asignaci&#243;n de requisitos.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// C&#243;digo de empresa.
         /// </param>
         /// <returns>
         /// Lista de planes activos.
@@ -194,10 +194,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// plan.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// C&#243;digo de empresa.
         /// </param>
         /// <param name="codPlan">
-        /// C&oacute;digo del plan.
+        /// C&#243;digo del plan.
         /// </param>
         /// <returns>
         /// Lista de causas activas.
@@ -241,20 +241,20 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 
         /// <summary>
         /// Obtiene todos los requisitos activos y su estado de
-        /// asignaci&oacute;n para un plan y una causa.
+        /// asignaci&#243;n para un plan y una causa.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// C&#243;digo de empresa.
         /// </param>
         /// <param name="codPlan">
-        /// C&oacute;digo del plan.
+        /// C&#243;digo del plan.
         /// </param>
         /// <param name="codCausa">
-        /// C&oacute;digo de la causa.
+        /// C&#243;digo de la causa.
         /// </param>
         /// <returns>
         /// Requisitos activos con sus indicadores de
-        /// asignaci&oacute;n y opcionalidad.
+        /// asignaci&#243;n y opcionalidad.
         /// </returns>
         public ErrorDto<List<FslRequisitoCausaDto>>
             FSL_Requisitos_Asignaciones_Obtener(
@@ -348,10 +348,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 
         /// <summary>
         /// Registra un movimiento del formulario en la
-        /// bit&aacute;cora general.
+        /// bit&#225;cora general.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// C&#243;digo de empresa.
         /// </param>
         /// <param name="usuario">
         /// Usuario responsable.

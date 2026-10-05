@@ -180,7 +180,7 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Obtiene los tipos de movimientos de una categor&iacute;a.
+        /// Obtiene los tipos de movimientos de una categor&#237;a.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="CodContabilidad"></param>

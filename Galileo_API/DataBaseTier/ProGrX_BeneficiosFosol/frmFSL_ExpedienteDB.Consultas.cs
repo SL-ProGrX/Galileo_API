@@ -9,8 +9,8 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <summary>
         /// Obtiene el encabezado completo de un expediente.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <param name="codExpediente">C&oacute;digo del expediente.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <param name="codExpediente">C&#243;digo del expediente.</param>
         /// <returns>Datos del expediente.</returns>
         public ErrorDto<FslExpedienteDatos>
             FSL_Expediente_Obtener(
@@ -139,10 +139,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <summary>
         /// Obtiene el expediente anterior o siguiente existente.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
         /// <param name="codExpediente">Expediente actual.</param>
-        /// <param name="siguiente">Indica la direcci&oacute;n.</param>
-        /// <returns>C&oacute;digo encontrado.</returns>
+        /// <param name="siguiente">Indica la direcci&#243;n.</param>
+        /// <returns>C&#243;digo encontrado.</returns>
         public ErrorDto<long>
             FSL_Expediente_Navegacion_Obtener(
                 int CodEmpresa,
@@ -243,7 +243,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene los miembros del comit&eacute; del expediente.
+        /// Obtiene los miembros del comit&#233; del expediente.
         /// </summary>
         public ErrorDto<List<FslExpedienteResolucionMiembroData>>
             FSL_Expediente_ResolucionMiembros_Obtener(

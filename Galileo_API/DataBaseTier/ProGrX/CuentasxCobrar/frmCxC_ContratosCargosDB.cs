@@ -19,7 +19,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// Consulta la lista de cargos tipo 'C', ordenados por el campo indicado.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
-        /// <param name="param">Parámetro de ordenamiento.</param>
+        /// <param name="orden">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <returns>Lista de cargos.</returns>
         public ErrorDto<List<CxcCargoDto>> CxcCargos_Lista(int codEmpresa, string orden)
         {
@@ -36,7 +36,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// Consulta los cargos de un contrato, incluyendo la descripción.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
-        /// <param name="param">Parámetros de consulta.</param>
+        /// <param name="codContrato">C&#243;digo que identifica el elemento relacionado.</param>
         /// <returns>Lista de cargos del contrato.</returns>
         public ErrorDto<List<CxcContratoCargoDto>> CxcContratoCargos_Lista(int codEmpresa, string codContrato)
         {

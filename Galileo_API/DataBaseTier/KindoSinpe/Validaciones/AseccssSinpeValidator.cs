@@ -1065,7 +1065,7 @@ namespace Galileo_API.DataBaseTier
 
                     bodyWCF.body = body;
                     bodyWCF.rastro = fxCrearRastroSINPESIF_CCD(vUsuario).Result;
-                    /**
+                    /*
                     Para pruebas de SINPE
                     **/
                     string json = JsonSerializer.Serialize(bodyWCF);
@@ -1380,7 +1380,7 @@ namespace Galileo_API.DataBaseTier
                 TransferData.Transfer.DestinationCustomer.IBAN = solicitud.Cuenta;
                 TransferData.Transfer.DestinationCustomer.Email = solicitud.CorreoNotifica;
 
-                /**
+                /*
                     Para pruebas de SINPE
                     **/
                 string json = JsonSerializer.Serialize(TransferData);
@@ -1993,6 +1993,7 @@ namespace Galileo_API.DataBaseTier
         /// Establece el código SUGEF estándar basado en el tipo de identificación.
         /// </summary>
         /// <param name="TipoId"></param>
+        /// <param name="isPin">Indica si la validaci&#243;n corresponde a un PIN.</param>
         /// <returns></returns>
         private ErrorDto<int> setCodigoSugefEstandar(int? TipoId, bool? isPin = false)
         {

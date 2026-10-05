@@ -125,7 +125,7 @@ OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
         /// Obtiene los datos principales de un acreedor APA por código.
         /// </summary>
         /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
+        /// <param name="cod_acreedor">C&#243;digo que identifica el elemento relacionado.</param>
         /// <returns></returns>
         public ErrorDto<FrmCrApaAcreedorDatosDto> CR_APA_Acreedor_Obtener(
             int codEmpresa,

@@ -180,6 +180,7 @@ SELECT
         /// </summary>
         /// <param name="CodEmpresa">Código de empresa.</param>
         /// <param name="Usuario">Usuario que registra.</param>
+        /// <param name="Contabilidad">Contabilidad asociada a la operaci&#243;n.</param>
         /// <param name="req">Datos del rebajo.</param>
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto CxC_Cuentas_SGT_Rebajos_Guardar(

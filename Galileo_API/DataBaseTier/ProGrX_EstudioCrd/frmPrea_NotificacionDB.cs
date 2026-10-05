@@ -116,14 +116,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 var tipoPlantilla = ObtenerTipoPlantilla(datosPlantilla.estado, request.monto_sugerido);
                 var plantillaCorreo = ObtenerPlantillaCorreo(conn, tx, tipoPlantilla);
-                /**
+                /*
                  *  * Se debe validar este dato en el flujo con la integracion a frmPreaEstudiov2
                  * plantillaMensaje = ObtenerPlantillaMensaje(conn, tx, tipoPlantilla);
                 **/
                 var plantillaSms = ObtenerPlantillaMensajeSms(conn, tx, tipoPlantilla);
 
                var cuerpoCorreo = CompletarPlantilla(plantillaCorreo.plantilla, datosPlantilla);
-                /**
+                /*
                * Se debe validar este dato en el flujo con la integracion a frmPreaEstudiov2
                * var cuerpoMensaje = CompletarPlantilla(plantillaMensaje.mensaje, datosPlantilla);
                **/

@@ -23,6 +23,7 @@ namespace Galileo_API.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <param name="usuario"></param>
+        /// <param name="tipo">Tipo utilizado para clasificar el registro o la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto fxValidacionSinpe(int CodEmpresa, string solicitud, string usuario, string? tipo = "PIN")
         {

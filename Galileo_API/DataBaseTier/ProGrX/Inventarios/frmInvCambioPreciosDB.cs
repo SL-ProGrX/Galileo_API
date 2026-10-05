@@ -58,7 +58,7 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Inicializa el acceso a datos del formulario de cambio de precios.
         /// </summary>
-        /// <param name="config">Configuraci&oacute;n de la aplicaci&oacute;n.</param>
+        /// <param name="config">Configuraci&#243;n de la aplicaci&#243;n.</param>
         public FrmInvCambioPreciosDB(
             IConfiguration config)
         {
@@ -71,7 +71,7 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Obtiene los tipos de precio disponibles.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de la empresa.</param>
+        /// <param name="CodEmpresa">C&#243;digo de la empresa.</param>
         /// <returns>Listado de tipos de precio.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>>
             INV_CambioPrecios_TiposPrecio_Obtener(
@@ -105,7 +105,7 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Obtiene los proveedores disponibles para buscar facturas.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de la empresa.</param>
+        /// <param name="CodEmpresa">C&#243;digo de la empresa.</param>
         /// <returns>Listado de proveedores.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>>
             INV_CambioPrecios_Proveedores_Obtener(
@@ -129,8 +129,8 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Carga los registros del archivo y retorna el resultado validado por el proceso de inventarios.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de la empresa.</param>
-        /// <param name="request">Informaci&oacute;n del archivo que se debe cargar.</param>
+        /// <param name="CodEmpresa">C&#243;digo de la empresa.</param>
+        /// <param name="request">Informaci&#243;n del archivo que se debe cargar.</param>
         /// <returns>Registros validados y totales de la carga.</returns>
         public ErrorDto<CambioPrecioArchivoCargaResponse>
             INV_CambioPrecios_Archivo_Cargar(
@@ -222,7 +222,7 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Procesa los cambios de precio seleccionados.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de la empresa.</param>
+        /// <param name="CodEmpresa">C&#243;digo de la empresa.</param>
         /// <param name="request">Registros seleccionados y datos del proceso.</param>
         /// <returns>Resultado del procesamiento.</returns>
         public ErrorDto
@@ -322,9 +322,9 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Obtiene los productos relacionados con una factura de proveedor.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de la empresa.</param>
-        /// <param name="codFactura">C&oacute;digo de la factura.</param>
-        /// <param name="codProveedor">C&oacute;digo del proveedor.</param>
+        /// <param name="CodEmpresa">C&#243;digo de la empresa.</param>
+        /// <param name="codFactura">C&#243;digo de la factura.</param>
+        /// <param name="codProveedor">C&#243;digo del proveedor.</param>
         /// <returns>Detalle de productos de la factura.</returns>
         public ErrorDto<List<FacturaPrecioDetalleDto>>
             INV_CambioPrecios_Factura_Detalle_Obtener(
@@ -405,9 +405,9 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Actualiza el precio regular y el margen de utilidad de los productos seleccionados.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de la empresa.</param>
+        /// <param name="CodEmpresa">C&#243;digo de la empresa.</param>
         /// <param name="request">Productos y precios nuevos que se deben aplicar.</param>
-        /// <returns>Resultado de la actualizaci&oacute;n.</returns>
+        /// <returns>Resultado de la actualizaci&#243;n.</returns>
         public ErrorDto
             INV_CambioPrecios_Factura_Precios_Actualizar(
                 int CodEmpresa,
@@ -480,8 +480,8 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Sube los registros del archivo al proceso temporal de cambio de precios.
         /// </summary>
-        /// <param name="connection">Conexi&oacute;n activa.</param>
-        /// <param name="transaction">Transacci&oacute;n activa.</param>
+        /// <param name="connection">Conexi&#243;n activa.</param>
+        /// <param name="transaction">Transacci&#243;n activa.</param>
         /// <param name="tipoPrecio">Tipo de precio seleccionado.</param>
         /// <param name="usuario">Usuario que realiza la carga.</param>
         /// <param name="registros">Registros obtenidos del archivo.</param>
@@ -535,10 +535,10 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Consulta los registros validados por el proceso de cambio de precios.
         /// </summary>
-        /// <param name="connection">Conexi&oacute;n activa.</param>
-        /// <param name="transaction">Transacci&oacute;n activa.</param>
+        /// <param name="connection">Conexi&#243;n activa.</param>
+        /// <param name="transaction">Transacci&#243;n activa.</param>
         /// <param name="tipoPrecio">Tipo de precio seleccionado.</param>
-        /// <param name="usuario">Usuario que realiz&oacute; la carga.</param>
+        /// <param name="usuario">Usuario que realiz&#243; la carga.</param>
         /// <returns>Registros validados.</returns>
         private static List<CambioPrecioArchivoResultadoDto>
             INV_CambioPrecios_Archivo_Consultar(
@@ -604,8 +604,8 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Actualiza el precio regular y la utilidad de un producto.
         /// </summary>
-        /// <param name="connection">Conexi&oacute;n activa.</param>
-        /// <param name="transaction">Transacci&oacute;n activa.</param>
+        /// <param name="connection">Conexi&#243;n activa.</param>
+        /// <param name="transaction">Transacci&#243;n activa.</param>
         /// <param name="registro">Producto y precio nuevo.</param>
         private static void
             INV_CambioPrecios_Producto_Precio_Actualizar(
@@ -778,7 +778,7 @@ namespace Galileo.DataBaseTier
         /// <param name="tipoPrecio">Tipo de precio seleccionado.</param>
         /// <param name="usuario">Usuario que ejecuta el proceso.</param>
         /// <param name="registros">Registros por procesar.</param>
-        /// <returns>Mensaje de validaci&oacute;n.</returns>
+        /// <returns>Mensaje de validaci&#243;n.</returns>
         private static string
             INV_CambioPrecios_Archivo_Validar(
                 string? tipoPrecio,
@@ -832,8 +832,8 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Valida los registros de precios de factura.
         /// </summary>
-        /// <param name="request">Solicitud de actualizaci&oacute;n.</param>
-        /// <returns>Mensaje de validaci&oacute;n.</returns>
+        /// <param name="request">Solicitud de actualizaci&#243;n.</param>
+        /// <returns>Mensaje de validaci&#243;n.</returns>
         private static string
             INV_CambioPrecios_Factura_Validar(
                 CambioPrecioFacturaActualizarRequest?

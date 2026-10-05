@@ -121,7 +121,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
         }
 
         /// <summary>
-        /// Obtiene las etiquetas activas del m&oacute;dulo BEN autorizadas
+        /// Obtiene las etiquetas activas del m&#243;dulo BEN autorizadas
         /// para el usuario.
         /// </summary>
         /// <param name="codEmpresa"></param>

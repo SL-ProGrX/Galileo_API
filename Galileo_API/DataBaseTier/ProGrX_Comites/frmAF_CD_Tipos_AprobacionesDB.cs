@@ -243,8 +243,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         /// Resuelve el campo y dirección de ordenamiento para la consulta SQL basada en los parámetros de entrada, aplicando valores predeterminados si es necesario.
         /// </summary>
-        /// <param name="sortField"></param>
-        /// <param name="sortOrder"></param>
+        /// <param name="sortField">Valor de entrada utilizado por la operación.</param>
+        /// <param name="sortOrder">Valor de entrada utilizado por la operación.</param>
+        ///
         /// <returns></returns>
         private static (string OrderBy, string Direction) ResolveOrder(string? sortField, int? sortOrder)
         {

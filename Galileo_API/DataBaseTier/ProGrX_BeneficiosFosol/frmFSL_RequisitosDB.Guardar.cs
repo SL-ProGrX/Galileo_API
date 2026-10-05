@@ -19,10 +19,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Registra un requisito nuevo.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// C&#243;digo de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n del requisito.
+        /// Informaci&#243;n del requisito.
         /// </param>
         /// <returns>
         /// Resultado del registro.
@@ -41,13 +41,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Actualiza un requisito existente.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// C&#243;digo de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n del requisito.
+        /// Informaci&#243;n del requisito.
         /// </param>
         /// <returns>
-        /// Resultado de la actualizaci&oacute;n.
+        /// Resultado de la actualizaci&#243;n.
         /// </returns>
         public ErrorDto FSL_Requisitos_Requisito_Actualizar(
             int CodEmpresa,
@@ -63,16 +63,16 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Elimina un requisito existente.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// C&#243;digo de empresa.
         /// </param>
         /// <param name="codRequisito">
-        /// C&oacute;digo del requisito.
+        /// C&#243;digo del requisito.
         /// </param>
         /// <param name="usuario">
         /// Usuario responsable.
         /// </param>
         /// <returns>
-        /// Resultado de la eliminaci&oacute;n.
+        /// Resultado de la eliminaci&#243;n.
         /// </returns>
         public ErrorDto FSL_Requisitos_Requisito_Eliminar(
             int CodEmpresa,
@@ -120,17 +120,17 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Registra, actualiza o elimina la asignaci&oacute;n
+        /// Registra, actualiza o elimina la asignaci&#243;n
         /// de un requisito a un plan y una causa.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// C&#243;digo de empresa.
         /// </param>
         /// <param name="request">
-        /// Estado final de la asignaci&oacute;n.
+        /// Estado final de la asignaci&#243;n.
         /// </param>
         /// <returns>
-        /// Resultado de la operaci&oacute;n.
+        /// Resultado de la operaci&#243;n.
         /// </returns>
         public ErrorDto
             FSL_Requisitos_Asignacion_Actualizar(
@@ -276,20 +276,20 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Ejecuta el registro o la actualizaci&oacute;n de un
+        /// Ejecuta el registro o la actualizaci&#243;n de un
         /// requisito.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// C&#243;digo de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n del requisito.
+        /// Informaci&#243;n del requisito.
         /// </param>
         /// <param name="registrar">
         /// Indica si corresponde registrar o actualizar.
         /// </param>
         /// <returns>
-        /// Resultado de la operaci&oacute;n.
+        /// Resultado de la operaci&#243;n.
         /// </returns>
         private ErrorDto FSL_Requisitos_Requisito_Guardar(
             int CodEmpresa,
@@ -381,17 +381,17 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Ejecuta una operaci&oacute;n de mantenimiento y
-        /// registra el movimiento en bit&aacute;cora.
+        /// Ejecuta una operaci&#243;n de mantenimiento y
+        /// registra el movimiento en bit&#225;cora.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// C&#243;digo de empresa.
         /// </param>
         /// <param name="operacion">
-        /// Datos de la operaci&oacute;n.
+        /// Datos de la operaci&#243;n.
         /// </param>
         /// <returns>
-        /// Resultado de la operaci&oacute;n.
+        /// Resultado de la operaci&#243;n.
         /// </returns>
         private ErrorDto FSL_Requisitos_Operacion_Ejecutar(
             int CodEmpresa,
@@ -432,10 +432,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Obtiene los datos normalizados de un requisito.
         /// </summary>
         /// <param name="request">
-        /// Informaci&oacute;n original.
+        /// Informaci&#243;n original.
         /// </param>
         /// <returns>
-        /// Informaci&oacute;n preparada para persistencia.
+        /// Informaci&#243;n preparada para persistencia.
         /// </returns>
         private static FslRequisitoDatos
             FSL_Requisitos_Requisito_Datos_Obtener(
@@ -458,10 +458,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// actualizar un requisito.
         /// </summary>
         /// <param name="request">
-        /// Informaci&oacute;n del requisito.
+        /// Informaci&#243;n del requisito.
         /// </param>
         /// <returns>
-        /// Mensaje de validaci&oacute;n o una cadena vac&iacute;a.
+        /// Mensaje de validaci&#243;n o una cadena vac&#237;a.
         /// </returns>
         private static string
             FSL_Requisitos_Requisito_Validar(
@@ -480,13 +480,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 
         /// <summary>
         /// Valida los datos requeridos para actualizar una
-        /// asignaci&oacute;n.
+        /// asignaci&#243;n.
         /// </summary>
         /// <param name="request">
-        /// Informaci&oacute;n de la asignaci&oacute;n.
+        /// Informaci&#243;n de la asignaci&#243;n.
         /// </param>
         /// <returns>
-        /// Mensaje de validaci&oacute;n o una cadena vac&iacute;a.
+        /// Mensaje de validaci&#243;n o una cadena vac&#237;a.
         /// </returns>
         private static string
             FSL_Requisitos_Asignacion_Validar(
@@ -508,16 +508,16 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Valida el c&oacute;digo del requisito y el usuario.
+        /// Valida el c&#243;digo del requisito y el usuario.
         /// </summary>
         /// <param name="codigo">
-        /// C&oacute;digo del requisito.
+        /// C&#243;digo del requisito.
         /// </param>
         /// <param name="usuario">
         /// Usuario responsable.
         /// </param>
         /// <returns>
-        /// Mensaje de validaci&oacute;n o una cadena vac&iacute;a.
+        /// Mensaje de validaci&#243;n o una cadena vac&#237;a.
         /// </returns>
         private static string
             FSL_Requisitos_CodigoUsuario_Validar(

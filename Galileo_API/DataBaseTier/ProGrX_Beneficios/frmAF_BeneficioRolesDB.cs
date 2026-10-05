@@ -187,6 +187,7 @@ SELECT U.nombre, U.descripcion, A.usuario,
         /// Construye el texto de filtro y su patrón LIKE. Devuelve nulos cuando no hay filtro.
         /// </summary>
         /// <param name="filtros">Filtros de carga perezosa.</param>
+        ///
         /// <returns>Tupla con el filtro normalizado y su patrón LIKE.</returns>
         private static (string? filtro, string? like) BuildFiltroLike(FiltrosLazyLoadData filtros)
         {
@@ -203,6 +204,7 @@ SELECT U.nombre, U.descripcion, A.usuario,
         /// Resuelve el ordenamiento de la tabla de grupos usando una lista blanca de columnas.
         /// </summary>
         /// <param name="filtros">Filtros de carga perezosa.</param>
+        ///
         /// <returns>Tupla con el campo y la dirección de ordenamiento.</returns>
         private static (string sortField, string sortOrder) ResolveSortGrupos(FiltrosLazyLoadData filtros)
         {
@@ -223,6 +225,7 @@ SELECT U.nombre, U.descripcion, A.usuario,
         /// Por defecto se conserva el orden original: primero los usuarios ya asignados.
         /// </summary>
         /// <param name="filtros">Filtros de carga perezosa.</param>
+        ///
         /// <returns>Tupla con el campo y la dirección de ordenamiento.</returns>
         private static (string sortField, string sortOrder) ResolveSortUsuarios(FiltrosLazyLoadData filtros)
         {

@@ -351,7 +351,8 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Construye la sentencia SQL para actualizar un contrato.
         /// </summary>
-        /// <param name="c"></param>
+        /// <param name="c">Valor de entrada utilizado por la operación.</param>
+        ///
         /// <returns></returns>
         private static (string sql, object args) BuildContratoUpdate(CprContratosDto c)
         {
@@ -1088,8 +1089,9 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Obtiene la información necesaria para la notificación de confección de contrato.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContrato"></param>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="codContrato">Código asociado a la operación.</param>
+        ///
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
         private Task<(CprContratosDto InfoContrato, string EmailConfeccionContrato)> ObtenerInfoNotificacion(int codEmpresa, string codContrato)

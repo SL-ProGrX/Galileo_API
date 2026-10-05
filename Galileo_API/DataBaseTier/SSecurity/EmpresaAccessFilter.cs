@@ -43,7 +43,6 @@ namespace Galileo.DataBaseTier
                          ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             }
 
-            Console.WriteLine($"EmpresaAccessFilter -> sub={userIdStr}, codEmpresa={codEmpresa}");
 
             if (!int.TryParse(userIdStr, out var userId))
             {

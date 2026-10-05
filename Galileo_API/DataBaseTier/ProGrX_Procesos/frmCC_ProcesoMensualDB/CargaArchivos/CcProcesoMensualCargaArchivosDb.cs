@@ -43,6 +43,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
         /// </summary>
         /// <param name="request">Solicitud con los datos de carga.</param>
         /// <param name="reglas">Reglas de transformación y filtrado para la carga.</param>
+        /// <param name="reportarProgreso">Acci&#243;n que informa el avance del proceso.</param>
         /// <returns>Resultado de la operación de carga.</returns>
         public ErrorDto<CcProcesoMensualCargaDeduccionesResponse> CargarDeduccionesGenerico(
             CcProcesoMensualCargaDeduccionesRequest request,
@@ -585,6 +586,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.CargaA
         /// <param name="connection">Conexión activa a base de datos.</param>
         /// <param name="transaction">Transacción activa.</param>
         /// <param name="registros">Registros a insertar.</param>
+        /// <param name="reportarInsertados">Acci&#243;n que informa cu&#225;ntos registros se insertaron.</param>
         private static void InsertarRegistrosPrmCargado(
             IDbConnection connection,
             IDbTransaction transaction,

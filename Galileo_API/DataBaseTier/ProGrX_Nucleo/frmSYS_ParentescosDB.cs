@@ -212,7 +212,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// Inserta o actualiza un parentesco.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="ubicacion"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
+        /// <param name="parentesco">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <returns></returns>
         /// 
         public ErrorDto SYS_Parentescos_Guardar(int CodEmpresa, string usuario, SysParentescosData parentesco)

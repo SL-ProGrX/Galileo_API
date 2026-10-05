@@ -18,6 +18,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// Obtener el monitoreo de los bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="fechaCorte">Fecha utilizada para delimitar la consulta o el proceso.</param>
         /// <returns></returns>
         public ErrorDto<List<TesMonitoreoDto>> TES_Monitoreo_Obtener(int CodEmpresa, DateTime fechaCorte)
         {

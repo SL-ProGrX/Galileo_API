@@ -721,10 +721,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         /// <summary>
         /// Calcula montos iniciales de primer cuota, póliza e interés.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
-        /// <param name="baseData"></param>
         /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="operacion">Datos de entrada requeridos por la operaci&#243;n.</param>
+        /// <param name="baseData"></param>
         /// <returns></returns>
         private MontosIniciales CalcularMontosIniciales(int CodEmpresa,long operacion,CrSeguimientoRefundicionesOperacionBaseDto baseData)
         {
@@ -837,10 +837,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         /// <summary>
         /// Recalcula interés cuando existe primer cuota e interés formalización.
-        /// <param name="request"></param>
+        /// </summary>
         /// <param name="baseData"></param>
         /// <param name="interes"></param>
-        /// </summary>
         /// <returns></returns>
         private static decimal AjustarInteresPrimerCuota(CrSeguimientoRefundicionesOperacionBaseDto baseData,decimal interes)
         {

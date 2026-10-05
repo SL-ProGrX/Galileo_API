@@ -303,6 +303,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// Inserta un auxiliar asignado a una caja.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <param name="param">Parámetros del auxiliar asignado.</param>
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto<bool> CajasDefinicion_AuxiliarAsignar_Insertar(int codEmpresa, string usuario, CajasAuxiliarAsignarParams param)
@@ -328,6 +329,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// Elimina un auxiliar asignado de una caja.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <param name="param">Parámetros del auxiliar asignado.</param>
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto<bool> CajasDefinicion_AuxiliarAsignar_Eliminar(int codEmpresa, string usuario, CajasAuxiliarAsignarParams param)
@@ -575,6 +577,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="codCaja">Código de la caja.</param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto<bool> CajasDefinicion_Caja_Eliminar(int codEmpresa, string codCaja, string usuario)
         {

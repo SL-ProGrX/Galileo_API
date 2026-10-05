@@ -128,7 +128,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// Método para eliminar un registro de auto registro de tesorería
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="autoReg"></param>
+        /// <param name="registro">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto Tes_AutoRegistro_Eliminar(int CodEmpresa, TesAutoRegistroDto registro)
         {
@@ -247,7 +247,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// Método para asignar o des asignar una cuenta bancaria a un auto registro de tesorería
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="CtaBanco"></param>
+        /// <param name="codigo">C&#243;digo que identifica el elemento relacionado.</param>
+        /// <param name="cta">Consecutivo de la cuenta bancaria.</param>
+        /// <param name="asignado">Indica si el elemento est&#225; asignado.</param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto Tes_AutoRegistroCtaBancos_Asignar(int CodEmpresa, int codigo , int cta ,bool asignado, string usuario )
         {
@@ -268,6 +271,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
+        /// <param name="filtro">Criterios utilizados para filtrar los resultados.</param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Tes_AutoRegistroTipos_Obtener(int CodEmpresa, int? tipo = 0, string? filtro = null)
         {
@@ -363,6 +367,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// Método para obtener los conceptos de auto registro de tesorería
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="concepto">Concepto asociado al registro.</param>
         /// <returns></returns>
         public ErrorDto<List<TesAutoregistroConceptos>> Tes_AutoRegistroConceptos_Obtener(int CodEmpresa, string? concepto = null)
         {
@@ -508,6 +513,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="autoReg"></param>
+        /// <param name="scroll">Identificador utilizado para continuar la consulta paginada.</param>
         /// <returns></returns>
         public ErrorDto<TesAutoRegistroDto> Tes_AutoRegistro_scroll(int CodEmpresa, int autoReg = 0, int? scroll = 0)
         {

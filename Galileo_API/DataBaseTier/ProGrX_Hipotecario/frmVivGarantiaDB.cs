@@ -447,7 +447,7 @@ WHERE IdGarantia = @id_garantia
         /// Obtiene los cantones de una provincia.
         /// </summary>
         /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="request">Provincia a consultar.</param>
+        /// <param name="provincia">C&#243;digo de provincia utilizado para filtrar los resultados.</param>
         /// <returns>Listado de cantones.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Viv_GarantiaCantones_Obtener(
             int codEmpresa,
@@ -477,7 +477,8 @@ ORDER BY DESCRIPCION;";
         /// Obtiene los distritos de una provincia y cantón.
         /// </summary>
         /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="request">Provincia y cantón a consultar.</param>
+        /// <param name="provincia">C&#243;digo de provincia utilizado para filtrar los resultados.</param>
+        /// <param name="canton">C&#243;digo de cant&#243;n utilizado para filtrar los resultados.</param>
         /// <returns>Listado de distritos.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Viv_GarantiaDistritos_Obtener(
             int codEmpresa,
@@ -551,7 +552,7 @@ ORDER BY DESCRIPCION;";
 
         #region Derechos
 
-        // <summary>
+        /// <summary>
         /// Obtiene la lista de dueños registrados para una garantía.
         /// Replica la consulta VB6 fxTraerListaDuenosxGarantia.
         /// </summary>
