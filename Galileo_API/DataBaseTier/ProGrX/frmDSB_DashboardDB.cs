@@ -110,15 +110,11 @@ namespace Galileo.DataBaseTier.ProGrX
                     if (!permitidos.Contains(indicador))
                         return DbHelper.CreateErrorResponse("El indicador no es válido.", -2, data);
 
-                    data = connection.Query<DashboardHistogramaData>(
+                    data = ObtenerHistogramaClientes(
+                        connection,
                         "spDSB_Clientes_Consulta_Histograma",
-                        new { Corte = corte, Dato = indicador },
-                        commandType: CommandType.StoredProcedure)
-                        .Select(x => new DashboardClientesPuntoData
-                        {
-                            Corte = x.Descripcion,
-                            Value = x.Value
-                        }).ToList();
+                        corte,
+                        indicador);
                 }
                 else
                 {
@@ -214,15 +210,11 @@ namespace Galileo.DataBaseTier.ProGrX
                     if (!permitidos.Contains(indicador))
                         return DbHelper.CreateErrorResponse("El indicador no es válido.", -2, data);
 
-                    data = connection.Query<DashboardHistogramaData>(
+                    data = ObtenerHistogramaClientes(
+                        connection,
                         "spDSB_Creditos_Consulta_Histograma",
-                        new { Corte = corte, Dato = indicador },
-                        commandType: CommandType.StoredProcedure)
-                        .Select(x => new DashboardClientesPuntoData
-                        {
-                            Corte = x.Descripcion,
-                            Value = x.Value
-                        }).ToList();
+                        corte,
+                        indicador);
                 }
                 else
                 {
@@ -322,15 +314,11 @@ namespace Galileo.DataBaseTier.ProGrX
                     if (!permitidos.Contains(indicador))
                         return DbHelper.CreateErrorResponse("El indicador no es válido.", -2, data);
 
-                    data = connection.Query<DashboardHistogramaData>(
+                    data = ObtenerHistogramaClientes(
+                        connection,
                         "spDSB_Captacion_Consulta_Histograma",
-                        new { Corte = corte, Dato = indicador },
-                        commandType: CommandType.StoredProcedure)
-                        .Select(x => new DashboardClientesPuntoData
-                        {
-                            Corte = x.Descripcion,
-                            Value = x.Value
-                        }).ToList();
+                        corte,
+                        indicador);
                 }
                 else
                 {
@@ -664,6 +652,23 @@ namespace Galileo.DataBaseTier.ProGrX
             Dictionary<string, string> Campos,
             Dictionary<string, string> Indicadores,
             string[] Graficos);
+
+        private static List<DashboardClientesPuntoData> ObtenerHistogramaClientes(
+            IDbConnection connection,
+            string procedimiento,
+            DateTime corte,
+            string indicador)
+        {
+            return connection.Query<DashboardHistogramaData>(
+                procedimiento,
+                new { Corte = corte, Dato = indicador },
+                commandType: CommandType.StoredProcedure)
+                .Select(item => new DashboardClientesPuntoData
+                {
+                    Corte = item.Descripcion,
+                    Value = item.Value
+                }).ToList();
+        }
 
         private static bool TieneAcceso(IDbConnection connection, string usuario, string categoria = "CLI")
         {
