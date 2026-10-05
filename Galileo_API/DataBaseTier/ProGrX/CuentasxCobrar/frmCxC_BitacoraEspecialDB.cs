@@ -302,7 +302,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 _ => filtro
             };
 
-            var dir = filtros.sortOrder == 0 ? "DESC" : "ASC";
+            // VB6: ORDER BY C.fecha / C.Revisado_fecha sin dirección → ASC.
+            // sortOrder: 0 = ASC (default VB6), 1 = DESC (ordenado por columna).
+            var dir = filtros.sortOrder == 1 ? "DESC" : "ASC";
             return $" ORDER BY {field} {dir}";
 
         }
