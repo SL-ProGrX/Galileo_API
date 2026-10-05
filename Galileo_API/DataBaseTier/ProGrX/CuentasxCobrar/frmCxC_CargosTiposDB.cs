@@ -63,10 +63,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 {
                     "cod_cargo" => "cod_cargo",
                     "descripcion" => "descripcion",
+                    "tipo" => "Tipo",
                     "activo" => "activo",
                     "cod_cuenta" => "cod_cuenta",
                     _ => "cod_cargo"
                 };
+                // 0 = ASC (default VB6), 1 = DESC
                 var direction = filtros.sortOrder == 1 ? "DESC" : "ASC";
 
                 // WHERE compartido para COUNT y SELECT (corrige bug: antes el COUNT no filtraba)
