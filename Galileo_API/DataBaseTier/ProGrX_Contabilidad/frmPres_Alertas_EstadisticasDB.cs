@@ -2,7 +2,6 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Contabilidad;
-using Galileo_API.Models.ProGrX_Polizas;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Galileo.Models.ProGrX_Contabilidad;
@@ -1003,18 +1002,6 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     return result;
                 }
 
-                /*
-                ** Se comenta temporalmente hasta validar un presupuesto actualizado 
-                if ((DateTime.Now.Date - cierreFecha.Value.Date).TotalDays > 30)
-                {
-                    result.Code = -1;
-                    result.Description = "El periodo excede los 30 días permitidos para justificar.";
-                    result.Result.permitido_justificar = false;
-                    result.Result.mensaje = result.Description;
-                    return result;
-                }
-                **/
-
                 const string sqlJustifica = @"
 SELECT TOP (1)
       id_periodo
@@ -1135,7 +1122,7 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     request.mes
                 });
 
-                if (periodo == null || (periodo.ESTADO ?? string.Empty) != "C")
+                if (periodo?.ESTADO != "C")
                 {
                     return new ErrorDto
                     {
@@ -1269,21 +1256,6 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     return result;
                 }
 
-                /*
-                Se comenta temporalmente para revisar casos de periodos sin fecha de cierre, pero se deja la validación para futuros ajustes en la regla de negocio.
-                if ((DateTime.Now.Date - cierreFecha.Value.Date).TotalDays > 30)
-                {
-                    result.Code = -1;
-                    result.Result.periodo_registrado = false;
-                    result.Result.puede_guardar_seleccion = true;
-                    result.Result.requiere_configuracion = false;
-                    result.Result.fuera_de_plazo = true;
-                    result.Result.mensaje = "El periodo cerrado excede los 30 días permitidos para configurar justificación.";
-                    result.Description = "El periodo cerrado excede los 30 días permitidos para configurar justificación.";
-                    return result;
-                }
-                **/
-
                 const string sqlJustifica = @"
 SELECT TOP (1)
       INICIO
@@ -1357,6 +1329,15 @@ ORDER BY FECHA DESC;";
                 {
                     Code = -1,
                     Description = validacion.Description
+                };
+            }
+
+            if (validacion.Result == null)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = validacion.Description ?? "No se pudo validar la configuración del periodo."
                 };
             }
 

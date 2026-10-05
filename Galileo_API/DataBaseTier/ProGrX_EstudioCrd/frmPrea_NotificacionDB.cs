@@ -3,10 +3,8 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX_EstudioCrd;
-using Galileo_API.Models.ProGrX_EstudioCrd.Galileo_API.Models.ProGrX_EstudioCrd;
 using Microsoft.Data.SqlClient;
 using System.Data;
-using System.ServiceModel.Channels;
 
 namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 {
@@ -116,17 +114,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 var tipoPlantilla = ObtenerTipoPlantilla(datosPlantilla.estado, request.monto_sugerido);
                 var plantillaCorreo = ObtenerPlantillaCorreo(conn, tx, tipoPlantilla);
-                /*
-                 *  * Se debe validar este dato en el flujo con la integracion a frmPreaEstudiov2
-                 * plantillaMensaje = ObtenerPlantillaMensaje(conn, tx, tipoPlantilla);
-                **/
+
                 var plantillaSms = ObtenerPlantillaMensajeSms(conn, tx, tipoPlantilla);
 
                var cuerpoCorreo = CompletarPlantilla(plantillaCorreo.plantilla, datosPlantilla);
-                /*
-               * Se debe validar este dato en el flujo con la integracion a frmPreaEstudiov2
-               * var cuerpoMensaje = CompletarPlantilla(plantillaMensaje.mensaje, datosPlantilla);
-               **/
+
                 var cuerpoSms = CompletarPlantilla(plantillaSms.mensaje_sms, datosPlantilla);
 
                 var envioCorreo = permiso is "NMYC" or "NSCO";
