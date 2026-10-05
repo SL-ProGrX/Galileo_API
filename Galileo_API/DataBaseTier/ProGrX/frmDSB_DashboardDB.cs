@@ -7,6 +7,14 @@ namespace Galileo.DataBaseTier.ProGrX
 {
     public class FrmDsbDashboardDB
     {
+        private const string ProcedureMainKpiAccess = "spDSB_Main_KPI_Access";
+        private const string TotalIndicator = "Total";
+        private const string InvalidChartMessage = "El gráfico solicitado no es válido.";
+        private const string ProcedureCreditosConsulta = "spDSB_Creditos_Consulta";
+        private const string ProcedureCaptacionConsulta = "spDSB_Captacion_Consulta";
+        private const string UtilidadMensual = "U_Mes";
+        private const string UtilidadAcumulada = "U_Acumulada";
+        private const string TasaEfectiva = "TASA_EFECTIVA";
         private readonly PortalDB _portalDb;
 
         public FrmDsbDashboardDB(IConfiguration config)
@@ -66,7 +74,7 @@ namespace Galileo.DataBaseTier.ProGrX
                     new { Corte = corte, Formato = "R", Tipo = "G" },
                     commandType: CommandType.StoredProcedure).ToList();
                 data.OpcionesTop = connection.Query<DashboardTopOpcionData>(
-                    "spDSB_Main_KPI_Access",
+                    ProcedureMainKpiAccess,
                     new { Usuario = usuario, Tipo = "T", Categoria = "CLI" },
                     commandType: CommandType.StoredProcedure).ToList();
 
@@ -97,12 +105,12 @@ namespace Galileo.DataBaseTier.ProGrX
                 var corte = resumen.Corte.Date.AddDays(1).AddTicks(-1);
                 if (origen == "kpi")
                 {
-                    string[] permitidos = ["Total", "Nuevos", "Reingresos", "Salidas",
+                    string[] permitidos = [TotalIndicator, "Nuevos", "Reingresos", "Salidas",
                         "ExAsociados", "INuevos", "IReingresos", "IExAsociados"];
                     if (!permitidos.Contains(indicador))
                         return DbHelper.CreateErrorResponse("El indicador no es válido.", -2, data);
 
-                    data = connection.Query<DashboardClientesHistogramaData>(
+                    data = connection.Query<DashboardHistogramaData>(
                         "spDSB_Clientes_Consulta_Histograma",
                         new { Corte = corte, Dato = indicador },
                         commandType: CommandType.StoredProcedure)
@@ -122,7 +130,7 @@ namespace Galileo.DataBaseTier.ProGrX
                         _ => null
                     };
                     if (procedimiento is null || !string.IsNullOrEmpty(filtro) && filtro.Length > 100)
-                        return DbHelper.CreateErrorResponse("El gráfico solicitado no es válido.", -2, data);
+                        return DbHelper.CreateErrorResponse(InvalidChartMessage, -2, data);
 
                     data = connection.Query<DashboardClientesPuntoData>(
                         procedimiento,
@@ -148,7 +156,7 @@ namespace Galileo.DataBaseTier.ProGrX
                     return DbHelper.CreateErrorResponse("No tiene acceso al dashboard de Crédito y Cobros.", -2, data);
 
                 data.Resumen = connection.QueryFirstOrDefault<DashboardCreditosResumenData>(
-                    "spDSB_Creditos_Consulta",
+                    ProcedureCreditosConsulta,
                     new { Corte = (DateTime?)null, Formato = "R", Tipo = "T" },
                     commandType: CommandType.StoredProcedure);
 
@@ -157,7 +165,7 @@ namespace Galileo.DataBaseTier.ProGrX
 
                 var corte = data.Resumen.Corte.Date.AddDays(1).AddTicks(-1);
                 data.Garantias = connection.Query<DashboardClientesPuntoData>(
-                    "spDSB_Creditos_Consulta",
+                    ProcedureCreditosConsulta,
                     new { Corte = corte, Formato = "R", Tipo = "G" },
                     commandType: CommandType.StoredProcedure).ToList();
                 data.Morosidad = connection.Query<DashboardClientesPuntoData>(
@@ -169,7 +177,7 @@ namespace Galileo.DataBaseTier.ProGrX
                     new { Corte = corte, Formato = "R", Tipo = "G" },
                     commandType: CommandType.StoredProcedure).ToList();
                 data.OpcionesTop = connection.Query<DashboardTopOpcionData>(
-                    "spDSB_Main_KPI_Access",
+                    ProcedureMainKpiAccess,
                     new { Usuario = usuario, Tipo = "T", Categoria = "CRD" },
                     commandType: CommandType.StoredProcedure).ToList();
 
@@ -192,7 +200,7 @@ namespace Galileo.DataBaseTier.ProGrX
                     return DbHelper.CreateErrorResponse("No tiene acceso al dashboard de Crédito y Cobros.", -2, data);
 
                 var resumen = connection.QueryFirstOrDefault<DashboardCreditosResumenData>(
-                    "spDSB_Creditos_Consulta",
+                    ProcedureCreditosConsulta,
                     new { Corte = (DateTime?)null, Formato = "R", Tipo = "T" },
                     commandType: CommandType.StoredProcedure);
                 if (resumen is null) return DbHelper.CreateOkResponse(data);
@@ -206,7 +214,7 @@ namespace Galileo.DataBaseTier.ProGrX
                     if (!permitidos.Contains(indicador))
                         return DbHelper.CreateErrorResponse("El indicador no es válido.", -2, data);
 
-                    data = connection.Query<DashboardClientesHistogramaData>(
+                    data = connection.Query<DashboardHistogramaData>(
                         "spDSB_Creditos_Consulta_Histograma",
                         new { Corte = corte, Dato = indicador },
                         commandType: CommandType.StoredProcedure)
@@ -220,13 +228,13 @@ namespace Galileo.DataBaseTier.ProGrX
                 {
                     var procedimiento = origen switch
                     {
-                        "garantias" => "spDSB_Creditos_Consulta",
+                        "garantias" => ProcedureCreditosConsulta,
                         "morosidad" => "spDSB_Creditos_Consulta_Morosidad",
                         "tppGarantia" => "spDSB_Creditos_Consulta_Tpp_Garantia",
                         _ => null
                     };
                     if (procedimiento is null || !string.IsNullOrEmpty(filtro) && filtro.Length > 100)
-                        return DbHelper.CreateErrorResponse("El gráfico solicitado no es válido.", -2, data);
+                        return DbHelper.CreateErrorResponse(InvalidChartMessage, -2, data);
 
                     data = connection.Query<DashboardClientesPuntoData>(
                         procedimiento,
@@ -267,11 +275,11 @@ namespace Galileo.DataBaseTier.ProGrX
 
                 var corte = data.Resumen.Corte.Date.AddDays(1).AddTicks(-1);
                 data.Planes = connection.Query<DashboardClientesPuntoData>(
-                    "spDSB_Captacion_Consulta",
+                    ProcedureCaptacionConsulta,
                     new { Corte = corte, Formato = "R", Tipo = "Plan" },
                     commandType: CommandType.StoredProcedure).ToList();
                 data.Grupos = connection.Query<DashboardClientesPuntoData>(
-                    "spDSB_Captacion_Consulta",
+                    ProcedureCaptacionConsulta,
                     new { Corte = corte, Formato = "R", Tipo = "Grupo" },
                     commandType: CommandType.StoredProcedure).ToList();
                 data.Patrimonio = connection.Query<DashboardClientesPuntoData>(
@@ -279,7 +287,7 @@ namespace Galileo.DataBaseTier.ProGrX
                     new { Corte = corte, Formato = "R", Tipo = "G" },
                     commandType: CommandType.StoredProcedure).ToList();
                 data.OpcionesTop = connection.Query<DashboardTopOpcionData>(
-                    "spDSB_Main_KPI_Access",
+                    ProcedureMainKpiAccess,
                     new { Usuario = usuario, Tipo = "T", Categoria = "FND" },
                     commandType: CommandType.StoredProcedure).ToList();
 
@@ -314,7 +322,7 @@ namespace Galileo.DataBaseTier.ProGrX
                     if (!permitidos.Contains(indicador))
                         return DbHelper.CreateErrorResponse("El indicador no es válido.", -2, data);
 
-                    data = connection.Query<DashboardClientesHistogramaData>(
+                    data = connection.Query<DashboardHistogramaData>(
                         "spDSB_Captacion_Consulta_Histograma",
                         new { Corte = corte, Dato = indicador },
                         commandType: CommandType.StoredProcedure)
@@ -328,13 +336,13 @@ namespace Galileo.DataBaseTier.ProGrX
                 {
                     var (procedimiento, tipo) = origen switch
                     {
-                        "planes" => ("spDSB_Captacion_Consulta", "Plan"),
-                        "grupos" => ("spDSB_Captacion_Consulta", "Grupo"),
+                        "planes" => (ProcedureCaptacionConsulta, "Plan"),
+                        "grupos" => (ProcedureCaptacionConsulta, "Grupo"),
                         "patrimonio" => ("spDSB_Clientes_Consulta_Patrimonio", "G"),
                         _ => ((string?)null, "")
                     };
                     if (procedimiento is null || !string.IsNullOrEmpty(filtro) && filtro.Length > 100)
-                        return DbHelper.CreateErrorResponse("El gráfico solicitado no es válido.", -2, data);
+                        return DbHelper.CreateErrorResponse(InvalidChartMessage, -2, data);
 
                     data = connection.Query<DashboardClientesPuntoData>(
                         procedimiento,
@@ -406,7 +414,7 @@ namespace Galileo.DataBaseTier.ProGrX
                 }
 
                 data.OpcionesTop = connection.Query<DashboardTopOpcionData>(
-                    "spDSB_Main_KPI_Access",
+                    ProcedureMainKpiAccess,
                     new { Usuario = usuario, Tipo = "T", Categoria = categoria },
                     commandType: CommandType.StoredProcedure).ToList();
 
@@ -450,7 +458,7 @@ namespace Galileo.DataBaseTier.ProGrX
                         return DbHelper.CreateErrorResponse(
                             "El indicador solicitado no es válido.", -2, data);
 
-                    data = connection.Query<DashboardModuloHistogramaData>(
+                    data = connection.Query<DashboardHistogramaData>(
                         config.ProcedimientoHistograma,
                         new { Corte = corte, Dato = dato },
                         commandType: CommandType.StoredProcedure)
@@ -468,7 +476,7 @@ namespace Galileo.DataBaseTier.ProGrX
                         !config.Graficos.Contains(indicador, StringComparer.Ordinal) ||
                         !string.IsNullOrEmpty(filtro) && filtro.Length > 100)
                         return DbHelper.CreateErrorResponse(
-                            "El gráfico solicitado no es válido.", -2, data);
+                            InvalidChartMessage, -2, data);
 
                     data = connection.Query<DashboardModuloPuntoData>(
                         config.ProcedimientoConsulta,
@@ -525,7 +533,7 @@ namespace Galileo.DataBaseTier.ProGrX
                         }, -2, data);
 
                 var autorizado = connection.Query<DashboardTopOpcionData>(
-                    "spDSB_Main_KPI_Access",
+                    ProcedureMainKpiAccess,
                     new { Usuario = usuario, Tipo = "T", Categoria = categoria },
                     commandType: CommandType.StoredProcedure).Any(x => x.Cod_Kpi == codigo);
                 if (!autorizado)
@@ -555,8 +563,8 @@ namespace Galileo.DataBaseTier.ProGrX
                     {
                         ["ROA"] = "ROA",
                         ["ROE"] = "ROE",
-                        ["U_Mes"] = "U_Mes",
-                        ["U_Acumulada"] = "U_Acumulada",
+                        [UtilidadMensual] = UtilidadMensual,
+                        [UtilidadAcumulada] = UtilidadAcumulada,
                         ["I"] = "Ingresos",
                         ["G"] = "Gastos",
                         ["A"] = "Activos",
@@ -567,8 +575,8 @@ namespace Galileo.DataBaseTier.ProGrX
                     {
                         ["ROA"] = "ROA",
                         ["ROE"] = "ROE",
-                        ["U_Mes"] = "U_Mes",
-                        ["U_Acumulada"] = "U_Acumulada",
+                        [UtilidadMensual] = UtilidadMensual,
+                        [UtilidadAcumulada] = UtilidadAcumulada,
                         ["I"] = "I",
                         ["G"] = "G",
                         ["A"] = "A",
@@ -585,7 +593,7 @@ namespace Galileo.DataBaseTier.ProGrX
                         ["TEc"] = "TEc",
                         ["CKc"] = "CKc",
                         ["DPc"] = "DPc",
-                        ["Total"] = "Total",
+                        [TotalIndicator] = TotalIndicator,
                         ["Transferencias"] = "Transferencias",
                         ["Cheques"] = "Cheques",
                         ["Depositos"] = "depositos"
@@ -595,7 +603,7 @@ namespace Galileo.DataBaseTier.ProGrX
                         ["TEc"] = "TEc",
                         ["CKc"] = "CKc",
                         ["DPc"] = "DPc",
-                        ["Total"] = "Sal",
+                        [TotalIndicator] = "Sal",
                         ["Transferencias"] = "TEm",
                         ["Cheques"] = "CKm",
                         ["Depositos"] = "DPm"
@@ -607,7 +615,7 @@ namespace Galileo.DataBaseTier.ProGrX
                     "spDSB_Inversiones_Consulta_Histograma",
                     new Dictionary<string, string>
                     {
-                        ["TASA_EFECTIVA"] = "TASA_EFECTIVA",
+                        [TasaEfectiva] = TasaEfectiva,
                         ["VALOR_LIBROS"] = "VALOR_LIBROS",
                         ["PYD_SALDO"] = "PYD_SALDO",
                         ["INTERES_ACUM_MONTO"] = "INTERES_ACUM_MONTO",
@@ -615,7 +623,7 @@ namespace Galileo.DataBaseTier.ProGrX
                     },
                     new Dictionary<string, string>
                     {
-                        ["TASA_EFECTIVA"] = "TASA_EFECTIVA",
+                        [TasaEfectiva] = TasaEfectiva,
                         ["VALOR_LIBROS"] = "VL",
                         ["PYD_SALDO"] = "PYD",
                         ["INTERES_ACUM_MONTO"] = "IA",
@@ -637,10 +645,13 @@ namespace Galileo.DataBaseTier.ProGrX
         private static object? ObtenerValor(
             IDictionary<string, object?> fila, string nombre)
         {
-            foreach (var item in fila)
-                if (string.Equals(item.Key, nombre, StringComparison.OrdinalIgnoreCase))
-                    return item.Value;
-            return null;
+            return fila
+                .Where(item => string.Equals(
+                    item.Key,
+                    nombre,
+                    StringComparison.OrdinalIgnoreCase))
+                .Select(item => item.Value)
+                .FirstOrDefault();
         }
 
         private static double? ConvertirNumero(object? valor)
@@ -654,12 +665,6 @@ namespace Galileo.DataBaseTier.ProGrX
             Dictionary<string, string> Indicadores,
             string[] Graficos);
 
-        private sealed class DashboardModuloHistogramaData
-        {
-            public DateTime Descripcion { get; set; }
-            public double? Value { get; set; }
-        }
-
         private static bool TieneAcceso(IDbConnection connection, string usuario, string categoria = "CLI")
         {
             if (string.IsNullOrWhiteSpace(usuario)) return false;
@@ -669,10 +674,6 @@ namespace Galileo.DataBaseTier.ProGrX
                 commandType: CommandType.StoredProcedure).Any(x => x.Cod_Categoria == categoria);
         }
 
-        private class DashboardClientesHistogramaData
-        {
-            public DateTime Descripcion { get; set; }
-            public double? Value { get; set; }
-        }
+        private sealed record DashboardHistogramaData(DateTime Descripcion, double? Value);
     }
 }
