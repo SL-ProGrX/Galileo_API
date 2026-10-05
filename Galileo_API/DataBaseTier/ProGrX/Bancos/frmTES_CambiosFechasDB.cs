@@ -26,7 +26,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
-        /// <param name="usuario"></param>
         /// <returns></returns>
         public ErrorDto<TesCambioFechasData> TES_CambioFechas_Obtener(int CodEmpresa, int solicitud)
         {

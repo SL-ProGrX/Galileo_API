@@ -61,7 +61,7 @@ namespace Galileo_API.DataBaseTier
         /// Obtiene los documentos duplicados
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="Cod_banco"></param>
+        /// <param name="filtros">Criterios utilizados para filtrar los resultados.</param>
         /// <returns></returns>
         public ErrorDto<List<DocumentoDuplicadosLista>> Documentos_Duplicados_Obtener(int CodEmpresa, string filtros)
         {

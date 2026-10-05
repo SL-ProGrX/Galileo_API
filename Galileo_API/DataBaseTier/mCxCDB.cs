@@ -36,6 +36,7 @@ namespace Galileo_API.DataBaseTier
         /// Obtiene el valor de un parámetro de CxC.
         /// Si no existe, devuelve "3" según la lógica original de VB6.
         /// </summary>
+        /// <param name="conn">Conexi&#243;n SQL utilizada por la operaci&#243;n.</param>
         /// <param name="codEmpresa">Empresa activa.</param>
         /// <param name="codParametro">Código del parámetro.</param>
         /// <returns>Valor del parámetro.</returns>

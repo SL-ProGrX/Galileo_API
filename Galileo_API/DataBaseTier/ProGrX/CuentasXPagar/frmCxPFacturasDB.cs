@@ -504,6 +504,7 @@ namespace Galileo.DataBaseTier
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="Cod_Factura">Código actual de la factura.</param>
         /// <param name="tipo">Dirección del desplazamiento: asc o desc.</param>
+        /// <param name="Cod_Proveedor">C&#243;digo que identifica el elemento relacionado.</param>
         /// <returns>Factura encontrada para el desplazamiento.</returns>
         public ErrorDto<FacturaAntSig> ConsultaAscDesc(int CodEmpresa, string Cod_Factura, string tipo, int Cod_Proveedor)
         {

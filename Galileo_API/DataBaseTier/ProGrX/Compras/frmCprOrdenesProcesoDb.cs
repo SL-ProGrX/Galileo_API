@@ -163,7 +163,7 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(codUnidad))
             {
                 codUnidad = "GEN";
-                /**return DbHelper.ErrorResponse("No se pudo determinar la UEN (COD_UNIDAD) de la orden.", -1);**/
+                /*return DbHelper.ErrorResponse("No se pudo determinar la UEN (COD_UNIDAD) de la orden.", -1);**/
             }
                 
             

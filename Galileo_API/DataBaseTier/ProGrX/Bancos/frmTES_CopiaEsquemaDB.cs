@@ -29,6 +29,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
+        /// <param name="contabilidad">Contabilidad asociada a la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto<TesCopiaEsquemaModels> Tes_CopiaEsquema_Obtener(int CodEmpresa, int solicitud, int contabilidad)
         {

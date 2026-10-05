@@ -126,7 +126,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// Elimina un Grupo de Cobros
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="IdGrupo"></param>
+        /// <param name="GrupoId">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
         public ErrorDto CO_Grupos_Eliminar(int CodEmpresa, int GrupoId, string Usuario)

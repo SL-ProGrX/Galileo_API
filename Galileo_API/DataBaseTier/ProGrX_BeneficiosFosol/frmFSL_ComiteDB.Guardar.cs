@@ -7,10 +7,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
     public sealed partial class FrmFslComiteDB
     {
         /// <summary>
-        /// Registra un nuevo comit&eacute; de FOSOL.
+        /// Registra un nuevo comit&#233; de FOSOL.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <param name="request">Informaci&oacute;n del comit&eacute;.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <param name="request">Informaci&#243;n del comit&#233;.</param>
         /// <returns>Resultado del registro.</returns>
         public ErrorDto FSL_Comite_Comite_Registrar(
             int CodEmpresa,
@@ -23,11 +23,11 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Actualiza un comit&eacute; existente.
+        /// Actualiza un comit&#233; existente.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <param name="request">Informaci&oacute;n del comit&eacute;.</param>
-        /// <returns>Resultado de la actualizaci&oacute;n.</returns>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <param name="request">Informaci&#243;n del comit&#233;.</param>
+        /// <returns>Resultado de la actualizaci&#243;n.</returns>
         public ErrorDto FSL_Comite_Comite_Actualizar(
             int CodEmpresa,
             FslComiteGuardarRequest request)
@@ -39,12 +39,12 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Elimina un comit&eacute; de FOSOL.
+        /// Elimina un comit&#233; de FOSOL.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <param name="codComite">C&oacute;digo del comit&eacute;.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <param name="codComite">C&#243;digo del comit&#233;.</param>
         /// <param name="usuario">Usuario responsable.</param>
-        /// <returns>Resultado de la eliminaci&oacute;n.</returns>
+        /// <returns>Resultado de la eliminaci&#243;n.</returns>
         public ErrorDto FSL_Comite_Comite_Eliminar(
             int CodEmpresa,
             string codComite,
@@ -57,10 +57,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Registra un nuevo miembro en un comit&eacute;.
+        /// Registra un nuevo miembro en un comit&#233;.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <param name="request">Informaci&oacute;n del miembro.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <param name="request">Informaci&#243;n del miembro.</param>
         /// <returns>Resultado del registro.</returns>
         public ErrorDto FSL_Comite_Miembro_Registrar(
             int CodEmpresa,
@@ -73,11 +73,11 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Actualiza un miembro existente de un comit&eacute;.
+        /// Actualiza un miembro existente de un comit&#233;.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <param name="request">Informaci&oacute;n del miembro.</param>
-        /// <returns>Resultado de la actualizaci&oacute;n.</returns>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <param name="request">Informaci&#243;n del miembro.</param>
+        /// <returns>Resultado de la actualizaci&#243;n.</returns>
         public ErrorDto FSL_Comite_Miembro_Actualizar(
             int CodEmpresa,
             FslComiteMiembroGuardarRequest request)
@@ -89,13 +89,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Elimina un miembro de un comit&eacute;.
+        /// Elimina un miembro de un comit&#233;.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <param name="codComite">C&oacute;digo del comit&eacute;.</param>
-        /// <param name="cedula">C&eacute;dula del miembro.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <param name="codComite">C&#243;digo del comit&#233;.</param>
+        /// <param name="cedula">C&#233;dula del miembro.</param>
         /// <param name="usuario">Usuario responsable.</param>
-        /// <returns>Resultado de la eliminaci&oacute;n.</returns>
+        /// <returns>Resultado de la eliminaci&#243;n.</returns>
         public ErrorDto FSL_Comite_Miembro_Eliminar(
             int CodEmpresa,
             string codComite,
@@ -110,12 +110,12 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Registra o actualiza un comit&eacute;.
+        /// Registra o actualiza un comit&#233;.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <param name="request">Informaci&oacute;n del comit&eacute;.</param>
-        /// <param name="tipo">Tipo de operaci&oacute;n.</param>
-        /// <returns>Resultado de la operaci&oacute;n.</returns>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <param name="request">Informaci&#243;n del comit&#233;.</param>
+        /// <param name="tipo">Tipo de operaci&#243;n.</param>
+        /// <returns>Resultado de la operaci&#243;n.</returns>
         private ErrorDto FSL_Comite_Comite_Guardar(
             int CodEmpresa,
             FslComiteGuardarRequest request,
@@ -198,12 +198,12 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Registra o actualiza un miembro de un comit&eacute;.
+        /// Registra o actualiza un miembro de un comit&#233;.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <param name="request">Informaci&oacute;n del miembro.</param>
-        /// <param name="tipo">Tipo de operaci&oacute;n.</param>
-        /// <returns>Resultado de la operaci&oacute;n.</returns>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <param name="request">Informaci&#243;n del miembro.</param>
+        /// <param name="tipo">Tipo de operaci&#243;n.</param>
+        /// <returns>Resultado de la operaci&#243;n.</returns>
         private ErrorDto FSL_Comite_Miembro_Guardar(
             int CodEmpresa,
             FslComiteMiembroGuardarRequest request,
@@ -312,12 +312,12 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Elimina un comit&eacute;.
+        /// Elimina un comit&#233;.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <param name="codComite">C&oacute;digo del comit&eacute;.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <param name="codComite">C&#243;digo del comit&#233;.</param>
         /// <param name="usuario">Usuario responsable.</param>
-        /// <returns>Resultado de la eliminaci&oacute;n.</returns>
+        /// <returns>Resultado de la eliminaci&#243;n.</returns>
         private ErrorDto FSL_Comite_Eliminar_Ejecutar(
             int CodEmpresa,
             string codComite,
@@ -339,13 +339,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Elimina un miembro de un comit&eacute;.
+        /// Elimina un miembro de un comit&#233;.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <param name="codComite">C&oacute;digo del comit&eacute;.</param>
-        /// <param name="cedula">C&eacute;dula del miembro.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <param name="codComite">C&#243;digo del comit&#233;.</param>
+        /// <param name="cedula">C&#233;dula del miembro.</param>
         /// <param name="usuario">Usuario responsable.</param>
-        /// <returns>Resultado de la eliminaci&oacute;n.</returns>
+        /// <returns>Resultado de la eliminaci&#243;n.</returns>
         private ErrorDto FSL_Comite_Eliminar_Ejecutar(
             int CodEmpresa,
             string codComite,
@@ -369,11 +369,11 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Ejecuta la eliminaci&oacute;n solicitada.
+        /// Ejecuta la eliminaci&#243;n solicitada.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <param name="request">Informaci&oacute;n de la eliminaci&oacute;n.</param>
-        /// <returns>Resultado de la eliminaci&oacute;n.</returns>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <param name="request">Informaci&#243;n de la eliminaci&#243;n.</param>
+        /// <returns>Resultado de la eliminaci&#243;n.</returns>
         private ErrorDto FSL_Comite_Eliminar_Ejecutar(
             int CodEmpresa,
             FslComiteEliminarOperacion request)
@@ -434,12 +434,12 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Ejecuta una operaci&oacute;n de mantenimiento y registra
-        /// el movimiento realizado en la bit&aacute;cora.
+        /// Ejecuta una operaci&#243;n de mantenimiento y registra
+        /// el movimiento realizado en la bit&#225;cora.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <param name="operacion">Informaci&oacute;n de la operaci&oacute;n.</param>
-        /// <returns>Resultado de la operaci&oacute;n.</returns>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <param name="operacion">Informaci&#243;n de la operaci&#243;n.</param>
+        /// <returns>Resultado de la operaci&#243;n.</returns>
         private ErrorDto FSL_Comite_Operacion_Ejecutar(
             int CodEmpresa,
             FslComiteOperacion operacion)
@@ -480,10 +480,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene los mensajes asociados con una operaci&oacute;n.
+        /// Obtiene los mensajes asociados con una operaci&#243;n.
         /// </summary>
-        /// <param name="tipo">Tipo de operaci&oacute;n.</param>
-        /// <returns>Mensajes y movimiento de la operaci&oacute;n.</returns>
+        /// <param name="tipo">Tipo de operaci&#243;n.</param>
+        /// <returns>Mensajes y movimiento de la operaci&#243;n.</returns>
         private static FslComiteOperacionMensajes
             FSL_Comite_Operacion_Mensajes_Obtener(
                 FslComiteOperacionTipo tipo)
@@ -571,10 +571,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Valida la informaci&oacute;n requerida de un comit&eacute;.
+        /// Valida la informaci&#243;n requerida de un comit&#233;.
         /// </summary>
-        /// <param name="request">Informaci&oacute;n recibida.</param>
-        /// <returns>Error de validaci&oacute;n o null.</returns>
+        /// <param name="request">Informaci&#243;n recibida.</param>
+        /// <returns>Error de validaci&#243;n o null.</returns>
         private static ErrorDto?
             FSL_Comite_Comite_Request_Validar(
                 FslComiteGuardarRequest request)
@@ -594,10 +594,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Valida la informaci&oacute;n requerida de un miembro.
+        /// Valida la informaci&#243;n requerida de un miembro.
         /// </summary>
-        /// <param name="request">Informaci&oacute;n recibida.</param>
-        /// <returns>Error de validaci&oacute;n o null.</returns>
+        /// <param name="request">Informaci&#243;n recibida.</param>
+        /// <returns>Error de validaci&#243;n o null.</returns>
         private static ErrorDto?
             FSL_Comite_Miembro_Request_Validar(
                 FslComiteMiembroGuardarRequest request)
@@ -621,10 +621,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Valida los datos requeridos de una eliminaci&oacute;n.
+        /// Valida los datos requeridos de una eliminaci&#243;n.
         /// </summary>
-        /// <param name="request">Informaci&oacute;n de la eliminaci&oacute;n.</param>
-        /// <returns>Error de validaci&oacute;n o null.</returns>
+        /// <param name="request">Informaci&#243;n de la eliminaci&#243;n.</param>
+        /// <returns>Error de validaci&#243;n o null.</returns>
         private static ErrorDto?
             FSL_Comite_Eliminar_Request_Validar(
                 FslComiteEliminarOperacion request)
@@ -663,10 +663,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Valida una colecci&oacute;n de campos requeridos.
+        /// Valida una colecci&#243;n de campos requeridos.
         /// </summary>
-        /// <param name="campos">Valores y mensajes de validaci&oacute;n.</param>
-        /// <returns>Error de validaci&oacute;n o null.</returns>
+        /// <param name="campos">Campos requeridos y mensajes de validación.</param>
+        /// <returns>Error de validaci&#243;n o null.</returns>
         private static ErrorDto?
             FSL_Comite_Campos_Requeridos_Validar(
                 params (
@@ -681,10 +681,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Valida una colecci&oacute;n de campos requeridos.
+        /// Valida una colecci&#243;n de campos requeridos.
         /// </summary>
-        /// <param name="campos">Valores y mensajes de validaci&oacute;n.</param>
-        /// <returns>Error de validaci&oacute;n o null.</returns>
+        /// <param name="campos">Valores y mensajes de validaci&#243;n.</param>
+        /// <returns>Error de validaci&#243;n o null.</returns>
         private static ErrorDto?
             FSL_Comite_Campos_Requeridos_Validar(
                 IEnumerable<(

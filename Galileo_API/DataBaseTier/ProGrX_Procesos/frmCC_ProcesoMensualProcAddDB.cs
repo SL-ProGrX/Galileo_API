@@ -300,6 +300,7 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
         /// <summary>
         /// Inserta un proceso complementario de planillas (PRM_PROCESOS_ADD).
         /// </summary>
+        /// <param name="connection">Conexi&#243;n SQL utilizada por la operaci&#243;n.</param>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <param name="data"></param>
@@ -331,6 +332,7 @@ namespace Galileo.DataBaseTier.ProGrX_Procesos
         /// <summary>
         /// Actualiza un proceso complementario de planillas (PRM_PROCESOS_ADD).
         /// </summary>
+        /// <param name="connection">Conexi&#243;n SQL utilizada por la operaci&#243;n.</param>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <param name="data"></param>

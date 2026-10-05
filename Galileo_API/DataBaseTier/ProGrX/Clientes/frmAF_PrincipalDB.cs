@@ -165,7 +165,7 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Guarda los datos de una persona en el sistema.
         /// </summary>
-        /// <param name = "CodEmpresa" ></param>
+        /// <param name="CodEmpresa">C&#243;digo de la empresa.</param>
         /// <param name="request"></param>
         /// <param name="mov"></param>
         /// <returns></returns>
@@ -228,6 +228,7 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
+        /// <param name="mov">Movimiento que se procesar&#225;.</param>
         /// <returns></returns>
         public ErrorDto AF_Persona_Relacion_Add(int CodEmpresa, string request, string mov)
         {
@@ -329,6 +330,7 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
+        /// <param name="mov">Movimiento que se procesar&#225;.</param>
         /// <returns></returns>
         public ErrorDto AF_Persona_Direccion_Add(int CodEmpresa, string request, string mov)
         {
@@ -382,7 +384,7 @@ namespace Galileo.DataBaseTier
         /// Registra preferencias de la persona
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="req"></param>
+        /// <param name="request">Solicitud con los datos de entrada de la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto AF_Persona_Preferencias_Registra(int CodEmpresa, string request)
         {
@@ -599,6 +601,7 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto<AfConsultasGeneralesDto> AF_Persona_Consulta_Obtener(
             int CodEmpresa,
@@ -756,7 +759,10 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="scrollCode"></param>
-        /// <param name="cedula"></param>
+        /// <param name="id">Identificador del registro relacionado.</param>
+        /// <param name="tipoScroll">Tipo utilizado para clasificar el registro o la operaci&#243;n.</param>
+        /// <param name="cod_Institucion">C&#243;digo que identifica el elemento relacionado.</param>
+        /// <param name="cod_Departamento">C&#243;digo que identifica el elemento relacionado.</param>
         /// <returns></returns>
         public ErrorDto<string> AF_Scroll_General(int CodEmpresa, int scrollCode, string id, int tipoScroll, string cod_Institucion, string cod_Departamento = "")
         {
@@ -904,7 +910,7 @@ namespace Galileo.DataBaseTier
         /// Registra motivos de afiliacion de la persona
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="req"></param>
+        /// <param name="request">Solicitud con los datos de entrada de la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto AF_Persona_Motivos_Registra(int CodEmpresa, string request)
         {
@@ -975,4 +981,3 @@ namespace Galileo.DataBaseTier
         #endregion
     }
 }
-

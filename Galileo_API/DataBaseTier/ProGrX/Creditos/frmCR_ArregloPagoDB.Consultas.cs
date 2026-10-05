@@ -86,6 +86,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="codEmpresa"></param>
         /// <param name="operacion"></param>
         /// <param name="usuario"></param>
+        /// <param name="tipoIntereses">Tipo utilizado para clasificar el registro o la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto<CrArregloPagoOperacionData?> Cr_ArregloPago_Operacion_Obtener(
             int codEmpresa,

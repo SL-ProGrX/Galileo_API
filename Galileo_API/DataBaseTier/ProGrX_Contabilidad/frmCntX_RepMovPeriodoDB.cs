@@ -267,9 +267,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Obtiene el mes y año inicial del periodo fiscal seleccionado.
         /// </summary>
-        /// <param name="connection">Conexión abierta de la empresa.</param>
-        /// <param name="transaction">Transacción activa.</param>
-        /// <param name="periodo">Identificador del cierre fiscal.</param>
+        /// <param name="connection">Conexión SQL utilizada para consultar el periodo.</param>
+        /// <param name="transaction">Transacción SQL activa.</param>
+        /// <param name="periodo">Identificador del periodo fiscal.</param>
         /// <param name="codContabilidad">Código de la contabilidad.</param>
         /// <returns>Mes y año iniciales del periodo.</returns>
         private static (int mes, int anio) ObtenerPeriodo(

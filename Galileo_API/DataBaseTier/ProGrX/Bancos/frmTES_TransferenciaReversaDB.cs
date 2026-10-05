@@ -72,7 +72,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
-        /// <param name="gestion"></param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboSinpe(int CodEmpresa, string usuario)
         {
@@ -815,7 +814,7 @@ exec spTES_W_SinpeReversion_Main
                 new { CuentaIBAN = cuentaIban ?? string.Empty });
         }
 
-        // <summary>
+        /// <summary>
         /// Obtiene la información de tránsito SINPE asociada a una solicitud.
         /// </summary>
         private dynamic? TES_TransferenciaRevSinpe_ObtenerInfoTransaccion(

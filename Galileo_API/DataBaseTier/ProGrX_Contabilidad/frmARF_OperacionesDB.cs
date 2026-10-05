@@ -806,10 +806,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="sql">Sentencia o procedimiento que se desea ejecutar.</param>
         /// <param name="parametros">Parámetros requeridos por el proceso.</param>
         /// <param name="usuario">Usuario que ejecutó el proceso.</param>
-        /// <param name="movimiento">Tipo de movimiento para la bitácora.</param>
-        /// <param name="detalleMovimiento">Descripción del movimiento.</param>
+        /// <param name="detalleBitacora">Datos que se registrar&#225;n en la bit&#225;cora.</param>
         /// <param name="mensajeExito">Mensaje devuelto cuando el proceso finaliza correctamente.</param>
-        /// <param name="mensajeSinCambios">Mensaje devuelto cuando el proceso no produce cambios.</param>
         /// <returns>Resultado normalizado de éxito o error.</returns>
         private ErrorDto EjecutarProcesoOperacion(
             int codEmpresa,

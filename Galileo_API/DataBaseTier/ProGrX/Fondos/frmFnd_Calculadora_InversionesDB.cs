@@ -129,14 +129,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// Obtener tasa de referencia
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="PlazoDias"></param>
-        /// <param name="Tipo"></param>
-        /// <param name="Plan"></param>
-        /// <param name="Operadora"></param>
-        /// <param name="chkCupon"></param>
-        /// <param name="rpTipo"></param>
-        /// <param name="PlazoInv"></param>
-        /// <param name="CuponId"></param>
+        /// <param name="request">Solicitud con los datos de entrada de la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto<decimal> Fnd_Calculadora_TasaRef_Obtener(int CodEmpresa, CalculadoraTasaRefParams request)
         {

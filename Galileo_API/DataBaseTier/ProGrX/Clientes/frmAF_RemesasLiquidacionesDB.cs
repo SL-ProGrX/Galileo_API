@@ -270,7 +270,8 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
-        /// <param name="remesa"></param>
+        /// <param name="cod_remesa">C&#243;digo que identifica el elemento relacionado.</param>
+        /// <param name="estado">Estado utilizado para filtrar o actualizar el registro.</param>
         /// <returns></returns>
         public ErrorDto AF_RemesasLiquidaciones_Remesa_Eliminar(int CodEmpresa, string usuario, int cod_remesa, string estado)
         {
@@ -301,7 +302,6 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// Método para obtener las remesa de liquidacion activas
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="remesa"></param>
         /// <returns></returns>
         public ErrorDto<List<AfRemesaLiquidacionDto>> AF_RemesasLiquidaciones_Carga_Obtener(int CodEmpresa)
         {
@@ -430,7 +430,6 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="remesa"></param>
         /// <param name="usuario"></param>
-        /// <param name="datos"></param>
         /// <returns></returns>
         public ErrorDto AF_RemesasLiquidaciones_Carga_Cerrar(int CodEmpresa, int remesa, string usuario)
         {
@@ -458,6 +457,8 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// Método para obtener las remesas de liquidaciones para reporte
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="fechaInicio">Fecha utilizada para delimitar la consulta o el proceso.</param>
+        /// <param name="fechaCorte">Fecha utilizada para delimitar la consulta o el proceso.</param>
         /// <param name="top"></param>
         /// <returns></returns>
         public ErrorDto<List<AfRemesaLiquidacionDto>> AF_RemesasLiquidaciones_Reporte_Obtener(int CodEmpresa, DateTime fechaInicio, DateTime fechaCorte, int top)
@@ -544,7 +545,10 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Valida permisos de usuario
         /// </summary>
+        /// <param name="CodEmpresa">C&#243;digo de la empresa.</param>
         /// <param name="usuario"></param>
+        /// <param name="formName">Nombre del formulario que origina la operaci&#243;n.</param>
+        /// <param name="boton">Bot&#243;n que origin&#243; la operaci&#243;n.</param>
         /// <returns></returns>
         private ErrorDto<int> Derecho(int CodEmpresa, string usuario, string formName, string boton)
         {

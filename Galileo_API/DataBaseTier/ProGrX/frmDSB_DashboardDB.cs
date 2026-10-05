@@ -686,6 +686,14 @@ namespace Galileo.DataBaseTier.ProGrX
             Func<IDbConnection, DateTime?> ObtenerCorte,
             Func<string, (string? Procedimiento, string Tipo)> ResolverGrafico);
 
-        private sealed record DashboardHistogramaData(DateTime Descripcion, double? Value);
+        internal sealed class DashboardHistogramaData
+        {
+            public DashboardHistogramaData()
+            {
+            }
+
+            public DateTime Descripcion { get; set; }
+            public double? Value { get; set; }
+        }
     }
 }

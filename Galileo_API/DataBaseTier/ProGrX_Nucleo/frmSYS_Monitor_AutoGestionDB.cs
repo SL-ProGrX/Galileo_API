@@ -353,8 +353,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// <summary>
         /// Descarga un adjunto (bytes, nombre y tipo).
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="archivo_id"></param>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="archivo_id">Identificador del registro.</param>
+        ///
+        ///
         public ErrorDto<(byte[] buffer, string nombre, string tipo)>Sys_Monitor_AutoGestion_Adjunto_Descargar(int CodEmpresa,long archivo_id)
         {
             try

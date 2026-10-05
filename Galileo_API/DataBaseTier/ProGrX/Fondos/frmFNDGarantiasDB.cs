@@ -257,6 +257,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="garantiaFND"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto Fnd_Garantias_Eliminar(int CodEmpresa, string garantiaFND, string usuario)
         {

@@ -172,13 +172,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// Obtiene una lista de gestiones de bitacora con paginación y filtros.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="cliente_Buscar"></param>
-        /// <param name="gestion_Cod"></param>
-        /// <param name="usuario_Buscar"></param>
-        /// <param name="fecha_Inicio"></param>
-        /// <param name="fecha_Fin"></param>
-        /// <param name="todasFechas"></param>
-        /// <param name="filtros"></param>
+        /// <param name="filtro">Criterios utilizados para filtrar los resultados.</param>
         /// <returns></returns>
         public ErrorDto<SysGestionesBitacorasLista> Sys_Gestiones_Bitacoras_Lista_Obtener(int CodEmpresa, SysGestionesBitacoraFiltro filtro)
         {

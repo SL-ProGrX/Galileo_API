@@ -232,10 +232,11 @@ where UPPER(COD_CONCEPTO) = @cod;";
 
         /// <summary>
         /// Actualiza un concepto existente.
+        /// </summary>
+        /// <param name="connection">Conexi&#243;n SQL utilizada por la operaci&#243;n.</param>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <param name="concepto"></param>
-        /// </summary>
         private void ExecuteConceptosUpdate(SqlConnection connection, int CodEmpresa, string usuario, SifConceptoData concepto)
         {
             var query = @"UPDATE SIF_CONCEPTOS
@@ -267,10 +268,11 @@ where UPPER(COD_CONCEPTO) = @cod;";
 
         /// <summary>
         /// Inserta un nuevo concepto.
+        /// </summary>
+        /// <param name="connection">Conexi&#243;n SQL utilizada por la operaci&#243;n.</param>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <param name="concepto"></param>
-        /// </summary>
         private void ExecuteConceptosInsert(SqlConnection connection, int CodEmpresa, string usuario, SifConceptoData concepto)
         {
             var query = @"INSERT INTO SIF_CONCEPTOS

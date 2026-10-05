@@ -34,6 +34,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="operacion"></param>
         /// <param name="tipoActa"></param>
         /// <param name="tipoDetalle"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
+        /// <param name="codContabilidad">C&#243;digo de la contabilidad asociada.</param>
         /// <returns></returns>
         public ErrorDto<CrConsultaDetalleCompletoDto> CR_ConsultaDetalle_Obtener(
     int CodEmpresa,

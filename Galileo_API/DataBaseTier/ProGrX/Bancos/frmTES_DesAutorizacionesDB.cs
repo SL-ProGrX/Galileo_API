@@ -116,7 +116,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return response;
         }
 
-        // <summary>
+        /// <summary>
         /// Aplica la desautorización de las solicitudes seleccionadas.
         /// </summary>
         /// <param name="CodEmpresa">Código de empresa.</param>
@@ -199,5 +199,4 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
     }
 }
-
 

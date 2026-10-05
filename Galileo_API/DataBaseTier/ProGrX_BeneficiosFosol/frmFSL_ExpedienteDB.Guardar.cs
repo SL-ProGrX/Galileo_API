@@ -360,7 +360,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Guarda la resoluci&oacute;n y sus miembros.
+        /// Guarda la resoluci&#243;n y sus miembros.
         /// </summary>
         public ErrorDto
             FSL_Expediente_Resolucion_Guardar(

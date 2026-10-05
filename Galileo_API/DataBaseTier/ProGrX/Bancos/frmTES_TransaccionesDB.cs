@@ -948,7 +948,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 TES_TransaccionDetalleActualizar(CodEmpresa, transaccion.nsolicitud, (transaccion.asientoDetalle ?? new List<TesTransAsientoDto>()));
 
-                /**Des-Autoriza si existe algun cambio **/
+                /*Des-Autoriza si existe algun cambio **/
                 var queryAuth = @"update T set T.Autoriza = 'N', T.Fecha_Autorizacion = Null, User_Autoriza = Null,
                                     USUARIO_AUTORIZA_ESPECIAL = null, TIPO_GIROSINPE = null
                                    from Tes_Transacciones T  

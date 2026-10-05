@@ -455,6 +455,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="codRemesa">Código de remesa.</param>
+        ///
         /// <returns>Fechas de inicio y corte de la remesa.</returns>
         private ErrorDto<(DateTime FechaInicio, DateTime FechaCorte)> ObtenerFechasRemesa(int codEmpresa, string codRemesa)
         {
@@ -488,6 +489,8 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="fechas">Rango de fechas de la remesa.</param>
         /// <param name="oficina">Código de oficina o TODOS.</param>
+        ///
+        ///
         /// <returns>Listado de ingresos pendientes.</returns>
         private ErrorDto<List<IngresosPendientesDto>> ObtenerIngresosPendientes(int codEmpresa, (DateTime FechaInicio, DateTime FechaCorte) fechas, string oficina)
         {
