@@ -1,46 +1,84 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
 using Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Endpoints de la Tabla de Coberturas Fosol (frmFSL_TablaCoberturas).
-    /// </summary>
     [Route("api/frmFSL_TablaCoberturas")]
+    [Authorize]
     [ApiController]
-    public class FrmFslTablaCoberturasController : ControllerBase
+    public sealed class FrmFslTablaCoberturasController
+        : ControllerBase
     {
-        private readonly FrmFslTablaCoberturasBL _bl;
+        private readonly FrmFslTablaCoberturasBl _bl;
 
-        public FrmFslTablaCoberturasController(IConfiguration config)
+        public FrmFslTablaCoberturasController(
+            IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            ArgumentNullException.ThrowIfNull(config);
 
-            _bl = new FrmFslTablaCoberturasBL(config);
+            _bl = new FrmFslTablaCoberturasBl(config);
         }
 
-        /// <summary>Tabla de aplicación (coberturas) por tipo.</summary>
-        [Authorize]
-        [HttpGet("TablaAplicacion_Obtener")]
-        public ErrorDto<FslTablaAplicacionDataLista> TablaAplicacion_Obtener(int CodCliente, string filtros)
-            => _bl.TablaAplicacion_Obtener(CodCliente, filtros);
+        [HttpGet(
+            "FSL_TablaCoberturas_Lista_Obtener")]
+        public ErrorDto<
+            FslListaPaginadaDto<FslTablaCoberturaDto>>
+            FSL_TablaCoberturas_Lista_Obtener(
+                int CodEmpresa,
+                string filtros = "")
+        {
+            return _bl
+                .FSL_TablaCoberturas_Lista_Obtener(
+                    CodEmpresa,
+                    filtros);
+        }
 
-        /// <summary>Guarda una cobertura (inserta o actualiza).</summary>
-        [Authorize]
-        [HttpPost("Cobertura_Guardar")]
-        public ErrorDto Cobertura_Guardar(int CodCliente, [FromBody] FslTablaAplicacionData aplicacion)
-            => _bl.Cobertura_Guardar(CodCliente, aplicacion);
+        [HttpPost(
+            "FSL_TablaCoberturas_Cobertura_Registrar")]
+        public ErrorDto
+            FSL_TablaCoberturas_Cobertura_Registrar(
+                int CodEmpresa,
+                [FromBody]
+                FslTablaCoberturaGuardarRequest request)
+        {
+            return _bl
+                .FSL_TablaCoberturas_Cobertura_Registrar(
+                    CodEmpresa,
+                    request);
+        }
 
-        /// <summary>Elimina una cobertura.</summary>
-        [Authorize]
-        [HttpDelete("TablaAplicacion_Eliminar")]
-        public ErrorDto TablaAplicacion_Eliminar(int CodCliente, string tipo, int linea)
-            => _bl.TablaAplicacion_Eliminar(CodCliente, tipo, linea);
+        [HttpPut(
+            "FSL_TablaCoberturas_Cobertura_Actualizar")]
+        public ErrorDto
+            FSL_TablaCoberturas_Cobertura_Actualizar(
+                int CodEmpresa,
+                [FromBody]
+                FslTablaCoberturaGuardarRequest request)
+        {
+            return _bl
+                .FSL_TablaCoberturas_Cobertura_Actualizar(
+                    CodEmpresa,
+                    request);
+        }
+
+        [HttpDelete(
+            "FSL_TablaCoberturas_Cobertura_Eliminar")]
+        public ErrorDto
+            FSL_TablaCoberturas_Cobertura_Eliminar(
+                int CodEmpresa,
+                string tipo,
+                int linea,
+                string usuario)
+        {
+            return _bl
+                .FSL_TablaCoberturas_Cobertura_Eliminar(
+                    CodEmpresa,
+                    tipo,
+                    linea,
+                    usuario);
+        }
     }
 }
