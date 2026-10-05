@@ -61,6 +61,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// Obtiene los planes
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="cod_operadora">C&#243;digo que identifica el elemento relacionado.</param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> FND_Planes_Obtener(int CodEmpresa, string cod_operadora)
         {

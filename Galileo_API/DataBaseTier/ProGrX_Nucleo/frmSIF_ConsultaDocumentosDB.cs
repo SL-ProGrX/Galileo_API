@@ -564,6 +564,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// Consulta el listado de documentos según los filtros indicados
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="esExportar">Indica si se solicita exportar los resultados.</param>
         /// <param name="filtros"></param>
         /// <returns></returns>
         public ErrorDto<SifConsultaDocTrasaccionesDataLista> SifConsultaDocumentos_Buscar(int CodEmpresa, bool esExportar, SifConsultaDocFiltros filtros)

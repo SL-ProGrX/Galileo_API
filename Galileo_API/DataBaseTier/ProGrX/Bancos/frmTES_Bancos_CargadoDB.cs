@@ -31,6 +31,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// Obtiene la cuenta de los bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaBancosCargados>> Tes_Bancos_Obtener(int CodEmpresa, string usuario)
         {
@@ -47,6 +48,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// Metodo para obtener los conceptos 
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="concepto">Concepto asociado al registro.</param>
         /// <returns></returns>
         public ErrorDto<List<TesBancoCargadoConceptos>> Tes_BancosCargadoConceptos_Obtener(int CodEmpresa, string? concepto = null)
         {
@@ -78,6 +80,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// Metodo para obtener los centros de costos 
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="contabilidad">Contabilidad asociada a la operaci&#243;n.</param>
+        /// <param name="unidad">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroCostos_Obtener(int CodEmpresa, int contabilidad, string? unidad = null)
         {
@@ -205,6 +209,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_banco"></param>
         /// <param name="usuario"></param>
+        /// <param name="chkGeneraSolicitud">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <param name="file"></param>
         /// <returns></returns>
         public ErrorDto TES_BancosCargados_Aplicar(int CodEmpresa, string cod_banco, string usuario, bool chkGeneraSolicitud, List<TesCargadoExcelDto> file)
@@ -318,7 +323,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// Aplica el registro de bancos cargados
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="registroLista"></param>
+        /// <param name="lista">Lista de registros que se procesar&#225;n o devolver&#225;n.</param>
         /// <returns></returns>
         public async Task<ErrorDto> TES_RegistrosBancosCargados_Aplicar(int CodEmpresa, List<RegistroBancoDto> lista)
         {
@@ -580,6 +585,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <param name="spName">Nombre del stored procedure a ejecutar.</param>
         /// <param name="parametrosFactory">Función que construye los parámetros del SP por cada línea.</param>
         /// <param name="verboExito">Participio del verbo para el mensaje de éxito (ej. "excluida(s)").</param>
+        /// <param name="successWhenNoResult">Indica si una consulta sin resultados se considera exitosa.</param>
         private static ErrorDto ProcesarLineasEnLote(
             IDbConnection conn,
             List<long> lineasId,

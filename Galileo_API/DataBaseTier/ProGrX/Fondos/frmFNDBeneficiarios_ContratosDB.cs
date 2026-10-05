@@ -186,7 +186,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// Método para actualizar un beneficiario de un contrato
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
         private ErrorDto FNDBeneficiarios_Contratos_Actualizar(int CodEmpresa,FndBeneficiariosContratosData data)

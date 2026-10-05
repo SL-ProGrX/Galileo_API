@@ -19,8 +19,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <summary>
         /// Método para actualizar los abonos en la base de datos.
         /// </summary>
-        /// <param name="connection"></param>
-        /// <param name="usuario"></param>
+        /// <param name="CodEmpresa">C&#243;digo de la empresa.</param>
         /// <returns></returns>
         public ErrorDto Co_ControlActualizaAbonos_Actualizar(int CodEmpresa)
         {

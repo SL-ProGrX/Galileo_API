@@ -250,7 +250,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <summary>
         /// Revisa y valida las fechas del filtro de busqueda
         /// </summary>
-        /// <param name="request"></param>
+        /// <param name="request">Datos de la solicitud.</param>
+        ///
         /// <returns></returns>
         private static (DateTime inicio, DateTime corte) ResolverRangoFechas(CrdGestorExternoFiltroRequest request)
         {

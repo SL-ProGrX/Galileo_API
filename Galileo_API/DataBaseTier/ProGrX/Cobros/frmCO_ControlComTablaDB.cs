@@ -171,9 +171,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         /// <summary>
         /// Elimina un registro existente
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="id_Linea"></param>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="usuario">Usuario asociado a la operación.</param>
+        /// <param name="id_linea">Identificador del registro.</param>
+        ///
+        ///
         /// <returns></returns>
         public ErrorDto CO_ControlComTabla_Delete(int CodEmpresa, string usuario, int id_linea)
         {

@@ -119,7 +119,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// Actualiza un  origen recursos existente.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
         /// <param name="OrigenRecursos"></param>
         /// <returns></returns>
         private ErrorDto Sys_OrigenRecursos_Actualizar(int CodEmpresa, SysOrigenRecursosData OrigenRecursos)

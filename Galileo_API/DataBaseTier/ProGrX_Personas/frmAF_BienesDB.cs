@@ -124,6 +124,7 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         /// <summary>
         /// Inserta un nuevo tipo de bien.
         /// </summary>
+        /// <param name="connection">Conexi&#243;n SQL utilizada por la operaci&#243;n.</param>
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="bienTipo">Datos del tipo de bien a insertar</param>
@@ -153,6 +154,7 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         /// <summary>
         /// Actualiza un tipo de bien existente.
         /// </summary>
+        /// <param name="connection">Conexi&#243;n SQL utilizada por la operaci&#243;n.</param>
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="bienTipo">Datos del tipo de bien a actualizar</param>

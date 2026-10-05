@@ -55,7 +55,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// Agrega o actualiza una cobertura, motivo o causa para una póliza.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
-        /// <param name="param">
+        /// <param name="param">Parámetros de la configuración.</param>
         /// <returns>Resultado de la operación (Pass, Mensaje, Movimiento, IdLLave).</returns>
         public ErrorDto<PolizasConceptosConfigAddResult> PolizasConceptosConfigAdd(int codEmpresa, PolizasConceptosConfigAddParams param)
         {
@@ -83,7 +83,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// Elimina una cobertura, motivo o causa de una póliza.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
-        /// <param name="param">
+        /// <param name="param">Parámetros de la configuración.</param>
         /// <returns>Resultado de la operación (Pass, Mensaje, Movimiento, IdLLave).</returns>
         public ErrorDto<PolizasConceptosConfigAddResult> PolizasConceptosConfigDel(int codEmpresa, PolizasConceptosConfigDelParams param)
         {

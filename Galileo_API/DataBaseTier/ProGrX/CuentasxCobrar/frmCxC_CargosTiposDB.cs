@@ -29,9 +29,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <summary>
         /// Obtiene la lista de tipos de cargos .
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <param name="esExportar"></param>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="filtros">Criterios de búsqueda y filtrado.</param>
+        /// <param name="esExportar">Valor de entrada utilizado por la operación.</param>
+        ///
+        ///
         /// <returns></returns>
         public ErrorDto<CxCCargosTiposLista> CxCCargosTiposLista_Obtener(int codEmpresa, FiltrosLazyLoadData filtros, bool esExportar)
         {
@@ -141,9 +143,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <summary>
         /// Guarda o actualiza un tipo de cargo.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="datos"></param>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="usuario">Usuario asociado a la operación.</param>
+        /// <param name="datos">Valor de entrada utilizado por la operación.</param>
+        ///
+        ///
         /// <returns></returns>
         public ErrorDto CxCCargosTipos_Guardar(int codEmpresa, string usuario, CxCCargosTiposData datos)
         {

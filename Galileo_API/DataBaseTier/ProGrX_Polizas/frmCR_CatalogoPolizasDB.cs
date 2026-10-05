@@ -123,7 +123,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_poliza"></param>
-        /// <param name="direccion"></param>
+        /// <param name="direccion">Dirección de navegación: siguiente o anterior.</param>
         /// <returns></returns>
         public ErrorDto<CrdCatalogoPolizasConsultaDto?> Crd_CatalogoPolizas_Navegar(
                 int CodEmpresa,

@@ -710,11 +710,11 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Registra una l&iacute;nea del detalle contable de tesorer&iacute;a.
+        /// Registra una l&#237;nea del detalle contable de tesorer&#237;a.
         /// </summary>
-        /// <param name="connection">Conexi&oacute;n activa.</param>
-        /// <param name="transaction">Transacci&oacute;n vigente.</param>
-        /// <param name="request">Informaci&oacute;n del detalle contable.</param>
+        /// <param name="connection">Conexi&#243;n activa.</param>
+        /// <param name="transaction">Transacci&#243;n vigente.</param>
+        /// <param name="request">Informaci&#243;n del detalle contable.</param>
         private static void
             FSL_RemesasPago_Tesoreria_Detalle_Crear(
                 SqlConnection connection,

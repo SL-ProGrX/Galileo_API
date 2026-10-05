@@ -515,9 +515,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Lista asientos por período (año/mes de fechaPeriodo)
         /// </summary>
-        /// <param name="codEmpresa"
-        /// <param name="fechaPeriodo"
-        ///  <returns></returns>
+        /// <param name="codEmpresa"></param>
+        /// <param name="fechaPeriodo"></param>
+        /// <returns></returns>
         public ErrorDto<List<ActivosExploradorAsientoDto>> Asientos(int codEmpresa,DateTime fechaPeriodo)
         {
             return EjecutarLista<ActivosExploradorAsientoDto>(
@@ -543,10 +543,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Lista detalle de un asiento por período
         /// </summary>
-        /// <param name="codEmpresa"
-        /// <param name="numAsiento"
-        /// <param name="fechaPeriodo"
-        ///  <returns></returns>
+        /// <param name="codEmpresa"></param>
+        /// <param name="numAsiento"></param>
+        /// <param name="fechaPeriodo"></param>
+        /// <returns></returns>
         public ErrorDto<List<ActivosExploradorAsientoDetalleDto>> AsientoDetalle(int codEmpresa,string numAsiento,DateTime fechaPeriodo)
         {
             return EjecutarLista<ActivosExploradorAsientoDetalleDto>(
@@ -572,9 +572,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Lista adiciones/retiros (modificaciones) por período
         /// </summary>
-        /// <param name="codEmpresa"
-        /// <param name="fechaPeriodo"
-        ///  <returns></returns>
+        /// <param name="codEmpresa"></param>
+        /// <param name="fechaPeriodo"></param>
+        /// <returns></returns>
         public ErrorDto<List<ActivosExploradorModificacionDto>> AdicionesRetiros(int codEmpresa,DateTime fechaPeriodo)
         {
             return EjecutarLista<ActivosExploradorModificacionDto>(

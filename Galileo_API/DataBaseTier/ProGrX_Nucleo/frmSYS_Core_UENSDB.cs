@@ -426,7 +426,7 @@ namespace Galileo.DataBaseTier
         /// Obtener UENs principales
         /// </summary>
         /// <param name="CodCliente"></param>
-        /// <param name="cod_unidad"></param>
+        /// <param name="filtros">Criterios utilizados para filtrar los resultados.</param>
         /// <returns></returns>
         public ErrorDto<CoreUeNsDtoList> Core_UENSPrincipales_Obtener(int CodCliente, string filtros)
         {
@@ -444,6 +444,7 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <param name="cod_unidad"></param>
+        /// <param name="contabilidad">Contabilidad asociada a la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto<CoreUeNsDtoList> Core_SubUnidades_Obtener(int CodCliente, string cod_unidad, int contabilidad)
         {
@@ -492,6 +493,7 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <param name="cod_unidad"></param>
+        /// <param name="sub_unidad">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto<CoreUeNsDtoList> Core_SubCentroCosto_Obtener(int CodCliente, string cod_unidad, string sub_unidad)
         {

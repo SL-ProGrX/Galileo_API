@@ -113,6 +113,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// Obtiene la lista de clientes para carga de lote de créditos.
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="CodInstitucion">C&#243;digo que identifica el elemento relacionado.</param>
         /// <returns></returns>
         public ErrorDto<List<FrecuenciaReductora>> CrCreditosCargaLote_ObtenerFrecuenciaDeductora(int CodEmpresa, string CodInstitucion)
         {

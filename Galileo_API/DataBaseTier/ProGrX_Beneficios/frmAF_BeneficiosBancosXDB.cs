@@ -144,6 +144,7 @@ WHERE (@filtro IS NULL)
         /// Resuelve el campo y la dirección de ordenamiento usando una lista blanca de columnas.
         /// </summary>
         /// <param name="filtros">Filtros de carga perezosa.</param>
+        ///
         /// <returns>Tupla con el campo y la dirección de ordenamiento.</returns>
         private static (string sortField, string sortOrder) ResolveSort(FiltrosLazyLoadData filtros)
         {

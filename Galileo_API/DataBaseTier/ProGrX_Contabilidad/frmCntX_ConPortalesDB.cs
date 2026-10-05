@@ -263,7 +263,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="usuario"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        /// <summary>
         public ErrorDto CntXConPortales_Guardar(
             int codEmpresa,
             string usuario,

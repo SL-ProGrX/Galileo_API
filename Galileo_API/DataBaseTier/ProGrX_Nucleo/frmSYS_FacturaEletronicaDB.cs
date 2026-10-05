@@ -528,7 +528,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="codCliente"></param>
         /// <param name="idFactura"></param>
-        /// <param name="comprobante"></param>
+        /// <param name="tipo">Tipo utilizado para clasificar el registro o la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto<List<FeFacturaDetalleItem>> FE_Factura_Detalle_Obtener(int CodEmpresa,string codCliente,string idFactura,string tipo)
         {

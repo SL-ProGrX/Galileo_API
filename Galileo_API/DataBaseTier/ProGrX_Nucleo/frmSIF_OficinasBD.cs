@@ -213,6 +213,7 @@ OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
         /// Método para consultar lista unidades contables
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="contabilidad">Contabilidad asociada a la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasUnidadContable_Obtener(int CodEmpresa, int contabilidad)
         {
@@ -225,6 +226,7 @@ OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
         /// Método para consultar lista de centros de costo
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="contabilidad">Contabilidad asociada a la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasCentroCostos_Obtener(int CodEmpresa, int contabilidad)
         {
@@ -371,7 +373,7 @@ OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
         /// <param name="oficina"></param>
         /// <param name="usuario"></param>
         /// <param name="apoyo"></param>
-        /// <param name="usuarioRegistro"></param>
+        /// <param name="UsuarioReg">Usuario que registra la operaci&#243;n.</param>
         /// <param name="accion"></param>
         /// <returns></returns>
         public ErrorDto Sif_OficinasMiembros_Agregar(int CodEmpresa, string oficina, string usuario, int apoyo, string UsuarioReg, string accion)

@@ -152,10 +152,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
         }
 
         /// <summary>Resuelve la consulta y los parámetros correspondientes al reporte solicitado.</summary>
-        /// <param name="codigo">Código original asignado al reporte.</param>
-        /// <param name="request">Filtros enviados por el formulario.</param>
-        /// <param name="esAseVersion">Indica si deben utilizarse unidades de la variante ASE.</param>
-        /// <param name="fechaCredito">Fecha numérica requerida para calcular plazos de crédito.</param>
+        /// <param name="codigo">Código del reporte que se desea generar.</param>
+        /// <param name="request">Filtros y opciones solicitados para el reporte.</param>
+        /// <param name="esAseVersion">Indica si se genera la versión ASE del reporte.</param>
+        /// <param name="fechaCredito">Fecha de crédito aplicada a los filtros.</param>
         /// <returns>Consulta parametrizada o <see langword="null"/> cuando el código no existe.</returns>
         private static (string Sql, object Parametros)? ResolverConsulta(
             string codigo,
