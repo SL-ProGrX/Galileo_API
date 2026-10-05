@@ -176,9 +176,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// Obtener lista de inconsistencias
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="banco"></param>
-        /// <param name="fecha_inicio"></param>
-        /// <param name="fecha_corte"></param>
+        /// <param name="filtros">Criterios utilizados para filtrar los resultados.</param>
         /// <returns></returns>
         public ErrorDto<TablasListaGenericaModel> TES_DepositosLote_Inconsistencias_Obtener(int CodEmpresa, string filtros)
         {

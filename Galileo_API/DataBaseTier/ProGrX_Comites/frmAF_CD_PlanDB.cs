@@ -148,6 +148,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="codComite"></param>
+        /// <param name="numMensaje">N&#250;mero de mensaje que se procesar&#225;.</param>
         /// <returns></returns>
         public ErrorDto AfCdPlanMensajes_Eliminar(int codEmpresa, string codComite, int numMensaje)
         {

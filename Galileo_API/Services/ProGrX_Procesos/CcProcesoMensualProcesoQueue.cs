@@ -6,7 +6,7 @@ namespace Galileo_API.Services.ProGrX_Procesos
 {
     /// <summary>
     /// Cola en memoria para trabajos de proceso mensual.
-    /// Channel<T> con capacidad limitada y deduplicación por ProcesoId.
+    /// <c>Channel&lt;T&gt;</c> con capacidad limitada y deduplicación por ProcesoId.
     /// </summary>
     public sealed class CcProcesoMensualProcesoQueue
     {

@@ -40,6 +40,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         /// <summary>
         /// Obtiene lista de códigos (catálogo) para buscador (F4).
+        /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="texto"></param>
         /// <returns></returns>
@@ -63,6 +64,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         /// <summary>
         /// Lista de cuotas para Unificación de Cuotas.
+        /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="jfiltros"></param>
         /// <returns></returns>
@@ -157,6 +159,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         /// <summary>
         /// Exporta la lista de cuotas para Unificación de Cuotas.
+        /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="jfiltros"></param>
         /// <returns></returns>

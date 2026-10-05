@@ -734,7 +734,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="codContabilidad"></param>
-        /// <returns></returns
+        /// <returns></returns>
         public ErrorDto<SysIvaCuentasResumenLista> Sys_Iva_Cuentas_Todas_Obtener(int CodEmpresa, int codContabilidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);

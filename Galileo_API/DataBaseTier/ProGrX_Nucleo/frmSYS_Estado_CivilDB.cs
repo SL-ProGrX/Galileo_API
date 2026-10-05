@@ -26,7 +26,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// Obtiene una lista de estados civil sin paginación, con filtros aplicados.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
         /// <returns></returns>
         public ErrorDto<SysEstadoCivilLista> Sys_EstadoCivilLista_Obtener(int CodEmpresa)
         {
@@ -122,7 +121,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// Actualiza un estado civil existente.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
         /// <param name="estadoCivil"></param>
         /// <returns></returns>
         private ErrorDto Sys_EstadoCivil_Actualizar(int CodEmpresa, SysEstadoCivilData estadoCivil)

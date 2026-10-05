@@ -37,12 +37,8 @@ namespace Galileo_API.DataBaseTier
         /// Método para registrar una transacción en la bitácora del proceso mensual.
         /// </summary>
         /// <param name="connection"></param>
-        /// <param name="transaccion"></param>
-        /// <param name="codInstitucion"></param>
-        /// <param name="proceso"></param>
-        /// <param name="gestion"></param>
-        /// <param name="usuario"></param>
-        /// <param name="documento"></param>
+        /// <param name="bitacora">Datos que se registrar&#225;n en la bit&#225;cora.</param>
+        /// <param name="transaccionDb">Transacci&#243;n SQL en la que se ejecuta la operaci&#243;n.</param>
         public static void SbBitacoraPlanilla(IDbConnection connection, CcProcesoMensualBitacoraPlanillaDto bitacora, IDbTransaction? transaccionDb = null)
         {
             const string query = @"
@@ -71,13 +67,7 @@ namespace Galileo_API.DataBaseTier
         /// Método para registrar una transacción relacionada con la generación de asientos contables en la bitácora del proceso mensual.
         /// </summary>
         /// <param name="connection"></param>
-        /// <param name="proceso"></param>
-        /// <param name="codInstitucion"></param>
-        /// <param name="operadora"></param>
-        /// <param name="plan"></param>
-        /// <param name="cuenta"></param>
-        /// <param name="usuario"></param>
-        /// <param name="numeroDocumento"></param>
+        /// <param name="request">Solicitud con los datos de entrada de la operaci&#243;n.</param>
         public static void SbFndAsiento(IDbConnection connection, ProcesoMensualFndAsientoRequest request)
         {
             const string query = @"
@@ -107,6 +97,7 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         /// <param name="connection"></param>
         /// <param name="codInstitucion"></param>
+        /// <param name="glngFechaCR">Fecha utilizada para delimitar la consulta o el proceso.</param>
         /// <param name="fechaProceso"></param>
         public static void SbCrEnviaConPlanillaTransito(IDbConnection connection, int codInstitucion, decimal glngFechaCR, decimal fechaProceso)
         {

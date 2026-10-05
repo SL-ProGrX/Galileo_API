@@ -25,6 +25,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// Obtiene la lista de grupos de bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="filtro">Criterios utilizados para filtrar los resultados.</param>
         /// <returns></returns>
         public ErrorDto<TesBancosGruposLista> Tes_BancosGruposLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro)
         {

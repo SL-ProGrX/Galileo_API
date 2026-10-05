@@ -105,10 +105,10 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <summary>
         /// Navegación por scroll de planes
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="CodOperadora"></param>
-        /// <param name="CodPlan"></param>
-        /// <param name="scrollCode"></param>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="CodOperadora">Código asociado a la operación.</param>
+        /// <param name="CodPlan">Código asociado a la operación.</param>
+        /// <param name="scrollCode">Valor de entrada utilizado por la operación.</param>
         /// <returns></returns>
         public ErrorDto<DropDownListaGenericaModel> Fnd_ReportesGenerales_Plan_Scroll_Obtener(int CodEmpresa, int CodOperadora, string? CodPlan, int scrollCode)
         {

@@ -146,6 +146,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// Calcula el rango de fechas a consultar en bitácora según la configuración de filtros.
         /// </summary>
         /// <param name="filtros">Filtros de consulta de bitácora.</param>
+        ///
         /// <returns>Tupla con fecha de inicio y fecha de corte.</returns>
         private static (DateTime inicio, DateTime corte) ObtenerRangoFechasBitacora(MonitorCambiosCfgFiltros filtros)
         {

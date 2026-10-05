@@ -21,6 +21,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// Método para actualizar la comisión de generación. Ejecuta el procedimiento almacenado "spCbrComision_Actualiza" en la base de datos.
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto Co_ControlComGeneracion_Actualizar(int CodEmpresa, string usuario)
         {

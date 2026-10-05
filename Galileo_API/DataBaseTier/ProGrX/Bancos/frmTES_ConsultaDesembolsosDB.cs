@@ -74,6 +74,7 @@ namespace Galileo_API.DataBaseTier.TES
         /// Obtiene las cuentas de la base de datos.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <param name="codGrupo">Código del grupo de bancos (opcional).</param>
         /// <returns>Lista de cuentas.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TES_Bancos_Cuentas_Obtener(int codEmpresa, string usuario, string? codGrupo = null)

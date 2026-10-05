@@ -920,7 +920,6 @@ namespace Galileo.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="contabilidad"></param>
         /// <param name="cuenta"></param>
-        /// <param name="Usuario"></param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Pres_AjustesCuentasCompensado(int CodEmpresa, int contabilidad, string cuenta)
         {

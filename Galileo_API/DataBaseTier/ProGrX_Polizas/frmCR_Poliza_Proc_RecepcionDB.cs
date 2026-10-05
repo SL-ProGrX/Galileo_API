@@ -100,6 +100,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
         /// <summary>
         /// Consulta la divisa local para la contabilidad indicada.
+        /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="codContabilidad"></param>
         /// <returns></returns>
