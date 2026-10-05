@@ -15,6 +15,56 @@ namespace Galileo.DataBaseTier.ProGrX
         private const string UtilidadMensual = "U_Mes";
         private const string UtilidadAcumulada = "U_Acumulada";
         private const string TasaEfectiva = "TASA_EFECTIVA";
+        private static readonly DashboardClientesTendenciaConfig ClientesTendenciaConfig = new(
+            "CLI",
+            "No tiene acceso al dashboard de Clientes.",
+            "spDSB_Clientes_Consulta_Histograma",
+            [TotalIndicator, "Nuevos", "Reingresos", "Salidas", "ExAsociados",
+                "INuevos", "IReingresos", "IExAsociados"],
+            connection => ObtenerCorteResumen<DashboardClientesResumenData>(
+                connection,
+                "spDSB_Clientes_Consulta",
+                resumen => resumen.Corte),
+            origen => origen switch
+            {
+                "edades" => ("spDSB_Clientes_Asociados_Edades", ""),
+                "generaciones" => ("spDSB_Clientes_Asociados_Generacion", "G"),
+                "causas" => ("spDSB_Clientes_Consulta_Causas", "G"),
+                _ => ((string?)null, "")
+            });
+        private static readonly DashboardClientesTendenciaConfig CreditosTendenciaConfig = new(
+            "CRD",
+            "No tiene acceso al dashboard de Crédito y Cobros.",
+            "spDSB_Creditos_Consulta_Histograma",
+            ["Tpp", "Pipp", "IMora_Activa", "ICbrJud", "IRefinancia", "ICancela",
+                "CCPr", "CLPr", "TSaldo", "Colocacion", "Operaciones", "Refinancia", "TCbrJud"],
+            connection => ObtenerCorteResumen<DashboardCreditosResumenData>(
+                connection,
+                ProcedureCreditosConsulta,
+                resumen => resumen.Corte),
+            origen => origen switch
+            {
+                "garantias" => (ProcedureCreditosConsulta, "G"),
+                "morosidad" => ("spDSB_Creditos_Consulta_Morosidad", "G"),
+                "tppGarantia" => ("spDSB_Creditos_Consulta_Tpp_Garantia", "G"),
+                _ => ((string?)null, "")
+            });
+        private static readonly DashboardClientesTendenciaConfig AhorrosTendenciaConfig = new(
+            "FND",
+            "No tiene acceso al dashboard de Ahorros.",
+            "spDSB_Captacion_Consulta_Histograma",
+            ["CNT", "TOT", "AP", "RND", "Aportes", "Retiros"],
+            connection => ObtenerCorteResumen<DashboardAhorrosResumenData>(
+                connection,
+                "spDSB_Captacion_Resumen",
+                resumen => resumen.Corte),
+            origen => origen switch
+            {
+                "planes" => (ProcedureCaptacionConsulta, "Plan"),
+                "grupos" => (ProcedureCaptacionConsulta, "Grupo"),
+                "patrimonio" => ("spDSB_Clientes_Consulta_Patrimonio", "G"),
+                _ => ((string?)null, "")
+            });
         private readonly PortalDB _portalDb;
 
         public FrmDsbDashboardDB(IConfiguration config)
@@ -60,23 +110,26 @@ namespace Galileo.DataBaseTier.ProGrX
                 if (data.Resumen is null)
                     return DbHelper.CreateOkResponse(data);
 
-                var corte = data.Resumen.Corte.Date.AddDays(1).AddTicks(-1);
-                data.Edades = connection.Query<DashboardClientesPuntoData>(
+                var corte = CorteCompleto(data.Resumen.Corte);
+                data.Edades = ObtenerPuntosResumen(
+                    connection,
                     "spDSB_Clientes_Asociados_Edades",
-                    new { Corte = corte, Formato = "R", Tipo = "G" },
-                    commandType: CommandType.StoredProcedure).ToList();
-                data.Generaciones = connection.Query<DashboardClientesPuntoData>(
+                    corte,
+                    "G");
+                data.Generaciones = ObtenerPuntosResumen(
+                    connection,
                     "spDSB_Clientes_Asociados_Generacion",
-                    new { Corte = corte, Formato = "R", Tipo = "G" },
-                    commandType: CommandType.StoredProcedure).ToList();
-                data.Causas = connection.Query<DashboardClientesPuntoData>(
+                    corte,
+                    "G");
+                data.Causas = ObtenerPuntosResumen(
+                    connection,
                     "spDSB_Clientes_Consulta_Causas",
-                    new { Corte = corte, Formato = "R", Tipo = "G" },
-                    commandType: CommandType.StoredProcedure).ToList();
-                data.OpcionesTop = connection.Query<DashboardTopOpcionData>(
-                    ProcedureMainKpiAccess,
-                    new { Usuario = usuario, Tipo = "T", Categoria = "CLI" },
-                    commandType: CommandType.StoredProcedure).ToList();
+                    corte,
+                    "G");
+                data.OpcionesTop = ObtenerOpcionesTop(
+                    connection,
+                    usuario,
+                    "CLI");
 
                 return DbHelper.CreateOkResponse(data);
             }
@@ -88,59 +141,8 @@ namespace Galileo.DataBaseTier.ProGrX
 
         public ErrorDto<List<DashboardClientesPuntoData>> Clientes_Tendencia_Obtener(
             int codEmpresa, string usuario, string origen, string indicador, string? filtro)
-        {
-            var data = new List<DashboardClientesPuntoData>();
-            try
-            {
-                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-                if (!TieneAcceso(connection, usuario))
-                    return DbHelper.CreateErrorResponse("No tiene acceso al dashboard de Clientes.", -2, data);
-
-                var resumen = connection.QueryFirstOrDefault<DashboardClientesResumenData>(
-                    "spDSB_Clientes_Consulta",
-                    new { Corte = (DateTime?)null, Formato = "R", Tipo = "T" },
-                    commandType: CommandType.StoredProcedure);
-                if (resumen is null) return DbHelper.CreateOkResponse(data);
-
-                var corte = resumen.Corte.Date.AddDays(1).AddTicks(-1);
-                if (origen == "kpi")
-                {
-                    string[] permitidos = [TotalIndicator, "Nuevos", "Reingresos", "Salidas",
-                        "ExAsociados", "INuevos", "IReingresos", "IExAsociados"];
-                    if (!permitidos.Contains(indicador))
-                        return DbHelper.CreateErrorResponse("El indicador no es válido.", -2, data);
-
-                    data = ObtenerHistogramaClientes(
-                        connection,
-                        "spDSB_Clientes_Consulta_Histograma",
-                        corte,
-                        indicador);
-                }
-                else
-                {
-                    var procedimiento = origen switch
-                    {
-                        "edades" => "spDSB_Clientes_Asociados_Edades",
-                        "generaciones" => "spDSB_Clientes_Asociados_Generacion",
-                        "causas" => "spDSB_Clientes_Consulta_Causas",
-                        _ => null
-                    };
-                    if (procedimiento is null || !string.IsNullOrEmpty(filtro) && filtro.Length > 100)
-                        return DbHelper.CreateErrorResponse(InvalidChartMessage, -2, data);
-
-                    data = connection.Query<DashboardClientesPuntoData>(
-                        procedimiento,
-                        new { Corte = corte, Formato = "H", Tipo = origen == "edades" ? "" : "G", Codigo = filtro },
-                        commandType: CommandType.StoredProcedure).ToList();
-                }
-
-                return DbHelper.CreateOkResponse(data);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse(ex.Message, -1, data);
-            }
-        }
+            => Tendencia_Clientes_Obtener(
+                codEmpresa, usuario, origen, indicador, filtro, ClientesTendenciaConfig);
 
         public ErrorDto<DashboardCreditosData> Creditos_Obtener(int codEmpresa, string usuario)
         {
@@ -159,23 +161,26 @@ namespace Galileo.DataBaseTier.ProGrX
                 if (data.Resumen is null)
                     return DbHelper.CreateOkResponse(data);
 
-                var corte = data.Resumen.Corte.Date.AddDays(1).AddTicks(-1);
-                data.Garantias = connection.Query<DashboardClientesPuntoData>(
+                var corte = CorteCompleto(data.Resumen.Corte);
+                data.Garantias = ObtenerPuntosResumen(
+                    connection,
                     ProcedureCreditosConsulta,
-                    new { Corte = corte, Formato = "R", Tipo = "G" },
-                    commandType: CommandType.StoredProcedure).ToList();
-                data.Morosidad = connection.Query<DashboardClientesPuntoData>(
+                    corte,
+                    "G");
+                data.Morosidad = ObtenerPuntosResumen(
+                    connection,
                     "spDSB_Creditos_Consulta_Morosidad",
-                    new { Corte = corte, Formato = "R", Tipo = "G" },
-                    commandType: CommandType.StoredProcedure).ToList();
-                data.TppGarantia = connection.Query<DashboardClientesPuntoData>(
+                    corte,
+                    "G");
+                data.TppGarantia = ObtenerPuntosResumen(
+                    connection,
                     "spDSB_Creditos_Consulta_Tpp_Garantia",
-                    new { Corte = corte, Formato = "R", Tipo = "G" },
-                    commandType: CommandType.StoredProcedure).ToList();
-                data.OpcionesTop = connection.Query<DashboardTopOpcionData>(
-                    ProcedureMainKpiAccess,
-                    new { Usuario = usuario, Tipo = "T", Categoria = "CRD" },
-                    commandType: CommandType.StoredProcedure).ToList();
+                    corte,
+                    "G");
+                data.OpcionesTop = ObtenerOpcionesTop(
+                    connection,
+                    usuario,
+                    "CRD");
 
                 return DbHelper.CreateOkResponse(data);
             }
@@ -187,60 +192,8 @@ namespace Galileo.DataBaseTier.ProGrX
 
         public ErrorDto<List<DashboardClientesPuntoData>> Creditos_Tendencia_Obtener(
             int codEmpresa, string usuario, string origen, string indicador, string? filtro)
-        {
-            var data = new List<DashboardClientesPuntoData>();
-            try
-            {
-                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-                if (!TieneAcceso(connection, usuario, "CRD"))
-                    return DbHelper.CreateErrorResponse("No tiene acceso al dashboard de Crédito y Cobros.", -2, data);
-
-                var resumen = connection.QueryFirstOrDefault<DashboardCreditosResumenData>(
-                    ProcedureCreditosConsulta,
-                    new { Corte = (DateTime?)null, Formato = "R", Tipo = "T" },
-                    commandType: CommandType.StoredProcedure);
-                if (resumen is null) return DbHelper.CreateOkResponse(data);
-
-                var corte = resumen.Corte.Date.AddDays(1).AddTicks(-1);
-                if (origen == "kpi")
-                {
-                    string[] permitidos = ["Tpp", "Pipp", "IMora_Activa", "ICbrJud",
-                        "IRefinancia", "ICancela", "CCPr", "CLPr", "TSaldo",
-                        "Colocacion", "Operaciones", "Refinancia", "TCbrJud"];
-                    if (!permitidos.Contains(indicador))
-                        return DbHelper.CreateErrorResponse("El indicador no es válido.", -2, data);
-
-                    data = ObtenerHistogramaClientes(
-                        connection,
-                        "spDSB_Creditos_Consulta_Histograma",
-                        corte,
-                        indicador);
-                }
-                else
-                {
-                    var procedimiento = origen switch
-                    {
-                        "garantias" => ProcedureCreditosConsulta,
-                        "morosidad" => "spDSB_Creditos_Consulta_Morosidad",
-                        "tppGarantia" => "spDSB_Creditos_Consulta_Tpp_Garantia",
-                        _ => null
-                    };
-                    if (procedimiento is null || !string.IsNullOrEmpty(filtro) && filtro.Length > 100)
-                        return DbHelper.CreateErrorResponse(InvalidChartMessage, -2, data);
-
-                    data = connection.Query<DashboardClientesPuntoData>(
-                        procedimiento,
-                        new { Corte = corte, Formato = "H", Tipo = "G", Codigo = filtro },
-                        commandType: CommandType.StoredProcedure).ToList();
-                }
-
-                return DbHelper.CreateOkResponse(data);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse(ex.Message, -1, data);
-            }
-        }
+            => Tendencia_Clientes_Obtener(
+                codEmpresa, usuario, origen, indicador, filtro, CreditosTendenciaConfig);
 
         public ErrorDto<List<DashboardTopFilaData>> Clientes_Top_Obtener(
             int codEmpresa, string usuario, string codigo, int dias, int cantidad)
@@ -265,23 +218,26 @@ namespace Galileo.DataBaseTier.ProGrX
                     commandType: CommandType.StoredProcedure);
                 if (data.Resumen is null) return DbHelper.CreateOkResponse(data);
 
-                var corte = data.Resumen.Corte.Date.AddDays(1).AddTicks(-1);
-                data.Planes = connection.Query<DashboardClientesPuntoData>(
+                var corte = CorteCompleto(data.Resumen.Corte);
+                data.Planes = ObtenerPuntosResumen(
+                    connection,
                     ProcedureCaptacionConsulta,
-                    new { Corte = corte, Formato = "R", Tipo = "Plan" },
-                    commandType: CommandType.StoredProcedure).ToList();
-                data.Grupos = connection.Query<DashboardClientesPuntoData>(
+                    corte,
+                    "Plan");
+                data.Grupos = ObtenerPuntosResumen(
+                    connection,
                     ProcedureCaptacionConsulta,
-                    new { Corte = corte, Formato = "R", Tipo = "Grupo" },
-                    commandType: CommandType.StoredProcedure).ToList();
-                data.Patrimonio = connection.Query<DashboardClientesPuntoData>(
+                    corte,
+                    "Grupo");
+                data.Patrimonio = ObtenerPuntosResumen(
+                    connection,
                     "spDSB_Clientes_Consulta_Patrimonio",
-                    new { Corte = corte, Formato = "R", Tipo = "G" },
-                    commandType: CommandType.StoredProcedure).ToList();
-                data.OpcionesTop = connection.Query<DashboardTopOpcionData>(
-                    ProcedureMainKpiAccess,
-                    new { Usuario = usuario, Tipo = "T", Categoria = "FND" },
-                    commandType: CommandType.StoredProcedure).ToList();
+                    corte,
+                    "G");
+                data.OpcionesTop = ObtenerOpcionesTop(
+                    connection,
+                    usuario,
+                    "FND");
 
                 return DbHelper.CreateOkResponse(data);
             }
@@ -293,58 +249,8 @@ namespace Galileo.DataBaseTier.ProGrX
 
         public ErrorDto<List<DashboardClientesPuntoData>> Ahorros_Tendencia_Obtener(
             int codEmpresa, string usuario, string origen, string indicador, string? filtro)
-        {
-            var data = new List<DashboardClientesPuntoData>();
-            try
-            {
-                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-                if (!TieneAcceso(connection, usuario, "FND"))
-                    return DbHelper.CreateErrorResponse("No tiene acceso al dashboard de Ahorros.", -2, data);
-
-                var resumen = connection.QueryFirstOrDefault<DashboardAhorrosResumenData>(
-                    "spDSB_Captacion_Resumen",
-                    new { Corte = (DateTime?)null, Formato = "R", Tipo = "T" },
-                    commandType: CommandType.StoredProcedure);
-                if (resumen is null) return DbHelper.CreateOkResponse(data);
-
-                var corte = resumen.Corte.Date.AddDays(1).AddTicks(-1);
-                if (origen == "kpi")
-                {
-                    string[] permitidos = ["CNT", "TOT", "AP", "RND", "Aportes", "Retiros"];
-                    if (!permitidos.Contains(indicador))
-                        return DbHelper.CreateErrorResponse("El indicador no es válido.", -2, data);
-
-                    data = ObtenerHistogramaClientes(
-                        connection,
-                        "spDSB_Captacion_Consulta_Histograma",
-                        corte,
-                        indicador);
-                }
-                else
-                {
-                    var (procedimiento, tipo) = origen switch
-                    {
-                        "planes" => (ProcedureCaptacionConsulta, "Plan"),
-                        "grupos" => (ProcedureCaptacionConsulta, "Grupo"),
-                        "patrimonio" => ("spDSB_Clientes_Consulta_Patrimonio", "G"),
-                        _ => ((string?)null, "")
-                    };
-                    if (procedimiento is null || !string.IsNullOrEmpty(filtro) && filtro.Length > 100)
-                        return DbHelper.CreateErrorResponse(InvalidChartMessage, -2, data);
-
-                    data = connection.Query<DashboardClientesPuntoData>(
-                        procedimiento,
-                        new { Corte = corte, Formato = "H", Tipo = tipo, Codigo = filtro },
-                        commandType: CommandType.StoredProcedure).ToList();
-                }
-
-                return DbHelper.CreateOkResponse(data);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse(ex.Message, -1, data);
-            }
-        }
+            => Tendencia_Clientes_Obtener(
+                codEmpresa, usuario, origen, indicador, filtro, AhorrosTendenciaConfig);
 
         public ErrorDto<List<DashboardTopFilaData>> Ahorros_Top_Obtener(
             int codEmpresa, string usuario, string codigo, int dias, int cantidad)
@@ -365,13 +271,8 @@ namespace Galileo.DataBaseTier.ProGrX
                     return DbHelper.CreateErrorResponse(
                         $"No tiene acceso al dashboard de {NombreCategoria(categoria)}.", -2, data);
 
-                var fila = connection.QueryFirstOrDefault(
-                    config.ProcedimientoResumen,
-                    new { Corte = (DateTime?)null, Formato = "R", Tipo = "T" },
-                    commandType: CommandType.StoredProcedure);
-                if (fila is null) return DbHelper.CreateOkResponse(data);
-
-                var valoresFila = (IDictionary<string, object?>)fila;
+                var valoresFila = ObtenerResumenModulo(connection, config);
+                if (valoresFila is null) return DbHelper.CreateOkResponse(data);
                 var corte = Convert.ToDateTime(ObtenerValor(valoresFila, "Corte"));
                 data.Resumen = new DashboardModuloResumenData
                 {
@@ -381,7 +282,7 @@ namespace Galileo.DataBaseTier.ProGrX
                         item => ConvertirNumero(ObtenerValor(valoresFila, item.Value)))
                 };
 
-                var corteCompleto = corte.Date.AddDays(1).AddTicks(-1);
+                var corteCompleto = CorteCompleto(corte);
                 foreach (var grafico in config.Graficos)
                 {
                     var puntos = connection.Query<DashboardModuloPuntoData>(
@@ -401,10 +302,10 @@ namespace Galileo.DataBaseTier.ProGrX
                     }
                 }
 
-                data.OpcionesTop = connection.Query<DashboardTopOpcionData>(
-                    ProcedureMainKpiAccess,
-                    new { Usuario = usuario, Tipo = "T", Categoria = categoria },
-                    commandType: CommandType.StoredProcedure).ToList();
+                data.OpcionesTop = ObtenerOpcionesTop(
+                    connection,
+                    usuario,
+                    categoria);
 
                 return DbHelper.CreateOkResponse(data);
             }
@@ -431,14 +332,10 @@ namespace Galileo.DataBaseTier.ProGrX
                     return DbHelper.CreateErrorResponse(
                         $"No tiene acceso al dashboard de {NombreCategoria(categoria)}.", -2, data);
 
-                var fila = connection.QueryFirstOrDefault(
-                    config.ProcedimientoResumen,
-                    new { Corte = (DateTime?)null, Formato = "R", Tipo = "T" },
-                    commandType: CommandType.StoredProcedure);
-                if (fila is null) return DbHelper.CreateOkResponse(data);
-                var valoresFila = (IDictionary<string, object?>)fila;
-                var corte = Convert.ToDateTime(ObtenerValor(valoresFila, "Corte"))
-                    .Date.AddDays(1).AddTicks(-1);
+                var valoresFila = ObtenerResumenModulo(connection, config);
+                if (valoresFila is null) return DbHelper.CreateOkResponse(data);
+                var corte = CorteCompleto(
+                    Convert.ToDateTime(ObtenerValor(valoresFila, "Corte")));
 
                 if (origen == "kpi")
                 {
@@ -653,6 +550,108 @@ namespace Galileo.DataBaseTier.ProGrX
             Dictionary<string, string> Indicadores,
             string[] Graficos);
 
+        private ErrorDto<List<DashboardClientesPuntoData>> Tendencia_Clientes_Obtener(
+            int codEmpresa,
+            string usuario,
+            string origen,
+            string indicador,
+            string? filtro,
+            DashboardClientesTendenciaConfig config)
+        {
+            var data = new List<DashboardClientesPuntoData>();
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                if (!TieneAcceso(connection, usuario, config.Categoria))
+                    return DbHelper.CreateErrorResponse(config.MensajeAcceso, -2, data);
+
+                var corte = config.ObtenerCorte(connection);
+                if (corte is null) return DbHelper.CreateOkResponse(data);
+
+                if (origen == "kpi")
+                {
+                    if (!config.IndicadoresKpi.Contains(indicador))
+                        return DbHelper.CreateErrorResponse(
+                            "El indicador no es válido.", -2, data);
+
+                    data = ObtenerHistogramaClientes(
+                        connection,
+                        config.ProcedimientoHistograma,
+                        corte.Value,
+                        indicador);
+                }
+                else
+                {
+                    var (procedimiento, tipo) = config.ResolverGrafico(origen);
+                    if (procedimiento is null || FiltroGraficoInvalido(filtro))
+                        return DbHelper.CreateErrorResponse(InvalidChartMessage, -2, data);
+
+                    data = connection.Query<DashboardClientesPuntoData>(
+                        procedimiento,
+                        new { Corte = corte.Value, Formato = "H", Tipo = tipo, Codigo = filtro },
+                        commandType: CommandType.StoredProcedure).ToList();
+                }
+
+                return DbHelper.CreateOkResponse(data);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse(ex.Message, -1, data);
+            }
+        }
+
+        private static List<DashboardClientesPuntoData> ObtenerPuntosResumen(
+            IDbConnection connection,
+            string procedimiento,
+            DateTime corte,
+            string tipo)
+        {
+            return connection.Query<DashboardClientesPuntoData>(
+                procedimiento,
+                new { Corte = corte, Formato = "R", Tipo = tipo },
+                commandType: CommandType.StoredProcedure).ToList();
+        }
+
+        private static List<DashboardTopOpcionData> ObtenerOpcionesTop(
+            IDbConnection connection,
+            string usuario,
+            string categoria)
+        {
+            return connection.Query<DashboardTopOpcionData>(
+                ProcedureMainKpiAccess,
+                new { Usuario = usuario, Tipo = "T", Categoria = categoria },
+                commandType: CommandType.StoredProcedure).ToList();
+        }
+
+        private static IDictionary<string, object?>? ObtenerResumenModulo(
+            IDbConnection connection,
+            DashboardModuloConfig config)
+        {
+            var fila = connection.QueryFirstOrDefault(
+                config.ProcedimientoResumen,
+                new { Corte = (DateTime?)null, Formato = "R", Tipo = "T" },
+                commandType: CommandType.StoredProcedure);
+            return fila is null ? null : (IDictionary<string, object?>)fila;
+        }
+
+        private static DateTime? ObtenerCorteResumen<TResumen>(
+            IDbConnection connection,
+            string procedimiento,
+            Func<TResumen, DateTime> selectorCorte)
+        {
+            var resumen = connection.QueryFirstOrDefault<TResumen>(
+                procedimiento,
+                new { Corte = (DateTime?)null, Formato = "R", Tipo = "T" },
+                commandType: CommandType.StoredProcedure);
+            return resumen is null ? null : CorteCompleto(selectorCorte(resumen));
+        }
+
+        private static DateTime CorteCompleto(DateTime corte)
+            => corte.Date.AddDays(1).AddTicks(-1);
+
+        private static bool FiltroGraficoInvalido(string? filtro)
+            => !string.IsNullOrEmpty(filtro) && filtro.Length > 100;
+
         private static List<DashboardClientesPuntoData> ObtenerHistogramaClientes(
             IDbConnection connection,
             string procedimiento,
@@ -678,6 +677,14 @@ namespace Galileo.DataBaseTier.ProGrX
                 new { Usuario = usuario },
                 commandType: CommandType.StoredProcedure).Any(x => x.Cod_Categoria == categoria);
         }
+
+        private sealed record DashboardClientesTendenciaConfig(
+            string Categoria,
+            string MensajeAcceso,
+            string ProcedimientoHistograma,
+            string[] IndicadoresKpi,
+            Func<IDbConnection, DateTime?> ObtenerCorte,
+            Func<string, (string? Procedimiento, string Tipo)> ResolverGrafico);
 
         private sealed record DashboardHistogramaData(DateTime Descripcion, double? Value);
     }
