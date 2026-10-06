@@ -1,40 +1,96 @@
+using Galileo.DataBaseTier;
 using Galileo.DataBaseTier.ProGrX_BeneficiosFosol;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
+using Newtonsoft.Json;
 
 namespace Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Lógica de negocio de la Tabla de Devoluciones Fosol (frmFSL_TablaDevoluciones).
-    /// </summary>
-    public class FrmFslTablaDevolucionesBL
+    public sealed class FrmFslTablaDevolucionesBl
     {
-        private readonly FrmFslTablaDevolucionesDB _db;
+        private const int CodigoValidacion = -2;
 
-        public FrmFslTablaDevolucionesBL(IConfiguration config)
+        private readonly FrmFslTablaDevolucionesDb _db;
+
+        public FrmFslTablaDevolucionesBl(
+            IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            ArgumentNullException.ThrowIfNull(config);
 
-            _db = new FrmFslTablaDevolucionesDB(config);
+            _db = new FrmFslTablaDevolucionesDb(config);
         }
 
-        /// <summary>Catálogo de tipos de garantía.</summary>
-        public ErrorDto<List<FslGarantiasData>> FslGarantias_Obtener(int CodCliente)
-            => _db.FslGarantias_Obtener(CodCliente);
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            FSL_TablaDevoluciones_Garantias_Obtener(
+                int CodEmpresa)
+        {
+            return _db
+                .FSL_TablaDevoluciones_Garantias_Obtener(
+                    CodEmpresa);
+        }
 
-        /// <summary>Lista de devoluciones.</summary>
-        public ErrorDto<FslDevolucionesDataLista> FslDevoluciones_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
-            => _db.FslDevoluciones_Obtener(CodCliente, pagina, paginacion, filtro);
+        public ErrorDto<
+            FslListaPaginadaDto<FslTablaDevolucionDto>>
+            FSL_TablaDevoluciones_Lista_Obtener(
+                int CodEmpresa,
+                string filtros)
+        {
+            try
+            {
+                var request =
+                    DbHelper.DeserializeOrNew<
+                        FslTablaDevolucionesFiltros>(
+                            filtros);
 
-        /// <summary>Guarda una devolución (inserta o actualiza).</summary>
-        public ErrorDto ParametroDevolucion_Guardar(int CodCliente, FslDevolucionesData devolucion)
-            => _db.ParametroDevolucion_Guardar(CodCliente, devolucion);
+                return _db
+                    .FSL_TablaDevoluciones_Lista_Obtener(
+                        CodEmpresa,
+                        request);
+            }
+            catch (JsonException)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Los filtros enviados no son v&aacute;lidos.",
+                    CodigoValidacion,
+                    new FslListaPaginadaDto<
+                        FslTablaDevolucionDto>());
+            }
+        }
 
-        /// <summary>Elimina una devolución.</summary>
-        public ErrorDto FslDevolucion_Eliminar(int CodCliente, int cod_devolucion)
-            => _db.FslDevolucion_Eliminar(CodCliente, cod_devolucion);
+        public ErrorDto
+            FSL_TablaDevoluciones_Devolucion_Registrar(
+                int CodEmpresa,
+                FslTablaDevolucionGuardarRequest request)
+        {
+            return _db
+                .FSL_TablaDevoluciones_Devolucion_Registrar(
+                    CodEmpresa,
+                    request);
+        }
+
+        public ErrorDto
+            FSL_TablaDevoluciones_Devolucion_Actualizar(
+                int CodEmpresa,
+                FslTablaDevolucionGuardarRequest request)
+        {
+            return _db
+                .FSL_TablaDevoluciones_Devolucion_Actualizar(
+                    CodEmpresa,
+                    request);
+        }
+
+        public ErrorDto
+            FSL_TablaDevoluciones_Devolucion_Eliminar(
+                int CodEmpresa,
+                int codDevolucion,
+                string usuario)
+        {
+            return _db
+                .FSL_TablaDevoluciones_Devolucion_Eliminar(
+                    CodEmpresa,
+                    codDevolucion,
+                    usuario);
+        }
     }
 }

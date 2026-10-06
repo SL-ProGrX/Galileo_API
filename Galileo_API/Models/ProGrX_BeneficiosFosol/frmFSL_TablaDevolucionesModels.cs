@@ -1,29 +1,43 @@
 using System.Text.Json.Serialization;
+
 namespace Galileo.Models.FSL
 {
-    public class FslGarantiasData
+    public sealed class FslTablaDevolucionDto
     {
-        public string item { get; set; } = string.Empty;
-        public string descripcion { get; set; } = string.Empty;
-    }
-    
-    public class FslDevolucionesDataLista
-    {
-        public int Total { get; set; }
-        public List<FslDevolucionesData> devoluciones { get; set; } = new List<FslDevolucionesData>();
+        public int cod_devolucion { get; set; } = 0;
+        public DateTime? fecha_inicio { get; set; }
+        public DateTime? fecha_corte { get; set; }
+        public string garantia { get; set; } = string.Empty;
+        public string garantia_descripcion { get; set; } = string.Empty;
+        public string _base { get; set; } = string.Empty;
+        public string base_descripcion { get; set; } = string.Empty;
+        public decimal porcentaje { get; set; } = 0;
+        public DateTime? registro_fecha { get; set; }
+        public string registro_usuario { get; set; } = string.Empty;
     }
 
-    public class FslDevolucionesData
+    public sealed class FslTablaDevolucionesFiltros
+    {
+        public int pagina { get; set; } = 0;
+        public int paginacion { get; set; } = 30;
+        public string filtro { get; set; } = string.Empty;
+        public string sort_field { get; set; } = "fecha_inicio";
+        public int sort_order { get; set; } = 1;
+    }
+
+    public sealed class FslTablaDevolucionGuardarRequest
     {
         [JsonRequired]
-        public int cod_devolucion { get; set; }
-        public Nullable<DateTime> fecha_inicio { get; set; }
-        public Nullable<DateTime> fecha_corte { get; set; }
+        public int cod_devolucion { get; set; } = 0;
+
+        public DateTime? fecha_inicio { get; set; }
+        public DateTime? fecha_corte { get; set; }
         public string garantia { get; set; } = string.Empty;
         public string _base { get; set; } = string.Empty;
+
         [JsonRequired]
-        public float porcentaje { get; set; }
-        public Nullable<DateTime> registro_fecha { get; set; }
-        public string registro_usuario { get; set; } = string.Empty;
+        public decimal porcentaje { get; set; } = 0;
+
+        public string usuario { get; set; } = string.Empty;
     }
 }
