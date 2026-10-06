@@ -53,8 +53,9 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         private const string MensajeCausaNoExiste =
             "La causa indicada no existe para el plan seleccionado.";
 
-        private const string MensajeUsuarioRequerido =
-            "El usuario es requerido.";
+        private const string MensajeUsuarioRequerido = "El usuario es requerido.";
+
+        private const string CampoDescripcion = "descripcion";
 
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _securityMainDb;
@@ -529,7 +530,8 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                 sortField)
                 .ToLowerInvariant() switch
             {
-                "descripcion" => "descripcion",
+                CampoDescripcion =>
+                    CampoDescripcion,
                 "tipo_desembolso" =>
                     "tipo_desembolso",
                 "activo" => "activo",
@@ -545,7 +547,8 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                 sortField)
                 .ToLowerInvariant() switch
             {
-                "descripcion" => "descripcion",
+                CampoDescripcion =>
+                    CampoDescripcion,
                 "monto_base" => "monto_base",
                 "tipo_tabla" => "tipo_tabla",
                 "activa" => "activa",
