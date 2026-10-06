@@ -338,35 +338,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var msg =
                     $"- La operación No. {req.id_tramite} fue cancelada y se registró nueva operación No. {nuevaOperacion}\n\n - Readecuación No.{doc.NumDocStr}";
 
-                string? reporteResultado = null;
-                string? advertenciaBoleta = null;
-
-                // ProGrX imprime automáticamente la boleta REA únicamente con
-                // el esquema documental versión 2, después de confirmar la
-                // readecuación. Un fallo de impresión no debe revertir la
-                // operación ya creada.
-                if (g.SysDocVersion == 2)
-                {
-                    var impresion = _mRecibos.sbImprimeRecibo(
-                        CodEmpresa,
-                        doc.NumDocStr,
-                        vTipoDoc,
-                        valid.Usuario);
-                    var contenidoBoleta = impresion.Result?.ToString();
-
-                    if (impresion.Code == -1 || string.IsNullOrWhiteSpace(contenidoBoleta))
-                    {
-                        var detalle = string.IsNullOrWhiteSpace(impresion.Description)
-                            ? "La respuesta del generador no contiene el archivo PDF."
-                            : impresion.Description;
-                        advertenciaBoleta =
-                            $"La readecuación fue aplicada, pero no fue posible generar la boleta: {detalle}";
-                    }
-                    else
-                    {
-                        reporteResultado = contenidoBoleta;
-                    }
-                }
+                var boleta = GenerarBoletaReadecuacion(
+                    CodEmpresa,
+                    g.SysDocVersion,
+                    doc.NumDocStr,
+                    vTipoDoc,
+                    valid.Usuario);
 
                 return DbHelper.CreateOkResponse(new CoReadecuacionCambioOperacionAplicarResponse
                 {
@@ -375,8 +352,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     tipo_documento = vTipoDoc,
                     num_documento = doc.NumDocStr,
                     mensaje = msg,
-                    reporte_resultado = reporteResultado,
-                    advertencia_boleta = advertenciaBoleta
+                    reporte_resultado = boleta.ReporteResultado,
+                    advertencia_boleta = boleta.Advertencia
                 });
             }
             catch (SqlException ex)
@@ -384,6 +361,40 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(ex.Message);
             }
         }
+
+        private (string? ReporteResultado, string? Advertencia) GenerarBoletaReadecuacion(
+            int codEmpresa,
+            int sysDocVersion,
+            string numeroDocumento,
+            string tipoDocumento,
+            string usuario)
+        {
+            // ProGrX imprime automáticamente la boleta REA únicamente con
+            // el esquema documental versión 2, después de confirmar la
+            // readecuación. Un fallo de impresión no debe revertir la
+            // operación ya creada.
+            if (sysDocVersion != 2)
+                return (null, null);
+
+            var impresion = _mRecibos.sbImprimeRecibo(
+                codEmpresa,
+                numeroDocumento,
+                tipoDocumento,
+                usuario);
+            var contenidoBoleta = impresion.Result?.ToString();
+
+            if (impresion.Code != -1 && !string.IsNullOrWhiteSpace(contenidoBoleta))
+                return (contenidoBoleta, null);
+
+            var detalle = string.IsNullOrWhiteSpace(impresion.Description)
+                ? "La respuesta del generador no contiene el archivo PDF."
+                : impresion.Description;
+
+            return (
+                null,
+                $"La readecuación fue aplicada, pero no fue posible generar la boleta: {detalle}");
+        }
+
         /// <summary>
         /// Obtiene el id de la nueva operacion para el reporte.
         /// </summary>
