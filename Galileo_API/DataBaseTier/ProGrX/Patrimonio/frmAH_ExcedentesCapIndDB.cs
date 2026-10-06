@@ -35,7 +35,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
             var listadoResp = AH_ExcedentesCapInd_Capitalizaciones_Lista(codEmpresa, request);
             if (listadoResp.Code < 0)
             {
-                return DbHelper.CreateErrorResponse<FrmAhExcedentesCapIndCargarResponse>(listadoResp.Description);
+                return DbHelper.CreateErrorResponse<FrmAhExcedentesCapIndCargarResponse>(listadoResp.Description ?? string.Empty);
             }
 
             var capitalizaciones = listadoResp.Result ?? [];

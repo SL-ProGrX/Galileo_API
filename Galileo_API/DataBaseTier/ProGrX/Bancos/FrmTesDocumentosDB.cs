@@ -15,7 +15,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private readonly int vModulo = 9;
         private readonly MSecurityMainDb _Security_MainDB;
 
-        public FrmTesDocumentosDB(IConfiguration? config)
+        public FrmTesDocumentosDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
             _Security_MainDB = new MSecurityMainDb(config);
@@ -182,18 +182,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var validation = ValidarDocumento(documento);
                 if (validation.Code != 0) return validation;
 
-                var existe = ExisteTipoDocumento(conn, documento.tipo);
+                var tipoDocumento = documento.tipo!;
+                var existe = ExisteTipoDocumento(conn, tipoDocumento);
                 var parameters = BuildDocumentoParams(documento, usuario);
 
                 if (existe)
                 {
                     ActualizarDocumento(conn, parameters);
-                    RegistrarBitacora(CodEmpresa, usuario, documento.tipo, "Registra - Web");
+                    RegistrarBitacora(CodEmpresa, usuario, tipoDocumento, "Registra - Web");
                 }
                 else
                 {
                     InsertarDocumento(conn, parameters);
-                    RegistrarBitacora(CodEmpresa, usuario, documento.tipo, "Modifica - Web");
+                    RegistrarBitacora(CodEmpresa, usuario, tipoDocumento, "Modifica - Web");
                 }
 
                 return new ErrorDto { Code = 0, Description = "Guardado correctamente" };
@@ -231,7 +232,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             return new
             {
-                Tipo = documento.tipo.Trim(),
+                Tipo = documento.tipo!.Trim(),
                 Descripcion = (documento.descripcion ?? string.Empty).ToUpper().Trim(),
                 Movimiento = (documento.movimiento ?? string.Empty).Trim().Substring(0, 1),
                 Generacion = documento.generacion ? 1 : 0,

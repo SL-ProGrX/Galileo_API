@@ -61,9 +61,14 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
             var safeReq = CreateSafeSimularCuotasRequest(req);
 
             var result = _db.CajasCrdAbonosSt_SimularCuotas(codEmpresa, safeReq);
+            if (result is null)
+            {
+                return DbHelper.CreateErrorResponse<SimularCuotasResponse>(
+                    "La base de datos no devolvió respuesta al simular las cuotas.");
+            }
 
             // Defensa adicional: capar salida por si DB devolvió una proyección enorme de todos modos
-            if (result?.Result?.Proyeccion != null && result.Result.Proyeccion.Count > MaxCantidadCuotas)
+            if (result.Result?.Proyeccion != null && result.Result.Proyeccion.Count > MaxCantidadCuotas)
             {
                 result.Result.Proyeccion = result.Result.Proyeccion.Take(MaxCantidadCuotas).ToList();
             }

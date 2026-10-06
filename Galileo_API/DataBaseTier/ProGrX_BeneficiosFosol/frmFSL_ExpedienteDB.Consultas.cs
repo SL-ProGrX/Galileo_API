@@ -277,7 +277,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <summary>
         /// Obtiene las validaciones necesarias para resolver.
         /// </summary>
-        public ErrorDto<FslExpedienteResolucionValidacionesData>
+        public ErrorDto<FslExpedienteResolucionValidacionesData?>
             FSL_Expediente_ResolucionValidaciones_Obtener(
                 int CodEmpresa,
                 long codExpediente)
@@ -389,7 +389,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <summary>
         /// Obtiene el usuario vinculado a un miembro.
         /// </summary>
-        public ErrorDto<string>
+        public ErrorDto<string?>
             FSL_Expediente_UsuarioVinculado_Obtener(
                 int CodEmpresa,
                 string cedula,
@@ -398,7 +398,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             if (string.IsNullOrWhiteSpace(cedula) ||
                 string.IsNullOrWhiteSpace(codComite))
             {
-                return DbHelper.CreateErrorResponse(
+                return DbHelper.CreateErrorResponse<string?>(
                     "El miembro y el comit&eacute; son requeridos.",
                     CodigoValidacion,
                     string.Empty);

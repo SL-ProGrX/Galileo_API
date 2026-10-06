@@ -31,12 +31,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.ArfUnidades_Unidades_Obtener(codEmpresa);
         }
 
-        public ErrorDto<ArfUnidadesData> ArfUnidades_Scroll_Obtener(int codEmpresa, int scrollCode, string? codUnidad)
+        public ErrorDto<ArfUnidadesData?> ArfUnidades_Scroll_Obtener(int codEmpresa, int scrollCode, string? codUnidad)
         {
             return _db.ArfUnidades_Scroll_Obtener(codEmpresa, scrollCode, codUnidad);
         }
 
-        public ErrorDto<ArfUnidadesData> ArfUnidades_ConsultaUnidad_Obtener(int codEmpresa, string codUnidad)
+        public ErrorDto<ArfUnidadesData?> ArfUnidades_ConsultaUnidad_Obtener(int codEmpresa, string codUnidad)
         {
             return _db.ArfUnidades_ConsultaUnidad_Obtener(codEmpresa, codUnidad);
         }

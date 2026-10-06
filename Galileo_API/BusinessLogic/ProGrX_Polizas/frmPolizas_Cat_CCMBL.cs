@@ -21,10 +21,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
         public ErrorDto<List<PolizasCoberturasMotivosCausasDto>> PolizasConceptosConfigListas(int codEmpresa, string codPoliza, string tipo)
             => _db.PolizasConceptosConfigListas(codEmpresa, codPoliza, tipo);
 
-        public ErrorDto<PolizasConceptosConfigAddResult> PolizasConceptosConfigAdd(int codEmpresa, PolizasConceptosConfigAddParams param)
+        public ErrorDto<PolizasConceptosConfigAddResult?> PolizasConceptosConfigAdd(int codEmpresa, PolizasConceptosConfigAddParams param)
             => _db.PolizasConceptosConfigAdd(codEmpresa, param);
 
-        public ErrorDto<PolizasConceptosConfigAddResult> PolizasConceptosConfigDel(int codEmpresa, PolizasConceptosConfigDelParams param)
+        public ErrorDto<PolizasConceptosConfigAddResult?> PolizasConceptosConfigDel(int codEmpresa, PolizasConceptosConfigDelParams param)
             => _db.PolizasConceptosConfigDel(codEmpresa, param);
     }
 }

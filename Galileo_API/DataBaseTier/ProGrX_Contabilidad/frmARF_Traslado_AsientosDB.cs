@@ -175,7 +175,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Arrendamientos
 
             if (proceso.Code == -1 || proceso.Result == null)
             {
-                return DbHelper.CreateErrorResponse<bool>(proceso.Description);
+                return DbHelper.CreateErrorResponse<bool>(proceso.Description ?? string.Empty);
             }
 
             var descripcion = proceso.Result.PeriodosCerrados switch

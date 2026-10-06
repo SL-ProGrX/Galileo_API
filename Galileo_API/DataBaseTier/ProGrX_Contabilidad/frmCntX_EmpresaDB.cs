@@ -25,7 +25,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<CntXEmpresaDto> CntXEmpresa_Obtener(int codEmpresa)
+        public ErrorDto<CntXEmpresaDto?> CntXEmpresa_Obtener(int codEmpresa)
         {
             const string query = @"select * from CntX_Empresa_Registro";
             var result = DbHelper.ExecuteSingleQuery(_portalDb, codEmpresa, query, new CntXEmpresaDto());

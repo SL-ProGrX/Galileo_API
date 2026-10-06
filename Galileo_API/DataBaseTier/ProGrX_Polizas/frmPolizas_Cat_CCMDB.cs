@@ -57,7 +57,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="param">Parámetros de la configuración.</param>
         /// <returns>Resultado de la operación (Pass, Mensaje, Movimiento, IdLLave).</returns>
-        public ErrorDto<PolizasConceptosConfigAddResult> PolizasConceptosConfigAdd(int codEmpresa, PolizasConceptosConfigAddParams param)
+        public ErrorDto<PolizasConceptosConfigAddResult?> PolizasConceptosConfigAdd(int codEmpresa, PolizasConceptosConfigAddParams param)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
@@ -85,7 +85,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="param">Parámetros de la configuración.</param>
         /// <returns>Resultado de la operación (Pass, Mensaje, Movimiento, IdLLave).</returns>
-        public ErrorDto<PolizasConceptosConfigAddResult> PolizasConceptosConfigDel(int codEmpresa, PolizasConceptosConfigDelParams param)
+        public ErrorDto<PolizasConceptosConfigAddResult?> PolizasConceptosConfigDel(int codEmpresa, PolizasConceptosConfigDelParams param)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {

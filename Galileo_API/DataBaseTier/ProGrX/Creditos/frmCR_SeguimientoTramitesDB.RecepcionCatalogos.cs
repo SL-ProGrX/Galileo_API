@@ -153,12 +153,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             if (response.Code != 0
                 && string.Equals(
-                    response.Description,
+                    response.Description!,
                     "No existe la persona o la línea indicada.",
                     StringComparison.Ordinal))
             {
                 return DbHelper.CreateErrorResponse(
-                    response.Description,
+                    response.Description!,
                     -2,
                     new CrSeguimientoTramitesRecepcionLineaContextoData());
             }

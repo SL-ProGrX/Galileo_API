@@ -206,7 +206,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 }
 
                 var response = DbHelper.CreateOkResponse(new CxCCuentasFacturasLista());
-                AsignarTotalesFacturas(response.Result, lista, x => x.monto, x => x.adelanto_monto);
+                AsignarTotalesFacturas(response.Result!, lista, x => x.monto, x => x.adelanto_monto);
                 return response;
             }
             catch (DbException ex)
@@ -250,7 +250,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 }).ToList();
 
                 var response = DbHelper.CreateOkResponse(new CxCCuentasFacturasAdelantadasLista());
-                AsignarTotalesFacturas(response.Result, lista, x => x.monto, x => x.adelanto_monto);
+                AsignarTotalesFacturas(response.Result!, lista, x => x.monto, x => x.adelanto_monto);
                 return response;
             }
             catch (DbException ex)

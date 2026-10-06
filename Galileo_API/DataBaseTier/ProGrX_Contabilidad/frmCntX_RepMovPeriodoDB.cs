@@ -512,7 +512,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     cod_contabilidad = codContabilidad,
                     unidad,
                     centro_costo = centroCosto,
-                    usuario = f.usuario.Trim()
+                    usuario = f.usuario!.Trim()
                 },
                 transaction,
                 commandTimeout: 0);
@@ -618,7 +618,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             var parametros = new
             {
-                usuario = f.usuario.Trim(),
+                usuario = f.usuario!.Trim(),
                 cod_contabilidad = codContabilidad,
                 tipo = f.tipo,
                 nivel = f.nivel,
@@ -705,7 +705,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     anio_inicial = anioInicial,
                     mes_inicial = mesInicial,
                     mostrar = f.mostrar,
-                    usuario = f.usuario.Trim(),
+                    usuario = f.usuario!.Trim(),
                     cod_contabilidad = codContabilidad
                 },
                 transaction,
@@ -722,7 +722,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             return new
             {
-                usuario = f.usuario.Trim(),
+                usuario = f.usuario!.Trim(),
                 cod_contabilidad = codContabilidad,
                 reporte = f.reporte,
                 tipo = f.tipo,

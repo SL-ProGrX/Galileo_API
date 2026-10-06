@@ -193,11 +193,12 @@ namespace Galileo.DataBaseTier
                 return validacion;
             }
 
+            var equivalenciaValidada = equivalencia!;
             string codUnidad =
-                equivalencia.cod_unidad.Trim();
+                equivalenciaValidada.cod_unidad.Trim();
 
             string codUnidadDestino =
-                equivalencia.cod_unidad_d.Trim();
+                equivalenciaValidada.cod_unidad_d.Trim();
 
             const string query = """
                 IF EXISTS

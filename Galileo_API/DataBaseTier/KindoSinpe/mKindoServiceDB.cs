@@ -1327,7 +1327,8 @@ WHERE REFERENCIA_SINPE = @referencia;";
                 query,
                 "", parametros);
 
-            return result.Result;
+            return result.Result
+                ?? throw new InvalidOperationException("No se pudo obtener el consecutivo de la transacción SINPE.");
         }
 
         public string ConsecutivoTransSinpe(int CodCliente)
@@ -2166,8 +2167,17 @@ WHERE COD_EMPRESA = @codEmpresa;";
                 //si cod_divisa = 'X' 
                 if(cod_divisa == "X")
                 {
-                    cod_divisa = ValidaCuentaDestinoIBAN(connection, solicitud.Codigo, solicitud.Cuenta);
-                    cod_divisa = GetCurrencyCodeDes(cod_divisa);
+                    var divisaCuentaDestino = ValidaCuentaDestinoIBAN(connection, solicitud.Codigo, solicitud.Cuenta);
+                    if (string.IsNullOrWhiteSpace(divisaCuentaDestino))
+                    {
+                        return new ErrorDto
+                        {
+                            Code = -1,
+                            Description = "No se encontró una cuenta destino IBAN activa para validar la divisa."
+                        };
+                    }
+
+                    cod_divisa = GetCurrencyCodeDes(divisaCuentaDestino);
                 }
                 
 
@@ -2197,7 +2207,7 @@ WHERE COD_EMPRESA = @codEmpresa;";
             }
         }
 
-        private string ValidaCuentaDestinoIBAN(SqlConnection connection , string cedula, string iban)
+        private string? ValidaCuentaDestinoIBAN(SqlConnection connection , string cedula, string iban)
         {
             const string querySolicitud = @"
                 SELECT TOP (1)

@@ -16,7 +16,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         public FrmCntXEmpresaController(IConfiguration config) => _bl = new FrmCntXEmpresaBl(config);
 
         [HttpGet("CntXEmpresa_Obtener")]
-        public ErrorDto<CntXEmpresaDto> CntXEmpresa_Obtener(int codEmpresa)
+        public ErrorDto<CntXEmpresaDto?> CntXEmpresa_Obtener(int codEmpresa)
         {
             return _bl.CntXEmpresa_Obtener(codEmpresa);
         }

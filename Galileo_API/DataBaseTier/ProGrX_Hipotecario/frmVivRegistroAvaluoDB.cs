@@ -17,7 +17,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         /// Obtiene el detalle funcional del formulario frmVivRegistroAvaluo.
         /// Replica fxTraerOperacionXIdGarantiaIng de VB6 usando spViv_Garantia_Consulta_Avaluo.
         /// </summary>
-        public ErrorDto<FrmVivGarantiaAvaluoRegistroResponse> Viv_GarantiaAvaluo_Obtener(
+        public ErrorDto<FrmVivGarantiaAvaluoRegistroResponse?> Viv_GarantiaAvaluo_Obtener(
             int codEmpresa,
             FrmVivGarantiaAvaluoRegistroRequest request)
         {
@@ -74,7 +74,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         /// Actualiza montos individuales del registro de avalúo.
         /// Replica btnIngCambios_Click de VB6 usando spVivAvaluos_Cambios.
         /// </summary>
-        public ErrorDto<FrmVivGarantiaAvaluoMontoCambiarResponse> Viv_GarantiaAvaluoMonto_Guardar(
+        public ErrorDto<FrmVivGarantiaAvaluoMontoCambiarResponse?> Viv_GarantiaAvaluoMonto_Guardar(
             int codEmpresa,
             FrmVivGarantiaAvaluoMontoCambiarRequest request)
         {

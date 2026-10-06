@@ -14,7 +14,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private readonly MProGrxMain mProGrx;
 
 
-        public FrmFndLiquidacionPlanDB(IConfiguration? config)
+        public FrmFndLiquidacionPlanDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
             mProGrx = new MProGrxMain(config);
@@ -900,7 +900,11 @@ where F.Cod_Operadora = @CodOperadora
             CrearDocumentoGeneralParametros parametro
            )
         {
-            var resumen = ObtenerResumenDocumento(parametro.conn, parametro.tx, parametro.codOperador, parametro.request.cod_plan, parametro.docRef);
+            var tipoDocumento = parametro.tipoDoc
+                ?? throw new InvalidOperationException("El tipo de documento contable es requerido.");
+            var numeroDocumento = parametro.docRef
+                ?? throw new InvalidOperationException("La referencia del documento contable es requerida.");
+            var resumen = ObtenerResumenDocumento(parametro.conn, parametro.tx, parametro.codOperador, parametro.request.cod_plan, numeroDocumento);
             string detalleAsiento = LimitarTexto($"Liquidacion general {parametro.request.cod_plan}", 30);
 
             foreach (var item in resumen)
@@ -913,8 +917,8 @@ where F.Cod_Operadora = @CodOperadora
                         request = parametro.request,
                         plan = parametro.plan,
                         item = item,
-                        docRef = parametro.docRef,
-                        tipoDoc = parametro.tipoDoc,
+                        docRef = numeroDocumento,
+                        tipoDoc = tipoDocumento,
                         concepto = parametro.concepto
                     });
 
@@ -923,8 +927,8 @@ where F.Cod_Operadora = @CodOperadora
                     {
                         conn = parametro.conn,
                         tx = parametro.tx,
-                        tipoDocumento = parametro.tipoDoc,
-                        numDocumento = parametro.docRef,
+                        tipoDocumento = tipoDocumento,
+                        numDocumento = numeroDocumento,
                         monto = item.aporte,
                         debeHaber = "D",
                         codDivisa = parametro.plan.cod_moneda,
@@ -942,8 +946,8 @@ where F.Cod_Operadora = @CodOperadora
                     {
                         conn = parametro.conn,
                         tx = parametro.tx,
-                        tipoDocumento = parametro.tipoDoc,
-                        numDocumento = parametro.docRef,
+                        tipoDocumento = tipoDocumento,
+                        numDocumento = numeroDocumento,
                         monto = item.rendimiento,
                         debeHaber = "D",
                         codDivisa = parametro.plan.cod_moneda,
@@ -961,8 +965,8 @@ where F.Cod_Operadora = @CodOperadora
                     {
                         conn = parametro.conn,
                         tx = parametro.tx,
-                        tipoDocumento = parametro.tipoDoc,
-                        numDocumento = parametro.docRef,
+                        tipoDocumento = tipoDocumento,
+                        numDocumento = numeroDocumento,
                         monto = item.isr_monto,
                         debeHaber = "C",
                         codDivisa = parametro.plan.cod_moneda,
@@ -980,8 +984,8 @@ where F.Cod_Operadora = @CodOperadora
                     {
                         conn = parametro.conn,
                         tx = parametro.tx,
-                        tipoDocumento = parametro.tipoDoc,
-                        numDocumento = parametro.docRef,
+                        tipoDocumento = tipoDocumento,
+                        numDocumento = numeroDocumento,
                         monto = item.multa,
                         debeHaber = "C",
                         codDivisa = parametro.plan.cod_moneda,
@@ -1000,8 +1004,8 @@ where F.Cod_Operadora = @CodOperadora
                      {
                          conn = parametro.conn,
                          tx = parametro.tx,
-                         tipoDocumento = parametro.tipoDoc,
-                         numDocumento = parametro.docRef,
+                         tipoDocumento = tipoDocumento,
+                         numDocumento = numeroDocumento,
                          monto = neto,
                          debeHaber = "C",
                          codDivisa = parametro.plan.cod_moneda,

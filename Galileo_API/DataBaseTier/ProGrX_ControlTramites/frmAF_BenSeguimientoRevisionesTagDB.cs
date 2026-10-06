@@ -113,7 +113,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     new
                     {
                         Consecutivo =
-                            request.consec.ToString(),
+                            request!.consec.ToString(),
                         CodBeneficio =
                             request.cod_beneficio.Trim(),
                         Modulo
@@ -209,7 +209,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             if (resultado.Code == -1)
             {
                 return DbHelper.ErrorResponse(
-                    resultado.Description,
+                    resultado.Description ?? string.Empty,
                     -1);
             }
 
@@ -281,7 +281,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     sql,
                     new
                     {
-                        Cedula = request.cedula.Trim(),
+                        Cedula = request!.cedula.Trim(),
                         CodBeneficio =
                             request.cod_beneficio.Trim(),
                         Consecutivo =
@@ -338,7 +338,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                             new
                             {
                                 Cedula =
-                                    request.cedula.Trim(),
+                                    request!.cedula.Trim(),
                                 CodBeneficio =
                                     request.cod_beneficio.Trim(),
                                 Consecutivo =
@@ -554,7 +554,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             {
                 return DbHelper.CreateErrorResponse<
                     AfBenSeguimientoOmisionCambiarData>(
-                        ejecucion.Description,
+                        ejecucion.Description ?? string.Empty,
                         -1,
                         new AfBenSeguimientoOmisionCambiarData());
             }
@@ -614,7 +614,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                             new
                             {
                                 Cedula =
-                                    request.cedula.Trim(),
+                                    request!.cedula.Trim(),
                                 CodBeneficio =
                                     request.cod_beneficio.Trim(),
                                 Consecutivo =
@@ -741,7 +741,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             if (ejecucion.Code == -1)
             {
                 return DbHelper.ErrorResponse(
-                    ejecucion.Description,
+                    ejecucion.Description ?? string.Empty,
                     -1);
             }
 

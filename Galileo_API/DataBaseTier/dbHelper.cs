@@ -44,7 +44,7 @@ namespace Galileo.DataBaseTier
             return sqlSeguro;
         }
 
-        public static ErrorDto<T> CreateOkResponse<T>(T initialResult = default, string description = "Ok")
+        public static ErrorDto<T> CreateOkResponse<T>(T? initialResult = default, string description = "Ok")
             => new() { Code = 0, Description = description, Result = initialResult };
 
         public static ErrorDto CreateOkResponse()
@@ -80,7 +80,7 @@ namespace Galileo.DataBaseTier
         /// </summary>
         public static ErrorDto<T?> ExecuteSingleQuery<T>(PortalDB portalDb, int codEmpresa, string sql, T? defaultValue = default, object? parameters = null)
         {
-            var result = CreateOkResponse(defaultValue);
+            var result = CreateOkResponse<T?>(defaultValue);
 
             try
             {
@@ -102,7 +102,7 @@ namespace Galileo.DataBaseTier
 
         public static ErrorDto<T?> ExecuteSingleQuery<T>(string connectionString, string sql, T? defaultValue = default, object? parameters = null)
         {
-            var result = CreateOkResponse(defaultValue);
+            var result = CreateOkResponse<T?>(defaultValue);
 
             try
             {
@@ -210,7 +210,7 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        public static ErrorDto<T> CreateErrorResponse<T>(string msg, int code = -1, T result = default) =>
+        public static ErrorDto<T> CreateErrorResponse<T>(string msg, int code = -1, T? result = default) =>
             new ErrorDto<T> { Code = code, Description = msg, Result = result };
 
         public static ErrorDto OkResponse(string msg) =>
@@ -262,7 +262,7 @@ namespace Galileo.DataBaseTier
             T? defaultValue = default,
             object? parameters = null)
         {
-            var result = CreateOkResponse(defaultValue);
+            var result = CreateOkResponse<T?>(defaultValue);
 
             try
             {
