@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Galileo.BusinessLogic;
@@ -9,6 +10,7 @@ namespace Galileo.Controllers
     [Route("api/FrmGaDocumentos")]
     [Route("api/frmGA_Documentos")]
     [ApiController]
+    [Authorize]
     public class FrmGaDocumentosController : ControllerBase
     {
         private readonly IConfiguration _config;
@@ -56,6 +58,8 @@ namespace Galileo.Controllers
             }
 
             documentInfo.filecontent = fileContent;
+            // El código de empresa ya fue autorizado por EmpresaAccessFilter; no confiar en el valor del formulario.
+            documentInfo.empresaid = CodEmpresa.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
             var result = BL_GA_Documentos.Documentos_Insertar(CodEmpresa, documentInfo);
 
@@ -71,9 +75,21 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("Documentos_Eliminar")]
-        public ErrorDto Documentos_Eliminar(int CodCliente, string llave01, string llave02, string llave03, string usuario)
+        public ErrorDto Documentos_Eliminar(
+            [FromQuery] int? CodEmpresa,
+            [FromQuery] int? CodCliente,
+            string llave01,
+            string llave02,
+            string llave03,
+            string usuario)
         {
-            return new FrmGaDocumentosBl(_config).Documentos_Eliminar(CodCliente, llave01, llave02, llave03, usuario);
+            var empresaId = CodEmpresa ?? CodCliente;
+            if (!empresaId.HasValue)
+            {
+                return new ErrorDto { Code = -1, Description = "CodEmpresa requerido." };
+            }
+
+            return new FrmGaDocumentosBl(_config).Documentos_Eliminar(empresaId.Value, llave01, llave02, llave03, usuario);
         }
     }
 }

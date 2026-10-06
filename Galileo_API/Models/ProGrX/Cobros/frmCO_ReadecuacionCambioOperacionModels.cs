@@ -61,7 +61,9 @@
         public string tipo_documento { get; set; } = string.Empty;
         public string num_documento { get; set; } = string.Empty;
 
-        public string mensaje { get; set; } = string.Empty; 
+        public string mensaje { get; set; } = string.Empty;
+        public string? reporte_resultado { get; set; }
+        public string? advertencia_boleta { get; set; }
     }
     public class CoReadecuacionReporteOperacionNuevaRequest
     {

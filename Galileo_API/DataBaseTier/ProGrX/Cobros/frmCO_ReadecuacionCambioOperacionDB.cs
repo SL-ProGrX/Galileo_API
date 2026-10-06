@@ -16,6 +16,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private readonly MSecurityMainDb _security_MainDB;
         private readonly MProGrxMain _mProGrxMain;
         private readonly MSeguimientoDB _mSeguimientoDB;
+        private readonly MRecibos _mRecibos;
         private const string IDENTIFICACION_CONGELADA = "Esta Persona se encuentra CONGELADA, verifique...";
         private const string OPERACION_INVALIDA = "No se encontró el número de operación [Activa]";
         private const string NOTA_INVALIDA = "La nota para realizar la transacción no es válida...";
@@ -32,7 +33,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 new PortalDB(config),
                 new MSecurityMainDb(config),
                 new MProGrxMain(config),
-                new MSeguimientoDB(config))
+                new MSeguimientoDB(config),
+                new MRecibos(config))
         {
         }
 
@@ -40,12 +42,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             PortalDB portalDB,
             MSecurityMainDb securityMainDb,
             MProGrxMain mProGrxMain,
-            MSeguimientoDB mSeguimientoDB)
+            MSeguimientoDB mSeguimientoDB,
+            MRecibos mRecibos)
         {
             _portalDB = portalDB;
             _security_MainDB = securityMainDb;
             _mProGrxMain = mProGrxMain;
             _mSeguimientoDB = mSeguimientoDB;
+            _mRecibos = mRecibos;
         }
         /// <summary>
         /// Obtiene la informacion por codigo de tramite de una operacion.
@@ -334,13 +338,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var msg =
                     $"- La operación No. {req.id_tramite} fue cancelada y se registró nueva operación No. {nuevaOperacion}\n\n - Readecuación No.{doc.NumDocStr}";
 
+                var boleta = GenerarBoletaReadecuacion(
+                    CodEmpresa,
+                    g.SysDocVersion,
+                    doc.NumDocStr,
+                    vTipoDoc,
+                    valid.Usuario);
+
                 return DbHelper.CreateOkResponse(new CoReadecuacionCambioOperacionAplicarResponse
                 {
                     operacion_original = req.id_tramite ?? 0,
                     operacion_nueva = nuevaOperacion,
                     tipo_documento = vTipoDoc,
                     num_documento = doc.NumDocStr,
-                    mensaje = msg
+                    mensaje = msg,
+                    reporte_resultado = boleta.ReporteResultado,
+                    advertencia_boleta = boleta.Advertencia
                 });
             }
             catch (SqlException ex)
@@ -348,6 +361,40 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<CoReadecuacionCambioOperacionAplicarResponse>(ex.Message);
             }
         }
+
+        private (string? ReporteResultado, string? Advertencia) GenerarBoletaReadecuacion(
+            int codEmpresa,
+            int sysDocVersion,
+            string numeroDocumento,
+            string tipoDocumento,
+            string usuario)
+        {
+            // ProGrX imprime automáticamente la boleta REA únicamente con
+            // el esquema documental versión 2, después de confirmar la
+            // readecuación. Un fallo de impresión no debe revertir la
+            // operación ya creada.
+            if (sysDocVersion != 2)
+                return (null, null);
+
+            var impresion = _mRecibos.sbImprimeRecibo(
+                codEmpresa,
+                numeroDocumento,
+                tipoDocumento,
+                usuario);
+            var contenidoBoleta = impresion.Result?.ToString();
+
+            if (impresion.Code != -1 && !string.IsNullOrWhiteSpace(contenidoBoleta))
+                return (contenidoBoleta, null);
+
+            var detalle = string.IsNullOrWhiteSpace(impresion.Description)
+                ? "La respuesta del generador no contiene el archivo PDF."
+                : impresion.Description;
+
+            return (
+                null,
+                $"La readecuación fue aplicada, pero no fue posible generar la boleta: {detalle}");
+        }
+
         /// <summary>
         /// Obtiene el id de la nueva operacion para el reporte.
         /// </summary>
