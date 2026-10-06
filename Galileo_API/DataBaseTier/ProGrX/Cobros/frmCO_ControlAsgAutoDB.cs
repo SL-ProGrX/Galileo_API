@@ -74,7 +74,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     commandTimeout: 0
                 );
 
-                return DbHelper.CreateOkResponse(response);
+                return DbHelper.CreateOkResponse<CbrControlDistribucionResult?>(response);
             }
             catch(Exception ex)
             {

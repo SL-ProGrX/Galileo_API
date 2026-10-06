@@ -446,7 +446,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 proy.Add(CrearFila(tmpInter, tmpAmort, estado.FechaProceso, estado.Saldo, estado.Cuota));
 
                 plazoRst = Math.Max(1, plazoRst - 1);
-                estado.Cuota = MCobroDb.fxCalcula_Cuota(estado.Saldo, plazoRst, req.Interes, "M");
+                estado.Cuota = MCobroDb.fxCalcula_Cuota(estado.Saldo, plazoRst, req.Interes!, "M");
             }
 
             return cuotaMax;
@@ -659,7 +659,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 if (valida.Code != 0)
                     return valida;
 
-                long vNumDoc = _mRecibos.FxDocumentoConsecutivo(codEmpresa, request.tipoDoc);
+                long vNumDoc = _mRecibos.FxDocumentoConsecutivo(codEmpresa, request.tipoDoc!);
                 decimal glngFechaCR = _mProGrx.glngFechaCR(codEmpresa);
 
                 if (request.lblFecUltMovR.HasValue && request.lblFecUltMovR.Value < (long)glngFechaCR)
@@ -855,7 +855,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             try
             {
-                decimal pTipoCambio = _mCajas.fxCajasTipoCambio(codEmpresa, 0, variable.vTipoDoc);
+                decimal pTipoCambio = _mCajas.fxCajasTipoCambio(codEmpresa, 0, variable.vTipoDoc!);
                 variable.tipoCambio = pTipoCambio;
 
                 if (!variable.vNumDoc.HasValue)

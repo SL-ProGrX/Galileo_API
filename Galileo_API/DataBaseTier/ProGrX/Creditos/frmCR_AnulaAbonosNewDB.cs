@@ -166,7 +166,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             const string sql = @"
             select isnull(dbo.fxCrd_Operacion_Anula_Cta_Recomendada(@Operacion, @Amortizacion), '...') as cuenta;";
 
-            return DbHelper.ExecuteSingleQuery(
+            var result = DbHelper.ExecuteSingleQuery(
                 _portalDb,
                 codEmpresa,
                 sql,
@@ -176,6 +176,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     Operacion = request.operacion,
                     Amortizacion = request.amortizacion
                 });
+
+            return new ErrorDto<string>
+            {
+                Code = result.Code,
+                Description = result.Description,
+                Result = result.Result!
+            };
         }
 
         /// <summary>

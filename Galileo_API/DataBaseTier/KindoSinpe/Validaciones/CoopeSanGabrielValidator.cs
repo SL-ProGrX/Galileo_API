@@ -63,7 +63,7 @@ namespace Galileo_API.DataBaseTier
                 if (!TieneDatosMinimos(info))
                     return ok; // mismo comportamiento actual: si no hay datos, regresa Ok
 
-                if (!MKindoServiceDb.IsValidCostaRicaIBAN(info.CuentaIBAN))
+                if (!MKindoServiceDb.IsValidCostaRicaIBAN(info.CuentaIBAN!))
                     return DbHelper.ErrorResponse("Cuenta IBAN no válida");
 
                 var sinpeTipo = ParseTipo(tipo);
@@ -75,7 +75,7 @@ namespace Galileo_API.DataBaseTier
                 if (errorDisponible != null)
                     return errorDisponible;
 
-                string cedula = MKindoServiceDb.MaskSinpeId(info.tipoID, info.Cedula);
+                string cedula = MKindoServiceDb.MaskSinpeId(info.tipoID, info.Cedula!);
 
                 var cuenta = ConsultarCuenta(parametrosSinpe, context, info.CuentaIBAN, sinpeTipo, cedula);
 
@@ -101,7 +101,7 @@ namespace Galileo_API.DataBaseTier
 
             var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(codEmpresa, solicitud, cuenta.Account.CurrencyCode ?? "X");
             if (valOrigen.Code == -1)
-                return DbHelper.ErrorResponse(valOrigen.Description);
+                return DbHelper.ErrorResponse(valOrigen.Description ?? string.Empty);
 
             if (!cuenta.IsSuccessful)
             {
@@ -149,9 +149,10 @@ namespace Galileo_API.DataBaseTier
         {
             if (estado == 0 || estado == 1)
             {
+                var account = cuenta.Account!;
                 var desc = $@"La cuenta IBAN {info.CuentaIBAN} registrada a
-nombre de {cuenta.Account.Holder} cédula: {cuenta.Account.HolderId} Tipo Id: {info.tipoID}
-Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCode}-{cuenta.Account.EntityName}";
+nombre de {account.Holder} cédula: {account.HolderId} Tipo Id: {info.tipoID}
+Tipo de Moneda: {account.CurrencyCode} Entidad: {account.EntityCode}-{account.EntityName}";
 
                 return DbHelper.OkResponse(desc);
             }
@@ -190,12 +191,12 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
         private static ReqBase CrearContexto(ErrorDto<ParametrosSinpe> parametrosSinpe) =>
             new ReqBase
             {
-                HostId = parametrosSinpe.Result.vHostPin,
+                HostId = parametrosSinpe.Result!.vHostPin,
                 OperationId = Guid.NewGuid().ToString(),
-                ClientIPAddress = parametrosSinpe.Result.vIpHost,
+                ClientIPAddress = parametrosSinpe.Result!.vIpHost,
                 CultureCode = "ES-CR",
-                UserCode = parametrosSinpe.Result.vUsuarioLog,
-                vCanalCGP = parametrosSinpe.Result.vCanalCGP
+                UserCode = parametrosSinpe.Result!.vUsuarioLog,
+                vCanalCGP = parametrosSinpe.Result!.vCanalCGP
             };
 
         private Galileo.Models.KindoSinpe.ResAccountInfo ConsultarCuenta(
@@ -231,7 +232,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
 
         private static string GetServiceUri(ErrorDto<ParametrosSinpe> parametros, SinpeTipo tipo)
         {
-            var r = parametros.Result;
+            var r = parametros.Result!;
             return tipo == SinpeTipo.PIN
                 ? (r.UrlCGP_PIN ?? string.Empty)
                 : (r.UrlCGP_DTR ?? string.Empty);
@@ -312,7 +313,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                 var servicioDisponible = fxValidacionSinpe(
                     parametros.codEmpresa,
                     parametros.nSolicitud.ToString(),
-                    parametros.usuario,
+                    parametros.usuario!,
                     "PIN");
 
                 if (servicioDisponible.Code != 0 && servicioDisponible.Code != 1)
@@ -329,7 +330,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                 var envio = enviar(parametros.codEmpresa, parametros.nSolicitud, parametros.usuario);
                 respuesta = envio.Result;
 
-                if(envio.Result.MotivoError == 32)
+                if(envio.Result!.MotivoError == 32)
                 {
                     // 3) Persistir respuesta
                     datos.NumeroSolicitud = parametros.nSolicitud;
@@ -419,7 +420,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
         {
             try
             {
-                var parametrosSinpe = _mKindo.GetUriEmpresa(parametros.codEmpresa, parametros.usuario);
+                var parametrosSinpe = _mKindo.GetUriEmpresa(parametros.codEmpresa, parametros.usuario!);
                 if (parametrosSinpe?.Result == null)
                     return new ErrorDto<RespuestaRegistro> { Code = -1, Description = "No se pudieron obtener parámetros SINPE." };
 
@@ -499,14 +500,16 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
             if (resp?.Errors?.Length > 0)
                 fxGuardaID_RespuestaSinpe(parametros.codEmpresa, resp.Errors[0].Code, parametros.nSolicitud.ToString(), codReferencia);
 
-            if (resp != null && resp.IsSuccessful)
+            if (resp is not null && resp.IsSuccessful)
             {
                 _mKindo.RegistraMovTransito(parametros.codEmpresa, codReferencia, context.UserCode, canal, resp, solicitud);
                 return null;
             }
 
-            var code = resp?.Errors != null && resp.Errors.Length > 0 ? resp.Errors[0].Code : -1;
-            var msg = resp?.Errors != null && resp.Errors.Length > 0 ? resp.Errors[0].Message : "Error al enviar solicitud a SINPE.";
+            var errores = resp?.Errors;
+            var tieneErrores = errores is not null && errores.Length > 0;
+            var code = tieneErrores ? errores[0].Code : -1;
+            var msg = tieneErrores ? errores[0].Message : "Error al enviar solicitud a SINPE.";
             _mKindo.RegistraMovTransito(parametros.codEmpresa, codReferencia, context.UserCode, canal, resp, solicitud);
 
             return new ErrorDto<RespuestaRegistro>
@@ -556,7 +559,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
 
             var context = CrearContexto(parametrosSinpe);
 
-            var servicio = _sinpePIN.IsServiceAvailable(parametrosSinpe.Result.UrlCGP_PIN, context);
+            var servicio = _sinpePIN.IsServiceAvailable(parametrosSinpe.Result.UrlCGP_PIN ?? string.Empty, context);
             if (!servicio.ServiceAvailable)
                 return DbHelper.ErrorResponse(servicio.Errors?[0]?.Message ?? "Servicio no disponible");
 

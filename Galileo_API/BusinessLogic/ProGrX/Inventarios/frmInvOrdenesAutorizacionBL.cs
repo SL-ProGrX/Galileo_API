@@ -44,7 +44,7 @@ namespace Galileo.BusinessLogic
                 return _db
                     .INV_OrdenesAutorizacion_Ordenes_Obtener(
                         CodEmpresa,
-                        filtrosConsulta);
+                        filtrosConsulta!);
             }
             catch (JsonException)
             {

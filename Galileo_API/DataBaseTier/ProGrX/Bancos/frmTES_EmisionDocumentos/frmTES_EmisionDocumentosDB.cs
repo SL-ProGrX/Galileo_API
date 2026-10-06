@@ -554,7 +554,7 @@ where B.estado = 'A'
                 filtroItem.banco,
                 filtroItem.plan).Result;
 
-            filtroItem.cantidad = documento.total;
+            filtroItem.cantidad = documento!.total;
             filtroItem.docBloqueo = documento.docBloqueo;
             filtroItem.docInicial = (int)documento.docInicial;
 

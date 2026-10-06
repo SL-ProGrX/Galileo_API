@@ -189,7 +189,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 if (string.IsNullOrWhiteSpace(trx.cta_iban_origen) || trx.cta_iban_origen == "9999999999999999999999")
                 {
-                    trx.cta_iban_origen = cuentaOrigen.Result.cuenta_interna;
+                    trx.cta_iban_origen = cuentaOrigen.Result!.cuenta_interna;
                     trx.cedula_origen = cuentaOrigen.Result.itmx;
                     trx.nombre_origen = cuentaOrigen.Result.cuenta_desc;
                 }
@@ -1860,12 +1860,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                   .Select(g => g.First())
                                   .ToList();
 
-                result = result.Where(x => x.cuenta_desc.Contains(bancoInfo.cod_divisa)).ToList();
+                result = result.Where(x => x.cuenta_desc!.Contains(bancoInfo.cod_divisa!)).ToList();
 
                 if (CuentaInterna == true)
                 {
                     //filtro cuando descripcion contiene INT
-                    result = result.Where(x => x.cuenta_desc.Contains("INT")).ToList();
+                    result = result.Where(x => x.cuenta_desc!.Contains("INT")).ToList();
                 }
 
                 return Ok(result);
@@ -1936,8 +1936,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 if(cuentaInfo == null)
                 {
                     //Valido la cedula por Kindo
-                    var servicio = _factory.CrearServicio(CodEmpresa, usuario);
-                    var result = servicio.fxValidacionSinpeTransaccion(CodEmpresa, cedula, cuenta, usuario);
+                    var servicio = _factory.CrearServicio(CodEmpresa, usuario!);
+                    var result = servicio.fxValidacionSinpeTransaccion(CodEmpresa, cedula!, cuenta!, usuario!);
 
                     return result.Code == 0
                         ? DbHelper.OkResponse("La cuenta es válida para la cédula proporcionada.")
@@ -1950,7 +1950,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                             .Replace(" ", "")
                             .TrimStart('0');
 
-                var id2 = cedula.ToString().Trim()
+                var id2 = cedula!.ToString().Trim()
                             .Replace("-", "")
                             .Replace(" ", "")
                             .TrimStart('0');

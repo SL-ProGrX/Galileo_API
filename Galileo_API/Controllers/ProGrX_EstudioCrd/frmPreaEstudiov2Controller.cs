@@ -499,7 +499,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             [FromQuery] int id_adjunto)
         {
             var response = _bl.Prea_frmPreaEstudiov2_Adjunto_Descargar(codEmpresa, cod_preanalisis, id_adjunto);
-            if (response.Code != 0 || response.Result.contenido.Length == 0)
+            if (response.Code != 0 || response.Result!.contenido.Length == 0)
             {
                 return BadRequest(response);
             }

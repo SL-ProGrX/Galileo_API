@@ -529,7 +529,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     return DbHelper.CreateErrorResponse<long>("No se encontró la cuenta contable del banco.");
                 }
 
-                var ctaPuente = ObtenerCtaPuente(connection, request.CodigoCliente);
+                var ctaPuente = ObtenerCtaPuente(connection, request.CodigoCliente!);
                 if (string.IsNullOrWhiteSpace(ctaPuente))
                 {
                     return DbHelper.CreateErrorResponse<long>("No se encontró la cuenta puente del cliente.");
@@ -564,7 +564,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             var userAutoriza = string.Equals(request.TipoDocumento, "CK", StringComparison.OrdinalIgnoreCase) ? request.Usuario : null;
             var fechaAutoriza = string.Equals(request.TipoDocumento, "CK", StringComparison.OrdinalIgnoreCase) ? (DateTime?)DateTime.Now : null;
 
-            var nSolicitud = request.Conn.QueryFirstOrDefault<long>(insertSql, new
+            var nSolicitud = request.Conn!.QueryFirstOrDefault<long>(insertSql, new
             {
                 Concepto = request.Concepto,
                 Unidad = request.Unidad,

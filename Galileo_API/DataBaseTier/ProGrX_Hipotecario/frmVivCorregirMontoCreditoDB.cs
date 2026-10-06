@@ -43,7 +43,7 @@ OUTER APPLY (
 ) AS VG
 WHERE R.ID_SOLICITUD = @numero_operacion;";
 
-            return DbHelper.ExecuteSingleQuery(
+            var result = DbHelper.ExecuteSingleQuery(
                 _portalDb,
                 codEmpresa,
                 query,
@@ -52,6 +52,13 @@ WHERE R.ID_SOLICITUD = @numero_operacion;";
                 {
                     numero_operacion = numero_operacion
                 });
+
+            return new ErrorDto<FrmVivCorregirMontoCreditoResponse>
+            {
+                Code = result.Code,
+                Description = result.Description,
+                Result = result.Result!
+            };
         }
 
         /// <summary>

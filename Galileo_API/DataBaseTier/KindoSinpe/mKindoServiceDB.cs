@@ -1385,7 +1385,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
         }
 
 
-        public static TipoId Inferir(string cedula)
+        public static TipoId Inferir(string? cedula)
         {
             if (string.IsNullOrEmpty(cedula)) return Desconocido();
 

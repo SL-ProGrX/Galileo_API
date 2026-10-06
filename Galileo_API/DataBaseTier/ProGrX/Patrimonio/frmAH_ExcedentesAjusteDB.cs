@@ -233,7 +233,7 @@ ORDER BY A.AJUSTE_ID DESC;";
                 return validacion;
             }
 
-            var cedula = AH_ExcedentesAjuste_NormalizarCedula(request.cedula);
+            var cedula = AH_ExcedentesAjuste_NormalizarCedula(request!.cedula);
             var detalle = AH_ExcedentesAjuste_NormalizarTextoLibre(request.detalle, 500);
             var usuario = AH_ExcedentesAjuste_NormalizarTextoLibre(request.usuario, 50);
 

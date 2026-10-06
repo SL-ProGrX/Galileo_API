@@ -303,7 +303,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 conn,
                 bloqueaAutoAutorizacion,
                 solicitudesUnicas,
-                p.usuario);
+                p.usuario!);
             
             var bloqueadas = bloqueadasPorMismoUsuario.ToHashSet();
             var solicitudesAutorizables = solicitudesUnicas

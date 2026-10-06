@@ -232,7 +232,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: 0);
 
-                return DbHelper.CreateOkResponse(item);
+                return DbHelper.CreateOkResponse<CcCaRemesasEnvioPendienteData?>(item);
             }
             catch (SqlException ex)
             {
