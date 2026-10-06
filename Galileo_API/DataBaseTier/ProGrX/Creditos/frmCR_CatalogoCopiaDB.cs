@@ -217,7 +217,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         public ErrorDto<CrCatalogoCopiaResultadoDto> CR_CatalogoCopia_Copiar(int CodEmpresa, CrCatalogoCopiaRequest request)
         {
-            var response = DbHelper.CreateOkResponse(new CrCatalogoCopiaResultadoDto());
+            var resultado = new CrCatalogoCopiaResultadoDto();
+            var response = DbHelper.CreateOkResponse(resultado);
 
             try
             {
@@ -230,12 +231,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var data = NormalizarRequest(request);
                 var destinos = ResolverDestinos(data);
 
-                response.Result.detalle.AddRange(
+                resultado.detalle.AddRange(
                     destinos
                         .Select(destino => CopiarDestino(conn, CodEmpresa, data, destino))
                         .ToList());
 
-                response.Result.total_procesadas = response.Result.detalle.Count(x => x.procesada);
+                resultado.total_procesadas = resultado.detalle.Count(x => x.procesada);
                 response.Description = "Copia Realizada Satisfactoriamente.";
 
                 return response;
@@ -367,12 +368,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 })
                 .ToList();
 
-            if (TieneNuevaLineaCompleta(data) && !IgualCodigo(data.nueva_linea.codigo, data.linea_origen))
+            if (data.nueva_linea is { } nuevaLinea
+                && TieneNuevaLineaCompleta(data)
+                && !IgualCodigo(nuevaLinea.codigo, data.linea_origen))
             {
                 destinos.Add(new CrCatalogoCopiaDestinoDto
                 {
-                    codigo = data.nueva_linea.codigo,
-                    descripcion = data.nueva_linea.descripcion,
+                    codigo = nuevaLinea.codigo,
+                    descripcion = nuevaLinea.descripcion,
                     es_nueva = true
                 });
             }

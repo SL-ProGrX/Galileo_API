@@ -19,13 +19,13 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [HttpGet("CntxPlantillaRate_Scroll_Obtener")]
-        public ErrorDto<CntxPlantillaRateDto> CntxPlantillaRate_Scroll_Obtener(int codEmpresa, int scrollCode, int? codPlantilla)
+        public ErrorDto<CntxPlantillaRateDto?> CntxPlantillaRate_Scroll_Obtener(int codEmpresa, int scrollCode, int? codPlantilla)
         {
             return _bl.CntxPlantillaRate_Scroll_Obtener(codEmpresa, scrollCode, codPlantilla);
         }
 
         [HttpGet("CntxPlantillaRate_Consulta_Obtener")]
-        public ErrorDto<CntxPlantillaRateDto> CntxPlantillaRate_Consulta_Obtener(int codEmpresa, int codPlantilla)
+        public ErrorDto<CntxPlantillaRateDto?> CntxPlantillaRate_Consulta_Obtener(int codEmpresa, int codPlantilla)
         {
             return _bl.CntxPlantillaRate_Consulta_Obtener(codEmpresa, codPlantilla);
         }

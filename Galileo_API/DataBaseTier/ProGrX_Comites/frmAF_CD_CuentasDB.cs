@@ -394,13 +394,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 int nuevoId = ObtenerSiguienteOperacion(codEmpresa);
 
                 var insertResponse = InsertarCuenta(codEmpresa, usuario, cuentaData, nuevoId);
-                if (HasError(insertResponse))
+                if (insertResponse is not null && HasError(insertResponse))
                 {
                     return insertResponse;
                 }
 
                 var actividadesResponse = GuardarActividades(codEmpresa, nuevoId, request.actividades);
-                if (HasError(actividadesResponse))
+                if (actividadesResponse is not null && HasError(actividadesResponse))
                 {
                     return actividadesResponse;
                 }

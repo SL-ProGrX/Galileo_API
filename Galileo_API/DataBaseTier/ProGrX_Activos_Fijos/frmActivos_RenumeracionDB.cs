@@ -61,7 +61,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 string? filtroTexto = filtros?.filtro;
                 bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
                 p.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
-                p.Add("@filtro", tieneFiltro ? $"%{filtroTexto.Trim()}%" : null);
+                p.Add("@filtro", tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
 
                 // Total
                 string qTotal = $@"

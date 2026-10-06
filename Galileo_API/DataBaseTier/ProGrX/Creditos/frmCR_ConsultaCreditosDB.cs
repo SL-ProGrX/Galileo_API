@@ -66,7 +66,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
         /// <param name="CodEmpresa">Código de la empresa que define la conexión de consulta.</param>
         /// <param name="criterio">Cédula o número de operación digitado.</param>
         /// <returns>Cédula que debe utilizar la consulta integrada.</returns>
-        public ErrorDto<string> CR_ConsultaCrdCriterio_Resolver(
+        public ErrorDto<string?> CR_ConsultaCrdCriterio_Resolver(
             int CodEmpresa,
             string criterio)
         {

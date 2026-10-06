@@ -12,7 +12,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         private const int CodigoValidacion = -2;
 
         private const string MensajeCodigoRequerido =
-            "El c&oacute;digo de la devoluci&oacute;n es requerido.";
+            "El código de la devolución es requerido.";
 
         private const string MensajeFechaInicioRequerida =
             "La fecha inicial es requerida.";
@@ -21,10 +21,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             "La fecha de corte es requerida.";
 
         private const string MensajeGarantiaRequerida =
-            "La garant&iacute;a es requerida.";
+            "La garantía es requerida.";
 
         private const string MensajeBaseInvalida =
-            "La base de aplicaci&oacute;n no es v&aacute;lida.";
+            "La base de aplicación no es válida.";
 
         private const string MensajeUsuarioRequerido =
             "El usuario es requerido.";
@@ -42,14 +42,14 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene las garant&iacute;as utilizadas por la tabla
+        /// Obtiene las garantías utilizadas por la tabla
         /// de devoluciones.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <returns>
-        /// Cat&aacute;logo de garant&iacute;as.
+        /// Catálogo de garantías.
         /// </returns>
         public ErrorDto<List<DropDownListaGenericaModel>>
             FSL_TablaDevoluciones_Garantias_Obtener(
@@ -75,13 +75,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 
         /// <summary>
         /// Obtiene la tabla de devoluciones aplicando filtros,
-        /// ordenamiento y paginaci&oacute;n.
+        /// ordenamiento y paginación.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="filtros">
-        /// Filtros y configuraci&oacute;n de la tabla.
+        /// Filtros y configuración de la tabla.
         /// </param>
         /// <returns>
         /// Lista paginada de devoluciones.
@@ -317,14 +317,14 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Registra una nueva devoluci&oacute;n y obtiene el
+        /// Registra una nueva devolución y obtiene el
         /// siguiente consecutivo disponible.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n de la devoluci&oacute;n.
+        /// Información de la devolución.
         /// </param>
         /// <returns>
         /// Resultado del registro.
@@ -432,7 +432,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                     codigo);
 
                 return DbHelper.OkResponse(
-                    "Devoluci&oacute;n registrada correctamente.");
+                    "Devolución registrada correctamente.");
             }
             catch (Exception ex)
             {
@@ -444,16 +444,16 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Actualiza una devoluci&oacute;n existente.
+        /// Actualiza una devolución existente.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n de la devoluci&oacute;n.
+        /// Información de la devolución.
         /// </param>
         /// <returns>
-        /// Resultado de la actualizaci&oacute;n.
+        /// Resultado de la actualización.
         /// </returns>
         public ErrorDto
             FSL_TablaDevoluciones_Devolucion_Actualizar(
@@ -517,9 +517,9 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                     Movimiento = "Modifica",
                     Codigo = request.cod_devolucion,
                     MensajeExito =
-                        "Devoluci&oacute;n actualizada correctamente.",
+                        "Devolución actualizada correctamente.",
                     MensajeSinCambios =
-                        "No se encontr&oacute; la devoluci&oacute;n indicada."
+                        "No se encontró la devolución indicada."
                 };
 
             return FSL_TablaDevoluciones_Operacion_Ejecutar(
@@ -528,19 +528,19 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Elimina una devoluci&oacute;n existente.
+        /// Elimina una devolución existente.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="codDevolucion">
-        /// C&oacute;digo de la devoluci&oacute;n.
+        /// Código de la devolución.
         /// </param>
         /// <param name="usuario">
         /// Usuario responsable.
         /// </param>
         /// <returns>
-        /// Resultado de la eliminaci&oacute;n.
+        /// Resultado de la eliminación.
         /// </returns>
         public ErrorDto
             FSL_TablaDevoluciones_Devolucion_Eliminar(
@@ -582,9 +582,9 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                     Movimiento = "Elimina",
                     Codigo = codDevolucion,
                     MensajeExito =
-                        "Devoluci&oacute;n eliminada correctamente.",
+                        "Devolución eliminada correctamente.",
                     MensajeSinCambios =
-                        "No se encontr&oacute; la devoluci&oacute;n indicada."
+                        "No se encontró la devolución indicada."
                 };
 
             return FSL_TablaDevoluciones_Operacion_Ejecutar(
@@ -593,17 +593,17 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Ejecuta una operaci&oacute;n de mantenimiento y
-        /// registra el movimiento en bit&aacute;cora.
+        /// Ejecuta una operación de mantenimiento y
+        /// registra el movimiento en bitácora.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="operacion">
-        /// Informaci&oacute;n de la operaci&oacute;n.
+        /// Información de la operación.
         /// </param>
         /// <returns>
-        /// Resultado de la operaci&oacute;n.
+        /// Resultado de la operación.
         /// </returns>
         private ErrorDto
             FSL_TablaDevoluciones_Operacion_Ejecutar(
@@ -621,7 +621,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             {
                 return DbHelper.ErrorResponse(
                     response.Description ??
-                    "Ocurri&oacute; un error al procesar la devoluci&oacute;n.");
+                    "Ocurrió un error al procesar la devolución.");
             }
 
             if (response.Result <= 0)
@@ -642,17 +642,17 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Valida la informaci&oacute;n requerida para registrar
-        /// o actualizar una devoluci&oacute;n.
+        /// Valida la información requerida para registrar
+        /// o actualizar una devolución.
         /// </summary>
         /// <param name="request">
-        /// Informaci&oacute;n de la devoluci&oacute;n.
+        /// Información de la devolución.
         /// </param>
         /// <param name="requiereCodigo">
-        /// Indica si se requiere un c&oacute;digo existente.
+        /// Indica si se requiere un código existente.
         /// </param>
         /// <returns>
-        /// Mensaje de validaci&oacute;n o una cadena vac&iacute;a.
+        /// Mensaje de validación o una cadena vacía.
         /// </returns>
         private static string
             FSL_TablaDevoluciones_Request_Validar(
@@ -694,15 +694,15 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Extrae el c&oacute;digo de garant&iacute;a cuando el
-        /// cliente env&iacute;a c&oacute;digo y descripci&oacute;n,
+        /// Extrae el código de garantía cuando el
+        /// cliente envía código y descripción,
         /// conservando el comportamiento de fxCodText en VB6.
         /// </summary>
         /// <param name="garantia">
-        /// Garant&iacute;a recibida.
+        /// Garantía recibida.
         /// </param>
         /// <returns>
-        /// C&oacute;digo de garant&iacute;a normalizado.
+        /// Código de garantía normalizado.
         /// </returns>
         private static string
             FSL_TablaDevoluciones_Garantia_Normalizar(
@@ -720,15 +720,15 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene el primer car&aacute;cter de la base de
-        /// aplicaci&oacute;n, conservando el comportamiento de
+        /// Obtiene el primer carácter de la base de
+        /// aplicación, conservando el comportamiento de
         /// Mid utilizado por VB6.
         /// </summary>
         /// <param name="baseAplicacion">
-        /// Base de aplicaci&oacute;n recibida.
+        /// Base de aplicación recibida.
         /// </param>
         /// <returns>
-        /// C&oacute;digo normalizado de la base.
+        /// Código normalizado de la base.
         /// </returns>
         private static string
             FSL_TablaDevoluciones_Base_Normalizar(
@@ -770,11 +770,11 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Registra el movimiento realizado en la bit&aacute;cora
+        /// Registra el movimiento realizado en la bitácora
         /// general, igual que el formulario VB6.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="usuario">
         /// Usuario responsable.
@@ -783,7 +783,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Movimiento realizado.
         /// </param>
         /// <param name="codigo">
-        /// C&oacute;digo de la devoluci&oacute;n.
+        /// Código de la devolución.
         /// </param>
         private void
             FSL_TablaDevoluciones_Bitacora_Registrar(
@@ -802,7 +802,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                     Modulo = ModuloFosol,
                     Movimiento = movimiento,
                     DetalleMovimiento =
-                        $"Tabla Devoluci&oacute;n Id.:{codigo}"
+                        $"Tabla Devolución Id.:{codigo}"
                 });
         }
 

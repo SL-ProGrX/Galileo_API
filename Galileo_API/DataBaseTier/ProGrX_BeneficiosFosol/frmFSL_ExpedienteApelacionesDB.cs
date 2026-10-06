@@ -190,7 +190,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <returns>
         /// Usuario vinculado.
         /// </returns>
-        public ErrorDto<string>
+        public ErrorDto<string?>
             FSL_ExpedienteApelaciones_UsuarioVinculado_Obtener(
                 int CodEmpresa,
                 string cedula,

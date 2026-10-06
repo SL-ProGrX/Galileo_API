@@ -15,7 +15,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private readonly MCntLinkDB _mCnt;
         private readonly MSecurityMainDb _Security_MainDB;
 
-        public FrmTesConceptosDB(IConfiguration? config)
+        public FrmTesConceptosDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
             _mCnt = new MCntLinkDB(config);

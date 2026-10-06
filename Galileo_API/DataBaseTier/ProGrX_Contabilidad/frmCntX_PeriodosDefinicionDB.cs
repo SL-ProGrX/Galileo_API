@@ -19,7 +19,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codEmpresa">Código de empresa utilizado para seleccionar la conexión.</param>
         /// <param name="codContabilidad">Código de la contabilidad cuyos periodos se consultan.</param>
         /// <returns>Periodo inicial y corte sugeridos para la contabilidad.</returns>
-        public ErrorDto<PeriodosDefinicionDto> Inicial(int codEmpresa, int codContabilidad)
+        public ErrorDto<PeriodosDefinicionDto?> Inicial(int codEmpresa, int codContabilidad)
         {
             const string sql = @"
                 SELECT

@@ -34,10 +34,16 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             if (!filtros.vence)
             {
                 if (filtros.inicioVenc == null)
-                    return DbHelper.CreateErrorResponse("filtros.inicioVenc cannot be null", -1, (List<SysRaExpedientesData>)null);
+                    return DbHelper.CreateErrorResponse<List<SysRaExpedientesData>>(
+                        "filtros.inicioVenc cannot be null",
+                        -1,
+                        null);
 
                 if (filtros.finVenc == null)
-                    return DbHelper.CreateErrorResponse("filtros.finVenc cannot be null", -1, (List<SysRaExpedientesData>)null);
+                    return DbHelper.CreateErrorResponse<List<SysRaExpedientesData>>(
+                        "filtros.finVenc cannot be null",
+                        -1,
+                        null);
 
                 DateTimeOffset fecha_inicio = DateTimeOffset.Parse(filtros.inicioVenc, System.Globalization.CultureInfo.InvariantCulture);
                 DateTimeOffset fecha_fin = DateTimeOffset.Parse(filtros.finVenc, System.Globalization.CultureInfo.InvariantCulture);

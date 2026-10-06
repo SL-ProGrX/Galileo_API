@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using System.Diagnostics.CodeAnalysis;
 using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
@@ -742,12 +743,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             List<string> filtros,
             StringBuilder subTitulo)
         {
-            if (!TieneValorFiltrable(request.Sexo))
+            var sexoValor = request.Sexo;
+            if (!TieneValorFiltrable(sexoValor))
             {
                 return;
             }
 
-            var sexo = request.Sexo.Trim().StartsWith("F", StringComparison.OrdinalIgnoreCase) ? "F" : "M";
+            var sexo = sexoValor.Trim().StartsWith("F", StringComparison.OrdinalIgnoreCase) ? "F" : "M";
             filtros.Add($"vPoliza_Informe_Main.SEXO = '{sexo}'");
             subTitulo.Append($"¦ Sexo: {request.Sexo}");
         }
@@ -757,7 +759,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// </summary>
         /// <param name="valor"></param>
         /// <returns></returns>
-        private static bool TieneValorFiltrable(string? valor)
+        private static bool TieneValorFiltrable([NotNullWhen(true)] string? valor)
         {
             return CrdPolizasReportesHelper.TieneValor(valor) &&
                    !string.Equals(valor, CrdPolizasReportesConstantes.Todos, StringComparison.OrdinalIgnoreCase);
@@ -851,12 +853,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             return $" in Date({inicio:yyyy,MM,dd}) to Date({fin:yyyy,MM,dd})";
         }
 
-        public static string EscaparCrystal(string valor)
+        public static string EscaparCrystal(string? valor)
         {
             return (valor ?? string.Empty).Replace("'", "''");
         }
 
-        public static bool TieneValor(string? valor)
+        public static bool TieneValor([NotNullWhen(true)] string? valor)
         {
             return !string.IsNullOrWhiteSpace(valor);
         }

@@ -76,7 +76,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="scrollCode"></param>
         /// <param name="codUnidad"></param>
         /// <returns></returns>
-        public ErrorDto<ArfUnidadesData> ArfUnidades_Scroll_Obtener(int codEmpresa, int scrollCode, string? codUnidad)
+        public ErrorDto<ArfUnidadesData?> ArfUnidades_Scroll_Obtener(int codEmpresa, int scrollCode, string? codUnidad)
         {
             string query = "select Top 1 COD_LOCAL from ARF_UNIDADES ";
 
@@ -96,7 +96,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (string.IsNullOrWhiteSpace(codResult?.Result))
             {
-                return new ErrorDto<ArfUnidadesData>
+                return new ErrorDto<ArfUnidadesData?>
                 {
                     Code = -2,
                     Description = "No se encontraron registros",
@@ -113,7 +113,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codEmpresa"></param>
         /// <param name="codUnidad"></param>
         /// <returns></returns>
-        public ErrorDto<ArfUnidadesData> ArfUnidades_ConsultaUnidad_Obtener(int codEmpresa, string codUnidad)
+        public ErrorDto<ArfUnidadesData?> ArfUnidades_ConsultaUnidad_Obtener(int codEmpresa, string codUnidad)
         {
             string query = @"select P.*,rtrim(Prov.Descripcion) as ProvDesc, rtrim(Cant.Descripcion) as CantonDesc, rtrim(Dist.Descripcion) as DistDesc
                 from ARF_UNIDADES P 

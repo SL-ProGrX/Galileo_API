@@ -157,7 +157,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// </summary>
         /// <param name="movimiento">Tipo de movimiento seleccionado.</param>
         /// <returns>Nombre seguro de la columna SQL.</returns>
-        private static string ObtenerCampoMovimiento(string movimiento) => movimiento switch
+        private static string ObtenerCampoMovimiento(string? movimiento) => movimiento switch
                 {
                     "Creditos" => "D.monto_credito",
                     "Debitos" => "D.monto_debito",
@@ -169,7 +169,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// </summary>
         /// <param name="signo">Signo seleccionado.</param>
         /// <returns>Operador SQL validado.</returns>
-        private static string ObtenerOperador(string signo) =>
+        private static string ObtenerOperador(string? signo) =>
             signo switch
             {
                 "=" => "=",
@@ -305,4 +305,3 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
     }
 }
-

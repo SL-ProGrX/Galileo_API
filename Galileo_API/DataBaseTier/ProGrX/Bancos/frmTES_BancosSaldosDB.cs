@@ -413,7 +413,7 @@ FETCH NEXT @fetch ROWS ONLY;";
                 decimal vDebitos = 0, vCreditos = 0;
 
                 //Emisiones de Documentos
-                string sqlEmisiones = @"SELECT D.debehaber AS Movimiento, SUM(D.monto) AS Total
+                string sqlEmisiones = @"SELECT D.debehaber AS Movimiento, SUM(D.monto / C.TIPO_CAMBIO)  AS Total
                         FROM Tes_Transacciones C INNER JOIN Tes_Trans_Asiento D ON C.nsolicitud = D.nsolicitud
                         WHERE C.fecha_emision BETWEEN @inicio AND @corte 
                           AND C.estado IN ('I','T','A', 'E')
@@ -434,7 +434,7 @@ FETCH NEXT @fetch ROWS ONLY;";
                 }
 
                 //Anulaciones de Documentos
-                string sqlAnulaciones = @"SELECT D.debehaber AS Movimiento, SUM(D.monto) AS Total
+                string sqlAnulaciones = @"SELECT D.debehaber AS Movimiento, SUM(D.monto / C.TIPO_CAMBIO) AS Total
                         FROM Tes_Transacciones C
                         INNER JOIN Tes_Trans_Asiento D ON C.nsolicitud = D.nsolicitud
                         WHERE C.fecha_anula BETWEEN @inicio AND @corte

@@ -14,7 +14,7 @@ namespace Galileo_API.DataBaseTier.TES
     {
         private readonly PortalDB _portalDB;
 
-        public FrmTesBitacoraEspecialDB(IConfiguration? config)
+        public FrmTesBitacoraEspecialDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
         }

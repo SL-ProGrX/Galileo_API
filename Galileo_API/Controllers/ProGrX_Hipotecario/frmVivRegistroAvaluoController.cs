@@ -20,7 +20,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
 
 
         [HttpPost("Viv_GarantiaAvaluo_Obtener")]
-        public ErrorDto<FrmVivGarantiaAvaluoRegistroResponse> Viv_GarantiaAvaluo_Obtener(
+        public ErrorDto<FrmVivGarantiaAvaluoRegistroResponse?> Viv_GarantiaAvaluo_Obtener(
     int codEmpresa,
     FrmVivGarantiaAvaluoRegistroRequest request)
         {
@@ -36,7 +36,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
         }
 
         [HttpPost("Viv_GarantiaAvaluoMonto_Guardar")]
-        public ErrorDto<FrmVivGarantiaAvaluoMontoCambiarResponse> Viv_GarantiaAvaluoMonto_Guardar(
+        public ErrorDto<FrmVivGarantiaAvaluoMontoCambiarResponse?> Viv_GarantiaAvaluoMonto_Guardar(
             int codEmpresa,
             FrmVivGarantiaAvaluoMontoCambiarRequest request)
         {

@@ -228,6 +228,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     bancos = solicitud.id_banco
                 });
 
+                if (banco is null || transaccion is null)
+                {
+                    throw new InvalidOperationException("No se encontró la información requerida para la reimpresión.");
+                }
+
                 var data = new FrmReporteGlobal
                 {
                     codEmpresa = CodEmpresa,
@@ -265,9 +270,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             TesReImpresionModels solicitud,
             TesReImpresionBancoData banco,
             TesTransaccionDto transaccion,
-            TesReImpresionDoc docFormatos,
+            TesReImpresionDoc? docFormatos,
             bool usuarioTieneFirma)
         {
+            ArgumentNullException.ThrowIfNull(docFormatos);
+
             if (DebeUsarChequeConFirmas(banco, transaccion, usuarioTieneFirma))
             {
                 return !string.IsNullOrEmpty(docFormatos.archivo_cheques_firmas)
@@ -369,6 +376,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             var res = objectResult.Value;
             var json = System.Text.Json.JsonSerializer.Serialize(res);
             var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(json);
+            ArgumentNullException.ThrowIfNull(err);
 
             response.Code = err.Code;
             response.Description = err.Description;

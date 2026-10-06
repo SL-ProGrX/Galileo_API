@@ -104,9 +104,14 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
                 return DbHelper.CreateErrorResponse<SimularCuotasResponse>("Interes fuera de rango.");
 
             var result = _bl.CajasCrdAbonosSt_SimularCuotas(CodEmpresa, req);
+            if (result is null)
+            {
+                return DbHelper.CreateErrorResponse<SimularCuotasResponse>(
+                    "No se recibió respuesta al simular las cuotas.");
+            }
 
             // Capa extra defensiva por si el BL genera más de lo permitido
-            if (result?.Result?.Proyeccion != null && result.Result.Proyeccion.Count > MaxCantidadCuotas)
+            if (result.Result?.Proyeccion != null && result.Result.Proyeccion.Count > MaxCantidadCuotas)
             {
                 result.Result.Proyeccion = result.Result.Proyeccion.Take(MaxCantidadCuotas).ToList();
             }
