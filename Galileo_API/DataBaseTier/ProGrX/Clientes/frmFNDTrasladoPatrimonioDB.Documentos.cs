@@ -18,11 +18,13 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     null);
             }
 
-            return DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-                connection.QueryFirstOrDefault<FndDocumentoConsecutivoResult>(
-                    SpDocsConsecutivo,
-                    new { Tipo = NormalizarTipoDocumento(request.Tipo) },
-                    commandType: System.Data.CommandType.StoredProcedure));
+            return ObtenerSysDocVersion(CodEmpresa) == 1
+                ? ObtenerConsecutivoFndVersionUno(CodEmpresa, request.Tipo, request.Operadora)
+                : DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+                    connection.QueryFirstOrDefault<FndDocumentoConsecutivoResult>(
+                        SpDocsConsecutivo,
+                        new { Tipo = NormalizarTipoDocumento(request.Tipo) },
+                        commandType: System.Data.CommandType.StoredProcedure));
         }
 
         public ErrorDto<FndDocumentoConsecutivoAseResult?> Fnd_TrasladoPatrimonio_DocumentoConsecutivoAse_Obtener(
@@ -37,7 +39,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     null);
             }
 
-            return request.SysDocVersion == 1
+            return ObtenerSysDocVersion(CodEmpresa) == 1
                 ? ObtenerConsecutivoAseVersionUno(CodEmpresa, request.Tipo)
                 : DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
                     connection.QueryFirstOrDefault<FndDocumentoConsecutivoAseResult>(
