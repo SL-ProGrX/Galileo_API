@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
@@ -7,6 +8,7 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class FrmSysRaAutorizadoresController : ControllerBase
     {
         private readonly FrmSysRaAutorizadoresBL _bl;

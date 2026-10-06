@@ -53,6 +53,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
                 return BL_Cajas_Sesion.Cajas_Sesion_Movimientos(CodEmpresa, sesionId);
             }
 
+            [Authorize]
             [HttpGet("TiposIdentificacion_Obtener")]
             public ErrorDto<List<DropDownListaGenericaModel>> TiposIdentificacion_Obtener(int CodCliente)
             {

@@ -10,6 +10,7 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class DataController : ControllerBase
     {
         readonly DataBL Databl;
@@ -93,7 +94,6 @@ namespace Galileo.Controllers
             return Databl.Socios_Obtener(CodCliente, pagina, paginacion, filtro);
         }
 
-        [Authorize]
         [HttpGet("Socios_Obtenerv2")]
         public ErrorDto<TablasListaGenericaModel> Socios_Obtener(int CodEmpresa, string filtro)
         {
@@ -143,7 +143,6 @@ namespace Galileo.Controllers
 
         }
 
-        [Authorize]
         [HttpGet("Personas_Obtener")]
         public ErrorDto<TablasListaGenericaModel> Personas_Obtener(int CodEmpresa, string filtro)
         {
@@ -154,4 +153,3 @@ namespace Galileo.Controllers
     }
 
 }
-

@@ -52,6 +52,7 @@ namespace Galileo.Controllers
         }
 
         [HttpDelete("Core_SubUnidad_Delete")]
+        [Authorize]
         public ErrorDto Core_SubUnidad_Delete(int CodCliente, string cod_unidad, string cntx_unidad)
         {
             return _bl.Core_SubUnidad_Delete(CodCliente, cod_unidad, cntx_unidad);
