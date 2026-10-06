@@ -18,15 +18,25 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
         /// </summary>
         public string GetBasePath(int codEmpresa, string dirRdlc, string? folder = null)
         {
+            return BuildBasePath(dirRdlc, codEmpresa.ToString(), folder);
+        }
+
+        /// <summary>
+        /// Construye la ruta base alternativa para reportes compartidos.
+        /// </summary>
+        public string GetDefaultBasePath(string dirRdlc, string? folder = null)
+        {
+            return BuildBasePath(dirRdlc, DefaultEmpresaSegment, folder);
+        }
+
+        private static string BuildBasePath(string dirRdlc, string empresaSegment, string? folder)
+        {
             if (!string.IsNullOrWhiteSpace(folder) && Path.IsPathRooted(folder))
             {
                 throw new SecurityException("La carpeta especificada no es válida.");
             }
 
             var root = Path.GetFullPath(dirRdlc);
-
-            // Normaliza el código de empresa para que solo se use como segmento de ruta.
-            var empresaSegment = Path.GetFileName(codEmpresa.ToString());
 
             // Normaliza la carpeta opcional para que se use solo como segmento de ruta.
             string? safeFolder = null;
@@ -45,7 +55,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
         /// <summary>
         /// Resuelve la ruta final del reporte usando únicamente extensiones permitidas.
         /// </summary>
-        public string ResolveReportPath(int codEmpresa, string basePath)
+        public string ResolveReportPath(int codEmpresa, string basePath, string? defaultBasePath = null)
         {
             if (string.IsNullOrWhiteSpace(basePath))
                 throw new SecurityException("La ruta base del reporte es requerida.");
@@ -61,34 +71,38 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                 Path.GetFileNameWithoutExtension(normalizedBasePath),
                 "nombreReporte");
 
-            var match = Directory
-                .EnumerateFiles(normalizedDirectory)
-                .Select(Path.GetFullPath)
-                .Where(path => IsUnderDirectory(normalizedDirectory, path))
-                .Where(path => AllowedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
-                .FirstOrDefault(path =>
-                    string.Equals(
-                        Path.GetFileNameWithoutExtension(path),
-                        requestedName,
-                        StringComparison.OrdinalIgnoreCase));
-            if(match == null)
+            var match = FindReportInDirectory(normalizedDirectory, requestedName);
+            if (match == null && !string.IsNullOrWhiteSpace(defaultBasePath))
             {
-                normalizedDirectory = validaRutaFinal(normalizedDirectory, codEmpresa);
-                match = Directory
-                .EnumerateFiles(normalizedDirectory)
-                .Select(Path.GetFullPath)
-                .Where(path => IsUnderDirectory(normalizedDirectory, path))
-                .Where(path => AllowedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
-                .FirstOrDefault(path =>
-                    string.Equals(
-                        Path.GetFileNameWithoutExtension(path),
-                        requestedName,
-                        StringComparison.OrdinalIgnoreCase));
+                var normalizedDefaultDirectory = Path.GetFullPath(defaultBasePath);
+                if (!string.Equals(
+                        normalizedDefaultDirectory,
+                        normalizedDirectory,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    match = FindReportInDirectory(normalizedDefaultDirectory, requestedName);
+                }
             }
 
-            
-
             return match ?? string.Empty;
+        }
+
+        private static string? FindReportInDirectory(string directory, string requestedName)
+        {
+            if (!Directory.Exists(directory))
+            {
+                return null;
+            }
+
+            return Directory
+                .EnumerateFiles(directory)
+                .Select(Path.GetFullPath)
+                .Where(path => IsUnderDirectory(directory, path))
+                .Where(path => AllowedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+                .FirstOrDefault(path => string.Equals(
+                    Path.GetFileNameWithoutExtension(path),
+                    requestedName,
+                    StringComparison.OrdinalIgnoreCase));
         }
 
 
@@ -181,14 +195,5 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             return normalizedCandidate.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string validaRutaFinal(string ruta, int codEmpresa)
-        {
-            //valido si la ruta final con el documento existe si no busco el archivo en la carpeta predeterminada
-            if(!File.Exists(ruta))
-            {
-                ruta = ruta.Replace(codEmpresa.ToString(), DefaultEmpresaSegment);
-            }
-            return ruta;
-        }
     }
 }

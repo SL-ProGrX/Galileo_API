@@ -111,9 +111,10 @@ namespace Galileo.DataBaseTier
 
                 var report = new LocalReport { EnableExternalImages = true };
                 var basePath = _path.GetBasePath(data.codEmpresa, dirRdlc, data.folder ?? null);
+                var defaultBasePath = _path.GetDefaultBasePath(dirRdlc, data.folder ?? null);
 
                 var mainPath = _path.CombineUnderRoot(basePath, reportFile);
-                finalPath = _path.ResolveReportPath(data.codEmpresa, mainPath);
+                finalPath = _path.ResolveReportPath(data.codEmpresa, mainPath, defaultBasePath);
 
                 // CxSuppress: PathTraversal
                 if (!System.IO.File.Exists(finalPath))
@@ -123,8 +124,8 @@ namespace Galileo.DataBaseTier
                 report.LoadReportDefinition(patched);
 
                 var (mainDataSets, subreportNames) = _meta.ReadRdlcMeta(finalPath);
-                var subMeta = _subs.LoadSubreports(data.codEmpresa, report, basePath, subreportNames);
-                var autoAliases = _subs.BuildAutoAliasMap(data.codEmpresa, finalPath, basePath);
+                var subMeta = _subs.LoadSubreports(data.codEmpresa, report, basePath, subreportNames, defaultBasePath);
+                var autoAliases = _subs.BuildAutoAliasMap(data.codEmpresa, finalPath, basePath, defaultBasePath);
 
                 var (reportParams, paramDict, jParams) = _params.Build(
                     data,
@@ -291,8 +292,9 @@ namespace Galileo.DataBaseTier
             ValidateSegment(reportFile, nameof(data.nombreReporte), allowEmpty: false);
 
             var basePath = _path.GetBasePath(data.codEmpresa, dirRdlc, data.folder ?? null);
+            var defaultBasePath = _path.GetDefaultBasePath(dirRdlc, data.folder ?? null);
             var mainPath = _path.CombineUnderRoot(basePath, reportFile);
-            var finalPath = _path.ResolveReportPath(data.codEmpresa, mainPath);
+            var finalPath = _path.ResolveReportPath(data.codEmpresa, mainPath, defaultBasePath);
 
             if (string.IsNullOrWhiteSpace(finalPath) || !File.Exists(finalPath))
                 throw new FileNotFoundException("No se encontró el reporte principal.");
@@ -330,6 +332,7 @@ namespace Galileo.DataBaseTier
             string dirRdlc = GetRequiredParametrerValue(data.codEmpresa, "Rep01");
 
             var basePath = _path.GetBasePath(data.codEmpresa, dirRdlc, data.folder ?? null);
+            var defaultBasePath = _path.GetDefaultBasePath(dirRdlc, data.folder ?? null);
 
             var subreportNames = doc.Descendants()
                 .Where(x => x.Name.LocalName == "Subreport")
@@ -344,7 +347,7 @@ namespace Galileo.DataBaseTier
                 ValidateSegment(subreportName, nameof(subreportName), allowEmpty: false);
 
                 var mainPath = _path.CombineUnderRoot(basePath, subreportName ?? string.Empty);
-                var subPath = _path.ResolveReportPath(data.codEmpresa, mainPath);
+                var subPath = _path.ResolveReportPath(data.codEmpresa, mainPath, defaultBasePath);
 
                 if (string.IsNullOrWhiteSpace(subPath) || !File.Exists(subPath))
                     continue;

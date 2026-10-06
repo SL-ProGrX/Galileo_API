@@ -272,7 +272,9 @@ namespace Galileo.DataBaseTier
 
                 if (!double.TryParse(cuenta, out _))
                 {
-                    return optMensaje == 1 ? "Código de cuenta inválido..." : cuenta;
+                    // No devolver texto recibido en la respuesta HTTP cuando el llamador
+                    // solicita omitir el mensaje de error (optMensaje != 1).
+                    return optMensaje == 1 ? "Código de cuenta inválido..." : string.Empty;
                 }
 
                 if (param.Result == null)
