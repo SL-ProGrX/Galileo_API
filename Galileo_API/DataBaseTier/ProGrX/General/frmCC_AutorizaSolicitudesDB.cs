@@ -450,7 +450,7 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Autoriza una liquidaci&oacute;n general para supervision de tesoreria.
+        /// Autoriza una liquidaci&#243;n general para supervision de tesoreria.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="Usuario"></param>

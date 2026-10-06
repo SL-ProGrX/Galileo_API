@@ -16,7 +16,8 @@ namespace Galileo.DataBaseTier
                 throw new FileNotFoundException("No se encontró el archivo RDLC.");
 
             var xdoc   = XDocument.Load(rdlcPath);
-            var ns     = xdoc.Root.GetDefaultNamespace();
+            var root   = xdoc.Root ?? throw new InvalidDataException("El archivo RDLC no contiene un elemento raíz.");
+            var ns     = root.GetDefaultNamespace();
             var codeNode = xdoc.Descendants(ns + "Code").FirstOrDefault();
 
             if (string.IsNullOrWhiteSpace(codeSection))
@@ -29,7 +30,7 @@ namespace Galileo.DataBaseTier
                     codeText = UpsertFunctionReturn(codeText, kv.Key, kv.Value);
 
                 if (codeNode == null)
-                    xdoc.Root.Add(new XElement(ns + "Code", codeText));
+                    root.Add(new XElement(ns + "Code", codeText));
                 else
                     codeNode.Value = codeText;
 
@@ -38,7 +39,7 @@ namespace Galileo.DataBaseTier
 
             // VB crudo
             if (codeNode == null)
-                xdoc.Root.Add(new XElement(ns + "Code", codeSection));
+                root.Add(new XElement(ns + "Code", codeSection));
             else
                 codeNode.Value = codeSection;
 
@@ -137,11 +138,15 @@ End Function
                 var jo = JObject.Parse(json);
                 foreach (var prop in jo.Properties())
                 {
-                    var t = prop.Value?.Type ?? JTokenType.Null;
+                    var value = prop.Value;
+                    if (value is null)
+                        continue;
+
+                    var t = value.Type;
                     if (t == JTokenType.Boolean)
-                        dict[prop.Name] = ((bool)prop.Value) ? 1 : 0;
+                        dict[prop.Name] = ((bool)value) ? 1 : 0;
                     else if (t == JTokenType.Integer || t == JTokenType.Float)
-                        dict[prop.Name] = Convert.ToInt32(prop.Value.ToString(), CultureInfo.InvariantCulture);
+                        dict[prop.Name] = Convert.ToInt32(value.ToString(), CultureInfo.InvariantCulture);
                 }
                 return true;
             }

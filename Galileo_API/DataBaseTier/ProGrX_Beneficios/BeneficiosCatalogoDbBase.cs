@@ -30,6 +30,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// Construye el texto de filtro y su patrón LIKE. Devuelve nulos cuando no hay filtro.
         /// </summary>
         /// <param name="filtros">Filtros de carga perezosa.</param>
+        ///
         /// <returns>Tupla con el filtro normalizado y su patrón LIKE.</returns>
         protected static (string? filtro, string? like) BuildFiltroLike(FiltrosLazyLoadData filtros)
         {

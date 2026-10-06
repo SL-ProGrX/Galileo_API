@@ -26,6 +26,7 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto<TesAnulacionDocData> TES_Anulacion_Obtener(int CodEmpresa, int solicitud, string usuario)
         {
@@ -59,6 +60,7 @@ namespace Galileo_API.DataBaseTier
         /// Anula un Documento ya emitido y actualiza saldos del Banco.
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <param name="anula"></param>
         /// <returns></returns>
         public ErrorDto TES_Anulacion_Anular(int CodEmpresa, string usuario , TesAnulacionAnulaModel anula)
@@ -111,6 +113,7 @@ namespace Galileo_API.DataBaseTier
         /// Duplica una determinada solicitud ya ingresada a Tesoreria. Tambien duplica
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <param name="anula"></param>
         /// <returns></returns>
         public ErrorDto TES_AnulacionCopiaSolicitud(int CodEmpresa, string usuario, TesAnulacionAnulaModel anula)

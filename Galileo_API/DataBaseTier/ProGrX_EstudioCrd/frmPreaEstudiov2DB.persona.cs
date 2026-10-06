@@ -207,7 +207,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// VB6 (txtCedula_LostFocus ~16804): si la cedula esta en socios se usa su estado;
         /// si no esta pero existe en CRD_PREA_PREANALISIS se marca "No Socio".
         /// </summary>
-        private static string ResolverEstadoPersona(string cedula, string estadoSocio, int? existeEnPreanalisis)
+        private static string ResolverEstadoPersona(string cedula, string? estadoSocio, int? existeEnPreanalisis)
         {
             if (string.IsNullOrWhiteSpace(cedula))
             {
@@ -222,7 +222,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             return existeEnPreanalisis.HasValue ? "No Socio" : string.Empty;
         }
 
-        private static int LeerEdadAplica(IDictionary<string, object> fila)
+        private static int LeerEdadAplica(IDictionary<string, object>? fila)
         {
             if (fila is null)
             {
@@ -232,7 +232,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             return GetInt(new Dictionary<string, object>(fila, StringComparer.OrdinalIgnoreCase), "EDAD_APLICA");
         }
 
-        private static string LeerEdadJustificacion(IDictionary<string, object> fila)
+        private static string LeerEdadJustificacion(IDictionary<string, object>? fila)
         {
             if (fila is null)
             {

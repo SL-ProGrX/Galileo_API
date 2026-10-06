@@ -53,9 +53,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Obtiene el siguiente o anterior plan registrado, dependiendo del valor de scroll 
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="scroll"></param>
-        /// <param name="codPlazoBono"></param>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="scroll">Dirección del desplazamiento solicitado.</param>
+        /// <param name="codPlazoBono">Código del plazo usado como referencia.</param>
         /// <returns></returns>
         public ErrorDto<CrPlazosBonificacionDefinicionData?> CrPlazosBonificacion_Scroll_Obtener(
             int codEmpresa,

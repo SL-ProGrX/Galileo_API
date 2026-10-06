@@ -171,7 +171,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// Método que obtiene la lista de SubCuentas de un contrato
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="cedula"></param>
         /// <param name="operadora"></param>
         /// <param name="plan"></param>
         /// <param name="contrato"></param>
@@ -393,7 +392,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// Método para obtener el consecutivo de un beneficiario por cedula
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="cedula"></param>
         /// <param name="plan"></param>
         /// <param name="contrato"></param>
         /// <param name="operadora"></param>

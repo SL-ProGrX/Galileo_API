@@ -138,7 +138,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         new Galileo.Models.Security.BitacoraInsertarDto
                         {
                             EmpresaId = request.cod_empresa.Value,
-                            Usuario = request.usuario,
+                            Usuario = request.usuario ?? string.Empty,
                             Movimiento = "Elimina Asientos - WEB",
                             DetalleMovimiento =
                                 $"TIPO:{request.tipo_asiento} D:{request.desde} H:{request.hasta}",
@@ -164,7 +164,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codEmpresa">Código de la empresa activa.</param>
         /// <param name="cod_contabilidad">Código de la contabilidad activa.</param>
         /// <returns>Año y mes del primer período abierto.</returns>
-        public ErrorDto<CntxPeriodoActualDto> Cntx_PeriodoActual_Obtener(int codEmpresa,int cod_contabilidad)
+        public ErrorDto<CntxPeriodoActualDto?> Cntx_PeriodoActual_Obtener(int codEmpresa,int cod_contabilidad)
         {
             const string sql = @"SELECT TOP 1
               anio,

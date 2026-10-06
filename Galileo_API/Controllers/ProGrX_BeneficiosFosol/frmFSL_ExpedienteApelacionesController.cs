@@ -80,7 +80,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
 
         [HttpGet(
             "FSL_ExpedienteApelaciones_UsuarioVinculado_Obtener")]
-        public ErrorDto<string>
+        public ErrorDto<string?>
             FSL_ExpedienteApelaciones_UsuarioVinculado_Obtener(
                 int CodEmpresa,
                 string cedula,

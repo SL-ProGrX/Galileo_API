@@ -34,8 +34,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// Consulta los asientos por tipo, año y mes.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
-        /// <param name="param">Parámetros de consulta:
-        /// </param>
+        /// <param name="param">Valor de entrada utilizado por la operación.</param>
         /// <returns>Lista de asientos.</returns>
         public ErrorDto<List<CntXAsientoDto>> Asientos_Lista(int codEmpresa, CntXAsientoParams param)
         {

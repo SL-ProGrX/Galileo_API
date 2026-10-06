@@ -146,8 +146,6 @@ namespace Galileo.DataBaseTier
                 filtros.llave2 = NormalizarFiltroOpcional(filtros.llave2);
                 filtros.llave3 = NormalizarFiltroOpcional(filtros.llave3);
 
-                List<DocumentosArchivoDto> respGen = null;
-
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     // Build parameterized query
@@ -167,8 +165,7 @@ namespace Galileo.DataBaseTier
                         parameters.Add("@llave3", filtros.llave3, DbType.String);
                     }
 
-                    respGen = connection.Query<DocumentosArchivoDto>(query, parameters).ToList();
-                    resp = respGen;
+                    resp = connection.Query<DocumentosArchivoDto>(query, parameters).ToList();
 
                 }
             }

@@ -53,7 +53,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Valida las credenciales del miembro del comit&eacute;.
+        /// Valida las credenciales del miembro del comit&#233;.
         /// </summary>
         public ErrorDto
             FSL_Expediente_Miembro_Validar(
@@ -97,7 +97,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Aplica los c&aacute;lculos FOSOL del expediente.
+        /// Aplica los c&#225;lculos FOSOL del expediente.
         /// </summary>
         public ErrorDto<FslExpedienteAplicarResultado>
             FSL_Expediente_Aplicar(

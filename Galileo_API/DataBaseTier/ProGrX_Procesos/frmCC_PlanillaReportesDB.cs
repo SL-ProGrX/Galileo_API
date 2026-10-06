@@ -69,6 +69,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         /// Obtiene parámetros iniciales de la pantalla.
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="codInstitucion">C&#243;digo que identifica el elemento relacionado.</param>
         /// <returns></returns>
         public ErrorDto<CcPlanillaReportesParametrosInicialesDto> CC_PlanillaReportes_ParametrosIniciales_Obtener(int CodEmpresa,int codInstitucion)
         {

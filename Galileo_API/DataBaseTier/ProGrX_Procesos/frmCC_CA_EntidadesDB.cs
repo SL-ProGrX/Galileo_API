@@ -142,6 +142,7 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Actualiza un registro de entidad
         /// </summary>
+        /// <param name="connection">Conexi&#243;n SQL utilizada por la operaci&#243;n.</param>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
@@ -175,6 +176,7 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Inserta un nuevo registro de entidad
         /// </summary>
+        /// <param name="connection">Conexi&#243;n SQL utilizada por la operaci&#243;n.</param>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <param name="datos"></param>

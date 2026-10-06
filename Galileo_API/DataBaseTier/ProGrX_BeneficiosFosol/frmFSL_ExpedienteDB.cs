@@ -39,7 +39,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <summary>
         /// Obtiene los planes FOSOL activos.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
         /// <returns>Planes activos.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>>
             FSL_Expediente_Planes_Obtener(int CodEmpresa)
@@ -61,10 +61,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene los comit&eacute;s FOSOL activos.
+        /// Obtiene los comit&#233;s FOSOL activos.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <returns>Comit&eacute;s activos.</returns>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <returns>Comit&#233;s activos.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>>
             FSL_Expediente_Comites_Obtener(int CodEmpresa)
         {
@@ -87,7 +87,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <summary>
         /// Obtiene los tipos de enfermedades activos.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
         /// <returns>Enfermedades activas.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>>
             FSL_Expediente_Enfermedades_Obtener(int CodEmpresa)
@@ -111,8 +111,8 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <summary>
         /// Obtiene las causas relacionadas con un plan.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <param name="codPlan">C&oacute;digo del plan.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <param name="codPlan">C&#243;digo del plan.</param>
         /// <returns>Causas del plan.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>>
             FSL_Expediente_Causas_Obtener(

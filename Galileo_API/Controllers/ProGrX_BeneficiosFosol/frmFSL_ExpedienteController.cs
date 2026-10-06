@@ -92,7 +92,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                 codExpediente);
 
         [HttpGet("FSL_Expediente_ResolucionValidaciones_Obtener")]
-        public ErrorDto<FslExpedienteResolucionValidacionesData>
+        public ErrorDto<FslExpedienteResolucionValidacionesData?>
             FSL_Expediente_ResolucionValidaciones_Obtener(
                 int CodEmpresa,
                 [FromQuery(Name = "cod_expediente")] long codExpediente)
@@ -119,7 +119,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                 codExpediente);
 
         [HttpGet("FSL_Expediente_UsuarioVinculado_Obtener")]
-        public ErrorDto<string>
+        public ErrorDto<string?>
             FSL_Expediente_UsuarioVinculado_Obtener(
                 int CodEmpresa,
                 string cedula,

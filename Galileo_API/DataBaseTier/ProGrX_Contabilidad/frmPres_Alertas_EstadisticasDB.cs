@@ -2,7 +2,6 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Contabilidad;
-using Galileo_API.Models.ProGrX_Polizas;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Galileo.Models.ProGrX_Contabilidad;
@@ -21,7 +20,7 @@ namespace Galileo.DataBaseTier.ProGrX_Contabilidad
         /// <summary>
         /// Método para obtener una lista de tipos de alertas estadísticas.
         /// </summary>
-        /// <param name="CodCliente"></param>
+        /// <param name="CodEmpresa">C&#243;digo de la empresa.</param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> PresAlertasEstadisticasTipos_Obtener(int CodEmpresa)
         {
@@ -520,15 +519,7 @@ VALUES
         /// <summary>
         /// Obtiene la bitácora de justificaciones de una alerta presupuestaria.
         /// </summary>
-        /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="codConta">Código de contabilidad.</param>
-        /// <param name="codModelo">Código de modelo.</param>
-        /// <param name="codUnidad">Código de unidad.</param>
-        /// <param name="codCentroCosto">Código de centro de costo.</param>
-        /// <param name="codCuenta">Código de cuenta.</param>
-        /// <param name="anio">Año del periodo.</param>
-        /// <param name="mes">Mes del periodo.</param>
-        /// <param name="tipoAlerta">Tipo de alerta.</param>
+        /// <param name="resquest">Solicitud con los datos de entrada de la operaci&#243;n.</param>
         /// <returns>Lista de movimientos de bitácora.</returns>
         public ErrorDto<List<PresAlertaJustificacionBitacoraData>> PresAlertaJustificacionBitacora_Obtener(
             PresAlertaJustificacionBitRequest resquest)
@@ -1011,18 +1002,6 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     return result;
                 }
 
-                /**
-                ** Se comenta temporalmente hasta validar un presupuesto actualizado 
-                if ((DateTime.Now.Date - cierreFecha.Value.Date).TotalDays > 30)
-                {
-                    result.Code = -1;
-                    result.Description = "El periodo excede los 30 días permitidos para justificar.";
-                    result.Result.permitido_justificar = false;
-                    result.Result.mensaje = result.Description;
-                    return result;
-                }
-                **/
-
                 const string sqlJustifica = @"
 SELECT TOP (1)
       id_periodo
@@ -1143,7 +1122,7 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     request.mes
                 });
 
-                if (periodo == null || (periodo.ESTADO ?? string.Empty) != "C")
+                if (periodo?.ESTADO != "C")
                 {
                     return new ErrorDto
                     {
@@ -1277,21 +1256,6 @@ WHERE COD_CONTABILIDAD = @cod_contabilidad
                     return result;
                 }
 
-                /**
-                Se comenta temporalmente para revisar casos de periodos sin fecha de cierre, pero se deja la validación para futuros ajustes en la regla de negocio.
-                if ((DateTime.Now.Date - cierreFecha.Value.Date).TotalDays > 30)
-                {
-                    result.Code = -1;
-                    result.Result.periodo_registrado = false;
-                    result.Result.puede_guardar_seleccion = true;
-                    result.Result.requiere_configuracion = false;
-                    result.Result.fuera_de_plazo = true;
-                    result.Result.mensaje = "El periodo cerrado excede los 30 días permitidos para configurar justificación.";
-                    result.Description = "El periodo cerrado excede los 30 días permitidos para configurar justificación.";
-                    return result;
-                }
-                **/
-
                 const string sqlJustifica = @"
 SELECT TOP (1)
       INICIO
@@ -1365,6 +1329,15 @@ ORDER BY FECHA DESC;";
                 {
                     Code = -1,
                     Description = validacion.Description
+                };
+            }
+
+            if (validacion.Result == null)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = validacion.Description ?? "No se pudo validar la configuración del periodo."
                 };
             }
 

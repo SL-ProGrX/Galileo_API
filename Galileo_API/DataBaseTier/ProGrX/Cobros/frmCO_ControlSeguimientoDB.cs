@@ -926,7 +926,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        /// <summary>
         public ErrorDto CO_ControlSeguimiento_Registrar(int CodEmpresa, CoControlSegRegistrarDto data)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
@@ -1250,7 +1249,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <summary>
         /// Extrea e interpreta los filtros básicos comunes.
         /// </summary>
-        /// <param name="filtros"></param>
+        /// <param name="filtros">Criterios de búsqueda y filtrado.</param>
         /// <returns></returns>
 
         private static (string Cedula, string? Texto, string? Like, int Pagina, int Fetch, int Offset) ParseFiltrosBasicos(FiltrosLazyLoadData filtros)

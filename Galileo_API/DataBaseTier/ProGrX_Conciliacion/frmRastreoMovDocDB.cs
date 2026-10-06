@@ -314,8 +314,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
         /// <summary>
         /// Valida y normaliza defensivamente los filtros recibidos.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="request">Filtros de consulta recibidos.</param>
         /// <returns></returns>
         private (
             RastreoMovDocFiltrosNormalizados? Filtros,

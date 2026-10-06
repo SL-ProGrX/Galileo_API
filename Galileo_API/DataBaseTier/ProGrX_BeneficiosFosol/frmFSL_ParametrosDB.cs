@@ -367,9 +367,9 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <summary>
         /// Valida y ajusta el valor de acuerdo con el tipo del parámetro.
         /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
+        /// <param name="CodCliente">Código del cliente.</param>
         /// <param name="valor">Valor ingresado.</param>
-        /// <param name="tipo">Tipo configurado para el parámetro.</param>
+        /// <param name="tipo">Tipo de parámetro que determina las reglas de validación.</param>
         /// <returns>Resultado de la validación y valor ajustado.</returns>
         private (
             bool esValido,
@@ -410,7 +410,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Valida parámetros numéricos, decimales y porcentuales.
         /// </summary>
         /// <param name="valor">Valor recibido.</param>
-        /// <param name="tipo">Tipo numérico configurado.</param>
+        /// <param name="tipo">Tipo de parámetro que se valida.</param>
         /// <returns>Resultado de la validación y valor ajustado.</returns>
         private static (
             bool esValido,
@@ -463,9 +463,9 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// <summary>
         /// Valida parámetros de cuenta contable, caracteres y respuestas S/N.
         /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
+        /// <param name="CodCliente">Código del cliente.</param>
         /// <param name="valor">Valor recibido.</param>
-        /// <param name="tipo">Tipo de parámetro configurado.</param>
+        /// <param name="tipo">Tipo de parámetro que se valida.</param>
         /// <returns>Resultado de la validación y valor ajustado.</returns>
         private (
             bool esValido,

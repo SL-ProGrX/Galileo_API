@@ -213,6 +213,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// Inserta o actualiza una entidad pagadora.
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <param name="entidad"></param>
         /// <returns></returns>
         /// 

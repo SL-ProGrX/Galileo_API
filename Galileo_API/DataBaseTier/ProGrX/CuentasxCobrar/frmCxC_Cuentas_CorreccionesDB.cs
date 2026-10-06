@@ -38,7 +38,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 foreach (var item in datos)
                 {
                     string idx = item.IdX.ToString();
-                    string itmx = item.ItmX;
+                    string itmx = item.ItmX ?? string.Empty;
 
                     response.Result.Add(new DropDownListaGenericaModel { item = idx, descripcion = itmx });
                 }
@@ -74,7 +74,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 foreach (var item in datos)
                 {
                     string idx = item.IdX.ToString();
-                    string itmx = item.ItmX;
+                    string itmx = item.ItmX ?? string.Empty;
 
                     response.Result.Add(new DropDownListaGenericaModel { item = idx, descripcion = itmx });
                 }

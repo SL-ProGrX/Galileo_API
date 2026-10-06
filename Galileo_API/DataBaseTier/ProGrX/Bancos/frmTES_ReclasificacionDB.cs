@@ -32,6 +32,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// Método para obtener los bancos activos
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
+        /// <param name="gestion">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TES_ReclasificacionBancos_Obtener(int CodEmpresa,string usuario,string gestion)
         {
@@ -134,7 +136,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     (new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
-                        Usuario = data.usuario,
+                        Usuario = data.usuario ?? string.Empty,
                         DetalleMovimiento = $"Solicitud {data.nsolicitud} reclasificada a Banco {data.bancoDestino}",
                         Movimiento = "RECLASIFICACION - WEB",
                         Modulo = vModulo
@@ -219,7 +221,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     (new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
-                        Usuario = data.usuario,
+                        Usuario = data.usuario ?? string.Empty,
                         DetalleMovimiento = $"Solicitud {data.nsolicitud} reclasificada a Documento {data.ndocumento}",
                         Movimiento = "RECLASIFICACION - WEB",
                         Modulo = vModulo
@@ -344,7 +346,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// Método para obtener la lista de solicitudes de tesorería
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="filtro"></param>
+        /// <param name="filtros">Criterios utilizados para filtrar los resultados.</param>
         /// <returns></returns>
         public ErrorDto<TablasListaGenericaModel> TES_Solicitudes_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
@@ -476,7 +478,7 @@ FETCH NEXT @fetch ROWS ONLY;";
         /// <summary>
         /// Método para obtener los tipos de identificación
         /// </summary>
-        /// <param name="CodCliente"></param>
+        /// <param name="CodEmpresa">C&#243;digo de la empresa.</param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TiposIdentificacion_Obtener(int CodEmpresa)
         {

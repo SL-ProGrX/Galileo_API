@@ -181,7 +181,7 @@ exec spPAT_Concilia_Patronal_Registro
             if (validacionRegistros != null)
             {
                 return DbHelper.CreateErrorResponse<List<FrmAhConciliadorPatronalConciliacionDto>>(
-                    validacionRegistros.Description, -1, result);
+                    validacionRegistros.Description ?? string.Empty, -1, result);
             }
 
             const string sqlConciliacion = @"
@@ -257,7 +257,7 @@ order by x.nombre, x.identificacion;";
             if (validacionRegistros != null)
             {
                 return DbHelper.CreateErrorResponse<List<FrmAhConciliadorPatronalResultadoDto>>(
-                    validacionRegistros.Description,
+                    validacionRegistros.Description ?? string.Empty,
                     -1,
                     result);
             }

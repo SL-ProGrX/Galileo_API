@@ -32,27 +32,27 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
         public ErrorDto<DropDownListaGenericaModel> PolizaDivisasLocal_Consulta(int codEmpresa, int codContabilidad)
         => _db.PolizaDivisasLocal_Consulta(codEmpresa, codContabilidad);
 
-        public ErrorDto<PolizaAseguradoraCorte> PolizaAseguradoraCorte_Valida(int codEmpresa, DateTime corte, string codPoliza, int idFactura)
+        public ErrorDto<PolizaAseguradoraCorte?> PolizaAseguradoraCorte_Valida(int codEmpresa, DateTime corte, string codPoliza, int idFactura)
         => _db.PolizaAseguradoraCorte_Valida(codEmpresa, corte, codPoliza, idFactura);
 
-        public ErrorDto<PolizaAseguradoraCorte> PolizaAseguradoraCorte_Agregar(int codEmpresa, string usuario, PolizaAseguradoraCorteData datos)
+        public ErrorDto<PolizaAseguradoraCorte?> PolizaAseguradoraCorte_Agregar(int codEmpresa, string usuario, PolizaAseguradoraCorteData datos)
         => _db.PolizaAseguradoraCorte_Agregar(codEmpresa, usuario, datos);
 
         public ErrorDto<int> PolizaAseguradoraCorteDetalle_Agregar(int codEmpresa, string usuario, int scFacturaId, IEnumerable<PolizaAseguradoraCorteDetalleData> datos)
         => _db.PolizaAseguradoraCorteDetalle_Agregar(codEmpresa, usuario, scFacturaId, datos);
 
-        public ErrorDto<PolizaAseguradoraCorte> PolizaAseguradoraCorte_Pago(int codEmpresa, string usuario, DateTime corte, string codPoliza, int idFactura)
+        public ErrorDto<PolizaAseguradoraCorte?> PolizaAseguradoraCorte_Pago(int codEmpresa, string usuario, DateTime corte, string codPoliza, int idFactura)
         => _db.PolizaAseguradoraCorte_Pago(codEmpresa, usuario, corte, codPoliza, idFactura);
 
         public ErrorDto<decimal> TipoCambio_Consultar(int codEmpresa, int contabilidad, string divisa)
         => _db.TipoCambio_Consultar(codEmpresa, contabilidad, divisa);
 
-        public ErrorDto<PolizaDatos> PolizaPolizaDatos(int codEmpresa, string codPoliza)
+        public ErrorDto<PolizaDatos?> PolizaPolizaDatos(int codEmpresa, string codPoliza)
         => _db.PolizaPolizaDatos(codEmpresa, codPoliza);
 
         public ErrorDto<List<PolizaAseguradoraCorteDetalleConsulta>> PolizaAseguradoraCorteDetalle_Consulta(int codEmpresa, DateTime corte, string codPoliza, int idFactura)
         => _db.PolizaAseguradoraCorteDetalle_Consulta(codEmpresa, corte, codPoliza, idFactura);
-        public ErrorDto<PolizaDatos> PolizaAseguradoraCorte_Consulta(int codEmpresa, DateTime corte, string codPoliza)
+        public ErrorDto<PolizaDatos?> PolizaAseguradoraCorte_Consulta(int codEmpresa, DateTime corte, string codPoliza)
         => _db.PolizaAseguradoraCorte_Consulta(codEmpresa, corte, codPoliza); 
 
     }

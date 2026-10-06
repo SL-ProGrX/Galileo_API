@@ -816,13 +816,12 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
         /// <summary>
         /// Guarda la asignación de una caja a un servicio de un recaudador
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="cod_recaudador"></param>
-        /// <param name="cod_servicio"></param>
-        /// <param name="cod_caja"></param>
-        /// <param name="asignada">
-        /// </param>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="usuario">Usuario asociado a la operación.</param>
+        /// <param name="cod_recaudador">Código asociado a la operación.</param>
+        /// <param name="cod_servicio">Código asociado a la operación.</param>
+        /// <param name="cod_caja">Código asociado a la operación.</param>
+        /// <param name="asignada">Valor de entrada utilizado por la operación.</param>
         /// </summary>
         /// <returns></returns>
         public ErrorDto Cajas_Recaudadores_Servicios_CajasVinculadas_Guardar(int CodEmpresa, string usuario, string cod_recaudador, string cod_servicio, string cod_caja, short asignada)

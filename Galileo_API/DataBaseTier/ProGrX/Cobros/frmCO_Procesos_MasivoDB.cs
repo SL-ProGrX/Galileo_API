@@ -91,6 +91,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="connection"></param>
         /// <param name="operaciones"></param>
         /// <param name="usuario"></param>
+        /// <param name="modulo">Datos de entrada requeridos por la operaci&#243;n.</param>
         private static void EjecutarCargaMasivaProcesos(IDbConnection connection, IEnumerable<string> operaciones, string usuario, string modulo)
         {
             var numeroLinea = 0;
@@ -195,7 +196,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         ///  Procesa los casos del proceso masivo previamente cargados y revisados, registrando una nota explicativa.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
+        /// <param name="nota">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <param name="usuario"></param>
         /// <param name="modulo"></param>
         /// <returns></returns>

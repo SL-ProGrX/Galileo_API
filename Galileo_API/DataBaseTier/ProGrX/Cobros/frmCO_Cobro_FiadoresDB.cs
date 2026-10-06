@@ -82,7 +82,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
             return CrearOkPendientes(total, Paginar(data, filtrosSeguros).ToList());
         }
 
-        // <summary>
+        /// <summary>
         /// Obtiene la lista de activos con lazyloading.
         /// </summary>
         /// <param name="CodEmpresa"></param>
@@ -111,7 +111,7 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
             return CrearOkActivos(total, Paginar(data, filtrosSeguros).ToList());
         }
 
-        // <summary>
+        /// <summary>
         /// Obtiene la lista de consultas con lazyloading.
         /// </summary>
         /// <param name="CodEmpresa"></param>

@@ -117,7 +117,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             var estado = NormalizarTexto(filtro.estado);
             p.Add("@estadoLike", estado == "T" ? null : $"%{estado}%");
-            p.Add("@cedulaLike", EsCedulaVacia(filtro.cedula) ? null : $"%{filtro.cedula.Trim()}%");
+            var cedula = filtro.cedula;
+            p.Add("@cedulaLike", cedula is null || EsCedulaVacia(cedula) ? null : $"%{cedula.Trim()}%");
             p.Add("@expLike", filtro.noExpediente != null ? $"%{filtro.noExpediente}%" : null);
             p.Add("@usuarioLike", filtro.usuario != null ? $"%{filtro.usuario.Trim().ToUpper()}%" : null);
             p.Add("@filtroLike", string.IsNullOrEmpty(filtro.filtro) ? null : $"%{filtro.filtro}%");

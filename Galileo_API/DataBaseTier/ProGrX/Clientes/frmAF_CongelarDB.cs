@@ -224,6 +224,7 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="filtrosCongelar"></param>
+        /// <param name="filtros">Criterios utilizados para filtrar los resultados.</param>
         /// <returns></returns>
         public ErrorDto<TablasListaGenericaModel> AF_BloqueosCongelamientos_Obtener(int CodEmpresa, string filtrosCongelar, FiltrosLazyLoadData filtros)
         {

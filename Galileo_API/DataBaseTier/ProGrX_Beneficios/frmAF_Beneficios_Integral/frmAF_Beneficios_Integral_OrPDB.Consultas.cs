@@ -98,7 +98,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 return new ErrorDto { Code = -1, Description = result.Description };
             }
 
-            return new ErrorDto { Code = result.Result.Codigo, Description = result.Result.Mensaje };
+            var resultadoValidacion = result.Result!;
+            return new ErrorDto { Code = resultadoValidacion.Codigo, Description = resultadoValidacion.Mensaje };
         }
 
         /// <summary>

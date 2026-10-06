@@ -14,7 +14,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
     {
         private readonly FrmFndConsultaContratosBL _BL;
 
-        public FrmFndConsultaContratosController(IConfiguration? config)
+        public FrmFndConsultaContratosController(IConfiguration config)
         {
             _BL = new FrmFndConsultaContratosBL(config);
         }

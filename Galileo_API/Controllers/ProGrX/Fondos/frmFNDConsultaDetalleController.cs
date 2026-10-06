@@ -12,7 +12,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
     {
         private readonly FrmFndConsultaDetalleBL _BL;
 
-        public FrmFndConsultaDetalleController(IConfiguration? config)
+        public FrmFndConsultaDetalleController(IConfiguration config)
         {
             _BL = new FrmFndConsultaDetalleBL(config);
         }

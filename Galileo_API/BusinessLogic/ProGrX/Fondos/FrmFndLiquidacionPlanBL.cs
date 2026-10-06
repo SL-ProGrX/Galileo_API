@@ -9,7 +9,7 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
     {
         private readonly FrmFndLiquidacionPlanDB _db;
 
-        public FrmFndLiquidacionPlanBL(IConfiguration? config)
+        public FrmFndLiquidacionPlanBL(IConfiguration config)
         {
             _db = new FrmFndLiquidacionPlanDB(config);
         }

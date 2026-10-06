@@ -824,7 +824,16 @@ namespace Galileo_API.DataBaseTier
                 Code = 0,
                 Description = "Ok"
             };
-            _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario).Result;
+            var parametrosSinpeResponse = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario);
+            if (parametrosSinpeResponse.Code != 0 || parametrosSinpeResponse.Result is null)
+            {
+                response.Code = parametrosSinpeResponse.Code.GetValueOrDefault(-1);
+                if (response.Code == 0)
+                    response.Code = -1;
+                response.Description = parametrosSinpeResponse.Description ?? "No fue posible obtener la configuración SINPE de la empresa.";
+                return response;
+            }
+            _parametrosSinpe = parametrosSinpeResponse.Result;
 
 
             var respuesta = new Sinpe_CCD.RespuestaRegistro();
@@ -840,7 +849,7 @@ namespace Galileo_API.DataBaseTier
                     {
                         estadoSinpe = false;
                         idRechazo = 83;
-                        rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result;
+                        rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
                         response = TesEmisionDocumentosSinpeResultado
                             .TES_EmisionDocumentos_Sinpe_CrearRechazo(
                                 idRechazo,
@@ -855,7 +864,7 @@ namespace Galileo_API.DataBaseTier
                         {
                             estadoSinpe = false;
                             idRechazo = respuesta.MotivoError;
-                            rechazo = fxTesConsultaMotivo(CodEmpresa, respuesta.MotivoError).Result;
+                            rechazo = fxTesConsultaMotivo(CodEmpresa, respuesta.MotivoError).Result ?? "Motivo desconocido.";
                             response = TesEmisionDocumentosSinpeResultado
                                 .TES_EmisionDocumentos_Sinpe_CrearRechazo(
                                     idRechazo,
@@ -1065,7 +1074,7 @@ namespace Galileo_API.DataBaseTier
 
                     bodyWCF.body = body;
                     bodyWCF.rastro = fxCrearRastroSINPESIF_CCD(vUsuario).Result;
-                    /**
+                    /*
                     Para pruebas de SINPE
                     **/
                     string json = JsonSerializer.Serialize(bodyWCF);
@@ -1119,7 +1128,16 @@ namespace Galileo_API.DataBaseTier
                 Code = 0,
                 Description = "Ok"
             };
-            _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario).Result;
+            var parametrosSinpeResponse = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario);
+            if (parametrosSinpeResponse.Code != 0 || parametrosSinpeResponse.Result is null)
+            {
+                response.Code = parametrosSinpeResponse.Code.GetValueOrDefault(-1);
+                if (response.Code == 0)
+                    response.Code = -1;
+                response.Description = parametrosSinpeResponse.Description ?? "No fue posible obtener la configuración SINPE de la empresa.";
+                return response;
+            }
+            _parametrosSinpe = parametrosSinpeResponse.Result;
 
             var solicitud = new Galileo.Models.KindoSinpe.TesTransaccion();
             var ElResultadoDeSendTransfer = new ResPINSending();
@@ -1141,7 +1159,7 @@ namespace Galileo_API.DataBaseTier
                         {
                             estadoSinpe = false;
                             idRechazo = 83;
-                            rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result;
+                            rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
                         }
                         else
                         {
@@ -1160,7 +1178,7 @@ namespace Galileo_API.DataBaseTier
                                 else
                                 {
                                     idRechazo = -1;
-                                    rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result;
+                                    rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
                                 }
                             }
                             else
@@ -1248,7 +1266,7 @@ namespace Galileo_API.DataBaseTier
                             //'Se registra el error por servicio no disponible
                             estadoSinpe = false;
                             idRechazo = 83;
-                            rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result;
+                            rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
                             _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Emisión Transferencia Sinpe: {rechazo}", vUsuario);
                         }
                         else
@@ -1259,7 +1277,7 @@ namespace Galileo_API.DataBaseTier
                             {
                                 estadoSinpe = false;
                                 idRechazo = 83;
-                                rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result;
+                                rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
                                 _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Transferencia Sinpe rechazada: {rechazo}", vUsuario);
                             }
                             else
@@ -1380,12 +1398,13 @@ namespace Galileo_API.DataBaseTier
                 TransferData.Transfer.DestinationCustomer.IBAN = solicitud.Cuenta;
                 TransferData.Transfer.DestinationCustomer.Email = solicitud.CorreoNotifica;
 
-                /**
+                /*
                     Para pruebas de SINPE
                     **/
                 string json = JsonSerializer.Serialize(TransferData);
 
-                ElResultadoDeSendTransfer = SendTransfer(CodEmpresa, TransferData, solicitud.UsuarioGenera).Result;
+                ElResultadoDeSendTransfer = SendTransfer(CodEmpresa, TransferData, solicitud.UsuarioGenera).Result
+                    ?? new ResPINSending();
 
                 ErrorDto.Result = ElResultadoDeSendTransfer;
             }
@@ -1571,7 +1590,17 @@ namespace Galileo_API.DataBaseTier
             byte pTipoDocEletronico, string pNotas, string pTipoTramite)
         {
             var response = new ErrorDto<bool>();
-            _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, "ProGrx").Result;
+            var parametrosSinpeResponse = _mKindo.GetUriEmpresa(CodEmpresa, "ProGrx");
+            if (parametrosSinpeResponse.Code != 0 || parametrosSinpeResponse.Result is null)
+            {
+                response.Code = parametrosSinpeResponse.Code.GetValueOrDefault(-1);
+                if (response.Code == 0)
+                    response.Code = -1;
+                response.Description = parametrosSinpeResponse.Description ?? "No fue posible obtener la configuración SINPE de la empresa.";
+                response.Result = false;
+                return response;
+            }
+            _parametrosSinpe = parametrosSinpeResponse.Result;
 
             try
             {
@@ -1993,6 +2022,7 @@ namespace Galileo_API.DataBaseTier
         /// Establece el código SUGEF estándar basado en el tipo de identificación.
         /// </summary>
         /// <param name="TipoId"></param>
+        /// <param name="isPin">Indica si la validaci&#243;n corresponde a un PIN.</param>
         /// <returns></returns>
         private ErrorDto<int> setCodigoSugefEstandar(int? TipoId, bool? isPin = false)
         {

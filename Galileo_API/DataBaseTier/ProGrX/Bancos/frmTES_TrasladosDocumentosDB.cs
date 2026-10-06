@@ -397,7 +397,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var query = "";
                 var valida = fxVerificaLinea(CodEmpresa, Remesa.cod_ubicacion, Linea.nsolicitud, Remesa.estado);
                 if(!valida.Result) {
-                    return DbHelper.ErrorResponse(valida.Description);
+                    return DbHelper.ErrorResponse(valida.Description ?? string.Empty);
                 }
 
                 //Verifica si existe el documento

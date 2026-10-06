@@ -460,7 +460,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         private ErrorDto<TItem> EjecutarConsultaUnica<TItem>(
             int codEmpresa,
             string sql,
-            object parametros,
+            object? parametros,
             string mensajeNoEncontrado,
             string mensajeDb,
             string mensajeGeneral)

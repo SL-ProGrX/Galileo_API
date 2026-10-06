@@ -44,7 +44,6 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de empresa.</param>
         /// <param name="institucion">Código de institución.</param>
         /// <param name="usuario">Usuario que ejecuta el proceso.</param>
-        
         /// <param name="padron">Registros de padrón a procesar.</param>
         /// <returns>Resultado del procesamiento.</returns>
         public ErrorDto AF_PadronSalarios_Padron_Procesar(int CodEmpresa, string institucion, string usuario, List<AfPadronData> padron)

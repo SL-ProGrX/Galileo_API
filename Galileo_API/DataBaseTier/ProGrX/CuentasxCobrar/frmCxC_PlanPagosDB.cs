@@ -40,11 +40,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             var result = DbHelper.ExecuteSingleQuery<CxCPlanPagosOperacionData>(
                 _portalDb, codEmpresa, query, new CxCPlanPagosOperacionData(), new { operacionId });
 
-            if (result.Result == null)
+            return new ErrorDto<CxCPlanPagosOperacionData>
             {
-                result.Result = new CxCPlanPagosOperacionData();
-            }
-            return result;
+                Code = result.Code,
+                Description = result.Description,
+                Result = result.Result ?? new CxCPlanPagosOperacionData()
+            };
         }
 
         /// <summary>
@@ -87,11 +88,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             var result = DbHelper.ExecuteSingleQuery<CxCPlanPagosOperacionResumenData>(
                 _portalDb, codEmpresa, query, new CxCPlanPagosOperacionResumenData(), new { operacionId });
 
-            if (result.Result == null)
+            return new ErrorDto<CxCPlanPagosOperacionResumenData>
             {
-                result.Result = new CxCPlanPagosOperacionResumenData();
-            }
-            return result;
+                Code = result.Code,
+                Description = result.Description,
+                Result = result.Result ?? new CxCPlanPagosOperacionResumenData()
+            };
         }
 
         /// <summary>

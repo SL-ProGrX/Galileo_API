@@ -37,7 +37,9 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         /// Método para obtener las personas asociadas a un plan mutual.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
+        /// <param name="filtro">Criterios utilizados para filtrar los resultados.</param>
+        /// <param name="plan">Plan asociado a la consulta.</param>
+        /// <param name="estado">Estado utilizado para filtrar o actualizar el registro.</param>
         /// <returns></returns>
         public ErrorDto<AfPlanPersonaslLista> AF_PlanMutualPersonas_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro, string? plan, string? estado)
         {

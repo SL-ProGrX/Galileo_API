@@ -591,6 +591,7 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="Cod_Proveedor">Proveedor actual.</param>
+        /// <param name="CodContabilidad">C&#243;digo de la contabilidad asociada.</param>
         /// <param name="Vence">Fecha de corte.</param>
         /// <param name="tipo">Dirección del desplazamiento: asc o desc.</param>
         /// <returns>Proveedor encontrado según el criterio de navegación.</returns>

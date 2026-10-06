@@ -1,64 +1,54 @@
 using System.Text.Json.Serialization;
+
 namespace Galileo.Models.FSL
 {
-    public class FslRequisitosData
+    public sealed class FslRequisitoDto
     {
         public string cod_requisito { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
+        public bool activo { get; set; } = false;
+    }
+
+    public sealed class FslRequisitosFiltros
+    {
+        public int pagina { get; set; } = 0;
+        public int paginacion { get; set; } = 30;
+        public string filtro { get; set; } = string.Empty;
+        public string sort_field { get; set; } = "cod_requisito";
+        public int sort_order { get; set; } = 1;
+    }
+
+    public sealed class FslRequisitoGuardarRequest
+    {
+        public string cod_requisito { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+
         [JsonRequired]
-        public bool activo { get; set; }
-        public string registro_usuario { get; set; } = string.Empty;
+        public bool activo { get; set; } = false;
 
+        public string usuario { get; set; } = string.Empty;
     }
 
-    public class FslRequisitosDataLista
-    {
-        public int Total { get; set; }
-        public List<FslRequisitosData> requisitos { get; set; } = new List<FslRequisitosData>();
-    }
-
-    public class FslPanesCausasLista
-    {
-        public string item { get; set; } = string.Empty;
-        public string descripcion { get; set; } = string.Empty;
-    }
-
-    public class FslRequisitoCausa
+    public sealed class FslRequisitoCausaDto
     {
         public string cod_requisito { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-        public bool opcional { get; set; }
-        public bool asignado { get; set; }
-        public int? cod_causa { get; set; }
-        public int? cod_plan { get; set; }
-
+        public bool opcional { get; set; } = false;
+        public bool asignado { get; set; } = false;
     }
 
-    public class FslPlanes
-    {
-        public string item { get; set; } = string.Empty;
-        public string descripcion { get; set; } = string.Empty;
-    }
-
-    public class FslRequisitoEditar
+    public sealed class FslRequisitoAsignacionRequest
     {
         public string cod_plan { get; set; } = string.Empty;
         public string cod_causa { get; set; } = string.Empty;
         public string cod_requisito { get; set; } = string.Empty;
-        public string descripcion { get; set; } = string.Empty;
-        [JsonRequired]
-        public bool opcional { get; set; }
-        [JsonRequired]
-        public bool asignado { get; set; }
-        public string registro_usuario { get; set; } = string.Empty;
-    }
 
-    public class FslRequisitosFiltros
-    {
-        public int? pagina { get; set; }
-        public int? paginacion { get; set; }
-        public string? filtro { get; set; }
+        [JsonRequired]
+        public bool opcional { get; set; } = false;
 
-        public string? comiteSeleccionado { get; set; }
+        [JsonRequired]
+        public bool asignado { get; set; } = false;
+
+        public string usuario { get; set; } = string.Empty;
     }
 }

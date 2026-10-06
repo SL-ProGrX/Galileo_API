@@ -72,6 +72,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <param name="cedula"></param>
         /// <param name="operacion"></param>
         /// <param name="monto"></param>
+        /// <param name="cod_concepto">C&#243;digo que identifica el elemento relacionado.</param>
         /// <returns></returns>
         public string CxCCuentasSGTAutorizacion_Validar(int codEmpresa, string cedula, int operacion, decimal monto, string cod_concepto)
         {
@@ -102,6 +103,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <param name="codEmpresa"></param>
         /// <param name="cedula"></param>
         /// <param name="monto"></param>
+        /// <param name="cod_concepto">C&#243;digo que identifica el elemento relacionado.</param>
         /// <returns></returns>
         private string PersonaDisponibleValida(int codEmpresa, string cedula, decimal monto, string cod_concepto)
         {

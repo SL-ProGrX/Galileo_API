@@ -14,7 +14,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private readonly string vDateFormat = "yyyy-MM-dd HH:mm:ss";
         private readonly string vMensaje = "El periodo ya se encuentra cerrado, no es posible actualizar el saldo.";
 
-        public FrmTesConciliacionDB(IConfiguration? config)
+        public FrmTesConciliacionDB(IConfiguration config)
         {
             mCntLinkDB = new MCntLinkDB(config);
             _portalDB = new PortalDB(config);
@@ -509,8 +509,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     datos.ForEach(item =>
                     {
-                        string pId_Bancos;
-                        string pId_Libros;
+                        string? pId_Bancos;
+                        string? pId_Libros;
 
                         if (filtro.ubicacion == "B")
                         {
@@ -605,8 +605,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                     datos.ForEach(item =>
                     {
-                        string pId_Bancos;
-                        string pId_Libros;
+                        string? pId_Bancos;
+                        string? pId_Libros;
 
                         if (filtro.ubicacion == "B")
                         {

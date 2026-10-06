@@ -98,7 +98,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = CreateConnection();
-                return DbHelper.CreateOkResponse(connection.QueryFirstOrDefault<T>(sql, parameters));
+                return DbHelper.CreateOkResponse<T?>(connection.QueryFirstOrDefault<T>(sql, parameters));
             }
             catch (Exception ex)
             {
