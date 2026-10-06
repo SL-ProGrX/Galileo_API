@@ -70,6 +70,12 @@
         private const string SqlAseNotaDebitoUpdate = "UPDATE dbo.ase_consecutivos SET CS_NOTA_DEBITO = CS_NOTA_DEBITO + 1;";
         private const string SqlAseNotaCreditoSelect = "SELECT CS_NOTA_CREDITO AS Consecutivo FROM dbo.ase_consecutivos;";
         private const string SqlAseNotaCreditoUpdate = "UPDATE dbo.ase_consecutivos SET CS_NOTA_CREDITO = CS_NOTA_CREDITO + 1;";
+        private const string SqlFndOperadoraConsecutivoReciboSelect = "SELECT ISNULL(RECIBO, 0) AS Consecutivo FROM dbo.Fnd_operadoras WHERE Cod_operadora = @Operadora;";
+        private const string SqlFndOperadoraConsecutivoReciboUpdate = "UPDATE dbo.Fnd_operadoras SET RECIBO = ISNULL(RECIBO, 0) + 1 WHERE Cod_operadora = @Operadora;";
+        private const string SqlFndOperadoraConsecutivoNotaCreditoSelect = "SELECT ISNULL(NOTA_CREDITO, 0) AS Consecutivo FROM dbo.Fnd_operadoras WHERE Cod_operadora = @Operadora;";
+        private const string SqlFndOperadoraConsecutivoNotaCreditoUpdate = "UPDATE dbo.Fnd_operadoras SET NOTA_CREDITO = ISNULL(NOTA_CREDITO, 0) + 1 WHERE Cod_operadora = @Operadora;";
+        private const string SqlFndOperadoraConsecutivoNotaDebitoSelect = "SELECT ISNULL(NOTA_DEBITO, 0) AS Consecutivo FROM dbo.Fnd_operadoras WHERE Cod_operadora = @Operadora;";
+        private const string SqlFndOperadoraConsecutivoNotaDebitoUpdate = "UPDATE dbo.Fnd_operadoras SET NOTA_DEBITO = ISNULL(NOTA_DEBITO, 0) + 1 WHERE Cod_operadora = @Operadora;";
 
         private const string SqlContratoDetalleInsert = @"
                     INSERT INTO dbo.fnd_contratos_detalle

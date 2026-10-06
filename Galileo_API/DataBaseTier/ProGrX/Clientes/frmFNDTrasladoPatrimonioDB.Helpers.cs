@@ -267,9 +267,9 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 string tipo,
                 long operadora)
         {
-            var campo = ObtenerCampoConsecutivoFnd(tipo);
+            var sql = ObtenerSqlConsecutivoFnd(tipo);
 
-            if (campo is null)
+            if (sql is null)
             {
                 return DbHelper.CreateErrorResponse<
                     FndDocumentoConsecutivoResult?>(
@@ -285,11 +285,11 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 {
                     var consecutivo =
                         connection.QueryFirstOrDefault<long>(
-                            $"SELECT ISNULL({campo}, 0) AS Consecutivo FROM dbo.Fnd_operadoras WHERE Cod_operadora = @Operadora;",
+                            sql.Value.SelectSql,
                             new { Operadora = operadora });
 
                     connection.Execute(
-                        $"UPDATE dbo.Fnd_operadoras SET {campo} = ISNULL({campo}, 0) + 1 WHERE Cod_operadora = @Operadora;",
+                        sql.Value.UpdateSql,
                         new { Operadora = operadora });
 
                     return new FndDocumentoConsecutivoResult
@@ -351,13 +351,23 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 new { CodEmpresa = codEmpresa });
         }
 
-        private static string? ObtenerCampoConsecutivoFnd(string tipo)
+        private static (string SelectSql, string UpdateSql)?
+            ObtenerSqlConsecutivoFnd(string tipo)
         {
             return NormalizarTexto(tipo).ToUpperInvariant() switch
             {
-                "RECIBO" or "RE" => "RECIBO",
-                "NOTA CREDITO" or "NC" => "NOTA_CREDITO",
-                "NOTA DEBITO" or "ND" => "NOTA_DEBITO",
+                "RECIBO" or "RE" => (
+                    SqlFndOperadoraConsecutivoReciboSelect,
+                    SqlFndOperadoraConsecutivoReciboUpdate),
+
+                "NOTA CREDITO" or "NC" => (
+                    SqlFndOperadoraConsecutivoNotaCreditoSelect,
+                    SqlFndOperadoraConsecutivoNotaCreditoUpdate),
+
+                "NOTA DEBITO" or "ND" => (
+                    SqlFndOperadoraConsecutivoNotaDebitoSelect,
+                    SqlFndOperadoraConsecutivoNotaDebitoUpdate),
+
                 _ => null
             };
         }
