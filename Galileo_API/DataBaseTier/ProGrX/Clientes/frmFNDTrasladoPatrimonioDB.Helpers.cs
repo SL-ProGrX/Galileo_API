@@ -261,6 +261,55 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     null);
         }
 
+        private ErrorDto<FndDocumentoConsecutivoResult?>
+            ObtenerConsecutivoFndVersionUno(
+                int codEmpresa,
+                string tipo,
+                long operadora)
+        {
+            var campo = ObtenerCampoConsecutivoFnd(tipo);
+
+            if (campo is null)
+            {
+                return DbHelper.CreateErrorResponse<
+                    FndDocumentoConsecutivoResult?>(
+                    "Tipo de documento no soportado para FND SysDocVersion 1.",
+                    -2,
+                    null);
+            }
+
+            var result = DbHelper.WithConn(
+                CreatePortalDb(),
+                codEmpresa,
+                connection =>
+                {
+                    var consecutivo =
+                        connection.QueryFirstOrDefault<long>(
+                            $"SELECT ISNULL({campo}, 0) AS Consecutivo FROM dbo.Fnd_operadoras WHERE Cod_operadora = @Operadora;",
+                            new { Operadora = operadora });
+
+                    connection.Execute(
+                        $"UPDATE dbo.Fnd_operadoras SET {campo} = ISNULL({campo}, 0) + 1 WHERE Cod_operadora = @Operadora;",
+                        new { Operadora = operadora });
+
+                    return new FndDocumentoConsecutivoResult
+                    {
+                        Consecutivo = consecutivo
+                    };
+                });
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse<
+                    FndDocumentoConsecutivoResult?>(
+                    result.Result)
+                : DbHelper.CreateErrorResponse<
+                    FndDocumentoConsecutivoResult?>(
+                    result.Description
+                        ?? "Error obteniendo consecutivo FND.",
+                    result.Code.GetValueOrDefault(-1),
+                    null);
+        }
+
         private static (string SelectSql, string UpdateSql)?
             ObtenerSqlConsecutivoAse(string tipo)
         {
@@ -282,6 +331,33 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     SqlAseNotaCreditoSelect,
                     SqlAseNotaCreditoUpdate),
 
+                _ => null
+            };
+        }
+
+        private int ObtenerSysDocVersion(int codEmpresa)
+        {
+            using var connection = DbHelper.OpenConnection(
+                CreatePortalDb(),
+                codEmpresa);
+
+            const string query = @"
+                SELECT ISNULL(SysDocVersion, 0)
+                FROM dbo.SIF_EMPRESA
+                WHERE PORTAL_ID = @CodEmpresa;";
+
+            return connection.QueryFirstOrDefault<int>(
+                query,
+                new { CodEmpresa = codEmpresa });
+        }
+
+        private static string? ObtenerCampoConsecutivoFnd(string tipo)
+        {
+            return NormalizarTexto(tipo).ToUpperInvariant() switch
+            {
+                "RECIBO" or "RE" => "RECIBO",
+                "NOTA CREDITO" or "NC" => "NOTA_CREDITO",
+                "NOTA DEBITO" or "ND" => "NOTA_DEBITO",
                 _ => null
             };
         }
