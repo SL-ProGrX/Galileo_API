@@ -385,7 +385,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             foreach (var item in asientos)
             {
                 item.cod_unidad = (vSolicitud.cod_unidad ?? string.Empty);
-                item.tipo_cambio = item.cod_divisa == "DOL" ? tipoCambio : 1m;
+                item.tipo_cambio = (item.cod_divisa == "DOL" ) ? tipoCambio : 1m;
                 item.monto = item.monto * tipoCambio;
             }
         }
