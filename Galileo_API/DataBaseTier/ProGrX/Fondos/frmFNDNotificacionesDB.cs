@@ -72,7 +72,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// Método para obtener las operadoras
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="lista"></param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Fnd_Notificaciones_Operadora_Obtener(int CodEmpresa)
         {
@@ -87,7 +86,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// Método para obtener Tipos de Movimientos
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="lista"></param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Fnd_Notificaciones_TipoMov_Obtener(int CodEmpresa)
         {

@@ -120,6 +120,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// Obtiene la lista de conceptos de retención con paginación y filtros.
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="enlace">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <param name="filtros"></param>
         /// <returns></returns>
         public ErrorDto<FndRetencionConceptoLista> FND_RetencionConceptosLista_Obtener(int CodEmpresa, string enlace, Models.FiltrosLazyLoadData filtros)

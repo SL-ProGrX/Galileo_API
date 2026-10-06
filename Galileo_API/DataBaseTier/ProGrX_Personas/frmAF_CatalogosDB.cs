@@ -174,6 +174,7 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         /// <summary>
         /// Inserta un nuevo catálogo.
         /// </summary>
+        /// <param name="connection">Conexi&#243;n SQL utilizada por la operaci&#243;n.</param>
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="catalogo">Datos del catálogo a insertar</param>
@@ -205,6 +206,7 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         /// <summary>
         /// Actualiza un catálogo existente.
         /// </summary>
+        /// <param name="connection">Conexi&#243;n SQL utilizada por la operaci&#243;n.</param>
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="catalogo">Datos del catálogo a actualizar</param>

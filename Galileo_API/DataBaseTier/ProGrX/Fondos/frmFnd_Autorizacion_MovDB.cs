@@ -141,6 +141,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// Método para obtener las autorizaciones de movimientos
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="exporta">Indica si se solicita exportar los resultados.</param>
         /// <param name="data"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
@@ -195,6 +196,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="pGestion"></param>
         /// <param name="pAutorizador"></param>
+        /// <param name="pNota">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <param name="movimiento"></param>
         /// <returns></returns>
         public ErrorDto Fnd_Autorizacion_Mov_Autoriza(int CodEmpresa, string pGestion, string pAutorizador, string pNota, List<FndAutorizacionMovData> movimiento)

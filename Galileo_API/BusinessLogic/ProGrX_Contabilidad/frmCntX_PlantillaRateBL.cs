@@ -14,12 +14,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             _db = new FrmCntXPlantillaRateDb(config);
         }
 
-        public ErrorDto<CntxPlantillaRateDto> CntxPlantillaRate_Scroll_Obtener(int codEmpresa, int scrollCode, int? codPlantilla)
+        public ErrorDto<CntxPlantillaRateDto?> CntxPlantillaRate_Scroll_Obtener(int codEmpresa, int scrollCode, int? codPlantilla)
         {
             return _db.CntxPlantillaRate_Scroll_Obtener(codEmpresa, scrollCode, codPlantilla);
         }
 
-        public ErrorDto<CntxPlantillaRateDto> CntxPlantillaRate_Consulta_Obtener(int codEmpresa, int codPlantilla)
+        public ErrorDto<CntxPlantillaRateDto?> CntxPlantillaRate_Consulta_Obtener(int codEmpresa, int codPlantilla)
         {
             return _db.CntxPlantillaRate_Consulta_Obtener(codEmpresa, codPlantilla);
         }

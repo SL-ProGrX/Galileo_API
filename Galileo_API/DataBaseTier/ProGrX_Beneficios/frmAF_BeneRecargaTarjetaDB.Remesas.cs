@@ -32,7 +32,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             if (result.Code != 0)
             {
-                return DbHelper.ErrorResponse(result.Description);
+                return DbHelper.ErrorResponse(result.Description ?? string.Empty);
             }
 
             return result.Result > 0
@@ -66,7 +66,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             if (result.Code != 0)
             {
-                return DbHelper.ErrorResponse(result.Description);
+                return DbHelper.ErrorResponse(result.Description ?? string.Empty);
             }
 
             return result.Result > 0

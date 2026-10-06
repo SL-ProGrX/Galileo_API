@@ -17,7 +17,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Fondos
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly PortalDB _portalDb;
 
-        public FrmFndConsultaContratosDB(IConfiguration? config)
+        public FrmFndConsultaContratosDB(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
             _portalDb = new PortalDB(config);
@@ -98,7 +98,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Fondos
         /// Método para obtener los subcontratos de un contrato específico
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="operadora"></param>
+        /// <param name="vCedula">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <param name="cod_plan"></param>
         /// <param name="cod_contrato"></param>
         /// <returns></returns>
@@ -147,9 +147,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Fondos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="vCedula"></param>
-        /// <param name="contrato"></param>
-        /// <param name="cod_plan"></param>
-        /// <param name="chkTodas"></param>
+        /// <param name="filtros">Criterios utilizados para filtrar los resultados.</param>
         /// <returns></returns>
         public ErrorDto<List<FndConsultaMovimientosData>> FND_ConsultaContratos_Movimiento_Obtener(
             int CodEmpresa, 

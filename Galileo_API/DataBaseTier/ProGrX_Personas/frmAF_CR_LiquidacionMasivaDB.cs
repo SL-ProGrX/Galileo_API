@@ -52,7 +52,6 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         /// <param name="tipoApl"></param>
         /// <param name="inicio"></param>
         /// <param name="corte"></param>
-        /// <param name="tipo"></param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> AF_LiquidacionMasiva_Obtener_Causas(int CodEmpresa, string? tipoApl = null, DateTime? inicio = null, DateTime? corte = null)
         {

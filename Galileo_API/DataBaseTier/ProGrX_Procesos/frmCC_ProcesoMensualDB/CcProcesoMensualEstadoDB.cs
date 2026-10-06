@@ -139,6 +139,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="gInstitucion">Código de la institución.</param>
+        /// <param name="pasoEjecutado">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <returns>Estado actual del proceso mensual.</returns>
         public ErrorDto<CcProcesoMensualEstadoResponse> CcProcesoMensual_EstadoActualProceso_Obtener(int codEmpresa, int gInstitucion, string? pasoEjecutado = null)
         {

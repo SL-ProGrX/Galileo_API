@@ -186,7 +186,7 @@ namespace Galileo.DataBaseTier
             {
                 return DbHelper.CreateErrorResponse<UsuarioModel?>(ex.Message);
             }
-            return DbHelper.CreateOkResponse(result);
+            return DbHelper.CreateOkResponse<UsuarioModel?>(result);
         }
 
 

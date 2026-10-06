@@ -301,7 +301,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
             string movimiento =
                 CR_frmCR_SeguimientoRecepcionTag_Movimiento_Normalizar(
-                    request.movimiento);
+                    request!.movimiento);
 
             try
             {

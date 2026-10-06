@@ -1,52 +1,154 @@
+using Galileo.DataBaseTier;
 using Galileo.DataBaseTier.ProGrX_BeneficiosFosol;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
+using Newtonsoft.Json;
 
 namespace Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Lógica de negocio de los Requisitos Fosol (frmFSL_Requisitos).
-    /// </summary>
-    public class FrmFslRequisitosBL
+    public sealed class FrmFslRequisitosBL
     {
+        private const int CodigoValidacion = -2;
+
         private readonly FrmFslRequisitosDB _db;
 
-        public FrmFslRequisitosBL(IConfiguration config)
+        public FrmFslRequisitosBL(
+            IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            ArgumentNullException.ThrowIfNull(config);
 
             _db = new FrmFslRequisitosDB(config);
         }
 
-        /// <summary>Lista de requisitos Fosol.</summary>
-        public ErrorDto<FslRequisitosDataLista> FslRequisitos_Obtener(int CodCliente, string filtros)
-            => _db.FslRequisitos_Obtener(CodCliente, filtros);
+        public ErrorDto<
+            FslListaPaginadaDto<FslRequisitoDto>>
+            FSL_Requisitos_Lista_Obtener(
+                int CodEmpresa,
+                string filtros)
+        {
+            if (!FSL_Requisitos_Filtros_Deserializar(
+                filtros,
+                out FslRequisitosFiltros request))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Los filtros enviados no son v&aacute;lidos.",
+                    CodigoValidacion,
+                    new FslListaPaginadaDto<
+                        FslRequisitoDto>());
+            }
 
-        /// <summary>Causas activas de un plan.</summary>
-        public ErrorDto<List<FslPanesCausasLista>> FslPlanesCausa_Obtener(int CodCliente, string cod_plan)
-            => _db.FslPlanesCausa_Obtener(CodCliente, cod_plan);
+            return _db.FSL_Requisitos_Lista_Obtener(
+                CodEmpresa,
+                request);
+        }
 
-        /// <summary>Requisitos y su asignación a una causa/plan.</summary>
-        public ErrorDto<List<FslRequisitoCausa>> FslRequisitoCausa_Obtener(int CodCliente, string cod_plan, string cod_causa)
-            => _db.FslRequisitoCausa_Obtener(CodCliente, cod_plan, cod_causa);
+        public ErrorDto<
+            List<DropDownListaGenericaModel>>
+            FSL_Requisitos_Planes_Obtener(
+                int CodEmpresa)
+        {
+            return _db.FSL_Requisitos_Planes_Obtener(
+                CodEmpresa);
+        }
 
-        /// <summary>Planes Fosol activos.</summary>
-        public ErrorDto<List<FslPlanes>> FslPlanes_Obtener(int CodCliente)
-            => _db.FslPlanes_Obtener(CodCliente);
+        public ErrorDto<
+            List<DropDownListaGenericaModel>>
+            FSL_Requisitos_Causas_Obtener(
+                int CodEmpresa,
+                string codPlan)
+        {
+            return _db.FSL_Requisitos_Causas_Obtener(
+                CodEmpresa,
+                codPlan);
+        }
 
-        /// <summary>Guarda un requisito (inserta o actualiza).</summary>
-        public ErrorDto Requisito_Guardar(int CodCliente, FslRequisitosData requisito)
-            => _db.Requisito_Guardar(CodCliente, requisito);
+        public ErrorDto<
+            List<FslRequisitoCausaDto>>
+            FSL_Requisitos_Asignaciones_Obtener(
+                int CodEmpresa,
+                string codPlan,
+                string codCausa)
+        {
+            return _db
+                .FSL_Requisitos_Asignaciones_Obtener(
+                    CodEmpresa,
+                    codPlan,
+                    codCausa);
+        }
 
-        /// <summary>Elimina un requisito.</summary>
-        public ErrorDto FslRequisito_Eliminar(int CodCliente, string cod_requisito)
-            => _db.FslRequisito_Eliminar(CodCliente, cod_requisito);
+        public ErrorDto
+            FSL_Requisitos_Requisito_Registrar(
+                int CodEmpresa,
+                FslRequisitoGuardarRequest request)
+        {
+            return _db
+                .FSL_Requisitos_Requisito_Registrar(
+                    CodEmpresa,
+                    request);
+        }
 
-        /// <summary>Edita la asignación de un requisito a una causa/plan.</summary>
-        public ErrorDto FslAsignacion_Editar(int CodCliente, FslRequisitoEditar asignacion)
-            => _db.FslAsignacion_Editar(CodCliente, asignacion);
+        public ErrorDto
+            FSL_Requisitos_Requisito_Actualizar(
+                int CodEmpresa,
+                FslRequisitoGuardarRequest request)
+        {
+            return _db
+                .FSL_Requisitos_Requisito_Actualizar(
+                    CodEmpresa,
+                    request);
+        }
+
+        public ErrorDto
+            FSL_Requisitos_Requisito_Eliminar(
+                int CodEmpresa,
+                string codRequisito,
+                string usuario)
+        {
+            return _db
+                .FSL_Requisitos_Requisito_Eliminar(
+                    CodEmpresa,
+                    codRequisito,
+                    usuario);
+        }
+
+        public ErrorDto
+            FSL_Requisitos_Asignacion_Actualizar(
+                int CodEmpresa,
+                FslRequisitoAsignacionRequest request)
+        {
+            return _db
+                .FSL_Requisitos_Asignacion_Actualizar(
+                    CodEmpresa,
+                    request);
+        }
+
+        private static bool
+            FSL_Requisitos_Filtros_Deserializar(
+                string filtros,
+                out FslRequisitosFiltros request)
+        {
+            request = new FslRequisitosFiltros();
+
+            if (string.IsNullOrWhiteSpace(filtros))
+            {
+                return true;
+            }
+
+            try
+            {
+                request =
+                    JsonConvert.DeserializeObject<
+                        FslRequisitosFiltros>(
+                            filtros) ??
+                    new FslRequisitosFiltros();
+
+                return true;
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+        }
     }
 }

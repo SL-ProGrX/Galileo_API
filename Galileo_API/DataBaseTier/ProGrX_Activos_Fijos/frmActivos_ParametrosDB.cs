@@ -173,7 +173,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// Método para actualizar los parámetros generales.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
         private ErrorDto Activos_Parametros_Actualizar(int CodEmpresa, ActivosParametrosData datos)
@@ -208,7 +207,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// Método para insertar los parámetros generales.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
         private ErrorDto Activos_Parametros_Insertar(int CodEmpresa, ActivosParametrosData datos)

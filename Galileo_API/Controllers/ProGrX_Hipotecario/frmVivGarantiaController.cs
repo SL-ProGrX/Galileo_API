@@ -54,7 +54,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
         #region Garantia
 
         [HttpPost("Viv_GarantiaDetalle_Obtener")]
-        public ErrorDto<FrmVivGarantiaDetalleResponse> Viv_GarantiaDetalle_Obtener(
+        public ErrorDto<FrmVivGarantiaDetalleResponse?> Viv_GarantiaDetalle_Obtener(
     int codEmpresa,
     FrmVivGarantiaDetalleRequest request)
         {
@@ -97,7 +97,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
         }
 
         [HttpPost("Viv_GarantiaSocio_Obtener")]
-        public ErrorDto<FrmVivGarantiaSocioItem> Viv_GarantiaSocio_Obtener(
+        public ErrorDto<FrmVivGarantiaSocioItem?> Viv_GarantiaSocio_Obtener(
     int codEmpresa,
     FrmVivGarantiaSocioRequest request)
         {

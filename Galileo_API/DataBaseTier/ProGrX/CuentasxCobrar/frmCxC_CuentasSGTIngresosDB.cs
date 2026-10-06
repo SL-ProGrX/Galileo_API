@@ -69,8 +69,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_CxC
         /// <summary>
         /// Obtiene el centro de costo y la unidad asignada
         /// </summary>
-        /// <param name="cn"></param>
-        /// <param name="usuario"></param>
+        /// <param name="cn">Valor de entrada utilizado por la operación.</param>
+        /// <param name="usuario">Usuario asociado a la operación.</param>
+        ///
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
         private static (string codUnidad, string codCentroCosto) ObtenerOficina(SqlConnection cn, string usuario)

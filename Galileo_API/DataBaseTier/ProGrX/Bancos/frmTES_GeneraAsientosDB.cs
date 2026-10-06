@@ -75,6 +75,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="filtrosTransacciones"></param>
+        /// <param name="filtros">Criterios utilizados para filtrar los resultados.</param>
         /// <returns></returns>
         public ErrorDto<TablasListaGenericaModel> TES_transaccionesAsientos_Obtener(
      int CodEmpresa,

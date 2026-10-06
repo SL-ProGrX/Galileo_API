@@ -64,6 +64,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
         /// <summary>
         /// Normaliza los datos de la solicitud para asegurar que los filtros se apliquen correctamente.
+        /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
         private static PolizasPeConsultasBuscarRequestDto NormalizeRequest(PolizasPeConsultasBuscarRequestDto request)
@@ -152,8 +153,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <summary>
         /// Construye las consultas SQL para buscar pólizas PE según los criterios especificados en la solicitud. La función genera tanto la consulta para obtener los datos paginados como la consulta para contar el total de registros que coinciden con los filtros aplicados. Se utilizan parámetros dinámicos para evitar inyecciones SQL y se construyen las cláusulas WHERE, ORDER BY y de paginación según los filtros y opciones de ordenamiento proporcionados en la solicitud. Si la opción de exportar está activada, no se aplica la paginación para obtener todos los registros que coinciden con los criterios.
         /// </summary>
-        /// <param name="request"></param>
-        /// <param name="esExportar"></param>
+        /// <param name="request">Datos de la solicitud.</param>
+        /// <param name="esExportar">Valor de entrada utilizado por la operación.</param>
+        ///
+        ///
         /// <returns></returns>
         private static (string ListSql, string CountSql, DynamicParameters Parameters) BuildBuscarSql(PolizasPeConsultasBuscarRequestDto request, bool esExportar)
         {
@@ -476,8 +479,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <summary>
         /// Calcula el offset y el pageSize para la paginación de la consulta. Si es una exportación, se devuelven valores que indican que no se debe aplicar paginación (offset 0 y pageSize 0). Para consultas normales, se asegura de que el pageSize sea al menos 1 y que el offset no sea negativo, basándose en los valores proporcionados en la solicitud. Esta función centraliza la lógica de paginación, facilitando su mantenimiento y asegurando un comportamiento consistente en toda la aplicación.
         /// </summary>
-        /// <param name="request"></param>
-        /// <param name="esExportar"></param>
+        /// <param name="request">Datos de la solicitud.</param>
+        /// <param name="esExportar">Valor de entrada utilizado por la operación.</param>
+        ///
         /// <returns></returns>
         private static (int offset, int pageSize) GetPaging(PolizasPeConsultasBuscarRequestDto request, bool esExportar)
         {

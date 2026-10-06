@@ -335,7 +335,7 @@ namespace Galileo.DataBaseTier
                 return DbHelper.CreateErrorResponse(
                     BodegaCodigoRequerido,
                     -2,
-                    (BodegasDto)null);
+                    (BodegasDto?)null);
             }
 
             var result = DbHelper.ExecuteSingleQuery<BodegasDto>(
@@ -353,7 +353,7 @@ namespace Galileo.DataBaseTier
                 : DbHelper.CreateErrorResponse(
                     result.Description ?? ErrorConsultarBodega,
                     result.Code.GetValueOrDefault(-1),
-                    (BodegasDto)null);
+                    (BodegasDto?)null);
         }
 
         /// <summary>
@@ -373,7 +373,7 @@ namespace Galileo.DataBaseTier
                 return DbHelper.CreateErrorResponse(
                     BodegaCodigoRequerido,
                     -2,
-                    (BodegasDto)null);
+                    (BodegasDto?)null);
             }
 
             string direccion = tipo?.Trim().ToLowerInvariant() ?? string.Empty;
@@ -383,7 +383,7 @@ namespace Galileo.DataBaseTier
                 return DbHelper.CreateErrorResponse(
                     "La direcci&oacute;n de navegaci&oacute;n no es v&aacute;lida.",
                     -2,
-                    (BodegasDto)null);
+                    (BodegasDto?)null);
             }
 
             var result = DbHelper.ExecuteSingleQuery<BodegasDto>(
@@ -402,7 +402,7 @@ namespace Galileo.DataBaseTier
                 : DbHelper.CreateErrorResponse(
                     result.Description ?? ErrorNavegarBodegas,
                     result.Code.GetValueOrDefault(-1),
-                    (BodegasDto)null);
+                    (BodegasDto?)null);
         }
 
         /// <summary>

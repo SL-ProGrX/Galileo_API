@@ -144,6 +144,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// Guarda un autorizador de usuario. Si el autorizador ya existe, lo actualiza; si no, lo inserta como nuevo.
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <param name="autorizador"></param>
         /// <returns></returns>
         public ErrorDto Tes_Autorizadores_Guardar(int CodEmpresa,string usuario, TesAutorizadoresDto autorizador)
@@ -273,6 +274,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="nombre"></param>
+        /// <param name="usuario">Usuario asociado a la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto Tes_Autorizadores_Eliminar(int CodEmpresa, string nombre, string usuario)
         {

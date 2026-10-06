@@ -145,6 +145,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="Solicitud"></param>
+        /// <param name="razon">Motivo asociado a la operaci&#243;n.</param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
         public ErrorDto TES_Bloqueos_Solicitud_Bloquear(int CodEmpresa, int Solicitud, string razon ,string Usuario)

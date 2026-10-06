@@ -324,11 +324,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>
         /// Obtiene el historico de actas de comite.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_comite"></param>
-        /// <param name="fecha_inicio"></param>
-        /// <param name="fecha_corte"></param>
-        /// <param name="identificacion"></param>
+        /// <param name="campos">Datos de entrada requeridos por la operaci&#243;n.</param>
+        /// <param name="nombres">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <returns></returns>
         private static object? ValorCampo(IDictionary<string, object> campos, params string[] nombres)
         {

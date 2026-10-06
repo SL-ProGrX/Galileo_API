@@ -32,12 +32,7 @@ namespace Galileo_API.DataBaseTier
         /// Método para aceptar las transferencias bancarias y actualiza los registros correspondientes.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="id_Banco"></param>
-        /// <param name="TipoDoc"></param>
-        /// <param name="plan"></param>
-        /// <param name="usuario"></param>
-        /// <param name="BancoConsec"></param>
-        /// <param name="gstrQuery"></param>
+        /// <param name="transferencia">Datos de la transferencia que se procesar&#225;.</param>
         /// <returns></returns>
         public ErrorDto TES_Transferencia_Aceptar(int CodEmpresa, TesTransferenciasInfo transferencia)
         {
@@ -311,9 +306,7 @@ Where ID_Solicitud = @IdSolicitud";
         /// Método para revertir una transferencia bancaria, actualizando los registros correspondientes.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="id_Banco"></param>
-        /// <param name="TipoDoc"></param>
-        /// <param name="plan"></param>
+        /// <param name="transferencia">Datos de la transferencia que se procesar&#225;.</param>
         /// <returns></returns>
         public ErrorDto TES_Transferencia_Reversar(int CodEmpresa, TesTransferenciasInfo transferencia)
         {

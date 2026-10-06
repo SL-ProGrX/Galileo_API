@@ -53,12 +53,12 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
 
         [Authorize]
         [HttpGet("PolizaAseguradoraCorte_Valida")]
-        public ErrorDto<PolizaAseguradoraCorte> PolizaAseguradoraCorte_Valida(int codEmpresa, DateTime corte, string codPoliza, int idFactura)
+        public ErrorDto<PolizaAseguradoraCorte?> PolizaAseguradoraCorte_Valida(int codEmpresa, DateTime corte, string codPoliza, int idFactura)
         => _bl.PolizaAseguradoraCorte_Valida(codEmpresa, corte, codPoliza, idFactura);
 
         [Authorize]
         [HttpPost("PolizaAseguradoraCorte_Agregar")]
-        public ErrorDto<PolizaAseguradoraCorte> PolizaAseguradoraCorte_Agregar(int codEmpresa, string usuario, [FromBody] PolizaAseguradoraCorteData datos)
+        public ErrorDto<PolizaAseguradoraCorte?> PolizaAseguradoraCorte_Agregar(int codEmpresa, string usuario, [FromBody] PolizaAseguradoraCorteData datos)
         => _bl.PolizaAseguradoraCorte_Agregar(codEmpresa, usuario, datos);
 
         [Authorize]
@@ -68,7 +68,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
 
         [Authorize]
         [HttpGet("PolizaAseguradoraCorte_Pago")]
-        public ErrorDto<PolizaAseguradoraCorte> PolizaAseguradoraCorte_Pago(int codEmpresa, string usuario, DateTime corte, string codPoliza, int idFactura)
+        public ErrorDto<PolizaAseguradoraCorte?> PolizaAseguradoraCorte_Pago(int codEmpresa, string usuario, DateTime corte, string codPoliza, int idFactura)
         => _bl.PolizaAseguradoraCorte_Pago(codEmpresa, usuario, corte, codPoliza, idFactura);
 
         [Authorize]
@@ -78,7 +78,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
 
         [Authorize]
         [HttpGet("PolizaPolizaDatos")]
-        public ErrorDto<PolizaDatos> PolizaPolizaDatos(int codEmpresa, string codPoliza)
+        public ErrorDto<PolizaDatos?> PolizaPolizaDatos(int codEmpresa, string codPoliza)
         => _bl.PolizaPolizaDatos(codEmpresa, codPoliza);
 
         [Authorize]
@@ -88,7 +88,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
 
         [Authorize]
         [HttpGet("PolizaAseguradoraCorte_Consulta")]
-        public ErrorDto<PolizaDatos> PolizaAseguradoraCorte_Consulta(int codEmpresa, DateTime corte, string codPoliza)
+        public ErrorDto<PolizaDatos?> PolizaAseguradoraCorte_Consulta(int codEmpresa, DateTime corte, string codPoliza)
         => _bl.PolizaAseguradoraCorte_Consulta(codEmpresa, corte, codPoliza);
 
     }

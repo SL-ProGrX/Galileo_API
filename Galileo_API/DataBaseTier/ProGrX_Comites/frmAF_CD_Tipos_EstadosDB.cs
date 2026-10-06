@@ -116,7 +116,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         // Inicializa dependencias de acceso a datos.
 
         /// <summary>
-        // Obtiene la lista filtrada, ordenada y paginada.
+        /// Obtiene la lista filtrada, ordenada y paginada.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="filtros"></param>
@@ -144,7 +144,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         }
 
         /// <summary>
-        // Obtiene la lista filtrada, ordenada y paginada.
+        /// Obtiene la lista filtrada, ordenada y paginada.
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="usuario"></param>
@@ -159,7 +159,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 return error;
             }
 
-            var codigo = datos.CodEstado.Trim();
+            var codigo = datos.CodEstado?.Trim() ?? string.Empty;
             var resultado = DbHelper.ExecuteSingleQuery<string>(
                 _portalDb,
                 codEmpresa,
@@ -293,8 +293,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <summary>
         ///  Resuelve el campo y dirección de ordenamiento.
         /// </summary>
-        /// <param name="sortField"></param>
-        /// <param name="sortOrder"></param>
+        /// <param name="sortField">Valor de entrada utilizado por la operación.</param>
+        /// <param name="sortOrder">Valor de entrada utilizado por la operación.</param>
+        ///
         /// <returns></returns>
         private static (string OrderBy, string Direction) ResolveOrder(string? sortField, int? sortOrder)
         {

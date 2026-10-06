@@ -10,7 +10,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Fondos
         private readonly int vModulo = 18; // Módulo de Fondos
         private readonly PortalDB _portalDb;
 
-        public FrmFndConsultaDetalleDB(IConfiguration? config)
+        public FrmFndConsultaDetalleDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
         }

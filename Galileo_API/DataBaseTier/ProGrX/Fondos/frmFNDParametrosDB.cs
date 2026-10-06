@@ -110,6 +110,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="exporta"></param>
+        /// <param name="cod_contabilidad">C&#243;digo de la contabilidad asociada.</param>
         /// <param name="filtro"></param>
         /// <returns></returns>
         public ErrorDto<TablasListaGenericaModel> Fnd_Parametros_Obtener(int CodEmpresa, bool exporta, int cod_contabilidad,  FiltrosLazyLoadData filtro)

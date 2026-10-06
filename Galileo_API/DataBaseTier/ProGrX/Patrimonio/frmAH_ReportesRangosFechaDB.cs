@@ -69,7 +69,7 @@ order by descripcion;";
             FrmAhReportesRangosFechaReporteRequest? request)
         {
             var validacion = AH_ReportesRangosFecha_ValidarRequest(request);
-            if (validacion.Code < 0)
+            if (validacion.Code < 0 || request is null)
             {
                 return validacion;
             }

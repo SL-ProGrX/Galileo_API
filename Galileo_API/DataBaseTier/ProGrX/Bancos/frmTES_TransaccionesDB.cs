@@ -16,7 +16,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
     public class FrmTesTransaccionesDb
     {
-        private readonly IConfiguration? _config;
+        private readonly IConfiguration _config;
         private readonly MTesoreria mTesoreria;
         private readonly MProGrXAuxiliarDB _AuxiliarDB;
         private readonly int vModulo = 9;
@@ -385,7 +385,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             foreach (var item in asientos)
             {
                 item.cod_unidad = (vSolicitud.cod_unidad ?? string.Empty);
-                item.tipo_cambio = item.cod_divisa == "DOL" ? tipoCambio : 1m;
+                item.tipo_cambio = (item.cod_divisa == "DOL" ) ? tipoCambio : 1m;
                 item.monto = item.monto * tipoCambio;
             }
         }
@@ -948,7 +948,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 TES_TransaccionDetalleActualizar(CodEmpresa, transaccion.nsolicitud, (transaccion.asientoDetalle ?? new List<TesTransAsientoDto>()));
 
-                /**Des-Autoriza si existe algun cambio **/
+                /*Des-Autoriza si existe algun cambio **/
                 var queryAuth = @"update T set T.Autoriza = 'N', T.Fecha_Autorizacion = Null, User_Autoriza = Null,
                                     USUARIO_AUTORIZA_ESPECIAL = null, TIPO_GIROSINPE = null
                                    from Tes_Transacciones T  
