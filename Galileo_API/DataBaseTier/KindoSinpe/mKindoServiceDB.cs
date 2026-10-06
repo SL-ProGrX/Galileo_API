@@ -194,7 +194,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             var resultado = new List<CoreInterno.CL_ResultadoValidacion>();
             using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-            foreach (var t in request.Transacciones)
+            foreach (var t in request.Transacciones ?? Array.Empty<CoreInterno.CL_DatosTransaccion>())
             {
                 var cedulaFormateada = formateoCedula(t.Identificacion);
 
@@ -205,7 +205,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                     CODIGO_MONEDA = t.CodigoMoneda,
                     CODIGO_SERVICIO = t.CodigoServicio,
                     MONTO = t.Monto,
-                    REGISTROUSUARIO = request.Rastro.Usuario
+                    REGISTROUSUARIO = request.Rastro?.Usuario
                 });
 
                 var codigoError = Convert.ToInt32((object?)valida?.CODIGO_ERROR);
@@ -710,7 +710,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
             {
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-                string tipo = CuentaIBAN.Substring(8, 2);
+                string tipo = (CuentaIBAN ?? string.Empty).Substring(8, 2);
 
                 int tipoMovimiento;
                 if (tipo == "01")
@@ -1083,6 +1083,11 @@ WHERE REFERENCIA_SINPE = @referencia;";
                     CodigoServicio = Request.codigoServicio
                 });
 
+                if (result is null)
+                {
+                    throw new InvalidOperationException("No se obtuvo el saldo disponible.");
+                }
+
                 bool disponible = Convert.ToBoolean(result.SaldoDisponible);
 
                 resultado.disponible = disponible;
@@ -1231,7 +1236,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
             };
         }
 
-        public static int GetCurrencyCodeId(string currency)
+        public static int GetCurrencyCodeId(string? currency)
         {
             if (string.IsNullOrWhiteSpace(currency))
                 return 0;
@@ -1251,7 +1256,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
             return 0;
         }
 
-        public static string GetCurrencyCodeDes(string currency)
+        public static string GetCurrencyCodeDes(string? currency)
         {
             if (string.IsNullOrWhiteSpace(currency))
                 return "CRC";
@@ -1511,6 +1516,11 @@ WHERE REFERENCIA_SINPE = @referencia;";
                             commandType: CommandType.StoredProcedure
                         );
 
+                if (res is null)
+                {
+                    throw new InvalidOperationException("No se encontró información SINPE para la solicitud.");
+                }
+
                 var infoSinpe = new vInfoSinpe
                 {
                     Cedula = res.Cedula,
@@ -1737,7 +1747,9 @@ WHERE COD_EMPRESA = @codEmpresa;";
                 if (response.Result is not null)
                 {
                     response.Result.Codigo = infoSinpe?.Cedula?.ToString();
-                    response.Result.NombreOrigen = TES_TransaccionesCtaInterna_Obtener(CodEmpresa, Convert.ToInt32(response.Result.id_banco)).Result.cuenta_desc;
+                    var cuentaInterna = TES_TransaccionesCtaInterna_Obtener(CodEmpresa, Convert.ToInt32(response.Result.id_banco)).Result
+                        ?? throw new InvalidOperationException("No se encontró la cuenta interna del banco origen.");
+                    response.Result.NombreOrigen = cuentaInterna.cuenta_desc;
                 }
             }
             catch
@@ -2032,7 +2044,12 @@ WHERE COD_EMPRESA = @codEmpresa;";
 
             var response = conn.QueryFirstOrDefault<dynamic>(Query, new { iban });
 
-            return response != null && response.TIPO_SINPE == 1 && response.SINPE_PRODUCTO == 1;
+            if (response is null)
+            {
+                return false;
+            }
+
+            return response.TIPO_SINPE == 1 && response.SINPE_PRODUCTO == 1;
         }
 
         public void RegistraMovTransito(int CodEmpresa, string cod_referencia, string usuario, int canal, ResSendingDynamic resPIN, TesTransaccion solicitud)
@@ -2042,7 +2059,7 @@ WHERE COD_EMPRESA = @codEmpresa;";
             string Query = @"SELECT COUNT(COD_REFERENCIA) existe
                              FROM SINPE_MOV_TRANSITO WHERE COD_REFERENCIA = @referencia";
 
-             cod_referencia = resPIN.PINSendingResult.SINPERefNumber ?? cod_referencia;
+             cod_referencia = resPIN.PINSendingResult?.SINPERefNumber ?? cod_referencia;
 
             var existe = conn.Query<int>(Query, new { referencia = cod_referencia }).FirstOrDefault();
             
@@ -2156,6 +2173,15 @@ WHERE COD_EMPRESA = @codEmpresa;";
             try
             {
                 var solicitud = fxTesConsultaSolicitud(CodEmpresa,Convert.ToInt32(Nsolicitud)).Result;
+
+                if (solicitud is null)
+                {
+                    return new ErrorDto
+                    {
+                        Code = -1,
+                        Description = "No se encontró la solicitud para validar la divisa."
+                    };
+                }
              
 
                 //1) Consulto Cod Divisa Origen
@@ -2207,7 +2233,7 @@ WHERE COD_EMPRESA = @codEmpresa;";
             }
         }
 
-        private string? ValidaCuentaDestinoIBAN(SqlConnection connection , string cedula, string iban)
+        private string? ValidaCuentaDestinoIBAN(SqlConnection connection , string? cedula, string? iban)
         {
             const string querySolicitud = @"
                 SELECT TOP (1)
@@ -2363,7 +2389,7 @@ WHERE COD_REFERENCIA = @codReferencia;";
             DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, Query, parametros);
         }
 
-        private static string formateoCedula(string cedula)
+        private static string formateoCedula(string? cedula)
         {
             if (string.IsNullOrWhiteSpace(cedula))
             {
