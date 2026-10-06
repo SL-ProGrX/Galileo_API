@@ -1,64 +1,201 @@
+using Galileo.DataBaseTier;
 using Galileo.DataBaseTier.ProGrX_BeneficiosFosol;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
+using Newtonsoft.Json;
 
 namespace Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Lógica de negocio de los Tipos de Aplicación Fosol (frmFSL_TipoAplicacion): planes y causas.
-    /// </summary>
-    public class FrmFslTipoAplicacionBL
+    public sealed class FrmFslTipoAplicacionBl
     {
+        private const int CodigoValidacion = -2;
+
+        private const string MensajeFiltrosInvalidos =
+            "Los filtros enviados no son v&aacute;lidos.";
+
         private readonly FrmFslTipoAplicacionDB _db;
 
-        public FrmFslTipoAplicacionBL(IConfiguration config)
+        public FrmFslTipoAplicacionBl(
+            IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            ArgumentNullException.ThrowIfNull(config);
 
-            _db = new FrmFslTipoAplicacionDB(config);
+            _db = new FrmFslTipoAplicacionDB(
+                config);
         }
 
-        /// <summary>Causas de un plan.</summary>
-        public ErrorDto<CausasDataLista> Causas_Obtener(int CodCliente, string TipoCausa, string Jfiltro)
-            => _db.Causas_Obtener(CodCliente, TipoCausa, Jfiltro);
+        public ErrorDto<
+            FslListaPaginadaDto<
+                FslTipoAplicacionPlanDto>>
+            FSL_TipoAplicacion_Planes_Lista_Obtener(
+                int CodEmpresa,
+                string? filtros)
+        {
+            if (
+                !FSL_TipoAplicacion_Filtros_Deserializar(
+                    filtros,
+                    out FslTipoAplicacionFiltros request)
+            )
+            {
+                return DbHelper.CreateErrorResponse(
+                    MensajeFiltrosInvalidos,
+                    CodigoValidacion,
+                    new FslListaPaginadaDto<
+                        FslTipoAplicacionPlanDto>());
+            }
 
-        /// <summary>Exporta la lista completa de causas de un plan.</summary>
-        public ErrorDto<List<TiposCausaData>> CausasListas_Exportar(int CodCliente, string TipoCausa)
-            => _db.CausasListas_Exportar(CodCliente, TipoCausa);
+            return _db
+                .FSL_TipoAplicacion_Planes_Lista_Obtener(
+                    CodEmpresa,
+                    request);
+        }
 
-        /// <summary>Planes Fosol.</summary>
-        public ErrorDto<PlanesDataLista> Planes_Obtener(int CodCliente, string Jfiltro)
-            => _db.Planes_Obtener(CodCliente, Jfiltro);
+        public ErrorDto<
+            FslListaPaginadaDto<
+                FslTipoAplicacionCausaDto>>
+            FSL_TipoAplicacion_Causas_Lista_Obtener(
+                int CodEmpresa,
+                string? codPlan,
+                string? filtros)
+        {
+            if (
+                !FSL_TipoAplicacion_Filtros_Deserializar(
+                    filtros,
+                    out FslTipoAplicacionFiltros request)
+            )
+            {
+                return DbHelper.CreateErrorResponse(
+                    MensajeFiltrosInvalidos,
+                    CodigoValidacion,
+                    new FslListaPaginadaDto<
+                        FslTipoAplicacionCausaDto>());
+            }
 
-        /// <summary>Exporta la lista completa de planes.</summary>
-        public ErrorDto<List<ListaPlanesData>> PlanesLista_Exportar(int CodCliente)
-            => _db.PlanesLista_Exportar(CodCliente);
+            return _db
+                .FSL_TipoAplicacion_Causas_Lista_Obtener(
+                    CodEmpresa,
+                    codPlan,
+                    request);
+        }
 
-        /// <summary>Lista simple de planes activos.</summary>
-        public ErrorDto<List<ListaPlanesData>> ListaPlanes_Obtener(int CodCliente)
-            => _db.ListaPlanes_Obtener(CodCliente);
+        public ErrorDto<
+            List<DropDownListaGenericaModel>>
+            FSL_TipoAplicacion_Planes_Selector_Obtener(
+                int CodEmpresa)
+        {
+            return _db
+                .FSL_TipoAplicacion_Planes_Selector_Obtener(
+                    CodEmpresa);
+        }
 
-        /// <summary>Inserta un plan (o actualiza si existe).</summary>
-        public ErrorDto Planes_Insertar(int CodCliente, PlanDataInsert planData)
-            => _db.Planes_Insertar(CodCliente, planData);
+        public ErrorDto
+            FSL_TipoAplicacion_Plan_Registrar(
+                int CodEmpresa,
+                FslTipoAplicacionPlanGuardarRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
 
-        /// <summary>Elimina un plan.</summary>
-        public ErrorDto Planes_Eliminar(int CodCliente, string cod_plan)
-            => _db.Planes_Eliminar(CodCliente, cod_plan);
+            return _db
+                .FSL_TipoAplicacion_Plan_Registrar(
+                    CodEmpresa,
+                    request);
+        }
 
-        /// <summary>Inserta una causa (o actualiza si existe).</summary>
-        public ErrorDto Causas_Insertar(int CodCliente, CausaDataInsert causaData)
-            => _db.Causas_Insertar(CodCliente, causaData);
+        public ErrorDto
+            FSL_TipoAplicacion_Plan_Actualizar(
+                int CodEmpresa,
+                FslTipoAplicacionPlanGuardarRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
 
-        /// <summary>Actualiza una causa.</summary>
-        public ErrorDto Causas_Actualizar(int CodCliente, CausaDataInsert causaData)
-            => _db.Causas_Actualizar(CodCliente, causaData);
+            return _db
+                .FSL_TipoAplicacion_Plan_Actualizar(
+                    CodEmpresa,
+                    request);
+        }
 
-        /// <summary>Elimina una causa.</summary>
-        public ErrorDto Causas_Eliminar(int CodCliente, string cod_causa, string cod_plan)
-            => _db.Causas_Eliminar(CodCliente, cod_causa, cod_plan);
+        public ErrorDto
+            FSL_TipoAplicacion_Plan_Eliminar(
+                int CodEmpresa,
+                string? codPlan,
+                string? usuario)
+        {
+            return _db
+                .FSL_TipoAplicacion_Plan_Eliminar(
+                    CodEmpresa,
+                    codPlan,
+                    usuario);
+        }
+
+        public ErrorDto
+            FSL_TipoAplicacion_Causa_Registrar(
+                int CodEmpresa,
+                FslTipoAplicacionCausaGuardarRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            return _db
+                .FSL_TipoAplicacion_Causa_Registrar(
+                    CodEmpresa,
+                    request);
+        }
+
+        public ErrorDto
+            FSL_TipoAplicacion_Causa_Actualizar(
+                int CodEmpresa,
+                FslTipoAplicacionCausaGuardarRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            return _db
+                .FSL_TipoAplicacion_Causa_Actualizar(
+                    CodEmpresa,
+                    request);
+        }
+
+        public ErrorDto
+            FSL_TipoAplicacion_Causa_Eliminar(
+                int CodEmpresa,
+                string? codPlan,
+                string? codCausa,
+                string? usuario)
+        {
+            return _db
+                .FSL_TipoAplicacion_Causa_Eliminar(
+                    CodEmpresa,
+                    codPlan,
+                    codCausa,
+                    usuario);
+        }
+
+        private static bool
+            FSL_TipoAplicacion_Filtros_Deserializar(
+                string? filtros,
+                out FslTipoAplicacionFiltros request)
+        {
+            request =
+                new FslTipoAplicacionFiltros();
+
+            if (string.IsNullOrWhiteSpace(filtros))
+            {
+                return true;
+            }
+
+            try
+            {
+                request =
+                    JsonConvert.DeserializeObject<
+                        FslTipoAplicacionFiltros>(
+                            filtros) ??
+                    new FslTipoAplicacionFiltros();
+
+                return true;
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+        }
     }
 }
