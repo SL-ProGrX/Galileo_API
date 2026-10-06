@@ -7,6 +7,7 @@ using Galileo.BusinessLogic.Auth;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo_API;
+using Galileo_API.Filters;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
@@ -18,6 +19,9 @@ namespace Galileo_API.Extensions;
 public static class ApiHostServiceCollectionExtensions
 {
     public const string CorsPolicyName = "_myAllowSpecificOrigins";
+    private const int HstsMaxAgeSeconds = 31_536_000;
+    private const string StrictTransportSecurityHeaderValue =
+        "max-age=31536000; includeSubDomains; preload";
 
     public static IConfigurationManager AddExternalSettings(
         this IConfigurationManager configuration,
@@ -62,8 +66,13 @@ public static class ApiHostServiceCollectionExtensions
         services.AddSingleton<AuthSessionStore>();
         services.AddSingleton<AccessTokenService>();
         services.AddScoped<AuthBL>();
+        services.AddScoped<CsrfOriginValidationFilter>();
         services.AddScoped<EmpresaAccessFilter>();
-        services.AddControllers(options => options.Filters.AddService<EmpresaAccessFilter>());
+        services.AddControllers(options =>
+        {
+            options.Filters.AddService<CsrfOriginValidationFilter>();
+            options.Filters.AddService<EmpresaAccessFilter>();
+        });
         services.AddAuthorization();
         services.AddRateLimiter(options =>
         {
@@ -137,7 +146,7 @@ public static class ApiHostServiceCollectionExtensions
         {
             options.Preload = true;
             options.IncludeSubDomains = true;
-            options.MaxAge = TimeSpan.FromDays(365);
+            options.MaxAge = TimeSpan.FromSeconds(HstsMaxAgeSeconds);
         });
 
         return services;
@@ -190,6 +199,12 @@ public static class ApiHostServiceCollectionExtensions
                         context.HandleResponse();
                         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                         context.Response.ContentType = "application/json";
+                        if (context.Request.IsHttps)
+                        {
+                            context.Response.Headers["Strict-Transport-Security"] =
+                                StrictTransportSecurityHeaderValue;
+                        }
+
                         var result = JsonSerializer.Serialize(new
                         {
                             error = "Token inválido o no autorizado"
@@ -210,7 +225,7 @@ public static class ApiHostServiceCollectionExtensions
         {
             options.AddPolicy(CorsPolicyName, policy =>
             {
-                policy.SetIsOriginAllowed(origin => IsAllowedOrigin(environment, origin))
+                policy.SetIsOriginAllowed(origin => CorsOrigins.IsAllowedOrigin(environment, origin))
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials();
@@ -227,12 +242,5 @@ public static class ApiHostServiceCollectionExtensions
         cultureInfo.DateTimeFormat.LongTimePattern = "HH:mm:ss";
         CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
         CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
-    }
-
-    private static bool IsAllowedOrigin(IWebHostEnvironment environment, string origin)
-    {
-        return environment.IsDevelopment()
-            ? CorsOrigins.Dev.Contains(origin)
-            : CorsOrigins.Prod.Contains(origin);
     }
 }

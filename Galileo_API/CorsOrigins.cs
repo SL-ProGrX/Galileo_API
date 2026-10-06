@@ -19,4 +19,9 @@ internal static class CorsOrigins
         "https://progrxpruebas.aseccss.com",
         "https://progrxweb.com"
     };
+
+    public static bool IsAllowedOrigin(IWebHostEnvironment environment, string origin)
+    {
+        return (environment.IsDevelopment() ? Dev : Prod).Contains(origin);
+    }
 }
