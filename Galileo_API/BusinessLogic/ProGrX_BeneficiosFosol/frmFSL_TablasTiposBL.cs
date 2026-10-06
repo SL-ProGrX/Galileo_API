@@ -1,40 +1,120 @@
+using Galileo.DataBaseTier;
 using Galileo.DataBaseTier.ProGrX_BeneficiosFosol;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
+using Newtonsoft.Json;
 
 namespace Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Lógica de negocio de los catálogos de Tipos Fosol (frmFSL_TablasTipos).
-    /// </summary>
-    public class FrmFslTablasTiposBL
+    public sealed class FrmFslTablasTiposBl
     {
-        private readonly FrmFslTablasTiposDB _db;
+        private const int CodigoValidacion = -2;
 
-        public FrmFslTablasTiposBL(IConfiguration config)
+        private const string MensajeFiltrosInvalidos =
+            "Los filtros enviados no son v&aacute;lidos.";
+
+        private readonly FrmFslTablasTiposDb _db;
+
+        public FrmFslTablasTiposBl(
+            IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            ArgumentNullException.ThrowIfNull(config);
 
-            _db = new FrmFslTablasTiposDB(config);
+            _db = new FrmFslTablasTiposDb(config);
         }
 
-        /// <summary>Lista de tipos (gestiones, apelaciones o enfermedades).</summary>
-        public ErrorDto<FslTablaTipoLista> FslTablaTipos_Obtener(int CodCliente, string tipo, string? filtro, int? pagina, int? paginacion)
-            => _db.FslTablaTipos_Obtener(CodCliente, tipo, filtro, pagina, paginacion);
+        public ErrorDto<
+            FslListaPaginadaDto<FslTablaTipoDto>>
+            FSL_TablasTipos_Lista_Obtener(
+                int CodEmpresa,
+                string? filtros)
+        {
+            if (
+                !FSL_TablasTipos_Filtros_Deserializar(
+                    filtros,
+                    out FslTablasTiposFiltros request)
+            )
+            {
+                return DbHelper.CreateErrorResponse(
+                    MensajeFiltrosInvalidos,
+                    CodigoValidacion,
+                    new FslListaPaginadaDto<
+                        FslTablaTipoDto>());
+            }
 
-        /// <summary>Actualiza un tipo.</summary>
-        public ErrorDto FslTablaTipos_Actualizar(int CodCliente, string tipo, FslTablaTipoData tipoData)
-            => _db.FslTablaTipos_Actualizar(CodCliente, tipo, tipoData);
+            return _db
+                .FSL_TablasTipos_Lista_Obtener(
+                    CodEmpresa,
+                    request);
+        }
 
-        /// <summary>Inserta un tipo (o actualiza si existe).</summary>
-        public ErrorDto FslTablaTipo_Insertar(int CodCliente, string tipo, string usuario, FslTablaTipoData tipoData)
-            => _db.FslTablaTipo_Insertar(CodCliente, tipo, usuario, tipoData);
+        public ErrorDto
+            FSL_TablasTipos_Tipo_Registrar(
+                int CodEmpresa,
+                FslTablaTipoGuardarRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
 
-        /// <summary>Elimina un tipo.</summary>
-        public ErrorDto FslTablaTipo_Eliminar(int CodCliente, string tipo, string codigo)
-            => _db.FslTablaTipo_Eliminar(CodCliente, tipo, codigo);
+            return _db
+                .FSL_TablasTipos_Tipo_Registrar(
+                    CodEmpresa,
+                    request);
+        }
+
+        public ErrorDto
+            FSL_TablasTipos_Tipo_Actualizar(
+                int CodEmpresa,
+                FslTablaTipoGuardarRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            return _db
+                .FSL_TablasTipos_Tipo_Actualizar(
+                    CodEmpresa,
+                    request);
+        }
+
+        public ErrorDto
+            FSL_TablasTipos_Tipo_Eliminar(
+                int CodEmpresa,
+                string? tipo,
+                string? codigo,
+                string? usuario)
+        {
+            return _db
+                .FSL_TablasTipos_Tipo_Eliminar(
+                    CodEmpresa,
+                    tipo,
+                    codigo,
+                    usuario);
+        }
+
+        private static bool
+            FSL_TablasTipos_Filtros_Deserializar(
+                string? filtros,
+                out FslTablasTiposFiltros request)
+        {
+            request = new FslTablasTiposFiltros();
+
+            if (string.IsNullOrWhiteSpace(filtros))
+            {
+                return true;
+            }
+
+            try
+            {
+                request =
+                    JsonConvert.DeserializeObject<
+                        FslTablasTiposFiltros>(
+                            filtros) ??
+                    new FslTablasTiposFiltros();
+
+                return true;
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+        }
     }
 }
