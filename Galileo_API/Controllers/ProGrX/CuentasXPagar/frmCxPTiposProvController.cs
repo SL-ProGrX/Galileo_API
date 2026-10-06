@@ -1,4 +1,5 @@
 ﻿
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
@@ -8,6 +9,7 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class FrmCxPTiposProvController : ControllerBase
     {
         private readonly FrmCxPTiposProvBL _bl;
