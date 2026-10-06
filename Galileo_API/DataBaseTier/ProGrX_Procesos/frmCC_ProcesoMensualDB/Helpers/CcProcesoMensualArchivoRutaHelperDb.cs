@@ -295,6 +295,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             {
                 throw new ArgumentException("El nombre del archivo no es válido.", nameof(nombreArchivo));
             }
+
+            if (nombreArchivoSeguro is "." or "..")
+            {
+                throw new ArgumentException("El nombre del archivo no es válido.", nameof(nombreArchivo));
+            }
+
             if (Path.IsPathRooted(nombreArchivoSeguro))
             {
                 throw new ArgumentException("El nombre del archivo no es válido.", nameof(nombreArchivo));
@@ -521,7 +527,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
                 nombre = nombre.Replace(caracter, '_');
             }
 
-            return nombre;
+            return nombre.All(caracter => caracter == '.')
+                ? NombreInstitucionDefault
+                : nombre;
         }
 
         /// <summary>
@@ -604,4 +612,3 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
         }
     }
 }
-

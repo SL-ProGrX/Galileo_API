@@ -30,14 +30,19 @@ namespace Galileo.DataBaseTier
         // =================== CARGA DE SUBREPORTES =======================
         // ================================================================
 
-        public Dictionary<string, List<RdlcDataSetMeta>> LoadSubreports(int codEmpresa, LocalReport report, string basePath, IEnumerable<string> subreportNames)
+        public Dictionary<string, List<RdlcDataSetMeta>> LoadSubreports(
+            int codEmpresa,
+            LocalReport report,
+            string basePath,
+            IEnumerable<string> subreportNames,
+            string? defaultBasePath = null)
         {
             var subMeta = new Dictionary<string, List<RdlcDataSetMeta>>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var subName in subreportNames)
             {
                 var mainPath = _paths.CombineUnderRoot(basePath, subName);
-                var subPath = _paths.ResolveReportPath(codEmpresa, mainPath);
+                var subPath = _paths.ResolveReportPath(codEmpresa, mainPath, defaultBasePath);
                 if (string.IsNullOrWhiteSpace(subPath) || !File.Exists(subPath))
                     continue;
 
@@ -55,14 +60,18 @@ namespace Galileo.DataBaseTier
         // =================== ALIAS AUTOMÁTICOS ==========================
         // ================================================================
 
-        public Dictionary<string, Dictionary<string, string>> BuildAutoAliasMap(int codEmpresa, string parentRdlcPath, string basePath)
+        public Dictionary<string, Dictionary<string, string>> BuildAutoAliasMap(
+            int codEmpresa,
+            string parentRdlcPath,
+            string basePath,
+            string? defaultBasePath = null)
         {
             var parentMap = ReadParentSubreportParamNames(parentRdlcPath);
             var result = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var kv in parentMap)
             {
-                var alias = BuildAliasForSubreport(codEmpresa, kv.Key, kv.Value, basePath);
+                var alias = BuildAliasForSubreport(codEmpresa, kv.Key, kv.Value, basePath, defaultBasePath);
                 if (alias.Count > 0)
                     result[kv.Key] = alias;
             }
@@ -70,12 +79,17 @@ namespace Galileo.DataBaseTier
             return result;
         }
 
-        private Dictionary<string, string> BuildAliasForSubreport(int codEmpresa,string subName, List<string> parentParams, string basePath)
+        private Dictionary<string, string> BuildAliasForSubreport(
+            int codEmpresa,
+            string subName,
+            List<string> parentParams,
+            string basePath,
+            string? defaultBasePath)
         {
             var alias = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             var mainPath = _paths.CombineUnderRoot(basePath, subName);
-            var childPath = _paths.ResolveReportPath(codEmpresa, mainPath);
+            var childPath = _paths.ResolveReportPath(codEmpresa, mainPath, defaultBasePath);
 
             if (string.IsNullOrWhiteSpace(childPath) || !File.Exists(childPath))
                 return alias;
