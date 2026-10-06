@@ -202,7 +202,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
             string movimiento =
                 FND_frmFNDRecepcionLiqFondosTags_Movimiento_Normalizar(
-                    request!.movimiento);
+                    request.movimiento);
 
             if (string.IsNullOrEmpty(movimiento))
             {

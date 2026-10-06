@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using System.Diagnostics.CodeAnalysis;
-using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Conciliacion;
@@ -119,12 +118,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                 AutoVerCuentasSaldosCuentaQuery? request,
                 string? auxiliar)
         {
+            if (request is null)
+            {
+                return CrearErrorLista<AutoVerCuentasSaldosTendenciaData>(
+                    "La solicitud no puede ser nula.");
+            }
+
             var validacion =
                 ValidarCuentaPeriodo(
                     codEmpresa,
                     request);
 
-            if (request is null || !validacion.valido)
+            if (!validacion.valido)
             {
                 return CrearErrorLista<AutoVerCuentasSaldosTendenciaData>(
                     validacion.mensaje);
@@ -173,12 +178,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                 int codEmpresa,
                 AutoVerCuentasSaldosCuentaQuery? request)
         {
+            if (request is null)
+            {
+                return CrearErrorLista<AutoVerCuentasSaldosAsignacionData>(
+                    "La solicitud no puede ser nula.");
+            }
+
             var validacion =
                 ValidarCuentaPeriodo(
                     codEmpresa,
                     request);
 
-            if (request is null || !validacion.valido)
+            if (!validacion.valido)
             {
                 return CrearErrorLista<AutoVerCuentasSaldosAsignacionData>(
                     validacion.mensaje);
@@ -388,7 +399,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                     codEmpresa,
                     request);
 
-            if (request is null || !validacion.valido)
+            if (!validacion.valido)
             {
                 return CrearErrorLista<AutoVerCuentasSaldosAnaliticoData>(
                     validacion.mensaje);

@@ -1,5 +1,4 @@
 using Dapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Data.SqlClient;
 using System.Data;
 using Galileo.Models;
@@ -121,7 +120,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                         registraUser = (beneficio.registra_user ?? string.Empty).ToUpper(),
                         estado,
                         notas = beneficio.notas,
-                        solicita = beneficio.cedula!.Trim(),
+                        solicita = beneficio.cedula.Trim(),
                         nombre = beneficio.nombre,
                         tipo = tipoItem,
                         codOficina = empresa[0].Titular,

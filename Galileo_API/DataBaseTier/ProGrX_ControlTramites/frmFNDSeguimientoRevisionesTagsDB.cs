@@ -395,7 +395,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
                         var parametrosClave = new
                         {
-                            Cedula = request!.cedula.Trim(),
+                            Cedula = request.cedula.Trim(),
                             Modulo,
                             CodPlan = request.cod_plan.Trim(),
                             CodContrato = request.cod_contrato.ToString(),
