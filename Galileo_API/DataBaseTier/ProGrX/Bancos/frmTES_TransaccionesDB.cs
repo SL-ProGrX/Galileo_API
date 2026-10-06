@@ -16,7 +16,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
     public class FrmTesTransaccionesDb
     {
-        private readonly IConfiguration? _config;
+        private readonly IConfiguration _config;
         private readonly MTesoreria mTesoreria;
         private readonly MProGrXAuxiliarDB _AuxiliarDB;
         private readonly int vModulo = 9;

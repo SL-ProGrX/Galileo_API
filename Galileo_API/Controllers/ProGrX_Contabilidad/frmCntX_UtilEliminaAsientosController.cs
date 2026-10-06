@@ -41,7 +41,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
 
         [HttpGet]
         [Route("Cntx_PeriodoActual_Obtener")]
-        public ErrorDto<CntxPeriodoActualDto> PeriodoActual(int codEmpresa, int cod_contabilidad)
+        public ErrorDto<CntxPeriodoActualDto?> PeriodoActual(int codEmpresa, int cod_contabilidad)
         {
             return _bl.Cntx_PeriodoActual_Obtener(codEmpresa, cod_contabilidad);
         }

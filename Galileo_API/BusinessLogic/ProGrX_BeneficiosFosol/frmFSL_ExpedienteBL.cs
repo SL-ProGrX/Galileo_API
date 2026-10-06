@@ -77,7 +77,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol
                 CodEmpresa,
                 codExpediente);
 
-        public ErrorDto<FslExpedienteResolucionValidacionesData>
+        public ErrorDto<FslExpedienteResolucionValidacionesData?>
             FSL_Expediente_ResolucionValidaciones_Obtener(
                 int CodEmpresa,
                 long codExpediente)
@@ -101,7 +101,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol
                 CodEmpresa,
                 codExpediente);
 
-        public ErrorDto<string>
+        public ErrorDto<string?>
             FSL_Expediente_UsuarioVinculado_Obtener(
                 int CodEmpresa,
                 string cedula,

@@ -213,12 +213,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             };
         }
 
-        private static string TES_TransferenciaReversa_NormalizarTexto(string valor)
+        private static string TES_TransferenciaReversa_NormalizarTexto(string? valor)
         {
             return string.IsNullOrWhiteSpace(valor) ? string.Empty : valor.Trim();
         }
 
-        private static string TES_TransferenciaReversa_CrearLike(string valor)
+        private static string TES_TransferenciaReversa_CrearLike(string? valor)
         {
             return string.IsNullOrWhiteSpace(valor) ? string.Empty : $"%{valor}%";
         }
@@ -882,7 +882,7 @@ WHERE T.NSOLICITUD = @Cod_Referencia";
             _mSecurity.Bitacora(new BitacoraInsertarDto
             {
                 EmpresaId = reversa.codEmpresa,
-                Usuario = reversa.usuario,
+                Usuario = reversa.usuario ?? string.Empty,
                 Modulo = module,
                 Movimiento = "Aplica",
                 DetalleMovimiento = "Reversión Transferencia = " + reversionId +

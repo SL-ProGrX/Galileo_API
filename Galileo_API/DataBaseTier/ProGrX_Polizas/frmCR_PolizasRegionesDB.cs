@@ -63,7 +63,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             if (validationError != null) return validationError;
 
             // Determina si es insert (como VB6: cuando no hay cod_region)
-            var esInsert = !dto.cod_region.HasValue || dto.cod_region.Value <= 0;
+            var codRegionActual = dto.cod_region.GetValueOrDefault();
+            var esInsert = codRegionActual <= 0;
 
             try
             {
@@ -82,7 +83,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 }
                 else
                 {
-                    codRegion = dto.cod_region.Value;
+                    codRegion = codRegionActual;
 
                     // Para update: confirmar que existe (VB6 asumía que sí porque venía del grid)
                     var existe = conn.ExecuteScalar<int>(@"
@@ -305,7 +306,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             var validationError = ValidateCantonesListar(codPoliza, cod_region, provinciaTxt, out var provinciaInt);
             if (validationError != null)
             {
-                return DbHelper.CreateErrorResponse<List<CrdPolizasRegionCantonDto>>(validationError.Description);
+                return DbHelper.CreateErrorResponse<List<CrdPolizasRegionCantonDto>>(validationError.Description ?? string.Empty);
             }
                 
 

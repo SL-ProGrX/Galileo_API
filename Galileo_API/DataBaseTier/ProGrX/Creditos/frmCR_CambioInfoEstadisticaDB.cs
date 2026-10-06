@@ -166,7 +166,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             });
         }
 
-        private static ErrorDto<CrCambioInfoEstadisticaCargaListadoResponse> ValidarSolicitud(CrCambioInfoEstadisticaCargaListadoRequest request)
+        private static ErrorDto<CrCambioInfoEstadisticaCargaListadoResponse>? ValidarSolicitud(CrCambioInfoEstadisticaCargaListadoRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.TipoSeleccionado) ||
                 string.IsNullOrWhiteSpace(request.CodigoDato) ||

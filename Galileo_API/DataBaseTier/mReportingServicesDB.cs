@@ -89,7 +89,6 @@ namespace Galileo.DataBaseTier
         // ================= API PRINCIPAL (V2) =================
         public IActionResult ReporteRDLC_v2(FrmReporteGlobal data)
          {
-            string _dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result;
             if (data.parametros == null)
                 return ReportRenderer.Error("Datos del reporte no proporcionados.", 400);
 
@@ -102,6 +101,7 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(connString);
                 connection.Open();
+                string dirRdlc = GetRequiredParametrerValue(data.codEmpresa, "Rep01");
 
                 // 1) Validar inputs como segmentos
                 var reportFile = data.nombreReporte.Trim();
@@ -110,7 +110,7 @@ namespace Galileo.DataBaseTier
                 ValidateSegment(data.folder, nameof(data.folder), allowEmpty: true);
 
                 var report = new LocalReport { EnableExternalImages = true };
-                var basePath = _path.GetBasePath(data.codEmpresa, _dirRdlc, data.folder ?? null);
+                var basePath = _path.GetBasePath(data.codEmpresa, dirRdlc, data.folder ?? null);
 
                 var mainPath = _path.CombineUnderRoot(basePath, reportFile);
                 finalPath = _path.ResolveReportPath(data.codEmpresa, mainPath);
@@ -226,8 +226,8 @@ namespace Galileo.DataBaseTier
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
-            string DefaultLogoUrl = GetParametrerValues(codEmpresa, "Rep02").Result;
-            string DefaultEmpresa = GetParametrerValues(codEmpresa, "Rep03").Result;
+            string DefaultLogoUrl = GetParametrerValues(codEmpresa, "Rep02").Result ?? string.Empty;
+            string DefaultEmpresa = GetParametrerValues(codEmpresa, "Rep03").Result ?? string.Empty;
             var resp = new ErrorDto<object> { Code = 0, Description = "OK", Result = new { LOGO_WEB_SITE = string.Empty, Nombre = string.Empty } };
 
             try
@@ -284,7 +284,7 @@ namespace Galileo.DataBaseTier
 
         private LocalReport CreateReportInstance(FrmReporteGlobal data)
         {
-            string dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result;
+            string dirRdlc = GetRequiredParametrerValue(data.codEmpresa, "Rep01");
             var report = new LocalReport { EnableExternalImages = true };
 
             var reportFile = (data.nombreReporte ?? string.Empty).Trim();
@@ -305,7 +305,9 @@ namespace Galileo.DataBaseTier
         {
             var allDatasets = new List<(string ReportName, string DataSetName, string? Query)>();
 
-            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            if (string.IsNullOrWhiteSpace(path) ||
+                !File.Exists(path) ||
+                string.IsNullOrWhiteSpace(data.nombreReporte))
                 return allDatasets;
 
             var doc = System.Xml.Linq.XDocument.Load(path);
@@ -325,7 +327,7 @@ namespace Galileo.DataBaseTier
 
         private IEnumerable<(string ReportName, string DataSetName, string? Query)> LoadSubreportDataSets(System.Xml.Linq.XDocument doc, FrmReporteGlobal data)
         {
-            string dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result;
+            string dirRdlc = GetRequiredParametrerValue(data.codEmpresa, "Rep01");
 
             var basePath = _path.GetBasePath(data.codEmpresa, dirRdlc, data.folder ?? null);
 
@@ -333,6 +335,7 @@ namespace Galileo.DataBaseTier
                 .Where(x => x.Name.LocalName == "Subreport")
                 .Select(x => x.Elements().FirstOrDefault(e => e.Name.LocalName == "ReportName")?.Value)
                 .Where(name => !string.IsNullOrEmpty(name))
+                .OfType<string>()
                 .Distinct()
                 .ToList();
 
@@ -351,7 +354,7 @@ namespace Galileo.DataBaseTier
                 foreach (var ds in subDoc.Descendants().Where(x => x.Name.LocalName == "DataSet"))
                 {
                     yield return (
-                        ReportName: subreportName,
+                        ReportName: subreportName!,
                         DataSetName: ds.Attribute("Name")?.Value ?? string.Empty,
                         Query: ds.Descendants().FirstOrDefault(q => q.Name.LocalName == "CommandText")?.Value
                     );
@@ -425,6 +428,18 @@ namespace Galileo.DataBaseTier
                 const string query = "SELECT VALOR FROM SIF_PARAMETROS WHERE COD_PARAMETRO = @Code";
                 return conn.Query<string>(query, new { Code = code }).FirstOrDefault() ?? string.Empty;
             });
+        }
+
+        private string GetRequiredParametrerValue(int codEmpresa, string code)
+        {
+            var response = GetParametrerValues(codEmpresa, code);
+            if (response.Code != 0 || response.Result is null)
+            {
+                throw new InvalidOperationException(
+                    response.Description ?? $"No se pudo obtener el parámetro de reporte {code}.");
+            }
+
+            return response.Result;
         }
 
         static void ValidateSegment(string? segment, string paramName, bool allowEmpty)

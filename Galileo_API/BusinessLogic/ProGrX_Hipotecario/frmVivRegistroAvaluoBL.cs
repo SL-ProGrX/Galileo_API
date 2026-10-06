@@ -20,13 +20,13 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             _clsAgregar = new ClsAgregarBD(config);
         }
 
-        public ErrorDto<FrmVivGarantiaAvaluoRegistroResponse> Viv_GarantiaAvaluo_Obtener(
+        public ErrorDto<FrmVivGarantiaAvaluoRegistroResponse?> Viv_GarantiaAvaluo_Obtener(
     int codEmpresa,
     FrmVivGarantiaAvaluoRegistroRequest request)
         {
             if (request.id_garantia <= 0)
             {
-                return new ErrorDto<FrmVivGarantiaAvaluoRegistroResponse>
+                return new ErrorDto<FrmVivGarantiaAvaluoRegistroResponse?>
                 {
                     Code = -1,
                     Description = pValidaGarantia,
@@ -65,7 +65,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             var estadoOperacion = _clsConsultar.fxEstadoOperacion(codEmpresa, request.numero_operacion);
             if (estadoOperacion.Code < 0)
             {
-                return DbHelper.ErrorResponse(estadoOperacion.Description);
+                return DbHelper.ErrorResponse(estadoOperacion.Description ?? string.Empty);
             }
 
             if ((estadoOperacion.Result ?? string.Empty).Trim() != "F")
@@ -76,7 +76,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             var yaRegistrado = _db.Viv_GarantiaAvaluoRegistrado_Existe(codEmpresa, request.id_garantia);
             if (yaRegistrado.Code < 0)
             {
-                return DbHelper.ErrorResponse(yaRegistrado.Description);
+                return DbHelper.ErrorResponse(yaRegistrado.Description ?? string.Empty);
             }
 
             if (yaRegistrado.Result)
@@ -87,7 +87,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             var existeIngeniero = _clsConsultar.fxTraerExisteContacto(codEmpresa, request.id_contacto, "I");
             if (existeIngeniero.Code < 0)
             {
-                return DbHelper.ErrorResponse(existeIngeniero.Description);
+                return DbHelper.ErrorResponse(existeIngeniero.Description ?? string.Empty);
             }
 
             if (!existeIngeniero.Result)
@@ -114,7 +114,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 });
 
             return resp.Code < 0
-                ? DbHelper.ErrorResponse(resp.Description)
+                ? DbHelper.ErrorResponse(resp.Description ?? string.Empty)
                 : new ErrorDto
                 {
                     Code = 0,
@@ -122,13 +122,13 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 };
         }
 
-        public ErrorDto<FrmVivGarantiaAvaluoMontoCambiarResponse> Viv_GarantiaAvaluoMonto_Guardar(
+        public ErrorDto<FrmVivGarantiaAvaluoMontoCambiarResponse?> Viv_GarantiaAvaluoMonto_Guardar(
             int codEmpresa,
             FrmVivGarantiaAvaluoMontoCambiarRequest request)
         {
             if (request.id_garantia <= 0)
             {
-                return new ErrorDto<FrmVivGarantiaAvaluoMontoCambiarResponse>
+                return new ErrorDto<FrmVivGarantiaAvaluoMontoCambiarResponse?>
                 {
                     Code = -1,
                     Description = pValidaGarantia,
@@ -139,7 +139,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
             string tipo = request.tipo.Trim();
             if (tipo != "Avaluo" && tipo != "Viaticos" && tipo != "Honorarios" && tipo != "GLegales")
             {
-                return new ErrorDto<FrmVivGarantiaAvaluoMontoCambiarResponse>
+                return new ErrorDto<FrmVivGarantiaAvaluoMontoCambiarResponse?>
                 {
                     Code = -1,
                     Description = "Debe indicar un tipo de cambio válido.",

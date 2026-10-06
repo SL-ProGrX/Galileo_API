@@ -239,6 +239,9 @@ namespace Galileo.DataBaseTier
                 return new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
             var x  = XDocument.Load(parentRdlcPath);
+            if (x.Root is null)
+                return new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
             var ns = x.Root.GetDefaultNamespace();
             var map = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
@@ -251,7 +254,7 @@ namespace Galileo.DataBaseTier
                     .Elements(ns + "Parameter")
                     .Select(p => p.Attribute("Name")?.Value)
                     .Where(name => !string.IsNullOrWhiteSpace(name))
-                    .Select(name => name)     // afirmas que ya no es null
+                    .OfType<string>()
                     .ToList() ?? new List<string>();
 
 
@@ -263,6 +266,9 @@ namespace Galileo.DataBaseTier
 
         private static HashSet<string> ReadExpectedChildParams(XDocument childDoc)
         {
+            if (childDoc.Root is null)
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             var ns = childDoc.Root.GetDefaultNamespace();
             var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 

@@ -15,7 +15,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         }
 
 
-        private static string ValidarOperadorFiltro(string operador)
+        private static string ValidarOperadorFiltro(string? operador)
         {
             string operadorNormalizado = operador?.Trim() ?? string.Empty;
 

@@ -134,7 +134,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <param name="codPoliza"></param>
         /// <param name="idFactura"></param>
         /// <returns></returns>
-        public ErrorDto<PolizaAseguradoraCorte> PolizaAseguradoraCorte_Valida(int codEmpresa, DateTime corte, string codPoliza, int idFactura)
+        public ErrorDto<PolizaAseguradoraCorte?> PolizaAseguradoraCorte_Valida(int codEmpresa, DateTime corte, string codPoliza, int idFactura)
         {
 
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -160,7 +160,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDto<PolizaAseguradoraCorte> PolizaAseguradoraCorte_Agregar(int codEmpresa, string usuario, PolizaAseguradoraCorteData datos)
+        public ErrorDto<PolizaAseguradoraCorte?> PolizaAseguradoraCorte_Agregar(int codEmpresa, string usuario, PolizaAseguradoraCorteData datos)
         {
 
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -345,7 +345,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <param name="codPoliza"></param>
         /// <param name="idFactura"></param>
         /// <returns></returns>
-        public ErrorDto<PolizaAseguradoraCorte> PolizaAseguradoraCorte_Pago(int codEmpresa, string usuario, DateTime corte, string codPoliza, int idFactura)
+        public ErrorDto<PolizaAseguradoraCorte?> PolizaAseguradoraCorte_Pago(int codEmpresa, string usuario, DateTime corte, string codPoliza, int idFactura)
         {
 
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -393,7 +393,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <param name="codEmpresa"></param>
         /// <param name="codPoliza"></param>
         /// <returns></returns>
-        public ErrorDto<PolizaDatos> PolizaPolizaDatos(int codEmpresa, string codPoliza)
+        public ErrorDto<PolizaDatos?> PolizaPolizaDatos(int codEmpresa, string codPoliza)
         {
 
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -436,7 +436,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <param name="corte"></param>
         /// <param name="codPoliza"></param>
         /// <returns></returns>
-        public ErrorDto<PolizaDatos> PolizaAseguradoraCorte_Consulta(int codEmpresa, DateTime corte, string codPoliza)
+        public ErrorDto<PolizaDatos?> PolizaAseguradoraCorte_Consulta(int codEmpresa, DateTime corte, string codPoliza)
         {
 
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>

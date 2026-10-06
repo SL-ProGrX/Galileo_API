@@ -42,7 +42,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         /// <returns>Cédula que debe utilizar la consulta integrada.</returns>
         [Authorize]
         [HttpGet("CR_ConsultaCrdCriterio_Resolver")]
-        public ErrorDto<string> CR_ConsultaCrdCriterio_Resolver(
+        public ErrorDto<string?> CR_ConsultaCrdCriterio_Resolver(
             int CodEmpresa,
             string criterio)
         {

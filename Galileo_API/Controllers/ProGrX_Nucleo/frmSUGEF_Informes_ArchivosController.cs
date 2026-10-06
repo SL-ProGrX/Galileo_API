@@ -43,6 +43,11 @@ namespace Galileo.Controllers
         {
             var resultado = _bl.SUGEFInformesArchivos_Archivo(CodEmpresa, Usuario, Corte);
 
+            if (resultado.Code != 0 || resultado.Result == null)
+            {
+                return NotFound(new { resultado.Code, resultado.Description });
+            }
+
             ArchivoDescargaDto archivo = resultado.Result;
 
             return File(

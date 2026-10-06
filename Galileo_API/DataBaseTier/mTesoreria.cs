@@ -413,8 +413,12 @@ namespace Galileo.DataBaseTier
 
                 if (archivosData.utiliza_formato_especial == 1)
                 {
-                    response.Result.chequesFirmas = File.Exists(archivoFirmas) ? archivosData.archivo_cheques_firmas : "Banking_DocFormat01";
-                    response.Result.chequesSinFirmas = File.Exists(archivoSinFirmas) ? archivosData.archivo_cheques_sin_firmas : "Banking_DocFormat02";
+                    response.Result.chequesFirmas = File.Exists(archivoFirmas) && archivosData.archivo_cheques_firmas is not null
+                        ? archivosData.archivo_cheques_firmas
+                        : "Banking_DocFormat01";
+                    response.Result.chequesSinFirmas = File.Exists(archivoSinFirmas) && archivosData.archivo_cheques_sin_firmas is not null
+                        ? archivosData.archivo_cheques_sin_firmas
+                        : "Banking_DocFormat02";
                 }
                 else
                 {

@@ -129,7 +129,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 .Select(r => (IDictionary<string, object>)r)
                 .Select(dict => dict.ToDictionary(
                     k => k.Key.ToUpperInvariant(),
-                    v => v.Value,
+                    v => (object?)v.Value,
                     StringComparer.OrdinalIgnoreCase
                 ))
                 .ToList();

@@ -21,12 +21,14 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 var aplicarPaginacion = pagina.HasValue
                     && paginacion.HasValue
                     && paginacion.Value > 0;
+                var offset = pagina.GetValueOrDefault();
+                var fetch = paginacion.GetValueOrDefault();
 
                 var p = new DynamicParameters();
                 p.Add("@cedula", cedula, DbType.String);
                 p.Add("@filtroLike", filtroLike, DbType.String);
-                p.Add("@offset", aplicarPaginacion ? pagina.Value : 0, DbType.Int32);
-                p.Add("@fetch", aplicarPaginacion ? paginacion.Value : int.MaxValue, DbType.Int32);
+                p.Add("@offset", aplicarPaginacion ? offset : 0, DbType.Int32);
+                p.Add("@fetch", aplicarPaginacion ? fetch : int.MaxValue, DbType.Int32);
 
                 var datos = new AfiBeneOtorgaAsgDataList
                 {

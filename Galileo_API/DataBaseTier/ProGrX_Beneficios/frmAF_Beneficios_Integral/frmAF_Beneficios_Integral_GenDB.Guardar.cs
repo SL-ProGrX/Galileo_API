@@ -115,13 +115,13 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     {
                         consec = vBeneConsec,
                         codBeneficio,
-                        cedula = beneficio.cedula.Trim(),
+                        cedula = beneficio.cedula!.Trim(),
                         monto = beneficio.monto,
                         modificaMonto,
                         registraUser = (beneficio.registra_user ?? string.Empty).ToUpper(),
                         estado,
                         notas = beneficio.notas,
-                        solicita = beneficio.cedula.Trim(),
+                        solicita = beneficio.cedula!.Trim(),
                         nombre = beneficio.nombre,
                         tipo = tipoItem,
                         codOficina = empresa[0].Titular,
@@ -176,7 +176,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             const string sql = @"INSERT afi_bene_prodasg(consec, cod_beneficio, cod_producto, cantidad, costo_unidad, REGISTRO_FECHA, REGISTRO_USUARIO)
                                  VALUES(@consec, @codBeneficio, @codProducto, @cantidad, @costoUnidad, GETDATE(), @usuario)";
 
-            foreach (var prod in beneficio.productos)
+            foreach (var prod in beneficio.productos!)
             {
                 connection.Execute(sql, new
                 {
@@ -249,7 +249,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     connection.Execute(SqlUpdateOtorga, new
                     {
                         notas = beneficio.notas,
-                        solicita = beneficio.cedula.Trim(),
+                        solicita = beneficio.cedula!.Trim(),
                         nombre = beneficio.nombre,
                         desaNombre = beneficio.desa_nombre,
                         desaDescripcion = beneficio.desa_descripcion,

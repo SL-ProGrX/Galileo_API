@@ -263,7 +263,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 var v = ValidarSimulacion(req);
                 if (v.Code != 0)
-                    return DbHelper.CreateErrorResponse<SimularCuotasResponse>(v.Description);
+                    return DbHelper.CreateErrorResponse<SimularCuotasResponse>(v.Description ?? string.Empty);
 
                
                 var cuotas = Clamp(req.CantidadCuotas ?? 0, 0, MAX_CUOTAS);
@@ -343,13 +343,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
         private long AjustarFechaInicial(int codEmpresa, SimularCuotasRequest req)
         {
-            var lngFecha = req.FecUltMov;
+            long lngFecha = req.FecUltMov.GetValueOrDefault();
+            long priDeduc = req.PriDeduc.GetValueOrDefault();
 
             // Ajuste fecha vs prideduc
-            if (lngFecha < req.PriDeduc)
-                lngFecha = (long)_mCobro.fxFechaProcesoAnterior(codEmpresa, (int)req.PriDeduc);
+            if (lngFecha < priDeduc)
+                lngFecha = (long)_mCobro.fxFechaProcesoAnterior(codEmpresa, (int)priDeduc);
 
-            return (long)lngFecha;
+            return lngFecha;
         }
 
         private static decimal CalcularSaldoInicial(SimularCuotasRequest req)
@@ -860,8 +861,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 if (!variable.vNumDoc.HasValue)
                     return DbHelper.ErrorResponse("Error al registrar el documento de abono: número de documento inválido.", -1);
 
+                var idSolicitud = variable.id_solicutud;
+                if (!idSolicitud.HasValue)
+                    return DbHelper.ErrorResponse("Error al registrar el documento de abono: solicitud inválida.", -1);
+
                 var docAfectacion = spCrdDocumentoAfectacionStP(codEmpresa, variable.vTipoDoc, variable.vNumDoc.Value, "R");
-                var cuentaOperacion = spCrdOperacionCtas(codEmpresa, (long)variable.id_solicutud);
+                var cuentaOperacion = spCrdOperacionCtas(codEmpresa, idSolicitud.Value);
 
                 var lineas = BuildLineas(docAfectacion, variable, solicitud);
 

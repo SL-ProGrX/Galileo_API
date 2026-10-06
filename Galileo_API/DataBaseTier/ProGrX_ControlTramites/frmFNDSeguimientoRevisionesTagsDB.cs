@@ -131,7 +131,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 codEmpresa,
                 sql,
                 null,
-                CrearParametrosClave(request));
+                CrearParametrosClave(request!));
         }
 
         /// <summary>
@@ -177,7 +177,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 sql,
                 new
                 {
-                    CodPlan = request.cod_plan.Trim(),
+                    CodPlan = request!.cod_plan.Trim(),
                     CodContrato = request.cod_contrato.ToString(),
                     Modulo
                 });
@@ -265,7 +265,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
             if (resultado.Code == -1)
             {
-                return DbHelper.ErrorResponse(resultado.Description, -1);
+                return DbHelper.ErrorResponse(resultado.Description ?? string.Empty, -1);
             }
 
             return DbHelper.OkResponse(resultado.Result ?? string.Empty);
@@ -330,7 +330,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 sql,
                 new
                 {
-                    Cedula = request.cedula.Trim(),
+                    Cedula = request!.cedula.Trim(),
                     CodPlan = request.cod_plan.Trim(),
                     CodContrato = request.cod_contrato.ToString(),
                     Modulo
@@ -378,7 +378,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                             sqlContrato,
                             new
                             {
-                                Cedula = request.cedula.Trim(),
+                                Cedula = request!.cedula.Trim(),
                                 CodPlan = request.cod_plan.Trim(),
                                 CodContrato = request.cod_contrato
                             },
@@ -395,7 +395,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
                         var parametrosClave = new
                         {
-                            Cedula = request.cedula.Trim(),
+                            Cedula = request!.cedula.Trim(),
                             Modulo,
                             CodPlan = request.cod_plan.Trim(),
                             CodContrato = request.cod_contrato.ToString(),
@@ -565,7 +565,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
             if (ejecucion.Code == -1)
             {
-                return CrearErrorCambioOmision(ejecucion.Description, -1);
+                return CrearErrorCambioOmision(ejecucion.Description ?? string.Empty, -1);
             }
 
             return ejecucion.Result
@@ -615,7 +615,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                         sqlContrato,
                         new
                         {
-                            Cedula = request.cedula.Trim(),
+                            Cedula = request!.cedula.Trim(),
                             CodOperadora = request.cod_operadora,
                             CodPlan = request.cod_plan.Trim(),
                             CodContrato = request.cod_contrato
@@ -716,7 +716,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
             if (ejecucion.Code == -1)
             {
-                return DbHelper.ErrorResponse(ejecucion.Description, -1);
+                return DbHelper.ErrorResponse(ejecucion.Description ?? string.Empty, -1);
             }
 
             return ejecucion.Result

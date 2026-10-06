@@ -17,7 +17,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Fondos
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly PortalDB _portalDb;
 
-        public FrmFndConsultaContratosDB(IConfiguration? config)
+        public FrmFndConsultaContratosDB(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
             _portalDb = new PortalDB(config);

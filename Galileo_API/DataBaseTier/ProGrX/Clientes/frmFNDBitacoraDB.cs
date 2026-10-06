@@ -168,13 +168,15 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             var codPlan = NormalizarTexto(request.CodPlan);
             var soloNoRevisados = NormalizarTexto(request.SoloNoRevisados);
             var movimientos = request.Movimientos ?? new List<string>();
-            var filtraFecha = request.FechaIni.HasValue && request.FechaFin.HasValue;
+            var fechaIni = request.FechaIni;
+            var fechaFin = request.FechaFin;
+            var filtraFecha = fechaIni.HasValue && fechaFin.HasValue;
 
             parameters.Add("@Modulo", vModulo);
             parameters.Add("@Cedula", string.IsNullOrWhiteSpace(cedula) ? null : $"%{cedula}%");
             parameters.Add("@FiltraFecha", filtraFecha ? 1 : 0);
-            parameters.Add("@FechaIni", filtraFecha ? request.FechaIni.Value.Date : null);
-            parameters.Add("@FechaFin", filtraFecha ? request.FechaFin.Value.Date.AddDays(1).AddSeconds(-1) : null);
+            parameters.Add("@FechaIni", filtraFecha ? fechaIni.GetValueOrDefault().Date : null);
+            parameters.Add("@FechaFin", filtraFecha ? fechaFin.GetValueOrDefault().Date.AddDays(1).AddSeconds(-1) : null);
             parameters.Add("@FiltraMovimientos", movimientos.Count > 0 ? 1 : 0);
             parameters.Add("@Movimientos", movimientos);
             parameters.Add("@CodPlan", string.IsNullOrWhiteSpace(codPlan) ? null : codPlan);

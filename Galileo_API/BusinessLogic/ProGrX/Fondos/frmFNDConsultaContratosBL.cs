@@ -11,7 +11,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Fondos
     {
         private readonly FrmFndConsultaContratosDB _Db;
 
-        public FrmFndConsultaContratosBL(IConfiguration? config)
+        public FrmFndConsultaContratosBL(IConfiguration config)
         {
             _Db = new FrmFndConsultaContratosDB(config);
         }

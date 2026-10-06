@@ -125,7 +125,7 @@ namespace Galileo_API.DataBaseTier
 
             return ConstruirRespuestaEstado(codEmpresa, cuenta.Account.State.Value, info, cuenta);
         }
-        private ErrorDto VerificarServicioDisponible(string uriConn, ReqBase context)
+        private ErrorDto? VerificarServicioDisponible(string uriConn, ReqBase context)
         {
             if (_servicioDisponibleLote == true)
                 return null;

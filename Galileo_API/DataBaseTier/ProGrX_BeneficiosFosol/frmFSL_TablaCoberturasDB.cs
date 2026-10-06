@@ -11,10 +11,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         private const int CodigoValidacion = -2;
 
         private const string MensajeTipoInvalido =
-            "El tipo de tabla de cobertura no es v&aacute;lido.";
+            "El tipo de tabla de cobertura no es válido.";
 
         private const string MensajeLineaRequerida =
-            "La l&iacute;nea de la cobertura es requerida.";
+            "La línea de la cobertura es requerida.";
 
         private const string MensajeUsuarioRequerido =
             "El usuario es requerido.";
@@ -36,10 +36,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// tabla seleccionado.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="filtros">
-        /// Filtros, ordenamiento y paginaci&oacute;n.
+        /// Filtros, ordenamiento y paginación.
         /// </param>
         /// <returns>
         /// Lista paginada de coberturas.
@@ -221,13 +221,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 
         /// <summary>
         /// Registra una nueva cobertura y calcula la siguiente
-        /// l&iacute;nea disponible para el tipo seleccionado.
+        /// línea disponible para el tipo seleccionado.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n de la cobertura.
+        /// Información de la cobertura.
         /// </param>
         /// <returns>
         /// Resultado del registro.
@@ -317,7 +317,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             {
                 return DbHelper.ErrorResponse(
                     response.Description ??
-                    "Ocurri&oacute; un error al registrar la cobertura.");
+                    "Ocurrió un error al registrar la cobertura.");
             }
 
             var linea = response.Result;
@@ -337,13 +337,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Actualiza una cobertura existente.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n de la cobertura.
+        /// Información de la cobertura.
         /// </param>
         /// <returns>
-        /// Resultado de la actualizaci&oacute;n.
+        /// Resultado de la actualización.
         /// </returns>
         public ErrorDto
             FSL_TablaCoberturas_Cobertura_Actualizar(
@@ -400,7 +400,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                     MensajeExito =
                         "Cobertura actualizada correctamente.",
                     MensajeSinCambios =
-                        "No se encontr&oacute; la cobertura indicada."
+                        "No se encontró la cobertura indicada."
                 };
 
             return FSL_TablaCoberturas_Operacion_Ejecutar(
@@ -409,22 +409,22 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Elimina una cobertura por tipo y l&iacute;nea.
+        /// Elimina una cobertura por tipo y línea.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="tipo">
         /// Tipo de tabla.
         /// </param>
         /// <param name="linea">
-        /// L&iacute;nea de la cobertura.
+        /// Línea de la cobertura.
         /// </param>
         /// <param name="usuario">
         /// Usuario responsable.
         /// </param>
         /// <returns>
-        /// Resultado de la eliminaci&oacute;n.
+        /// Resultado de la eliminación.
         /// </returns>
         public ErrorDto
             FSL_TablaCoberturas_Cobertura_Eliminar(
@@ -484,7 +484,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
                     MensajeExito =
                         "Cobertura eliminada correctamente.",
                     MensajeSinCambios =
-                        "No se encontr&oacute; la cobertura indicada."
+                        "No se encontró la cobertura indicada."
                 };
 
             return FSL_TablaCoberturas_Operacion_Ejecutar(
@@ -493,17 +493,17 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Ejecuta una operaci&oacute;n de mantenimiento y
-        /// registra el movimiento en bit&aacute;cora.
+        /// Ejecuta una operación de mantenimiento y
+        /// registra el movimiento en bitácora.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="operacion">
-        /// Informaci&oacute;n de la operaci&oacute;n.
+        /// Información de la operación.
         /// </param>
         /// <returns>
-        /// Resultado de la operaci&oacute;n.
+        /// Resultado de la operación.
         /// </returns>
         private ErrorDto
             FSL_TablaCoberturas_Operacion_Ejecutar(
@@ -521,7 +521,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
             {
                 return DbHelper.ErrorResponse(
                     response.Description ??
-                    "Ocurri&oacute; un error al procesar la cobertura.");
+                    "Ocurrió un error al procesar la cobertura.");
             }
 
             if (response.Result <= 0)
@@ -543,18 +543,18 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Valida la informaci&oacute;n enviada para registrar o
+        /// Valida la información enviada para registrar o
         /// actualizar una cobertura.
         /// </summary>
         /// <param name="request">
-        /// Informaci&oacute;n de la cobertura.
+        /// Información de la cobertura.
         /// </param>
         /// <param name="requiereLinea">
-        /// Indica si la operaci&oacute;n requiere una l&iacute;nea
+        /// Indica si la operación requiere una línea
         /// existente.
         /// </param>
         /// <returns>
-        /// Mensaje de validaci&oacute;n o una cadena vac&iacute;a.
+        /// Mensaje de validación o una cadena vacía.
         /// </returns>
         private static string
             FSL_TablaCoberturas_Request_Validar(
@@ -586,7 +586,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Tipo de tabla.
         /// </param>
         /// <returns>
-        /// Verdadero cuando el tipo es v&aacute;lido.
+        /// Verdadero cuando el tipo es válido.
         /// </returns>
         private static bool
             FSL_TablaCoberturas_Tipo_Valido(
@@ -625,10 +625,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 
         /// <summary>
         /// Registra un movimiento del formulario en la
-        /// bit&aacute;cora general.
+        /// bitácora general.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="usuario">
         /// Usuario responsable.
@@ -640,7 +640,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Tipo de tabla.
         /// </param>
         /// <param name="linea">
-        /// L&iacute;nea afectada.
+        /// Línea afectada.
         /// </param>
         private void
             FSL_TablaCoberturas_Bitacora_Registrar(
@@ -669,14 +669,14 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene la descripci&oacute;n utilizada por VB6 para
+        /// Obtiene la descripción utilizada por VB6 para
         /// el tipo de tabla.
         /// </summary>
         /// <param name="tipo">
         /// Tipo de tabla.
         /// </param>
         /// <returns>
-        /// Descripci&oacute;n del tipo.
+        /// Descripción del tipo.
         /// </returns>
         private static string
             FSL_TablaCoberturas_Tipo_Descripcion_Obtener(

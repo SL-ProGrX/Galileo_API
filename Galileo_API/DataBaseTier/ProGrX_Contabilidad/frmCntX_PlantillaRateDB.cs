@@ -65,7 +65,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="scrollCode"></param>
         /// <param name="codPlantilla"></param>
         /// <returns></returns>
-        public ErrorDto<CntxPlantillaRateDto> CntxPlantillaRate_Scroll_Obtener(
+        public ErrorDto<CntxPlantillaRateDto?> CntxPlantillaRate_Scroll_Obtener(
             int codEmpresa,
             int scrollCode,
             int? codPlantilla)
@@ -90,7 +90,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             if (codResult.Result == 0)
             {
-                return new ErrorDto<CntxPlantillaRateDto>
+                return new ErrorDto<CntxPlantillaRateDto?>
                 {
                     Code = -2,
                     Description = "No se encontraron registros"
@@ -108,7 +108,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codEmpresa"></param>
         /// <param name="codPlantilla"></param>
         /// <returns></returns>
-        public ErrorDto<CntxPlantillaRateDto> CntxPlantillaRate_Consulta_Obtener(
+        public ErrorDto<CntxPlantillaRateDto?> CntxPlantillaRate_Consulta_Obtener(
             int codEmpresa,
             int codPlantilla)
         {

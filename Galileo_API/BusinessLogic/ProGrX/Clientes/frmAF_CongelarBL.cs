@@ -24,7 +24,8 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
 
         public ErrorDto<TablasListaGenericaModel> AF_BloqueosCongelamientos_Obtener(int CodEmpresa, string filtrosCongelar, string filtros)
         {
-            FiltrosLazyLoadData filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(filtros);
+            FiltrosLazyLoadData filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(filtros)
+                ?? new FiltrosLazyLoadData();
             return _db.AF_BloqueosCongelamientos_Obtener(CodEmpresa, filtrosCongelar, filtro);
         }
 

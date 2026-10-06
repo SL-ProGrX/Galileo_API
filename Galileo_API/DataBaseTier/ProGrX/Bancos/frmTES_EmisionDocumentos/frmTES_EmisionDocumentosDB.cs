@@ -527,11 +527,29 @@ where B.estado = 'A'
 
                         var formato = TES_EmisionDocumento_Formato_Obtener(
                             codEmpresa,
-                            filtroItem.banco).Result;
+                            filtroItem.banco);
 
-                        filtroItem.formatoTE = item.tipo == "TS"
-                            ? "SG"
-                            : (string)formato[0].item;
+                        if (item.tipo == "TS")
+                        {
+                            filtroItem.formatoTE = "SG";
+                        }
+                        else
+                        {
+                            if (formato.Code != 0 || formato.Result is null || formato.Result.Count == 0)
+                            {
+                                return DbHelper.CreateErrorResponse<object>(
+                                    formato.Description ?? $"No se encontró el formato de emisión para la solicitud {item.nsolicitud}.");
+                            }
+
+                            if (formato.Result[0].item is not string codigoFormato ||
+                                string.IsNullOrWhiteSpace(codigoFormato))
+                            {
+                                return DbHelper.CreateErrorResponse<object>(
+                                    $"El formato de emisión está vacío para la solicitud {item.nsolicitud}.");
+                            }
+
+                            filtroItem.formatoTE = codigoFormato;
+                        }
 
                         var proceso = ProcesoDocumentos(codEmpresa, filtroItem);
                         if (proceso.Code != 0)

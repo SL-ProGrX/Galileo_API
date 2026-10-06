@@ -136,7 +136,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     (new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
-                        Usuario = data.usuario,
+                        Usuario = data.usuario ?? string.Empty,
                         DetalleMovimiento = $"Solicitud {data.nsolicitud} reclasificada a Banco {data.bancoDestino}",
                         Movimiento = "RECLASIFICACION - WEB",
                         Modulo = vModulo
@@ -221,7 +221,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     (new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
-                        Usuario = data.usuario,
+                        Usuario = data.usuario ?? string.Empty,
                         DetalleMovimiento = $"Solicitud {data.nsolicitud} reclasificada a Documento {data.ndocumento}",
                         Movimiento = "RECLASIFICACION - WEB",
                         Modulo = vModulo

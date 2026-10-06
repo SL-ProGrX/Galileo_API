@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using System.Diagnostics.CodeAnalysis;
 using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
@@ -123,7 +124,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                     codEmpresa,
                     request);
 
-            if (!validacion.valido)
+            if (request is null || !validacion.valido)
             {
                 return CrearErrorLista<AutoVerCuentasSaldosTendenciaData>(
                     validacion.mensaje);
@@ -177,7 +178,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                     codEmpresa,
                     request);
 
-            if (!validacion.valido)
+            if (request is null || !validacion.valido)
             {
                 return CrearErrorLista<AutoVerCuentasSaldosAsignacionData>(
                     validacion.mensaje);
@@ -255,7 +256,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                     codEmpresa,
                     request);
 
-            if (!validacion.valido)
+            if (request is null || !validacion.valido)
             {
                 return CrearErrorLista<
                     AutoVerCuentasSaldosRevisionContableData>(
@@ -300,7 +301,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                     codEmpresa,
                     request);
 
-            if (!validacion.valido)
+            if (request is null || !validacion.valido)
             {
                 return CrearErrorLista<
                     AutoVerCuentasSaldosNoContabilizadoData>(
@@ -387,7 +388,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                     codEmpresa,
                     request);
 
-            if (!validacion.valido)
+            if (request is null || !validacion.valido)
             {
                 return CrearErrorLista<AutoVerCuentasSaldosAnaliticoData>(
                     validacion.mensaje);
@@ -454,14 +455,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                     codEmpresa,
                     request);
 
-            if (!validacion.valido)
+            if (request is null || !validacion.valido)
             {
                 return CrearErrorLista<AutoVerCuentasSaldosConciliaData>(
                     validacion.mensaje);
             }
 
+            var requestValidado = request;
+
             var tipoMovimiento =
-                request?.tipo_movimiento?
+                requestValidado.tipo_movimiento?
                     .Trim()
                     .ToUpperInvariant();
 
@@ -494,8 +497,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                 {
                     var parameters = new
                     {
-                        request.anio,
-                        request.mes,
+                        requestValidado.anio,
+                        requestValidado.mes,
                         cuenta =
                             validacion.cuenta,
                         tipo_movimiento =
@@ -571,7 +574,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
         }
 
         private static bool PeriodoEsValido(
-            AutoVerPeriodoBase? request)
+            [NotNullWhen(true)] AutoVerPeriodoBase? request)
         {
             return request is not null &&
                    request.anio is >= 1900 and <= 9999 &&
