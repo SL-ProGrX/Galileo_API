@@ -1663,13 +1663,53 @@ namespace Galileo.DataBaseTier.ProGrX
         {
             var (inicio, corte) = periodo;
 
-            if (request.Dias.GetValueOrDefault() < 0)
+            if (request.Dias.GetValueOrDefault() <= 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "Días de vacaciones inválidos.",
+                    "Los días de vacaciones deben ser mayores que cero.",
                     -7,
                     result);
             }
+
+                var vacaciones = connection.QueryFirstOrDefault<ColaboradorVacacionesInfoRow>(
+                    "SELECT Dias_Disponibles, Fecha_Inicio FROM vRH_Vacaciones_Info " +
+                    "WHERE Empleado_Id = @EmpleadoId",
+                    new { EmpleadoId = empleadoId });
+
+                if (vacaciones?.Fecha_Inicio is DateTime fechaMinima
+                    && inicio.Date < fechaMinima.Date)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "La fecha inicial es anterior al mínimo permitido para vacaciones.",
+                        -7,
+                        result);
+                }
+
+                var diasLaborables = connection.QueryFirst<int>(
+                    "SELECT dbo.fxRH_Dias_Laborales(@EmpleadoId, @Inicio, @Corte)",
+                    new { EmpleadoId = empleadoId, Inicio = inicio.Date, Corte = corte.Date });
+
+                if (diasLaborables <= 0)
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "El rango seleccionado no tiene días laborables para disfrutar.",
+                        -7,
+                        result);
+                }
+
+                var boletaExistente = connection.QueryFirstOrDefault<string>(
+                    "SELECT TOP (1) BOLETA_VAC FROM RH_VACACIONES " +
+                    "WHERE EMPLEADO_ID = @EmpleadoId AND ESTADO IN ('S', 'A') " +
+                    "AND FECHA_SALIDA <= @Corte AND FECHA_ENTRADA >= @Inicio",
+                    new { EmpleadoId = empleadoId, Inicio = inicio, Corte = corte });
+
+                if (!string.IsNullOrWhiteSpace(boletaExistente))
+                {
+                    return DbHelper.CreateErrorResponse(
+                        "Ya existe una solicitud de vacaciones para ese rango de fechas: " + boletaExistente.Trim(),
+                        -8,
+                        result);
+                }
 
                 var nomina = connection.QueryFirstOrDefault<string>(
                     "SELECT COD_NOMINA FROM RH_PERSONAS WHERE EMPLEADO_ID = @EmpleadoId",
@@ -1692,10 +1732,6 @@ namespace Galileo.DataBaseTier.ProGrX
                         result);
                 }
 
-                var vacaciones = connection.QueryFirstOrDefault<ColaboradorVacacionesInfoRow>(
-                    "SELECT Dias_Disponibles FROM vRH_Vacaciones_Info " +
-                    "WHERE Empleado_Id = @EmpleadoId",
-                    new { EmpleadoId = empleadoId });
                 var registroVacaciones = connection.QueryFirstOrDefault<ColaboradorSolicitudRegistroRow>(
                     "spRH_Vacaciones_Registro",
                     new
