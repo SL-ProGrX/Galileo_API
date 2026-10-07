@@ -804,24 +804,49 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             if (file == null || file.Length <= 0)
                 return DbHelper.ErrorResponse("No se recibió un archivo válido.");
 
-            ext = Path.GetExtension(file.FileName);
-            if (!ExtensionesPermitidas.Contains(ext))
+            ext = ObtenerExtensionPermitida(Path.GetExtension(file.FileName));
+            if (ext.Length == 0)
                 return DbHelper.ErrorResponse("Extensión inválida. Solo .rdl/.rdlc.");
 
-            if (documento != DocumentoEspecialCk &&
-                    documento != DocumentoChequesFirmas &&
-                    documento != DocumentoChequesSinFirmas)
+            col = ObtenerDocumentoPermitido(documento);
+            if (col.Length == 0)
             {
                 return DbHelper.ErrorResponse("Nombre de documento inválido.");
             }
 
-            col = documento;
-
             return DbHelper.CreateOkResponse();
         }
 
-        private static readonly HashSet<string> ExtensionesPermitidas =
-            new(StringComparer.OrdinalIgnoreCase) { ".rdl", ".rdlc" };
+        /// <summary>
+        /// Devuelve la extensión permitida como literal constante, o vacío si no es válida.
+        /// </summary>
+        /// <param name="extension"></param>
+        /// <returns></returns>
+        private static string ObtenerExtensionPermitida(string? extension)
+        {
+            return (extension ?? string.Empty).ToLowerInvariant() switch
+            {
+                ".rdl" => ".rdl",
+                ".rdlc" => ".rdlc",
+                _ => string.Empty
+            };
+        }
+
+        /// <summary>
+        /// Devuelve el nombre de documento permitido como literal constante, o vacío si no es válido.
+        /// </summary>
+        /// <param name="documento"></param>
+        /// <returns></returns>
+        private static string ObtenerDocumentoPermitido(string? documento)
+        {
+            return documento switch
+            {
+                DocumentoEspecialCk => DocumentoEspecialCk,
+                DocumentoChequesFirmas => DocumentoChequesFirmas,
+                DocumentoChequesSinFirmas => DocumentoChequesSinFirmas,
+                _ => string.Empty
+            };
+        }
 
 
         // Resuelve qué archivo devolver (SIN exponerlo al cliente)

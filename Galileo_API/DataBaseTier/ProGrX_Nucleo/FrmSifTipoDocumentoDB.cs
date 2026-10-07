@@ -231,7 +231,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         private static string? BuscarEnArbol(string raiz, string nombreArchivo)
         {
-            var raizCompleta = Path.GetFullPath(raiz);
+            var raizCompleta = SafePath.RootPath(raiz, nameof(raiz));
+            var nombreSeguro = SafePath.Strict(nombreArchivo, SafePath.FileNameChars, nameof(nombreArchivo));
 
             if (!Directory.Exists(raizCompleta))
             {
@@ -239,7 +240,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             }
 
             return Directory
-                .EnumerateFiles(raizCompleta, nombreArchivo, SearchOption.AllDirectories)
+                .EnumerateFiles(raizCompleta, nombreSeguro, SearchOption.AllDirectories)
                 .Select(Path.GetFullPath)
                 .FirstOrDefault(ruta => EstaBajoDirectorio(raizCompleta, ruta));
         }
