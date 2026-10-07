@@ -1112,11 +1112,16 @@ namespace Galileo.DataBaseTier.ProGrX
                     "FROM ACTIVOS_TRASLADOS_MOTIVOS WHERE ACTIVO = 1 ORDER BY COD_MOTIVO")
                     .ToList();
                 result.Destinatarios = connection.Query<ColaboradorTrasladoOpcionData>(
-                    "SELECT TOP (50) IDENTIFICACION AS Codigo, Nombre AS Descripcion " +
-                    "FROM ACTIVOS_PERSONAS " +
-                    "WHERE IDENTIFICACION <> @Identificacion " +
-                    "AND (@Filtro = '' OR IDENTIFICACION LIKE @Busqueda OR Nombre LIKE @Busqueda) " +
-                    "ORDER BY Nombre",
+                    "SELECT TOP (50) p.IDENTIFICACION AS Codigo, p.Nombre AS Descripcion, " +
+                    "ISNULL(d.DESCRIPCION, '') AS Departamento, " +
+                    "ISNULL(s.DESCRIPCION, '') AS Seccion " +
+                    "FROM ACTIVOS_PERSONAS p " +
+                    "LEFT JOIN ACTIVOS_DEPARTAMENTOS d ON d.COD_DEPARTAMENTO = p.COD_DEPARTAMENTO " +
+                    "LEFT JOIN ACTIVOS_SECCIONES s ON s.COD_DEPARTAMENTO = p.COD_DEPARTAMENTO " +
+                    "AND s.COD_SECCION = p.COD_SECCION " +
+                    "WHERE p.IDENTIFICACION <> @Identificacion " +
+                    "AND (@Filtro = '' OR p.IDENTIFICACION LIKE @Busqueda OR p.Nombre LIKE @Busqueda) " +
+                    "ORDER BY p.Nombre",
                     new
                     {
                         Identificacion = identificacion.Trim(),
@@ -1765,10 +1770,20 @@ namespace Galileo.DataBaseTier.ProGrX
         {
             var (inicio, corte) = periodo;
 
-            if (request.Dias.GetValueOrDefault() < 0)
+            if (request.Dias.GetValueOrDefault() <= 0)
             {
                 return DbHelper.CreateErrorResponse(
-                    "Días de incapacidad inválidos.",
+                    "Los días de incapacidad deben ser mayores que cero.",
+                    -7,
+                    result);
+            }
+
+            if (!request.PorcentajePatrono.HasValue
+                || request.PorcentajePatrono < 0
+                || request.PorcentajePatrono > 100)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Porcentaje patrono inválido.",
                     -7,
                     result);
             }
