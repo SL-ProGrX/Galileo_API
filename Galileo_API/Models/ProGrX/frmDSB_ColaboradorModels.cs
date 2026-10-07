@@ -136,6 +136,8 @@ namespace Galileo.Models.ProGrX
     {
         public string Codigo { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
+        public string Departamento { get; set; } = string.Empty;
+        public string Seccion { get; set; } = string.Empty;
     }
 
     public class ColaboradorTrasladoPlacaData
