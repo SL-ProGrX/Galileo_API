@@ -316,7 +316,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 conn,
                 solicitudesAutorizables,
                 estado,
-                p.usuario);
+                p.usuario!);
 
             conn.Execute(
                     "EXEC spTes_Mass_Aplica @Usuario, @Estado, @SINPE_Tipo, @UsuarioEspecial",

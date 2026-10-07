@@ -77,7 +77,7 @@ namespace Galileo_API.DataBaseTier
 
                 string cedula = MKindoServiceDb.MaskSinpeId(info.tipoID, info.Cedula!);
 
-                var cuenta = ConsultarCuenta(parametrosSinpe, context, info.CuentaIBAN, sinpeTipo, cedula);
+                var cuenta = ConsultarCuenta(parametrosSinpe, context, info.CuentaIBAN!, sinpeTipo, cedula);
 
                 return ValidarCuenta(codEmpresa, solicitud, cedula, info, cuenta, ok);
             }
@@ -327,7 +327,7 @@ Tipo de Moneda: {account.CurrencyCode} Entidad: {account.EntityCode}-{account.En
                     fxGuardaID_RespuestaSinpe(parametros.codEmpresa, idRechazo, parametros.nSolicitud.ToString());
                 }
                 // 2) Envío
-                var envio = enviar(parametros.codEmpresa, parametros.nSolicitud, parametros.usuario);
+                var envio = enviar(parametros.codEmpresa, parametros.nSolicitud, parametros.usuario!);
                 respuesta = envio.Result;
 
                 if(envio.Result!.MotivoError == 32)
@@ -348,14 +348,14 @@ Tipo de Moneda: {account.CurrencyCode} Entidad: {account.EntityCode}-{account.En
                         _mTesoreria.sbTesBitacoraEspecial(
                             parametros.codEmpresa, parametros.nSolicitud, "10",
                             "Se produjo un error al actualizar la transacción",
-                            parametros.usuario);
+                            parametros.usuario!);
                     }
 
                     // 4) Bitácora final
                     _mTesoreria.sbTesBitacoraEspecial(
                         parametros.codEmpresa, parametros.nSolicitud, "10",
                         estadoSinpe ? bitacoraExito : $"{bitacoraRechazo}: {rechazoTexto}",
-                        parametros.usuario);
+                        parametros.usuario!);
                 }
 
                 if (envio.Code != 0 || (respuesta != null && respuesta.MotivoError != 32))
@@ -508,8 +508,8 @@ Tipo de Moneda: {account.CurrencyCode} Entidad: {account.EntityCode}-{account.En
 
             var errores = resp?.Errors;
             var tieneErrores = errores is not null && errores.Length > 0;
-            var code = tieneErrores ? errores[0].Code : -1;
-            var msg = tieneErrores ? errores[0].Message : "Error al enviar solicitud a SINPE.";
+            var code = tieneErrores ? errores![0].Code : -1;
+            var msg = tieneErrores ? errores![0].Message : "Error al enviar solicitud a SINPE.";
             _mKindo.RegistraMovTransito(parametros.codEmpresa, codReferencia, context.UserCode, canal, resp, solicitud);
 
             return new ErrorDto<RespuestaRegistro>

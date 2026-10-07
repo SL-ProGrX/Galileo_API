@@ -865,7 +865,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 if (!idSolicitud.HasValue)
                     return DbHelper.ErrorResponse("Error al registrar el documento de abono: solicitud inválida.", -1);
 
-                var docAfectacion = spCrdDocumentoAfectacionStP(codEmpresa, variable.vTipoDoc, variable.vNumDoc.Value, "R");
+                var docAfectacion = spCrdDocumentoAfectacionStP(codEmpresa, variable.vTipoDoc!, variable.vNumDoc.Value, "R");
                 var cuentaOperacion = spCrdOperacionCtas(codEmpresa, idSolicitud.Value);
 
                 var lineas = BuildLineas(docAfectacion, variable, solicitud);

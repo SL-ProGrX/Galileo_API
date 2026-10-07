@@ -142,7 +142,7 @@ WHERE NSolicitud = @solicitud;";
                 mSecurity.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
-                    Usuario = fechas.usuario,
+                    Usuario = fechas.usuario!,
                     Modulo = vModulo,
                     Movimiento = "Modifica",
                     DetalleMovimiento = bitacora
