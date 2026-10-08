@@ -68,10 +68,19 @@ public static class ApiHostServiceCollectionExtensions
         services.AddScoped<AuthBL>();
         services.AddScoped<CsrfOriginValidationFilter>();
         services.AddScoped<EmpresaAccessFilter>();
-        services.AddControllers(options =>
+        // PILOTO CSRF: [ValidateAntiForgeryToken] requiere los servicios de ViewFeatures.
+        services.AddControllersWithViews(options =>
         {
             options.Filters.AddService<CsrfOriginValidationFilter>();
             options.Filters.AddService<EmpresaAccessFilter>();
+        });
+        // PILOTO CSRF: el token viaja en el header y la cookie asociada solo la lee el servidor.
+        services.AddAntiforgery(options =>
+        {
+            options.HeaderName = "X-XSRF-TOKEN";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.SameSite = SameSiteMode.None;
         });
         services.AddAuthorization();
         services.AddRateLimiter(options =>

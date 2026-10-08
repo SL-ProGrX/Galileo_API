@@ -32,12 +32,14 @@ namespace Galileo_API.Controllers
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Bloqueos_Solicitud_Bloquear")]
         public ErrorDto TES_Bloqueos_Solicitud_Bloquear(int CodEmpresa, int Solicitud, string Razon, string Usuario)
         {
             return BloqueosBL.TES_Bloqueos_Solicitud_Bloquear(CodEmpresa, Solicitud, Razon, Usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Bloqueos_Solicitud_Desbloquear")]
         public ErrorDto TES_Bloqueos_Solicitud_Desbloquear(int CodEmpresa, int Solicitud, string Usuario)
         {

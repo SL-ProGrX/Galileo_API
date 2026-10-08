@@ -1328,7 +1328,7 @@ namespace Galileo_API.DataBaseTier
 
                 _mKindo.UpdateErrorTransaccionSinpe(
                     CodEmpresa,
-                    respuesta?.CodigoReferencia
+                    respuesta.CodigoReferencia
                         ?? ElResultadoDeSendTransfer?.PINSendingResult?.SINPERefNumber
                         ?? string.Empty,
                     idRechazo,
@@ -1384,16 +1384,16 @@ namespace Galileo_API.DataBaseTier
                 TransferData.Transfer.OriginEntityIBAN = ""; 
 
                 TransferData.Transfer.OriginCustomer = new Sinpe_PIN.OriginCustomer();
-                TransferData.Transfer.OriginCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Trim()).Codigo), solicitud.CedulaOrigen!.Trim()); 
-                TransferData.Transfer.OriginCustomer.IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Trim()).Codigo);
+                TransferData.Transfer.OriginCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Trim()).Codigo), solicitud.CedulaOrigen.Trim()); 
+                TransferData.Transfer.OriginCustomer.IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen.Trim()).Codigo);
                 TransferData.Transfer.OriginCustomer.Name = solicitud.NombreOrigen;
                 TransferData.Transfer.OriginCustomer.IBAN = solicitud.CuentaOrigen;
                 TransferData.Transfer.OriginCustomer.Email = "";
                 TransferData.Transfer.OriginCustomer.DebitIBAN = true;
 
                 TransferData.Transfer.DestinationCustomer = new DestinationCustomer();
-                TransferData.Transfer.DestinationCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Trim()).Codigo), solicitud.Codigo!.Trim());
-                TransferData.Transfer.DestinationCustomer.IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Trim()).Codigo);
+                TransferData.Transfer.DestinationCustomer.Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Trim()).Codigo), solicitud.Codigo.Trim());
+                TransferData.Transfer.DestinationCustomer.IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo.Trim()).Codigo);
                 TransferData.Transfer.DestinationCustomer.Name = solicitud.Beneficiario;
                 TransferData.Transfer.DestinationCustomer.IBAN = solicitud.Cuenta;
                 TransferData.Transfer.DestinationCustomer.Email = solicitud.CorreoNotifica;

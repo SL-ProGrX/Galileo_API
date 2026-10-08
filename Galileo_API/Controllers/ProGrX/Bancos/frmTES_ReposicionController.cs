@@ -24,6 +24,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _reposicionBL.TES_Reposicion_Obtener(CodEmpresa, solicitud);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Reposicion_Guardar")]
         public ErrorDto TES_Reposicion_Guardar(int CodEmpresa, TesReposicionData solicitud)
         {

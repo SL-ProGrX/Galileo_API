@@ -1,73 +1,137 @@
-using Dapper;
-using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.FSL;
 
 namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 {
     /// <summary>
-    /// Acceso a datos de los Reportes de Beneficios Fosol (frmFSL_Reportes).
+    /// Acceso a datos de los reportes de beneficios FOSOL
+    /// correspondientes a frmFSL_Reportes.
     /// </summary>
-    public partial class FrmFslReportesDB
+    public sealed class FrmFslReportesDB
     {
-        private readonly IConfiguration _config;
+        private readonly PortalDB _portalDb;
 
         /// <summary>
-        /// Inicializa el acceso a datos con la configuración inyectada.
+        /// Inicializa el acceso a datos del formulario
+        /// frmFSL_Reportes.
         /// </summary>
-        /// <param name="config">Configuración de la aplicación.</param>
-        public FrmFslReportesDB(IConfiguration config)
+        /// <param name="config">
+        /// Configuración general de la aplicación.
+        /// </param>
+        public FrmFslReportesDB(
+            IConfiguration config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+            ArgumentNullException.ThrowIfNull(config);
+
+            _portalDb = new PortalDB(config);
         }
 
         /// <summary>
-        /// Crea una instancia de acceso al portal usando la configuración inyectada.
+        /// Obtiene las oficinas disponibles para filtrar los
+        /// reportes de expedientes.
         /// </summary>
-        private PortalDB CreatePortalDb() => new(_config);
-
-        /// <summary>
-        /// Obtiene el catálogo de oficinas.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <returns>Lista de oficinas.</returns>
-        public ErrorDto<List<Oficina>> FSL_Oficinas_Obtener(int CodEmpresa)
+        /// <param name="CodEmpresa">
+        /// Código de empresa.
+        /// </param>
+        /// <returns>
+        /// Catálogo de oficinas, incluyendo la opción TODOS.
+        /// </returns>
+        public ErrorDto<
+            List<DropDownListaGenericaModel<string>>>
+            FSL_Reportes_Oficinas_Obtener(
+                int CodEmpresa)
         {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-            {
-                const string sql = @"SELECT RTRIM(cod_oficina) AS item, RTRIM(descripcion) AS descripcion
-                                     FROM SIF_Oficinas ORDER BY cod_oficina";
-                return connection.Query<Oficina>(sql).ToList();
-            });
+            const string sql = """
+                SELECT
+                    C.item,
+                    C.descripcion
+                FROM
+                (
+                    SELECT
+                        'TODOS' AS item,
+                        'TODOS' AS descripcion,
+                        0 AS orden
 
-            if (result.Code != 0)
-            {
-                return DbHelper.CreateErrorResponse<List<Oficina>>("FSL_Oficinas_Obtener - " + result.Description);
-            }
+                    UNION ALL
 
-            return result;
+                    SELECT
+                        RTRIM(
+                            ISNULL(O.cod_oficina, '')
+                        ) AS item,
+                        RTRIM(
+                            ISNULL(O.cod_oficina, '')
+                        ) + ' - ' +
+                        RTRIM(
+                            ISNULL(O.descripcion, '')
+                        ) AS descripcion,
+                        1 AS orden
+                    FROM SIF_Oficinas O
+                ) C
+                ORDER BY
+                    C.orden,
+                    C.item;
+                """;
+
+            return DbHelper.ExecuteListQuery<
+                DropDownListaGenericaModel<string>>(
+                    _portalDb,
+                    CodEmpresa,
+                    sql);
         }
 
         /// <summary>
-        /// Obtiene el catálogo de planes Fosol activos.
+        /// Obtiene los planes activos disponibles para
+        /// filtrar los reportes de expedientes.
         /// </summary>
-        /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <returns>Lista de planes.</returns>
-        public ErrorDto<List<Plan>> FSL_Planes_Obtener(int CodEmpresa)
+        /// <param name="CodEmpresa">
+        /// Código de empresa.
+        /// </param>
+        /// <returns>
+        /// Catálogo de planes activos, incluyendo la opción
+        /// TODOS.
+        /// </returns>
+        public ErrorDto<
+            List<DropDownListaGenericaModel<string>>>
+            FSL_Reportes_Planes_Obtener(
+                int CodEmpresa)
         {
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-            {
-                const string sql = @"SELECT RTRIM(COD_PLAN) AS item, RTRIM(COD_PLAN) + ' - ' + descripcion AS descripcion
-                                     FROM FSL_PLANES WHERE ACTIVO = 1 ORDER BY cod_plan";
-                return connection.Query<Plan>(sql).ToList();
-            });
+            const string sql = """
+                SELECT
+                    C.item,
+                    C.descripcion
+                FROM
+                (
+                    SELECT
+                        'TODOS' AS item,
+                        'TODOS' AS descripcion,
+                        0 AS orden
 
-            if (result.Code != 0)
-            {
-                return DbHelper.CreateErrorResponse<List<Plan>>("FSL_Planes_Obtener - " + result.Description);
-            }
+                    UNION ALL
 
-            return result;
+                    SELECT
+                        RTRIM(
+                            ISNULL(P.COD_PLAN, '')
+                        ) AS item,
+                        RTRIM(
+                            ISNULL(P.COD_PLAN, '')
+                        ) + ' - ' +
+                        RTRIM(
+                            ISNULL(P.DESCRIPCION, '')
+                        ) AS descripcion,
+                        1 AS orden
+                    FROM FSL_PLANES P
+                    WHERE P.ACTIVO = 1
+                ) C
+                ORDER BY
+                    C.orden,
+                    C.item;
+                """;
+
+            return DbHelper.ExecuteListQuery<
+                DropDownListaGenericaModel<string>>(
+                    _portalDb,
+                    CodEmpresa,
+                    sql);
         }
     }
 }

@@ -40,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX.ControlTramites
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_TagsModulos_Proceso_Guardar")]
         public ErrorDto SIF_TagsModulos_Proceso_Guardar(int CodEmpresa, string? usuario, [FromBody] SifTagsModulosProcesoGuardarRequest? request)
         {
@@ -54,6 +55,7 @@ namespace Galileo_API.Controllers.ProGrX.ControlTramites
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_TagsModulos_Etiqueta_Guardar")]
         public ErrorDto SIF_TagsModulos_Etiqueta_Guardar(int CodEmpresa, [FromBody] SifTagsModulosEtiquetaGuardarRequest? request)
         {

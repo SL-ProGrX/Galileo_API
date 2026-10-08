@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Operadora_Guardar")]
         public ErrorDto<FndOperadoraDto> AF_Operadora_Guardar(int codEmpresa, FndOperadoraDto request)
         {
@@ -47,6 +48,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_Operadora_Eliminar")]
         public ErrorDto AF_Operadora_Eliminar(int codEmpresa, int cod_operadora)
         {

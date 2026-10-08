@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CntX_Unidades_Guardar")]
         public ErrorDto<bool> CntX_Unidades_Guardar(int CodEmpresa, int CodContabilidad, string Usuario,
             [FromBody] CntXUnidadGuardarDto dto
@@ -35,6 +36,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntX_Unidades_Eliminar")]
         public ErrorDto<bool> CntX_Unidades_Eliminar(int CodEmpresa, int CodContabilidad, string Usuario, string CodUnidad
         )
@@ -58,6 +60,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CntX_Unidades_CC_Guardar")]
         public ErrorDto<bool> CntX_Unidades_CC_Guardar(int CodEmpresa, int CodContabilidad, string Usuario,
             [FromBody] CntXUnidadCCGuardarDto dto

@@ -32,6 +32,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sys_Nacionalidades_Guardar")]
         public ErrorDto Sys_Nacionalidades_Guardar(int CodEmpresa, string usuario, [FromBody] SysNacionalidadesData nacionalidad)
         {
@@ -46,6 +47,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Sys_Nacionalidades_Eliminar")]
         public ErrorDto Sys_Nacionalidades_Eliminar(int CodEmpresa, string usuario, string codNacionalidad)
         {

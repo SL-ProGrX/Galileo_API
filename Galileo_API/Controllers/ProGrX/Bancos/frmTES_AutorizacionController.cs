@@ -39,6 +39,7 @@ namespace Galileo_API.Controllers
             return AutorizacionBL.TES_SolicitudesPendientes_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Autorizacion_Aplicar")]
         public ErrorDto TES_Autorizacion_Aplicar(TesAutorizaParametros nsoliictud)
         {

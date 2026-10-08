@@ -277,6 +277,8 @@ namespace Galileo.DataBaseTier
                     return optMensaje == 1 ? "Código de cuenta inválido..." : string.Empty;
                 }
 
+                cuenta = SafePath.Filter(cuenta, SafePath.AccountChars);
+
                 if (param.Result == null)
                 {
                     return optMensaje == 1 ? "No se pudo obtener los parámetros de la cuenta." : cuenta;
@@ -292,7 +294,7 @@ namespace Galileo.DataBaseTier
             catch (Exception ex)
             {
                 _ = ex.Message;
-                return pCuenta;
+                return SafePath.Filter(pCuenta, SafePath.AccountChars);
             }
         }
 

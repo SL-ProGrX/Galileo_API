@@ -127,7 +127,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         Usuario = filtro.usuario
                     });
 
-                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario!);
+                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
 
                     return DbHelper.CreateOkResponse();
                 }),
@@ -320,7 +320,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         Usuario = filtro.usuario
                     }, commandTimeout: 900);
 
-                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario!);
+                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
 
                     return DbHelper.CreateOkResponse();
                 }),
@@ -345,7 +345,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         Usuario = filtro.usuario
                     }, commandTimeout: 300);
 
-                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario!);
+                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
 
                     return DbHelper.CreateOkResponse();
                 }),
