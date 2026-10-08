@@ -22,6 +22,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
             _db = new FrmAfBeneficioAsgDB(config);
         }
 
+        /// <summary>Obtiene la información exacta del socio.</summary>
+        public ErrorDto<SociosData?> AF_BeneficioAsg_Socio_Obtener(
+            int CodCliente, string? cedula)
+            => _db.AF_BeneficioAsg_Socio_Obtener(
+                CodCliente, cedula);
+
         /// <summary>Lista paginada de beneficios otorgados al socio.</summary>
         public ErrorDto<AfiBeneOtorgaAsgDataList> AfiBeneOtorga_Obtener(int CodCliente, string cedula, int? pagina, int? paginacion, string? filtro)
             => _db.AfiBeneOtorga_Obtener(CodCliente, cedula, pagina, paginacion, filtro);

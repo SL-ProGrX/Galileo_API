@@ -26,6 +26,14 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
             _bl = new FrmAfBeneficioAsgBL(config);
         }
 
+        /// <summary>Obtiene la información exacta del socio.</summary>
+        [Authorize]
+        [HttpGet("AF_BeneficioAsg_Socio_Obtener")]
+        public ErrorDto<SociosData?> AF_BeneficioAsg_Socio_Obtener(
+            int CodCliente, string? cedula)
+            => _bl.AF_BeneficioAsg_Socio_Obtener(
+                CodCliente, cedula);
+
         /// <summary>Lista paginada de beneficios otorgados al socio.</summary>
         [Authorize]
         [HttpGet("AfiBeneOtorgaAsg_Obtener")]
