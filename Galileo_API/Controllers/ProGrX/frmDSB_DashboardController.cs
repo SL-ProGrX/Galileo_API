@@ -3,6 +3,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
 
 namespace Galileo.Controllers.ProGrX
@@ -14,9 +15,9 @@ namespace Galileo.Controllers.ProGrX
     {
         private readonly FrmDsbDashboardBL _bl;
 
-        public FrmDsbDashboardController(IConfiguration config)
+        public FrmDsbDashboardController(IConfiguration config, IMemoryCache cache)
         {
-            _bl = new FrmDsbDashboardBL(config);
+            _bl = new FrmDsbDashboardBL(config, cache);
         }
 
         [HttpGet("Categorias_Obtener")]

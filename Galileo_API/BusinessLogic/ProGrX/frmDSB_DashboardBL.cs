@@ -1,6 +1,7 @@
 using Galileo.DataBaseTier.ProGrX;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Galileo.BusinessLogic.ProGrX
 {
@@ -8,9 +9,9 @@ namespace Galileo.BusinessLogic.ProGrX
     {
         private readonly FrmDsbDashboardDB _db;
 
-        public FrmDsbDashboardBL(IConfiguration config)
+        public FrmDsbDashboardBL(IConfiguration config, IMemoryCache cache)
         {
-            _db = new FrmDsbDashboardDB(config);
+            _db = new FrmDsbDashboardDB(config, cache);
         }
 
         public ErrorDto<List<DashboardCategoriaData>> Categorias_Obtener(int codEmpresa, string usuario)

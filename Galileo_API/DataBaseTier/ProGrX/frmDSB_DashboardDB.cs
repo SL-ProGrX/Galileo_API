@@ -1,6 +1,7 @@
 using Dapper;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX;
+using Microsoft.Extensions.Caching.Memory;
 using System.Data;
 
 namespace Galileo.DataBaseTier.ProGrX
@@ -15,6 +16,7 @@ namespace Galileo.DataBaseTier.ProGrX
         private const string UtilidadMensual = "U_Mes";
         private const string UtilidadAcumulada = "U_Acumulada";
         private const string TasaEfectiva = "TASA_EFECTIVA";
+        private static readonly TimeSpan ModuloCorteCacheDuracion = TimeSpan.FromMinutes(1);
         private static readonly DashboardClientesTendenciaConfig ClientesTendenciaConfig = new(
             "CLI",
             "No tiene acceso al dashboard de Clientes.",
@@ -66,10 +68,12 @@ namespace Galileo.DataBaseTier.ProGrX
                 _ => ((string?)null, "")
             });
         private readonly PortalDB _portalDb;
+        private readonly IMemoryCache _cache;
 
-        public FrmDsbDashboardDB(IConfiguration config)
+        public FrmDsbDashboardDB(IConfiguration config, IMemoryCache cache)
         {
             _portalDb = new PortalDB(config);
+            _cache = cache;
         }
 
         public ErrorDto<List<DashboardCategoriaData>> Categorias_Obtener(int codEmpresa, string usuario)
@@ -283,6 +287,7 @@ namespace Galileo.DataBaseTier.ProGrX
                 };
 
                 var corteCompleto = CorteCompleto(corte);
+                GuardarModuloCorteEnCache(codEmpresa, categoria, corteCompleto);
                 foreach (var grafico in config.Graficos)
                 {
                     var puntos = connection.Query<DashboardModuloPuntoData>(
@@ -332,10 +337,16 @@ namespace Galileo.DataBaseTier.ProGrX
                     return DbHelper.CreateErrorResponse(
                         $"No tiene acceso al dashboard de {NombreCategoria(categoria)}.", -2, data);
 
-                var valoresFila = ObtenerResumenModulo(connection, config);
-                if (valoresFila is null) return DbHelper.CreateOkResponse(data);
-                var corte = CorteCompleto(
-                    Convert.ToDateTime(ObtenerValor(valoresFila, "Corte")));
+                if (!_cache.TryGetValue(
+                        ObtenerModuloCorteCacheKey(codEmpresa, categoria),
+                        out DateTime corte))
+                {
+                    var valoresFila = ObtenerResumenModulo(connection, config);
+                    if (valoresFila is null) return DbHelper.CreateOkResponse(data);
+                    corte = CorteCompleto(
+                        Convert.ToDateTime(ObtenerValor(valoresFila, "Corte")));
+                    GuardarModuloCorteEnCache(codEmpresa, categoria, corte);
+                }
 
                 if (origen == "kpi")
                 {
@@ -632,6 +643,26 @@ namespace Galileo.DataBaseTier.ProGrX
                 new { Corte = (DateTime?)null, Formato = "R", Tipo = "T" },
                 commandType: CommandType.StoredProcedure);
             return fila is null ? null : (IDictionary<string, object?>)fila;
+        }
+
+        private static string ObtenerModuloCorteCacheKey(
+            int codEmpresa,
+            string categoria)
+            => $"DashboardModuloCorte:{codEmpresa}:{categoria}";
+
+        private void GuardarModuloCorteEnCache(
+            int codEmpresa,
+            string categoria,
+            DateTime corte)
+        {
+            _cache.Set(
+                ObtenerModuloCorteCacheKey(codEmpresa, categoria),
+                corte,
+                new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpiration = DateTimeOffset.UtcNow.Add(
+                        ModuloCorteCacheDuracion)
+                });
         }
 
         private static DateTime? ObtenerCorteResumen<TResumen>(
