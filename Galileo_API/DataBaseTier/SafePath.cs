@@ -118,14 +118,19 @@ namespace Galileo.DataBaseTier
 
         private static bool TryGetAllowed(string allowedChars, char candidate, out char allowed)
         {
-            foreach (var item in allowedChars.Where(c => c == candidate))
+            var found = false;
+            allowed = default;
+
+            for (var i = 0; i < allowedChars.Length; i++)
             {
-                allowed = item;
-                return true;
+                if (allowedChars[i] == candidate)
+                {
+                    allowed = allowedChars[i];
+                    found = true;
+                }
             }
 
-            allowed = default;
-            return false;
+            return found;
         }
     }
 }
