@@ -285,5 +285,86 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             return respuesta;
         }
+
+
+        /// <summary>
+        /// Elimina un rango base por monto.
+        /// </summary>
+        public ErrorDto CrCatalogoCreditos_RangoBase_Eliminar(int codEmpresa, string codigo, int consec, string usuario)
+        {
+            codigo = codigo.Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(codigo) || consec <= 0)
+                return new ErrorDto { Code = -1, Description = "Debe indicar la linea y el rango." };
+
+            const string query = "DELETE FROM Rangos WHERE codigo = @Codigo AND consec = @Consec;";
+            return EliminarRango(
+                codEmpresa,
+                query,
+                new { Codigo = codigo, Consec = consec },
+                usuario,
+                $"Rango para el Codigo: {codigo} ID:{consec}");
+        }
+
+
+        /// <summary>
+        /// Elimina un rango de tasa por plazo.
+        /// </summary>
+        public ErrorDto CrCatalogoCreditos_RangoPlazo_Eliminar(int codEmpresa, string codigo, int consec, string usuario)
+        {
+            codigo = codigo.Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(codigo) || consec <= 0)
+                return new ErrorDto { Code = -1, Description = "Debe indicar la linea y el rango de plazo." };
+
+            const string query = "DELETE FROM Rangos_Plazo WHERE codigo = @Codigo AND consec = @Consec;";
+            return EliminarRango(
+                codEmpresa,
+                query,
+                new { Codigo = codigo, Consec = consec },
+                usuario,
+                $"Rango Plazo para el Codigo: {codigo} ID:{consec}");
+        }
+
+
+        /// <summary>
+        /// Elimina la configuracion de tasas y maximos de una garantia.
+        /// </summary>
+        public ErrorDto CrCatalogoCreditos_RangoGarantia_Eliminar(int codEmpresa, string codigo, string garantia, string usuario)
+        {
+            codigo = codigo.Trim().ToUpperInvariant();
+            garantia = garantia.Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(codigo) || string.IsNullOrWhiteSpace(garantia))
+                return new ErrorDto { Code = -1, Description = "Debe indicar la linea y la garantia." };
+
+            const string query = @"
+                DELETE FROM crd_catalogo_garantias
+                WHERE codigo = @Codigo
+                    AND garantia = @Garantia;";
+            return EliminarRango(
+                codEmpresa,
+                query,
+                new { Codigo = codigo, Garantia = garantia },
+                usuario,
+                $"Garantia: {garantia} Linea: {codigo}");
+        }
+
+
+        private ErrorDto EliminarRango(
+            int codEmpresa,
+            string query,
+            object parametros,
+            string usuario,
+            string detalleBitacora)
+        {
+            var respuesta = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                query,
+                parametros);
+
+            if (respuesta.Code >= 0)
+                RegistrarBitacora(codEmpresa, usuario, "Elimina - WEB", detalleBitacora);
+
+            return respuesta;
+        }
     }
 }
