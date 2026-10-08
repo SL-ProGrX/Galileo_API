@@ -193,10 +193,10 @@ Tipo de Moneda: {account.CurrencyCode} Entidad: {account.EntityCode}-{account.En
             {
                 HostId = parametrosSinpe.Result!.vHostPin,
                 OperationId = Guid.NewGuid().ToString(),
-                ClientIPAddress = parametrosSinpe.Result!.vIpHost,
+                ClientIPAddress = parametrosSinpe.Result.vIpHost,
                 CultureCode = "ES-CR",
-                UserCode = parametrosSinpe.Result!.vUsuarioLog,
-                vCanalCGP = parametrosSinpe.Result!.vCanalCGP
+                UserCode = parametrosSinpe.Result.vUsuarioLog,
+                vCanalCGP = parametrosSinpe.Result.vCanalCGP
             };
 
         private Galileo.Models.KindoSinpe.ResAccountInfo ConsultarCuenta(

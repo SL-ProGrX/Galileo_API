@@ -323,7 +323,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     {
                         transferencia.id_banco,
                         transferencia.tipo,
-                        documento = transferencia.ndocumento!.Trim(),
+                        documento = transferencia.ndocumento.Trim(),
                         observaciones = transferencia.observaciones ?? string.Empty,
                         usuario = transferencia.usuario!.ToUpper()
                     });
@@ -338,7 +338,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         {
                             iConsecutivo = ReversionId,
                             item = item.nsolicitud,
-                            usuario = transferencia.usuario!.ToUpper()
+                            usuario = transferencia.usuario.ToUpper()
                         });
 
                     }
