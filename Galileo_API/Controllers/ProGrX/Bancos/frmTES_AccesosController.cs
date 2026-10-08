@@ -57,6 +57,7 @@ namespace Galileo_API.Controllers
         }
 
         
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_AccesosCuentas_Asignar")]
         public ErrorDto Tes_AccesosCuentas_Asignar(int CodEmpresa, int id_banco, string nombre)
         {
@@ -64,6 +65,7 @@ namespace Galileo_API.Controllers
         }
 
         
+        [ValidateAntiForgeryToken]
         [HttpDelete("Tes_AccesosCuentas_Eliminar")]
         public ErrorDto Tes_AccesosCuentas_Eliminar(int CodEmpresa, int id_banco, string nombre)
         {
@@ -83,6 +85,7 @@ namespace Galileo_API.Controllers
         }
 
         
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_AccesosUsuarios_Asignar")]
         public ErrorDto Tes_AccesosUsuarios_Asignar(int CodEmpresa, int id_banco, string nombre)
         {
@@ -90,6 +93,7 @@ namespace Galileo_API.Controllers
         }
 
         
+        [ValidateAntiForgeryToken]
         [HttpDelete("Tes_AccesosUsuarios_Eliminar")]
         public ErrorDto Tes_AccesosUsuarios_Eliminar(int CodEmpresa, int id_banco, string nombre)
         {
@@ -134,6 +138,7 @@ namespace Galileo_API.Controllers
         }
 
         
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_AccesosDocumentos_Guardar")]
         public ErrorDto Tes_AccesosDocumentos_Guardar(int CodEmpresa, string usuario, int id_banco, TesAccesosDocumentosData documento)
         {
@@ -141,6 +146,7 @@ namespace Galileo_API.Controllers
         }
 
         
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_AccesosConceptos_Guardar")]
         public ErrorDto Tes_AccesosConceptos_Guardar(int CodEmpresa, string usuario, int id_banco, bool itemChecked, TesAccesosConceptosData concepto)
         {
@@ -148,6 +154,7 @@ namespace Galileo_API.Controllers
         }
 
         
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_AccesosUnidades_Guardar")]
         public ErrorDto Tes_AccesosUnidades_Guardar(int CodEmpresa, string usuario, int id_banco, bool itemChecked, TesAccesosUnidadesData unidad)
         {
@@ -155,6 +162,7 @@ namespace Galileo_API.Controllers
         }
 
         
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_AccesosFirmas_Guardar")]
         public ErrorDto Tes_AccesosFirmas_Guardar(int CodEmpresa, TesAccesosFirmasData firmas)
         {
@@ -166,6 +174,7 @@ namespace Galileo_API.Controllers
         #region Copia
 
         
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_AccesosUsuarios_Copiar")]
         public ErrorDto Tes_AccesosUsuarios_Copiar(int CodEmpresa, string usuarioOrigen, string usuarioDestino)
         {
@@ -173,6 +182,7 @@ namespace Galileo_API.Controllers
         }
 
         
+        [ValidateAntiForgeryToken]
         [HttpDelete("Tes_AccesosUsuarios_EliminarInactivos")]
         public ErrorDto Tes_AccesosUsuarios_EliminarInactivos(int CodEmpresa)
         {

@@ -187,7 +187,7 @@ ORDER BY A.EXC_CAP_IND DESC;";
                 return validacion;
             }
 
-            var cedula = AH_ExcedentesCapInd_NormalizarCedula(request.cedula);
+            var cedula = AH_ExcedentesCapInd_NormalizarCedula(request!.cedula);
             var usuario = AH_ExcedentesCapInd_NormalizarTextoLibre(request.usuario, 50);
             var vencimiento = AH_ExcedentesCapInd_NormalizarVencimiento(request.vencimiento);
             var porcentaje = request.porcentaje;

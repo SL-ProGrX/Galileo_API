@@ -2,6 +2,7 @@
 using System.Text;
 using System.Data;
 using Dapper;
+using Galileo.DataBaseTier;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helpers
@@ -106,8 +107,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var anio = Path.GetFileName(ObtenerAnioProceso(request.FechaProceso));
-            var nombreInstitucion = Path.GetFileName(LimpiarNombreDirectorio(request.NombreInstitucion));
+            var anio = SafePath.Strict(
+                ObtenerAnioProceso(request.FechaProceso),
+                SafePath.ReportNameChars,
+                nameof(request.FechaProceso));
+            var nombreInstitucion = SafePath.Lenient(
+                Path.GetFileName(LimpiarNombreDirectorio(request.NombreInstitucion)),
+                SafePath.FileNameChars);
 
 
             var rutaBase = Path.GetFullPath(rutaBaseConfigurada);
@@ -130,7 +136,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
         public static void CrearDirectorioSiNoExiste(string rutaBaseConfigurada, string rutaDirectorio)
         {
             var rutaBase = Path.GetFullPath(rutaBaseConfigurada);
-            var rutaDirectorioSeguro = Path.GetFullPath(rutaDirectorio);
+            var rutaDirectorioSeguro = SafePath.RootPath(rutaDirectorio, nameof(rutaDirectorio));
 
             ValidarRutaDentroDeBase(rutaBase, rutaDirectorioSeguro);
 
@@ -249,8 +255,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             Encoding encoding)
         {
             var rutaBase = Path.GetFullPath(rutaBaseConfigurada);
-            var rutaDirectorioSeguro = Path.GetFullPath(rutaDirectorio);
-            var rutaArchivoSeguro = Path.GetFullPath(rutaArchivo);
+            var rutaDirectorioSeguro = SafePath.RootPath(rutaDirectorio, nameof(rutaDirectorio));
+            var rutaArchivoSeguro = SafePath.RootPath(rutaArchivo, nameof(rutaArchivo));
 
             ValidarRutaDentroDeBase(rutaBase, rutaDirectorioSeguro);
             ValidarRutaDentroDeBase(rutaBase, rutaArchivoSeguro);
@@ -311,9 +317,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
 
             ValidarRutaDentroDeBase(rutaBase, rutaDirectorioSeguro);
 
+            var nombreArchivoFinal = SafePath.Lenient(nombreArchivoSeguro, SafePath.FileNameChars);
+
             var rutaArchivo = Path.GetFullPath(Path.Combine(
                 rutaDirectorioSeguro,
-                nombreArchivoSeguro));
+                nombreArchivoFinal));
 
             ValidarRutaDentroDeBase(rutaBase, rutaArchivo);
 

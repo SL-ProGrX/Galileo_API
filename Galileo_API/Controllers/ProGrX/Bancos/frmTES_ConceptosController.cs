@@ -23,12 +23,14 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         {
             return _conceptosBL.Tes_ConceptosLista_Obtener(CodEmpresa, filtros);
         }
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_Conceptos_Guardar")]
         public ErrorDto Tes_Conceptos_Guardar(int CodEmpresa, string usuario, TesConceptosData concepto)
         {
             return _conceptosBL.Tes_Conceptos_Guardar(CodEmpresa, usuario, concepto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Tes_Conceptos_Eliminar")]
         public ErrorDto Tes_Conceptos_Eliminar(int CodEmpresa, string tipo, string usuario)
         {

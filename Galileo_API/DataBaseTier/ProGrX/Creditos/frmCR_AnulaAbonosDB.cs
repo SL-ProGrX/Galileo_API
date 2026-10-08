@@ -127,12 +127,19 @@ order by id_seq desc;", new { idSolicitud }).ToList();
             const string sql = @"
 select isnull(dbo.fxCrd_Operacion_Anula_Cta_Recomendada(@idSolicitud, @montoAmortizacion),'...') as cuenta;";
 
-            return DbHelper.ExecuteSingleQuery(
+            var result = DbHelper.ExecuteSingleQuery(
                 _portalDb,
                 codEmpresa,
                 sql,
                 "...",
                 new { idSolicitud = request.id_solicitud, montoAmortizacion = request.monto_amortizacion });
+
+            return new ErrorDto<string>
+            {
+                Code = result.Code,
+                Description = result.Description,
+                Result = result.Result!
+            };
         }
 
         /// <summary>

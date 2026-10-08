@@ -261,6 +261,55 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     null);
         }
 
+        private ErrorDto<FndDocumentoConsecutivoResult?>
+            ObtenerConsecutivoFndVersionUno(
+                int codEmpresa,
+                string tipo,
+                long operadora)
+        {
+            var sql = ObtenerSqlConsecutivoFnd(tipo);
+
+            if (sql is null)
+            {
+                return DbHelper.CreateErrorResponse<
+                    FndDocumentoConsecutivoResult?>(
+                    "Tipo de documento no soportado para FND SysDocVersion 1.",
+                    -2,
+                    null);
+            }
+
+            var result = DbHelper.WithConn(
+                CreatePortalDb(),
+                codEmpresa,
+                connection =>
+                {
+                    var consecutivo =
+                        connection.QueryFirstOrDefault<long>(
+                            sql.Value.SelectSql,
+                            new { Operadora = operadora });
+
+                    connection.Execute(
+                        sql.Value.UpdateSql,
+                        new { Operadora = operadora });
+
+                    return new FndDocumentoConsecutivoResult
+                    {
+                        Consecutivo = consecutivo
+                    };
+                });
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse<
+                    FndDocumentoConsecutivoResult?>(
+                    result.Result)
+                : DbHelper.CreateErrorResponse<
+                    FndDocumentoConsecutivoResult?>(
+                    result.Description
+                        ?? "Error obteniendo consecutivo FND.",
+                    result.Code.GetValueOrDefault(-1),
+                    null);
+        }
+
         private static (string SelectSql, string UpdateSql)?
             ObtenerSqlConsecutivoAse(string tipo)
         {
@@ -281,6 +330,43 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 "NC" => (
                     SqlAseNotaCreditoSelect,
                     SqlAseNotaCreditoUpdate),
+
+                _ => null
+            };
+        }
+
+        private int ObtenerSysDocVersion(int codEmpresa)
+        {
+            using var connection = DbHelper.OpenConnection(
+                CreatePortalDb(),
+                codEmpresa);
+
+            const string query = @"
+                SELECT ISNULL(SysDocVersion, 0)
+                FROM dbo.SIF_EMPRESA
+                WHERE PORTAL_ID = @CodEmpresa;";
+
+            return connection.QueryFirstOrDefault<int>(
+                query,
+                new { CodEmpresa = codEmpresa });
+        }
+
+        private static (string SelectSql, string UpdateSql)?
+            ObtenerSqlConsecutivoFnd(string tipo)
+        {
+            return NormalizarTexto(tipo).ToUpperInvariant() switch
+            {
+                "RECIBO" or "RE" => (
+                    SqlFndOperadoraConsecutivoReciboSelect,
+                    SqlFndOperadoraConsecutivoReciboUpdate),
+
+                "NOTA CREDITO" or "NC" => (
+                    SqlFndOperadoraConsecutivoNotaCreditoSelect,
+                    SqlFndOperadoraConsecutivoNotaCreditoUpdate),
+
+                "NOTA DEBITO" or "ND" => (
+                    SqlFndOperadoraConsecutivoNotaDebitoSelect,
+                    SqlFndOperadoraConsecutivoNotaDebitoUpdate),
 
                 _ => null
             };

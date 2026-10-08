@@ -215,7 +215,7 @@ SELECT
                     return DbHelper.ErrorResponse(MENSAJEMONTO);
                 }
 
-                var globales = _mProGrx.sbSifParametrosInicializa(CodEmpresa, Usuario, Contabilidad).Result;
+                var globales = _mProGrx.sbSifParametrosInicializa(CodEmpresa, Usuario, Contabilidad).Result!;
 
                 decimal cargoReposicion = 0m;
                 decimal cargosFinales = req.Cargos;

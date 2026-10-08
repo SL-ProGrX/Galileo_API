@@ -43,12 +43,14 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bancosDocBL.Tes_BancoDoc_Obtener(CodEmpresa, id_banco, tipo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_BancoDoc_Guardar")]
         public ErrorDto Tes_BancoDoc_Guardar(int CodEmpresa, string bancoDoc)
         {
             return _bancosDocBL.Tes_BancoDoc_Guardar(CodEmpresa, bancoDoc);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("TesBancoDoc_Eliminar")]
         public ErrorDto TesBancoDoc_Eliminar(int CodEmpresa, int id_banco, string tipo, string usuario)
         {

@@ -24,6 +24,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sys_EstadoCivil_Guardar")]
         public ErrorDto  Sys_EstadoCivil_Guardar(int codEmpresa,SysEstadoCivilData estadoCivil)
         { 
@@ -31,6 +32,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Sys_EstadoCivil_Eliminar")]
         public ErrorDto Sys_EstadoCivil_Eliminar(int codEmpresa, string usuario, string estadoCivil)
         {

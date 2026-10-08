@@ -760,7 +760,9 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 mensajes.Add($" - El Plazo no cumple con el plazo mínimo permitido ({valida.Result.plazo_minimo})...\n");
             }
 
-            var validaMontoMinimo = contrato.tipo_deduc == "M" && valida.Result.cuenta_maestra != 1;
+            var validaMontoMinimo = contrato.tipo_deduc == "M" &&
+                valida.Result.cuenta_maestra != 1 &&
+                valida.Result.tipo_cdp != 1;
             var validaInversionMinima = contrato.tipo_deduc == "M" &&
                 valida.Result.tipo_cdp == 1 &&
                 !valida.Result.web_vence.HasValue;

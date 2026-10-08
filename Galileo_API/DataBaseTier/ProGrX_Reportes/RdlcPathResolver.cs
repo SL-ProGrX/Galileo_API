@@ -42,7 +42,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             string? safeFolder = null;
             if (!string.IsNullOrWhiteSpace(folder))
             {
-                safeFolder = Path.GetFileName(folder);
+                safeFolder = SafePath.Lenient(Path.GetFileName(folder), SafePath.FileNameChars);
             }
 
             var trimmedRoot = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
@@ -60,7 +60,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             if (string.IsNullOrWhiteSpace(basePath))
                 throw new SecurityException("La ruta base del reporte es requerida.");
 
-            var normalizedBasePath = Path.GetFullPath(basePath);
+            var normalizedBasePath = SafePath.RootPath(basePath, nameof(basePath));
             var directory = Path.GetDirectoryName(normalizedBasePath);
             var normalizedDirectory = string.IsNullOrWhiteSpace(directory) ? string.Empty : Path.GetFullPath(directory);
 
@@ -74,7 +74,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             var match = FindReportInDirectory(normalizedDirectory, requestedName);
             if (match == null && !string.IsNullOrWhiteSpace(defaultBasePath))
             {
-                var normalizedDefaultDirectory = Path.GetFullPath(defaultBasePath);
+                var normalizedDefaultDirectory = SafePath.RootPath(defaultBasePath, nameof(defaultBasePath));
                 if (!string.Equals(
                         normalizedDefaultDirectory,
                         normalizedDirectory,
@@ -128,7 +128,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                 throw new SecurityException($"{paramName} inválido.");
             }
 
-            return normalized;
+            return SafePath.Strict(normalized, SafePath.ReportNameChars, paramName);
         }
 
         private static IEnumerable<string> BuildBasePathCandidates(
@@ -173,7 +173,9 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
         public string CombineUnderRoot(string basePath, params string[] reportFile)
         {
             var rootFull = Path.GetFullPath(basePath);
-            var combined = reportFile.Aggregate(rootFull, Path.Combine);
+            var safeSegments = reportFile.Select(
+                segment => SafePath.Strict(segment, SafePath.FileNameChars, nameof(reportFile)));
+            var combined = safeSegments.Aggregate(rootFull, Path.Combine);
             var full = Path.GetFullPath(combined);
 
             if (!IsUnderDirectory(rootFull, full))
