@@ -337,16 +337,8 @@ namespace Galileo.DataBaseTier.ProGrX
                     return DbHelper.CreateErrorResponse(
                         $"No tiene acceso al dashboard de {NombreCategoria(categoria)}.", -2, data);
 
-                if (!_cache.TryGetValue(
-                        ObtenerModuloCorteCacheKey(codEmpresa, categoria),
-                        out DateTime corte))
-                {
-                    var valoresFila = ObtenerResumenModulo(connection, config);
-                    if (valoresFila is null) return DbHelper.CreateOkResponse(data);
-                    corte = CorteCompleto(
-                        Convert.ToDateTime(ObtenerValor(valoresFila, "Corte")));
-                    GuardarModuloCorteEnCache(codEmpresa, categoria, corte);
-                }
+                var corte = ObtenerModuloCorte(connection, codEmpresa, categoria, config);
+                if (corte is null) return DbHelper.CreateOkResponse(data);
 
                 if (origen == "kpi")
                 {
@@ -356,7 +348,7 @@ namespace Galileo.DataBaseTier.ProGrX
 
                     data = connection.Query<DashboardHistogramaData>(
                         config.ProcedimientoHistograma,
-                        new { Corte = corte, Dato = dato },
+                        new { Corte = corte.Value, Dato = dato },
                         commandType: CommandType.StoredProcedure)
                         .Select(item => new DashboardModuloPuntoData
                         {
@@ -378,7 +370,7 @@ namespace Galileo.DataBaseTier.ProGrX
                         config.ProcedimientoConsulta,
                         new
                         {
-                            Corte = corte,
+                            Corte = corte.Value,
                             Formato = "H",
                             Tipo = indicador,
                             Codigo = filtro
@@ -643,6 +635,26 @@ namespace Galileo.DataBaseTier.ProGrX
                 new { Corte = (DateTime?)null, Formato = "R", Tipo = "T" },
                 commandType: CommandType.StoredProcedure);
             return fila is null ? null : (IDictionary<string, object?>)fila;
+        }
+
+        private DateTime? ObtenerModuloCorte(
+            IDbConnection connection,
+            int codEmpresa,
+            string categoria,
+            DashboardModuloConfig config)
+        {
+            if (_cache.TryGetValue(
+                    ObtenerModuloCorteCacheKey(codEmpresa, categoria),
+                    out DateTime corte))
+                return corte;
+
+            var valoresFila = ObtenerResumenModulo(connection, config);
+            if (valoresFila is null) return null;
+
+            corte = CorteCompleto(
+                Convert.ToDateTime(ObtenerValor(valoresFila, "Corte")));
+            GuardarModuloCorteEnCache(codEmpresa, categoria, corte);
+            return corte;
         }
 
         private static string ObtenerModuloCorteCacheKey(
