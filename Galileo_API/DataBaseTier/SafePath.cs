@@ -106,7 +106,7 @@ namespace Galileo.DataBaseTier
         {
             var rebuilt = Strict(value, PathChars, paramName);
 
-            if (rebuilt.Split('\\', '/').Contains(".."))
+            if (rebuilt.Split(PathSeparators).Contains(".."))
             {
                 throw new SecurityException($"{paramName} contiene segmentos no permitidos.");
             }
@@ -114,15 +114,14 @@ namespace Galileo.DataBaseTier
             return Path.GetFullPath(rebuilt);
         }
 
+        private static readonly char[] PathSeparators = ['\\', '/'];
+
         private static bool TryGetAllowed(string allowedChars, char candidate, out char allowed)
         {
-            foreach (var item in allowedChars)
+            foreach (var item in allowedChars.Where(c => c == candidate))
             {
-                if (item == candidate)
-                {
-                    allowed = item;
-                    return true;
-                }
+                allowed = item;
+                return true;
             }
 
             allowed = default;

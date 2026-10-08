@@ -29,11 +29,19 @@ namespace Galileo_API.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("token")]
+        [ProducesResponseType(typeof(AntiforgeryTokenResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public IActionResult ObtenerToken()
         {
             var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
 
-            return Ok(new { token = tokens.RequestToken });
+            return Ok(new AntiforgeryTokenResponse(tokens.RequestToken));
         }
     }
+
+    /// <summary>
+    /// Respuesta con el token de solicitud anti-forgery.
+    /// </summary>
+    /// <param name="Token">Token que el cliente envía en el header X-XSRF-TOKEN.</param>
+    public sealed record AntiforgeryTokenResponse(string? Token);
 }
