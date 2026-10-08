@@ -126,6 +126,24 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrCatalogoCreditos_RangoGarantia_Guardar(codEmpresa, request);
         }
 
+        [HttpDelete("CrCatalogoCreditos_RangoBase_Eliminar")]
+        public ErrorDto CrCatalogoCreditos_RangoBase_Eliminar(int codEmpresa, string codigo, int consec, string usuario)
+        {
+            return _bl.CrCatalogoCreditos_RangoBase_Eliminar(codEmpresa, codigo, consec, usuario);
+        }
+
+        [HttpDelete("CrCatalogoCreditos_RangoPlazo_Eliminar")]
+        public ErrorDto CrCatalogoCreditos_RangoPlazo_Eliminar(int codEmpresa, string codigo, int consec, string usuario)
+        {
+            return _bl.CrCatalogoCreditos_RangoPlazo_Eliminar(codEmpresa, codigo, consec, usuario);
+        }
+
+        [HttpDelete("CrCatalogoCreditos_RangoGarantia_Eliminar")]
+        public ErrorDto CrCatalogoCreditos_RangoGarantia_Eliminar(int codEmpresa, string codigo, string garantia, string usuario)
+        {
+            return _bl.CrCatalogoCreditos_RangoGarantia_Eliminar(codEmpresa, codigo, garantia, usuario);
+        }
+
         [HttpGet("CrCatalogoCreditos_RangosLiquidez_Obtener")]
         public ErrorDto<CrCatalogoCreditoRangosLiquidezData> CrCatalogoCreditos_RangosLiquidez_Obtener(int codEmpresa, string codigo)
         {
@@ -154,6 +172,12 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<int> CrCatalogoCreditos_ComiteEstudio_Guardar(int codEmpresa, CrCatalogoCreditoComiteEstudioGuardarRequest request)
         {
             return _bl.CrCatalogoCreditos_ComiteEstudio_Guardar(codEmpresa, request);
+        }
+
+        [HttpDelete("CrCatalogoCreditos_ComiteEstudio_Eliminar")]
+        public ErrorDto CrCatalogoCreditos_ComiteEstudio_Eliminar(int codEmpresa, string codigo, int id, string usuario)
+        {
+            return _bl.CrCatalogoCreditos_ComiteEstudio_Eliminar(codEmpresa, codigo, id, usuario);
         }
 
         [HttpPost("CrCatalogoCreditos_Guardar")]
