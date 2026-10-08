@@ -24,12 +24,14 @@ namespace Galileo.Controllers
             return _bl.TiposSuspension_ObtenerTodos(CodEmpresa, pagina, paginacion, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TiposSuspension_Guardar")]
         public ErrorDto TiposSuspension_Guardar(int CodEmpresa, TiposSuspensionDto tiposSuspensionDto)
         {
             return _bl.TiposSuspension_Guardar(CodEmpresa, tiposSuspensionDto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("TiposSuspension_Eliminar")]
         public ErrorDto TiposSuspension_Eliminar(int CodEmpresa, string codSuspension)
         {

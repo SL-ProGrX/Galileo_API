@@ -29,18 +29,21 @@ namespace Galileo.Controllers
             return _bl.Precios_ObtenerTodos(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Precios_Insertar")]
         public ErrorDto Precios_Insertar(int CodEmpresa, Precio request)
         {
             return _bl.Precios_Insertar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Precios_Actualizar")]
         public ErrorDto Precios_Actualizar(int CodEmpresa, Precio request)
         {
             return _bl.Precios_Actualizar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Precios_Eliminar")]
         public ErrorDto Precios_Eliminar(int CodEmpresa, string precio)
         {

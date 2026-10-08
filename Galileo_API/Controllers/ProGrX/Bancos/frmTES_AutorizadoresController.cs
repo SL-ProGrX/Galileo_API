@@ -40,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_Autorizadores_Guardar")]
         public ErrorDto Tes_Autorizadores_Guardar(int CodEmpresa, string usuario, TesAutorizadoresDto autorizador)
         {
@@ -47,6 +48,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Tes_Autorizadores_Eliminar")]
         public ErrorDto Tes_Autorizadores_Eliminar(int CodEmpresa, string nombre, string usuario)
         {

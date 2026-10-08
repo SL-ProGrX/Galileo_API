@@ -40,6 +40,7 @@ namespace Galileo.Controllers
 
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Departamentos_Guardar")]
         public ErrorDto AF_Departamentos_Guardar(int CodEmpresa, AfDepartamentosDto Info)
         {
@@ -47,6 +48,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_DepartamentosSecciones_Guardar")]
         public ErrorDto AF_DepartamentosSecciones_Guardar(int CodEmpresa, AfSeccionesDto Info)
         {
@@ -54,6 +56,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_Departamentos_Borrar")]
         public ErrorDto AF_Departamentos_Borrar(int CodEmpresa, int Institucion, string Departamento)
         {
@@ -61,6 +64,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_DepartamentosSecciones_Borrar")]
         public ErrorDto AF_DepartamentosSecciones_Borrar(int CodEmpresa, int Institucion, string Departamento, string Seccion)
         {

@@ -27,12 +27,14 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _AnulacionDocBL.TES_Anulacion_Obtener(CodEmpresa, solicitud, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Anulacion_Anular")]
         public ErrorDto TES_Anulacion_Anular(int CodEmpresa, string usuario, TesAnulacionAnulaModel anula)
         {
             return _AnulacionDocBL.TES_Anulacion_Anular(CodEmpresa, usuario, anula);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_AnulacionCopiaSolicitud")]
         public ErrorDto TES_AnulacionCopiaSolicitud(int CodEmpresa, string usuario, TesAnulacionAnulaModel anula)
         {

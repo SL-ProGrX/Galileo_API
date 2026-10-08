@@ -26,12 +26,14 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.Tes_UbicacionesLista_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_Ubicaciones_Guardar")]
         public ErrorDto Tes_Ubicaciones_Guardar(int CodEmpresa, string usuario, TesUbicacionesData ubicacion)
         {
             return _bl.Tes_Ubicaciones_Guardar(CodEmpresa, usuario, ubicacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Tes_Ubicaciones_Eliminar")]
         public ErrorDto Tes_Ubicaciones_Eliminar(int CodEmpresa, string ubicacion, string usuario)
         {

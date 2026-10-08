@@ -37,12 +37,14 @@ namespace PGalileo_API.Controllers
             return PlanesBL.TES_Planes_BancosGrupos_Obtener(CodEmpresa, banco);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Planes_Guardar")]
         public ErrorDto TES_Planes_Guardar(int CodEmpresa, string infoPlan)
         {
             return PlanesBL.TES_Planes_Guardar(CodEmpresa, infoPlan);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("TES_Planes_Borrar")]
         public ErrorDto TES_Planes_Borrar(int CodEmpresa, string infoPlan)
         {

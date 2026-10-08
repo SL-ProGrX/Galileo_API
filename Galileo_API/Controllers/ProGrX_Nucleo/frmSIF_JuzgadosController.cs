@@ -17,6 +17,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_Juzgados_Insertar")]
         public ErrorDto SIF_Juzgados_Insertar(int CodCliente, JuzgadosDto juzgado)
         {
@@ -38,6 +39,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_Juzgados_Actualizar")]
         public ErrorDto SIF_Juzgados_Actualizar(int CodEmpresa, JuzgadosDto request)
         {
@@ -45,6 +47,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("SIF_Juzgados_Eliminar")]
         public ErrorDto SIF_Juzgados_Eliminar(int CodEmpresa, string consecutivo)
         {

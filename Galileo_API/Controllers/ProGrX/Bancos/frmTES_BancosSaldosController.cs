@@ -37,6 +37,7 @@ namespace Galileo_API.Controllers
             return _bancosSaldosBL.TES_BancosSaldos_Monitoreo_Obtener(CodEmpresa, CodGrupo, Filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_BancosSaldos_Monitoreo_Actualizar")]
         public ErrorDto TES_BancosSaldos_Monitoreo_Actualizar(int CodEmpresa, string Banco, bool Monitoreo)
         {
@@ -55,12 +56,14 @@ namespace Galileo_API.Controllers
             return _bancosSaldosBL.TES_BancosSaldos_Cierres_Obtener(CodEmpresa, Banco);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_BancosSaldos_Cierres_Actualizar")]
         public ErrorDto TES_BancosSaldos_Cierres_Actualizar(int CodEmpresa, string Usuario, string Datos)
         {
             return _bancosSaldosBL.TES_BancosSaldos_Cierres_Actualizar(CodEmpresa, Usuario, Datos);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_BancosSaldos_Cierres_CargaMasiva")]
         public ErrorDto<TesBancosSaldosCargaMasivaResult> TES_BancosSaldos_Cierres_CargaMasiva(
             int CodEmpresa,

@@ -31,12 +31,14 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.TES_MotivoSinpeExportar_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_MotivoSinpe_Guardar")]
         public ErrorDto TES_MotivoSinpe_Guardar(int CodEmpresa, string usuario, TesMotivosSinpeDto motivo)
         {
             return _bl.TES_MotivoSinpe_Guardar(CodEmpresa, usuario, motivo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("TES_MotivoSinpe_Eliminar")]
         public ErrorDto TES_MotivoSinpe_Eliminar(int CodEmpresa, string usuario, int cod_motivo)
         {
