@@ -65,7 +65,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
         public int orden { get; set; } = 0;
 
-        public decimal poliza_prevista => 0M;
+        public decimal poliza_prevista { get; set; } = 0M;
 
         public decimal total =>
             ab_int_cor +
