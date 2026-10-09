@@ -24,12 +24,14 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
             return _bl.VivTiposDesembolsos_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("VivTiposDesembolsos_Guardar")]
         public ErrorDto VivTiposDesembolsos_Guardar(int codEmpresa, int operacion, VivTiposDesembolsosData request)
         {
             return _bl.VivTiposDesembolsos_Guardar(codEmpresa, operacion, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("VivTiposDesembolsos_Eliminar")]
         public ErrorDto VivTiposDesembolsos_Eliminar(int codEmpresa, string codigo, string usuario)
         {

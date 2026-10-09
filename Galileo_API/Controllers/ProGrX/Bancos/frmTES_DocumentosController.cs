@@ -55,24 +55,28 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _Bl.Tes_DocAnulaConceptos_Scroll(CodEmpresa, concepto, scroll);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_Documentos_Guardar")]
         public ErrorDto Tes_Documentos_Guardar(int CodEmpresa, string usuario, TesTiposDocDto documento)
         {
             return _Bl.TES_Documentos_Guardar(CodEmpresa, usuario, documento);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Tes_Documentos_Eliminar")]
         public ErrorDto Tes_Documentos_Eliminar(int CodEmpresa, string tipo, string usuario)
         {
             return _Bl.TES_Documentos_Eliminar(CodEmpresa, tipo, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_DocAnulaConcepto_Guardar")]
         public ErrorDto TES_DocAnulaConcepto_Guardar(int CodEmpresa, string usuario, string tipo, TesDocAnulaConceptosData concepto)
         {
             return _Bl.TES_DocAnulaConcepto_Guardar(CodEmpresa, usuario, tipo, concepto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("TES_DocAnulaConcepto_Eliminar")]
         public ErrorDto TES_DocAnulaConcepto_Eliminar(int CodEmpresa, int id_conceptos, string usuario)
         {

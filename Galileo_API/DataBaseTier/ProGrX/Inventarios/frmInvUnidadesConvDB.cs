@@ -241,7 +241,7 @@ namespace Galileo.DataBaseTier
                         CodUnidad = codUnidad,
                         CodUnidadDestino =
                             codUnidadDestino,
-                        Factor = equivalencia.factor
+                        Factor = equivalenciaValidada.factor
                     });
 
             return INV_UnidadesConv_NonQuery_Resultado_Procesar(

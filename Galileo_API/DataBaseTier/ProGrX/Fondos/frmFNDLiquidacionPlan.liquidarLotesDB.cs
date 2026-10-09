@@ -39,7 +39,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 var globales = mProGrx.sbSifParametrosInicializa(
                     codEmpresa,
                     request.usuario,
-                    request.codContabilidad).Result;
+                    request.codContabilidad).Result!;
 
                 request.oficinaTitular = globales.GOficinaTitular;
                 request.oficinaUnidad = globales.GOficinaUnidad;

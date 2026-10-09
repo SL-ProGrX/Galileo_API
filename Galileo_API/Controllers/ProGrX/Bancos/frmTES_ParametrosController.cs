@@ -25,6 +25,7 @@ namespace Galileo_API.Controllers
             return _parametrosBL.TES_Parametros_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Parametros_Guardar")]
         public ErrorDto TES_Parametros_Guardar(int CodEmpresa, string Usuario, string Parametros)
         {

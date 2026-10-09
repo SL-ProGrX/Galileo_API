@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_AutoRegistro_Guardar")]
         public ErrorDto Tes_AutoRegistro_Guardar(int CodEmpresa, TesAutoRegistroDto registro)
         {
@@ -33,6 +34,7 @@ namespace Galileo_API.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Tes_AutoRegistro_Eliminar")]
         public ErrorDto Tes_AutoRegistro_Eliminar(int CodEmpresa, string registro)
         {
@@ -47,6 +49,7 @@ namespace Galileo_API.Controllers
         }
 
         //[Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPatch("Tes_AutoRegistroCtaBancos_Asignar")]
         public ErrorDto Tes_AutoRegistroCtaBancos_Asignar(int CodEmpresa, int codigo, int cta, bool asignado, string usuario)
         {

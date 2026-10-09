@@ -52,7 +52,7 @@ namespace Galileo_API.DataBaseTier
                 decimal curMonto = 0m;
                 
 
-                var cantidadSolicitudes = transferencia.parametros.cantidad;
+                var cantidadSolicitudes = transferencia.parametros!.cantidad;
                 cantidadSolicitudes = ValCantidadSolicitudes(cantidadSolicitudes, transferencia);
 
                 // 2) Ejecutar SOLO SQL permitido
@@ -120,7 +120,7 @@ namespace Galileo_API.DataBaseTier
 
                     ActualizaTesBancosDocsConse(conn, consc, transferencia);
 
-                    var aplicaInterno = spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc, transferencia.bancoConsec, transferencia.usuario);
+                    var aplicaInterno = spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, transferencia.bancoConsec!, transferencia.usuario!);
 
                     if(aplicaInterno.aplica == "1")
                     {
@@ -142,7 +142,7 @@ namespace Galileo_API.DataBaseTier
         private static  int ValCantidadSolicitudes(int cantidadSolicitudes, TesTransferenciasInfo transferencia)
         {
             if (cantidadSolicitudes <= 0 &&
-                    transferencia.parametros.maximo >= transferencia.parametros.minimo &&
+                    transferencia.parametros!.maximo >= transferencia.parametros.minimo &&
                     transferencia.parametros.minimo > 0)
             {
                 cantidadSolicitudes =
@@ -320,7 +320,7 @@ Where ID_Solicitud = @IdSolicitud";
                          };
                 }
 
-                _mTesoreria.fxTesTipoDocConsec(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc, "-", transferencia.plan);
+                _mTesoreria.fxTesTipoDocConsec(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, "-", transferencia.plan!);
                 return DbHelper.OkResponse("Transferencia Revertida Correctamente");
             }
             catch (Exception ex)

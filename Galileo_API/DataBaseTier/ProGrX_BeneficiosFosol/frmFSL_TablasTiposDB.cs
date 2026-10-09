@@ -60,14 +60,14 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene los registros del cat&aacute;logo
+        /// Obtiene los registros del catálogo
         /// seleccionado.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="filtros">
-        /// Filtros, ordenamiento y paginaci&oacute;n.
+        /// Filtros, ordenamiento y paginación.
         /// </param>
         /// <returns>
         /// Lista paginada de tipos.
@@ -275,13 +275,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// conservando el comportamiento de fxGuardar en VB6.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n del tipo.
+        /// Información del tipo.
         /// </param>
         /// <returns>
-        /// Resultado de la operaci&oacute;n.
+        /// Resultado de la operación.
         /// </returns>
         public ErrorDto
             FSL_TablasTipos_Tipo_Registrar(
@@ -298,13 +298,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Actualiza un tipo existente.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n del tipo.
+        /// Información del tipo.
         /// </param>
         /// <returns>
-        /// Resultado de la actualizaci&oacute;n.
+        /// Resultado de la actualización.
         /// </returns>
         public ErrorDto
             FSL_TablasTipos_Tipo_Actualizar(
@@ -318,22 +318,22 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Elimina un tipo del cat&aacute;logo seleccionado.
+        /// Elimina un tipo del catálogo seleccionado.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="tipo">
-        /// Tipo de cat&aacute;logo.
+        /// Tipo de catálogo.
         /// </param>
         /// <param name="codigo">
-        /// C&oacute;digo del registro.
+        /// Código del registro.
         /// </param>
         /// <param name="usuario">
         /// Usuario responsable.
         /// </param>
         /// <returns>
-        /// Resultado de la eliminaci&oacute;n.
+        /// Resultado de la eliminación.
         /// </returns>
         public ErrorDto
             FSL_TablasTipos_Tipo_Eliminar(
@@ -375,20 +375,20 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Prepara el registro o actualizaci&oacute;n de un
+        /// Prepara el registro o actualización de un
         /// tipo.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n del tipo.
+        /// Información del tipo.
         /// </param>
         /// <param name="accion">
-        /// Acci&oacute;n que debe ejecutarse.
+        /// Acción que debe ejecutarse.
         /// </param>
         /// <returns>
-        /// Resultado de la operaci&oacute;n.
+        /// Resultado de la operación.
         /// </returns>
         private ErrorDto
             FSL_TablasTipos_Tipo_Guardar(
@@ -436,13 +436,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 
         /// <summary>
         /// Ejecuta el mantenimiento solicitado sobre el
-        /// cat&aacute;logo seleccionado.
+        /// catálogo seleccionado.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="operacion">
-        /// Informaci&oacute;n normalizada de la operaci&oacute;n.
+        /// Información normalizada de la operación.
         /// </param>
         /// <returns>
         /// Resultado del mantenimiento.
@@ -741,14 +741,14 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Valida la operaci&oacute;n normalizada antes de
+        /// Valida la operación normalizada antes de
         /// acceder a la base de datos.
         /// </summary>
         /// <param name="operacion">
-        /// Informaci&oacute;n de la operaci&oacute;n.
+        /// Información de la operación.
         /// </param>
         /// <returns>
-        /// Mensaje de validaci&oacute;n o una cadena vac&iacute;a.
+        /// Mensaje de validación o una cadena vacía.
         /// </returns>
         private static string
             FSL_TablasTipos_Operacion_Validar(
@@ -774,13 +774,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 
         /// <summary>
         /// Determina si el tipo corresponde a uno de los
-        /// cat&aacute;logos utilizados por el formulario VB6.
+        /// catálogos utilizados por el formulario VB6.
         /// </summary>
         /// <param name="tipo">
         /// Tipo normalizado.
         /// </param>
         /// <returns>
-        /// Verdadero cuando el tipo es v&aacute;lido.
+        /// Verdadero cuando el tipo es válido.
         /// </returns>
         private static bool
             FSL_TablasTipos_Tipo_Valido(
@@ -794,7 +794,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Normaliza el tipo de cat&aacute;logo.
+        /// Normaliza el tipo de catálogo.
         /// </summary>
         /// <param name="tipo">
         /// Tipo recibido.
@@ -852,13 +852,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Registra el movimiento en la bit&aacute;cora general.
+        /// Registra el movimiento en la bitácora general.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="operacion">
-        /// Informaci&oacute;n de la operaci&oacute;n.
+        /// Información de la operación.
         /// </param>
         /// <param name="movimiento">
         /// Movimiento ejecutado.
@@ -887,14 +887,14 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene la descripci&oacute;n mostrada por el
-        /// formulario VB6 para el cat&aacute;logo.
+        /// Obtiene la descripción mostrada por el
+        /// formulario VB6 para el catálogo.
         /// </summary>
         /// <param name="tipo">
-        /// Tipo de cat&aacute;logo.
+        /// Tipo de catálogo.
         /// </param>
         /// <returns>
-        /// Descripci&oacute;n del cat&aacute;logo.
+        /// Descripción del catálogo.
         /// </returns>
         private static string
             FSL_TablasTipos_Tipo_Descripcion_Obtener(

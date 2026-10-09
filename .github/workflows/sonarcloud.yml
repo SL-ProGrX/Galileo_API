@@ -24,7 +24,7 @@ jobs:
       - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'   # .slnx requiere .NET 9
+          dotnet-version: '10.0.x'
 
       - name: Setup JDK 17 (requerido por Sonar)
         uses: actions/setup-java@v4

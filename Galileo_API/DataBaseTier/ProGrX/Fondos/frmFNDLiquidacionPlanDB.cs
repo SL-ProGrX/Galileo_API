@@ -660,7 +660,7 @@ where F.Cod_Operadora = @CodOperadora
             FndLiquidacionPlanLiquidarRequest request)
         {
 
-            var globales = mProGrx.sbSifParametrosInicializa(codEmpresa, request.usuario, request.codContabilidad).Result;
+            var globales = mProGrx.sbSifParametrosInicializa(codEmpresa, request.usuario, request.codContabilidad).Result!;
 
             request.oficinaTitular = globales.GOficinaTitular;
             request.oficinaUnidad = globales.GOficinaUnidad;
@@ -904,7 +904,7 @@ where F.Cod_Operadora = @CodOperadora
                 ?? throw new InvalidOperationException("El tipo de documento contable es requerido.");
             var numeroDocumento = parametro.docRef
                 ?? throw new InvalidOperationException("La referencia del documento contable es requerida.");
-            var resumen = ObtenerResumenDocumento(parametro.conn, parametro.tx, parametro.codOperador, parametro.request.cod_plan, numeroDocumento);
+            var resumen = ObtenerResumenDocumento(parametro.conn, parametro.tx!, parametro.codOperador, parametro.request!.cod_plan, numeroDocumento);
             string detalleAsiento = LimitarTexto($"Liquidacion general {parametro.request.cod_plan}", 30);
 
             foreach (var item in resumen)
@@ -931,7 +931,7 @@ where F.Cod_Operadora = @CodOperadora
                         numDocumento = numeroDocumento,
                         monto = item.aporte,
                         debeHaber = "D",
-                        codDivisa = parametro.plan.cod_moneda,
+                        codDivisa = parametro.plan!.cod_moneda,
                         enlace = parametro.request.enlace,
                         codUnidad = parametro.request.oficinaUnidad,
                         codCentroCosto = string.Empty,
@@ -992,7 +992,7 @@ where F.Cod_Operadora = @CodOperadora
                         enlace = parametro.request.enlace,
                         codUnidad = parametro.request.oficinaUnidad,
                         codCentroCosto = parametro.request.oficinaCentroCosto,
-                        codCuenta = parametro.operadora.cta_ingresos,
+                        codCuenta = parametro.operadora!.cta_ingresos,
                         referencia1 = item.cod_operadora,
                         referencia2 = item.cod_plan,
                         detalle = detalleAsiento
@@ -1084,9 +1084,9 @@ where F.Cod_Operadora = @CodOperadora
             {
                 DocRef = parametros.docRef,
                 TipoDoc = parametros.tipoDoc,
-                Usuario = parametros.request.usuario.Trim(),
+                Usuario = parametros.request!.usuario.Trim(),
                 ClienteIdentificacion = parametros.request.cod_plan.Trim(),
-                ClienteNombre = parametros.plan.descripcion,
+                ClienteNombre = parametros.plan!.descripcion,
                 Concepto = parametros.concepto,
                 Monto = total,
                 Referencia01 = parametros.item.cod_operadora,

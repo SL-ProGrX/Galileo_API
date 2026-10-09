@@ -198,7 +198,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             return new TesTransferenciaReversaFiltrosObtener
             {
-                Documento = solicitud.documento.Trim(),
+                Documento = solicitud.documento!.Trim(),
                 Codigo = solicitud.codigo == "" ? null: solicitud.codigo,
                 CodigoLike = TES_TransferenciaReversa_NormalizarTexto(solicitud.codigo),
                 Ndocumento = solicitud.ndocumento == "" ? null : solicitud.ndocumento,
@@ -310,7 +310,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 query = $@"select count(*) as Existe from tes_te_reversion where isnull(Tipo,'T') = 'T'
                                     and id_Banco = @id_banco and Documento = @documento ";
                 var existe = conn.QueryFirstOrDefault<int>(query,
-                    new { transferencia.id_banco, documento = transferencia.ndocumento.Trim() });
+                    new { transferencia.id_banco, documento = transferencia.ndocumento!.Trim() });
 
                 if (existe == 1)
                 {
@@ -325,7 +325,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         transferencia.tipo,
                         documento = transferencia.ndocumento.Trim(),
                         observaciones = transferencia.observaciones ?? string.Empty,
-                        usuario = transferencia.usuario.ToUpper()
+                        usuario = transferencia.usuario!.ToUpper()
                     });
 
                 if (transferencia.lista.Count > 0)
@@ -723,9 +723,9 @@ exec spTES_W_SinpeReversion_Main
                 new
                 {
                     reversa.id_banco,
-                    documento = reversa.documento.Trim(),
+                    documento = reversa.documento!.Trim(),
                     observaciones = reversa.observaciones ?? string.Empty,
-                    usuario = reversa.usuario.ToUpper()
+                    usuario = reversa.usuario!.ToUpper()
                 });
 
             return DbHelper.CreateOkResponse(reversionId);
@@ -749,7 +749,7 @@ exec spTES_W_SinpeReversion_Main
                     {
                         ReversionId = ReversaID,
                         TesoreriaId = item.nsolicitud,
-                        Usuario = reversa.usuario.ToUpper(),
+                        Usuario = reversa.usuario!.ToUpper(),
                     };
 
                     conn.Execute(sp, parametros, commandTimeout: 0, commandType: CommandType.StoredProcedure);

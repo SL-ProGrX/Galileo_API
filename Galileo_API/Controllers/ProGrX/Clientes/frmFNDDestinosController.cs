@@ -41,6 +41,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Destinos_Guardar")]
         public ErrorDto Fnd_Destinos_Guardar(int CodEmpresa, string usuario, FndDestinosData destino)
         {
@@ -48,6 +49,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Fnd_Destinos_Eliminar")]
         public ErrorDto Fnd_Destinos_Eliminar(int CodEmpresa, string usuario, string codDestino)
         {
@@ -69,6 +71,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Planes_AsignarDesasignar")]
         public ErrorDto Fnd_Planes_AsignarDesasignar(int CodEmpresa, FndAsignarPlanRequest request)
         {

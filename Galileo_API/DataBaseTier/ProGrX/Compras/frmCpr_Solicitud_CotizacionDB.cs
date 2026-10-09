@@ -142,7 +142,7 @@ namespace Galileo.DataBaseTier
 
             MarcarCotizaVigente(conn, tx, cprId, proveedorCodigo, idCotizacion);
             EliminarLineasBsPrevias(conn, tx, cprId, proveedorCodigo, noCotizacion);
-            InsertarDetalleBsPorLinea(conn, tx, cprId, proveedorCodigo, noCotizacion, idCotizacion, codProducto);
+            InsertarDetalleBsPorLinea(conn, tx, cprId, proveedorCodigo, noCotizacion, idCotizacion, codProducto!);
             ActualizarSolicitudProv(conn, tx, cotizacion.cpr_id.Value, proveedorCodigo, cotizacion.registro_usuario);
         }
 

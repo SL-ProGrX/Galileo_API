@@ -64,7 +64,7 @@ order by COD_INSTITUCION;";
             }
 
             var registrosNormalizados = Ah_ConciliadorPatronal_NormalizarRegistros(
-                request.registros,
+                request!.registros,
                 out var validacionRegistros);
 
             if (validacionRegistros != null)
@@ -91,7 +91,7 @@ order by COD_INSTITUCION;";
             }
 
             var registrosNormalizados = Ah_ConciliadorPatronal_NormalizarRegistros(
-                request.registros,
+                request!.registros,
                 out var validacionRegistrosAplicar,
                 response);
 
@@ -175,7 +175,7 @@ exec spPAT_Concilia_Patronal_Registro
             }
 
             var registrosNormalizados = Ah_ConciliadorPatronal_NormalizarRegistros(
-                request.registros,
+                request!.registros,
                 out var validacionRegistros);
 
             if (validacionRegistros != null)
@@ -251,7 +251,7 @@ order by x.nombre, x.identificacion;";
             }
 
             var registrosNormalizados = Ah_ConciliadorPatronal_NormalizarRegistros(
-                request.registros,
+                request!.registros,
                 out var validacionRegistros);
 
             if (validacionRegistros != null)

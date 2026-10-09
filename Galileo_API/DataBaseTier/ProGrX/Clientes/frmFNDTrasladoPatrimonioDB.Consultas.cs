@@ -102,7 +102,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         {
             var globales = _mProGrx
                 .sbSifParametrosInicializa(CodEmpresa, usuario, codContabilidad)
-                .Result;
+                .Result!;
 
             return DbHelper.CreateOkResponse<FndTrasladoPatrimonioGlobalesResult?>(
                 new FndTrasladoPatrimonioGlobalesResult
