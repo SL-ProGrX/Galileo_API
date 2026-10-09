@@ -49,6 +49,12 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             CntXBalancesLoadProcesoRequestDto request)
             => _bl.CntX_Balances_Load_Importar(codEmpresa, request);
 
+        [HttpPost("CntX_Balances_Load_Importar_Validar")]
+        public ActionResult<ErrorDto<CntXBalancesLoadValidaDto?>> CntX_Balances_Load_Importar_Validar(
+            int codEmpresa,
+            CntXBalancesLoadProcesoRequestDto request)
+            => _bl.CntX_Balances_Load_Importar_Validar(codEmpresa, request);
+
         [HttpPost("CntX_Balances_Load_Inicializar")]
         public ActionResult<ErrorDto<CntXBalancesLoadProcesoResultDto?>> CntX_Balances_Load_Inicializar(
             int codEmpresa,
