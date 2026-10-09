@@ -172,49 +172,6 @@ namespace Galileo.Controllers.ProGrX.Credito
                 CodEmpresa,
                 operacion);
         }
-
-        [Authorize]
-        [HttpGet("CR_ConsultaPlanillaAbonoDist_Inicializar")]
-        public ErrorDto<CrConsultaPlanillaAbonoDistInicialData> CR_ConsultaPlanillaAbonoDist_Inicializar(
-            int CodEmpresa,
-            string cedula)
-        {
-            return _BL.CR_ConsultaPlanillaAbonoDist_Inicializar(CodEmpresa, cedula);
-        }
-
-        [Authorize]
-        [HttpGet("CR_ConsultaPlanillaAbonoDist_UltimoMonto")]
-        public ErrorDto<CrConsultaPlanillaAbonoDistUltimoData> CR_ConsultaPlanillaAbonoDist_UltimoMonto(
-            int CodEmpresa,
-            string cedula,
-            int codInstitucion,
-            int proceso)
-        {
-            return _BL.CR_ConsultaPlanillaAbonoDist_UltimoMonto(
-                CodEmpresa,
-                cedula,
-                codInstitucion,
-                proceso);
-        }
-
-        [Authorize]
-        [HttpGet("CR_ConsultaPlanillaAbonoDist_Consultar")]
-        public ErrorDto<List<CrConsultaPlanillaAbonoDistDetalleData>> CR_ConsultaPlanillaAbonoDist_Consultar(
-            int CodEmpresa,
-            string cedula,
-            int codInstitucion,
-            int proceso,
-            decimal monto,
-            DateTime corte)
-        {
-            return _BL.CR_ConsultaPlanillaAbonoDist_Consultar(
-                CodEmpresa,
-                cedula,
-                codInstitucion,
-                proceso,
-                monto,
-                corte);
-        }
         
         [Authorize]
         [HttpGet("CR_ConsultaCrd_Creditos_Obtener")]
