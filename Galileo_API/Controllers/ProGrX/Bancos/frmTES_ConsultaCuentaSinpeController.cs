@@ -18,6 +18,7 @@ namespace Galileo_API.Controllers
             _bl = new FrmTesConsultaCuentaSinpeBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_ConsultaCuentasSinpe_Aplicar")]
         public ErrorDto Tes_ConsultaCuentasSinpe_Aplicar(int CodEmpresa, int aplica, TesConsultaCuentaSinpeModels cuenta)
         {

@@ -79,5 +79,7 @@
         public bool todas_fechas { get; set; }
         public DateTime inicio { get; set; }
         public DateTime corte { get; set; }
+        public string tipo_mov { get; set; } = "0";
+        public string tipo_periodo { get; set; } = "DIARIO";
     }
 }

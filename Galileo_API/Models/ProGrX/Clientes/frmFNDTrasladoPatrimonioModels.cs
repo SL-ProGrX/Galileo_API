@@ -36,7 +36,7 @@
     {
         public string Tipo { get; set; } = string.Empty;
         public required long Operadora { get; set; }
-        public required int SysDocVersion { get; set; }
+        public int? sysDocVersion { get; set; }
     }
 
     public class FndDocumentoConsecutivoResult
@@ -46,8 +46,8 @@
 
     public class FndDocumentoConsecutivoAseRequest
     {
-        public string Tipo { get; set; } = string.Empty;
-        public required int SysDocVersion { get; set; }
+        public string tipo { get; set; } = string.Empty;
+        public int? sysDocVersion { get; set; }
     }
 
     public class FndDocumentoConsecutivoAseResult

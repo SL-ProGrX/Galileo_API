@@ -46,11 +46,28 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 return ErrorSimple("Los datos de la transacción de patrimonio son requeridos.", -2);
             }
 
+            var oficinaTitular = ObtenerOficinaTitular(CodEmpresa, request.Usuario);
+            if (string.IsNullOrWhiteSpace(oficinaTitular))
+            {
+                return ErrorSimple("No se encontró la oficina titular del usuario.", -2);
+            }
+
+            request.OficinaTitular = oficinaTitular;
+
             return EjecutarSimple(
                 CodEmpresa,
                 SqlSifTransaccionPatrimonioInsert,
                 CrearParametrosTransaccionPatrimonio(request),
                 "Error al insertar transacción de patrimonio.");
+        }
+
+        private string ObtenerOficinaTitular(int CodEmpresa, string usuario)
+        {
+            var globales = _mProGrx
+                .sbSifParametrosInicializa(CodEmpresa, usuario)
+                .Result;
+
+            return globales?.GOficinaTitular?.Trim() ?? string.Empty;
         }
     }
 }

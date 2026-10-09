@@ -43,6 +43,7 @@ namespace Galileo_API.Controllers
             return RecepcionDocumentosBL.TES_RecepcionDocumentos_Obtener(CodEmpresa, Remesa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_RecepcionDocumentos_Aplicar")]
         public ErrorDto TES_RecepcionDocumentos_Aplicar(int CodEmpresa, string parametros)
         {
