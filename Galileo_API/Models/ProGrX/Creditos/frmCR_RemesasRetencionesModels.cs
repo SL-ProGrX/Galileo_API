@@ -23,8 +23,8 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     public class CrRemesasRetencionesAplicarRequest : CrRemesasRetencionesValidarRequest
     {
-        public int anio { get; set; }
-        public int mes { get; set; }
+        public required int anio { get; set; }
+        public required int mes { get; set; }
     }
 
     public class CrRemesasRetencionesLineaData : CrRemesasRetencionesLineaRequest
