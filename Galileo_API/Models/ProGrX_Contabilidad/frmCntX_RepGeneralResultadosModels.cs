@@ -1,4 +1,5 @@
-﻿namespace Galileo_API.Models.ProGrX_Contabilidad
+﻿
+namespace Galileo_API.Models.ProGrX_Contabilidad
 {
     public class CntXRepGeneralResultadosContextoResponseDto
     {
@@ -14,14 +15,14 @@
 
     public class CntXRepGeneralResultadosValidarRequestDto
     {
-        public int cod_contabilidad { get; set; }
-        public int periodo_anio { get; set; }
-        public int periodo_mes { get; set; }
-        public int chk_preliminar { get; set; }
-        public int chk_titulos { get; set; }
-        public int chk_mov_cero { get; set; }
-        public int chk_orden { get; set; }
-        public int chk_cuentas_contables { get; set; }
+        public int? cod_contabilidad { get; set; }
+        public int? periodo_anio { get; set; }
+        public int? periodo_mes { get; set; }
+        public int? chk_preliminar { get; set; }
+        public int? chk_titulos { get; set; }
+        public int? chk_mov_cero { get; set; }
+        public int? chk_orden { get; set; }
+        public int? chk_cuentas_contables { get; set; }
         public string reporte { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
         public string nivel { get; set; } = string.Empty;
@@ -42,21 +43,8 @@
     }
 
     public class CntXRepGeneralResultadosReporteRequestDto
+        : CntXRepGeneralResultadosValidarRequestDto
     {
-        public int cod_contabilidad { get; set; }
-        public int periodo_anio { get; set; }
-        public int periodo_mes { get; set; }
-        public int chk_preliminar { get; set; }
-        public int chk_titulos { get; set; }
-        public int chk_mov_cero { get; set; }
-        public int chk_orden { get; set; }
-        public int chk_cuentas_contables { get; set; }
-        public string reporte { get; set; } = string.Empty;
-        public string tipo { get; set; } = string.Empty;
-        public string nivel { get; set; } = string.Empty;
-        public string unidad { get; set; } = string.Empty;
-        public string centro_costo { get; set; } = string.Empty;
-        public string usuario { get; set; } = string.Empty;
     }
 
     public class CntXRepGeneralResultadosReporteResponseDto

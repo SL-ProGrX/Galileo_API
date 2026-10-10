@@ -11,7 +11,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
     {
         private readonly PortalDB _portalDB;
         private readonly MCntXCalculosDb _mCntXCalculosDb;
-
+        private const string UnidadConsolidado = "[CONSOLIDADO]";
+        private const string CentroCostoTodos = "TODOS";
         public FrmCntXRepGeneralResultadosDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
@@ -40,8 +41,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 lista.Insert(0, new DropDownListaGenericaModel
                 {
-                    item = "[CONSOLIDADO]",
-                    descripcion = "[CONSOLIDADO]"
+                    item = UnidadConsolidado,
+                    descripcion = UnidadConsolidado
                 });
 
                 return lista;
@@ -85,7 +86,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 List<DropDownListaGenericaModel> lista;
 
-                if (string.IsNullOrWhiteSpace(codUnidad) || codUnidad == "[CONSOLIDADO]")
+                if (string.IsNullOrWhiteSpace(codUnidad) || codUnidad == UnidadConsolidado)
                 {
                     lista = conn.Query<DropDownListaGenericaModel>(sqlConsolidado, new
                     {
@@ -103,8 +104,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 lista.Insert(0, new DropDownListaGenericaModel
                 {
-                    item = "TODOS",
-                    descripcion = "TODOS"
+                    item = CentroCostoTodos,
+                    descripcion = CentroCostoTodos
                 });
 
                 return lista;
@@ -117,15 +118,29 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto<CntXRepGeneralResultadosValidarResponseDto> CntX_RepGeneralResultados_ValidarReporte(int CodEmpresa,CntXRepGeneralResultadosValidarRequestDto data)
+
+        public ErrorDto<CntXRepGeneralResultadosValidarResponseDto> CntX_RepGeneralResultados_ValidarReporte(
+            int CodEmpresa,
+            CntXRepGeneralResultadosValidarRequestDto data)
         {
-            var response = DbHelper.CreateOkResponse(new CntXRepGeneralResultadosValidarResponseDto());
+            var response = DbHelper.CreateOkResponse(
+                new CntXRepGeneralResultadosValidarResponseDto());
 
             response.Result ??= new CntXRepGeneralResultadosValidarResponseDto();
 
             try
             {
-                if (data.cod_contabilidad <= 0)
+                if (data == null)
+                {
+                    return new ErrorDto<CntXRepGeneralResultadosValidarResponseDto>
+                    {
+                        Code = -2,
+                        Description = "Los datos del reporte son requeridos.",
+                        Result = new CntXRepGeneralResultadosValidarResponseDto()
+                    };
+                }
+
+                if (data.cod_contabilidad.GetValueOrDefault() <= 0)
                 {
                     return new ErrorDto<CntXRepGeneralResultadosValidarResponseDto>
                     {
@@ -135,12 +150,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     };
                 }
 
+                if (data.periodo_anio.GetValueOrDefault() <= 0 ||
+                    data.periodo_mes.GetValueOrDefault() < 1 ||
+                    data.periodo_mes.GetValueOrDefault() > 12)
+                {
+                    return new ErrorDto<CntXRepGeneralResultadosValidarResponseDto>
+                    {
+                        Code = -2,
+                        Description = "El año o mes del período no es válido.",
+                        Result = new CntXRepGeneralResultadosValidarResponseDto()
+                    };
+                }
+
+                int codContabilidad = data.cod_contabilidad.GetValueOrDefault();
+                int periodoAnio = data.periodo_anio.GetValueOrDefault();
+                int periodoMes = data.periodo_mes.GetValueOrDefault();
+
                 var unidad = string.IsNullOrWhiteSpace(data.unidad)
-                    ? "[CONSOLIDADO]"
+                    ? UnidadConsolidado
                     : data.unidad.Trim();
 
                 var centroCosto = string.IsNullOrWhiteSpace(data.centro_costo)
-                    ? "TODOS"
+                    ? CentroCostoTodos
                     : data.centro_costo.Trim();
 
                 var nivel = string.IsNullOrWhiteSpace(data.nivel)
@@ -149,9 +180,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 var periodoAbierto = _mCntXCalculosDb.FxCntX_PeriodoVerifica(
                     CodEmpresa,
-                    data.cod_contabilidad,
-                    data.periodo_anio,
-                    data.periodo_mes);
+                    codContabilidad,
+                    periodoAnio,
+                    periodoMes);
 
                 if (data.chk_preliminar == 1 && !periodoAbierto)
                 {
@@ -164,34 +195,41 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 }
 
                 var periodoDesc = MCntXCalculosDb.FxCntX_PeriodoDesc(
-                    data.periodo_anio,
-                    data.periodo_mes);
+                    periodoAnio,
+                    periodoMes);
 
                 var esMesFiscal = _mCntXCalculosDb.FxCntX_MesFiscal(
                     CodEmpresa,
-                    data.cod_contabilidad,
-                    data.periodo_anio,
-                    data.periodo_mes);
+                    codContabilidad,
+                    periodoAnio,
+                    periodoMes);
 
-                var subtitulo = $"PERIODO: {periodoDesc} {(periodoAbierto ? "[PENDIENTE]" : "[CERRADO]")} [Nivel {nivel}]";
-                subtitulo += $"  Unidad: {unidad}   Centro Costo: {centroCosto}";
+                var subtitulo =
+                    $"PERIODO: {periodoDesc} " +
+                    $"{(periodoAbierto ? "[PENDIENTE]" : "[CERRADO]")} " +
+                    $"[Nivel {nivel}]";
+
+                subtitulo +=
+                    $"  Unidad: {unidad}   Centro Costo: {centroCosto}";
 
                 var fxUnidad = string.Empty;
 
-                if (unidad != "[CONSOLIDADO]" && centroCosto == "TODOS")
+                if (unidad != UnidadConsolidado && centroCosto == CentroCostoTodos)
                 {
                     fxUnidad = unidad;
                 }
-                else if (centroCosto != "TODOS")
+                else if (centroCosto != CentroCostoTodos)
                 {
-                    fxUnidad = $"{unidad}     Centro de Costos: {centroCosto}";
+                    fxUnidad =
+                        $"{unidad}     Centro de Costos: {centroCosto}";
                 }
 
                 response.Result.periodo_desc = periodoDesc;
                 response.Result.periodo_abierto = periodoAbierto ? 1 : 0;
                 response.Result.es_mes_fiscal = esMesFiscal ? 1 : 0;
                 response.Result.fx_asiento_cierre = esMesFiscal ? 1 : 0;
-                response.Result.fx_muestra_titulo = data.chk_titulos == 1 ? 1 : 0;
+                response.Result.fx_muestra_titulo =
+                    data.chk_titulos == 1 ? 1 : 0;
                 response.Result.fx_subtitulo = subtitulo;
                 response.Result.fx_unidad = fxUnidad;
 
@@ -205,5 +243,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     new CntXRepGeneralResultadosValidarResponseDto());
             }
         }
+
     }
 }
