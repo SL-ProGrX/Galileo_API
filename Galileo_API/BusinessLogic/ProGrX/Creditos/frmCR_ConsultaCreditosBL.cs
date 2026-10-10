@@ -138,43 +138,6 @@ namespace Galileo.BusinessLogic.ProGrX.Credito
                 operacion);
         }
 
-        public ErrorDto<CrConsultaPlanillaAbonoDistInicialData> CR_ConsultaPlanillaAbonoDist_Inicializar(
-            int CodEmpresa,
-            string cedula)
-        {
-            return _Db.CR_ConsultaPlanillaAbonoDist_Inicializar(CodEmpresa, cedula);
-        }
-
-        public ErrorDto<CrConsultaPlanillaAbonoDistUltimoData> CR_ConsultaPlanillaAbonoDist_UltimoMonto(
-            int CodEmpresa,
-            string cedula,
-            int codInstitucion,
-            int proceso)
-        {
-            return _Db.CR_ConsultaPlanillaAbonoDist_UltimoMonto(
-                CodEmpresa,
-                cedula,
-                codInstitucion,
-                proceso);
-        }
-
-        public ErrorDto<List<CrConsultaPlanillaAbonoDistDetalleData>> CR_ConsultaPlanillaAbonoDist_Consultar(
-            int CodEmpresa,
-            string cedula,
-            int codInstitucion,
-            int proceso,
-            decimal monto,
-            DateTime corte)
-        {
-            return _Db.CR_ConsultaPlanillaAbonoDist_Consultar(
-                CodEmpresa,
-                cedula,
-                codInstitucion,
-                proceso,
-                monto,
-                corte);
-        }
-
         public ErrorDto<List<CrConsultaCrdCreditosData>> CR_ConsultaCrd_Creditos_Obtener(int CodEmpresa, string cedula, string sheetName)
         {
             return _Db.CR_ConsultaCrd_Creditos_Obtener(CodEmpresa, cedula, sheetName);

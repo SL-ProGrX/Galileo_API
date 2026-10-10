@@ -15,7 +15,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         private const string MsgLineasRequeridas = "Debe enviar líneas para procesar.";
         private const string MsgHistoricoInvalido = "Debe indicar un histórico válido.";
         private const string MsgContabilidadInvalida = "Debe indicar una contabilidad válida.";
-        private const string MsgContabilidadNoConsolidadora = "Esta Contabilidad no es Consolidadora!";
         private const string MsgErrorUnidades = "No fue posible cargar las unidades.";
         private const string MsgErrorConsolidacion = "No fue posible obtener la información de consolidación.";
         private const string MsgErrorValidacionImportacion = "No fue posible validar la importación.";
@@ -24,12 +23,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         private readonly MSecurityMainDb _mSecurityMainDb;
         private readonly int vModulo = 20;
 
+        /// <summary>
+        /// Inicializa el acceso a datos de la carga de balances.
+        /// </summary>
+        /// <param name="config">Configuración de conexiones de la aplicación.</param>
         public FrmCntXBalancesLoadDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
             _mSecurityMainDb = new MSecurityMainDb(config);
         }
 
+        /// <summary>
+        /// Obtiene las unidades activas y la configuración de consolidación de la pantalla.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="contabilidad">Código de la contabilidad seleccionada.</param>
+        /// <param name="anio">Año del período contable.</param>
+        /// <param name="mes">Mes del período contable.</param>
+        /// <returns>Datos iniciales requeridos por el formulario.</returns>
         public ErrorDto<CntXBalancesLoadPantallaDto> CntX_Balances_Load_Pantalla_Obtener(
             int codEmpresa,
             int contabilidad,
@@ -84,14 +95,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     new CntXBalancesLoadPantallaDto());
             }
 
-            if ((contaResp.Result?.consolida_ind ?? 0) != 1)
-            {
-                return CrearError(
-                    MsgContabilidadNoConsolidadora,
-                    -2,
-                    new CntXBalancesLoadPantallaDto());
-            }
-
             return DbHelper.CreateOkResponse(new CntXBalancesLoadPantallaDto
             {
                 contabilidad = contabilidad,
@@ -105,6 +108,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             });
         }
 
+        /// <summary>
+        /// Lista los históricos disponibles para una unidad y período.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Filtros de contabilidad, unidad y período.</param>
+        /// <returns>Históricos disponibles para seleccionar.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntX_Balances_Load_Historico_Listar(
             int codEmpresa,
             CntXBalancesLoadHistoricoListarRequestDto request)
@@ -150,6 +159,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Consulta las líneas de un histórico de carga.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="historicoId">Identificador del histórico.</param>
+        /// <returns>Detalle de las líneas almacenadas en el histórico.</returns>
         public ErrorDto<List<CntXBalancesLoadResultadoDto>> CntX_Balances_Load_Historico_Consultar(
             int codEmpresa,
             int historicoId)
@@ -184,6 +199,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Carga las líneas del archivo, ejecuta el automapeo y devuelve sus resultados.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Archivo transformado y contexto contable de la carga.</param>
+        /// <returns>Resultados temporales de la carga y validación.</returns>
         public ErrorDto<List<CntXBalancesLoadResultadoDto>> CntX_Balances_Load_Archivo_Cargar(
             int codEmpresa,
             CntXBalancesLoadArchivoCargarRequestDto request)
@@ -321,16 +342,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
-        public ErrorDto<CntXBalancesLoadProcesoResultDto?> CntX_Balances_Load_Importar(
+        /// <summary>
+        /// Valida las líneas temporales antes de confirmar la importación.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Contabilidad, unidad, período y usuario por validar.</param>
+        /// <returns>Cantidad de líneas erróneas encontradas.</returns>
+        public ErrorDto<CntXBalancesLoadValidaDto?> CntX_Balances_Load_Importar_Validar(
             int codEmpresa,
             CntXBalancesLoadProcesoRequestDto request)
         {
             if (ContabilidadUnidadInvalidas(request.contabilidad, request.unidad))
             {
-                return CrearErrorContabilidadUnidad<CntXBalancesLoadProcesoResultDto?>(null);
+                return CrearErrorContabilidadUnidad<CntXBalancesLoadValidaDto?>(null);
             }
 
-            var validaResp = DbHelper.ExecuteSingleQuery<CntXBalancesLoadValidaDto?>(
+            return DbHelper.ExecuteSingleQuery<CntXBalancesLoadValidaDto?>(
                 _portalDb,
                 codEmpresa,
                 @"exec spCntX_Consolida_Balance_Importa_Valida
@@ -341,6 +368,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     @Usuario",
                 null,
                 CrearParametrosProceso(request));
+        }
+
+        /// <summary>
+        /// Importa el balance temporal después de verificar que no tenga errores.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Contabilidad, unidad, período y usuario que se importarán.</param>
+        /// <returns>Estado y mensaje del proceso de importación.</returns>
+        public ErrorDto<CntXBalancesLoadProcesoResultDto?> CntX_Balances_Load_Importar(
+            int codEmpresa,
+            CntXBalancesLoadProcesoRequestDto request)
+        {
+            var validaResp = CntX_Balances_Load_Importar_Validar(codEmpresa, request);
 
             if (validaResp.Code != 0)
             {
@@ -380,6 +420,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return resp;
         }
 
+        /// <summary>
+        /// Inicializa el balance de una unidad para el período seleccionado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Contabilidad, unidad, período y usuario del proceso.</param>
+        /// <returns>Estado y mensaje de la inicialización.</returns>
         public ErrorDto<CntXBalancesLoadProcesoResultDto?> CntX_Balances_Load_Inicializar(
             int codEmpresa,
             CntXBalancesLoadProcesoRequestDto request)
@@ -410,6 +456,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return resp;
         }
 
+        /// <summary>
+        /// Importa el balance desde la contabilidad base configurada.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Contabilidad, período y usuario del proceso.</param>
+        /// <returns>Estado y mensaje de la importación desde la contabilidad base.</returns>
         public ErrorDto<CntXBalancesLoadProcesoResultDto?> CntX_Balances_Load_ImportarContaBase(
             int codEmpresa,
             CntXBalancesLoadImportaContaBaseRequestDto request)

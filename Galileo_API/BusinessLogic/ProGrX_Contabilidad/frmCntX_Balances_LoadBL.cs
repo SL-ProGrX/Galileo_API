@@ -47,6 +47,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             CntXBalancesLoadProcesoRequestDto request)
             => _db.CntX_Balances_Load_Importar(codEmpresa, request);
 
+        public ErrorDto<CntXBalancesLoadValidaDto?> CntX_Balances_Load_Importar_Validar(
+            int codEmpresa,
+            CntXBalancesLoadProcesoRequestDto request)
+            => _db.CntX_Balances_Load_Importar_Validar(codEmpresa, request);
+
         public ErrorDto<CntXBalancesLoadProcesoResultDto?> CntX_Balances_Load_Inicializar(
             int codEmpresa,
             CntXBalancesLoadProcesoRequestDto request)
