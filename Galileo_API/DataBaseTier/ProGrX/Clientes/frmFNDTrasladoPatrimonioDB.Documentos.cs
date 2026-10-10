@@ -17,6 +17,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     -2,
                     null);
             }
+            request.sysDocVersion ??= ObtenerSysDocVersion(CodEmpresa);
 
             return ObtenerSysDocVersion(CodEmpresa) == 1
                 ? ObtenerConsecutivoFndVersionUno(CodEmpresa, request.Tipo, request.Operadora)
@@ -39,12 +40,14 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     null);
             }
 
+            request.sysDocVersion ??= ObtenerSysDocVersion(CodEmpresa);
+
             return ObtenerSysDocVersion(CodEmpresa) == 1
-                ? ObtenerConsecutivoAseVersionUno(CodEmpresa, request.Tipo)
+                ? ObtenerConsecutivoAseVersionUno(CodEmpresa, request.tipo)
                 : DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
                     connection.QueryFirstOrDefault<FndDocumentoConsecutivoAseResult>(
                         SpDocsConsecutivo,
-                        new { Tipo = NormalizarTexto(request.Tipo) },
+                        new { Tipo = NormalizarTexto(request.tipo) },
                         commandType: System.Data.CommandType.StoredProcedure));
         }
 
@@ -88,6 +91,14 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             {
                 return ErrorSimple("Los datos de la transacción son requeridos.", -2);
             }
+
+            var oficinaTitular = ObtenerOficinaTitular(CodEmpresa, request.RegistroUsuario);
+            if (string.IsNullOrWhiteSpace(oficinaTitular))
+            {
+                return ErrorSimple("No se encontró la oficina titular del usuario.", -2);
+            }
+
+            request.CodOficina = oficinaTitular;
 
             return EjecutarSimple(
                 CodEmpresa,

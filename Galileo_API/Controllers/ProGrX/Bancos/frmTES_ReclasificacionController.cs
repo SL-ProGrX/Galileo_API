@@ -44,18 +44,21 @@ namespace Galileo_API.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Reclasificacion_CambiaBanco")]
         public ErrorDto TES_Reclasificacion_CambiaBanco(int CodEmpresa, TesReclasificaBancoModel data)
         {
             return _ReclasificacionBL.TES_Reclasificacion_CambiaBanco(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Reclasificacion_CambiaDocumento")]
         public ErrorDto TES_Reclasificacion_CambiaDocumento(int CodEmpresa, TesReclasificaDocumentoModel data)
         {
             return _ReclasificacionBL.TES_Reclasificacion_CambiaDocumento(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Reclasificacion_CambiaSolicitud")]
         public async Task<ErrorDto> TES_Reclasificacion_CambiaSolicitud(int CodEmpresa, TesReclasificaSolicitudModel data)
         {

@@ -25,6 +25,7 @@ namespace Galileo_API.Controllers
             return _CambiosFechasBL.TES_CambioFechas_Obtener(CodEmpresa, solicitud);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_CambioFecha_Cambiar")]
         public ErrorDto TES_CambioFecha_Cambiar(int CodEmpresa, TesCambioFechasModel fechas)
         {

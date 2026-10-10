@@ -141,6 +141,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPatch("TES_CambioCuentaBancaria_Aplicar")]
         public ErrorDto TES_CambioCuentaBancaria_Aplicar(int CodEmpresa, string usuario, int solicitud, string cuenta)
         {
@@ -148,6 +149,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Transaccion_Guardar")]
         public ErrorDto TES_Transaccion_Guardar(int CodEmpresa, string usuario, int contabilidad, TesTransaccionDto transaccion)
         {
@@ -212,6 +214,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("TES_Transacciones_Eliminar")]
         public ErrorDto TES_Transacciones_Eliminar(int CodEmpresa, int solicitud, string usuario)
         {

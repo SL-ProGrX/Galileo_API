@@ -32,6 +32,7 @@ namespace Galileo_API.Controllers
             return depositosLoteBL.TES_DepositosLote_ArchivoCarga(CodEmpresa, archivoData);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_DepositosLote_Procesar")]
         public ErrorDto TES_DepositosLote_Procesar(int CodEmpresa, string cuenta, string usuario, string archivoData)
         {
@@ -56,18 +57,21 @@ namespace Galileo_API.Controllers
             return depositosLoteBL.TES_DepositosLote_CategoriaCta_Obtener(CodEmpresa, Categoria);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_DepositosLote_Registro_Aplicar")]
         public ErrorDto TES_DepositosLote_Registro_Aplicar(int CodEmpresa, string Usuario, string Datos)
         {
             return depositosLoteBL.TES_DepositosLote_Registro_Aplicar(CodEmpresa, Usuario, Datos);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_DepositosLote_Registro_Actualizar")]
         public ErrorDto TES_DepositosLote_Registro_Actualizar(int CodEmpresa)
         {
             return depositosLoteBL.TES_DepositosLote_Registro_Actualizar(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_DepositosLote_Registro_Desvincular")]
         public ErrorDto TES_DepositosLote_Registro_Desvincular(int CodEmpresa, string Usuario, string Datos)
         {

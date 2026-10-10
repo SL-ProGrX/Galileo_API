@@ -86,12 +86,14 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.TES_EmisionDocumento_TipoDocGestion(CodEmpresa, banco, tipoDoc);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_EmisionDocumento_ValidaNumDocumento")]
         public ErrorDto TES_EmisionDocumento_ValidaNumDocumento(int CodEmpresa, int banco, string tipoDoc, int docInicial, int cantidadList)
         {
             return _bl.TES_EmisionDocumento_ValidaNumDocumento(CodEmpresa, banco, tipoDoc, docInicial, cantidadList);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_EmisionDocumento_RevisaCuentas_SP")]
         public ErrorDto TES_EmisionDocumento_RevisaCuentas_SP(int CodEmpresa, int banco)
         {
@@ -110,6 +112,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.TES_EmisionDocumento_CtasPuente_Obtener(CodEmpresa, Usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_EmisionDocumento_CtaPuente_Aplicar")]
         public ErrorDto TES_EmisionDocumento_CtaPuente_Aplicar(int CodEmpresa, int Banco, string Usuario, string Solicitudes)
         {
@@ -122,6 +125,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.TES_EmisionDocumento_Generar(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_EmisionDocumento_GenerarLote")]
         public Task<ErrorDto<TesEmisionGenerarLoteResult>>
             TES_EmisionDocumentos_Sinpe_GenerarLoteAsync(
@@ -131,6 +135,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_EmisionDocumento_ConsecutivoIniciar")]
         public ErrorDto<long> TES_EmisionDocumento_ConsecutivoIniciar(
             int CodEmpresa, int banco, string tipoDoc, string plan)
@@ -138,6 +143,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.TES_EmisionDocumento_ConsecutivoIniciar(CodEmpresa, banco, tipoDoc, plan);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_EmisionDocumento_ConsecutivoRevertir")]
         public ErrorDto<long> TES_EmisionDocumento_ConsecutivoRevertir(
             int CodEmpresa, int banco, string tipoDoc, string plan)
@@ -145,6 +151,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.TES_EmisionDocumento_ConsecutivoRevertir(CodEmpresa, banco, tipoDoc, plan);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_EmisionDocumentos_Proceso_Iniciar")]
         public ErrorDto<TesEmisionDocumentosProcesoResult> TES_EmisionDocumentos_Proceso_Iniciar(
             int codEmpresa,
