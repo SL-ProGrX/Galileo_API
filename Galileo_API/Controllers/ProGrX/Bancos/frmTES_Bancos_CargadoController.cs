@@ -57,6 +57,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.Tes_AutoRegistroLista_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_BancosCargados_Aplicar")]
         public ErrorDto TES_ConciliacionResumenArchivo_Cargar(int CodEmpresa, string cod_banco, string usuario, bool chkGeneraSolicitud, List<TesCargadoExcelDto> file)
         {
@@ -69,12 +70,14 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.TES_ListaRegistroBancos_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_RegistrosBancosCargados_Aplicar")]
         public async Task<ErrorDto> TES_RegistrosBancosCargados_Aplicar(int CodEmpresa, List<RegistroBancoDto> registroLista)
         {
             return await _bl.TES_RegistrosBancosCargados_Aplicar(CodEmpresa, registroLista);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_RegistrosBancosCargados_Elimina")]
         public ErrorDto<List<TesBancoCargadoEliminaResultado>> TES_RegistrosBancosCargados_Elimina(int CodEmpresa, List<TesBancoCargadoElimina> registroLista)
         {
@@ -109,18 +112,21 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_BancosCargado_DetalleExcluir")]
         public ErrorDto TES_BancosCargado_DetalleExcluir(int CodEmpresa, [FromBody] TesBancosCargadoDetalleExcluirModel data)
         {
             return _bl.TES_BancosCargado_DetalleExcluir(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_BancosCargado_DetalleRegistrar")]
         public ErrorDto TES_BancosCargado_DetalleRegistrar(int CodEmpresa, [FromBody] TesBancosCargadoDetalleRegistrarModel data)
         {
             return _bl.TES_BancosCargado_DetalleRegistrar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_BancosCargado_ReclasificaConcepto")]
         public ErrorDto TES_BancosCargado_ReclasificaConcepto(int CodEmpresa, [FromBody] TesBancosCargadoReclasificaConceptoModel data)
         {
@@ -147,6 +153,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_BancosCargado_RevMovConcilia_Aplicar")]
         public ErrorDto TES_BancosCargado_RevMovConcilia_Aplicar(
             int CodEmpresa,
@@ -157,6 +164,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.TES_BancosCargado_RevMovConcilia_Aplicar(CodEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_BancosCargado_ChequesCambiados_Obtener")]
         public ErrorDto<List<TesBancosCargadoChequeCambiadoDto>>
             TES_BancosCargado_ChequesCambiados_Obtener(
@@ -170,6 +178,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_BancosCargado_ChequesCambiados_Procesar")]
         public ErrorDto TES_BancosCargado_ChequesCambiados_Procesar(
             int CodEmpresa,

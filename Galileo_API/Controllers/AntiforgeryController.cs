@@ -5,11 +5,12 @@ using Microsoft.AspNetCore.Mvc;
 namespace Galileo_API.Controllers
 {
     /// <summary>
-    /// Entrega el token anti-forgery (PILOTO CSRF). El cliente debe enviarlo en el header
-    /// X-XSRF-TOKEN en las operaciones que modifican datos.
+    /// Entrega el token anti-forgery. Es anonimo para que tambien lo puedan pedir los endpoints previos a la
+    /// sesion (login, recuperacion de contrasena). El cliente debe enviarlo en el header X-XSRF-TOKEN
+    /// en las operaciones que modifican datos.
     /// </summary>
     [Route("api/[controller]")]
-    [Authorize]
+    [AllowAnonymous]
     [ApiController]
     public sealed class AntiforgeryController : ControllerBase
     {
@@ -30,7 +31,6 @@ namespace Galileo_API.Controllers
         /// <returns></returns>
         [HttpGet("token")]
         [ProducesResponseType(typeof(AntiforgeryTokenResponse), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public IActionResult ObtenerToken()
         {
             var tokens = _antiforgery.GetAndStoreTokens(HttpContext);

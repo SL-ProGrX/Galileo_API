@@ -10,6 +10,7 @@ using Galileo_API;
 using Galileo_API.Filters;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualArchivosModels;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -73,6 +74,8 @@ public static class ApiHostServiceCollectionExtensions
         {
             options.Filters.AddService<CsrfOriginValidationFilter>();
             options.Filters.AddService<EmpresaAccessFilter>();
+            // Valida el token anti-forgery en POST/PUT/PATCH/DELETE de todos los controladores.
+            options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
         });
         // PILOTO CSRF: el token viaja en el header y la cookie asociada solo la lee el servidor.
         services.AddAntiforgery(options =>

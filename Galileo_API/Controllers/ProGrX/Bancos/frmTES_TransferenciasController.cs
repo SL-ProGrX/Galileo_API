@@ -19,6 +19,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Transferencia_Aceptar")]
         public ErrorDto TES_Transferencia_Aceptar([FromQuery] int CodEmpresa,
             [FromBody] TesTransferenciasInfo transferencia)
@@ -26,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _transferenciasBL.TES_Transferencia_Aceptar(CodEmpresa, transferencia);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Transferencia_Reversar")]
         public ErrorDto TES_Transferencia_Reversar([FromQuery] int CodEmpresa,
             [FromBody] TesTransferenciasInfo transferencia)

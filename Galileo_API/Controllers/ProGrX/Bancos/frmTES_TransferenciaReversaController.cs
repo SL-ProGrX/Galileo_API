@@ -50,6 +50,7 @@ namespace Galileo_API.Controllers
             return _TransferenciaReversaBL.TES_TransferenciaReversa_Obtener(CodEmpresa, solicitud);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_TransferenciaReversa_Aplicar")]
         public ErrorDto TES_TransferenciaReversa_Aplicar(int CodEmpresa, TransferenciaReversaAplicaModel transferencia)
         {
@@ -94,6 +95,7 @@ namespace Galileo_API.Controllers
             return _TransferenciaReversaBL.TES_TransferenciaRevSinpe_Obtener(reversa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_TransferenciaRevSinpe_Aplicar")]
         public ErrorDto TES_TransferenciaRevSinpe_Aplicar([FromBody] TesReversaSinpeModel reversa)
         {

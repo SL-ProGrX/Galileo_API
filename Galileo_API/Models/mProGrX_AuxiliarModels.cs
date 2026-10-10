@@ -142,6 +142,9 @@
         public int sortOrder { get; set; } = 0; //0: sin orden, 1: ascendente, 2: descendente
         public string? sortField { get; set; } //campo por el cual se ordena
         public object? filters { get; set; } //filtros de encabezados
+
+        public string? tipo_periodo { get; set; }
+        public int tipo_mov { get; set; } = 0;
     }
 
     public class TesBancosArchivosData

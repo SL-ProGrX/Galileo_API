@@ -37,6 +37,7 @@ namespace Galileo_API.Controllers
             return DesAutorizacionesBL.TES_DesAutorizaciones_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_DesAutorizaciones_Aplicar")]
         public ErrorDto TES_DesAutorizaciones_Aplicar(int CodEmpresa, string clave, string usuario, int tipo_autorizacion, List<int> solicitudesLista)
         {

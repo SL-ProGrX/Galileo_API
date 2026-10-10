@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_CopiarEsquema_Guardar")]
         public ErrorDto Tes_CopiarEsquema_Guardar(int CodEmpresa, TesCopiaEsquemaModels solicitud)
         {

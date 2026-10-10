@@ -288,7 +288,9 @@ FETCH NEXT @fetch ROWS ONLY;";
                     Offset = offset,
                     Fetch = fetch,
                     Columna = columna,
-                    Direccion = direccion
+                    Direccion = direccion,
+                    Tipo_periodo = filtrosFechas.tipo_periodo,
+                    Tipo_mov = filtrosFechas.tipo_mov
                 };
 
 

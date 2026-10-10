@@ -31,18 +31,21 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bancosGruposBL.Tes_BancosGruposExportar_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_BancoGrupoFirma_Guardar")]
         public ErrorDto Tes_BancoGrupoFirma_Guardar(TesBancosGruposImgData firma)
         {
             return _bancosGruposBL.Tes_BancoGrupoFirma_Guardar(firma);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_BancosGrupo_Guardar")]
         public ErrorDto Tes_BancosGrupo_Guardar(int CodEmpresa, TesBancosGruposData banco)
         {
             return _bancosGruposBL.Tes_BancosGrupo_Guardar(CodEmpresa, banco);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Tes_BancoGrupo_Eliminar")]
         public ErrorDto Tes_BancoGrupo_Eliminar(int CodEmpresa, string cod_grupo)
         {

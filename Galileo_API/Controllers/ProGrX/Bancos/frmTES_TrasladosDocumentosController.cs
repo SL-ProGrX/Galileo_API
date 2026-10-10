@@ -50,24 +50,28 @@ namespace Galileo_API.Controllers
             return TrasladosDocumentosBL.TES_TrasladosDoc_Solicitud_Obtener(CodEmpresa, Solicitud);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_TrasladosDocumentos_Guardar")]
         public ErrorDto TES_TrasladosDocumentos_Guardar(int CodEmpresa, bool vEdita, string Remesa)
         {
             return TrasladosDocumentosBL.TES_TrasladosDocumentos_Guardar(CodEmpresa, vEdita, Remesa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("TES_TrasladosDocumentos_Eliminar")]
         public ErrorDto TES_TrasladosDocumentos_Eliminar(int CodEmpresa, int Remesa, string Usuario)
         {
             return TrasladosDocumentosBL.TES_TrasladosDocumentos_Eliminar(CodEmpresa, Remesa, Usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_TrasladosDocumentos_Linea_Guardar")]
         public ErrorDto TES_TrasladosDocumentos_Linea_Guardar(int CodEmpresa, string Remesa, string Linea)
         {
             return TrasladosDocumentosBL.TES_TrasladosDocumentos_Linea_Guardar(CodEmpresa, Remesa, Linea);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("TES_TrasladosDocumentos_Linea_Eliminar")]
         public ErrorDto TES_TrasladosDocumentos_Linea_Eliminar(int CodEmpresa, int Remesa, int Solicitud)
         {

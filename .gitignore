@@ -101,3 +101,4 @@ Galileo_API/Galileo_API.csproj.Backup.tmp
 /.codex
 /Galileo_API.Tests
 !/AGENTS.md
+/api-build

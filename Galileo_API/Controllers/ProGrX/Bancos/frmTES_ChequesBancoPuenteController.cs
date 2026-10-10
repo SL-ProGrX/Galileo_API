@@ -38,6 +38,7 @@ namespace Galileo_API.Controllers
             return _chequesBancoPuenteBL.TES_ChequePuenteLista_Obtener(CodEmpresa, id_banco);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_ChequesBanco_Aplica")]
         public ErrorDto TES_ChequesBanco_Aplica(int CodEmpresa, int id_banco, int banco, string usuario, List<ChequesBancoPuenteData> data)
         {
