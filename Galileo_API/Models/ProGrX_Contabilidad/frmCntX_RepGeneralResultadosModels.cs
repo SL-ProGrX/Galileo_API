@@ -42,11 +42,6 @@ namespace Galileo_API.Models.ProGrX_Contabilidad
         public string fx_unidad { get; set; } = string.Empty;
     }
 
-    public class CntXRepGeneralResultadosReporteRequestDto
-        : CntXRepGeneralResultadosValidarRequestDto
-    {
-    }
-
     public class CntXRepGeneralResultadosReporteResponseDto
     {
         public string nombre_reporte { get; set; } = string.Empty;

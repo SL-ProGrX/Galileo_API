@@ -56,51 +56,50 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codContabilidad"></param>
         /// <param name="codUnidad"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> CntX_CentroCosto_Dropdown_Obtener(int CodEmpresa, int codContabilidad, string? codUnidad)
+
+        public ErrorDto<List<DropDownListaGenericaModel>> CntX_CentroCosto_Dropdown_Obtener( int CodEmpresa,int codContabilidad,string? codUnidad)
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
                 codUnidad = (codUnidad ?? string.Empty).Trim();
 
                 const string sqlConsolidado = @"
-                    select
-                        rtrim(cod_centro_costo) as item,
-                        rtrim(descripcion) as descripcion
-                    from CntX_Centro_Costos
-                    where cod_contabilidad = @codContabilidad
-                    order by descripcion;";
+            select
+                rtrim(cod_centro_costo) as item,
+                rtrim(descripcion) as descripcion
+            from CntX_Centro_Costos
+            where cod_contabilidad = @codContabilidad
+            order by descripcion;";
 
                 const string sqlUnidad = @"
-                    select
-                        rtrim(cc.cod_centro_costo) as item,
-                        rtrim(cc.descripcion) as descripcion
-                    from CntX_Centro_Costos cc
-                    where cc.cod_contabilidad = @codContabilidad
-                      and cc.cod_centro_costo in (
-                            select ucc.cod_centro_costo
-                            from CntX_Unidades_CC ucc
-                            where ucc.cod_contabilidad = @codContabilidad
-                              and ucc.cod_unidad = @codUnidad
-                      )
-                    order by cc.descripcion;";
+            select
+                rtrim(cc.cod_centro_costo) as item,
+                rtrim(cc.descripcion) as descripcion
+            from CntX_Centro_Costos cc
+            where cc.cod_contabilidad = @codContabilidad
+              and cc.cod_centro_costo in (
+                    select ucc.cod_centro_costo
+                    from CntX_Unidades_CC ucc
+                    where ucc.cod_contabilidad = @codContabilidad
+                      and ucc.cod_unidad = @codUnidad
+              )
+            order by cc.descripcion;";
 
-                List<DropDownListaGenericaModel> lista;
-
-                if (string.IsNullOrWhiteSpace(codUnidad) || codUnidad == UnidadConsolidado)
-                {
-                    lista = conn.Query<DropDownListaGenericaModel>(sqlConsolidado, new
-                    {
-                        codContabilidad
-                    }).ToList();
-                }
-                else
-                {
-                    lista = conn.Query<DropDownListaGenericaModel>(sqlUnidad, new
-                    {
-                        codContabilidad,
-                        codUnidad
-                    }).ToList();
-                }
+                List<DropDownListaGenericaModel> lista =
+                    string.IsNullOrWhiteSpace(codUnidad) ||
+                    codUnidad == UnidadConsolidado
+                        ? conn.Query<DropDownListaGenericaModel>(
+                            sqlConsolidado,
+                            new { codContabilidad }
+                        ).ToList()
+                        : conn.Query<DropDownListaGenericaModel>(
+                            sqlUnidad,
+                            new
+                            {
+                                codContabilidad,
+                                codUnidad
+                            }
+                        ).ToList();
 
                 lista.Insert(0, new DropDownListaGenericaModel
                 {
@@ -112,16 +111,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             });
         }
 
+
         /// <summary>
         /// Valida contexto del reporte y devuelve valores calculados para fórmulas.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-
-        public ErrorDto<CntXRepGeneralResultadosValidarResponseDto> CntX_RepGeneralResultados_ValidarReporte(
-            int CodEmpresa,
-            CntXRepGeneralResultadosValidarRequestDto data)
+        public ErrorDto<CntXRepGeneralResultadosValidarResponseDto> CntX_RepGeneralResultados_ValidarReporte(int CodEmpresa,CntXRepGeneralResultadosValidarRequestDto data)
         {
             var response = DbHelper.CreateOkResponse(
                 new CntXRepGeneralResultadosValidarResponseDto());
@@ -130,36 +127,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             try
             {
-                if (data == null)
-                {
-                    return new ErrorDto<CntXRepGeneralResultadosValidarResponseDto>
-                    {
-                        Code = -2,
-                        Description = "Los datos del reporte son requeridos.",
-                        Result = new CntXRepGeneralResultadosValidarResponseDto()
-                    };
-                }
+                var errorValidacion = ValidarParametrosReporte(data);
 
-                if (data.cod_contabilidad.GetValueOrDefault() <= 0)
+                if (errorValidacion != null)
                 {
-                    return new ErrorDto<CntXRepGeneralResultadosValidarResponseDto>
-                    {
-                        Code = -2,
-                        Description = "La contabilidad es requerida.",
-                        Result = new CntXRepGeneralResultadosValidarResponseDto()
-                    };
-                }
-
-                if (data.periodo_anio.GetValueOrDefault() <= 0 ||
-                    data.periodo_mes.GetValueOrDefault() < 1 ||
-                    data.periodo_mes.GetValueOrDefault() > 12)
-                {
-                    return new ErrorDto<CntXRepGeneralResultadosValidarResponseDto>
-                    {
-                        Code = -2,
-                        Description = "El año o mes del período no es válido.",
-                        Result = new CntXRepGeneralResultadosValidarResponseDto()
-                    };
+                    return DbHelper.CreateErrorResponse<CntXRepGeneralResultadosValidarResponseDto>(
+                        errorValidacion,
+                        -2,
+                        new CntXRepGeneralResultadosValidarResponseDto());
                 }
 
                 int codContabilidad = data.cod_contabilidad.GetValueOrDefault();
@@ -186,12 +161,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 if (data.chk_preliminar == 1 && !periodoAbierto)
                 {
-                    return new ErrorDto<CntXRepGeneralResultadosValidarResponseDto>
-                    {
-                        Code = -2,
-                        Description = "El período está cerrado y no permite preliminares.",
-                        Result = new CntXRepGeneralResultadosValidarResponseDto()
-                    };
+                    return DbHelper.CreateErrorResponse<CntXRepGeneralResultadosValidarResponseDto>(
+                        "El período está cerrado y no permite preliminares.",
+                        -2,
+                        new CntXRepGeneralResultadosValidarResponseDto());
                 }
 
                 var periodoDesc = MCntXCalculosDb.FxCntX_PeriodoDesc(
@@ -212,17 +185,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 subtitulo +=
                     $"  Unidad: {unidad}   Centro Costo: {centroCosto}";
 
-                var fxUnidad = string.Empty;
-
-                if (unidad != UnidadConsolidado && centroCosto == CentroCostoTodos)
-                {
-                    fxUnidad = unidad;
-                }
-                else if (centroCosto != CentroCostoTodos)
-                {
-                    fxUnidad =
-                        $"{unidad}     Centro de Costos: {centroCosto}";
-                }
+                var fxUnidad = ObtenerFxUnidad(unidad, centroCosto);
 
                 response.Result.periodo_desc = periodoDesc;
                 response.Result.periodo_abierto = periodoAbierto ? 1 : 0;
@@ -243,6 +206,49 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     new CntXRepGeneralResultadosValidarResponseDto());
             }
         }
+
+        private static string? ValidarParametrosReporte(
+            CntXRepGeneralResultadosValidarRequestDto? data)
+        {
+            if (data == null)
+            {
+                return "Los datos del reporte son requeridos.";
+            }
+
+            if (data.cod_contabilidad.GetValueOrDefault() <= 0)
+            {
+                return "La contabilidad es requerida.";
+            }
+
+            int periodoAnio = data.periodo_anio.GetValueOrDefault();
+            int periodoMes = data.periodo_mes.GetValueOrDefault();
+
+            if (periodoAnio <= 0 || periodoMes < 1 || periodoMes > 12)
+            {
+                return "El año o mes del período no es válido.";
+            }
+
+            return null;
+        }
+
+        private static string ObtenerFxUnidad(
+            string unidad,
+            string centroCosto)
+        {
+            if (unidad != UnidadConsolidado &&
+                centroCosto == CentroCostoTodos)
+            {
+                return unidad;
+            }
+
+            if (centroCosto != CentroCostoTodos)
+            {
+                return $"{unidad}     Centro de Costos: {centroCosto}";
+            }
+
+            return string.Empty;
+        }
+
 
     }
 }
