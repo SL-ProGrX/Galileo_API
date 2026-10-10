@@ -8,6 +8,7 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [IgnoreAntiforgeryToken]
  
     public class CambiarContrasenaController : ControllerBase
     {
