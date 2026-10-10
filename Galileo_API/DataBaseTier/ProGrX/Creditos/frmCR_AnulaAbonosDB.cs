@@ -127,12 +127,19 @@ order by id_seq desc;", new { idSolicitud }).ToList();
             const string sql = @"
 select isnull(dbo.fxCrd_Operacion_Anula_Cta_Recomendada(@idSolicitud, @montoAmortizacion),'...') as cuenta;";
 
-            return DbHelper.ExecuteSingleQuery(
+            var result = DbHelper.ExecuteSingleQuery(
                 _portalDb,
                 codEmpresa,
                 sql,
                 "...",
                 new { idSolicitud = request.id_solicitud, montoAmortizacion = request.monto_amortizacion });
+
+            return new ErrorDto<string>
+            {
+                Code = result.Code,
+                Description = result.Description,
+                Result = result.Result!
+            };
         }
 
         /// <summary>
@@ -608,11 +615,11 @@ exec spCrdPlanPagoAnulaAbono
 
         private sealed class AnulacionContext
         {
-            public SqlConnection Conn { get; init; } = null;
-            public SqlTransaction Tx { get; init; } = null;
-            public CrAnulaAbonosProcesarRequest Request { get; init; } = null;
-            public CrAnulaAbonosOperacionData Operacion { get; init; } = null;
-            public CrAnulaAbonosOperacionCtasData Ctas { get; init; } = null;
+            public required SqlConnection Conn { get; init; }
+            public required SqlTransaction Tx { get; init; }
+            public required CrAnulaAbonosProcesarRequest Request { get; init; }
+            public required CrAnulaAbonosOperacionData Operacion { get; init; }
+            public required CrAnulaAbonosOperacionCtasData Ctas { get; init; }
             public string OficinaTitular { get; init; } = string.Empty;
             public int Enlace { get; init; }
             public string NumDocumento { get; init; } = string.Empty;

@@ -119,7 +119,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         /// <returns></returns>
         public ErrorDto<bool> Aprobar(AfcdAprobacionRequest req)
         {
-            req.oficina = _grxMain.sbSifParametrosInicializa(req.codEmpresa, req.usuario).Result.GOficinaTitular ?? req.oficina;
+            req.oficina = _grxMain.sbSifParametrosInicializa(req.codEmpresa, req.usuario).Result!.GOficinaTitular ?? req.oficina;
             return DbHelper.WithConn(_portalDb, req.codEmpresa, conn =>
             {
                 foreach (var op in req.operaciones)

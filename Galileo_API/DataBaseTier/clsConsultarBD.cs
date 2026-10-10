@@ -87,7 +87,7 @@ WHERE (
             );
         }
 
-        public ErrorDto<string> fxEstadoOperacion(
+        public ErrorDto<string?> fxEstadoOperacion(
     int codEmpresa,
     long numeroOperacion)
         {

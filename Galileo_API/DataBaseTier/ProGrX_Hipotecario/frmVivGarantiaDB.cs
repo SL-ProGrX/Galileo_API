@@ -32,7 +32,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Hipotecario
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto<FrmVivGarantiaOperacionResponse> Viv_GarantiaOperacion_Obtener(
+        public ErrorDto<FrmVivGarantiaOperacionResponse?> Viv_GarantiaOperacion_Obtener(
             int codEmpresa,
             FrmVivGarantiaCargaRequest request)
         {
@@ -171,7 +171,7 @@ ORDER BY Descripcion;";
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="numeroOperacion">Número de operación.</param>
         /// <returns>Estado de la operación.</returns>
-        public ErrorDto<string> Viv_GarantiaEstadoOperacion_Obtener(
+        public ErrorDto<string?> Viv_GarantiaEstadoOperacion_Obtener(
             int codEmpresa,
             long numeroOperacion)
         {
@@ -332,6 +332,16 @@ WHERE IdGarantia = @id_garantia
         {
            var general = _clsConsultar.Viv_GarantiaTraerGarantiasxOperacion(codEmpresa, request);
 
+            if (general.Code != 0 || general.Result is null)
+            {
+                return new ErrorDto<List<FrmVivGarantiaGeneralItem>>
+                {
+                    Code = general.Code,
+                    Description = general.Description,
+                    Result = []
+                };
+            }
+
             //mapeo los datos a la respuesta
             var result = new ErrorDto<List<FrmVivGarantiaGeneralItem>>
             {
@@ -362,13 +372,13 @@ WHERE IdGarantia = @id_garantia
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Id de la garantía.</param>
         /// <returns>Detalle de la garantía.</returns>
-        public ErrorDto<FrmVivGarantiaDetalleResponse> Viv_GarantiaDetalle_Obtener(
+        public ErrorDto<FrmVivGarantiaDetalleResponse?> Viv_GarantiaDetalle_Obtener(
             int codEmpresa,
             FrmVivGarantiaDetalleRequest request)
         {
             if (request.id_garantia <= 0)
             {
-                return new ErrorDto<FrmVivGarantiaDetalleResponse>
+                return new ErrorDto<FrmVivGarantiaDetalleResponse?>
                 {
                     Code = -1,
                     Description = "Debe indicar una garantía válida.",
@@ -447,7 +457,7 @@ WHERE IdGarantia = @id_garantia
         /// Obtiene los cantones de una provincia.
         /// </summary>
         /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="request">Provincia a consultar.</param>
+        /// <param name="provincia">C&#243;digo de provincia utilizado para filtrar los resultados.</param>
         /// <returns>Listado de cantones.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Viv_GarantiaCantones_Obtener(
             int codEmpresa,
@@ -477,7 +487,8 @@ ORDER BY DESCRIPCION;";
         /// Obtiene los distritos de una provincia y cantón.
         /// </summary>
         /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="request">Provincia y cantón a consultar.</param>
+        /// <param name="provincia">C&#243;digo de provincia utilizado para filtrar los resultados.</param>
+        /// <param name="canton">C&#243;digo de cant&#243;n utilizado para filtrar los resultados.</param>
         /// <returns>Listado de distritos.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Viv_GarantiaDistritos_Obtener(
             int codEmpresa,
@@ -551,7 +562,7 @@ ORDER BY DESCRIPCION;";
 
         #region Derechos
 
-        // <summary>
+        /// <summary>
         /// Obtiene la lista de dueños registrados para una garantía.
         /// Replica la consulta VB6 fxTraerListaDuenosxGarantia.
         /// </summary>
@@ -607,7 +618,7 @@ ORDER BY DESCRIPCION;";
         /// <param name="codEmpresa">Código de empresa.</param>
         /// <param name="request">Cédula del socio.</param>
         /// <returns>Datos básicos del socio.</returns>
-        public ErrorDto<FrmVivGarantiaSocioItem> Viv_GarantiaSocio_Obtener(
+        public ErrorDto<FrmVivGarantiaSocioItem?> Viv_GarantiaSocio_Obtener(
             int codEmpresa,
             FrmVivGarantiaSocioRequest request)
         {
@@ -856,7 +867,7 @@ WHERE IdGarantia = @id_garantia
         /// <param name="idGarantia">Id de garantía.</param>
         /// <param name="tipo">Tipo profesional: I ingeniero, A abogado.</param>
         /// <returns>Información del trámite.</returns>
-        public ErrorDto<FrmVivGarantiaHistorialRawItem> Viv_GarantiaHistorial_ObtenerPorTipo(
+        public ErrorDto<FrmVivGarantiaHistorialRawItem?> Viv_GarantiaHistorial_ObtenerPorTipo(
             int codEmpresa,
             long idGarantia,
             string tipo)

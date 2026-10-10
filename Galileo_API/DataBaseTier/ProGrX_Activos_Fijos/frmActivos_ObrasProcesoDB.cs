@@ -580,6 +580,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
        /// <summary>
        /// Metodo para guardar nuevo adendum de obra en proceso
+       /// </summary>
        /// <param name="CodEmpresa"></param>
        /// <param name="dato"></param>
        /// <param name="usuario"></param>

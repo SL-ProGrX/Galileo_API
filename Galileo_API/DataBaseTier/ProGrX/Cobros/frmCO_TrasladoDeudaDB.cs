@@ -145,7 +145,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        /// <summary>
         public ErrorDto<CoTrasladoDeudaAplicarResponse> CO_TrasladoDeuda_Aplicar(int CodEmpresa, CoTrasladoDeudaAplicarRequest data)
         {
             if (data == null)
@@ -515,40 +514,37 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         private ResumenDeudaRow ObtenerResumenDeuda(SqlConnection conn, long id_solicitud, DateTime fechaServidor, int sysPlanPagos, CabeceraOperacionRow cabecera)
         {
-            if (sysPlanPagos == 1)
-            {
-                var plan = conn.QueryFirstOrDefault<PlanPagoCancelacionRow>(
-                    "exec spCrdPlanPagosInfoCancelacion @Operacion, @Fecha",
-                    new
-                    {
-                        Operacion = id_solicitud,
-                        Fecha = fechaServidor.ToString(FECHA, CultureInfo.InvariantCulture)
-                    },
-                    commandTimeout: 0) ?? new PlanPagoCancelacionRow();
-
-                return new ResumenDeudaRow
+            // El traslado debe usar la misma fuente que la pestaña Estado de
+            // Gestión de Cobros. Antes se mezclaba InfoCancelacion/Vista_Morosidad
+            // con fxCRDCalculoIntCorte, por lo que el total podía diferir.
+            var mora = conn.QueryFirstOrDefault<GestionCobroMoraRow>(
+                "exec spCbrCobroJudicialInteresesHoy @Operacion, @FechaCorte",
+                new
                 {
-                    interes_corriente = plan.IntCor,
-                    interes_moratorio = plan.IntMor,
-                    principal_mora = cabecera.mora_amortiza,
-                    interes_pendiente = 0m,
-                    cargos = plan.Cargos,
-                    poliza = plan.Poliza
-                };
-            }
+                    Operacion = id_solicitud,
+                    FechaCorte = fechaServidor.ToString(FECHA, CultureInfo.InvariantCulture)
+                },
+                commandTimeout: 0) ?? new GestionCobroMoraRow();
 
-            decimal pendiente = cabecera.interes_total - (cabecera.mora_intc + cabecera.mora_intm);
-            if (pendiente < 0m)
-                pendiente = 0m;
+            decimal interesCorriente = mora.RegIntCor;
+            decimal interesPendiente = 0m;
+
+            // En sistemas sin plan de pagos se conserva la separación usada
+            // por el proceso contable entre interés registrado y generado a hoy.
+            if (sysPlanPagos != 1)
+            {
+                interesCorriente = Math.Min(Math.Max(cabecera.mora_intc, 0m), mora.RegIntCor);
+                interesPendiente = Math.Max(mora.RegIntCor - interesCorriente, 0m);
+            }
 
             return new ResumenDeudaRow
             {
-                interes_corriente = cabecera.mora_intc,
-                interes_moratorio = cabecera.mora_intm,
-                principal_mora = cabecera.mora_amortiza,
-                interes_pendiente = pendiente,
-                cargos = cabecera.cargos,
-                poliza = cabecera.poliza
+                interes_corriente = interesCorriente,
+                interes_moratorio = mora.RegIntMor,
+                principal_mora = mora.RegPrincipal,
+                interes_pendiente = interesPendiente,
+                cargos = mora.Cargos,
+                poliza = mora.Poliza
             };
         }
         private static void CargarCabecera(CoTrasladoDeudaObtenerDto dto, CabeceraOperacionRow row, long id_solicitud)
@@ -1446,12 +1442,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             public decimal cargos { get; set; }
             public decimal poliza { get; set; }
         }
-        private sealed class PlanPagoCancelacionRow
+        private sealed class GestionCobroMoraRow
         {
-            public decimal IntCor { get; set; } = 0m;
-            public decimal IntMor { get; set; } = 0m;
-            public decimal Cargos { get; set; } = 0m;
-            public decimal Poliza { get; set; } = 0m;
+            public decimal RegIntCor { get; set; }
+            public decimal RegIntMor { get; set; }
+            public decimal RegPrincipal { get; set; }
+            public decimal Cargos { get; set; }
+            public decimal Poliza { get; set; }
         }
         private sealed class OficinaContexto
         {

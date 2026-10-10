@@ -92,6 +92,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
 
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Bancos_Guardar")]
         public ErrorDto<int> TES_Bancos_Guardar(int CodEmpresa, bool vEdita, string Usuario, TesBancoDto Parametros)
         {
@@ -99,6 +100,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("TES_Bancos_Borrar")]
         public ErrorDto TES_Bancos_Borrar(int CodEmpresa, int Banco, string Usuario)
         {
@@ -107,6 +109,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
 
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Bancos_RangoFirmas_Actualizar")]
         public ErrorDto TES_Bancos_RangoFirmas_Actualizar(int CodEmpresa, int Banco, int FirmaDesde, int FirmaHasta, string Usuario)
         {
@@ -115,6 +118,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
 
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Bancos_SaldoFecha_Actualizar")]
         public ErrorDto TES_Bancos_SaldoFecha_Actualizar(int CodEmpresa, string Parametros)
         {
@@ -122,6 +126,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Bancos_Conciliacion_Actualizar")]
         public ErrorDto TES_Bancos_Conciliacion_Actualizar(int CodEmpresa, string Parametros)
         {
@@ -136,6 +141,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_BancosGrupos_Asignar")]
         public ErrorDto TES_BancosGrupos_Asignar(int CodEmpresa, int id_banco, bool asigna, TesBancosGruposAsgDto grupo)
         {
@@ -143,6 +149,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_BancosArchivos_Subir")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> TES_BancosArchivos_Subir(

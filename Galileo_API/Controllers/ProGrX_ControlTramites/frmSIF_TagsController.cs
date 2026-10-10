@@ -25,6 +25,7 @@ namespace Galileo_API.Controllers.ProGrX.ControlTramites
             return _bl.SIF_Tags_Lista_Obtener(CodEmpresa, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_Tags_Guardar")]
         [Authorize]
         public ErrorDto SIF_Tags_Guardar(int CodEmpresa, bool vEdita, string Usuario, [FromBody] SifTagsData param)
@@ -46,6 +47,7 @@ namespace Galileo_API.Controllers.ProGrX.ControlTramites
             return _bl.SIF_Tags_Notificacion_Obtener(CodEmpresa, tagCodigo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_Tags_Notificacion_Guardar")]
         [Authorize]
         public ErrorDto SIF_Tags_Notificacion_Guardar(int CodEmpresa, [FromBody] SifTagsNotificacionDto param)
@@ -53,6 +55,7 @@ namespace Galileo_API.Controllers.ProGrX.ControlTramites
             return _bl.SIF_Tags_Notificacion_Guardar(CodEmpresa, param);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("SIF_Tags_Notificacion_Eliminar")]
         [Authorize]
         public ErrorDto SIF_Tags_Notificacion_Eliminar(int CodEmpresa, string tagCodigo)

@@ -241,11 +241,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <summary>
         /// Aplicar autorizaci�n de solicitudes pendientes
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="clave"></param>
-        /// <param name="usuario"></param>
-        /// <param name="tipo_autorizacion"></param>
-        /// <param name="solicitudesLista"></param>
+        /// <param name="nsolicitud">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto TES_Autorizacion_Aplicar(TesAutorizaParametros nsolicitud)
         {
@@ -307,7 +303,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 conn,
                 bloqueaAutoAutorizacion,
                 solicitudesUnicas,
-                p.usuario);
+                p.usuario!);
             
             var bloqueadas = bloqueadasPorMismoUsuario.ToHashSet();
             var solicitudesAutorizables = solicitudesUnicas
@@ -320,7 +316,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 conn,
                 solicitudesAutorizables,
                 estado,
-                p.usuario);
+                p.usuario!);
 
             conn.Execute(
                     "EXEC spTes_Mass_Aplica @Usuario, @Estado, @SINPE_Tipo, @UsuarioEspecial",

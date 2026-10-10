@@ -24,6 +24,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sys_OrigenRecursos_Guardar")]
         public ErrorDto  Sys_OrigenRecursos_Guardar(int codEmpresa,SysOrigenRecursosData OrigenRecursos)
         { 
@@ -31,6 +32,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Sys_OrigenRecursos_Eliminar")]
         public ErrorDto Sys_OrigenRecursos_Eliminar(int codEmpresa, string usuario, string OrigenRecursos)
         {

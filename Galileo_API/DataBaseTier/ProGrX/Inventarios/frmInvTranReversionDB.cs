@@ -532,7 +532,7 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Obtiene el tipo inverso y el origen del movimiento.
         /// </summary>
-        /// <param name="tipoOriginal">Tipo original.</param>
+        /// <param name="tipoOriginal">Tipo del movimiento original.</param>
         /// <returns>Tipo inverso y origen.</returns>
         private static (string tipoInverso, string origen)
             INV_TranReversion_DatosInversos_Obtener(

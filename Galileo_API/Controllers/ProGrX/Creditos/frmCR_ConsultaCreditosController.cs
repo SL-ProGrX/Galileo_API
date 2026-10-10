@@ -42,7 +42,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         /// <returns>Cédula que debe utilizar la consulta integrada.</returns>
         [Authorize]
         [HttpGet("CR_ConsultaCrdCriterio_Resolver")]
-        public ErrorDto<string> CR_ConsultaCrdCriterio_Resolver(
+        public ErrorDto<string?> CR_ConsultaCrdCriterio_Resolver(
             int CodEmpresa,
             string criterio)
         {
@@ -171,49 +171,6 @@ namespace Galileo.Controllers.ProGrX.Credito
             return _BL.CR_ConsultaCrd_PreAnalisisOperacion_Obtener(
                 CodEmpresa,
                 operacion);
-        }
-
-        [Authorize]
-        [HttpGet("CR_ConsultaPlanillaAbonoDist_Inicializar")]
-        public ErrorDto<CrConsultaPlanillaAbonoDistInicialData> CR_ConsultaPlanillaAbonoDist_Inicializar(
-            int CodEmpresa,
-            string cedula)
-        {
-            return _BL.CR_ConsultaPlanillaAbonoDist_Inicializar(CodEmpresa, cedula);
-        }
-
-        [Authorize]
-        [HttpGet("CR_ConsultaPlanillaAbonoDist_UltimoMonto")]
-        public ErrorDto<CrConsultaPlanillaAbonoDistUltimoData> CR_ConsultaPlanillaAbonoDist_UltimoMonto(
-            int CodEmpresa,
-            string cedula,
-            int codInstitucion,
-            int proceso)
-        {
-            return _BL.CR_ConsultaPlanillaAbonoDist_UltimoMonto(
-                CodEmpresa,
-                cedula,
-                codInstitucion,
-                proceso);
-        }
-
-        [Authorize]
-        [HttpGet("CR_ConsultaPlanillaAbonoDist_Consultar")]
-        public ErrorDto<List<CrConsultaPlanillaAbonoDistDetalleData>> CR_ConsultaPlanillaAbonoDist_Consultar(
-            int CodEmpresa,
-            string cedula,
-            int codInstitucion,
-            int proceso,
-            decimal monto,
-            DateTime corte)
-        {
-            return _BL.CR_ConsultaPlanillaAbonoDist_Consultar(
-                CodEmpresa,
-                cedula,
-                codInstitucion,
-                proceso,
-                monto,
-                corte);
         }
         
         [Authorize]

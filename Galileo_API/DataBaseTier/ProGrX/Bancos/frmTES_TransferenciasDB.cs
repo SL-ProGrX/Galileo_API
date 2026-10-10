@@ -32,12 +32,7 @@ namespace Galileo_API.DataBaseTier
         /// Método para aceptar las transferencias bancarias y actualiza los registros correspondientes.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="id_Banco"></param>
-        /// <param name="TipoDoc"></param>
-        /// <param name="plan"></param>
-        /// <param name="usuario"></param>
-        /// <param name="BancoConsec"></param>
-        /// <param name="gstrQuery"></param>
+        /// <param name="transferencia">Datos de la transferencia que se procesar&#225;.</param>
         /// <returns></returns>
         public ErrorDto TES_Transferencia_Aceptar(int CodEmpresa, TesTransferenciasInfo transferencia)
         {
@@ -57,7 +52,7 @@ namespace Galileo_API.DataBaseTier
                 decimal curMonto = 0m;
                 
 
-                var cantidadSolicitudes = transferencia.parametros.cantidad;
+                var cantidadSolicitudes = transferencia.parametros!.cantidad;
                 cantidadSolicitudes = ValCantidadSolicitudes(cantidadSolicitudes, transferencia);
 
                 // 2) Ejecutar SOLO SQL permitido
@@ -125,7 +120,7 @@ namespace Galileo_API.DataBaseTier
 
                     ActualizaTesBancosDocsConse(conn, consc, transferencia);
 
-                    var aplicaInterno = spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc, transferencia.bancoConsec, transferencia.usuario);
+                    var aplicaInterno = spTes_TEI_Acreaditacion(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, transferencia.bancoConsec!, transferencia.usuario!);
 
                     if(aplicaInterno.aplica == "1")
                     {
@@ -147,7 +142,7 @@ namespace Galileo_API.DataBaseTier
         private static  int ValCantidadSolicitudes(int cantidadSolicitudes, TesTransferenciasInfo transferencia)
         {
             if (cantidadSolicitudes <= 0 &&
-                    transferencia.parametros.maximo >= transferencia.parametros.minimo &&
+                    transferencia.parametros!.maximo >= transferencia.parametros.minimo &&
                     transferencia.parametros.minimo > 0)
             {
                 cantidadSolicitudes =
@@ -311,9 +306,7 @@ Where ID_Solicitud = @IdSolicitud";
         /// Método para revertir una transferencia bancaria, actualizando los registros correspondientes.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="id_Banco"></param>
-        /// <param name="TipoDoc"></param>
-        /// <param name="plan"></param>
+        /// <param name="transferencia">Datos de la transferencia que se procesar&#225;.</param>
         /// <returns></returns>
         public ErrorDto TES_Transferencia_Reversar(int CodEmpresa, TesTransferenciasInfo transferencia)
         {
@@ -327,7 +320,7 @@ Where ID_Solicitud = @IdSolicitud";
                          };
                 }
 
-                _mTesoreria.fxTesTipoDocConsec(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc, "-", transferencia.plan);
+                _mTesoreria.fxTesTipoDocConsec(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, "-", transferencia.plan!);
                 return DbHelper.OkResponse("Transferencia Revertida Correctamente");
             }
             catch (Exception ex)

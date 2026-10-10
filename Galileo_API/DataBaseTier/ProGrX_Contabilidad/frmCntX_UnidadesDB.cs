@@ -20,6 +20,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// Lista las unidades
         /// </summary>
         /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad">C&#243;digo de la contabilidad asociada.</param>
         /// <returns></returns>
         public ErrorDto<List<CntXUnidadDto>> CntX_Unidades_Listar(int codEmpresa, int codContabilidad)
         {
@@ -49,6 +50,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// Guarda las unidades
         /// </summary>
         /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad">C&#243;digo de la contabilidad asociada.</param>
         /// <param name="usuario"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
@@ -147,6 +149,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// Elimina las unidades
         /// </summary>
         /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad">C&#243;digo de la contabilidad asociada.</param>
         /// <param name="usuario"></param>
         /// <param name="codUnidad"></param>
         /// <returns></returns>
@@ -181,6 +184,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// Lista las unidades activas
         /// </summary>
         /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad">C&#243;digo de la contabilidad asociada.</param>
         /// <returns></returns>
         public ErrorDto<List<CntXUnidadActivaDto>> CntX_Unidades_Activas_Listar(int codEmpresa, int codContabilidad)
         {
@@ -215,6 +219,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// Trae centros de costo por unidad 
         /// </summary>
         /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad">C&#243;digo de la contabilidad asociada.</param>
         /// <param name="codUnidad"></param>
         /// <returns></returns>
         public ErrorDto<List<CntXCentroCostoDto>> CntX_CentrosCosto_PorUnidad(int codEmpresa, int codContabilidad, string codUnidad)
@@ -255,6 +260,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// Guarda las unidades CC
         /// </summary>
         /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad">C&#243;digo de la contabilidad asociada.</param>
         /// <param name="usuario"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
@@ -321,6 +327,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// Consulta las unidades CC
         /// </summary>
         /// <param name="codEmpresa"></param>
+        /// <param name="codContabilidad">C&#243;digo de la contabilidad asociada.</param>
         /// <param name="codUnidad"></param>
         /// <returns></returns>
         public ErrorDto<List<CntXCentroCostoDto>> CntX_Unidades_CC_Consulta(int codEmpresa, int codContabilidad, string codUnidad

@@ -456,7 +456,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
 
             Bitacora_Registrar(CodEmpresa, request.Usuario, "Modifica", $"Remesa Comisiones de Créditos:  {request.CodRemesa}");
-            return DbHelper.CreateOkResponse(request.CodRemesa.Value);
+            return DbHelper.CreateOkResponse(request.CodRemesa.GetValueOrDefault());
         }
 
         /// <summary>

@@ -289,12 +289,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="param">Parámetros para eliminar el rol.</param>
         /// <returns>True si la operación fue exitosa.</returns>
-        /// <summary>
-        /// Elimina un rol de acceso usando el SP spCntX_AC_Rol_Delete.
-        /// </summary>
-        /// <param name="codEmpresa">Código de la empresa.</param>
-        /// <param name="param">Parámetros para eliminar el rol.</param>
-        /// <returns>True si la operación fue exitosa.</returns>
         public ErrorDto<bool> CntXAcRol_Delete(int codEmpresa, CntXAcRolDeleteParams param)
         {
             var sql = "spCntX_AC_Rol_Delete";

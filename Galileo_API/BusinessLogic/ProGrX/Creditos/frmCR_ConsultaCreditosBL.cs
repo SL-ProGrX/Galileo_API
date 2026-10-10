@@ -32,7 +32,7 @@ namespace Galileo.BusinessLogic.ProGrX.Credito
         /// <param name="CodEmpresa">Código de la empresa activa.</param>
         /// <param name="criterio">Cédula o número de operación digitado.</param>
         /// <returns>Cédula que debe utilizar la consulta integrada.</returns>
-        public ErrorDto<string> CR_ConsultaCrdCriterio_Resolver(
+        public ErrorDto<string?> CR_ConsultaCrdCriterio_Resolver(
             int CodEmpresa,
             string criterio)
         {
@@ -136,43 +136,6 @@ namespace Galileo.BusinessLogic.ProGrX.Credito
             return _Db.CR_ConsultaCrd_PreAnalisisOperacion_Obtener(
                 codEmpresa,
                 operacion);
-        }
-
-        public ErrorDto<CrConsultaPlanillaAbonoDistInicialData> CR_ConsultaPlanillaAbonoDist_Inicializar(
-            int CodEmpresa,
-            string cedula)
-        {
-            return _Db.CR_ConsultaPlanillaAbonoDist_Inicializar(CodEmpresa, cedula);
-        }
-
-        public ErrorDto<CrConsultaPlanillaAbonoDistUltimoData> CR_ConsultaPlanillaAbonoDist_UltimoMonto(
-            int CodEmpresa,
-            string cedula,
-            int codInstitucion,
-            int proceso)
-        {
-            return _Db.CR_ConsultaPlanillaAbonoDist_UltimoMonto(
-                CodEmpresa,
-                cedula,
-                codInstitucion,
-                proceso);
-        }
-
-        public ErrorDto<List<CrConsultaPlanillaAbonoDistDetalleData>> CR_ConsultaPlanillaAbonoDist_Consultar(
-            int CodEmpresa,
-            string cedula,
-            int codInstitucion,
-            int proceso,
-            decimal monto,
-            DateTime corte)
-        {
-            return _Db.CR_ConsultaPlanillaAbonoDist_Consultar(
-                CodEmpresa,
-                cedula,
-                codInstitucion,
-                proceso,
-                monto,
-                corte);
         }
 
         public ErrorDto<List<CrConsultaCrdCreditosData>> CR_ConsultaCrd_Creditos_Obtener(int CodEmpresa, string cedula, string sheetName)

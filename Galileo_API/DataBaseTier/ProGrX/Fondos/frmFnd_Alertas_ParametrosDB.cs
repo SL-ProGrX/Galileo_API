@@ -63,7 +63,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// Método para obtener las operadoras
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="lista"></param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Fnd_AlertasParametros_Operadora_Obtener(int CodEmpresa)
         {
@@ -222,6 +221,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// Método para obtener la lista de correos electrónicos registrados
         /// </summary>
         /// <param name="CodEmpresa"></param>
+        /// <param name="filtros">Criterios utilizados para filtrar los resultados.</param>
         /// <returns></returns>
         public ErrorDto<TablasListaGenericaModel> Fnd_AlertasParametros_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
@@ -290,8 +290,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// Método para registrar los parámetros de las alertas
         /// </summary>
         /// <param name="codEmpresa"></param>
-        /// <param name="listaAlertas"></param>
         /// <param name="usuario"></param>
+        /// <param name="alerta">Datos de entrada requeridos por la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto Fnd_AlertasParametros_Registrar(int codEmpresa, string usuario, FndalertasData alerta)
         {
@@ -406,7 +406,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="usuario"></param>
-        /// <param name="listaContactos"></param>
+        /// <param name="idregistro">Identificador del registro relacionado.</param>
         /// <returns></returns>
         public ErrorDto Fnd_AlertasEmailId_Eliminar(int codEmpresa, string usuario, int idregistro)
         {

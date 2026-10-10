@@ -8,7 +8,7 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+ 
     public class CambiarContrasenaController : ControllerBase
     {
         private readonly IConfiguration _config;

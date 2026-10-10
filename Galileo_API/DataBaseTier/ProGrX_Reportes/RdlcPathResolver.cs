@@ -18,6 +18,19 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
         /// </summary>
         public string GetBasePath(int codEmpresa, string dirRdlc, string? folder = null)
         {
+            return BuildBasePath(dirRdlc, codEmpresa.ToString(), folder);
+        }
+
+        /// <summary>
+        /// Construye la ruta base alternativa para reportes compartidos.
+        /// </summary>
+        public string GetDefaultBasePath(string dirRdlc, string? folder = null)
+        {
+            return BuildBasePath(dirRdlc, DefaultEmpresaSegment, folder);
+        }
+
+        private static string BuildBasePath(string dirRdlc, string empresaSegment, string? folder)
+        {
             if (!string.IsNullOrWhiteSpace(folder) && Path.IsPathRooted(folder))
             {
                 throw new SecurityException("La carpeta especificada no es válida.");
@@ -25,14 +38,11 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
             var root = Path.GetFullPath(dirRdlc);
 
-            // Normaliza el código de empresa para que solo se use como segmento de ruta.
-            var empresaSegment = Path.GetFileName(codEmpresa.ToString());
-
             // Normaliza la carpeta opcional para que se use solo como segmento de ruta.
             string? safeFolder = null;
             if (!string.IsNullOrWhiteSpace(folder))
             {
-                safeFolder = Path.GetFileName(folder);
+                safeFolder = SafePath.Lenient(Path.GetFileName(folder), SafePath.FileNameChars);
             }
 
             var trimmedRoot = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
@@ -45,12 +55,12 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
         /// <summary>
         /// Resuelve la ruta final del reporte usando únicamente extensiones permitidas.
         /// </summary>
-        public string ResolveReportPath(int codEmpresa, string basePath)
+        public string ResolveReportPath(int codEmpresa, string basePath, string? defaultBasePath = null)
         {
             if (string.IsNullOrWhiteSpace(basePath))
                 throw new SecurityException("La ruta base del reporte es requerida.");
 
-            var normalizedBasePath = Path.GetFullPath(basePath);
+            var normalizedBasePath = SafePath.RootPath(basePath, nameof(basePath));
             var directory = Path.GetDirectoryName(normalizedBasePath);
             var normalizedDirectory = string.IsNullOrWhiteSpace(directory) ? string.Empty : Path.GetFullPath(directory);
 
@@ -61,34 +71,38 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                 Path.GetFileNameWithoutExtension(normalizedBasePath),
                 "nombreReporte");
 
-            var match = Directory
-                .EnumerateFiles(normalizedDirectory)
-                .Select(Path.GetFullPath)
-                .Where(path => IsUnderDirectory(normalizedDirectory, path))
-                .Where(path => AllowedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
-                .FirstOrDefault(path =>
-                    string.Equals(
-                        Path.GetFileNameWithoutExtension(path),
-                        requestedName,
-                        StringComparison.OrdinalIgnoreCase));
-            if(match == null)
+            var match = FindReportInDirectory(normalizedDirectory, requestedName);
+            if (match == null && !string.IsNullOrWhiteSpace(defaultBasePath))
             {
-                normalizedDirectory = validaRutaFinal(normalizedDirectory, codEmpresa);
-                match = Directory
-                .EnumerateFiles(normalizedDirectory)
-                .Select(Path.GetFullPath)
-                .Where(path => IsUnderDirectory(normalizedDirectory, path))
-                .Where(path => AllowedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
-                .FirstOrDefault(path =>
-                    string.Equals(
-                        Path.GetFileNameWithoutExtension(path),
-                        requestedName,
-                        StringComparison.OrdinalIgnoreCase));
+                var normalizedDefaultDirectory = SafePath.RootPath(defaultBasePath, nameof(defaultBasePath));
+                if (!string.Equals(
+                        normalizedDefaultDirectory,
+                        normalizedDirectory,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    match = FindReportInDirectory(normalizedDefaultDirectory, requestedName);
+                }
             }
 
-            
-
             return match ?? string.Empty;
+        }
+
+        private static string? FindReportInDirectory(string directory, string requestedName)
+        {
+            if (!Directory.Exists(directory))
+            {
+                return null;
+            }
+
+            return Directory
+                .EnumerateFiles(directory)
+                .Select(Path.GetFullPath)
+                .Where(path => IsUnderDirectory(directory, path))
+                .Where(path => AllowedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+                .FirstOrDefault(path => string.Equals(
+                    Path.GetFileNameWithoutExtension(path),
+                    requestedName,
+                    StringComparison.OrdinalIgnoreCase));
         }
 
 
@@ -114,7 +128,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                 throw new SecurityException($"{paramName} inválido.");
             }
 
-            return normalized;
+            return SafePath.Strict(normalized, SafePath.ReportNameChars, paramName);
         }
 
         private static IEnumerable<string> BuildBasePathCandidates(
@@ -159,7 +173,9 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
         public string CombineUnderRoot(string basePath, params string[] reportFile)
         {
             var rootFull = Path.GetFullPath(basePath);
-            var combined = reportFile.Aggregate(rootFull, Path.Combine);
+            var safeSegments = reportFile.Select(
+                segment => SafePath.Strict(segment, SafePath.FileNameChars, nameof(reportFile)));
+            var combined = safeSegments.Aggregate(rootFull, Path.Combine);
             var full = Path.GetFullPath(combined);
 
             if (!IsUnderDirectory(rootFull, full))
@@ -181,14 +197,5 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             return normalizedCandidate.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string validaRutaFinal(string ruta, int codEmpresa)
-        {
-            //valido si la ruta final con el documento existe si no busco el archivo en la carpeta predeterminada
-            if(!File.Exists(ruta))
-            {
-                ruta = ruta.Replace(codEmpresa.ToString(), DefaultEmpresaSegment);
-            }
-            return ruta;
-        }
     }
 }

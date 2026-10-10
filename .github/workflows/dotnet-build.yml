@@ -6,9 +6,9 @@ name: .NET Build
 
 on:
   push:
-    branches: [ "*" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "*" ]
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -19,11 +19,11 @@ jobs:
       # 1) Código
       - uses: actions/checkout@v4
 
-      # 2) .NET 9
+      # 2) .NET 10
       - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
 
       # 3) Restore
       - name: Restore

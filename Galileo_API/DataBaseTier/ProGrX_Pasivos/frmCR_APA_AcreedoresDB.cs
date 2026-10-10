@@ -35,7 +35,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                 filtros ??= new FiltrosLazyLoadData();
 
                 var hasFilter = !string.IsNullOrWhiteSpace(filtros.filtro);
-                var filtroLike = hasFilter ? $"%{filtros.filtro.Trim()}%" : null;
+                var filtroLike = hasFilter ? $"%{filtros.filtro!.Trim()}%" : null;
 
                 var offset = filtros.pagina < 0 ? 0 : filtros.pagina;
                 var pageSize = filtros.paginacion <= 0 ? 30 : filtros.paginacion;
@@ -125,7 +125,7 @@ OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
         /// Obtiene los datos principales de un acreedor APA por código.
         /// </summary>
         /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
+        /// <param name="cod_acreedor">C&#243;digo que identifica el elemento relacionado.</param>
         /// <returns></returns>
         public ErrorDto<FrmCrApaAcreedorDatosDto> CR_APA_Acreedor_Obtener(
             int codEmpresa,

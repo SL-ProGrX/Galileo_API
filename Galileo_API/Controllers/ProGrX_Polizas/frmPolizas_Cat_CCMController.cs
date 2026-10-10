@@ -36,14 +36,14 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
 
         [Authorize]
         [HttpPost("PolizasConceptosConfigAdd")]
-        public ErrorDto<PolizasConceptosConfigAddResult> PolizasConceptosConfigAdd(int codEmpresa, [FromBody] PolizasConceptosConfigAddParams param)
+        public ErrorDto<PolizasConceptosConfigAddResult?> PolizasConceptosConfigAdd(int codEmpresa, [FromBody] PolizasConceptosConfigAddParams param)
         {
             return _bl.PolizasConceptosConfigAdd(codEmpresa, param);
         }
 
         [Authorize]
         [HttpPost("PolizasConceptosConfigDel")]
-        public ErrorDto<PolizasConceptosConfigAddResult> PolizasConceptosConfigDel(int codEmpresa, [FromBody] PolizasConceptosConfigDelParams param)
+        public ErrorDto<PolizasConceptosConfigAddResult?> PolizasConceptosConfigDel(int codEmpresa, [FromBody] PolizasConceptosConfigDelParams param)
         {
             return _bl.PolizasConceptosConfigDel(codEmpresa, param);
         }

@@ -2,12 +2,12 @@
 {
     public class AfCartasNoCotizantesFiltros
     {
-        public required string tipoDocumento { get; set; }
+        public required string? tipoDocumento { get; set; }
 
-        public required string meses { get; set; }
+        public required string? meses { get; set; }
         public int mesesNoCotizar { get; set; }
         public DateTime fechaIngreso { get; set; }
-        public required string mora { get; set; }
+        public required string? mora { get; set; }
         public int cuotaMora { get; set; }
 
         public bool chkCreditos { get; set; }

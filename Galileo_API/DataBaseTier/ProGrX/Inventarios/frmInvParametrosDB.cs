@@ -109,7 +109,7 @@ namespace Galileo.DataBaseTier
                         null);
             }
 
-            return DbHelper.CreateOkResponse(
+            return DbHelper.CreateOkResponse<ParametrosGenDto?>(
                 resultado.Result);
         }
 

@@ -30,7 +30,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Inicializa el acceso a datos del formulario.
         /// </summary>
         /// <param name="config">
-        /// Configuraci&oacute;n de la aplicaci&oacute;n.
+        /// Configuraci&#243;n de la aplicaci&#243;n.
         /// </param>
         public FrmFslExpedienteGestionesDB(
             IConfiguration config)
@@ -46,13 +46,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Obtiene el encabezado del expediente seleccionado.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// C&#243;digo de empresa.
         /// </param>
         /// <param name="codExpediente">
-        /// C&oacute;digo del expediente.
+        /// C&#243;digo del expediente.
         /// </param>
         /// <returns>
-        /// Informaci&oacute;n general del expediente.
+        /// Informaci&#243;n general del expediente.
         /// </returns>
         public ErrorDto<FslExpedienteDatos>
             FSL_ExpedienteGestiones_Expediente_Obtener(
@@ -65,13 +65,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene los tipos de gesti&oacute;n activos.
+        /// Obtiene los tipos de gesti&#243;n activos.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// C&#243;digo de empresa.
         /// </param>
         /// <returns>
-        /// Tipos de gesti&oacute;n disponibles.
+        /// Tipos de gesti&#243;n disponibles.
         /// </returns>
         public ErrorDto<List<DropDownListaGenericaModel>>
             FSL_ExpedienteGestiones_Catalogo_Obtener(
@@ -95,13 +95,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene el hist&oacute;rico de gestiones del expediente.
+        /// Obtiene el hist&#243;rico de gestiones del expediente.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// C&#243;digo de empresa.
         /// </param>
         /// <param name="codExpediente">
-        /// C&oacute;digo del expediente.
+        /// C&#243;digo del expediente.
         /// </param>
         /// <returns>
         /// Gestiones registradas en el expediente.
@@ -127,13 +127,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Registra una gesti&oacute;n en el expediente.
+        /// Registra una gesti&#243;n en el expediente.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// C&#243;digo de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n de la gesti&oacute;n.
+        /// Informaci&#243;n de la gesti&#243;n.
         /// </param>
         /// <returns>
         /// Resultado del registro.

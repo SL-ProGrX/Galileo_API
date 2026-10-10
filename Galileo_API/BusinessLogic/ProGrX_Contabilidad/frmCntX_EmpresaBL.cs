@@ -10,7 +10,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
 
         public FrmCntXEmpresaBl(IConfiguration config) => _db = new FrmCntXEmpresaDb(config);
 
-        public ErrorDto<CntXEmpresaDto> CntXEmpresa_Obtener(int codEmpresa)
+        public ErrorDto<CntXEmpresaDto?> CntXEmpresa_Obtener(int codEmpresa)
         {
             return _db.CntXEmpresa_Obtener(codEmpresa);
         }

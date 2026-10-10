@@ -587,7 +587,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>Agrupa los datos necesarios para registrar el documento SIF.</summary>
         private sealed class DocumentoRegistroContexto
         {
-            public CrAbonosComprobanteAplicarRequest Request { get; init; }
+            public required CrAbonosComprobanteAplicarRequest Request { get; init; }
             public CrAbonosComprobanteOperacionData Operacion { get; init; } = new();
             public CrAbonosComprobanteMovimientoData PrimerMovimiento { get; init; } = new();
             public CrAbonosComprobanteMovimientoData UltimoMovimiento { get; init; } = new();
@@ -601,9 +601,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <summary>Agrupa la conexión y los datos comunes de los asientos del comprobante.</summary>
         private sealed class AsientoRegistroContexto
         {
-            public SqlConnection Conn { get; init; }
-            public SqlTransaction Tx { get; init; }
-            public CrAbonosComprobanteAplicarRequest Request { get; init; }
+            public required SqlConnection Conn { get; init; }
+            public required SqlTransaction Tx { get; init; }
+            public required CrAbonosComprobanteAplicarRequest Request { get; init; }
             public CrAbonosComprobanteOperacionCtasData Cuentas { get; init; } = new();
             public int Enlace { get; init; }
             public string Deposito { get; init; } = string.Empty;

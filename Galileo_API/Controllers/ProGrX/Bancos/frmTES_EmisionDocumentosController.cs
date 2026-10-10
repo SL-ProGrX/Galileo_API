@@ -1,4 +1,5 @@
 ﻿using Galileo.Models;
+using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.TES;
 using Galileo_API.BusinessLogic.ProGrX.Bancos;
@@ -6,6 +7,7 @@ using Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos;
 using Galileo_API.Services.ProGrX.Bancos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security;
 
 namespace Galileo_API.Controllers.ProGrX.Bancos
 {
@@ -244,13 +246,14 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
                 procesoId,
                 archivoId,
                 ObtenerPropietario());
-            if (archivo == null || !RutaInternaEsValida(archivo.ruta_interna))
+            var rutaSegura = archivo == null ? null : ObtenerRutaInternaValida(archivo.ruta_interna);
+            if (archivo == null || rutaSegura == null)
             {
                 return NotFound();
             }
 
             var stream = new FileStream(
-                archivo.ruta_interna,
+                rutaSegura,
                 FileMode.Open,
                 FileAccess.Read,
                 FileShare.Read);
@@ -273,14 +276,26 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return propietario;
         }
 
-        private bool RutaInternaEsValida(string ruta)
+        private string? ObtenerRutaInternaValida(string ruta)
         {
             var raiz = _archivosRaiz.EndsWith(Path.DirectorySeparatorChar)
                 ? _archivosRaiz
                 : _archivosRaiz + Path.DirectorySeparatorChar;
-            var rutaCompleta = Path.GetFullPath(ruta);
+
+            string rutaCompleta;
+            try
+            {
+                rutaCompleta = SafePath.RootPath(ruta, nameof(ruta));
+            }
+            catch (SecurityException)
+            {
+                return null;
+            }
+
             return rutaCompleta.StartsWith(raiz, StringComparison.OrdinalIgnoreCase)
-                && System.IO.File.Exists(rutaCompleta);
+                && System.IO.File.Exists(rutaCompleta)
+                    ? rutaCompleta
+                    : null;
         }
     }
 }

@@ -14,7 +14,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private readonly MProGrxMain mProGrx;
 
 
-        public FrmFndLiquidacionPlanDB(IConfiguration? config)
+        public FrmFndLiquidacionPlanDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
             mProGrx = new MProGrxMain(config);
@@ -660,7 +660,7 @@ where F.Cod_Operadora = @CodOperadora
             FndLiquidacionPlanLiquidarRequest request)
         {
 
-            var globales = mProGrx.sbSifParametrosInicializa(codEmpresa, request.usuario, request.codContabilidad).Result;
+            var globales = mProGrx.sbSifParametrosInicializa(codEmpresa, request.usuario, request.codContabilidad).Result!;
 
             request.oficinaTitular = globales.GOficinaTitular;
             request.oficinaUnidad = globales.GOficinaUnidad;
@@ -900,7 +900,11 @@ where F.Cod_Operadora = @CodOperadora
             CrearDocumentoGeneralParametros parametro
            )
         {
-            var resumen = ObtenerResumenDocumento(parametro.conn, parametro.tx, parametro.codOperador, parametro.request.cod_plan, parametro.docRef);
+            var tipoDocumento = parametro.tipoDoc
+                ?? throw new InvalidOperationException("El tipo de documento contable es requerido.");
+            var numeroDocumento = parametro.docRef
+                ?? throw new InvalidOperationException("La referencia del documento contable es requerida.");
+            var resumen = ObtenerResumenDocumento(parametro.conn, parametro.tx!, parametro.codOperador, parametro.request!.cod_plan, numeroDocumento);
             string detalleAsiento = LimitarTexto($"Liquidacion general {parametro.request.cod_plan}", 30);
 
             foreach (var item in resumen)
@@ -913,8 +917,8 @@ where F.Cod_Operadora = @CodOperadora
                         request = parametro.request,
                         plan = parametro.plan,
                         item = item,
-                        docRef = parametro.docRef,
-                        tipoDoc = parametro.tipoDoc,
+                        docRef = numeroDocumento,
+                        tipoDoc = tipoDocumento,
                         concepto = parametro.concepto
                     });
 
@@ -923,11 +927,11 @@ where F.Cod_Operadora = @CodOperadora
                     {
                         conn = parametro.conn,
                         tx = parametro.tx,
-                        tipoDocumento = parametro.tipoDoc,
-                        numDocumento = parametro.docRef,
+                        tipoDocumento = tipoDocumento,
+                        numDocumento = numeroDocumento,
                         monto = item.aporte,
                         debeHaber = "D",
-                        codDivisa = parametro.plan.cod_moneda,
+                        codDivisa = parametro.plan!.cod_moneda,
                         enlace = parametro.request.enlace,
                         codUnidad = parametro.request.oficinaUnidad,
                         codCentroCosto = string.Empty,
@@ -942,8 +946,8 @@ where F.Cod_Operadora = @CodOperadora
                     {
                         conn = parametro.conn,
                         tx = parametro.tx,
-                        tipoDocumento = parametro.tipoDoc,
-                        numDocumento = parametro.docRef,
+                        tipoDocumento = tipoDocumento,
+                        numDocumento = numeroDocumento,
                         monto = item.rendimiento,
                         debeHaber = "D",
                         codDivisa = parametro.plan.cod_moneda,
@@ -961,8 +965,8 @@ where F.Cod_Operadora = @CodOperadora
                     {
                         conn = parametro.conn,
                         tx = parametro.tx,
-                        tipoDocumento = parametro.tipoDoc,
-                        numDocumento = parametro.docRef,
+                        tipoDocumento = tipoDocumento,
+                        numDocumento = numeroDocumento,
                         monto = item.isr_monto,
                         debeHaber = "C",
                         codDivisa = parametro.plan.cod_moneda,
@@ -980,15 +984,15 @@ where F.Cod_Operadora = @CodOperadora
                     {
                         conn = parametro.conn,
                         tx = parametro.tx,
-                        tipoDocumento = parametro.tipoDoc,
-                        numDocumento = parametro.docRef,
+                        tipoDocumento = tipoDocumento,
+                        numDocumento = numeroDocumento,
                         monto = item.multa,
                         debeHaber = "C",
                         codDivisa = parametro.plan.cod_moneda,
                         enlace = parametro.request.enlace,
                         codUnidad = parametro.request.oficinaUnidad,
                         codCentroCosto = parametro.request.oficinaCentroCosto,
-                        codCuenta = parametro.operadora.cta_ingresos,
+                        codCuenta = parametro.operadora!.cta_ingresos,
                         referencia1 = item.cod_operadora,
                         referencia2 = item.cod_plan,
                         detalle = detalleAsiento
@@ -1000,8 +1004,8 @@ where F.Cod_Operadora = @CodOperadora
                      {
                          conn = parametro.conn,
                          tx = parametro.tx,
-                         tipoDocumento = parametro.tipoDoc,
-                         numDocumento = parametro.docRef,
+                         tipoDocumento = tipoDocumento,
+                         numDocumento = numeroDocumento,
                          monto = neto,
                          debeHaber = "C",
                          codDivisa = parametro.plan.cod_moneda,
@@ -1080,9 +1084,9 @@ where F.Cod_Operadora = @CodOperadora
             {
                 DocRef = parametros.docRef,
                 TipoDoc = parametros.tipoDoc,
-                Usuario = parametros.request.usuario.Trim(),
+                Usuario = parametros.request!.usuario.Trim(),
                 ClienteIdentificacion = parametros.request.cod_plan.Trim(),
-                ClienteNombre = parametros.plan.descripcion,
+                ClienteNombre = parametros.plan!.descripcion,
                 Concepto = parametros.concepto,
                 Monto = total,
                 Referencia01 = parametros.item.cod_operadora,

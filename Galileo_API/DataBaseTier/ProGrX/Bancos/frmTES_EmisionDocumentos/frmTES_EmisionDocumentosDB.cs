@@ -485,72 +485,8 @@ where B.estado = 'A'
             try
             {
                 var filtro = ParseFiltros(filtros);
-
                 if (filtro.especial)
-                {
-                    var responses = new List<object>();
-                    var solicitudes = TES_EmisionDocumento_Solicitudes_Obtener(codEmpresa, filtros).Result;
-                    if(solicitudes == null)
-                    {
-                        return DbHelper.CreateErrorResponse<object>("Solicitud no Encontrada");
-                    }
-                    var procesadas = 0;
-                    var totalSolicitudes = solicitudes.Count;
-
-                    foreach (var item in solicitudes)
-                    {
-                        var filtroItem = new TesEmisionDocFiltros
-                        {
-                            especial = filtro.especial,
-                            usuario = filtro.usuario,
-                            generarPor = nSolicitudes,
-                            minimo = item.nsolicitud,
-                            maximo = item.nsolicitud,
-                            banco = item.id_banco ?? filtro.banco,
-                            tipoDoc = item.tipo,
-                            plan = "-sp-",
-                            cantidad = filtro.cantidad,
-                            fecha_inicio = null,
-                            fecha_corte = null,
-                            verificacion = filtro.verificacion
-                        };
-
-                        var documento = TES_EmisionDocumento_Buscar(
-                            codEmpresa,
-                            filtroItem.tipoDoc,
-                            filtroItem.banco,
-                            filtroItem.plan).Result;
-
-                        filtroItem.cantidad = documento.total;
-                        filtroItem.docBloqueo = documento.docBloqueo;
-                        filtroItem.docInicial = (int)documento.docInicial;
-
-                        var formato = TES_EmisionDocumento_Formato_Obtener(
-                            codEmpresa,
-                            filtroItem.banco).Result;
-
-                        filtroItem.formatoTE = item.tipo == "TS"
-                            ? "SG"
-                            : (string)formato[0].item;
-
-                        var proceso = ProcesoDocumentos(codEmpresa, filtroItem);
-                        if (proceso.Code != 0)
-                        {
-                            return DbHelper.CreateErrorResponse<object>(
-                                proceso.Description ?? $"Error al procesar la solicitud {item.nsolicitud}.");
-                        }
-
-                        responses.Add(new
-                        {
-                            result = proceso.Result
-                        });
-                        procesadas++;
-                        avance?.Invoke(procesadas, totalSolicitudes);
-                    }
-
-                    return DbHelper.CreateOkResponse<object>(
-                        JsonConvert.SerializeObject(responses, Formatting.Indented));
-                }
+                    return GenerarSolicitudesEspeciales(codEmpresa, filtros, filtro, avance);
 
                 var resultado = ProcesoDocumentos(codEmpresa, filtro);
                 if (resultado.Code == 0)
@@ -563,6 +499,90 @@ where B.estado = 'A'
             {
                 return DbHelper.CreateErrorResponse<object>(ex.Message);
             }
+        }
+
+        private ErrorDto<object> GenerarSolicitudesEspeciales(
+            int codEmpresa,
+            string filtros,
+            TesEmisionDocFiltros filtro,
+            Action<int, int>? avance)
+        {
+            var solicitudes = TES_EmisionDocumento_Solicitudes_Obtener(codEmpresa, filtros).Result;
+            if (solicitudes == null)
+                return DbHelper.CreateErrorResponse<object>("Solicitud no Encontrada");
+
+            var responses = new List<object>();
+            var totalSolicitudes = solicitudes.Count;
+            for (var index = 0; index < totalSolicitudes; index++)
+            {
+                var proceso = ProcesarSolicitudEspecial(codEmpresa, filtro, solicitudes[index]);
+                if (proceso.Code != 0)
+                    return proceso;
+
+                responses.Add(new { result = proceso.Result });
+                avance?.Invoke(index + 1, totalSolicitudes);
+            }
+
+            return DbHelper.CreateOkResponse<object>(
+                JsonConvert.SerializeObject(responses, Formatting.Indented));
+        }
+
+        private ErrorDto<object> ProcesarSolicitudEspecial(
+            int codEmpresa,
+            TesEmisionDocFiltros filtro,
+            dynamic item)
+        {
+            var filtroItem = new TesEmisionDocFiltros
+            {
+                especial = filtro.especial,
+                usuario = filtro.usuario,
+                generarPor = nSolicitudes,
+                minimo = item.nsolicitud,
+                maximo = item.nsolicitud,
+                banco = item.id_banco ?? filtro.banco,
+                tipoDoc = item.tipo,
+                plan = "-sp-",
+                cantidad = filtro.cantidad,
+                fecha_inicio = null,
+                fecha_corte = null,
+                verificacion = filtro.verificacion
+            };
+
+            var documento = TES_EmisionDocumento_Buscar(
+                codEmpresa,
+                filtroItem.tipoDoc,
+                filtroItem.banco,
+                filtroItem.plan).Result;
+
+            filtroItem.cantidad = documento!.total;
+            filtroItem.docBloqueo = documento.docBloqueo;
+            filtroItem.docInicial = (int)documento.docInicial;
+
+            var formato = TES_EmisionDocumento_Formato_Obtener(codEmpresa, filtroItem.banco);
+            if (item.tipo == "TS")
+            {
+                filtroItem.formatoTE = "SG";
+            }
+            else
+            {
+                if (formato.Code != 0 || formato.Result is null || formato.Result.Count == 0)
+                    return DbHelper.CreateErrorResponse<object>(
+                        formato.Description ?? $"No se encontró el formato de emisión para la solicitud {item.nsolicitud}.");
+
+                if (formato.Result[0].item is not string codigoFormato ||
+                    string.IsNullOrWhiteSpace(codigoFormato))
+                    return DbHelper.CreateErrorResponse<object>(
+                        $"El formato de emisión está vacío para la solicitud {item.nsolicitud}.");
+
+                filtroItem.formatoTE = codigoFormato;
+            }
+
+            var proceso = ProcesoDocumentos(codEmpresa, filtroItem);
+            if (proceso.Code != 0)
+                return DbHelper.CreateErrorResponse<object>(
+                    proceso.Description ?? $"Error al procesar la solicitud {item.nsolicitud}.");
+
+            return proceso;
         }
 
         private ErrorDto<object> ProcesoDocumentos(int codEmpresa, TesEmisionDocFiltros filtro)

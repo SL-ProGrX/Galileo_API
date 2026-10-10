@@ -9,6 +9,49 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
     public partial class FrmAfBeneficioAsgDB
     {
         /// <summary>
+        /// Obtiene la información exacta de un socio por cédula principal o alternativa.
+        /// </summary>
+        public ErrorDto<SociosData?> AF_BeneficioAsg_Socio_Obtener(
+            int CodCliente,
+            string? cedula)
+        {
+            var cedulaNormalizada = cedula?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(cedulaNormalizada))
+            {
+                return DbHelper.CreateErrorResponse<SociosData?>(
+                    "La cédula del socio es requerida.");
+            }
+
+            const string sql = """
+            SELECT TOP (1)
+                RTRIM(ISNULL(S.cedula, '')) AS cedula,
+                RTRIM(ISNULL(S.cedular, '')) AS cedular,
+                RTRIM(ISNULL(S.nombre, '')) AS nombre,
+                '' AS membresia
+            FROM SOCIOS S
+            WHERE S.cedula = @cedula
+               OR S.cedular = @cedula
+            ORDER BY
+                CASE
+                    WHEN S.cedula = @cedula THEN 0
+                    ELSE 1
+                END;
+            """;
+
+            return DbHelper.WithConn<SociosData?>(
+                CreatePortalDb(),
+                CodCliente,
+                connection =>
+                    connection.QueryFirstOrDefault<SociosData>(
+                        sql,
+                        new
+                        {
+                            cedula = cedulaNormalizada
+                        }));
+        }
+
+        /// <summary>
         /// Lista paginada de beneficios otorgados al socio, con filtro opcional.
         /// </summary>
         public ErrorDto<AfiBeneOtorgaAsgDataList> AfiBeneOtorga_Obtener(int CodCliente, string cedula, int? pagina, int? paginacion, string? filtro)
@@ -21,12 +64,14 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 var aplicarPaginacion = pagina.HasValue
                     && paginacion.HasValue
                     && paginacion.Value > 0;
+                var offset = pagina.GetValueOrDefault();
+                var fetch = paginacion.GetValueOrDefault();
 
                 var p = new DynamicParameters();
                 p.Add("@cedula", cedula, DbType.String);
                 p.Add("@filtroLike", filtroLike, DbType.String);
-                p.Add("@offset", aplicarPaginacion ? pagina.Value : 0, DbType.Int32);
-                p.Add("@fetch", aplicarPaginacion ? paginacion.Value : int.MaxValue, DbType.Int32);
+                p.Add("@offset", aplicarPaginacion ? offset : 0, DbType.Int32);
+                p.Add("@fetch", aplicarPaginacion ? fetch : int.MaxValue, DbType.Int32);
 
                 var datos = new AfiBeneOtorgaAsgDataList
                 {

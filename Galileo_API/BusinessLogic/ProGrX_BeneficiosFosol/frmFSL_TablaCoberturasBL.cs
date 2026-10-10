@@ -1,36 +1,114 @@
+using Galileo.DataBaseTier;
 using Galileo.DataBaseTier.ProGrX_BeneficiosFosol;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
+using Newtonsoft.Json;
 
 namespace Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Lógica de negocio de la Tabla de Coberturas Fosol (frmFSL_TablaCoberturas).
-    /// </summary>
-    public class FrmFslTablaCoberturasBL
+    public sealed class FrmFslTablaCoberturasBl
     {
-        private readonly FrmFslTablaCoberturasDB _db;
+        private const int CodigoValidacion = -2;
 
-        public FrmFslTablaCoberturasBL(IConfiguration config)
+        private readonly FrmFslTablaCoberturasDb _db;
+
+        public FrmFslTablaCoberturasBl(
+            IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            ArgumentNullException.ThrowIfNull(config);
 
-            _db = new FrmFslTablaCoberturasDB(config);
+            _db = new FrmFslTablaCoberturasDb(config);
         }
 
-        /// <summary>Tabla de aplicación (coberturas) por tipo.</summary>
-        public ErrorDto<FslTablaAplicacionDataLista> TablaAplicacion_Obtener(int CodCliente, string filtros)
-            => _db.TablaAplicacion_Obtener(CodCliente, filtros);
+        public ErrorDto<
+            FslListaPaginadaDto<FslTablaCoberturaDto>>
+            FSL_TablaCoberturas_Lista_Obtener(
+                int CodEmpresa,
+                string filtros)
+        {
+            if (
+                !FSL_TablaCoberturas_Filtros_Deserializar(
+                    filtros,
+                    out FslTablaCoberturasFiltros request)
+            )
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Los filtros enviados no son v&aacute;lidos.",
+                    CodigoValidacion,
+                    new FslListaPaginadaDto<
+                        FslTablaCoberturaDto>());
+            }
 
-        /// <summary>Guarda una cobertura (inserta o actualiza).</summary>
-        public ErrorDto Cobertura_Guardar(int CodCliente, FslTablaAplicacionData aplicacion)
-            => _db.Cobertura_Guardar(CodCliente, aplicacion);
+            return _db
+                .FSL_TablaCoberturas_Lista_Obtener(
+                    CodEmpresa,
+                    request);
+        }
 
-        /// <summary>Elimina una cobertura.</summary>
-        public ErrorDto TablaAplicacion_Eliminar(int CodCliente, string tipo, int linea)
-            => _db.TablaAplicacion_Eliminar(CodCliente, tipo, linea);
+        public ErrorDto
+            FSL_TablaCoberturas_Cobertura_Registrar(
+                int CodEmpresa,
+                FslTablaCoberturaGuardarRequest request)
+        {
+            return _db
+                .FSL_TablaCoberturas_Cobertura_Registrar(
+                    CodEmpresa,
+                    request);
+        }
+
+        public ErrorDto
+            FSL_TablaCoberturas_Cobertura_Actualizar(
+                int CodEmpresa,
+                FslTablaCoberturaGuardarRequest request)
+        {
+            return _db
+                .FSL_TablaCoberturas_Cobertura_Actualizar(
+                    CodEmpresa,
+                    request);
+        }
+
+        public ErrorDto
+            FSL_TablaCoberturas_Cobertura_Eliminar(
+                int CodEmpresa,
+                string tipo,
+                int linea,
+                string usuario)
+        {
+            return _db
+                .FSL_TablaCoberturas_Cobertura_Eliminar(
+                    CodEmpresa,
+                    tipo,
+                    linea,
+                    usuario);
+        }
+
+        private static bool
+            FSL_TablaCoberturas_Filtros_Deserializar(
+                string filtros,
+                out FslTablaCoberturasFiltros request)
+        {
+            request =
+                new FslTablaCoberturasFiltros();
+
+            if (string.IsNullOrWhiteSpace(filtros))
+            {
+                return true;
+            }
+
+            try
+            {
+                request =
+                    JsonConvert.DeserializeObject<
+                        FslTablaCoberturasFiltros>(
+                            filtros) ??
+                    new FslTablaCoberturasFiltros();
+
+                return true;
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+        }
     }
 }

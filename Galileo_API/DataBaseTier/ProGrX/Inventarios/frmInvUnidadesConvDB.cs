@@ -193,11 +193,12 @@ namespace Galileo.DataBaseTier
                 return validacion;
             }
 
+            var equivalenciaValidada = equivalencia!;
             string codUnidad =
-                equivalencia.cod_unidad.Trim();
+                equivalenciaValidada.cod_unidad.Trim();
 
             string codUnidadDestino =
-                equivalencia.cod_unidad_d.Trim();
+                equivalenciaValidada.cod_unidad_d.Trim();
 
             const string query = """
                 IF EXISTS
@@ -240,7 +241,7 @@ namespace Galileo.DataBaseTier
                         CodUnidad = codUnidad,
                         CodUnidadDestino =
                             codUnidadDestino,
-                        Factor = equivalencia.factor
+                        Factor = equivalenciaValidada.factor
                     });
 
             return INV_UnidadesConv_NonQuery_Resultado_Procesar(

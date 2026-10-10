@@ -208,7 +208,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             var response = DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, CodEmpresa, query);
 
             //agregar opcion TODOS al inicio
-            response.Result.Insert(0, new DropDownListaGenericaModel
+            response.Result!.Insert(0, new DropDownListaGenericaModel
             {
                 item = "T",
                 descripcion = ConstanteLiquidacionAsientos.todos
@@ -250,9 +250,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// '               Procedimiento)
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="token"></param>
-        /// <param name="usuario"></param>
-        /// <param name="liquidaciones"></param>
+        /// <param name="request">Solicitud con los datos de entrada de la operaci&#243;n.</param>
         /// <returns></returns>
         public ErrorDto<AfLiquidacionAsientosGenerarResponse> Af_LiquidacionAsientos_Generar(
               int CodEmpresa,

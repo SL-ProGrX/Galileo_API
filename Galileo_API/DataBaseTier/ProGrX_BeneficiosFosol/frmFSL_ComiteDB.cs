@@ -35,12 +35,12 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene los comit&eacute;s de FOSOL con filtro,
-        /// ordenamiento y paginaci&oacute;n.
+        /// Obtiene los comit&#233;s de FOSOL con filtro,
+        /// ordenamiento y paginaci&#243;n.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
         /// <param name="filtros">Filtros de la consulta.</param>
-        /// <returns>Lista paginada de comit&eacute;s.</returns>
+        /// <returns>Lista paginada de comit&#233;s.</returns>
         public ErrorDto<
             FslListaPaginadaDto<FslComiteDto>>
             FSL_Comite_Comites_Obtener(
@@ -206,11 +206,11 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene los comit&eacute;s activos para el selector
+        /// Obtiene los comit&#233;s activos para el selector
         /// de miembros.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
-        /// <returns>Comit&eacute;s activos.</returns>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
+        /// <returns>Comit&#233;s activos.</returns>
         public ErrorDto<
             List<DropDownListaGenericaModel>>
             FSL_Comite_ComitesActivos_Obtener(
@@ -239,10 +239,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene los miembros de un comit&eacute; con filtro,
-        /// ordenamiento y paginaci&oacute;n.
+        /// Obtiene los miembros de un comit&#233; con filtro,
+        /// ordenamiento y paginaci&#243;n.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
         /// <param name="filtros">Filtros de la consulta.</param>
         /// <returns>Lista paginada de miembros.</returns>
         public ErrorDto<
@@ -483,9 +483,9 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 
         /// <summary>
         /// Registra un movimiento del formulario en la
-        /// bit&aacute;cora general.
+        /// bit&#225;cora general.
         /// </summary>
-        /// <param name="CodEmpresa">C&oacute;digo de empresa.</param>
+        /// <param name="CodEmpresa">C&#243;digo de empresa.</param>
         /// <param name="usuario">Usuario responsable.</param>
         /// <param name="movimiento">Movimiento realizado.</param>
         /// <param name="detalle">Detalle del movimiento.</param>

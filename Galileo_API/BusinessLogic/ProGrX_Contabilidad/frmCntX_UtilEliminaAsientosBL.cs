@@ -30,7 +30,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.Cntx_Util_Asientos_Eliminar(request);
         }
 
-        public ErrorDto<CntxPeriodoActualDto> Cntx_PeriodoActual_Obtener(int codEmpresa, int cod_contabilidad)
+        public ErrorDto<CntxPeriodoActualDto?> Cntx_PeriodoActual_Obtener(int codEmpresa, int cod_contabilidad)
         {
             return _db.Cntx_PeriodoActual_Obtener(codEmpresa, cod_contabilidad);
         }

@@ -23,6 +23,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _ReImpresionBL.TES_ReImpresion_Obtener(CodEmpresa, solicitud);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_ReImpresion_Guardar")]
         public ErrorDto<object> TES_ReImpresion_Guardar(int CodEmpresa, TesReImpresionModels solicitud)
         {

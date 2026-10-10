@@ -52,6 +52,7 @@ namespace Galileo.Controllers
         }
 
         [HttpDelete("Core_SubUnidad_Delete")]
+        [Authorize]
         public ErrorDto Core_SubUnidad_Delete(int CodCliente, string cod_unidad, string cntx_unidad)
         {
             return _bl.Core_SubUnidad_Delete(CodCliente, cod_unidad, cntx_unidad);
@@ -108,14 +109,14 @@ namespace Galileo.Controllers
 
         [HttpGet("Core_SubUnidades_Obtener")]
         [Authorize]
-        public ErrorDto<CoreUeNsDtoList> Core_SubUnidades_Obtener(int CodCliente, string cod_unidad, int contabilidad)
+        public ErrorDto<CoreUeNsDtoList?> Core_SubUnidades_Obtener(int CodCliente, string cod_unidad, int contabilidad)
         {
             return _bl.Core_SubUnidades_Obtener(CodCliente, cod_unidad, contabilidad);
         }
 
         [HttpGet("Core_SubCentroCosto_Obtener")]
         [Authorize]
-        public ErrorDto<CoreUeNsDtoList> Core_SubCentroCosto_Obtener(int CodCliente, string cod_unidad, string sub_unidad)
+        public ErrorDto<CoreUeNsDtoList?> Core_SubCentroCosto_Obtener(int CodCliente, string cod_unidad, string sub_unidad)
         {
             return _bl.Core_SubCentroCosto_Obtener(CodCliente, cod_unidad, sub_unidad);
         }

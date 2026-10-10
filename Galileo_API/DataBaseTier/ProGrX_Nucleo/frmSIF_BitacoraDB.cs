@@ -84,7 +84,8 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Calcula las fechas de inicio y corte para la bitácora según los filtros.
         /// </summary>
-        /// <param name="bitacora"></param>
+        /// <param name="bitacora">Valor de entrada utilizado por la operación.</param>
+        ///
         /// <returns>Tuple con fechaInicio y fechaCorte</returns>
         private static (DateTime fechaInicio, DateTime fechaCorte) CalcularFechas(BitacoraDto bitacora)
         {

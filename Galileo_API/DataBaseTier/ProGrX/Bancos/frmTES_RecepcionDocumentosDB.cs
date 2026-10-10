@@ -123,6 +123,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="Remesa"></param>
+        /// <param name="filtros">Criterios utilizados para filtrar los resultados.</param>
         /// <returns></returns>
         public ErrorDto<TablasListaGenericaModel> TES_RecepcionDocumentos_Obtener(
     int CodEmpresa,
@@ -230,7 +231,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
-                foreach (var item in parametros.solicitudes)
+                foreach (var item in parametros.solicitudes!)
                 {
                     var query = @"update tes_ubi_remDet set observa_rec = @notas,fecha_rec = dbo.MyGetdate(), 
                         usuario_rec = @usuario, estado = @estado  where cod_remesa = @remesa and Nsolicitud = @solicitud";

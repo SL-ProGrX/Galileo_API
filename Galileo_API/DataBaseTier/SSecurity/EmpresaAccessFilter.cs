@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System.IdentityModel.Tokens.Jwt;
@@ -9,6 +10,7 @@ namespace Galileo.DataBaseTier
     {
         private readonly PerfilUsuarioDB _seguridad;
         private const string CodEmpresaKey = "CodEmpresa";
+        private const string EmpresaCodKey = "empresaCod";
 
         public EmpresaAccessFilter(IConfiguration config)
         {
@@ -43,7 +45,6 @@ namespace Galileo.DataBaseTier
                          ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             }
 
-            Console.WriteLine($"EmpresaAccessFilter -> sub={userIdStr}, codEmpresa={codEmpresa}");
 
             if (!int.TryParse(userIdStr, out var userId))
             {
@@ -71,12 +72,24 @@ namespace Galileo.DataBaseTier
         private static int? TryGetCodEmpresa(ActionExecutingContext context)
         {
             // query/route params
-            if (TryGetIntFromArguments(context, "empresaCod", out var e1)) return e1;
+            if (TryGetIntFromArguments(context, EmpresaCodKey, out var e1)) return e1;
             if (TryGetIntFromArguments(context, "codEmpresa", out var e2)) return e2;
-            if (TryGetIntFromArguments(context, "CodEmpresa", out var e3)) return e3;
+            if (TryGetIntFromArguments(context, CodEmpresaKey, out var e3)) return e3;
+
+            var requiresAuthentication = RequiereAutenticacion(context);
+
+            // En endpoints protegidos, CodCliente también identifica la empresa cuya BD se consulta.
+            // No se aplica a acciones anónimas para preservar los contratos existentes.
+            if (requiresAuthentication)
+            {
+                if (TryGetIntFromArguments(context, "CodCliente", out var c1)) return c1;
+                if (TryGetIntFromArguments(context, "codCliente", out var c2)) return c2;
+            }
 
             // DTOs (body)
-            var propertyNames = new[] { "CodEmpresa", "codEmpresa", "EmpresaCod", "empresaCod" };
+            var propertyNames = requiresAuthentication
+                ? new[] { CodEmpresaKey, "codEmpresa", "EmpresaCod", EmpresaCodKey, "CodCliente", "codCliente" }
+                : new[] { CodEmpresaKey, "codEmpresa", "EmpresaCod", EmpresaCodKey };
             var val = context.ActionArguments.Values
                 .Where(arg => arg is not null)
                 .Select(arg => TryGetIntFromProperties(arg!, propertyNames))
@@ -88,7 +101,7 @@ namespace Galileo.DataBaseTier
         private static void OverwriteEmpresaArgument(ActionExecutingContext context, int codEmpresa)
         {
             // Keys comunes en actions
-            var keys = new[] { "empresaCod", "codEmpresa", CodEmpresaKey };
+            var keys = new[] { EmpresaCodKey, "codEmpresa", CodEmpresaKey };
 
             keys
                 .Where(key => context.ActionArguments.ContainsKey(key))
@@ -96,6 +109,14 @@ namespace Galileo.DataBaseTier
                 .ForEach(key => context.ActionArguments[key] = codEmpresa);
 
             // Si viene dentro de un DTO, no lo reescribimos (evitamos reflection set). En ese caso usa HttpContext.Items[CodEmpresaKey].
+        }
+
+        private static bool RequiereAutenticacion(ActionExecutingContext context)
+        {
+            var metadata = context.HttpContext.GetEndpoint()?.Metadata.AsEnumerable()
+                ?? context.ActionDescriptor.EndpointMetadata.AsEnumerable();
+
+            return !metadata.OfType<IAllowAnonymous>().Any() && metadata.OfType<IAuthorizeData>().Any();
         }
 
         private static bool TryGetIntFromArguments(ActionExecutingContext context, string key, out int value)

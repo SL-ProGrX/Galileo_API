@@ -1,219 +1,965 @@
 using Dapper;
-using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
-using Microsoft.Data.SqlClient;
+using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Acceso a datos de los catálogos de Tipos Fosol (frmFSL_TablasTipos): gestiones, apelaciones y enfermedades.
-    /// </summary>
-    public partial class FrmFslTablasTiposDB
+    public sealed class FrmFslTablasTiposDb
     {
-        private const string TipoCatalogoInvalido = "Tipo de catálogo inválido";
-        private readonly IConfiguration _config;
+        private const int ModuloFosol = 22;
+        private const int CodigoValidacion = -2;
 
-        private const string CatalogosListaSql = @"
-            DECLARE @Catalogo TABLE (codigo NVARCHAR(100), descripcion NVARCHAR(MAX), activa BIT);
+        private const string AccionGuardar =
+            "GUARDAR";
 
-            IF @tipo = 'G'
-                INSERT INTO @Catalogo SELECT COD_GESTION, descripcion, Activa FROM FSL_TIPOS_GESTIONES;
-            ELSE IF @tipo = 'A'
-                INSERT INTO @Catalogo SELECT COD_APELACION, descripcion, Activa FROM FSL_TIPOS_APELACIONES;
-            ELSE IF @tipo = 'E'
-                INSERT INTO @Catalogo SELECT COD_ENFERMEDAD, descripcion, Activa FROM FSL_TIPOS_ENFERMEDADES;
+        private const string AccionActualizar =
+            "ACTUALIZAR";
 
-            SELECT COUNT(*)
-            FROM @Catalogo
-            WHERE @like IS NULL OR codigo LIKE @like OR descripcion LIKE @like;
+        private const string AccionEliminar =
+            "ELIMINAR";
 
-            SELECT codigo, descripcion, activa
-            FROM @Catalogo
-            WHERE @like IS NULL OR codigo LIKE @like OR descripcion LIKE @like
-            ORDER BY codigo
-            OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+        private const string MovimientoRegistrar =
+            "Registra";
 
-        private const string ActualizarSql = @"
-            IF @tipo = 'G'
-                UPDATE FSL_TIPOS_GESTIONES SET descripcion = @descripcion, Activa = @activa WHERE COD_GESTION = @codigo;
-            ELSE IF @tipo = 'A'
-                UPDATE FSL_TIPOS_APELACIONES SET descripcion = @descripcion, Activa = @activa WHERE COD_APELACION = @codigo;
-            ELSE IF @tipo = 'E'
-                UPDATE FSL_TIPOS_ENFERMEDADES SET descripcion = @descripcion, Activa = @activa WHERE COD_ENFERMEDAD = @codigo;";
+        private const string MovimientoModificar =
+            "Modifica";
 
-        private const string InsertarSql = @"
-            IF @tipo = 'G'
-                INSERT INTO FSL_TIPOS_GESTIONES (COD_GESTION, descripcion, Activa, registro_fecha, registro_usuario)
-                VALUES (@codigo, @descripcion, @activa, GETDATE(), @usuario);
-            ELSE IF @tipo = 'A'
-                INSERT INTO FSL_TIPOS_APELACIONES (COD_APELACION, descripcion, Activa, registro_fecha, registro_usuario)
-                VALUES (@codigo, @descripcion, @activa, GETDATE(), @usuario);
-            ELSE IF @tipo = 'E'
-                INSERT INTO FSL_TIPOS_ENFERMEDADES (COD_ENFERMEDAD, descripcion, Activa, registro_fecha, registro_usuario)
-                VALUES (@codigo, @descripcion, @activa, GETDATE(), @usuario);";
+        private const string MovimientoEliminar =
+            "Elimina";
 
-        private const string ExisteSql = @"
-            SELECT CASE @tipo
-                WHEN 'G' THEN (SELECT ISNULL(COUNT(*), 0) FROM FSL_TIPOS_GESTIONES WHERE COD_GESTION = @codigo)
-                WHEN 'A' THEN (SELECT ISNULL(COUNT(*), 0) FROM FSL_TIPOS_APELACIONES WHERE COD_APELACION = @codigo)
-                WHEN 'E' THEN (SELECT ISNULL(COUNT(*), 0) FROM FSL_TIPOS_ENFERMEDADES WHERE COD_ENFERMEDAD = @codigo)
-                ELSE 0
-            END;";
+        private const string MensajeTipoInvalido =
+            "El tipo de cat&aacute;logo no es v&aacute;lido.";
 
-        private const string EliminarSql = @"
-            IF @tipo = 'G'
-                DELETE FROM FSL_TIPOS_GESTIONES WHERE COD_GESTION = @codigo;
-            ELSE IF @tipo = 'A'
-                DELETE FROM FSL_TIPOS_APELACIONES WHERE COD_APELACION = @codigo;
-            ELSE IF @tipo = 'E'
-                DELETE FROM FSL_TIPOS_ENFERMEDADES WHERE COD_ENFERMEDAD = @codigo;";
+        private const string MensajeCodigoRequerido =
+            "El c&oacute;digo del tipo es requerido.";
 
-        /// <summary>
-        /// Inicializa el acceso a datos con la configuración inyectada.
-        /// </summary>
-        /// <param name="config">Configuración de la aplicación.</param>
-        public FrmFslTablasTiposDB(IConfiguration config)
+        private const string MensajeUsuarioRequerido =
+            "El usuario es requerido.";
+
+        private const string MensajeNoEncontrado =
+            "No se encontr&oacute; el tipo indicado.";
+
+        private const string MensajeErrorProceso =
+            "Ocurri&oacute; un error al procesar el tipo.";
+
+        private readonly PortalDB _portalDb;
+
+        private readonly MSecurityMainDb
+            _securityMainDb;
+
+        public FrmFslTablasTiposDb(
+            IConfiguration config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+            ArgumentNullException.ThrowIfNull(config);
+
+            _portalDb = new PortalDB(config);
+
+            _securityMainDb =
+                new MSecurityMainDb(config);
         }
 
         /// <summary>
-        /// Crea una instancia de acceso al portal usando la configuración inyectada.
+        /// Obtiene los registros del catálogo
+        /// seleccionado.
         /// </summary>
-        private PortalDB CreatePortalDb() => new(_config);
-
-        /// <summary>
-        /// Indica si el tipo corresponde a uno de los catálogos permitidos.
-        /// </summary>
-        private static bool EsTipoValido(string tipo) => tipo is "G" or "A" or "E";
-
-        /// <summary>
-        /// Obtiene la lista de tipos (gestiones, apelaciones o enfermedades) con paginación y filtro.
-        /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="tipo">Tipo de catálogo (G/A/E).</param>
-        /// <param name="filtro">Filtro por código o descripción.</param>
-        /// <param name="pagina">Offset de paginación.</param>
-        /// <param name="paginacion">Cantidad de registros por página.</param>
-        /// <returns>Lista de tipos y total.</returns>
-        public ErrorDto<FslTablaTipoLista> FslTablaTipos_Obtener(int CodCliente, string tipo, string? filtro, int? pagina, int? paginacion)
+        /// <param name="CodEmpresa">
+        /// Código de empresa.
+        /// </param>
+        /// <param name="filtros">
+        /// Filtros, ordenamiento y paginación.
+        /// </param>
+        /// <returns>
+        /// Lista paginada de tipos.
+        /// </returns>
+        public ErrorDto<
+            FslListaPaginadaDto<FslTablaTipoDto>>
+            FSL_TablasTipos_Lista_Obtener(
+                int CodEmpresa,
+                FslTablasTiposFiltros filtros)
         {
-            if (!EsTipoValido(tipo))
+            ArgumentNullException.ThrowIfNull(filtros);
+
+            var tipo =
+                FSL_TablasTipos_Tipo_Normalizar(
+                    filtros.tipo);
+
+            if (!FSL_TablasTipos_Tipo_Valido(tipo))
             {
-                return DbHelper.CreateErrorResponse<FslTablaTipoLista>(TipoCatalogoInvalido);
+                return DbHelper.CreateErrorResponse(
+                    MensajeTipoInvalido,
+                    CodigoValidacion,
+                    new FslListaPaginadaDto<
+                        FslTablaTipoDto>());
             }
 
-            return DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
-            {
-                var response = new FslTablaTipoLista();
+            var filtro =
+                FSL_TablasTipos_Texto_Normalizar(
+                    filtros.filtro);
 
-                var like = string.IsNullOrWhiteSpace(filtro) ? null : $"%{filtro}%";
-                var offset = pagina ?? 0;
-                var fetch = paginacion ?? 10;
+            var like =
+                string.IsNullOrWhiteSpace(filtro)
+                    ? null
+                    : $"%{filtro}%";
 
-                using var resultados = connection.QueryMultiple(
-                    CatalogosListaSql,
-                    new { tipo, like, offset, fetch });
-                response.Total = resultados.ReadSingle<int>();
-                response.Lista = resultados.Read<FslTablaTipoData>().ToList();
-                return response;
-            });
-        }
+            var offset = Math.Max(
+                filtros.pagina,
+                0);
 
-        /// <summary>
-        /// Actualiza un tipo (gestión, apelación o enfermedad).
-        /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="tipo">Tipo de catálogo (G/A/E).</param>
-        /// <param name="tipoData">Datos del tipo.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto FslTablaTipos_Actualizar(int CodCliente, string tipo, FslTablaTipoData tipoData)
-        {
-            if (!EsTipoValido(tipo))
-            {
-                return DbHelper.ErrorResponse(TipoCatalogoInvalido);
-            }
+            var fetch = Math.Clamp(
+                filtros.paginacion,
+                1,
+                500);
 
-            var result = DbHelper.ExecuteNonQuery(CreatePortalDb(), CodCliente, ActualizarSql, new
-            {
-                tipo,
-                tipoData.descripcion,
-                activa = tipoData.activa ? 1 : 0,
-                tipoData.codigo
-            });
+            var sortField =
+                FSL_TablasTipos_Orden_Campo_Obtener(
+                    filtros.sort_field);
 
-            if (result.Code == 0)
-            {
-                result.Description = "Registro actualizado satisfactoriamente!";
-            }
+            var sortOrder =
+                filtros.sort_order == -1
+                    ? -1
+                    : 1;
 
-            return result;
-        }
+            const string sql = """
+                SET NOCOUNT ON;
 
-        /// <summary>
-        /// Inserta un tipo; si ya existe, delega en la actualización.
-        /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="tipo">Tipo de catálogo (G/A/E).</param>
-        /// <param name="usuario">Usuario que registra.</param>
-        /// <param name="tipoData">Datos del tipo.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto FslTablaTipo_Insertar(int CodCliente, string tipo, string usuario, FslTablaTipoData tipoData)
-        {
-            if (!EsTipoValido(tipo))
-            {
-                return DbHelper.ErrorResponse(TipoCatalogoInvalido);
-            }
+                DECLARE @catalogo TABLE
+                (
+                    codigo NVARCHAR(100) NOT NULL,
+                    descripcion NVARCHAR(MAX) NOT NULL,
+                    activa BIT NOT NULL
+                );
 
-            using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente);
-            try
-            {
-                if (FslTablaTipoExiste(connection, tipo, tipoData.codigo))
+                IF @tipo = 'G'
+                BEGIN
+                    INSERT INTO @catalogo
+                    (
+                        codigo,
+                        descripcion,
+                        activa
+                    )
+                    SELECT
+                        RTRIM(
+                            ISNULL(COD_GESTION, '')
+                        ),
+                        ISNULL(descripcion, ''),
+                        CAST(
+                            ISNULL(Activa, 0)
+                            AS BIT
+                        )
+                    FROM FSL_TIPOS_GESTIONES;
+                END
+                ELSE IF @tipo = 'A'
+                BEGIN
+                    INSERT INTO @catalogo
+                    (
+                        codigo,
+                        descripcion,
+                        activa
+                    )
+                    SELECT
+                        RTRIM(
+                            ISNULL(COD_APELACION, '')
+                        ),
+                        ISNULL(descripcion, ''),
+                        CAST(
+                            ISNULL(Activa, 0)
+                            AS BIT
+                        )
+                    FROM FSL_TIPOS_APELACIONES;
+                END
+                ELSE IF @tipo = 'E'
+                BEGIN
+                    INSERT INTO @catalogo
+                    (
+                        codigo,
+                        descripcion,
+                        activa
+                    )
+                    SELECT
+                        RTRIM(
+                            ISNULL(COD_ENFERMEDAD, '')
+                        ),
+                        ISNULL(descripcion, ''),
+                        CAST(
+                            ISNULL(Activa, 0)
+                            AS BIT
+                        )
+                    FROM FSL_TIPOS_ENFERMEDADES;
+                END;
+
+                SELECT COUNT(*)
+                FROM @catalogo C
+                WHERE
+                    @like IS NULL
+                    OR C.codigo LIKE @like
+                    OR C.descripcion LIKE @like;
+
+                SELECT
+                    C.codigo,
+                    C.descripcion,
+                    C.activa
+                FROM @catalogo C
+                WHERE
+                    @like IS NULL
+                    OR C.codigo LIKE @like
+                    OR C.descripcion LIKE @like
+                ORDER BY
+                    CASE
+                        WHEN @sortField = 'codigo'
+                            AND @sortOrder = 1
+                        THEN C.codigo
+                    END ASC,
+                    CASE
+                        WHEN @sortField = 'codigo'
+                            AND @sortOrder = -1
+                        THEN C.codigo
+                    END DESC,
+                    CASE
+                        WHEN @sortField = 'descripcion'
+                            AND @sortOrder = 1
+                        THEN C.descripcion
+                    END ASC,
+                    CASE
+                        WHEN @sortField = 'descripcion'
+                            AND @sortOrder = -1
+                        THEN C.descripcion
+                    END DESC,
+                    CASE
+                        WHEN @sortField = 'activa'
+                            AND @sortOrder = 1
+                        THEN C.activa
+                    END ASC,
+                    CASE
+                        WHEN @sortField = 'activa'
+                            AND @sortOrder = -1
+                        THEN C.activa
+                    END DESC,
+                    C.codigo ASC
+                OFFSET @offset ROWS
+                FETCH NEXT @fetch ROWS ONLY;
+                """;
+
+            return DbHelper.WithConn(
+                _portalDb,
+                CodEmpresa,
+                connection =>
                 {
-                    return FslTablaTipos_Actualizar(CodCliente, tipo, tipoData);
-                }
+                    using var reader =
+                        connection.QueryMultiple(
+                            sql,
+                            new
+                            {
+                                tipo,
+                                like,
+                                offset,
+                                fetch,
+                                sortField,
+                                sortOrder
+                            });
 
-                connection.Execute(InsertarSql, new
-                {
-                    tipo,
-                    tipoData.codigo,
-                    tipoData.descripcion,
-                    activa = tipoData.activa ? 1 : 0,
-                    usuario
+                    return new FslListaPaginadaDto<
+                        FslTablaTipoDto>
+                    {
+                        total =
+                            reader.ReadFirst<int>(),
+                        lista = reader
+                            .Read<FslTablaTipoDto>()
+                            .ToList()
+                    };
                 });
-
-                return DbHelper.OkResponse("Registro agregado satisfactoriamente!");
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
         }
 
         /// <summary>
-        /// Verifica si existe un código en la tabla de tipo indicada.
+        /// Registra un tipo nuevo o actualiza el existente,
+        /// conservando el comportamiento de fxGuardar en VB6.
         /// </summary>
-        private static bool FslTablaTipoExiste(SqlConnection connection, string tipo, string codigo)
+        /// <param name="CodEmpresa">
+        /// Código de empresa.
+        /// </param>
+        /// <param name="request">
+        /// Información del tipo.
+        /// </param>
+        /// <returns>
+        /// Resultado de la operación.
+        /// </returns>
+        public ErrorDto
+            FSL_TablasTipos_Tipo_Registrar(
+                int CodEmpresa,
+                FslTablaTipoGuardarRequest request)
         {
-            return connection.QueryFirstOrDefault<int>(ExisteSql, new { tipo, codigo }) > 0;
+            return FSL_TablasTipos_Tipo_Guardar(
+                CodEmpresa,
+                request,
+                AccionGuardar);
         }
 
         /// <summary>
-        /// Elimina un tipo (gestión, apelación o enfermedad).
+        /// Actualiza un tipo existente.
         /// </summary>
-        /// <param name="CodCliente">Código de empresa.</param>
-        /// <param name="tipo">Tipo de catálogo (G/A/E).</param>
-        /// <param name="codigo">Código del tipo.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto FslTablaTipo_Eliminar(int CodCliente, string tipo, string codigo)
+        /// <param name="CodEmpresa">
+        /// Código de empresa.
+        /// </param>
+        /// <param name="request">
+        /// Información del tipo.
+        /// </param>
+        /// <returns>
+        /// Resultado de la actualización.
+        /// </returns>
+        public ErrorDto
+            FSL_TablasTipos_Tipo_Actualizar(
+                int CodEmpresa,
+                FslTablaTipoGuardarRequest request)
         {
-            if (!EsTipoValido(tipo))
+            return FSL_TablasTipos_Tipo_Guardar(
+                CodEmpresa,
+                request,
+                AccionActualizar);
+        }
+
+        /// <summary>
+        /// Elimina un tipo del catálogo seleccionado.
+        /// </summary>
+        /// <param name="CodEmpresa">
+        /// Código de empresa.
+        /// </param>
+        /// <param name="tipo">
+        /// Tipo de catálogo.
+        /// </param>
+        /// <param name="codigo">
+        /// Código del registro.
+        /// </param>
+        /// <param name="usuario">
+        /// Usuario responsable.
+        /// </param>
+        /// <returns>
+        /// Resultado de la eliminación.
+        /// </returns>
+        public ErrorDto
+            FSL_TablasTipos_Tipo_Eliminar(
+                int CodEmpresa,
+                string? tipo,
+                string? codigo,
+                string? usuario)
+        {
+            var operacion =
+                new FslTablaTipoOperacion
+                {
+                    Accion = AccionEliminar,
+                    Tipo =
+                        FSL_TablasTipos_Tipo_Normalizar(
+                            tipo),
+                    Codigo =
+                        FSL_TablasTipos_Texto_Normalizar(
+                            codigo),
+                    Usuario =
+                        FSL_TablasTipos_Texto_Normalizar(
+                            usuario)
+                            .ToUpperInvariant()
+                };
+
+            var validacion =
+                FSL_TablasTipos_Operacion_Validar(
+                    operacion);
+
+            if (!string.IsNullOrEmpty(validacion))
             {
-                return DbHelper.ErrorResponse(TipoCatalogoInvalido);
+                return DbHelper.ErrorResponse(
+                    validacion,
+                    CodigoValidacion);
             }
 
-            return DbHelper.ExecuteNonQuery(CreatePortalDb(), CodCliente, EliminarSql, new { tipo, codigo });
+            return FSL_TablasTipos_Mantenimiento_Ejecutar(
+                CodEmpresa,
+                operacion);
+        }
+
+        /// <summary>
+        /// Prepara el registro o actualización de un
+        /// tipo.
+        /// </summary>
+        /// <param name="CodEmpresa">
+        /// Código de empresa.
+        /// </param>
+        /// <param name="request">
+        /// Información del tipo.
+        /// </param>
+        /// <param name="accion">
+        /// Acción que debe ejecutarse.
+        /// </param>
+        /// <returns>
+        /// Resultado de la operación.
+        /// </returns>
+        private ErrorDto
+            FSL_TablasTipos_Tipo_Guardar(
+                int CodEmpresa,
+                FslTablaTipoGuardarRequest request,
+                string accion)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+
+            var operacion =
+                new FslTablaTipoOperacion
+                {
+                    Accion = accion,
+                    Tipo =
+                        FSL_TablasTipos_Tipo_Normalizar(
+                            request.tipo),
+                    Codigo =
+                        FSL_TablasTipos_Texto_Normalizar(
+                            request.codigo),
+                    Descripcion =
+                        FSL_TablasTipos_Texto_Normalizar(
+                            request.descripcion),
+                    Activa = request.activa,
+                    Usuario =
+                        FSL_TablasTipos_Texto_Normalizar(
+                            request.usuario)
+                            .ToUpperInvariant()
+                };
+
+            var validacion =
+                FSL_TablasTipos_Operacion_Validar(
+                    operacion);
+
+            if (!string.IsNullOrEmpty(validacion))
+            {
+                return DbHelper.ErrorResponse(
+                    validacion,
+                    CodigoValidacion);
+            }
+
+            return FSL_TablasTipos_Mantenimiento_Ejecutar(
+                CodEmpresa,
+                operacion);
+        }
+
+        /// <summary>
+        /// Ejecuta el mantenimiento solicitado sobre el
+        /// catálogo seleccionado.
+        /// </summary>
+        /// <param name="CodEmpresa">
+        /// Código de empresa.
+        /// </param>
+        /// <param name="operacion">
+        /// Información normalizada de la operación.
+        /// </param>
+        /// <returns>
+        /// Resultado del mantenimiento.
+        /// </returns>
+        private ErrorDto
+            FSL_TablasTipos_Mantenimiento_Ejecutar(
+                int CodEmpresa,
+                FslTablaTipoOperacion operacion)
+        {
+            const string sql = """
+                SET NOCOUNT ON;
+                SET XACT_ABORT ON;
+
+                DECLARE @filas INT = 0;
+                DECLARE @movimiento VARCHAR(10) = '';
+
+                BEGIN TRANSACTION;
+
+                IF @tipo = 'G'
+                BEGIN
+                    IF @accion = @accionGuardar
+                    BEGIN
+                        IF EXISTS
+                        (
+                            SELECT 1
+                            FROM FSL_TIPOS_GESTIONES
+                                WITH (UPDLOCK, HOLDLOCK)
+                            WHERE COD_GESTION = @codigo
+                        )
+                        BEGIN
+                            UPDATE FSL_TIPOS_GESTIONES
+                            SET
+                                descripcion = @descripcion,
+                                Activa = @activa
+                            WHERE COD_GESTION = @codigo;
+
+                            SET @filas = @@ROWCOUNT;
+                            SET @movimiento =
+                                @movimientoModificar;
+                        END
+                        ELSE
+                        BEGIN
+                            INSERT INTO FSL_TIPOS_GESTIONES
+                            (
+                                COD_GESTION,
+                                descripcion,
+                                Activa,
+                                registro_fecha,
+                                registro_usuario
+                            )
+                            VALUES
+                            (
+                                @codigo,
+                                @descripcion,
+                                @activa,
+                                GETDATE(),
+                                @usuario
+                            );
+
+                            SET @filas = @@ROWCOUNT;
+                            SET @movimiento =
+                                @movimientoRegistrar;
+                        END;
+                    END
+                    ELSE IF @accion = @accionActualizar
+                    BEGIN
+                        UPDATE FSL_TIPOS_GESTIONES
+                        SET
+                            descripcion = @descripcion,
+                            Activa = @activa
+                        WHERE COD_GESTION = @codigo;
+
+                        SET @filas = @@ROWCOUNT;
+                        SET @movimiento =
+                            @movimientoModificar;
+                    END
+                    ELSE IF @accion = @accionEliminar
+                    BEGIN
+                        DELETE FROM FSL_TIPOS_GESTIONES
+                        WHERE COD_GESTION = @codigo;
+
+                        SET @filas = @@ROWCOUNT;
+                        SET @movimiento =
+                            @movimientoEliminar;
+                    END;
+                END
+                ELSE IF @tipo = 'A'
+                BEGIN
+                    IF @accion = @accionGuardar
+                    BEGIN
+                        IF EXISTS
+                        (
+                            SELECT 1
+                            FROM FSL_TIPOS_APELACIONES
+                                WITH (UPDLOCK, HOLDLOCK)
+                            WHERE COD_APELACION = @codigo
+                        )
+                        BEGIN
+                            UPDATE FSL_TIPOS_APELACIONES
+                            SET
+                                descripcion = @descripcion,
+                                Activa = @activa
+                            WHERE COD_APELACION = @codigo;
+
+                            SET @filas = @@ROWCOUNT;
+                            SET @movimiento =
+                                @movimientoModificar;
+                        END
+                        ELSE
+                        BEGIN
+                            INSERT INTO FSL_TIPOS_APELACIONES
+                            (
+                                COD_APELACION,
+                                descripcion,
+                                Activa,
+                                registro_fecha,
+                                registro_usuario
+                            )
+                            VALUES
+                            (
+                                @codigo,
+                                @descripcion,
+                                @activa,
+                                GETDATE(),
+                                @usuario
+                            );
+
+                            SET @filas = @@ROWCOUNT;
+                            SET @movimiento =
+                                @movimientoRegistrar;
+                        END;
+                    END
+                    ELSE IF @accion = @accionActualizar
+                    BEGIN
+                        UPDATE FSL_TIPOS_APELACIONES
+                        SET
+                            descripcion = @descripcion,
+                            Activa = @activa
+                        WHERE COD_APELACION = @codigo;
+
+                        SET @filas = @@ROWCOUNT;
+                        SET @movimiento =
+                            @movimientoModificar;
+                    END
+                    ELSE IF @accion = @accionEliminar
+                    BEGIN
+                        DELETE FROM FSL_TIPOS_APELACIONES
+                        WHERE COD_APELACION = @codigo;
+
+                        SET @filas = @@ROWCOUNT;
+                        SET @movimiento =
+                            @movimientoEliminar;
+                    END;
+                END
+                ELSE IF @tipo = 'E'
+                BEGIN
+                    IF @accion = @accionGuardar
+                    BEGIN
+                        IF EXISTS
+                        (
+                            SELECT 1
+                            FROM FSL_TIPOS_ENFERMEDADES
+                                WITH (UPDLOCK, HOLDLOCK)
+                            WHERE COD_ENFERMEDAD = @codigo
+                        )
+                        BEGIN
+                            UPDATE FSL_TIPOS_ENFERMEDADES
+                            SET
+                                descripcion = @descripcion,
+                                Activa = @activa
+                            WHERE COD_ENFERMEDAD = @codigo;
+
+                            SET @filas = @@ROWCOUNT;
+                            SET @movimiento =
+                                @movimientoModificar;
+                        END
+                        ELSE
+                        BEGIN
+                            INSERT INTO FSL_TIPOS_ENFERMEDADES
+                            (
+                                COD_ENFERMEDAD,
+                                descripcion,
+                                Activa,
+                                registro_fecha,
+                                registro_usuario
+                            )
+                            VALUES
+                            (
+                                @codigo,
+                                @descripcion,
+                                @activa,
+                                GETDATE(),
+                                @usuario
+                            );
+
+                            SET @filas = @@ROWCOUNT;
+                            SET @movimiento =
+                                @movimientoRegistrar;
+                        END;
+                    END
+                    ELSE IF @accion = @accionActualizar
+                    BEGIN
+                        UPDATE FSL_TIPOS_ENFERMEDADES
+                        SET
+                            descripcion = @descripcion,
+                            Activa = @activa
+                        WHERE COD_ENFERMEDAD = @codigo;
+
+                        SET @filas = @@ROWCOUNT;
+                        SET @movimiento =
+                            @movimientoModificar;
+                    END
+                    ELSE IF @accion = @accionEliminar
+                    BEGIN
+                        DELETE FROM FSL_TIPOS_ENFERMEDADES
+                        WHERE COD_ENFERMEDAD = @codigo;
+
+                        SET @filas = @@ROWCOUNT;
+                        SET @movimiento =
+                            @movimientoEliminar;
+                    END;
+                END;
+
+                COMMIT TRANSACTION;
+
+                SELECT
+                    @filas AS Filas,
+                    @movimiento AS Movimiento;
+                """;
+
+            var response = DbHelper.WithConn(
+                _portalDb,
+                CodEmpresa,
+                connection =>
+                    connection.QuerySingle<
+                        FslTablaTipoOperacionResultado>(
+                            sql,
+                            new
+                            {
+                                accion =
+                                    operacion.Accion,
+                                tipo =
+                                    operacion.Tipo,
+                                codigo =
+                                    operacion.Codigo,
+                                descripcion =
+                                    operacion.Descripcion,
+                                activa =
+                                    operacion.Activa,
+                                usuario =
+                                    operacion.Usuario,
+                                accionGuardar =
+                                    AccionGuardar,
+                                accionActualizar =
+                                    AccionActualizar,
+                                accionEliminar =
+                                    AccionEliminar,
+                                movimientoRegistrar =
+                                    MovimientoRegistrar,
+                                movimientoModificar =
+                                    MovimientoModificar,
+                                movimientoEliminar =
+                                    MovimientoEliminar
+                            }));
+
+            if (response.Code != 0)
+            {
+                return DbHelper.ErrorResponse(
+                    response.Description ??
+                    MensajeErrorProceso);
+            }
+
+            var resultado = response.Result;
+
+            if (
+                resultado is null ||
+                resultado.Filas <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    MensajeNoEncontrado,
+                    CodigoValidacion);
+            }
+
+            var movimiento =
+                FSL_TablasTipos_Texto_Normalizar(
+                    resultado.Movimiento);
+
+            FSL_TablasTipos_Bitacora_Registrar(
+                CodEmpresa,
+                operacion,
+                movimiento);
+
+            return DbHelper.OkResponse(
+                FSL_TablasTipos_Mensaje_Exito_Obtener(
+                    movimiento));
+        }
+
+        /// <summary>
+        /// Valida la operación normalizada antes de
+        /// acceder a la base de datos.
+        /// </summary>
+        /// <param name="operacion">
+        /// Información de la operación.
+        /// </param>
+        /// <returns>
+        /// Mensaje de validación o una cadena vacía.
+        /// </returns>
+        private static string
+            FSL_TablasTipos_Operacion_Validar(
+                FslTablaTipoOperacion operacion)
+        {
+            if (!FSL_TablasTipos_Tipo_Valido(
+                operacion.Tipo))
+            {
+                return MensajeTipoInvalido;
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                operacion.Codigo))
+            {
+                return MensajeCodigoRequerido;
+            }
+
+            return string.IsNullOrWhiteSpace(
+                operacion.Usuario)
+                    ? MensajeUsuarioRequerido
+                    : string.Empty;
+        }
+
+        /// <summary>
+        /// Determina si el tipo corresponde a uno de los
+        /// catálogos utilizados por el formulario VB6.
+        /// </summary>
+        /// <param name="tipo">
+        /// Tipo normalizado.
+        /// </param>
+        /// <returns>
+        /// Verdadero cuando el tipo es válido.
+        /// </returns>
+        private static bool
+            FSL_TablasTipos_Tipo_Valido(
+                string? tipo)
+        {
+            var valor =
+                FSL_TablasTipos_Tipo_Normalizar(
+                    tipo);
+
+            return valor is "G" or "A" or "E";
+        }
+
+        /// <summary>
+        /// Normaliza el tipo de catálogo.
+        /// </summary>
+        /// <param name="tipo">
+        /// Tipo recibido.
+        /// </param>
+        /// <returns>
+        /// Tipo normalizado.
+        /// </returns>
+        private static string
+            FSL_TablasTipos_Tipo_Normalizar(
+                string? tipo)
+        {
+            return FSL_TablasTipos_Texto_Normalizar(
+                tipo)
+                .ToUpperInvariant();
+        }
+
+        /// <summary>
+        /// Normaliza un valor textual recibido desde una fuente
+        /// externa.
+        /// </summary>
+        /// <param name="valor">
+        /// Valor recibido.
+        /// </param>
+        /// <returns>
+        /// Texto sin espacios exteriores.
+        /// </returns>
+        private static string
+            FSL_TablasTipos_Texto_Normalizar(
+                string? valor)
+        {
+            return valor?.Trim() ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Obtiene el campo permitido para ordenar la lista.
+        /// </summary>
+        /// <param name="sortField">
+        /// Campo solicitado.
+        /// </param>
+        /// <returns>
+        /// Campo de ordenamiento permitido.
+        /// </returns>
+        private static string
+            FSL_TablasTipos_Orden_Campo_Obtener(
+                string? sortField)
+        {
+            return FSL_TablasTipos_Texto_Normalizar(
+                sortField)
+                .ToLowerInvariant() switch
+            {
+                "descripcion" => "descripcion",
+                "activa" => "activa",
+                _ => "codigo"
+            };
+        }
+
+        /// <summary>
+        /// Registra el movimiento en la bitácora general.
+        /// </summary>
+        /// <param name="CodEmpresa">
+        /// Código de empresa.
+        /// </param>
+        /// <param name="operacion">
+        /// Información de la operación.
+        /// </param>
+        /// <param name="movimiento">
+        /// Movimiento ejecutado.
+        /// </param>
+        private void
+            FSL_TablasTipos_Bitacora_Registrar(
+                int CodEmpresa,
+                FslTablaTipoOperacion operacion,
+                string movimiento)
+        {
+            var descripcion =
+                FSL_TablasTipos_Tipo_Descripcion_Obtener(
+                    operacion.Tipo);
+
+            _ = _securityMainDb.Bitacora(
+                new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario =
+                        operacion.Usuario,
+                    Modulo = ModuloFosol,
+                    Movimiento = movimiento,
+                    DetalleMovimiento =
+                        $"Tipos de {descripcion} Id.:{operacion.Codigo}"
+                });
+        }
+
+        /// <summary>
+        /// Obtiene la descripción mostrada por el
+        /// formulario VB6 para el catálogo.
+        /// </summary>
+        /// <param name="tipo">
+        /// Tipo de catálogo.
+        /// </param>
+        /// <returns>
+        /// Descripción del catálogo.
+        /// </returns>
+        private static string
+            FSL_TablasTipos_Tipo_Descripcion_Obtener(
+                string tipo)
+        {
+            return tipo switch
+            {
+                "A" => "Apelaciones",
+                "E" => "Enfermedades",
+                _ => "Gestiones"
+            };
+        }
+
+        /// <summary>
+        /// Obtiene el mensaje correspondiente al movimiento
+        /// ejecutado.
+        /// </summary>
+        /// <param name="movimiento">
+        /// Movimiento ejecutado.
+        /// </param>
+        /// <returns>
+        /// Mensaje de resultado satisfactorio.
+        /// </returns>
+        private static string
+            FSL_TablasTipos_Mensaje_Exito_Obtener(
+                string movimiento)
+        {
+            return movimiento switch
+            {
+                MovimientoRegistrar =>
+                    "Tipo registrado correctamente.",
+                MovimientoEliminar =>
+                    "Tipo eliminado correctamente.",
+                _ =>
+                    "Tipo actualizado correctamente."
+            };
+        }
+
+        private sealed class FslTablaTipoOperacion
+        {
+            public string Accion { get; init; } =
+                string.Empty;
+
+            public string Tipo { get; init; } =
+                string.Empty;
+
+            public string Codigo { get; init; } =
+                string.Empty;
+
+            public string Descripcion { get; init; } =
+                string.Empty;
+
+            public bool Activa { get; init; }
+
+            public string Usuario { get; init; } =
+                string.Empty;
+        }
+
+        private sealed class
+            FslTablaTipoOperacionResultado
+        {
+            public int Filas { get; init; }
+
+            public string Movimiento { get; init; } =
+                string.Empty;
         }
     }
 }

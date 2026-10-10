@@ -54,7 +54,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (operacion <= 0 || numPoliza <= 0)
             {
-                return DbHelper.CreateErrorResponse(
+                return DbHelper.CreateErrorResponse<CrPolizasRegistroBeneficiariosEncabezadoData?>(
                     MensajeOperacionPolizaRequerida,
                     -2,
                     (CrPolizasRegistroBeneficiariosEncabezadoData?)null);
@@ -96,7 +96,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             if (response.Code == 0 && response.Result is null)
             {
-                return DbHelper.CreateErrorResponse(
+                return DbHelper.CreateErrorResponse<CrPolizasRegistroBeneficiariosEncabezadoData?>(
                     "No se encontr&oacute; la p&oacute;liza seleccionada.",
                     -2,
                     (CrPolizasRegistroBeneficiariosEncabezadoData?)null);
@@ -172,7 +172,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (operacion <= 0 || numPoliza <= 0)
             {
-                return DbHelper.CreateErrorResponse(
+                return DbHelper.CreateErrorResponse<CrPolizasRegistroBeneficiariosNuevoData?>(
                     MensajeOperacionPolizaRequerida,
                     -2,
                     (CrPolizasRegistroBeneficiariosNuevoData?)null);
@@ -211,7 +211,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             if (response.Code == 0 && response.Result is null)
             {
-                return DbHelper.CreateErrorResponse(
+                return DbHelper.CreateErrorResponse<CrPolizasRegistroBeneficiariosNuevoData?>(
                     "No fue posible generar la identificaci&oacute;n sugerida.",
                     -2,
                     (CrPolizasRegistroBeneficiariosNuevoData?)null);
@@ -238,7 +238,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             if (operacion <= 0 || numPoliza <= 0)
             {
-                return DbHelper.CreateErrorResponse(
+                return DbHelper.CreateErrorResponse<CrPolizasRegistroBeneficiariosDetalleData?>(
                     MensajeOperacionPolizaRequerida,
                     -2,
                     (CrPolizasRegistroBeneficiariosDetalleData?)null);
@@ -246,7 +246,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             if (string.IsNullOrWhiteSpace(idBeneficiario))
             {
-                return DbHelper.CreateErrorResponse(
+                return DbHelper.CreateErrorResponse<CrPolizasRegistroBeneficiariosDetalleData?>(
                     MensajeBeneficiarioRequerido,
                     -2,
                     (CrPolizasRegistroBeneficiariosDetalleData?)null);
@@ -292,7 +292,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (response.Code != 0 || response.Result is null)
             {
                 return response.Code == 0
-                    ? DbHelper.CreateErrorResponse(
+                    ? DbHelper.CreateErrorResponse<CrPolizasRegistroBeneficiariosDetalleData?>(
                         "No se encontr&oacute; el beneficiario seleccionado.",
                         -2,
                         (CrPolizasRegistroBeneficiariosDetalleData?)null)

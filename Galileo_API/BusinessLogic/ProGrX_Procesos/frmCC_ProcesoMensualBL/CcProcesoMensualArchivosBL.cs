@@ -327,7 +327,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
             }
 
             var rutaBase = Path.GetFullPath(_rutaBaseArchivos);
-            var rutaArchivoCompleta = Path.GetFullPath(rutaArchivo);
+            var rutaArchivoCompleta = SafePath.RootPath(rutaArchivo, nameof(rutaArchivo));
 
             ValidarRutaArchivoGenerado(rutaBase, rutaArchivoCompleta);
 

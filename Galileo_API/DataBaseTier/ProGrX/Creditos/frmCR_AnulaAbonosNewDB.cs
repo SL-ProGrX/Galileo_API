@@ -166,7 +166,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             const string sql = @"
             select isnull(dbo.fxCrd_Operacion_Anula_Cta_Recomendada(@Operacion, @Amortizacion), '...') as cuenta;";
 
-            return DbHelper.ExecuteSingleQuery(
+            var result = DbHelper.ExecuteSingleQuery(
                 _portalDb,
                 codEmpresa,
                 sql,
@@ -176,6 +176,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     Operacion = request.operacion,
                     Amortizacion = request.amortizacion
                 });
+
+            return new ErrorDto<string>
+            {
+                Code = result.Code,
+                Description = result.Description,
+                Result = result.Result!
+            };
         }
 
         /// <summary>
@@ -848,11 +855,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private sealed class CrAnulaAbonosNewAplicarContext
         {
-            public SqlConnection conn { get; set; } = null;
-            public SqlTransaction tx { get; set; } = null;
-            public CrAnulaAbonosNewAplicarRequest request { get; set; } = null;
-            public CrAnulaAbonosNewOperacionData operacion { get; set; } = null;
-            public CrAnulaAbonosNewOperacionCtasData cuentas { get; set; } = null;
+            public required SqlConnection conn { get; set; }
+            public required SqlTransaction tx { get; set; }
+            public required CrAnulaAbonosNewAplicarRequest request { get; set; }
+            public required CrAnulaAbonosNewOperacionData operacion { get; set; }
+            public required CrAnulaAbonosNewOperacionCtasData cuentas { get; set; }
             public string oficina_titular { get; set; } = string.Empty;
             public int enlace { get; set; } = 0;
             public string numero_documento { get; set; } = string.Empty;

@@ -1,4 +1,4 @@
-﻿namespace Galileo_API.Models.ProGrX.CuentasxCobrar
+namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 {
     public class FrmCxCBitacoraEspecialModels
     {
@@ -38,7 +38,7 @@
             public string? filtro { get; set; } //filtro del buscar en tablas o buscador
             public int? pagina { get; set; } = 1;//pagina de la tabla
             public int? paginacion { get; set; } = 30; //paginacion de la tabla
-            public int? sortOrder { get; set; } = 0; //0: sin orden, 1: ascendente, 2: descendente
+            public int? sortOrder { get; set; } = 0; // 0: ASC (VB6 default), 1: DESC
             public string? sortField { get; set; } //campo por el cual se ordena
 
         }

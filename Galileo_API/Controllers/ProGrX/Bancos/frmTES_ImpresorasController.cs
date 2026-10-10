@@ -20,6 +20,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
 
 
         
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Impresoras_Guardar")]
         public ErrorDto Tes_Impresoras_Guardar(int CodEmpresa, string usuario, TesImpresorasDto impresora)
         {

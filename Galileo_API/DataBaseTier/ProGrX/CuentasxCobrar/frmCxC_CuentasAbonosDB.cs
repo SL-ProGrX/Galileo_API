@@ -61,7 +61,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             {
                 result.Result = new CxCCuentasAbonosData();
             }
-            return result;
+            return new ErrorDto<CxCCuentasAbonosData>
+            {
+                Code = result.Code,
+                Description = result.Description,
+                Result = result.Result
+            };
         }
 
         /// <summary>
@@ -183,7 +188,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 totales.Result.cuota = cuotaRs.Result;
             }
 
-            return totales;
+            return new ErrorDto<CxCCuentaCuotasInfoData>
+            {
+                Code = totales.Code,
+                Description = totales.Description,
+                Result = totales.Result
+            };
         }
 
         /// <summary>

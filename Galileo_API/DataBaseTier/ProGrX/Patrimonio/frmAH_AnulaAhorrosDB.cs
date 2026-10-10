@@ -401,7 +401,7 @@ exec spSIFDocsAsiento
             bool tieneMovimientos = request.movimientos != null && request.movimientos.Count > 0;
 
             return esMov && tieneMovimientos
-                ? request.movimientos.Sum(x => x.monto)
+                ? request.movimientos!.Sum(x => x.monto)
                 : request.monto;
         }
 

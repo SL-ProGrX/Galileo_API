@@ -185,8 +185,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <summary>
         /// Metodo para construir dinámicamente las consultas SQL de listado y conteo de estudios crediticios según los filtros proporcionados en la solicitud. Este método genera la cláusula WHERE basada en los filtros aplicados, así como la cláusula ORDER BY según el campo y orden de clasificación especificados. Además, maneja la paginación de resultados cuando no se trata de una exportación completa.
         /// </summary>
-        /// <param name="request"></param>
-        /// <param name="esExportar"></param>
+        /// <param name="request">Datos de la solicitud.</param>
+        /// <param name="esExportar">Valor de entrada utilizado por la operación.</param>
+        ///
+        ///
         /// <returns></returns>
         private static (string ListSql, string CountSql, DynamicParameters Parameters) PreaConsultas_BuildGridSql(PreaConsultasFiltroRequest request, bool esExportar)
         {
@@ -416,7 +418,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <summary>
         /// Metodo para obtener la configuración de agrupación y ordenamiento de la consulta de resumen según el tipo de resumen solicitado, permitiendo que la consulta se adapte dinámicamente para agrupar por línea, destino, garantía, institución, estado o tendencia según la selección del usuario. 
         /// </summary>
-        /// <param name="tipoResumen"></param>
+        /// <param name="tipoResumen">Valor de entrada utilizado por la operación.</param>
         /// <returns></returns>
         private static (string Codigo, string Descripcion, string GroupBy, string OrderBy) PreaConsultas_ResumenAgrupacion_Obtener(string? tipoResumen)
         {

@@ -14,7 +14,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private readonly string vDateFormat = "yyyy-MM-dd HH:mm:ss";
         private readonly string vMensaje = "El periodo ya se encuentra cerrado, no es posible actualizar el saldo.";
 
-        public FrmTesConciliacionDB(IConfiguration? config)
+        public FrmTesConciliacionDB(IConfiguration config)
         {
             mCntLinkDB = new MCntLinkDB(config);
             _portalDB = new PortalDB(config);
@@ -365,7 +365,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 const string query = @"exec spTes_Concilia_Periodo_Resultados @BancoId, @Anio ,@Mes,@Ubicacion,@Tipo,@Estado";
 
-                string estado = filtros.estadoCasos.Substring(0, 1);
+                string estado = filtros.estadoCasos!.Substring(0, 1);
 
                 return conn.Query<TesConciliaResultados>(query, new
                 {
@@ -387,7 +387,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return Exec(CodEmpresa, conn =>
                 GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    bool vCuenta = mCntLinkDB.fxgCntCuentaValida(CodEmpresa, filtro.ar_cuenta);
+                    bool vCuenta = mCntLinkDB.fxgCntCuentaValida(CodEmpresa, filtro.ar_cuenta!);
                     if (!vCuenta)
                     {
                         return DbHelper.ErrorResponse("La cuenta contable indicada para el auto-registro no es válida!");
@@ -409,7 +409,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         });
                     }
 
-                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
+                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario!);
 
                     return DbHelper.CreateOkResponse();
                 }),
@@ -509,8 +509,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     datos.ForEach(item =>
                     {
-                        string pId_Bancos;
-                        string pId_Libros;
+                        string? pId_Bancos;
+                        string? pId_Libros;
 
                         if (filtro.ubicacion == "B")
                         {
@@ -605,8 +605,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                     datos.ForEach(item =>
                     {
-                        string pId_Bancos;
-                        string pId_Libros;
+                        string? pId_Bancos;
+                        string? pId_Libros;
 
                         if (filtro.ubicacion == "B")
                         {
@@ -630,7 +630,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         });
                     });
 
-                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
+                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario!);
 
                     return DbHelper.CreateOkResponse();
                 }),

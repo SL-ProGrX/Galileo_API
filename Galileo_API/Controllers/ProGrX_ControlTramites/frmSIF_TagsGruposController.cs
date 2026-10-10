@@ -32,6 +32,7 @@ namespace Galileo_API.Controllers.ProGrX.ControlTramites
             return _bl.SIF_Grupos_Dropdown_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_Grupos_Guardar")]
         [Authorize]
         public ErrorDto SIF_Grupos_Guardar(int CodEmpresa, string Usuario, [FromBody] SifGruposGuardarRequest param)
@@ -46,6 +47,7 @@ namespace Galileo_API.Controllers.ProGrX.ControlTramites
             return _bl.SIF_Grupos_Miembros_Lista_Obtener(CodEmpresa, codGrupo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_Grupos_Miembro_Asignar")]
         [Authorize]
         public ErrorDto SIF_Grupos_Miembro_Asignar(int CodEmpresa, [FromBody] SifGruposMiembroAsignarRequest param)
@@ -60,6 +62,7 @@ namespace Galileo_API.Controllers.ProGrX.ControlTramites
             return _bl.SIF_Grupos_Tags_Lista_Obtener(CodEmpresa, codGrupo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_Grupos_Tag_Asignar")]
         [Authorize]
         public ErrorDto SIF_Grupos_Tag_Asignar(int CodEmpresa, [FromBody] SifGruposTagAsignarRequest param)

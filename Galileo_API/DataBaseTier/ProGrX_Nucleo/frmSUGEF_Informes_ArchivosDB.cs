@@ -21,7 +21,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// Consulta los cortes disponibles para informes de archivos SUGEF
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
         /// <returns></returns>
         public ErrorDto<List<SugefInformesArchivosData>> SUGEFInformesArchivos_Cortes_Obtener(int CodEmpresa)
         {

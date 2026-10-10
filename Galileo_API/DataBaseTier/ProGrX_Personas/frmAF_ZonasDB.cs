@@ -22,7 +22,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Personas
         /// Obtiene la lista de zonas con total y paginación.
         /// </summary>
         /// <param name="codEmpresa">Código de empresa.</param>
-        /// <param name="filtros">JSON con filtros de búsqueda, orden y paginación.</param>
+        /// <param name="filtrosObj">Criterios utilizados para filtrar los resultados.</param>
         public ErrorDto<ZonasLista> AF_ZonasLista_Obtener(int codEmpresa, FiltrosLazyLoadData? filtrosObj)
         {
             string filtro = filtrosObj?.filtro ?? string.Empty;

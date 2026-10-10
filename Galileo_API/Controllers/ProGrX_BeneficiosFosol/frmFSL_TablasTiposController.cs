@@ -1,52 +1,84 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Galileo.Models.ERROR;
 using Galileo.Models.FSL;
 using Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
 {
-    /// <summary>
-    /// Endpoints de los catálogos de Tipos Fosol (frmFSL_TablasTipos).
-    /// </summary>
     [Route("api/frmFSL_TablasTipos")]
+    [Authorize]
     [ApiController]
-    public class FrmFslTablasTiposController : ControllerBase
+    public sealed class FrmFslTablasTiposController
+        : ControllerBase
     {
-        private readonly FrmFslTablasTiposBL _bl;
+        private readonly FrmFslTablasTiposBl _bl;
 
-        public FrmFslTablasTiposController(IConfiguration config)
+        public FrmFslTablasTiposController(
+            IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            ArgumentNullException.ThrowIfNull(config);
 
-            _bl = new FrmFslTablasTiposBL(config);
+            _bl = new FrmFslTablasTiposBl(config);
         }
 
-        /// <summary>Lista de tipos (gestiones, apelaciones o enfermedades).</summary>
-        [Authorize]
-        [HttpGet("FslTablaTipos_Obtener")]
-        public ErrorDto<FslTablaTipoLista> FslTablaTipos_Obtener(int CodCliente, string tipo, string? filtro, int? pagina, int? paginacion)
-            => _bl.FslTablaTipos_Obtener(CodCliente, tipo, filtro, pagina, paginacion);
+        [HttpGet(
+            "FSL_TablasTipos_Lista_Obtener")]
+        public ErrorDto<
+            FslListaPaginadaDto<FslTablaTipoDto>>
+            FSL_TablasTipos_Lista_Obtener(
+                int CodEmpresa,
+                string filtros = "")
+        {
+            return _bl
+                .FSL_TablasTipos_Lista_Obtener(
+                    CodEmpresa,
+                    filtros);
+        }
 
-        /// <summary>Actualiza un tipo.</summary>
-        [Authorize]
-        [HttpPut("FslTablaTipos_Actualizar")]
-        public ErrorDto FslTablaTipos_Actualizar(int CodCliente, string tipo, [FromBody] FslTablaTipoData tipoData)
-            => _bl.FslTablaTipos_Actualizar(CodCliente, tipo, tipoData);
+        [HttpPost(
+            "FSL_TablasTipos_Tipo_Registrar")]
+        public ErrorDto
+            FSL_TablasTipos_Tipo_Registrar(
+                int CodEmpresa,
+                [FromBody]
+                FslTablaTipoGuardarRequest request)
+        {
+            return _bl
+                .FSL_TablasTipos_Tipo_Registrar(
+                    CodEmpresa,
+                    request);
+        }
 
-        /// <summary>Inserta un tipo (o actualiza si existe).</summary>
-        [Authorize]
-        [HttpPost("FslTablaTipo_Insertar")]
-        public ErrorDto FslTablaTipo_Insertar(int CodCliente, string tipo, string usuario, [FromBody] FslTablaTipoData tipoData)
-            => _bl.FslTablaTipo_Insertar(CodCliente, tipo, usuario, tipoData);
+        [HttpPut(
+            "FSL_TablasTipos_Tipo_Actualizar")]
+        public ErrorDto
+            FSL_TablasTipos_Tipo_Actualizar(
+                int CodEmpresa,
+                [FromBody]
+                FslTablaTipoGuardarRequest request)
+        {
+            return _bl
+                .FSL_TablasTipos_Tipo_Actualizar(
+                    CodEmpresa,
+                    request);
+        }
 
-        /// <summary>Elimina un tipo.</summary>
-        [Authorize]
-        [HttpDelete("FslTablaTipo_Eliminar")]
-        public ErrorDto FslTablaTipo_Eliminar(int CodCliente, string tipo, string codigo)
-            => _bl.FslTablaTipo_Eliminar(CodCliente, tipo, codigo);
+        [HttpDelete(
+            "FSL_TablasTipos_Tipo_Eliminar")]
+        public ErrorDto
+            FSL_TablasTipos_Tipo_Eliminar(
+                int CodEmpresa,
+                string tipo,
+                string codigo,
+                string usuario)
+        {
+            return _bl
+                .FSL_TablasTipos_Tipo_Eliminar(
+                    CodEmpresa,
+                    tipo,
+                    codigo,
+                    usuario);
+        }
     }
 }

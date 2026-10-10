@@ -64,7 +64,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_BeneficiosFosol
                     codExpediente);
         }
 
-        public ErrorDto<string>
+        public ErrorDto<string?>
             FSL_ExpedienteApelaciones_UsuarioVinculado_Obtener(
                 int CodEmpresa,
                 string cedula,
