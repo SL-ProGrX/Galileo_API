@@ -25,12 +25,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             => _bl.Cr_RemesasRetenciones_Pantalla_Obtener(codEmpresa, usuario);
 
         [HttpPost("Cr_RemesasRetenciones_Validar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto<CrRemesasRetencionesValidarData> Cr_RemesasRetenciones_Validar(
             int codEmpresa,
             [FromBody] CrRemesasRetencionesValidarRequest request)
             => _bl.Cr_RemesasRetenciones_Validar(codEmpresa, request);
 
         [HttpPost("Cr_RemesasRetenciones_Aplicar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Cr_RemesasRetenciones_Aplicar(
             int codEmpresa,
             string usuario,
