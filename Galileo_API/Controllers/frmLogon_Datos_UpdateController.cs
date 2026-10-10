@@ -8,7 +8,6 @@ namespace Galileo.Controllers
     [Route("api/frmLogon_Datos_Update")]
     [Route("api/FrmLogonDatosUpdate")]
     [ApiController]
-    [IgnoreAntiforgeryToken]
     public class FrmLogonDatosUpdateController : ControllerBase
     {
         readonly FrmLogonDatosUpdateBl Datos_UpdateBL;

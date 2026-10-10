@@ -74,8 +74,7 @@ public static class ApiHostServiceCollectionExtensions
         {
             options.Filters.AddService<CsrfOriginValidationFilter>();
             options.Filters.AddService<EmpresaAccessFilter>();
-            // Valida el token anti-forgery en POST/PUT/PATCH/DELETE. Los endpoints previos a la sesion
-            // (login, recuperacion de contrasena) se excluyen con [IgnoreAntiforgeryToken].
+            // Valida el token anti-forgery en POST/PUT/PATCH/DELETE de todos los controladores.
             options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
         });
         // PILOTO CSRF: el token viaja en el header y la cookie asociada solo la lee el servidor.

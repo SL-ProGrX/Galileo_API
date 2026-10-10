@@ -13,7 +13,6 @@ namespace Galileo.Controllers
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
-    [IgnoreAntiforgeryToken]
     public class LogonController : ControllerBase
     {
         readonly LogonBL logonBL;

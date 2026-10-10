@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace Galileo.Controllers;
 
 [ApiController]
-[IgnoreAntiforgeryToken]
 [Route("api/[controller]")]
 [EnableRateLimiting("auth")]
 public sealed class AuthController : ControllerBase
