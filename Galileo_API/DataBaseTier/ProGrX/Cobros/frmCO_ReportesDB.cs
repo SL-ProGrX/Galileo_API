@@ -43,6 +43,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var lista = new List<CoReporteItemDto>
             {
                 new() { codigo = "01", descripcion = "Listado General" },
+                new() { codigo = "GENTRA", descripcion = "Listado General + Cuota en Tránsito" },
                 new() { codigo = "02", descripcion = "Listado por Garantía" },
                 new() { codigo = "03", descripcion = "Listado por Líneas" },
                 new() { codigo = "04", descripcion = "Listado por Estado Persona" },
