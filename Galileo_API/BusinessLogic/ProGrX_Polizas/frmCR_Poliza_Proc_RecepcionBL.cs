@@ -1,5 +1,5 @@
-﻿using Galileo.Models.ERROR;
 using Galileo.Models;
+using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX_Polizas;
 using static Galileo_API.Models.ProGrX_Polizas.FrmCrPolizaProcRecepcionModels;
 
@@ -7,7 +7,6 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
 {
     public class FrmCrPolizaProcRecepcionBL
     {
-
         private readonly FrmCrPolizaProcRecepcionDB _db;
 
         public FrmCrPolizaProcRecepcionBL(IConfiguration config)
@@ -15,45 +14,43 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
             _db = new FrmCrPolizaProcRecepcionDB(config);
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> PolizaProcRecepcion_Listar(int codEmpresa)
-          => _db.PolizaProcRecepcion_Listar(codEmpresa);
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_PolizaProcRecepcion_Polizas_Listar(int codEmpresa)
+            => _db.Crd_PolizaProcRecepcion_Polizas_Listar(codEmpresa);
 
-        public ErrorDto<List<DropDownListaGenericaModel>> PolizaUnidades_Listar(int codEmpresa, int codContabilidad)
-        => _db.PolizaUnidades_Listar(codEmpresa, codContabilidad);
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_PolizaProcRecepcion_Unidades_Listar(int codEmpresa, int codContabilidad)
+            => _db.Crd_PolizaProcRecepcion_Unidades_Listar(codEmpresa, codContabilidad);
 
-        public ErrorDto<List<DropDownListaGenericaModel>> PolizaFacturables_Listar(int codEmpresa)
-         => _db.PolizaFacturables_Listar(codEmpresa);
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_PolizaProcRecepcion_CentrosCosto_Listar(int codEmpresa, int codContabilidad, string codUnidad)
+            => _db.Crd_PolizaProcRecepcion_CentrosCosto_Listar(codEmpresa, codContabilidad, codUnidad);
 
-        public ErrorDto<List<DropDownListaGenericaModel>> PolizaCentrosCosto_Listar(int codEmpresa, int codContabilidad, string codUnidad)
-        => _db.PolizaCentrosCosto_Listar(codEmpresa, codContabilidad, codUnidad);
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_PolizaProcRecepcion_Divisas_Listar(int codEmpresa, int codContabilidad)
+            => _db.Crd_PolizaProcRecepcion_Divisas_Listar(codEmpresa, codContabilidad);
 
-        public ErrorDto<List<DropDownListaGenericaModel>> PolizaDivisas_Listar(int codEmpresa, int codContabilidad)
-        => _db.PolizaDivisas_Listar(codEmpresa, codContabilidad);
-        public ErrorDto<DropDownListaGenericaModel> PolizaDivisasLocal_Consulta(int codEmpresa, int codContabilidad)
-        => _db.PolizaDivisasLocal_Consulta(codEmpresa, codContabilidad);
+        public ErrorDto<DropDownListaGenericaModel?> Crd_PolizaProcRecepcion_DivisaLocal_Obtener(int codEmpresa, int codContabilidad)
+            => _db.Crd_PolizaProcRecepcion_DivisaLocal_Obtener(codEmpresa, codContabilidad);
 
-        public ErrorDto<PolizaAseguradoraCorte?> PolizaAseguradoraCorte_Valida(int codEmpresa, DateTime corte, string codPoliza, int idFactura)
-        => _db.PolizaAseguradoraCorte_Valida(codEmpresa, corte, codPoliza, idFactura);
+        public ErrorDto<decimal> Crd_PolizaProcRecepcion_TipoCambio_Obtener(int codEmpresa, int codContabilidad, string divisa)
+            => _db.Crd_PolizaProcRecepcion_TipoCambio_Obtener(codEmpresa, codContabilidad, divisa);
 
-        public ErrorDto<PolizaAseguradoraCorte?> PolizaAseguradoraCorte_Agregar(int codEmpresa, string usuario, PolizaAseguradoraCorteData datos)
-        => _db.PolizaAseguradoraCorte_Agregar(codEmpresa, usuario, datos);
+        public ErrorDto<PolizaDatos?> Crd_PolizaProcRecepcion_Poliza_Datos_Obtener(int codEmpresa, string codPoliza)
+            => _db.Crd_PolizaProcRecepcion_Poliza_Datos_Obtener(codEmpresa, codPoliza);
 
-        public ErrorDto<int> PolizaAseguradoraCorteDetalle_Agregar(int codEmpresa, string usuario, int scFacturaId, IEnumerable<PolizaAseguradoraCorteDetalleData> datos)
-        => _db.PolizaAseguradoraCorteDetalle_Agregar(codEmpresa, usuario, scFacturaId, datos);
+        public ErrorDto<PolizaAseguradoraCorteConsulta?> Crd_PolizaProcRecepcion_Corte_Consultar(int codEmpresa, DateTime corte, string codPoliza)
+            => _db.Crd_PolizaProcRecepcion_Corte_Consultar(codEmpresa, corte, codPoliza);
 
-        public ErrorDto<PolizaAseguradoraCorte?> PolizaAseguradoraCorte_Pago(int codEmpresa, string usuario, DateTime corte, string codPoliza, int idFactura)
-        => _db.PolizaAseguradoraCorte_Pago(codEmpresa, usuario, corte, codPoliza, idFactura);
+        public ErrorDto<List<PolizaAseguradoraCorteDetalleConsulta>> Crd_PolizaProcRecepcion_Corte_Detalle_Consultar(int codEmpresa, DateTime corte, string codPoliza, int idFactura)
+            => _db.Crd_PolizaProcRecepcion_Corte_Detalle_Consultar(codEmpresa, corte, codPoliza, idFactura);
 
-        public ErrorDto<decimal> TipoCambio_Consultar(int codEmpresa, int contabilidad, string divisa)
-        => _db.TipoCambio_Consultar(codEmpresa, contabilidad, divisa);
+        public ErrorDto<PolizaAseguradoraCorte?> Crd_PolizaProcRecepcion_Corte_Validar(int codEmpresa, DateTime corte, string codPoliza, int idFactura)
+            => _db.Crd_PolizaProcRecepcion_Corte_Validar(codEmpresa, corte, codPoliza, idFactura);
 
-        public ErrorDto<PolizaDatos?> PolizaPolizaDatos(int codEmpresa, string codPoliza)
-        => _db.PolizaPolizaDatos(codEmpresa, codPoliza);
+        public ErrorDto<PolizaAseguradoraCorte?> Crd_PolizaProcRecepcion_Archivo_Cargar(int codEmpresa, string usuario, PolizaArchivoCargarRequest request)
+            => _db.Crd_PolizaProcRecepcion_Archivo_Cargar(codEmpresa, usuario, request);
 
-        public ErrorDto<List<PolizaAseguradoraCorteDetalleConsulta>> PolizaAseguradoraCorteDetalle_Consulta(int codEmpresa, DateTime corte, string codPoliza, int idFactura)
-        => _db.PolizaAseguradoraCorteDetalle_Consulta(codEmpresa, corte, codPoliza, idFactura);
-        public ErrorDto<PolizaDatos?> PolizaAseguradoraCorte_Consulta(int codEmpresa, DateTime corte, string codPoliza)
-        => _db.PolizaAseguradoraCorte_Consulta(codEmpresa, corte, codPoliza); 
+        public ErrorDto<string> Crd_PolizaProcRecepcion_Detalle_Eliminar(int codEmpresa, string usuario, PolizaDetalleEliminarRequest request)
+            => _db.Crd_PolizaProcRecepcion_Detalle_Eliminar(codEmpresa, usuario, request);
 
+        public ErrorDto<PolizaAseguradoraCorte?> Crd_PolizaProcRecepcion_Factura_Generar(int codEmpresa, string usuario, PolizaAseguradoraCorteData datos)
+            => _db.Crd_PolizaProcRecepcion_Factura_Generar(codEmpresa, usuario, datos);
     }
 }
