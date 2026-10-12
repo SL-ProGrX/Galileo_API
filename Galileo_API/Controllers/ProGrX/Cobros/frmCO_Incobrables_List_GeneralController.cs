@@ -20,6 +20,12 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         public FrmCoIncobrablesListGeneralController(IConfiguration config)
             => _bl = new FrmCoIncobrablesListGeneralBL(config);
 
+        [Authorize]
+        [HttpGet("CoIncobrablesFechaServidor_Obtener")]
+        public ErrorDto<DateTime> CoIncobrablesFechaServidor_Obtener(int CodEmpresa)
+        {
+            return _bl.CoIncobrablesFechaServidor_Obtener(CodEmpresa);
+        }
 
 
         [Authorize]
