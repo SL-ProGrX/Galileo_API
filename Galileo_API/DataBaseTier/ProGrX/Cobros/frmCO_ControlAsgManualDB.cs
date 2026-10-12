@@ -3,6 +3,8 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Cobros;
 using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
+using System.Globalization;
+using System.Text;
 
 namespace Galileo.DataBaseTier.ProGrX_Cobros
 {
@@ -95,6 +97,7 @@ namespace Galileo.DataBaseTier.ProGrX_Cobros
 
                     var asg = ObtenerAsignacion(conn, ced);
                     AplicarAsignacion(detalle, asg);
+                    detalle.info_expediente = ObtenerInfoExpediente(conn, ced);
 
                     var tieneMora = TieneMorosidad(conn, ced);
                     detalle.tiene_morosidad = tieneMora ? 1 : 0;
@@ -172,6 +175,85 @@ namespace Galileo.DataBaseTier.ProGrX_Cobros
                 commandTimeout: 0);
 
             return mora == 1;
+        }
+
+        private static string ObtenerInfoExpediente(SqlConnection conn, string cedula)
+        {
+            const string sql = @"
+                select
+                    R.id_solicitud,
+                    rtrim(R.codigo) as codigo,
+                    rtrim(C.Descripcion) as linea_desc,
+                    isnull(R.saldo, 0) as saldo,
+                    isnull(R.plazo, 0) as plazo,
+                    isnull(R.interesv, 0) as interesv,
+                    rtrim(G.Descripcion) as garantia_desc,
+                    case
+                        when R.Proceso = 'N' then 'Normal'
+                        when R.Proceso = 'J' then 'Cbr.Judicial'
+                        when R.Proceso = 'T' then 'Traspaso Deuda'
+                        when R.Proceso = 'E' then 'Incobrable'
+                        else 'Normal'
+                    end as proceso_desc,
+                    isnull(V.cuota, 0) as cuota,
+                    isnull(V.intc, 0) as intc,
+                    isnull(V.intm, 0) as intm,
+                    isnull(V.amortiza, 0) as amortiza
+                from reg_creditos R
+                inner join catalogo C
+                    on R.codigo = C.codigo and C.Linea_Interna = 1
+                inner join CRD_GARANTIA_TIPOS G
+                    on R.garantia = G.garantia
+                left join vista_morosidad V
+                    on R.id_solicitud = V.id_solicitud
+                where R.cedula = @cedula
+                  and R.Estado = 'A'
+                  and (isnull(V.Cuota, 0) > 0 or R.Proceso = 'J')
+                order by R.Fecult, R.id_solicitud";
+
+            var operaciones = conn.Query<OperacionExpediente>(
+                sql,
+                new { cedula },
+                commandTimeout: 0).ToList();
+
+            if (operaciones.Count == 0)
+                return string.Empty;
+
+            var info = new StringBuilder();
+            info.AppendLine(operaciones[0].cuota == 0
+                ? "Operaciones Activas al ** Dia **"
+                : "Presenta operaciones con morosidad");
+            info.AppendLine();
+
+            foreach (var operacion in operaciones)
+            {
+                info.AppendLine($"Operacion: {operacion.id_solicitud} Línea: {operacion.codigo} - {operacion.linea_desc}");
+                info.AppendLine($"Saldo : {operacion.saldo.ToString("N2", CultureInfo.CurrentCulture)}");
+                info.AppendLine($"Plazo: {operacion.plazo} Tasa: {operacion.interesv}");
+                info.AppendLine($"Garantia : {operacion.garantia_desc}");
+                info.AppendLine($"Proceso: {operacion.proceso_desc}");
+                var mora = operacion.intc + operacion.intm + operacion.amortiza;
+                info.AppendLine($"Mora: {mora.ToString("N2", CultureInfo.CurrentCulture)} Cuotas: {operacion.cuota}");
+                info.AppendLine("_____________________________________________________");
+            }
+
+            return info.ToString().TrimEnd();
+        }
+
+        private sealed class OperacionExpediente
+        {
+            public long id_solicitud { get; set; }
+            public string codigo { get; set; } = string.Empty;
+            public string linea_desc { get; set; } = string.Empty;
+            public decimal saldo { get; set; }
+            public decimal plazo { get; set; }
+            public decimal interesv { get; set; }
+            public string garantia_desc { get; set; } = string.Empty;
+            public string proceso_desc { get; set; } = string.Empty;
+            public decimal cuota { get; set; }
+            public decimal intc { get; set; }
+            public decimal intm { get; set; }
+            public decimal amortiza { get; set; }
         }
 
         /// <summary>
