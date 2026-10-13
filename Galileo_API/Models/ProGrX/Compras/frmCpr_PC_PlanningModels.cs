@@ -66,6 +66,7 @@ namespace Galileo.Models.CPR
         public string descripcion { get; set; } = string.Empty;
         public int cantidad { get; set; }
         public decimal monto { get; set; }
+        public decimal total { get; set; }
         public DateTime corte { get; set; }
     }
 
