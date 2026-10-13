@@ -1,20 +1,40 @@
 using System.Security.Cryptography;
 using System.Text;
 using Galileo.Models.Auth;
+using Galileo.DataBaseTier.Auth;
 
 namespace Galileo.BusinessLogic.Auth;
 
 /// <summary>
-/// Stores refresh sessions and pre-authentication challenges with one-time rotation.
-/// This first PR keeps the store process-local; a shared persistent implementation is
-/// required before running multiple API instances or expecting sessions to survive restarts.
+/// Stores pre-authentication challenges in process memory. Authenticated sessions use
+/// process memory by default or SQL when AuthSessions:Store is explicitly set to Sql.
 /// </summary>
 public sealed class AuthSessionStore
 {
+    private readonly SqlAuthSessionRepository? _sql;
     private readonly object _sync = new();
     private readonly Dictionary<string, SessionState> _sessionsByRefreshHash = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ChallengeState> _challengesByHash = new(StringComparer.Ordinal);
     private readonly HashSet<string> _revokedSessionIds = new(StringComparer.Ordinal);
+
+    public AuthSessionStore() { }
+
+    public AuthSessionStore(IConfiguration configuration)
+    {
+        var provider = configuration["AuthSessions:Store"];
+        if (string.IsNullOrWhiteSpace(provider) ||
+            string.Equals(provider, "Memory", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (!string.Equals(provider, "Sql", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("AuthSessions:Store debe ser Memory o Sql.");
+        }
+
+        _sql = new SqlAuthSessionRepository(configuration);
+    }
 
     public SessionState CreateSession(AuthUserDto user, string application, TimeSpan lifetime, string authenticationMethod)
     {
@@ -26,6 +46,12 @@ public sealed class AuthSessionStore
             now.Add(lifetime),
             CreateOpaqueToken(),
             authenticationMethod);
+
+        if (_sql is not null)
+        {
+            _sql.Create(session, Hash(session.RefreshToken));
+            return session;
+        }
 
         lock (_sync)
         {
@@ -44,6 +70,19 @@ public sealed class AuthSessionStore
         session = default!;
         replacementRefreshToken = string.Empty;
         var hash = Hash(rawRefreshToken);
+
+        if (_sql is not null)
+        {
+            replacementRefreshToken = CreateOpaqueToken();
+            if (!_sql.TryRotate(hash, Hash(replacementRefreshToken), application, out var persisted))
+            {
+                replacementRefreshToken = string.Empty;
+                return false;
+            }
+
+            session = persisted with { RefreshToken = replacementRefreshToken };
+            return true;
+        }
 
         lock (_sync)
         {
@@ -71,6 +110,12 @@ public sealed class AuthSessionStore
 
     public void Revoke(string rawRefreshToken)
     {
+        if (_sql is not null)
+        {
+            _sql.Revoke(Hash(rawRefreshToken));
+            return;
+        }
+
         lock (_sync)
         {
             if (_sessionsByRefreshHash.TryGetValue(Hash(rawRefreshToken), out var session))
@@ -81,8 +126,23 @@ public sealed class AuthSessionStore
         }
     }
 
+    public bool RecordActivity(string sessionId, string application)
+    {
+        if (_sql is not null)
+        {
+            return _sql.RecordActivity(sessionId, application);
+        }
+
+        return IsSessionActive(sessionId);
+    }
+
     public bool IsSessionActive(string sessionId)
     {
+        if (_sql is not null)
+        {
+            return _sql.IsActive(sessionId);
+        }
+
         lock (_sync)
         {
             return !_revokedSessionIds.Contains(sessionId) &&

@@ -10,8 +10,8 @@ public static class ApiHostApplicationBuilderExtensions
         app.UseHttpsRedirection();
         app.UseRouting();
         app.UseCors(ApiHostServiceCollectionExtensions.CorsPolicyName);
-        app.UseRateLimiter();
         app.UseAuthentication();
+        app.UseRateLimiter();
         app.UseAuthorization();
         app.MapControllers();
         app.MapGet("/health", () => Results.Ok(new
