@@ -554,7 +554,7 @@ namespace Galileo.DataBaseTier
                          WHERE D.ID_PC = @IdPc
                            AND (@Corte IS NULL OR CONVERT(varchar(10), S.CORTE, 111) = @Corte)
                            AND (@Q IS NULL OR (D.COD_PRODUCTO LIKE @Q OR P.DESCRIPCION LIKE @Q))
-                           AND (@ProdClas IS NULL OR P.COD_PRODCLAS = @ProdClas)
+                           AND (@ProdClas IS NULL OR P.COD_LINEA_SUB = @ProdClas)
                          ORDER BY
                                CASE WHEN @SortColumn = 1 AND @SortOrder = 1 THEN D.COD_PRODUCTO END ASC,
                                CASE WHEN @SortColumn = 1 AND @SortOrder = -1 THEN D.COD_PRODUCTO END DESC,
@@ -593,6 +593,7 @@ namespace Galileo.DataBaseTier
                     descripcion = x.DESCRIPCION,
                     cantidad = x.CANTIDAD,
                     monto = x.MONTO,
+                    total = x.MONTO * x.CANTIDAD,
                     corte = x.CORTE
                 },
                 (total, lineas) => new CprResumenPlanLista { Total = total, Lineas = lineas },
@@ -622,8 +623,12 @@ namespace Galileo.DataBaseTier
                               INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
                               INNER JOIN CORE_UENS U ON C.COD_UNIDAD = U.COD_UNIDAD
                               INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-                              INNER JOIN PV_PROD_CLASIFICA B ON P.COD_PRODCLAS = B.COD_PRODCLAS
-                              INNER JOIN CNTX_CUENTAS Z ON B.COD_CUENTA = Z.COD_CUENTA
+                              INNER JOIN PV_PROD_CLASIFICA_SUB B ON P.COD_PRODCLAS = B.COD_PRODCLAS 
+                               AND P.COD_LINEA_SUB = B.COD_LINEA_SUB 
+                             INNER JOIN CNTX_CUENTAS Z 
+                                    ON REPLACE(REPLACE(B.COD_CUENTA, ' ', ''), '-', '') = 
+                                       REPLACE(REPLACE(Z.COD_CUENTA, ' ', ''), '-', '')
+                                    AND Z.COD_CUENTA != ''
                              WHERE D.ID_PC = @IdPc
                                AND (@Corte IS NULL OR CONVERT(varchar(10), S.CORTE, 111) = @Corte)
                                AND (@Q IS NULL OR (Z.COD_CUENTA_MASK LIKE @Q OR Z.DESCRIPCION LIKE @Q))
@@ -727,7 +732,10 @@ namespace Galileo.DataBaseTier
         {
             var filtros = ParsePlanFiltros(parametros);
 
-            const string prodClasSql = @"SELECT TOP 1 COD_PRODCLAS FROM PV_PROD_CLASIFICA WHERE COD_CUENTA = @cod_cuenta;";
+            const string prodClasSql = @"SELECT TOP 1 COD_LINEA_SUB FROM PV_PROD_CLASIFICA_SUB WHERE 
+                             REPLACE(REPLACE(COD_CUENTA, ' ', ''), '-', '') =   REPLACE(REPLACE(@cod_cuenta, ' ', ''), '-', '') ;";
+
+
             var prodR = DbHelper.ExecuteSingleQuery<int?>(_portalDB, CodEmpresa, prodClasSql, 0, new { cod_cuenta = filtros.filtro });
             var prodclas = (prodR.Code == 0 ? (prodR.Result ?? 0) : 0);
 
