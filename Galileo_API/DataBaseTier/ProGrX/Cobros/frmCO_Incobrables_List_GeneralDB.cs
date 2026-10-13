@@ -18,6 +18,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             _portalDB = new PortalDB(config);
         }
 
+        /// <summary>
+        /// Obtiene la fecha de proceso configurada en la empresa.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<DateTime> CoIncobrablesFechaServidor_Obtener(int CodEmpresa)
+        {
+            return DbHelper.WithConn(
+                _portalDB,
+                CodEmpresa,
+                conn => conn.QuerySingle<DateTime>("SELECT dbo.MyGetdate();"));
+        }
+
 
         /// <summary>
         /// Consulta de movimiento por operacion 
@@ -66,6 +79,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             DateTime? auxiliar = filtros.Auxiliar.HasValue
               ? DateTime.SpecifyKind(filtros.Auxiliar.Value, DateTimeKind.Utc)
               : null;
+            var filtro = filtros.Filtro?.Trim() ?? string.Empty;
+            var usuario = filtros.Usuario?.Trim() ?? string.Empty;
            
 
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
@@ -79,9 +94,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         filtros.Estado,
                         Inicio = inicio,
                         Corte = corte,
-                        filtros.Filtro,
+                        Filtro = filtro,
                         Auxiliar = auxiliar,
-                        filtros.Usuario
+                        Usuario = usuario
                     },
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: 0 
