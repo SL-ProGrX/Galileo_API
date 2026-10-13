@@ -102,7 +102,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <summary>
         /// Inserta el detalle en bloques dentro de una transacción. Se omiten las filas sin cédula (VB6: Trim(Cedula) &lt;&gt; "").
         /// </summary>
-        private static int CargarDetalle(SqlConnection conn, int idFactura, IEnumerable<PolizaAseguradoraCorteDetalleData> filas, string usuario)
+        private static void CargarDetalle(SqlConnection conn, int idFactura, IEnumerable<PolizaAseguradoraCorteDetalleData> filas, string usuario)
         {
             using var tran = conn.BeginTransaction();
             try
@@ -121,7 +121,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                 lote.Ejecutar(conn, tran);
                 tran.Commit();
-                return lote.Lineas;
             }
             catch
             {

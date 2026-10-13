@@ -8,7 +8,7 @@ namespace Galileo_API.Models.ProGrX_Nucleo
     {
         public string estado { get; set; } = string.Empty;
         public string? linea_id { get; set; }
-        public bool atendidas { get; set; }
+        public required bool atendidas { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 

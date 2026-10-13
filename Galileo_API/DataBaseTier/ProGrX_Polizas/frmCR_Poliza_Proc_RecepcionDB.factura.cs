@@ -15,7 +15,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
         /// <summary>
         /// Elimina los registros seleccionados del detalle, registra bitácora por cada uno y recalcula el resumen del corte.
-        /// El Result contiene el mensaje de advertencia de spPoliza_Aseguradora_Corte_Actualiza cuando Pass = 0 (vacío si todo OK).
+        /// El Result contiene el mensaje de advertencia de spPoliza_Aseguradora_Corte_Actualiza cuando Pass = 0 (vacío si no hay advertencia).
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="usuario"></param>
