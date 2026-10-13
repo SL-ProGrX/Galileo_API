@@ -12,6 +12,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
 
         public FrmCoIncobrablesListGeneralBL(IConfiguration config) => _db = new FrmCoIncobrablesListGeneralDb(config);
 
+        public ErrorDto<DateTime> CoIncobrablesFechaServidor_Obtener(int CodEmpresa)
+        {
+            return _db.CoIncobrablesFechaServidor_Obtener(CodEmpresa);
+        }
+
         public ErrorDto<List<CbrIncobrableMovimientos>> CoIncobrablesListMovimiento_Obtener(int CodEmpresa, string pOperacion, string pCxC_Operacion)
         {
             return _db.CoIncobrablesListMovimiento_Obtener(CodEmpresa, pOperacion, pCxC_Operacion);

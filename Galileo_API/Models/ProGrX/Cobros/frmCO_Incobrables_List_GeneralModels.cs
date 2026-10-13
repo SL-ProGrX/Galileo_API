@@ -18,6 +18,7 @@
 
     public class CbrIncobrableGeneral
     {
+        [System.Text.Json.Serialization.JsonPropertyName("cod_INCOBRABLE")]
         public int COD_INCOBRABLE { get; set; }
         public string Cedula { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
@@ -35,8 +36,8 @@
         public decimal Mov_Monto { get; set; }
         public string Mov_Tipo_Desc { get; set; } = string.Empty;
         public DateTime? Corte { get; set; }
-        public int Corte_Saldo { get; set; }
-        public int Corte_Recaudo { get; set; }
+        public decimal Corte_Saldo { get; set; }
+        public decimal Corte_Recaudo { get; set; }
         public DateTime? Registro_fecha { get; set; } 
         public string Registro_Usuario { get; set; } = string.Empty;
         public DateTime? Modifica_fecha { get; set; }
