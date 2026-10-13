@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="Galileo_API.Tests/Galileo_API.Tests.csproj" />
   <Project Path="Galileo_API/Galileo_API.csproj" />
 </Solution>
