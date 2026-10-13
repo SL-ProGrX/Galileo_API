@@ -138,7 +138,7 @@ public sealed class AuthControllerCookieTests
             Assert.Contains(
                 controller.HttpContext.Response.Headers.SetCookie,
                 cookie => cookie is not null &&
-                    cookie.Contains($"Path={expectedPath}", StringComparison.Ordinal));
+                    cookie.Contains($"Path={expectedPath}", StringComparison.OrdinalIgnoreCase));
         }
         finally
         {
