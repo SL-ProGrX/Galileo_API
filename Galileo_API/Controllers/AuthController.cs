@@ -20,7 +20,9 @@ public sealed class AuthController : ControllerBase
     private readonly AuthBL _auth;
     private readonly int _refreshTokenDays;
 
-    public AuthController(AuthBL auth, IConfiguration configuration)
+    public AuthController(
+        AuthBL auth,
+        IConfiguration configuration)
     {
         _auth = auth;
         _refreshTokenDays = Math.Clamp(configuration.GetValue<int?>("Jwt:RefreshTokenDays") ?? 7, 1, 30);
@@ -137,6 +139,7 @@ public sealed class AuthController : ControllerBase
         var response = _auth.VerifyMfa(request);
         if (response.Status == "authenticated")
         {
+            RevokePreviousBrowserSession(AuthApplications.SSecurity);
             SetRefreshCookie(AuthApplications.SSecurity, response.RefreshToken);
             return Ok(response);
         }
@@ -216,7 +219,8 @@ public sealed class AuthController : ControllerBase
 
         if (!_auth.TryRefresh(refreshToken, application, out var response, out var replacementRefreshToken))
         {
-            Response.Cookies.Delete(cookieName, CookieOptions());
+            // Otra pestaña puede haber rotado la cookie mientras esta solicitud estaba en curso.
+            // Borrarla aquí eliminaría también la cookie nueva compartida por el navegador.
             return Unauthorized(new { status = "invalidRefreshToken" });
         }
 
@@ -225,11 +229,33 @@ public sealed class AuthController : ControllerBase
     }
 
     [Authorize]
+    [EnableRateLimiting("auth-activity")]
+    [HttpPost("Activity")]
+    public IActionResult Activity([FromQuery] string application)
+    {
+        if (!IsSupportedApplication(application)) return BadRequest(new { status = "invalidApplication" });
+
+        var sessionId = User.FindFirst("sid")?.Value;
+        if (string.IsNullOrWhiteSpace(sessionId) ||
+            !string.Equals(User.FindFirst("app")?.Value, application, StringComparison.OrdinalIgnoreCase))
+        {
+            return Forbid();
+        }
+
+        return _auth.RecordActivity(sessionId, application)
+            ? NoContent()
+            : Unauthorized(new { status = "sessionExpired" });
+    }
+
+    [AllowAnonymous]
     [HttpPost("Logout")]
     public IActionResult Logout([FromQuery] string application)
     {
         if (!IsSupportedApplication(application)) return BadRequest(new { status = "invalidApplication" });
 
+        // AutoValidateAntiforgeryToken valida globalmente las operaciones POST.
+        // El marcador X-Auth-Refresh es necesario para Refresh, pero duplicaría
+        // la validación CSRF y podía rechazar el logout aunque el token fuera válido.
         var cookieName = GetCookieName(application);
         if (Request.Cookies.TryGetValue(cookieName, out var refreshToken) && !string.IsNullOrWhiteSpace(refreshToken))
         {
@@ -245,6 +271,7 @@ public sealed class AuthController : ControllerBase
         var response = await _auth.LoginAsync(request, application);
         if (response.Status == "authenticated" && !string.IsNullOrWhiteSpace(response.AccessToken))
         {
+            RevokePreviousBrowserSession(application);
             SetRefreshCookie(application, response.RefreshToken);
             return Ok(response);
         }
@@ -267,6 +294,15 @@ public sealed class AuthController : ControllerBase
         Response.Cookies.Append(GetCookieName(application), refreshToken, CookieOptions());
     }
 
+    private void RevokePreviousBrowserSession(string application)
+    {
+        if (Request.Cookies.TryGetValue(GetCookieName(application), out var previousToken) &&
+            !string.IsNullOrWhiteSpace(previousToken))
+        {
+            _auth.RevokeRefreshToken(previousToken);
+        }
+    }
+
     private CookieOptions CookieOptions()
     {
         return new CookieOptions
@@ -275,7 +311,7 @@ public sealed class AuthController : ControllerBase
             Secure = true,
             SameSite = SameSiteMode.Lax,
             IsEssential = true,
-            Path = "/api/Auth",
+            Path = GetAuthCookiePath(),
             MaxAge = TimeSpan.FromDays(_refreshTokenDays),
         };
     }
@@ -288,9 +324,14 @@ public sealed class AuthController : ControllerBase
             Secure = true,
             SameSite = SameSiteMode.Lax,
             IsEssential = true,
-            Path = "/api/Auth",
+            Path = GetAuthCookiePath(),
             MaxAge = TimeSpan.FromDays(365),
         };
+    }
+
+    private string GetAuthCookiePath()
+    {
+        return Request.PathBase.Add(new PathString("/api/Auth")).Value ?? "/api/Auth";
     }
 
     private static string GetCookieName(string application)

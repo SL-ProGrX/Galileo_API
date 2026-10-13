@@ -1,0 +1,64 @@
+# Autenticación y sesiones: estado actual y evolución PR2
+
+Actualizado: 2026-10-12. Rama de trabajo: `codex/auth-sessions-pr2`. Este documento distingue el código existente del diseño pendiente y señala el ambiente al que corresponde cada evidencia.
+
+## QA local confirmada
+
+El usuario confirmó que la renovación automática funciona en Galileo y SSecurity con el API local. En la evidencia de Galileo, una llamada `Activity` devolvió 401 al vencer el JWT; luego `GET /api/Antiforgery/token` y `POST /api/Auth/Refresh?application=galileo` devolvieron 200, `Activity` respondió 204 y las consultas protegidas posteriores respondieron 200 sin cerrar la pantalla. El 401 inicial es el disparador esperado; el refresh 400 era el fallo.
+
+Para acelerar esta prueba se agregó el perfil local `https-test-refresh` con `Jwt__AccessTokenMinutes=1`; la configuración normal `https` conserva los 60 minutos de `appsettings.json`. El validador tiene un minuto de tolerancia, por lo que la prueba espera más de dos minutos antes de generar una nueva llamada protegida. Este perfil no cambia producción.
+
+El usuario también confirmó en desarrollo las pruebas anteriores de persistencia SQL, revocación/logout, actividad e inactividad, comportamiento de pestañas y aislamiento Galileo/SSecurity. En producción confirmó inserción de sesiones; la revocación aún no está verificada allí. Las nuevas pruebas automatizadas de integración Angular compilaron en ambos proyectos, pero Karma no pudo ejecutarse en este entorno porque el sandbox bloqueó el puerto local 9876; se deben ejecutar en un entorno de desarrollo normal.
+
+## Decisión funcional
+
+- Varias pestañas de **la misma aplicación y el mismo perfil de navegador** deben compartir una sola identidad y sesión. Si se ingresa con otra cuenta, las pestañas de esa aplicación pasan a la cuenta nueva o vuelven al login; no deben conservar la identidad anterior.
+- Otros perfiles de navegador y otros dispositivos pueden mantener sesiones simultáneas del mismo usuario. Galileo y SSecurity conservan sesiones separadas.
+- Se propone un límite de 30 minutos sin actividad real del usuario y uno absoluto de 8 horas. Estos valores requieren confirmación y configuración antes de activar la política. Las peticiones automáticas y el refresh no deben contar como actividad humana.
+- No se implementa TOTP en PR2. SSecurity conserva su verificación MFA actual.
+
+## Implementación verificada hoy
+
+`Galileo_API/Controllers/AuthController.cs` expone `POST /api/Auth/Galileo/Login`, `POST /api/Auth/SSecurity/Login`, `POST /api/Auth/SSecurity/Mfa/Verify`, `POST /api/Auth/Refresh?application=...` y `POST /api/Auth/Logout?application=...`. Cada aplicación usa una cookie de refresh distinta (`pgx_galileo_refresh` y `pgx_ssecurity_refresh`), `HttpOnly`, `Secure`, `SameSite=Lax`. Su ruta se construye con `Request.PathBase` más `/api/Auth`: en IIS raíz queda `/api/Auth`; bajo la aplicación `/Galileo_API` queda `/Galileo_API/api/Auth`. Esto es necesario para que el navegador envíe las cookies en producción. Refresh exige `X-Auth-Refresh: 1` y rota el token. El DTO oculta `RefreshToken` del JSON; el navegador lo recibe mediante cookie.
+
+Para pruebas locales con cookies equivalentes a producción, `CorsOrigins.Dev` permite los orígenes `https://localhost:4200` y `https://localhost:4301`; iniciar los Angular con `npm start`, que activa HTTPS usando el certificado de desarrollo generado automáticamente por Angular/Vite. El certificado no se versiona. Los orígenes HTTP siguen permitidos para desarrollo, pero el navegador puede omitir cookies `SameSite=Lax` cuando el frontend está en HTTP y el API en HTTPS.
+
+`Galileo_API/BusinessLogic/Auth/AuthBL.cs` emite el JWT tras autenticar; SSecurity puede exigir su challenge MFA antes de emitirlo. `Galileo_API/BusinessLogic/Auth/AccessTokenService.cs` usa `Jwt:AccessTokenMinutes`. El `Galileo_API/appsettings.json` versionado fija **60 minutos** de acceso y **7 días** de refresh; `JwtDto` tiene un valor predeterminado de 15 minutos, pero la configuración versionada prevalece. La configuración externa de producción puede ser distinta y debe comprobarse en el servidor sin revelar secretos. El historial muestra que `appsettings.json` pasó de 600 a 60 minutos en el commit `b96a7177`; ese commit no prueba por sí solo por qué se cambió ni que el refresh haya quedado validado en navegador.
+
+`Galileo_API/BusinessLogic/Auth/AuthSessionStore.cs` admite almacén en memoria o SQL. El modo memoria conserva sesiones y challenges en un solo proceso; reiniciarlo elimina ese estado y varias instancias no lo comparten. El proveedor SQL persiste hashes de refresh, revocaciones y vencimientos; Development selecciona SQL. La rotación es de un solo uso. `PerfilUsuario_Obtener` está protegido y no emite JWT.
+
+`POST /api/Auth/Logout?application=...` revoca por cookie de refresh y no exige un JWT de acceso vigente: se puede cerrar sesión aunque ese token haya vencido. La protección CSRF la aporta el filtro global, que exige `X-XSRF-TOKEN` obtenido desde `GET /api/Antiforgery/token`; logout ya no exige el marcador adicional `X-Auth-Refresh`, que queda reservado para `Refresh`. Si falla la validación anti-CSRF, el API devuelve 400 con un `detail` entendible y `traceId`; si pasa, devuelve 204 y borra la cookie. La validación global del origen CSRF también sigue aplicándose.
+
+En Firefox el botón de logout había recibido HTTP 400. Se eliminó del endpoint una condición redundante porque la validación global anti-CSRF ya protege la operación. La prueba manual posterior confirmó logout exitoso y revocación. El 12/10 se encontró otro caso: el refresh creado dentro del interceptor de autenticación omitía `X-XSRF-TOKEN` por el orden de interceptores. Se corrigió el orden en ambos Angular y se agregaron pruebas de regresión; la renovación ya fue confirmada manualmente en ambas aplicaciones.
+
+En desarrollo, `AuthSessions:IdleMinutes=30` y `AuthSessions:AbsoluteHours=8` activan límites del servidor para **sesiones SQL nuevas**. El SQL guarda ambos vencimientos al crear la sesión; la validación de `sid` y la rotación de refresh los comprueban. `POST /api/Auth/Activity?application=...` requiere JWT de esa aplicación y actualiza la última interacción y el límite inactivo; no mueve el límite absoluto. Peticiones de fondo o refresh no llaman a Activity. Filas anteriores con vencimientos nulos conservan esos valores hasta que se migren o se inicie una sesión nueva; no se ha ejecutado ningún backfill. Sin esos parámetros, el proveedor SQL mantiene las columnas nulas y el comportamiento anterior.
+
+Activity tiene un límite propio de 20 solicitudes/minuto por `sid`, separado del límite global del controlador Auth. El middleware autentica antes de aplicar ese límite para que el identificador de sesión esté disponible; los login anónimos siguen sujetos al límite Auth existente. Este límite controla abuso de la ruta, pero no sustituye las pruebas de carga ni la coordinación entre pestañas.
+
+### Primer corte implementado en esta rama (PR2A, fase 1)
+
+`database/2026-10-09-auth-sessions.sql` crea `dbo.PGX_AuthSessions` en la base de `DefaultConnString`. La tabla guarda solo el hash SHA-256 del refresh, metadatos mínimos, estado de revocación y columnas para los límites futuros. `Galileo_API/DataBaseTier/Auth/SqlAuthSessionRepository.cs` implementa creación, revocación, consulta de actividad y rotación mediante un único `UPDATE` condicionado, de modo que dos instancias no pueden consumir simultáneamente el mismo hash. La rotación SQL rechaza un hash anterior sin revocar la sesión nueva; este comportamiento difiere del almacén anterior y deberá evaluarse con el manejo entre pestañas.
+
+El API **continúa usando memoria por defecto** cuando no se configura otro proveedor. `Galileo_API/appsettings.Development.json` establece `AuthSessions:Store=Sql` para desarrollo; Production debe seleccionarlo en su configuración (`AuthSessions__Store=Sql` en IIS o `AuthSessions:Store=Sql` en `appsettings.Production.json`). No hay migración automática de sesiones en memoria; al activar SQL se requiere nuevo login. El usuario confirmó que Production ya inserta las nuevas sesiones en SQL. La URL productiva tiene el prefijo `/Galileo_API`, pero el código anterior fijaba las cookies a `/api/Auth`; por esa diferencia de ruta, el navegador no enviaba el refresh cookie al logout ni al siguiente login, lo cual explica que no se revocaran las filas. El path ahora incluye `Request.PathBase`. La revocación productiva queda pendiente de volver a probar después de publicar este cambio.
+
+El usuario confirmó después que las pruebas acordadas de actividad, vencimiento, login en otra pestaña, logout y aislamiento entre aplicaciones funcionaron en desarrollo. Como preparación de PR2B, el API revoca la sesión representada por la cookie anterior al completar un nuevo login de la misma aplicación (incluida la verificación MFA de SSecurity). Además, un refresh rechazado ya no envía una eliminación de cookie que podría borrar la renovación simultánea de otra pestaña. La serialización del refresh entre pestañas se implementa en los clientes Angular con Web Locks cuando está disponible. Sigue pendiente validar un refresh simultáneo real entre pestañas, el flujo MFA si una cuenta SSecurity lo exige y producción.
+
+## Cambios previstos y motivo
+
+### PR2A: persistencia y autoridad del API
+
+La tabla, el proveedor SQL y los límites del servidor están implementados. El usuario aplicó el SQL en desarrollo y confirmó persistencia tras reiniciar el API, logout/revocación y pruebas de Activity/inactividad. También confirmó que Production ya registra nuevas sesiones en SQL. Falta completar cobertura automatizada de integración, comprobar revocación en Production después del arreglo de ruta de cookie, y probar concurrencia/replay, límite absoluto, varias instancias y limpieza de sesiones. Nunca guardar el refresh ni el JWT en texto claro. Los challenges MFA permanecen en memoria y deben resolverse antes de operar con varias instancias.
+
+### PR2B y PR2C: consumidores y administración
+
+PR2B ya tiene cambios en ambos Angular: un marcador por aplicación en `localStorage` notifica nuevos login y logout a las otras pestañas, y Web Locks serializa refresh, login, verificación MFA y logout dentro del mismo origen cuando está disponible. El login final anuncia el cambio de cuenta antes de liberar el bloqueo y el interceptor comprueba que la respuesta de refresh siga perteneciendo al mismo marcador/usuario antes de guardar el JWT. Las pestañas antiguas vuelven al login al cambiar la identidad; no copian el estado completo de la cuenta nueva. Los listeners están conectados al servicio autenticado y al login; un rechazo definitivo del refresh ahora notifica a las demás pestañas. Falta validar todo esto con dos pestañas reales y revisar navegadores/contextos sin Web Locks. PR2C agregará consulta/revocación de sesiones y auditoría si se confirma su alcance. PR3 moverá el JWT de `sessionStorage` a memoria del cliente; PR4 tratará políticas adicionales, revisión CSRF y rotación de claves.
+
+## Despliegue y diagnóstico
+
+Orden: respaldo y script SQL revisado → API compatible con clientes actuales → Angular Galileo y SSecurity → habilitar vencimientos de servidor. Preparar una transición que solicite nuevo login a sesiones antiguas si cambia el almacén. No eliminar la tabla al revertir mientras haya sesiones que deban conservarse. Versionar script de reversión y probar en un ambiente previo.
+
+En IIS comprobar `APP_CONFIG_PATH`, `appsettings.Production.json` y que el proceso de la aplicación reciba `Jwt__Secret`, sin registrar su valor. Reciclar solo el application pool afectado. Un 500.30 exige revisar el log de arranque; un 401 tras reciclado puede provenir del almacén actual en memoria. Para distinguir errores de refresh, registrar identificador de correlación, aplicación, `sid` abreviado, motivo de rechazo y tiempos, nunca tokens ni claves.
+
+Validar con navegador y API: después de publicar el arreglo de cookie, confirmar logout y reemplazo de sesión en Production; además probar dos pestañas refrescando a la vez, perfiles/dispositivos separados, expiración absoluta, reinicio IIS, varias instancias y el MFA vigente de SSecurity. La renovación vencida en Galileo y SSecurity, la inactividad, logout/revocación, cambio de usuario en el perfil y el aislamiento entre aplicaciones ya fueron confirmados en desarrollo. En Production se confirmó la inserción de sesiones, pero no aún su revocación. El build o pruebas unitarias por sí solos no acreditan los escenarios pendientes.
+
+Pendiente por confirmar: revocación SQL en Production después de corregir el path de cookie; permiso `UPDATE` y límites efectivos en producción; refresh simultáneo entre pestañas y varias instancias; alcance de pantalla de sesiones; revocación por cambio de contraseña.

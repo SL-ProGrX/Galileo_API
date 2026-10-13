@@ -733,6 +733,11 @@ public sealed class AuthBL
         _sessionStore.Revoke(refreshToken);
     }
 
+    public bool RecordActivity(string sessionId, string application)
+    {
+        return _sessionStore.RecordActivity(sessionId, application);
+    }
+
     private AuthResponseDto CreateAuthenticatedResponse(AuthUserDto user, string application, string authenticationMethod = "pwd")
     {
         var refreshDays = Math.Clamp(_jwtSettings.RefreshTokenDays, 1, 30);

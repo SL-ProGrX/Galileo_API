@@ -64,11 +64,12 @@ public static class ApiHostServiceCollectionExtensions
         services.Configure<ArchivosGeneradosOptions>(
             configuration.GetSection("ArchivosGenerados"));
         services.AddMemoryCache();
-        services.AddSingleton<AuthSessionStore>();
+        services.AddSingleton(_ => new AuthSessionStore(configuration));
         services.AddSingleton<AccessTokenService>();
         services.AddScoped<AuthBL>();
         services.AddScoped<CsrfOriginValidationFilter>();
         services.AddScoped<EmpresaAccessFilter>();
+        services.AddScoped<AntiforgeryFailureDetailsFilter>();
         // PILOTO CSRF: [ValidateAntiForgeryToken] requiere los servicios de ViewFeatures.
         services.AddControllersWithViews(options =>
         {
@@ -76,6 +77,10 @@ public static class ApiHostServiceCollectionExtensions
             options.Filters.AddService<EmpresaAccessFilter>();
             // Valida el token anti-forgery en POST/PUT/PATCH/DELETE de todos los controladores.
             options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+            // Debe ejecutarse antes del ClientErrorResultFilter de ApiController (orden -2000),
+            // que de otro modo reemplaza el rechazo anti-CSRF por un ProblemDetails genérico.
+            options.Filters.AddService<AntiforgeryFailureDetailsFilter>(
+                AntiforgeryFailureDetailsFilter.FilterOrder);
         });
         // PILOTO CSRF: el token viaja en el header y la cookie asociada solo la lee el servidor.
         services.AddAntiforgery(options =>
@@ -94,6 +99,16 @@ public static class ApiHostServiceCollectionExtensions
                 limiterOptions.Window = TimeSpan.FromMinutes(1);
                 limiterOptions.QueueLimit = 0;
             });
+            options.AddPolicy("auth-activity", context =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    context.User.FindFirst("sid")?.Value ??
+                        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 20,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0,
+                    }));
         });
 
         return services;
