@@ -22,12 +22,14 @@ namespace Galileo_API.Controllers.ProGrX_Personas
             return _bl.AF_PerfilTransaccional_Obtener(codEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_PerfilTransaccional_Guardar")]
         public ErrorDto AF_PerfilTransaccional_Guardar(int codEmpresa, string usuario, PerfilTransaccionalData perfil)
         {
             return _bl.AF_PerfilTransaccional_Guardar(codEmpresa, usuario, perfil);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_PerfilTransaccional_Eliminar")]
         public ErrorDto AF_PerfilTransaccional_Eliminar(int codEmpresa, string usuario, int ptId)
         {

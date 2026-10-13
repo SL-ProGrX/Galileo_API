@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
             return _bl.CcCaRemesas_Catalogos_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcCaRemesas_Envio_Consulta")]
         public ErrorDto<List<CcCaRemesasEnvioConsultaData>> CcCaRemesas_Envio_Consulta(
             int CodEmpresa,
@@ -58,6 +59,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
             return _bl.CcCaRemesas_Envio_NumeroGeneracion_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcCaRemesas_Envio_Registrar")]
         public ErrorDto CcCaRemesas_Envio_Registrar(
             int CodEmpresa,
@@ -73,6 +75,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
             return _bl.CcCaRemesas_Envio_ArchivoBanco_Obtener(CodEmpresa, numeroGeneracion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcCaRemesas_Recibe_Autorizaciones_Cargar")]
         public ErrorDto CcCaRemesas_Recibe_Autorizaciones_Cargar(
             int CodEmpresa,
@@ -81,6 +84,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
             return _bl.CcCaRemesas_Recibe_Autorizaciones_Cargar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcCaRemesas_Recibe_Cierra")]
         public ErrorDto CcCaRemesas_Recibe_Cierra(
             int CodEmpresa,
@@ -90,6 +94,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
             return _bl.CcCaRemesas_Recibe_Cierra(CodEmpresa, numeroGeneracion, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcCaRemesas_Recibe_Aplica")]
         public ErrorDto<CcCaRemesasRecibeAplicaResponse> CcCaRemesas_Recibe_Aplica(
                 int CodEmpresa,
@@ -101,6 +106,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         /// <summary>
         /// Crea el comprobante y asiento contable de la aplicación de una remesa.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("CcCaRemesas_Recibe_Asiento")]
         public ErrorDto<bool> CcCaRemesas_Recibe_Asiento(
             int CodEmpresa,
@@ -112,6 +118,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         /// <summary>
         /// Genera y retorna el recibo en PDF de un documento de la remesa.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("CcCaRemesas_Recibe_ImprimeRecibo")]
         public ErrorDto<object> CcCaRemesas_Recibe_ImprimeRecibo(
             int CodEmpresa,
@@ -123,6 +130,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         /// <summary>
         /// Consulta el historial de remesas con filtros múltiples.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("CcCaRemesas_Consultas_Consultar")]
         public ErrorDto<CcCaRemesasConsultasResponse> CcCaRemesas_Consultas_Consultar(
             int CodEmpresa,

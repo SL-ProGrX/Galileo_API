@@ -18,6 +18,7 @@ namespace Galileo.Controllers
             _bl = new FrmCprOrdenesAutorizacionBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("OrdenCompra_Autorizacion_Obtener")]
         public ErrorDto<OrdenCompraDto> OrdenCompra_Autorizacion_Obtener(
             int CodEmpresa,
@@ -28,12 +29,14 @@ namespace Galileo.Controllers
                 ordenCompraRequestDto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("OrdenCompra_Autorizar")]
         public ErrorDto OrdenCompra_Autorizar(int CodEmpresa, OrdenCompraResolucionRequestDto ordenCompraResolucionRequestDto)
         {
             return _bl.OrdenCompra_Autorizar(CodEmpresa, ordenCompraResolucionRequestDto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("OrdenCompra_Rechazar")]
         public ErrorDto OrdenCompra_Rechazar(int CodEmpresa, OrdenCompraResolucionRequestDto ordenCompraRequestDto)
         {

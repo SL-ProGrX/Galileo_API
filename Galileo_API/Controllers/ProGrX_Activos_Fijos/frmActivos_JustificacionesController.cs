@@ -47,6 +47,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_Justificacion_Scroll(CodEmpresa, scroll, cod_justificacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Justificaciones_Guardar")]
         [Authorize]
         public ErrorDto Activos_Justificaciones_Guardar(int CodEmpresa, ActivosJustificacionesData justificacionesData)
@@ -54,6 +55,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_Justificaciones_Guardar(CodEmpresa, justificacionesData);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Activos_Justificaciones_Eliminar")]
         [Authorize]
         public ErrorDto Activos_Justificaciones_Eliminar(int CodEmpresa, string usuario, string cod_justificacion)

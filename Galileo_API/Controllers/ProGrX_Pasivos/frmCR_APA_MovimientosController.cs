@@ -59,6 +59,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
             return _bl.CR_APA_Movimientos_Operacion_Navegar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_APA_Movimientos_Aplicar")]
         public ErrorDto<FrmCrApaMovimientosAplicarResultadoDto> CR_APA_Movimientos_Aplicar(
             int codEmpresa,

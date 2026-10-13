@@ -37,6 +37,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _BL.CrdPolizasCargaLote_Banco_Obtener(CodEmpresa, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrdPolizasCargaLote_Cuenta_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> CrdPolizasCargaLote_Cuenta_Obtener(
           int CodEmpresa,
@@ -51,6 +52,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _BL.CrdPolizasCargaLote_Prideduc_Obtener(codEmpresa, usuario, codContabilidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrdPolizasCargaLote_Cargar")]
         public ErrorDto<CrdPolizasCargaLoteCargaResponse> CrdPolizasCargaLote_Cargar(
               int codEmpresa,
@@ -66,6 +68,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _BL.CrdPolizasCargaLote_Obtener(CodEmpresa, cedula);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrdPolizasCargaLote_Procesar")]
         public ErrorDto<long> CrdPolizasCargaLote_Procesar(
              int codEmpresa,

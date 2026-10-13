@@ -25,6 +25,7 @@ namespace Galileo_API.Controllers.ProGrX.Conciliacion
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("ASE_VerificaAsientosDocumento_Lista_Obtener")]
         public ErrorDto<AseVerificaAsientosDocumentoListaResult> ASE_VerificaAsientosDocumento_Lista_Obtener(int CodEmpresa, [FromBody] AseVerificaAsientosDocumentoListaRequest? request)
         {
@@ -32,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX.Conciliacion
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("ASE_VerificaAsientosDocumento_Lista_Export")]
         public ErrorDto<AseVerificaAsientosDocumentoListaResult> ASE_VerificaAsientosDocumento_Lista_Export(int CodEmpresa, [FromBody] AseVerificaAsientosDocumentoListaRequest? request)
         {

@@ -62,6 +62,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_APA_Reportes_AuxiliarCorte_Aplicar")]
         public ErrorDto CR_APA_Reportes_AuxiliarCorte_Aplicar(int codEmpresa, DateTime fechaCorte)
         {

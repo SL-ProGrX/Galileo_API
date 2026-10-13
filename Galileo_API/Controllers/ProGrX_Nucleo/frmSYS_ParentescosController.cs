@@ -31,6 +31,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sys_Parentescos_Guardar")]
         public ErrorDto Sys_Parentescos_Guardar(int CodEmpresa, string usuario, SysParentescosData parentesco)
         {
@@ -38,6 +39,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Sys_Parentescos_Eliminar")]
         public ErrorDto Sys_Parentescos_Eliminar(int CodEmpresa, string parentesco, string usuario)
         {

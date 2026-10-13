@@ -68,6 +68,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Excedentes_CasoEspecial_Add")]
         public ErrorDto<OperacionCasoEspecialResult?> Excedentes_CasoEspecial_Add([FromQuery] int codEmpresa, [FromBody] ExcedentesCasoEspecialAddParams param)
         {
@@ -75,6 +76,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Excedentes_CasoEspecial_Delete")]
         public ErrorDto<OperacionCasoEspecialResult?> Excedentes_CasoEspecial_Delete([FromQuery] int codEmpresa, [FromBody] CasoEspecialBaseParams param)
         {
@@ -82,6 +84,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Excedentes_Mass_CE_Sube")]
         public ErrorDto Excedentes_Mass_CE_Sube([FromQuery] int codEmpresa, [FromBody] ExcedentesMassCESubeParams param)
         {
@@ -89,6 +92,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Excedentes_Mass_CE_Valida")]
         public ErrorDto<ExcedentesMassValidaResult?> Excedentes_Mass_CE_Valida([FromQuery] int codEmpresa, [FromQuery] int periodoId)
         {
@@ -103,6 +107,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Excedentes_Mass_CE_Procesa")]
         public ErrorDto Excedentes_Mass_CE_Procesa([FromQuery] int codEmpresa, [FromQuery] int periodoId)
         {
@@ -110,6 +115,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Excedentes_Mass_CS_Sube")]
         public ErrorDto Excedentes_Mass_CS_Sube([FromQuery] int codEmpresa, [FromBody] ExcedentesMassCSSubeParams param)
         {
@@ -117,6 +123,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Excedentes_Mass_CS_Valida")]
         public ErrorDto<ExcedentesMassValidaResult?> Excedentes_Mass_CS_Valida([FromQuery] int codEmpresa, [FromQuery] int periodoId)
         {
@@ -131,6 +138,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Excedentes_Mass_CS_Procesa")]
         public ErrorDto Excedentes_Mass_CS_Procesa([FromQuery] int codEmpresa, [FromQuery] int periodoId)
         {
@@ -138,6 +146,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Excedentes_CasosEspeciales_Aplicados")]
         public ErrorDto<List<ExcedentesCasosEspecialesAplicadosResult>> Excedentes_CasosEspeciales_Aplicados([FromQuery] int codEmpresa, [FromBody] ExcedentesCasosEspecialesAplicadosParams param)
         {
@@ -145,6 +154,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Excedentes_CambioSalida_Lista")]
         public ErrorDto<List<ExcedentesCambioSalidaListaResult>> Excedentes_CambioSalida_Lista([FromQuery] int codEmpresa, [FromBody] ExcedentesCambioSalidaListaParams param)
         {
@@ -152,6 +162,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Excedentes_Cambio_Salida_Add")]
         public ErrorDto<OperacionCasoEspecialResult?> Excedentes_Cambio_Salida_Add([FromQuery] int codEmpresa, [FromBody] ExcedentesCambioSalidaAddParams param)
         {
@@ -159,6 +170,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Excedentes_Cambio_Salida_Delete")]
         public ErrorDto<OperacionCasoEspecialResult?> Excedentes_Cambio_Salida_Delete([FromQuery] int codEmpresa, [FromBody] ExcedentesCambioSalidaDeleteParams param)
         {
@@ -166,6 +178,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Excedentes_Cambio_Salida_Autoriza")]
         public ErrorDto<OperacionCasoEspecialResult?> Excedentes_Cambio_Salida_Autoriza([FromQuery] int codEmpresa, [FromBody] CasoEspecialBaseParams param)
         {

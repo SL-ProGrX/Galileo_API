@@ -35,6 +35,7 @@ namespace Galileo.Controllers
             return _bl.InvTranReversion_scroll(CodEmpresa, scrollValue, CodBoleta, TipoTran);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvTranReversion_Insertar")]
         public ErrorDto InvTranReversion_Insertar(int CodEmpresa, TranReversionInsert request)
         {

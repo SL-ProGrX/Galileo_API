@@ -31,12 +31,14 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.VivControlAsignacionGarantia_Asignacion_ObtenerProfesionales(codEmpresa, idZona, tipoProfesional, idGarantia);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("VivControlAsignacionGarantia_Asignacion_Aplicar")]
         public ErrorDto VivControlAsignacionGarantia_Asignacion_Aplicar(int codEmpresa, string usuario, VivControlAsignacionGarantiaAsignarRequest request)
         {
             return _bl.VivControlAsignacionGarantia_Asignacion_Aplicar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("VivControlAsignacionGarantia_Asignacion_Borrar")]
         public ErrorDto VivControlAsignacionGarantia_Asignacion_Borrar(int codEmpresa, long idGarantia, int idContacto, string usuario)
         {
@@ -56,6 +58,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.VivControlAsignacionGarantia_Entrega_ObtenerGarantias(codEmpresa, idContacto, tipoProfesional);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("VivControlAsignacionGarantia_Entrega_Aplicar")]
         public ErrorDto VivControlAsignacionGarantia_Entrega_Aplicar(int codEmpresa, string usuario, VivControlEntregaGarantiaRequest request)
         {
@@ -74,6 +77,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.VivControlAsignacionGarantia_Recepcion_ObtenerGarantias(codEmpresa, idContacto, tipoProfesional);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("VivControlAsignacionGarantia_Recepcion_Aplicar")]
         public ErrorDto VivControlAsignacionGarantia_Recepcion_Aplicar(int codEmpresa, string usuario, VivControlRecibeGarantiaRequest request)
         {
@@ -86,6 +90,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.VivControlAsignacionGarantia_Registro_ObtenerGarantias(codEmpresa, idContacto, tipoProfesional);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("VivControlAsignacionGarantia_Registro_Aplicar")]
         public ErrorDto VivControlAsignacionGarantia_Registro_Aplicar(int codEmpresa, string usuario, VivControlRegistroGarantiaRequest request)
         {

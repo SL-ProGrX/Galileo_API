@@ -43,6 +43,7 @@ namespace Galileo_API.Controllers.ProGrX.Procesos
             return _bl.RemesasTipos_Obtener(CodEmpresa, filtros, entidad);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("RemesasTipos_Guardar")]
         public ErrorDto RemesasTipos_Guardar(
             int CodEmpresa,
@@ -52,6 +53,7 @@ namespace Galileo_API.Controllers.ProGrX.Procesos
             return _bl.RemesasTipos_Guardar(CodEmpresa, usuario, item);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("RemesasTipos_Eliminar")]
         public ErrorDto RemesasTipos_Eliminar(
             int CodEmpresa,

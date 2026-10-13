@@ -24,16 +24,19 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             => _bl.IncendioCausas_Lista(codEmpresa);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("IncendioCausas_Insertar")]
         public ErrorDto<bool> IncendioCausas_Insertar(int codEmpresa, [FromBody] IncendioCausaSaveParams param)
             => _bl.IncendioCausas_Insertar(codEmpresa, param);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("IncendioCausas_Actualizar")]
         public ErrorDto<bool> IncendioCausas_Actualizar(int codEmpresa, [FromBody] IncendioCausaUpdateParams param)
             => _bl.IncendioCausas_Actualizar(codEmpresa, param);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("IncendioCausas_Eliminar")]
         public ErrorDto<bool> IncendioCausas_Eliminar(int codEmpresa, [FromBody] IncendioCausaDeleteParams param)
             => _bl.IncendioCausas_Eliminar(codEmpresa, param);

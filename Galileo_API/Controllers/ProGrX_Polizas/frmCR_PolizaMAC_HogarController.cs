@@ -33,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
 
         #region Envio
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_PolizaMacHogar_Envio_Consulta")]
         public ErrorDto<List<CrPolizaMacHogarEnvioRow>> Cr_PolizaMacHogar_Envio_Consulta(
            int codEmpresa,
@@ -45,6 +46,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         #endregion
 
         #region Recepcion
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_PolizaMacHogar_Recepcion_Validar")]
         public ErrorDto<List<CrPolizaMacHogarRecepcionRowDto>> Cr_PolizaMacHogar_Recepcion_Validar(
             int codEmpresa,
@@ -54,6 +56,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Cr_PolizaMacHogar_Recepcion_Validar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_PolizaMacHogar_Recepcion_Procesar")]
         public static ErrorDto Cr_PolizaMacHogar_Recepcion_Procesar(
             int codEmpresa,
@@ -65,6 +68,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         #endregion
 
         #region Consulta
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_PolizaMacHogar_Consulta_Obtener")]
         public ErrorDto<List<CrPolizaMacHogarEnvioRow>> Cr_PolizaMacHogar_Consulta_Obtener(
             int codEmpresa,

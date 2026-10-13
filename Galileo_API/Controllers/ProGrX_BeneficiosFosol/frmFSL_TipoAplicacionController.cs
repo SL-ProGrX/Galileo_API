@@ -68,6 +68,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "FSL_TipoAplicacion_Plan_Registrar")]
         public ErrorDto
@@ -82,6 +83,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut(
             "FSL_TipoAplicacion_Plan_Actualizar")]
         public ErrorDto
@@ -96,6 +98,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete(
             "FSL_TipoAplicacion_Plan_Eliminar")]
         public ErrorDto
@@ -111,6 +114,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "FSL_TipoAplicacion_Causa_Registrar")]
         public ErrorDto
@@ -125,6 +129,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut(
             "FSL_TipoAplicacion_Causa_Actualizar")]
         public ErrorDto
@@ -139,6 +144,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete(
             "FSL_TipoAplicacion_Causa_Eliminar")]
         public ErrorDto

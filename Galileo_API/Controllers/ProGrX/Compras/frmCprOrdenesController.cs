@@ -36,12 +36,14 @@ namespace Galileo.Controllers
             return _bl.Orden_scroll(CodEmpresa, scrollValue, cod_Orden);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Orden_Insertar")]
         public ErrorDto Orden_Insertar(int CodEmpresa, object Orden)
         {
             return _bl.Orden_Insertar(CodEmpresa, Orden);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Orden_Actualiza")]
         public ErrorDto Orden_Actualiza(int CodEmpresa, OrdenDatosAcciones Orden)
         {
@@ -54,12 +56,14 @@ namespace Galileo.Controllers
             return _bl.OrdenesUENs_Obtener(CodEmpresa, CodOrden, CodProducto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("OrdenesUENs_Guardar")]
         public ErrorDto OrdenesUENs_Guardar(int CodEmpresa, List<OrdenesUensData> lista)
         {
             return _bl.OrdenesUENs_Guardar(CodEmpresa, lista);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("OrdenesUENs_Eliminar")]
         public ErrorDto OrdenesUENs_Eliminar(int CodEmpresa, string cod_orden, string cod_producto, string cod_unidad)
         {
@@ -78,6 +82,7 @@ namespace Galileo.Controllers
             return _bl.formapago_Obtener(CodEmpresa, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CorreoNotificaOrdenCompra")]
         public ErrorDto CorreoNotificaOrdenCompra(int CodEmpresa, string cod_orden , string proveedor, string cod_proveedor)
         {

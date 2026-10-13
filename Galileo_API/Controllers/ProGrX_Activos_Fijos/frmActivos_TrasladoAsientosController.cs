@@ -25,6 +25,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_TrasladoAsientos_Trasladar")]
         [Authorize]
         public ErrorDto<bool> Activos_TrasladoAsientos_Trasladar(int CodEmpresa, List<ActivosTrasladoAsientoRequest> request)

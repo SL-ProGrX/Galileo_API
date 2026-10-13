@@ -61,6 +61,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
           => _bl.CRPolizasRegistroBeneficiarios_Detalle_Obtener(codEmpresa, IdSolicitud, NumPoliza, IdBeneficiario);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CRPolizasRegistroBeneficiarios_Guardar")]
         public ErrorDto<CRPolizasRegistroBeneficiariosGuardarResponse> CRPolizasRegistroBeneficiarios_Guardar(
             int codEmpresa,
@@ -69,6 +70,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
          => _bl.CRPolizasRegistroBeneficiarios_Guardar(codEmpresa, usuario, request);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CRPolizasRegistroBeneficiarios_Eliminar")]
         public ErrorDto CRPolizasRegistroBeneficiarios_Eliminar(
              int codEmpresa,

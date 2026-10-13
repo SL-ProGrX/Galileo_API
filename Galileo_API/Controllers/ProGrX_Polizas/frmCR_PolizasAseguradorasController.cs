@@ -26,18 +26,21 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return BL_CR_PolizasAseguradoras.Consultar(codEmpresa,codigo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Insertar")]
         public ErrorDto<int> Insertar(int codEmpresa, PolizaAseguradoraDto modelo)
         {
             return BL_CR_PolizasAseguradoras.Insertar(codEmpresa, modelo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Actualizar")]
         public ErrorDto<int> Actualizar(int codEmpresa,PolizaAseguradoraDto modelo)
         {
             return BL_CR_PolizasAseguradoras.Actualizar(codEmpresa, modelo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Borrar")]
         public ErrorDto<int> Borrar(int codEmpresa,string codigo)
         {

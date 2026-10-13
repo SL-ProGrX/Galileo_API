@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Poliza_PSD_Genera")]
         public ErrorDto<bool> Poliza_PSD_Genera(int codEmpresa,DateTime fechaCorte,string usuario)
         {

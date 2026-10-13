@@ -56,6 +56,7 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_frmFNDRecepcionDevoluciones_Aplicar")]
         public ErrorDto<FndRecepcionDevolucionesAplicarData>
             FND_frmFNDRecepcionDevoluciones_Aplicar(

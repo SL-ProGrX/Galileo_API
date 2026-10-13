@@ -25,6 +25,7 @@ namespace Galileo_API.Controllers.ProGrX_Conciliacion
             return _bl.ConCierreParcialesCreditos_UltimoCorte_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ConCierreParcialesCreditos_CierreParcial_Ejecutar")]
         public ErrorDto ConCierreParcialesCreditos_CierreParcial_Ejecutar(
             int codEmpresa,
@@ -35,6 +36,7 @@ namespace Galileo_API.Controllers.ProGrX_Conciliacion
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ConCierreParcialesCreditos_ProyeccionCartera_Ejecutar")]
         public ErrorDto<List<Dictionary<string, object?>>>
             ConCierreParcialesCreditos_ProyeccionCartera_Ejecutar(
@@ -46,6 +48,7 @@ namespace Galileo_API.Controllers.ProGrX_Conciliacion
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ConCierreParcialesCreditos_ProductoAcumulado_Ejecutar")]
         public ErrorDto ConCierreParcialesCreditos_ProductoAcumulado_Ejecutar(
             int codEmpresa,

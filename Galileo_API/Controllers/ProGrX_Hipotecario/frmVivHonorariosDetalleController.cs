@@ -31,6 +31,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.VivHonorariosDetalle_ObtenerLineas(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("VivHonorariosDetalle_Guardar")]
         public ErrorDto VivHonorariosDetalle_Guardar(
             int codEmpresa, string usuario, VivHonorariosDetalleGuardarRequest request)

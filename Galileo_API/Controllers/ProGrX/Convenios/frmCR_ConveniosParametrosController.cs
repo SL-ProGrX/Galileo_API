@@ -24,6 +24,7 @@ namespace Galileo_API.Controllers.ProGrX.Convenios
             [FromQuery] int codContabilidad)
             => _bl.CrConveniosParametros_Obtener(codEmpresa, codContabilidad);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CrConveniosParametros_Actualizar")]
         public ErrorDto<CrConvenioParametroData> CrConveniosParametros_Actualizar(
             [FromQuery] int codEmpresa,

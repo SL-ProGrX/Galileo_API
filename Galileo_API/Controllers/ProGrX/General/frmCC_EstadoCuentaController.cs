@@ -69,6 +69,7 @@ namespace Galileo.Controllers
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "CC_FrmCCEstadoCuenta_Email_Enviar")]
         public ErrorDto
@@ -82,6 +83,7 @@ namespace Galileo.Controllers
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "CC_FrmCCEstadoCuenta_EmailMasivo_Enviar")]
         public ErrorDto
@@ -95,6 +97,7 @@ namespace Galileo.Controllers
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_FrmCCEstadoCuenta_Reporte_Bitacora_Registrar")]
         public ErrorDto CC_FrmCCEstadoCuenta_Reporte_Bitacora_Registrar(
             int codEmpresa,

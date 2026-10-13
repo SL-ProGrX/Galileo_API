@@ -17,12 +17,14 @@ namespace Galileo.Controllers
             _bl = new FrmCprSolicitudCotizacionBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprSolicitudContizacionBs_Guardar")]
         public ErrorDto CprSolicitudContizacionBs_Guardar(int CodEmpresa, bool editaBs, CprSolicitusCotizacionGuardar datos)
         {
             return _bl.CprSolicitudContizacionBs_Guardar(CodEmpresa, datos);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CprSolicitudCotizacionBs_Eliminar")]
         public ErrorDto CprSolicitudCotizacionBs_Eliminar(int CodEmpresa, int id_cotizacion_linea)
         {
@@ -35,6 +37,7 @@ namespace Galileo.Controllers
             return _bl.CprSolicitudContizacionLista_Obtener(CodEmpresa, cpr_id, cod_proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CprSolicitudCotizacionLineaSel_Actualizar")]
         public ErrorDto CprSolicitudCotizacionLineaSel_Actualizar(int CodEmpresa, int id_cotizacion_linea, int seleccionado)
         {

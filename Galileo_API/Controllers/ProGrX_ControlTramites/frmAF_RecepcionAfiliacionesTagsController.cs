@@ -30,6 +30,7 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "AF_frmAF_RecepcionAfiliacionesTags_Pendientes_Antiguos_Eliminar")]
         public ErrorDto<AfRecepcionAfiliacionesTagsMantenimientoResponse>
@@ -84,6 +85,7 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_frmAF_RecepcionAfiliacionesTags_Movimiento_Aplicar")]
         public ErrorDto<AfRecepcionAfiliacionesTagsAplicarResponse>
             AF_frmAF_RecepcionAfiliacionesTags_Movimiento_Aplicar(

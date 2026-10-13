@@ -49,6 +49,7 @@ namespace Galileo_API.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Listar")]
         public ErrorDto<List<ActivoExploradorDto>> Listar(
             int codEmpresa, ActivosExploradorFiltrosDto filtros)

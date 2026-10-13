@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_AfiliacionTramite_Aprobar")]
         public ErrorDto AF_AfiliacionTramite_Aprobar(int CodEmpresa, List<AfAfiliacionTramiteDto> Lista, string Usuario)
         {

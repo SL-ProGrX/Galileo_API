@@ -29,12 +29,14 @@ namespace Galileo_API.Controllers.ProGrX_Personas
             return _bl.AF_MotivosIngreso_Valida(CodEmpresa, CodMotivo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_MotivosIngreso_Guardar")]
         public ErrorDto AF_MotivosIngreso_Guardar([FromQuery] int CodEmpresa, [FromQuery] string Usuario, [FromBody] MotivoIngresoData motivoIngreso)
         {
             return _bl.AF_MotivosIngreso_Guardar(CodEmpresa, Usuario, motivoIngreso);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_MotivosIngreso_Eliminar")]
         public ErrorDto AF_MotivosIngreso_Eliminar([FromQuery] int CodEmpresa, [FromQuery] string Usuario, [FromQuery] string CodMotivo)
         {

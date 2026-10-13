@@ -47,6 +47,7 @@ namespace Galileo.Controllers
                     CodUnidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "INV_UnidadesConv_Guardar")]
         public ErrorDto INV_UnidadesConv_Guardar(
@@ -59,6 +60,7 @@ namespace Galileo.Controllers
                 equivalencia);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete(
             "INV_UnidadesConv_Eliminar")]
         public ErrorDto INV_UnidadesConv_Eliminar(

@@ -39,48 +39,56 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _BL.TES_ConciliacionPeriodo_Consulta(CodEmpresa, usuario, id_banco, pAnio, mes);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPatch("TES_ConciliacionSaldo_Actualiza")]
         public ErrorDto TES_ConciliacionSaldo_Actualiza(int CodEmpresa, TesConciliaFiltros filtro)
         {
             return _BL.TES_ConciliacionSaldo_Actualiza(CodEmpresa, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_ConciliacionResumen_Guardar")]
         public ErrorDto TES_ConciliacionResumen_Guardar(int CodEmpresa, TesConciliaFiltros filtro)
         {
             return _BL.TES_ConciliacionResumen_Guardar(CodEmpresa, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_ConciliacionResumenArchivo_Cargar")]
         public ErrorDto TES_ConciliacionResumenArchivo_Cargar(int CodEmpresa, string filtro, List<TesConciliacioExcelDto> file)
         {
             return _BL.TES_ConciliacionResumenArchivo_Cargar(CodEmpresa, filtro, file);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_ConciliacionResumen_TesMov_Importar")]
         public ErrorDto TES_ConciliacionResumen_TesMov_Importar(int CodEmpresa, TesConciliaFiltros filtro)
         {
             return _BL.TES_ConciliacionResumen_TesMov_Importar(CodEmpresa, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_ConciliacionResumenPeriodo_Cerrar")]
         public ErrorDto TES_ConciliacionResumenPeriodo_Cerrar(int CodEmpresa, TesConciliaFiltros filtro)
         {
             return _BL.TES_ConciliacionResumenPeriodo_Cerrar(CodEmpresa, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_ConciliacionResumen_Concilia")]
         public ErrorDto TES_ConciliacionResumen_Concilia(int CodEmpresa, int tipo, TesConciliaFiltros filtro)
         {
             return _BL.TES_ConciliacionResumen_Concilia(CodEmpresa, tipo, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPatch("TES_Conciliacion_Actualizar")]
         public ErrorDto TES_Conciliacion_Actualizar(int CodEmpresa, TesConciliaFiltros filtro)
         {
             return _BL.TES_Conciliacion_Actualizar(CodEmpresa, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Conciliacion_Inicializa")]
         public ErrorDto TES_Conciliacion_Inicializa(int CodEmpresa, TesConciliaFiltros filtro)
         {
@@ -97,12 +105,14 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _BL.TES_ConciliacionResultados_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_ConciliacionResultados_Autoregistro")]
         public ErrorDto TES_ConciliacionResultados_Autoregistro(int CodEmpresa, string filtros, List<TesConciliaResultados> datos)
         {
             return _BL.TES_ConciliacionResultados_Autoregistro(CodEmpresa, filtros, datos);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_ConciliacionResultados_Pendiente")]
         public ErrorDto TES_ConciliacionResultados_Pendiente(int CodEmpresa, string filtros, List<TesConciliaResultados> datos)
         {
@@ -119,6 +129,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _BL.TES_ConciliacionAsigna_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Conciliacion_Aplicar")]
         public ErrorDto TES_Conciliacion_Aplicar(int CodEmpresa, string filtros, List<TesConciliaAsigna> datos)
         {
@@ -138,6 +149,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         }
 
         
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Conciliacion_Reversa")]
         public ErrorDto TES_Conciliacion_Reversa(int CodEmpresa, string filtros, List<TesConciliacionDetallesData> datos)
         {

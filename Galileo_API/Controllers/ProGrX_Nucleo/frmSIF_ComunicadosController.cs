@@ -18,6 +18,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Comunicados_Insertar")]
         public ErrorDto Comunicados_Insertar(int CodCliente, SifComunicadoDto comunicado)
         {
@@ -46,6 +47,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Comunicado_Actualizar")]
         public ErrorDto Comunicado_Actualizar(int CodEmpresa, SifComunicadoDto request)
         {

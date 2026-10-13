@@ -45,6 +45,7 @@ namespace Galileo.Controllers
                 tipo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("INV_TipoES_Registrar")]
         public ErrorDto INV_TipoES_Registrar(
             int CodEmpresa,
@@ -55,6 +56,7 @@ namespace Galileo.Controllers
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("INV_TipoES_Actualizar")]
         public ErrorDto INV_TipoES_Actualizar(
             int CodEmpresa,
@@ -65,6 +67,7 @@ namespace Galileo.Controllers
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("INV_TipoES_Eliminar")]
         public ErrorDto INV_TipoES_Eliminar(
             int CodEmpresa,

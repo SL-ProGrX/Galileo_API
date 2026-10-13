@@ -23,6 +23,7 @@ namespace Galileo.Controllers
             return BL_GG_PE_Planes.PePlanesLista_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PePlanes_Guardar")]
         public ErrorDto PePlanes_Guardar(int CodEmpresa, PePlanesDto plan)
         {

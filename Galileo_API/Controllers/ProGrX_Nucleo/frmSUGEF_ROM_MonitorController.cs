@@ -65,6 +65,7 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SUGEF_ROM_Monitor")]
         public ErrorDto<bool> SUGEF_ROM_Monitor(int codEmpresa, [FromBody] SugefRomMonitorParams param)
         {
@@ -72,6 +73,7 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SUGEF_ROM_Monitor_Forma_Pago_Actualiza")]
         public ErrorDto<bool> SUGEF_ROM_Monitor_Forma_Pago_Actualiza(
             int codEmpresa,

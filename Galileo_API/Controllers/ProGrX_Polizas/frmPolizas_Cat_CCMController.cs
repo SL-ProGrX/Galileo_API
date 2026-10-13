@@ -35,6 +35,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PolizasConceptosConfigAdd")]
         public ErrorDto<PolizasConceptosConfigAddResult?> PolizasConceptosConfigAdd(int codEmpresa, [FromBody] PolizasConceptosConfigAddParams param)
         {
@@ -42,6 +43,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PolizasConceptosConfigDel")]
         public ErrorDto<PolizasConceptosConfigAddResult?> PolizasConceptosConfigDel(int codEmpresa, [FromBody] PolizasConceptosConfigDelParams param)
         {

@@ -34,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
             return _bl.CR_APA_Acreedor_Obtener(codEmpresa, cod_acreedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_APA_Acreedor_Insertar")]
         public ErrorDto<int> CR_APA_Acreedor_Insertar(
     int codEmpresa,
@@ -42,6 +43,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
             return _bl.CR_APA_Acreedor_Insertar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CR_APA_Acreedor_Actualizar")]
         public ErrorDto<int> CR_APA_Acreedor_Actualizar(
             int codEmpresa,
@@ -73,6 +75,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
             return _bl.CR_APA_Contactos_Obtener(codEmpresa, cod_acreedor, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_APA_Contacto_Guardar")]
         public ErrorDto<int> CR_APA_Contacto_Guardar(
             int codEmpresa,
@@ -81,6 +84,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
             return _bl.CR_APA_Contacto_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CR_APA_Contacto_Eliminar")]
         public ErrorDto<int> CR_APA_Contacto_Eliminar(
             int codEmpresa,
@@ -99,6 +103,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
             return _bl.CR_APA_Autorizados_Obtener(codEmpresa, cod_acreedor, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_APA_Autorizado_Guardar")]
         public ErrorDto<int> CR_APA_Autorizado_Guardar(
             int codEmpresa,
@@ -107,6 +112,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
             return _bl.CR_APA_Autorizado_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CR_APA_Autorizado_Eliminar")]
         public ErrorDto<int> CR_APA_Autorizado_Eliminar(
             int codEmpresa,

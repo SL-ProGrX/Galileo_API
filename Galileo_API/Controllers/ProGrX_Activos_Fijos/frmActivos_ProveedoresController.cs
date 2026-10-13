@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Proveedores_Guardar")]
         public ErrorDto Activos_Proveedores_Guardar(int CodEmpresa, string usuario, [FromBody] ActivosProveedoresData proveedor)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Activos_Proveedores_Eliminar")]
         public ErrorDto Activos_Proveedores_Eliminar(int CodEmpresa, string usuario, string cod_proveedor)
         {
@@ -47,6 +49,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Proveedores_Importar")]
         public ErrorDto Activos_Proveedores_Importar(int CodEmpresa, string usuario)
         {

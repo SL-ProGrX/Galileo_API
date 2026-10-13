@@ -39,6 +39,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_Polizas_Obtener(CodEmpresa, cod_poliza);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Polizas_Guardar")]
         [Authorize]
         public ErrorDto Activos_Polizas_Guardar(int CodEmpresa, ActivosPolizasData poliza)
@@ -46,6 +47,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_Polizas_Guardar(CodEmpresa, poliza);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Activos_Polizas_Eliminar")]
         [Authorize]
         public ErrorDto Activos_Polizas_Eliminar(int CodEmpresa, string usuario, string cod_poliza)
@@ -77,6 +79,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         {
             return _bl.Activos_Polizas_Asignacion_Listar_Export(CodEmpresa,cod_poliza, tipo_activo, filtros);
         }
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Polizas_Asignar")]
         [Authorize]
         public ErrorDto Activos_Polizas_Asignar(int CodEmpresa, string usuario, string cod_poliza, List<string> placas)
@@ -84,6 +87,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_Polizas_Asignar(CodEmpresa, usuario, cod_poliza, placas);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Polizas_Desasignar")]
         [Authorize]
         public ErrorDto Activos_Polizas_Desasignar(int CodEmpresa, string usuario, string cod_poliza, List<string> placas)

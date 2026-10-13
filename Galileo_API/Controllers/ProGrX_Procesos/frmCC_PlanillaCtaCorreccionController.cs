@@ -40,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_PlanillaCtaCorreccion_Lista_Obtener")]
         public ErrorDto<CcPlanillaCtaCorreccionListaResult> CC_PlanillaCtaCorreccion_Lista_Obtener(int CodEmpresa, CcPlanillaCtaCorreccionListaRequest parametros)
         {
@@ -47,6 +48,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_PlanillaCtaCorreccion_Lista_Export")]
         public ErrorDto<CcPlanillaCtaCorreccionListaResult> CC_PlanillaCtaCorreccion_Lista_Export(int CodEmpresa, CcPlanillaCtaCorreccionListaRequest parametros)
         {
@@ -54,6 +56,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_PlanillaCtaCorreccion_Cuota_Actualizar")]
         public ErrorDto CC_PlanillaCtaCorreccion_Cuota_Actualizar(int CodEmpresa, CcPlanillaCtaCorreccionActualizarCuotaRequest parametros)
         {

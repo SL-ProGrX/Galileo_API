@@ -29,6 +29,7 @@ namespace Galileo.Controllers
             return _bl.CprSolicitudAdjudicaProductos_Consultar(CodEmpresa, cpr_id, proveedor, cotizacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprSolicitudAdjudicaProv_Upsert")]
         public ErrorDto CprSolicitudAdjudicaProv_Upsert(int CodEmpresa, string adjudica)
         {
@@ -47,12 +48,14 @@ namespace Galileo.Controllers
             return _bl.CprSolicitudNumContrato_Obtener(CodEmpresa, cpr_id);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprSolicitudRecomendacion_Guardar")]
         public ErrorDto CprSolicitudRecomendacion_Guardar(int CodEmpresa, int cpr_id, string recomendacion, string? cod_contrato, bool requiereContrato)
         {
             return _bl.CprSolicitudRecomendacion_Guardar(CodEmpresa, cpr_id, recomendacion, cod_contrato, requiereContrato);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprSolicitudAdjudicacion_Cerrar")]
         public ErrorDto CprSolicitudAdjudicacion_Cerrar(int CodEmpresa, int cpr_id, string usuario)
         {

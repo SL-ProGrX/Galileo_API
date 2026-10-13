@@ -24,6 +24,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.POL_Alertas_Parametros_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("POL_Alertas_Parametros_Guardar")]
         public ErrorDto POL_Alertas_Parametros_Guardar(int CodEmpresa, string Usuario, PolAlertasParametrosGuardarDto param)
         {
@@ -36,12 +37,14 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.POL_Alertas_Email_Listar(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("POL_Alertas_Email_Agregar")]
         public ErrorDto POL_Alertas_Email_Agregar(int CodEmpresa, string Usuario, PolAlertasEmailAgregarDto dto)
         {
             return _bl.POL_Alertas_Email_Agregar(CodEmpresa, Usuario, dto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("POL_Alertas_Email_Eliminar")]
         public ErrorDto POL_Alertas_Email_Eliminar(int CodEmpresa, string Usuario, int ids)
         {

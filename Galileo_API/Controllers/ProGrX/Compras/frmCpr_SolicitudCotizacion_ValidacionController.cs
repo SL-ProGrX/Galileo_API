@@ -23,12 +23,14 @@ namespace Galileo.Controllers
             return _bl.CprValidarCotizacionBs_Obtener(CodEmpresa, cpr_id, cod_unidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprValidarContizacionBs_Guardar")]
         public ErrorDto CprValidarContizacionBs_Guardar(int CodEmpresa, bool editaBs, CprSolicitusCotizacionGuardar datos)
         {
             return _bl.CprValidarContizacionBs_Guardar(CodEmpresa, datos);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CprValidacionCotizacionBs_Eliminar")]
         public ErrorDto CprValidacionCotizacionBs_Eliminar(
             int CodEmpresa,

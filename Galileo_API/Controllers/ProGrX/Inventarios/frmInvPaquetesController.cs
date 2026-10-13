@@ -71,6 +71,7 @@ namespace Galileo.Controllers
                     codPaquete);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "INV_Paquetes_Registrar")]
         public ErrorDto INV_Paquetes_Registrar(
@@ -82,6 +83,7 @@ namespace Galileo.Controllers
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut(
             "INV_Paquetes_Actualizar")]
         public ErrorDto INV_Paquetes_Actualizar(
@@ -93,6 +95,7 @@ namespace Galileo.Controllers
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "INV_Paquetes_Detalle_Registrar")]
         public ErrorDto
@@ -106,6 +109,7 @@ namespace Galileo.Controllers
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut(
             "INV_Paquetes_Detalle_Actualizar")]
         public ErrorDto
@@ -119,6 +123,7 @@ namespace Galileo.Controllers
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete(
             "INV_Paquetes_Detalle_Eliminar")]
         public ErrorDto

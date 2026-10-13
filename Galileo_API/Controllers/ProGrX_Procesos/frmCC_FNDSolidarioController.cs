@@ -23,6 +23,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
                 => _bl.FNDSolidario_Instituciones_Obtener(codEmpresa);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FrmCC_FNDSolidario_Ejecutar")]
         public ErrorDto FrmCC_FNDSolidario_Ejecutar(int codEmpresa, string usuario, int codContabilidad, int codInstitucion)
                      => _bl.FrmCC_FNDSolidario_Ejecutar(codEmpresa, usuario, codContabilidad, codInstitucion);

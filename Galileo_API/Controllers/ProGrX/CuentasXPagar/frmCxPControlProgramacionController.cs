@@ -17,6 +17,7 @@ namespace Galileo.Controllers
             _bl = new FrmCxPControlProgramacionBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PagosFactura_Obtener")]
         public ErrorDto<ProgramacionPagoLista> PagosFactura_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro, ConsultaPagosParam param)
         {
@@ -66,30 +67,35 @@ namespace Galileo.Controllers
             return _bl.TesoreriaDetalle_Obtener(CodEmpresa, Tesoreria);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("SaldosProveedor_Actualizar")]
         public ErrorDto SaldosProveedor_Actualizar(int CodEmpresa, decimal Saldo, decimal Tipo_Cambio, int Cod_Proveedor)
         {
             return _bl.SaldosProveedor_Actualizar(CodEmpresa, Saldo, Tipo_Cambio, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FacturaEstado_Actualizar")]
         public ErrorDto FacturaEstado_Actualizar(int CodEmpresa, string Cod_Factura, int Cod_Proveedor)
         {
             return _bl.FacturaEstado_Actualizar(CodEmpresa, Cod_Factura, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CompraEstado_Actualizar")]
         public ErrorDto CompraEstado_Actualizar(int CodEmpresa, string Cod_Factura, int Cod_Proveedor)
         {
             return _bl.CompraEstado_Actualizar(CodEmpresa, Cod_Factura, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Pago_Insertar")]
         public ErrorDto Pago_Insertar(int CodEmpresa, DetallePago data)
         {
             return _bl.Pago_Insertar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PagoProvCargo_Insertar")]
         public ErrorDto PagoProvCargo_Insertar(int CodEmpresa, PagoProvCargo data)
         {
@@ -102,12 +108,14 @@ namespace Galileo.Controllers
             return _bl.Disponible_Obtener(CodEmpresa, NPago, Cod_Factura, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PagoProv_Actualizar")]
         public ErrorDto PagoProv_Actualizar(int CodEmpresa, string Usuario, string Cod_Factura, int Cod_Proveedor)
         {
             return _bl.PagoProv_Actualizar(CodEmpresa, Usuario, Cod_Factura, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FechaVencimiento_Actualizar")]
         public ErrorDto FechaVencimiento_Actualizar(int CodEmpresa, DetallePago data)
         {

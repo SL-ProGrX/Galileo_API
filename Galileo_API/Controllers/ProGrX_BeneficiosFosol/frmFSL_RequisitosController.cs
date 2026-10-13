@@ -76,6 +76,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     codCausa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "FSL_Requisitos_Requisito_Registrar")]
         public ErrorDto
@@ -90,6 +91,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut(
             "FSL_Requisitos_Requisito_Actualizar")]
         public ErrorDto
@@ -104,6 +106,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete(
             "FSL_Requisitos_Requisito_Eliminar")]
         public ErrorDto
@@ -119,6 +122,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut(
             "FSL_Requisitos_Asignacion_Actualizar")]
         public ErrorDto

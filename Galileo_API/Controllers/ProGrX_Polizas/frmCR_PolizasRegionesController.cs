@@ -26,12 +26,14 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _dl.Crd_Polizas_Region_Obtener(CodEmpresa, cod_poliza);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_Polizas_Region_Guardar")]
         public ErrorDto Crd_Polizas_Region_Guardar(int CodEmpresa, string usuario, CrdPolizasRegionGuardarDto dto)
         {
             return _dl.Crd_Polizas_Region_Guardar(CodEmpresa, usuario, dto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Crd_Polizas_Region_Eliminar")]
         public ErrorDto Crd_Polizas_Region_Eliminar(int CodEmpresa, string cod_poliza, int cod_region)
         {
@@ -61,6 +63,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _dl.Crd_Polizas_Region_Cantones_Listar(CodEmpresa, cod_poliza, cod_region, provincia, modo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_Polizas_Region_Canton_Asignar")]
         public ErrorDto Crd_Polizas_Region_Canton_Asignar(int CodEmpresa, string usuario, CrdPolizasRegionAsignarCantonDto dto)
         {

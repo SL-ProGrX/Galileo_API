@@ -142,6 +142,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                 codPlan,
                 codCausa);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FSL_Expediente_Insertar")]
         public ErrorDto<FslExpedienteGuardarResultado>
             FSL_Expediente_Insertar(
@@ -151,6 +152,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                 CodEmpresa,
                 request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FSL_Expediente_Resolucion_Guardar")]
         public ErrorDto
             FSL_Expediente_Resolucion_Guardar(
@@ -160,6 +162,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                 CodEmpresa,
                 request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FSL_Expediente_Miembro_Validar")]
         public ErrorDto
             FSL_Expediente_Miembro_Validar(
@@ -169,6 +172,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                 CodEmpresa,
                 request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FSL_Expediente_Aplicar")]
         public ErrorDto<FslExpedienteAplicarResultado>
             FSL_Expediente_Aplicar(
@@ -178,6 +182,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                 CodEmpresa,
                 request);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("FSL_Expediente_Actualizar")]
         public ErrorDto
             FSL_Expediente_Actualizar(
@@ -187,6 +192,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                 CodEmpresa,
                 request);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("FSL_Expediente_Requisito_Actualizar")]
         public ErrorDto
             FSL_Expediente_Requisito_Actualizar(

@@ -102,6 +102,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sif_Empresa_Guardar")]
         public ErrorDto Sif_Empresa_Guardar(int CodEmpresa, [FromBody] FrmSifEmpresaModel dto, string usuario)
         {
@@ -116,6 +117,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sif_Empresa_Logo_Guardar")]
         [Consumes("multipart/form-data")]
         [RequestSizeLimit(1_200_000)]
@@ -132,6 +134,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sif_Empresa_Fondo_Guardar")]
         [Consumes("multipart/form-data")]
         [RequestSizeLimit(1_200_000)]
@@ -162,6 +165,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sif_Empresa_BloqueoFecha_Aplicar")]
         public ErrorDto Sif_Empresa_BloqueoFecha_Aplicar(int CodEmpresa, DateTime fecha, char accion, string usuario)
         {

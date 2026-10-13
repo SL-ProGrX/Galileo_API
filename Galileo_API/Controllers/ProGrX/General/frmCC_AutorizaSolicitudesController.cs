@@ -108,6 +108,7 @@ namespace Galileo.Controllers
                     FechaCorte);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CC_ModuloCredito_Autorizar")]
         public ErrorDto
             CC_ModuloCredito_Autorizar(
@@ -122,6 +123,7 @@ namespace Galileo.Controllers
                     Id_Solicitud);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CC_ModuloFondos_Autorizar")]
         public ErrorDto
             CC_ModuloFondos_Autorizar(
@@ -136,6 +138,7 @@ namespace Galileo.Controllers
                     Consec);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CC_ModuloLiquidacion_Autorizar")]
         public ErrorDto
             CC_ModuloLiquidacion_Autorizar(
@@ -150,6 +153,7 @@ namespace Galileo.Controllers
                     Consec);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CC_ModuloBeneficios_Autorizar")]
         public ErrorDto
             CC_ModuloBeneficios_Autorizar(
@@ -166,6 +170,7 @@ namespace Galileo.Controllers
                     Cod_Beneficio);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CC_ModuloHipotecario_Autorizar")]
         public ErrorDto
             CC_ModuloHipotecario_Autorizar(

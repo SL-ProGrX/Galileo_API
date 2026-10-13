@@ -25,6 +25,7 @@ namespace Galileo.Controllers
             return _bl.ProveedorOrden_Obtener(CodEmpresa, CodOrden);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cpr_Orden_Proceso")]
         public ErrorDto Cpr_Orden_Proceso(int CodEmpresa, OrdenProceso orden)
         {

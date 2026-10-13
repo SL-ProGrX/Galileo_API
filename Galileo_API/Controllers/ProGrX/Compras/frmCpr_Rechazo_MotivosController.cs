@@ -24,6 +24,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("cprRechazoMotivo_Guardar")]
         public ErrorDto CprRechazoMotivo_Guardar(int CodCliente, CprRechazosMotivosDto motivo)
         {
@@ -31,6 +32,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("cprRechazoMotivo_Eliminar")]
         public ErrorDto CprRechazoMotivo_Eliminar(int CodCliente, string cod_rechazo)
         {

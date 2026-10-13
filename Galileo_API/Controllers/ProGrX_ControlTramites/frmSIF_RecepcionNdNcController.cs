@@ -60,6 +60,7 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_RecepcionNdNc_Movimiento_Aplicar")]
         public ErrorDto<int>
             SIF_RecepcionNdNc_Movimiento_Aplicar(

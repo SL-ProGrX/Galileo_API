@@ -34,24 +34,28 @@ namespace Galileo.Controllers
             return _bl.CPR_frmCpr_Valoracion_Tipos_ValoracionItems_Obtener(CodEmpresa, val_id, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("EsquemaValoracion_Upsert")]
         public ErrorDto EsquemaValoracion_Upsert(int CodEmpresa, string usuario, CprValoraEsquemaDto request)
         {
             return _bl.EsquemaValoracion_Upsert(CodEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ValoracionItems_Upsert")]
         public ErrorDto ValoracionItems_Upsert(int CodEmpresa, string usuario, string val_id, CprValoraItemsDto request)
         {
             return _bl.ValoracionItems_Upsert(CodEmpresa, usuario, val_id, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("EsquemaValoracion_Delete")]
         public ErrorDto EsquemaValoracion_Delete(int CodEmpresa, string val_id)
         {
             return _bl.EsquemaValoracion_Delete(CodEmpresa, val_id);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("ValoracionItems_Delete")]
         public ErrorDto ValoracionItems_Delete(int CodEmpresa, string val_id, string val_item)
         {

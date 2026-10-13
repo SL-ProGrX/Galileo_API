@@ -24,10 +24,12 @@ namespace Galileo_API.Controllers.ProGrX_Comites
         public ActionResult<ErrorDto<List<AfCdComiteDirectorDto>>> AfCdDirectores_ValidarComite([FromQuery] int codEmpresa, [FromQuery] int codDirector)
             => _bl.AfCdDirectores_ValidarComite(codEmpresa, codDirector);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdDirectores_Guardar")]
         public ActionResult<ErrorDto<bool>> AfCdDirectores_Guardar([FromQuery] int codEmpresa, [FromBody] AfCdDirectorSaveDto dto)
             => _bl.AfCdDirectores_Guardar(codEmpresa, dto);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfCdDirectores_Eliminar")]
         public ActionResult<ErrorDto<bool>> AfCdDirectores_Eliminar(
             [FromQuery] int codEmpresa,

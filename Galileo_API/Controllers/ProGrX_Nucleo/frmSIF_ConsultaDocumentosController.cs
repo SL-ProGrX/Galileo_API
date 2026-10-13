@@ -25,6 +25,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SifConsultaDocumentos_Transaccion_Actualizar")]
         public ErrorDto SifConsultaDocumentos_Transaccion_Actualizar(int CodEmpresa, string usuario,string tipoDocumento, string codTransaccion, string actDocumento = "", string antDocumento = "")
         {
@@ -32,6 +33,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SifConsultaDocumentos_ReciboDigitar_Enviar")]
         public ErrorDto SifConsultaDocumentos_ReciboDigitar_Enviar(int CodEmpresa, string codigo, string tipoDocumento, string formato)
         {
@@ -74,6 +76,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SifConsultaDocumentos_Reversar_Actualizar")]
         public ErrorDto SifConsultaDocumentos_Reversar_Actualizar(int CodEmpresa, string usuario, string documento, string tipoDocumento)
         {

@@ -58,6 +58,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sif_DocsTraslado_Reactivar")]
         public ErrorDto<string> Sif_DocsTraslado_Reactivar(
             int CodEmpresa, DateTime fechaInicio, DateTime fechaFin)
@@ -66,6 +67,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sif_DocsTraslado_Aplica")]
         public ErrorDto<string> Sif_DocsTraslado_Aplica(
             int CodEmpresa, string jrequest)
@@ -74,6 +76,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sif_DocsTraslado_Aplica_Lote")]
         public ErrorDto<SifDocsTrasladoResultadoLote> Sif_DocsTraslado_Aplica_Lote(
             int CodEmpresa, string jrequest)

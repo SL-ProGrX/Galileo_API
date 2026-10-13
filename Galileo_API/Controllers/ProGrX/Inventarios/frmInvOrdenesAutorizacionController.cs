@@ -34,6 +34,7 @@ namespace Galileo.Controllers
                     filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "INV_OrdenesAutorizacion_Ordenes_Autorizar")]
         public ErrorDto
@@ -47,6 +48,7 @@ namespace Galileo.Controllers
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "INV_OrdenesAutorizacion_Ordenes_Rechazar")]
         public ErrorDto

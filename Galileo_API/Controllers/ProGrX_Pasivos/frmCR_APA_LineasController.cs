@@ -49,6 +49,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_APA_Lineas_Guardar")]
         public ErrorDto<FrmCrApaLineaGuardarResultadoDto> CR_APA_Lineas_Guardar(
             int codEmpresa, [FromBody] FrmCrApaLineaGuardarRequest request)

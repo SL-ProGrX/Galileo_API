@@ -31,6 +31,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
             return _bl.SIF_Formas_Pago_Obtener_SigAnt(CodEmpresa, codFormaPagoActual, orden);            
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_Formas_Pago_Guardar")]
         public ActionResult<ErrorDto> SIF_Formas_Pago_Guardar(int CodEmpresa, [FromBody] SifFormasPago formaPago)
         {
@@ -49,6 +50,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
             return _bl.CuentasBancarias_Obtener_Lista(codEmpresa, codFormaPago);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CuentasBancarias_Asignar")]
         public ErrorDto CuentasBancarias_Asignar(int codEmpresa, [FromBody] SifFormasPagoBancoAsgDto data)
         {

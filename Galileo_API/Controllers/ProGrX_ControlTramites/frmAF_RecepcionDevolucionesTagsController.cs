@@ -39,6 +39,7 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_frmAF_RecepcionDevolucionesTags_Aplicar")]
         public ErrorDto<AfRecepcionDevolucionesTagsAplicarData>
             AF_frmAF_RecepcionDevolucionesTags_Aplicar(

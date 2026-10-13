@@ -53,36 +53,42 @@ namespace Galileo.Controllers
             return _bl.PlantillaAsientos_Obtener(CodEmpresa, Cod_Plantilla);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Plantilla_Actualizar")]
         public ErrorDto Plantilla_Actualizar(int CodEmpresa, PlantillaDto data)
         {
             return _bl.Plantilla_Actualizar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Plantilla_Insertar")]
         public ErrorDto Plantilla_Insertar(int CodEmpresa, PlantillaDto data)
         {
             return _bl.Plantilla_Insertar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PlantillaAsiento_Insertar")]
         public ErrorDto PlantillaAsiento_Insertar(int CodEmpresa, PlantillaAsientoDto data)
         {
             return _bl.PlantillaAsiento_Insertar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PlantillaAsiento_Actualizar")]
         public ErrorDto PlantillaAsiento_Actualizar(int CodEmpresa, PlantillaAsientoDto data)
         {
             return _bl.PlantillaAsiento_Actualizar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PlantillaAsiento_Borrar")]
         public ErrorDto PlantillaAsiento_Borrar(int CodEmpresa, PlantillaAsientoDto data)
         {
             return _bl.PlantillaAsiento_Borrar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Plantilla_Borrar")]
         public ErrorDto Plantilla_Borrar(int CodEmpresa, string Cod_Plantilla)
         {

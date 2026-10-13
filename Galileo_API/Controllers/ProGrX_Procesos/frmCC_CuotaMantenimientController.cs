@@ -23,6 +23,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
                 => _bl.Crd_CuotaMantenimiento_Instituciones_Obtener(codEmpresa);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_CuotaMantenimiento_Ejecutar")]
         public ErrorDto Crd_CuotaMantenimiento_Ejecutar([FromBody] CcCuotaMantenimientoEjecutarRequest request)
                      => _bl.Crd_CuotaMantenimiento_Ejecutar(request);

@@ -36,6 +36,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "FSL_TablaCoberturas_Cobertura_Registrar")]
         public ErrorDto
@@ -50,6 +51,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut(
             "FSL_TablaCoberturas_Cobertura_Actualizar")]
         public ErrorDto
@@ -64,6 +66,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete(
             "FSL_TablaCoberturas_Cobertura_Eliminar")]
         public ErrorDto

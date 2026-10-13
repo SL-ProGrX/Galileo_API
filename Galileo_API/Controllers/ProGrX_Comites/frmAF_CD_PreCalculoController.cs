@@ -26,11 +26,13 @@ namespace Galileo_API.Controllers.ProGrX_Comites
                 => _bl.CrdPreCalculo_PantallaInicial_Obtener(codEmpresa);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CrdPreCalculo_Comite_Obtener")]
         public ErrorDto<CrdPreCalculoComiteResponse> CrdPreCalculo_Comite_Obtener(int codEmpresa, [FromBody] CrdPreCalculoComiteRequest request)
                   => _bl.CrdPreCalculo_Comite_Obtener(codEmpresa, request);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CrdPreCalculo_Grid_Obtener")]
         public ErrorDto<CrdPreCalculoGridResponse> CrdPreCalculo_Grid_Obtener(int codEmpresa, [FromBody] CrdPreCalculoGridRequest request)
                => _bl.CrdPreCalculo_Grid_Obtener(codEmpresa, request);

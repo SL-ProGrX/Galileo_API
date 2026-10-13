@@ -24,6 +24,7 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
             return _bl.VivTiemposSeguimiento_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("VivTiemposSeguimiento_Guardar")]
         public ErrorDto VivTiemposSeguimiento_Guardar(int codEmpresa, VivTiemposSeguimientoData request)
         {

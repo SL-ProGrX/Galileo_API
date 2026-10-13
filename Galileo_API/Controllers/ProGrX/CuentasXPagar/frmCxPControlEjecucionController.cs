@@ -17,6 +17,7 @@ namespace Galileo.Controllers
             _bl = new FrmCxPControlEjecucionBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("SincronizaTesoreriaCxPReportes")]
         public ErrorDto SincronizaTesoreriaCxPReportes(int CodEmpresa)
         {
@@ -54,6 +55,7 @@ namespace Galileo.Controllers
             return _bl.Usuarios_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FacturasPendientePago_Obtener")]
         public ErrorDto<List<FacturaPendientePago>> FacturasPendientePago_Obtener(int CodEmpresa, FactPenReq request)
         {
@@ -66,6 +68,7 @@ namespace Galileo.Controllers
             return _bl.DetalleProveedor_Obtener(CodEmpresa, Cod_Proveedor, Vence);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("RevisionPagos_Reactivar")]
         public ErrorDto RevisionPagos_Reactivar(int CodEmpresa, string user)
         {
@@ -120,6 +123,7 @@ namespace Galileo.Controllers
             return _bl.Proveedor_Obtener(CodEmpresa, Cod_Proveedor, CodContabilidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Detalle_Insertar")]
         public ErrorDto Detalle_Insertar(int CodEmpresa, TesTransAsiento data)
         {
@@ -132,6 +136,7 @@ namespace Galileo.Controllers
             return _bl.MontoAnticipos_Obtener(CodEmpresa, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Tesoreria_Insertar")]
         public ErrorDto Tesoreria_Insertar(int CodEmpresa, TesTransacciones data)
         {
@@ -144,18 +149,21 @@ namespace Galileo.Controllers
             return _bl.Tesoreria_Obtener(CodEmpresa, NSolicitud);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("EjecucionPagosCargos_Registra")]
         public ErrorDto EjecucionPagosCargos_Registra(int CodEmpresa, FacturaPendientePago data)
         {
             return _bl.EjecucionPagosCargos_Registra(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("EjecucionPagos_CargosFlotantes_Aplicar")]
         public ErrorDto EjecucionPagos_CargosFlotantes_Aplicar(int CodEmpresa, FacturaPendientePago data)
         {
             return _bl.EjecucionPagos_CargosFlotantes_Aplicar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("EjecucionPagos_SaldosCargoPorc_Actualizar")]
         public ErrorDto EjecucionPagos_SaldosCargoPorc_Actualizar(int CodEmpresa)
         {
@@ -168,18 +176,21 @@ namespace Galileo.Controllers
             return _bl.DesembolsoNetos_Obtener(CodEmpresa, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Indicadores_Actualizar")]
         public ErrorDto Indicadores_Actualizar(int CodEmpresa, PagoProvUpdate data)
         {
             return _bl.Indicadores_Actualizar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CancelacionCargos_Actualizar")]
         public ErrorDto CancelacionCargos_Actualizar(int CodEmpresa, int Cod_Proveedor, string Usuario)
         {
             return _bl.CancelacionCargos_Actualizar(CodEmpresa, Cod_Proveedor, Usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("EjecucionPagos_TesoreriaDetalle_Actualizar")]
         public ErrorDto EjecucionPagos_TesoreriaDetalle_Actualizar(int CodEmpresa)
         {
@@ -204,6 +215,7 @@ namespace Galileo.Controllers
             return _bl.Anticipos_Obtener(CodEmpresa, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("EjecucionPagos_Aplicar")]
         public ErrorDto<EjecucionPagosResultado> EjecucionPagos_Aplicar(int CodEmpresa, EjecucionPagosAplicar data)
         {

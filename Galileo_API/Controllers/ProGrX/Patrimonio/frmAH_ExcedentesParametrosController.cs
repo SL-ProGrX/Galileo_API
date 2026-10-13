@@ -25,6 +25,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_ExcedentesParametros_Lista(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Ah_ExcedentesParametros_Actualizar")]
         public ErrorDto<bool> Ah_ExcedentesParametros_Actualizar(
             [FromQuery] int codEmpresa,

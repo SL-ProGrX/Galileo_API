@@ -48,18 +48,21 @@ namespace Galileo.Controllers
             return _bl.CprPeriodoPlan_Scroll(CodEmpresa, scroll, id_periodo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprPeriodoPlan_Guardar")]
         public ErrorDto CprPeriodoPlan_Guardar(int CodEmpresa, CprPlanPeriodosDto periodo)
         {
             return _bl.CprPeriodoPlan_Guardar(CodEmpresa, periodo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CprPeriodoPlan_Eliminar")]
         public ErrorDto CprPeriodoPlan_Eliminar(int CodEmpresa, int id_periodo)
         {
             return _bl.CprPeriodoPlan_Eliminar(CodEmpresa, id_periodo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CprPeriodoPlan_Aprobar")]
         public ErrorDto CprPeriodoPlan_Aprobar(int CodEmpresa, int id_periodo, string usuario)
         {

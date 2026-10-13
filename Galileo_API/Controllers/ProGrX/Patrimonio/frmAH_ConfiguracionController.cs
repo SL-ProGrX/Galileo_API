@@ -28,6 +28,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
         public ErrorDto<ParametrosPatrimonioDto> AH_Configuracion_Parametros_Obtener(int CodEmpresa, string cod_divisa)
             => _bl.AH_Configuracion_Parametros_Obtener(CodEmpresa, cod_divisa);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_Configuracion_Parametros_Guardar")]
         public ErrorDto AH_Configuracion_Parametros_Guardar(int CodEmpresa, string usuario, [FromBody] AhConfiguracionGuardarRequest request)
         {

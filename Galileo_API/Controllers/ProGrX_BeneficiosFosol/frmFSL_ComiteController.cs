@@ -61,6 +61,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                 filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "FSL_Comite_Comite_Registrar")]
         public ErrorDto FSL_Comite_Comite_Registrar(
@@ -72,6 +73,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut(
             "FSL_Comite_Comite_Actualizar")]
         public ErrorDto FSL_Comite_Comite_Actualizar(
@@ -83,6 +85,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete(
             "FSL_Comite_Comite_Eliminar")]
         public ErrorDto FSL_Comite_Comite_Eliminar(
@@ -96,6 +99,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                 usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "FSL_Comite_Miembro_Registrar")]
         public ErrorDto FSL_Comite_Miembro_Registrar(
@@ -107,6 +111,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut(
             "FSL_Comite_Miembro_Actualizar")]
         public ErrorDto FSL_Comite_Miembro_Actualizar(
@@ -118,6 +123,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete(
             "FSL_Comite_Miembro_Eliminar")]
         public ErrorDto FSL_Comite_Miembro_Eliminar(

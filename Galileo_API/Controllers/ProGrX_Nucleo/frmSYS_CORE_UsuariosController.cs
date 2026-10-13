@@ -37,6 +37,7 @@ namespace Galileo.Controllers
             return _bl.CoreUsuarios_Obtener(CodEmpresa, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CoreUsuarios_Importar")]
         [Authorize]
         public ErrorDto CoreUsuarios_Importar(int CodEmpresa)
@@ -51,6 +52,7 @@ namespace Galileo.Controllers
             return _bl.CoreUsuario_Scroll(CodEmpresa, scroll, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CoreUsuarios_Guardar")]
         [Authorize]
         public ErrorDto CoreUsuarios_Guardar(int CodEmpresa, CoreUsuariosData usuariosData)
@@ -58,6 +60,7 @@ namespace Galileo.Controllers
             return _bl.CoreUsuarios_Guardar(CodEmpresa, usuariosData);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CoreUsuarios_Eliminar")]
         [Authorize]
         public ErrorDto CoreUsuarios_Eliminar(int CodEmpresa, string usuario)
@@ -79,6 +82,7 @@ namespace Galileo.Controllers
             return _bl.CoreUsuariosUENs_Roles_Obtener(CodEmpresa, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPatch("CoreUsuariosMiembro_Actualiza")]
         [Authorize]
         public ErrorDto CoreUsuariosMiembro_Actualiza(string miembro)
@@ -86,6 +90,7 @@ namespace Galileo.Controllers
             return _bl.CoreUsuariosMiembro_Actualiza(miembro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPatch("CoreUsuariosMiembroRol_Actualiza")]
         [Authorize]
         public ErrorDto CoreUsuariosMiembroRol_Actualiza(string miembroRol)

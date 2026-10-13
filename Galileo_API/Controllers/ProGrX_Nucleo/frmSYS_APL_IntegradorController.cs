@@ -39,6 +39,7 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SYS_APL_Integrador_Tramite_Atiende")]
         public ErrorDto SYS_APL_Integrador_Tramite_Atiende(int codEmpresa, long apl_operacion, string usuario)
         {
@@ -46,6 +47,7 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SYS_APL_Integrador_Solicitud_Atiende")]
         public ErrorDto SYS_APL_Integrador_Solicitud_Atiende(int codEmpresa, long num_solicitud, string usuario)
         {

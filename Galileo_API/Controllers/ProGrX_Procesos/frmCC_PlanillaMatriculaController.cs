@@ -36,6 +36,7 @@ namespace Galileo_API.Controllers.ProGrX.Procesos
             return BL.CC_PlanillaMatricula_Lista_Export(CodEmpresa, parametros);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_PlanillaMatricula_Bloquear")]
         public ErrorDto CC_PlanillaMatricula_Bloquear(int CodEmpresa,string usuario,[FromBody] CcPlanillaMatriculaBloquearRequest request)
         {
@@ -51,6 +52,7 @@ namespace Galileo_API.Controllers.ProGrX.Procesos
             return BL.CC_PlanillaMatricula_Bloquear(CodEmpresa, usuario, request);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_PlanillaMatricula_BloqueoMasivo")]
         public ErrorDto<CcPlanillaMatriculaBloqueoMasivoResultDto> CC_PlanillaMatricula_BloqueoMasivo(int CodEmpresa,string usuario,[FromBody] CcPlanillaMatriculaBloqueoMasivoRequest request)
         {
@@ -67,6 +69,7 @@ namespace Galileo_API.Controllers.ProGrX.Procesos
             return BL.CC_PlanillaMatricula_BloqueoMasivo(CodEmpresa, usuario, request);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_PlanillaMatricula_ArchivoTotal_Generar")]
         public ErrorDto<CcPlanillaMatriculaArchivoTotalDto> CC_PlanillaMatricula_ArchivoTotal_Generar(int CodEmpresa,[FromBody] CcPlanillaMatriculaArchivoTotalRequest request)
         {

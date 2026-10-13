@@ -23,6 +23,7 @@ namespace Galileo.Controllers
             return _bl.obtener_ParametrosSistema(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Parametros_Actualizar")]
         [Authorize]
         public ErrorDto Parametros_Actualizar(int CodEmpresa, string usuario, SifParametrosDto parametros)

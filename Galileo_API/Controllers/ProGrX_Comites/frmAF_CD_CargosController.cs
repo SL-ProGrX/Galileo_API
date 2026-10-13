@@ -23,11 +23,13 @@ namespace Galileo_API.Controllers.ProGrX_Comites
           => _bl.CdCargosLista_Obtener(codEmpresa, filtros, esExportar);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdCargos_Guardar")]
         public ErrorDto AfCdTiposProcesos_Guardar(int codEmpresa, string usuario, [FromBody] CdCargosData datos)
                  => _bl.AfCdCargos_Guardar(codEmpresa, usuario, datos);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfCdCargos_Eliminar")]
         public ErrorDto AfCdTiposProcesAfCdCargos_Eliminaros_Eliminar(int codEmpresa, string usuario, string codCargo)
                   => _bl.AfCdCargos_Eliminar(codEmpresa, usuario, codCargo);

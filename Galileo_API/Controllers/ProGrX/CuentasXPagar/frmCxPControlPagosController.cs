@@ -18,12 +18,14 @@ namespace Galileo.Controllers
             _bl = new FrmCxPControlPagosBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxPControlPagos_Obtener")]
         public ErrorDto<List<ControlPagosData>> CxPControlPagos_Obtener(int CodEmpresa, CxPControlPagosParametros pagosParametros)
         {
             return _bl.CxPControlPagos_Obtener(CodEmpresa, pagosParametros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxPControlPagos_Resumen")]
         public ErrorDto<List<ControlPagosResumenData>> CxPControlPagos_Resumen(int CodEmpresa, CxPControlPagosParametros pagosParametros)
         {

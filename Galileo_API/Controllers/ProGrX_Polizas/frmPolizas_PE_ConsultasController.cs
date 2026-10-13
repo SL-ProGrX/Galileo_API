@@ -59,6 +59,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             => _bl.PolizasPeConsultas_UnidadesCilindraje_Obtener(codEmpresa);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PolizasPeConsultas_Buscar")]
         public ErrorDto<PolizasPeConsultasBuscarResponseDto> PolizasPeConsultas_Buscar(int codEmpresa, bool esExportar, [FromBody] PolizasPeConsultasBuscarRequestDto request)
          => _bl.PolizasPeConsultas_Buscar(codEmpresa, esExportar, request);

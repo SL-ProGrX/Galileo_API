@@ -51,6 +51,7 @@ namespace Galileo.Controllers
                     cedula);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_ConsultaExcedente_Email_Enviar")]
         public ErrorDto CC_ConsultaExcedente_Email_Enviar(
             int codEmpresa,
@@ -60,6 +61,7 @@ namespace Galileo.Controllers
                 .CC_ConsultaExcedente_Email_Enviar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_ConsultaExcedente_Reporte_Bitacora_Registrar")]
         public ErrorDto CC_ConsultaExcedente_Reporte_Bitacora_Registrar(
             int codEmpresa,

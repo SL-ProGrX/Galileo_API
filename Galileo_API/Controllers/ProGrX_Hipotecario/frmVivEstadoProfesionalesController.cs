@@ -36,6 +36,7 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
             return _bl.VivEstadoProfesionales_ConsultaExterna_Obtener(codEmpresa, cedula);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("VivEstadoProfesionales_Suspender")]
         public ErrorDto VivEstadoProfesionales_Suspender(int codEmpresa, string usuario, ViviendaContactosData request)
         {
