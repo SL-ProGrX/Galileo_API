@@ -37,11 +37,13 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
             => _bl.AfiBeneficioProd_Producto_Exportar(CodCliente, filtros);
 
         /// <summary>Guarda un producto (inserta o actualiza).</summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiBeneficioProd_Producto_Guardar")]
         public ErrorDto AfiBeneficioProd_Producto_Guardar(int CodCliente, string usuario, [FromBody] ProductoData producto)
             => _bl.AfiBeneficioProd_Producto_Guardar(CodCliente, producto, usuario);
 
         /// <summary>Elimina un producto.</summary>
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfiBeneficioProd_Producto_Eliminar")]
         public ErrorDto AfiBeneficioProd_Producto_Eliminar(int CodCliente, string cod_producto)
             => _bl.AfiBeneficioProd_Producto_Eliminar(CodCliente, cod_producto);

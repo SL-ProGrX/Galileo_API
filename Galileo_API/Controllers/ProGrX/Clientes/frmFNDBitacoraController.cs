@@ -25,6 +25,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Bitacora_Cambios_Obtener")]
         public ErrorDto<List<FndBitacoraCambiosResult>> Fnd_Bitacora_Cambios_Obtener(
             int CodEmpresa, [FromBody] FndBitacoraCambiosRequest request)
@@ -33,6 +34,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Bitacora_Cambio_Revisar")]
         public ErrorDto<bool> Fnd_Bitacora_Cambio_Revisar(
             int CodEmpresa, [FromBody] FndBitacoraCambioRevisarRequest request)
@@ -41,6 +43,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sif_RegistraTags")]
         public ErrorDto<bool> Sif_RegistraTags(
             int CodEmpresa, [FromBody] SifRegistraTagsRequest request)

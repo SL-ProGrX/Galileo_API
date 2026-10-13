@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.ObtenerContabilidades(codEmpresa);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Copiar")]
         public ErrorDto Copiar(int codEmpresa,int codFuente,int codDestino,bool inicializa,string usuario)
         {

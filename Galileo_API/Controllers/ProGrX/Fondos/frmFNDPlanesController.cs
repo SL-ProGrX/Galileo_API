@@ -97,6 +97,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Planes_Retiros_Guardar")]
         public ErrorDto<FndPlanRetiroDto> Fnd_Planes_Retiros_Guardar(
             int CodEmpresa, string usuario, [FromBody] FndPlanRetiroDto dto)
@@ -105,6 +106,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Fnd_Planes_Retiros_Eliminar")]
         public ErrorDto<string> Fnd_Planes_Retiros_Eliminar(
             int CodEmpresa, int id)
@@ -113,6 +115,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Fnd_Planes_Puntos_Eliminar")]
         public ErrorDto<string> Fnd_Planes_Puntos_Eliminar(int CodEmpresa, int id)
         {
@@ -120,6 +123,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Planes_Puntos_Guardar")]
         public ErrorDto<FndPlanPuntoDto> Fnd_Planes_Puntos_Guardar(int CodEmpresa, string Usuario, FndPlanPuntoDto dto)
         {
@@ -127,6 +131,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Planes_Puntos_Detalle_Guardar")]
         public ErrorDto<FndPlanPuntoDetalleDto> Fnd_Planes_Puntos_Detalle_Guardar(int CodEmpresa, string Usuario, FndPlanPuntoDetalleDto dto)
         {
@@ -134,6 +139,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Fnd_Planes_Puntos_Detalle_Eliminar")]
         public ErrorDto<string> Fnd_Planes_Puntos_Detalle_Eliminar(int CodEmpresa, int id)
         {
@@ -141,6 +147,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Planes_Destinos_Guardar")]
         public ErrorDto Planes_Destinos_Guardar(int CodEmpresa, FndPlanDestinoGuardarDto dto)
         {
@@ -148,6 +155,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Planes_Destinos_Eliminar")]
         public ErrorDto<bool> Planes_Destinos_Eliminar(int CodEmpresa, int id, string usuario)
         {
@@ -155,6 +163,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Planes_Destinos_Asociados_Guardar")]
         public ErrorDto<bool> Fnd_Planes_Destinos_Asociados_Guardar(int CodEmpresa, string usuario, FndPlanDestinoAsociadoDto dto)
         {
@@ -162,6 +171,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Planes_Vencimientos_Guardar")]
         public ErrorDto<bool> Fnd_Planes_Vencimientos_Guardar(int CodEmpresa, string usuario, FndPlanesVencimientosGuardarDto dto)
         {
@@ -169,6 +179,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Reglas_Activar")]
         public ErrorDto Fnd_Reglas_Activar(int CodEmpresa, [FromBody] FndReglaActivarDto dto)
         {
@@ -176,6 +187,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Plan_Guardar")]
         public ErrorDto<FndPlanDto> Fnd_Plan_Guardar(int CodEmpresa, string usuario, FndPlanDto dto)
         {
@@ -183,6 +195,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Plan_Eliminar")]
         public ErrorDto<FndPlanDto> Fnd_Plan_Eliminar(int CodEmpresa, string usuario, int codoperadora, string codplan)
         {
@@ -190,6 +203,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Plan_FechaCorte_Update")]
         public ErrorDto<bool> Fnd_Plan_FechaCorte_Update(int CodEmpresa, string usuario, int codoperadora, string codplan, string fecha)
         {

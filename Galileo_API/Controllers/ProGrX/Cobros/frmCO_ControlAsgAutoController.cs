@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CbrUsuarios_Grupos_List")]
         public ErrorDto<List<CbrUsuarioGrupoListResult>> CbrUsuarios_Grupos_List(int codEmpresa, [FromBody] CbrUsuarioGrupoListParams param)
         {
@@ -33,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CbrControlDistribucion")]
         public ErrorDto<CbrControlDistribucionResult?> CbrControlDistribucion(int codEmpresa, [FromBody] CbrControlDistribucionParams param)
         {

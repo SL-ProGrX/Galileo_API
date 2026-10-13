@@ -57,6 +57,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Socios_RegistrarNota")]
         public ErrorDto CR_Socios_RegistrarNota(int CodEmpresa, string cedula, string nota, string usuario)
         {
@@ -64,6 +65,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Socios_BloqueoCreditos_Guardar")]
         public ErrorDto CR_Socios_BloqueoCreditos_Guardar(
             int CodEmpresa,
@@ -135,6 +137,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ConsultaCrd_SoSExclusion_Guardar")]
         public ErrorDto CR_ConsultaCrd_SoSExclusion_Guardar(
             int CodEmpresa,
@@ -220,6 +223,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ConsultaCobros_NotificacionEmail_Procesar")]
         public ErrorDto CR_ConsultaCobros_NotificacionEmail_Procesar(
             int CodEmpresa,
@@ -353,6 +357,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AFI_Socios_Mensajes_Guardar")]
         public ErrorDto AFI_Socios_Mensajes_Guardar(int codEmpresa, AfiSociosMensajesData data)
         {
@@ -360,6 +365,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AFI_Socios_Mensajes_Elimina")]
         public ErrorDto AFI_Socios_Mensajes_Elimina(int codEmpresa, string data)
         {
@@ -367,6 +373,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPatch("AFI_Socios_Mensajes_Resolucion")]
         public ErrorDto AFI_Socios_Mensajes_Resolucion(int codEmpresa, string usuario, AfiSociosMensajesData data)
         {
@@ -396,6 +403,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Canales_Registra")]
         public ErrorDto AF_Persona_Canales_Registra(int CodEmpresa, string request)
         {
@@ -403,6 +411,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Bienes_Registra")]
         public ErrorDto AF_Persona_Bienes_Registra(int CodEmpresa, string request)
         {
@@ -410,6 +419,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Escolaridad_Registra")]
         public ErrorDto AF_Persona_Escolaridad_Registra(int CodEmpresa, string request)
         {
@@ -417,6 +427,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Preferencia_Registra")]
         public ErrorDto AF_Persona_Preferencia_Registra(int CodEmpresa, string request)
         {
@@ -439,6 +450,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         #region Aut/C.I
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_RegistraConsentimiento")]
         public ErrorDto CR_RegistraConsentimiento(int CodEmpresa, string cedula, string usuario)
         {

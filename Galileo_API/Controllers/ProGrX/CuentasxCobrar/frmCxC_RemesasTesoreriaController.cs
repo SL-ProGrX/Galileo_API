@@ -42,6 +42,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxC_RemesasTesoreria_Remesa_Guardar")]
         public ErrorDto<CxCRemesasTesoreriaRemesaData> CxC_RemesasTesoreria_Remesa_Guardar(int CodEmpresa, [FromBody] CxCRemesasTesoreriaRemesaGuardarRequest request)
         {
@@ -49,6 +50,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxC_RemesasTesoreria_Remesa_Eliminar")]
         public ErrorDto CxC_RemesasTesoreria_Remesa_Eliminar(int CodEmpresa, int tesoreriaRemesa, string usuario)
         {
@@ -88,6 +90,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxC_RemesasTesoreria_Carga_Aplicar")]
         public ErrorDto CxC_RemesasTesoreria_Carga_Aplicar(int CodEmpresa, [FromBody] CxCRemesasTesoreriaCargaAplicarRequest request)
         {
@@ -95,6 +98,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxC_RemesasTesoreria_Carga_Cerrar")]
         public ErrorDto CxC_RemesasTesoreria_Carga_Cerrar(int CodEmpresa, [FromBody] CxCRemesasTesoreriaCerrarRequest request)
         {
@@ -119,6 +123,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxC_RemesasTesoreria_Traslado_Aplicar")]
         public ErrorDto CxC_RemesasTesoreria_Traslado_Aplicar(int CodEmpresa, [FromBody] CxCRemesasTesoreriaTrasladoAplicarRequest request)
         {
@@ -147,6 +152,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxC_RemesasTesoreria_Reactivacion_Aplicar")]
         public ErrorDto CxC_RemesasTesoreria_Reactivacion_Aplicar(int CodEmpresa, [FromBody] CxCRemesasTesoreriaReactivacionAplicarRequest request)
         {

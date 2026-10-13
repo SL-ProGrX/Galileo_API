@@ -45,6 +45,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return BL.CxC_Cuentas_SGT_Rebajo_CRD_Existe_Obtener(codEmpresa, operacion, id_Solicitud);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxC_Cuentas_SGT_Rebajo_CRD_Guardar")]
         public ErrorDto CxC_Cuentas_SGT_Rebajo_CRD_Guardar(
             int codEmpresa,
@@ -53,6 +54,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return BL.CxC_Cuentas_SGT_Rebajo_CRD_Guardar(codEmpresa, req);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxC_Cuentas_SGT_Rebajo_CRD_Eliminar")]
         public ErrorDto CxC_Cuentas_SGT_Rebajo_CRD_Eliminar(
             int codEmpresa,
@@ -61,6 +63,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return BL.CxC_Cuentas_SGT_Rebajo_CRD_Eliminar(codEmpresa, req);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxC_Cuentas_SGT_Rebajo_CRD_Actualizar")]
         public ErrorDto CxC_Cuentas_SGT_Rebajo_CRD_Actualizar(
             int codEmpresa,

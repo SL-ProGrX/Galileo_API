@@ -69,26 +69,32 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             [FromQuery] string filtro = "")
             => _bl.CntXAcMiembros_Consulta(codEmpresa, codContabilidad, rol, filtro, usuario);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXAcCuentas_Asigna")]
         public ActionResult<ErrorDto<bool>> CntXAcCuentas_Asigna([FromQuery] int codEmpresa, [FromBody] CntXAcCuentaAsignaParams param)
             => _bl.CntXAcCuentas_Asigna(codEmpresa, param);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXAcUnidades_Asigna")]
         public ActionResult<ErrorDto<bool>> CntXAcUnidades_Asigna([FromQuery] int codEmpresa, [FromBody] CntXAcUnidadAsignaParams param)
             => _bl.CntXAcUnidades_Asigna(codEmpresa, param);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXAcCentroCosto_Asigna")]
         public ActionResult<ErrorDto<bool>> CntXAcCentroCosto_Asigna([FromQuery] int codEmpresa, [FromBody] CntXAcCentroCostoAsignaParams param)
             => _bl.CntXAcCentroCosto_Asigna(codEmpresa, param);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXAcMiembros_Asigna")]
         public ActionResult<ErrorDto<bool>> CntXAcMiembros_Asigna([FromQuery] int codEmpresa, [FromBody] CntXAcMiembroAsignaParams param)
             => _bl.CntXAcMiembros_Asigna(codEmpresa, param);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXAcRol_Add")]
         public ActionResult<ErrorDto<bool>> CntXAcRol_Add([FromQuery] int codEmpresa, [FromBody] CntXAcRolAddParams param)
             => _bl.CntXAcRol_Add(codEmpresa, param);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXAcRol_Delete")]
         public ActionResult<ErrorDto<bool>> CntXAcRol_Delete([FromQuery] int codEmpresa, [FromBody] CntXAcRolDeleteParams param)
             => _bl.CntXAcRol_Delete(codEmpresa, param);

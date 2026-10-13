@@ -18,6 +18,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoDoc_Aplicar")]
         public ErrorDto CR_SeguimientoDoc_Aplicar(int CodEmpresa, FrmCRSeguimientoDocData documento)
         {

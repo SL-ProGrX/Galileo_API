@@ -25,6 +25,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Parametros_Actualizar")]
         public ErrorDto AF_Parametros_Actualizar(int CodEmpresa, string Usuario, string Codigo, string Valor)
         {

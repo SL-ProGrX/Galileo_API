@@ -31,12 +31,14 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.Co_AplFnd_Prioridades_Lista_Export(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_AplFnd_Prioridades_Guardar")]
         public ErrorDto Co_AplFnd_Prioridades_Guardar(int CodEmpresa, string usuario, [FromBody] COAplFndPrioridadData prioridad)
         {
             return _bl.Co_AplFnd_Prioridades_Guardar(CodEmpresa, usuario, prioridad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Co_AplFnd_Prioridades_Eliminar")]
         public ErrorDto Co_AplFnd_Prioridades_Eliminar(int CodEmpresa, string usuario, string codigo)
         {
@@ -55,6 +57,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.Co_AplFnd_PrioridadEjecucion_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_AplFnd_PrioridadEjecucion_Actualizar")]
         public ErrorDto Co_AplFnd_PrioridadEjecucion_Actualizar(int CodEmpresa, string usuario, [FromBody] int prioridad)
         {

@@ -27,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaAbandonaMotivos_Lista_Obtener(codEmpresa, usuario, cod_preanalisis);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaAbandonaMotivos_Registrar")]
         public ErrorDto<FrmPreaAbandonaMotivosRegistrarResponse> Prea_frmPreaAbandonaMotivos_Registrar(
             int codEmpresa,

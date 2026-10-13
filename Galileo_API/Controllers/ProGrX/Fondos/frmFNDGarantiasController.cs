@@ -40,6 +40,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Garantias_Guardar")]
         public ErrorDto Fnd_Garantias_Guardar(int CodEmpresa, [FromBody] FndGarantiaModel garantia)
         {
@@ -47,6 +48,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Fnd_Garantias_Eliminar")]
         public ErrorDto Fnd_Garantias_Eliminar(int CodEmpresa, string garantiaFND, string usuario)
         {
@@ -54,6 +56,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Garantia_Ahorros_Consulta")]
         public ErrorDto<List<FndGarantiaAhorrosConsultaResult>> Fnd_Garantia_Ahorros_Consulta(
             int CodEmpresa, [FromBody] FndGarantiaAhorrosConsultaRequest request)
@@ -62,6 +65,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Garantia_Ahorros_Registro")]
         public ErrorDto Fnd_Garantia_Ahorros_Registro(
             int CodEmpresa, [FromBody] FndGarantiaAhorrosRegistroRequest request)

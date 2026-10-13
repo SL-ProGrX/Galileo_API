@@ -89,6 +89,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             int numPoliza)
             => _bl.CrPolizasRegistro_Beneficiarios_Obtener(codEmpresa, operacion, numPoliza);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrPolizasRegistro_Acreedor_Aplicar")]
         public ErrorDto<bool> CrPolizasRegistro_Acreedor_Aplicar(
             int codEmpresa,
@@ -101,12 +102,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             string request)
             => _bl.CrPolizasRegistro_PlanPago_Detalle_Obtener(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrPolizasRegistro_PolizaIntegrada_Guardar")]
         public ErrorDto<int> CrPolizasRegistro_PolizaIntegrada_Guardar(
             int codEmpresa,
             CrPolizasRegistroPolizaIntegradaGuardarRequest request)
             => _bl.CrPolizasRegistro_PolizaIntegrada_Guardar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrPolizasRegistro_PolizaRetencion_Guardar")]
         public ErrorDto<int> CrPolizasRegistro_PolizaRetencion_Guardar(
             int codEmpresa,

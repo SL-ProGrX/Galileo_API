@@ -29,12 +29,14 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             [FromQuery] string expediente)
             => _bl.PreaAutorizaciones_ObtenerMiembros(codEmpresa, comite, expediente);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PreaAutorizaciones_Insertar")]
         public ActionResult<ErrorDto<bool>> PreaAutorizaciones_Insertar(
             [FromQuery] int codEmpresa,
             [FromBody] PreaAutorizadorRequestDto request)
             => _bl.PreaAutorizaciones_Insertar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("PreaAutorizaciones_Eliminar")]
         public ActionResult<ErrorDto<bool>> PreaAutorizaciones_Eliminar(
             [FromQuery] int codEmpresa,

@@ -31,6 +31,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             string? codigo)
             => _bl.CrAprobacionMasiva_LineasCatalago_Obtener(codEmpresa, codigo);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrAprobacionMasiva_Formalizar")]
         public ErrorDto CrAprobacionMasiva_Formalizar(
             int codEmpresa,

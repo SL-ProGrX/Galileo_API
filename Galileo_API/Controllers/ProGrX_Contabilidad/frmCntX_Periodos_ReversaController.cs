@@ -28,6 +28,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXPeriodos_Bitacora_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXPeriodos_Reversar")]
         public ErrorDto CntXPeriodos_Reversar(int codEmpresa, ReversaPeriodoRequest request)
         {

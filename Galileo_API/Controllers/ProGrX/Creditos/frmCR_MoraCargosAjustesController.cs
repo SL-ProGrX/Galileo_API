@@ -40,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrMoraCargosAjustes_Cargos_Obtener(codEmpresa, operacionId);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrMoraCargosAjustes_Fecha_Aplicar")]
         public ErrorDto CrMoraCargosAjustes_Fecha_Aplicar(
             int codEmpresa,
@@ -48,6 +49,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrMoraCargosAjustes_Fecha_Aplicar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrMoraCargosAjustes_CuotasMora_Eliminar")]
         public ErrorDto CrMoraCargosAjustes_CuotasMora_Eliminar(
             int codEmpresa,
@@ -56,6 +58,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrMoraCargosAjustes_CuotasMora_Eliminar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrMoraCargosAjustes_Cargos_Eliminar")]
         public ErrorDto CrMoraCargosAjustes_Cargos_Eliminar(
             int codEmpresa,

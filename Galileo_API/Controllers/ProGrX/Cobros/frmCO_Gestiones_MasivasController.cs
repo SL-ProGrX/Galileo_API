@@ -43,12 +43,14 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CO_GestionesMasivas_Arreglos_Dropdown_Obtener(CodEmpresa);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_GestionesMasivas_Cargar")]
         public ErrorDto<CoGestionesMasivasCargaResultDto> CO_GestionesMasivas_Cargar(int CodEmpresa,string usuarioSesion,[FromBody] CoGestionesMasivasCargaRequest request)
         {
             return _bl.CO_GestionesMasivas_Cargar(CodEmpresa, usuarioSesion, request);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_GestionesMasivas_Procesar")]
         public ErrorDto CO_GestionesMasivas_Procesar(int CodEmpresa,string usuarioSesion,[FromBody] CoGestionesMasivasProcesarRequest request)
         {

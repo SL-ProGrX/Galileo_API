@@ -25,6 +25,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Renuncia_Recepcion_Aplica")]
         public ErrorDto AF_CR_Renuncia_Recepcion_Aplica(int CodEmpresa, [FromBody] AfCrRenunciaRecepcionAplica recepcionDatos)
         {
@@ -32,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Renuncia_Revision_Aplica")]
         public ErrorDto AF_CR_Renuncia_Revision_Aplica(int CodEmpresa, [FromBody] AfCrRenunciaRevisionAplica revisionDatos)
         {
@@ -53,6 +55,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Renuncia_Revision_Reversar")]
         public ErrorDto AF_CR_Renuncia_Revision_Reversar(int CodEmpresa, [FromBody] AfCrRenunciaReversa dto)
         {

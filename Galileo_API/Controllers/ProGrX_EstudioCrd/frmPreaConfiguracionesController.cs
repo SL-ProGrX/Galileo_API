@@ -32,6 +32,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prea_Configuraciones_ComiteMax_Guardar")]
         public ErrorDto CR_Prea_Configuraciones_ComiteMax_Guardar(int CodEmpresa, string usuario, [FromBody] CrPreaConfiguracionesComiteMaxGuardarRequest request)
         {
@@ -53,6 +54,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prea_Configuraciones_ComiteLineas_Guardar")]
         public ErrorDto CR_Prea_Configuraciones_ComiteLineas_Guardar(int CodEmpresa, string usuario, [FromBody] CrPreaConfiguracionesComiteLineasGuardarRequest request)
         {
@@ -81,6 +83,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prea_Configuraciones_ComiteAdjuntos_Guardar")]
         public ErrorDto CR_Prea_Configuraciones_ComiteAdjuntos_Guardar(int CodEmpresa, string usuario, [FromBody] CrPreaConfiguracionesComiteAdjuntosGuardarRequest request)
         {
@@ -102,6 +105,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prea_Configuraciones_GarantiaLiquidez_Guardar")]
         public ErrorDto CR_Prea_Configuraciones_GarantiaLiquidez_Guardar(int CodEmpresa, string usuario, [FromBody] CrPreaConfiguracionesGarantiaLiquidezGuardarRequest request)
         {
@@ -123,6 +127,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prea_Configuraciones_GarantiaRefunde_Guardar")]
         public ErrorDto CR_Prea_Configuraciones_GarantiaRefunde_Guardar(int CodEmpresa, string usuario, [FromBody] CrPreaConfiguracionesGarantiaRefundeGuardarRequest request)
         {
@@ -144,6 +149,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prea_Configuraciones_CambioEstado_Guardar")]
         public ErrorDto CR_Prea_Configuraciones_CambioEstado_Guardar(int CodEmpresa, string usuario, [FromBody] CrPreaConfiguracionesCambioEstadoGuardarRequest request)
         {
@@ -165,6 +171,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prea_Configuraciones_EdadPension_Guardar")]
         public ErrorDto CR_Prea_Configuraciones_EdadPension_Guardar(int CodEmpresa, string usuario, [FromBody] CrPreaConfiguracionesEdadPensionGuardarRequest request)
         {

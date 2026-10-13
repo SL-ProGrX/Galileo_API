@@ -34,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
                 codigo ?? string.Empty);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaSeguimientoCausas_Registrar")]
         public ErrorDto<FrmPreaSeguimientoCausasRegistrarResponse> Prea_frmPreaSeguimientoCausas_Registrar(
             int codEmpresa,

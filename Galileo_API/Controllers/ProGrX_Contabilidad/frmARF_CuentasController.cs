@@ -34,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.ArfCuentas_Obtener(codEmpresa, codDivisa, codUnidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ArfCuentas_Registrar")]
         public ErrorDto ArfCuentas_Registrar(int codEmpresa, ArfCuentasRegistraRequest request)
         {

@@ -25,6 +25,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_EfectivosDenominaciones_Guardar")]
         public ErrorDto Cajas_EfectivosDenominaciones_Guardar(int CodEmpresa, string usuario, CajasEfectivosDenominacionesData denominacion)
         {
@@ -32,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Cajas_EfectivosDenominaciones_Eliminar")]
         public ErrorDto Cajas_EfectivosDenominaciones_Eliminar(int CodEmpresa,string usuario,string cod_divisa,decimal denominacion)
         {

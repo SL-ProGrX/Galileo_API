@@ -60,6 +60,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
                 caja);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxC_AbonoLote_Aplicar")]
         public ErrorDto<CxCAbonoLoteAplicarData>
             CxC_AbonoLote_Aplicar(

@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasSaldosFavorTipos_Guardar")]
         public ErrorDto CajasSaldosFavorTipos_Guardar(int CodEmpresa, string usuario, CajasSaldosFavorTiposData data)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
         }
         
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CajasSaldosFavorTipos_Eliminar")]
         public ErrorDto CajasSaldosFavorTipos_Eliminar(int CodEmpresa, string usuario, string doc_tipo)
         {
@@ -47,6 +49,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasSaldosFavorTipoLiq_Asigna")]
         public ErrorDto CajasSaldosFavorTipoLiq_Asigna(int CodEmpresa, string usuarioG, CajasSaldosFavorUsuarioLiquidData data)
         {

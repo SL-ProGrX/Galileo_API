@@ -28,12 +28,14 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.CR_Prea_Config_Lista_Export(CodEmpresa, tipo, filtros);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prea_Config_Guardar")]
         public ErrorDto CR_Prea_Config_Guardar(int CodEmpresa,string usuario,string tipo,[FromBody] CrPreaConfigGuardarRequest request)
         {
             return _bl.CR_Prea_Config_Guardar(CodEmpresa, usuario, tipo, request);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CR_Prea_Config_Eliminar")]
         public ErrorDto CR_Prea_Config_Eliminar(int CodEmpresa,string usuario,string tipo,int id)
         {
@@ -46,6 +48,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.CR_Prea_AvaluoCFIA_Obtener(CodEmpresa);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prea_AvaluoCFIA_Guardar")]
         public ErrorDto CR_Prea_AvaluoCFIA_Guardar(int CodEmpresa,string usuario,[FromBody] CrPreaAvaluoCfiaGuardarRequest request)
         {

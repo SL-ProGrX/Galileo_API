@@ -38,6 +38,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
                 codContabilidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntX_EREspecial_Guardar")]
         public ErrorDto CntX_EREspecial_Guardar(
             int codEmpresa,
@@ -52,6 +53,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntX_EREspecial_Borrar")]
         public ErrorDto CntX_EREspecial_Borrar(
             int codEmpresa,
@@ -66,6 +68,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
                 usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntX_EREspecial_Arbol_Obtener")]
         public ErrorDto<List<CntXErEspecialCuentaNodeData>> CntX_EREspecial_Arbol_Obtener(
             int codEmpresa,
@@ -78,6 +81,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntX_EREspecial_Cuentas_Guardar")]
         public ErrorDto CntX_EREspecial_Cuentas_Guardar(
             int codEmpresa,

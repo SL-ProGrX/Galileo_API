@@ -22,6 +22,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_AplFnd_Procesa_Aplicar")]
         public ErrorDto<CoAplFndProcesadosResult> CO_AplFnd_Procesa_Aplicar(int CodEmpresa, FondosAplicarRequest request)
         {

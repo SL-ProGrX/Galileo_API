@@ -34,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PresAlertaJustificacion_Guardar")]
         public ErrorDto PresAlertaJustificacion_Guardar(int CodEmpresa, [FromBody] PresAlertaJustificacionGuardarRequest data)
         {
@@ -58,6 +59,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         #region Control de Justificaciones
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PresAlertasControlExclusion_Guardar")]
         public ErrorDto PresAlertasControlExclusion_Guardar(int CodEmpresa, [FromBody] PresAlertasControlExclusionGuardarRequest request)
         {
@@ -65,6 +67,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PresAlertasControlExclusion_Obtener")]
         public ErrorDto<List<PresAlertasControlExclusionData>> PresAlertasControlExclusion_Obtener(int CodEmpresa, [FromBody] PresAlertasControlExclusionFiltroRequest request)
         {
@@ -72,6 +75,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PresAlertasControlExclusion_Eliminar")]
         public ErrorDto PresAlertasControlExclusion_Eliminar(int CodEmpresa, [FromBody] PresAlertasControlExclusionEliminarRequest request)
         {
@@ -79,6 +83,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PresAlertasJustificaPeriodo_Validar")]
         public ErrorDto<PresAlertasJustificaPeriodoData> PresAlertasJustificaPeriodo_Validar(int CodEmpresa, [FromBody] PresAlertasJustificaPeriodoRequest request)
         {
@@ -86,6 +91,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PresAlertasJustificaPeriodo_Abrir")]
         public ErrorDto PresAlertasJustificaPeriodo_Abrir(int CodEmpresa, [FromBody] PresAlertasJustificaPeriodoRequest request)
         {
@@ -95,6 +101,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         #endregion
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PresAlertasControlPeriodo_Validar")]
         public ErrorDto<PresAlertasControlPeriodoEstadoData> PresAlertasControlPeriodo_Validar(int CodEmpresa, [FromBody] PresAlertasControlPeriodoConfigRequest request)
         {
@@ -102,6 +109,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PresAlertasControlPeriodo_Registrar")]
         public ErrorDto PresAlertasControlPeriodo_Registrar(int CodEmpresa, [FromBody] PresAlertasControlPeriodoConfigRequest request)
         {
@@ -109,6 +117,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PresAlertasJustificaPeriodo_Obtener")]
         public ErrorDto<List<PresAlertasJustificaPeriodoConsultaData>> PresAlertasJustificaPeriodo_Obtener(
     int CodEmpresa,
@@ -118,6 +127,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PresAlertasDashboardResumen_Obtener")]
         public ErrorDto<PresAlertasDashboardResumenData> PresAlertasDashboardResumen_Obtener(int CodEmpresa, [FromBody] PresAlertasDashboardFiltroRequest request)
         {
@@ -125,6 +135,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PresAlertasDashboardUnidad_Obtener")]
         public ErrorDto<List<PresAlertasDashboardUnidadData>> PresAlertasDashboardUnidad_Obtener(int CodEmpresa, [FromBody] PresAlertasDashboardFiltroRequest request)
         {
@@ -132,6 +143,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PresAlertasDashboardJustificacion_Obtener")]
         public ErrorDto<List<PresAlertasDashboardJustificacionData>> PresAlertasDashboardJustificacion_Obtener(int CodEmpresa, [FromBody] PresAlertasDashboardFiltroRequest request)
         {
@@ -139,6 +151,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PresAlertasControlPeriodo_ActualizarBloqueo")]
         public ErrorDto PresAlertasControlPeriodo_ActualizarBloqueo(int CodEmpresa, [FromBody] PresAlertasControlPeriodoBloqueoActualizarRequest request)
         {

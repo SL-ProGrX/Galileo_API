@@ -63,6 +63,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Contratos_Email_Enviar")]
         public ErrorDto<string> Fnd_Contratos_Email_Enviar(int CodEmpresa, int operadora, string plan, int contrato, string usuario)
         {
@@ -70,6 +71,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Fnd_Contratos_Borrar")]
         public ErrorDto Fnd_Contratos_Borrar(int CodEmpresa, int operadora, string plan, int contrato, string usuario)
         {
@@ -84,6 +86,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Contratos_TasaRef")]
         public ErrorDto<decimal> fxTasaRef(FndContratoTasaRefParams param)
         {
@@ -112,6 +115,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Contratos_Guardar")]
         public ErrorDto<long> Fnd_Contratos_Guardar(int CodEmpresa, string usuario, [FromBody] FndContratosGuardarRequest request)
         {
@@ -141,6 +145,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Contratos_Destinos_Guardar")]
         public ErrorDto Fnd_Contratos_Destinos_Guardar(int CodEmpresa, FndContratoDestinoData destino)
         {
@@ -175,6 +180,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Contratos_SubCuentas_Guardar")]
         public ErrorDto Fnd_Contratos_SubCuentas_Guardar(int CodEmpresa, string usuario, FndContratoSubCuentasData subCuenta)
         {
@@ -225,6 +231,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Contratos_TP_Solicita")]
         public ErrorDto<FndSolicitudTpData> Fnd_Contratos_TP_Solicita(int CodEmpresa, FndContratoTasaPreferencial solicitud)
         {

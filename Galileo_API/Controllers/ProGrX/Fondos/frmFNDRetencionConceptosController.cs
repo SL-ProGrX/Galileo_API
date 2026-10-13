@@ -32,6 +32,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_RetencionConceptos_Guardar")]
         public ErrorDto FND_RetencionConceptos_Guardar(int CodEmpresa, string usuario, FndRetencionConceptoData concepto)
         {
@@ -39,6 +40,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("FND_RetencionConceptos_Eliminar")]
         public ErrorDto FND_RetencionConceptos_Eliminar(int CodEmpresa, string usuario, string retencionCodigo)
         {

@@ -17,6 +17,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_ActualizacionSif_Aplicar")]
         public ErrorDto Fnd_ActualizacionSif_Aplicar(int CodEmpresa, string Usuario)
         {

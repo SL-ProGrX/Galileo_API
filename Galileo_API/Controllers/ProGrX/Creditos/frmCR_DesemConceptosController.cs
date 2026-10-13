@@ -24,12 +24,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrDesembConceptos_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrDesembConcepto_Guardar")]
         public ErrorDto CrDesembConcepto_Guardar(int codEmpresa, string usuario, int codConta, CrConceptoDesembData request)
         {
             return _bl.CrDesembConcepto_Guardar(codEmpresa, usuario, codConta, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrDesembConcepto_Eliminar")]
         public ErrorDto CrDesembConcepto_Eliminar(int codEmpresa, int codCondeb, string usuario)
         {

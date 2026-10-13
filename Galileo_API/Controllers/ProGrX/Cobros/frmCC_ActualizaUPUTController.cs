@@ -19,6 +19,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             _bl = new FrmCCActualizaUpUtBl(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_ActualizaUpUt_ProcesarArchivo")]
         [Consumes("multipart/form-data")]
         public async Task<ErrorDto> CC_ActualizaUpUt_ProcesarArchivo(

@@ -91,6 +91,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             => _bl.CrReportesMov_Gestores_Obtener(codEmpresa);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CrReportesMov_AnalisisCubo_Ejecutar")]
         public ErrorDto CrReportesMov_AnalisisCubo_Ejecutar(
             int codEmpresa,

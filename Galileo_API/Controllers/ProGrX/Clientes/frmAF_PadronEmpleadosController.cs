@@ -32,6 +32,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_PadronEmpleados_Eliminar")]
         public ErrorDto AF_PadronEmpleados_Eliminar(int CodEmpresa, string cedula)
         {

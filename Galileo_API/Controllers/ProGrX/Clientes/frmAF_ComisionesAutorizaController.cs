@@ -18,6 +18,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_ComisionesAutoriza_Obtener")]
         public ErrorDto<List<ComisionAutorizaData>> AF_ComisionesAutoriza_Obtener(int CodEmpresa, [FromBody] ComisionAutorizaFiltroDto filtro)
         {
@@ -25,6 +26,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_ComisionesAutoriza_Autorizar")]
         public ErrorDto AF_ComisionesAutoriza_Autorizar(int CodEmpresa, string cedula, int autoriza, string? notas, string usuario)
         {

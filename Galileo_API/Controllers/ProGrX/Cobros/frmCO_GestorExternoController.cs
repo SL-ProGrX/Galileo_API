@@ -19,21 +19,25 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             => _bl = new FrmCoGestorExternoBL(config);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_GestorExterno_Listado_Obtener")]
         public ErrorDto<List<CrdGestorExternoListaItemModel>> Crd_GestorExterno_Listado_Obtener(int codEmpresa, [FromBody] CrdGestorExternoFiltroRequest request)
                 => _bl.Crd_GestorExterno_Listado_Obtener(codEmpresa, request);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_GestorExterno_Registrar")]
         public ErrorDto<string> Crd_GestorExterno_Registrar(int codEmpresa, [FromBody]  CrdGestorExternoRegistrarRequest request)
                         => _bl.Crd_GestorExterno_Registrar(codEmpresa, request);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_GestorExterno_Reversar")]
         public ErrorDto<string> Crd_GestorExterno_Reversar(int codEmpresa, [FromBody]  CrdGestorExternoReversaRequest request)
                 => _bl.Crd_GestorExterno_Reversar(codEmpresa, request);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_GestorExterno_CargaMasiva_Procesar")]
         public ErrorDto<CrdGestorExternoCargaMasivaResponse> Crd_GestorExterno_CargaMasiva_Procesar(int codEmpresa, [FromBody] CrdGestorExternoCargaMasivaRequest request)
                  => _bl.Crd_GestorExterno_CargaMasiva_Procesar(codEmpresa, request);

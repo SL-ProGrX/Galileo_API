@@ -225,6 +225,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return _BL.CxCCuentasCuentasBancarias_Obtener(CodEmpresa, cedula, banco);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCuentasFactura_Registra")]
         public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_Registra(
             int CodEmpresa,
@@ -233,6 +234,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return _BL.CxCCuentasFactura_Registra(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCuentasFactura_Elimina")]
         public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_Elimina(
             int CodEmpresa,
@@ -241,6 +243,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return _BL.CxCCuentasFactura_Elimina(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCuentasFactura_Vincular")]
         public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_Vincular(
             int CodEmpresa,
@@ -249,6 +252,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return _BL.CxCCuentasFactura_Vincular(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCuentasFactura_CargarArchivo")]
         public ErrorDto<CxCCuentasFacturaMantenimientoResult> CxCCuentasFactura_CargarArchivo(
             int CodEmpresa,
@@ -257,12 +261,14 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return _BL.CxCCuentasFactura_CargarArchivo(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCuentas_Guardar")]
         public ErrorDto<long> CxCCuentas_Guardar(int CodEmpresa, [FromBody] CxCCuentasSaveParams param)
         {
             return _BL.CxCCuentas_Guardar(CodEmpresa, param);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCuentasActivacion_Verifica")]
         public ErrorDto<CxCCuentasActivacionVerificaResult> CxCCuentasActivacion_Verifica(
     int CodEmpresa,
@@ -271,6 +277,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return _BL.CxCCuentasActivacion_Verifica(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCuentasActivacion_Activar")]
         public ErrorDto<bool> CxCCuentasActivacion_Activar(
             int CodEmpresa,
@@ -279,6 +286,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return _BL.CxCCuentasActivacion_Activar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCuentasAnulacion_Verifica")]
         public ErrorDto<CxCCuentasAnulacionVerificaResult> CxCCuentasAnulacion_Verifica(
     int CodEmpresa,
@@ -287,6 +295,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return _BL.CxCCuentasAnulacion_Verifica(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCuentasAnulacion_Anular")]
         public ErrorDto<bool> CxCCuentasAnulacion_Anular(
             int CodEmpresa,
@@ -295,6 +304,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return _BL.CxCCuentasAnulacion_Anular(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCuentasActivacionDetalle_Obtener")]
         public ErrorDto<CxCCuentasActivacionDetalleResult> CxCCuentasActivacionDetalle_Obtener(
     int CodEmpresa,
@@ -303,6 +313,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return _BL.CxCCuentasActivacionDetalle_Obtener(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCuentas_sbImprimeRecibo")]
         public ErrorDto<object> sbImprimeRecibo(int CodEmpresa, string pDocumento, string pTipo, string Usuario, bool pReImprime = false)
         {

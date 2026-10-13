@@ -26,6 +26,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasRoeAnular_Anular")]
         public ErrorDto CajasRoeAnular_Anular(int CodEmpresa, string usuario, string roe, string notas)
         {

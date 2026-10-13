@@ -59,6 +59,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Constancias_Bitacora_Registra")]
         public ErrorDto CR_Constancias_Bitacora_Registra(
             int CodEmpresa,

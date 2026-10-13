@@ -30,6 +30,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_ContratosInformes_Email_Enviar")]
         public ErrorDto<string> Fnd_ContratosInformes_Email_Enviar(
             int CodEmpresa,

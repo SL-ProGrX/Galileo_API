@@ -40,6 +40,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_DistribucionPolitica_Guardar")]
         public ErrorDto AF_DistribucionPolitica_Guardar(int CodEmpresa, string Usuario, AfDistribucionesDto Info)
         {

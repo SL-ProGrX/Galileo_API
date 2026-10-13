@@ -39,6 +39,7 @@ namespace Galileo.Controllers
             return _bl.Co_ControlAsgManual_Usuarios_Obtener(CodEmpresa);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_ControlAsgManual_Aplicar")]
         public ErrorDto Co_ControlAsgManual_Aplicar(
             int CodEmpresa,

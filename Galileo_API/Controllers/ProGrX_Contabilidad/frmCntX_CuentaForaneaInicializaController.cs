@@ -34,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXCuentaMovSaldo_Obtener(codEmpresa, codConta, codCuenta, anio, mes);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXCuentaForanea_Inicializar")]
         public ErrorDto CntXCuentaForanea_Inicializar(int codEmpresa, CntXCuentaForaneaInicializaRequest request)
         {

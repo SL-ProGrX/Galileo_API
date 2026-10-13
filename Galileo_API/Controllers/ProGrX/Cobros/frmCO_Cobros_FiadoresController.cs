@@ -66,18 +66,21 @@ namespace Galileo.Controllers.ProGrX.Cobros
             return _bl.Co_CobroFiadores_Consultas_Lista_Export(CodEmpresa, filtros, dto);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_CobroFiadores_NotificaAdvertencia_Bulk")]
         public ErrorDto Co_CobroFiadores_NotificaAdvertencia_Bulk(int CodEmpresa, string usuario, FrmCOCobroFiadoresAccionBulkDto dto)
         {
             return _bl.Co_CobroFiadores_NotificaAdvertencia_Bulk(CodEmpresa, usuario, dto);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_CobroFiadores_ProcesaCobros_Bulk")]
         public ErrorDto Co_CobroFiadores_ProcesaCobros_Bulk(int CodEmpresa, string usuario, FrmCOCobroFiadoresAccionBulkDto dto)
         {
             return _bl.Co_CobroFiadores_ProcesaCobros_Bulk(CodEmpresa, usuario, dto);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_CobroFiadores_CancelaCobro_Bulk")]
         public ErrorDto Co_CobroFiadores_CancelaCobro_Bulk(int CodEmpresa, string usuario, FrmCOCobroFiadoresAccionBulkDto dto)
         {

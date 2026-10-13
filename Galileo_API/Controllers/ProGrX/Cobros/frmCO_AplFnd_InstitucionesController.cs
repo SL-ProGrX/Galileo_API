@@ -36,6 +36,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_AplFnd_Instituciones_Actualizar")]
         public ErrorDto Co_AplFnd_Instituciones_Actualizar(
             int CodEmpresa,

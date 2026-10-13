@@ -18,12 +18,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             _bl = new FrmCrGeneraGarantiaBl(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_GeneraGarantia_Pagare_Preparar")]
         public ErrorDto<CrGeneraGarantiaPagareDto> CR_GeneraGarantia_Pagare_Preparar(
             int codEmpresa,
             CrGeneraGarantiaOperacionRequest request) =>
             _bl.CR_GeneraGarantia_Pagare_Preparar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_GeneraGarantia_Contrato_Preparar")]
         public ErrorDto<CrGeneraGarantiaContratoDto> CR_GeneraGarantia_Contrato_Preparar(
             int codEmpresa,
@@ -31,18 +33,21 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             CrGeneraGarantiaOperacionRequest request) =>
             _bl.CR_GeneraGarantia_Contrato_Preparar(codEmpresa, usuario, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_GeneraGarantia_PagareEmail_Enviar")]
         public ErrorDto<CrGeneraGarantiaEmailDto> CR_GeneraGarantia_PagareEmail_Enviar(
             int codEmpresa,
             CrGeneraGarantiaOperacionRequest request) =>
             _bl.CR_GeneraGarantia_PagareEmail_Enviar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_GeneraGarantia_Letras_Obtener")]
         public ErrorDto<List<CrGeneraGarantiaLetraDto>> CR_GeneraGarantia_Letras_Obtener(
             int codEmpresa,
             CrGeneraGarantiaRangoRequest request) =>
             _bl.CR_GeneraGarantia_Letras_Obtener(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_GeneraGarantia_PreImpreso_Preparar")]
         public ErrorDto<CrGeneraGarantiaPreImpresoDto> CR_GeneraGarantia_PreImpreso_Preparar(
             int codEmpresa,

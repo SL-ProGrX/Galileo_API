@@ -24,6 +24,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_Revo_TiposCausas_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Revo_TiposCausas_Guardar")]
         public ErrorDto CR_Revo_TiposCausas_Guardar(
             int codEmpresa,
@@ -33,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_Revo_TiposCausas_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CR_Revo_TiposCausas_Eliminar")]
         public ErrorDto CR_Revo_TiposCausas_Eliminar(
             int codEmpresa,

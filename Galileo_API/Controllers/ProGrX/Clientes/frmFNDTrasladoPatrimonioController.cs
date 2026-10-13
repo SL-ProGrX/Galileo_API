@@ -42,6 +42,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_TrasladoPatrimonio_DocumentoConsecutivo_Obtener")]
         public ErrorDto<FndDocumentoConsecutivoResult?> Fnd_TrasladoPatrimonio_DocumentoConsecutivo_Obtener(
             int CodEmpresa, [FromBody] FndDocumentoConsecutivoRequest request)
@@ -50,6 +51,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_TrasladoPatrimonio_DocumentoConsecutivoAse_Obtener")]
         public ErrorDto<FndDocumentoConsecutivoAseResult?> Fnd_TrasladoPatrimonio_DocumentoConsecutivoAse_Obtener(
            int CodEmpresa, [FromBody] FndDocumentoConsecutivoAseRequest request)
@@ -58,6 +60,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_ContratoDetalle_Insertar")]
         public ErrorDto<SimpleSuccessResult> Fnd_ContratoDetalle_Insertar(
             int CodEmpresa, [FromBody] FndContratoDetalleInsertRequest request)
@@ -66,6 +69,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Contrato_UpdateAportesRendimiento")]
         public ErrorDto<SimpleSuccessResult> Fnd_Contrato_UpdateAportesRendimiento(
             int CodEmpresa, [FromBody] FndContratoUpdateRequest request)
@@ -74,6 +78,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Documento_Insertar")]
         public ErrorDto<SimpleSuccessResult> Fnd_Documento_Insertar(
             int CodEmpresa, [FromBody] FndDocumentoInsertRequest request)
@@ -82,6 +87,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Asiento_Insertar")]
         public ErrorDto<SimpleSuccessResult> Fnd_Asiento_Insertar(
             int CodEmpresa, [FromBody] FndAsientoInsertRequest request)
@@ -90,6 +96,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SifTransaccion_Insertar")]
         public ErrorDto<SimpleSuccessResult> SifTransaccion_Insertar(
             int CodEmpresa, [FromBody] SifTransaccionInsertRequest request)
@@ -98,6 +105,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SifDocsAsiento_Ejecutar")]
         public ErrorDto<SimpleSuccessResult> SifDocsAsiento_Ejecutar(
             int CodEmpresa, [FromBody] SifDocsAsientoRequest request)
@@ -114,6 +122,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_AhorroConsolidado_Procesar")]
         public ErrorDto<SimpleSuccessResult> Fnd_AhorroConsolidado_Procesar(
             int CodEmpresa, [FromBody] FndAhorroConsolidadoRequest request)
@@ -122,6 +131,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SifTransaccionPatrimonio_Insertar")]
         public ErrorDto<SimpleSuccessResult> SifTransaccionPatrimonio_Insertar(
             int CodEmpresa, [FromBody] SifTransaccionPatrimonioInsertRequest request)
@@ -130,6 +140,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_AhorroDetallado_Resumen_Obtener")]
         public ErrorDto<List<FndAhorroDetalladoResumen>> Fnd_AhorroDetallado_Resumen_Obtener(
             int CodEmpresa, [FromBody] FndAhorroDetalladoResumenRequest request)

@@ -52,12 +52,14 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.ArfUnidades_ConsultaUnidad_Obtener(codEmpresa, codUnidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ArfUnidades_Guardar")]
         public ErrorDto ArfUnidades_Guardar(int codEmpresa, bool existe, ArfUnidadesData request)
         {
             return _bl.ArfUnidades_Guardar(codEmpresa, existe, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("ArfUnidades_Eliminar")]
         public ErrorDto ArfUnidades_Eliminar(int codEmpresa, string usuario, string codUnidad)
         {

@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Insertar")]
         public ErrorDto<int> Insertar(int codEmpresa, CntxPlantillaSaveDto modelo)
         {
@@ -33,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPut("Actualizar")]
         public ErrorDto<int?> Actualizar(int codEmpresa, CntxPlantillaSaveDto modelo)
         {
@@ -40,6 +42,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Borrar")]
         public ErrorDto<int> Borrar(int codEmpresa, int codContabilidad, int codPlantilla)
         {

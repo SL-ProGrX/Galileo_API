@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX_ARF
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Insertar")]
         public ErrorDto<int> Insertar(int codEmpresa, ArfAcreedorDto modelo)
         {
@@ -33,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX_ARF
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPut("Actualizar")]
         public ErrorDto<int> Actualizar(int codEmpresa, ArfAcreedorDto modelo)
         {
@@ -40,6 +42,7 @@ namespace Galileo_API.Controllers.ProGrX_ARF
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Borrar")]
         public ErrorDto<int> Borrar(int codEmpresa, int codigo)
         {

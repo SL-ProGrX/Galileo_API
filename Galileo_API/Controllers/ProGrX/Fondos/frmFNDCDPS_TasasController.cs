@@ -30,6 +30,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_CdpsTasas_Config_Guardar")]
         public ErrorDto Fnd_CdpsTasas_Config_Guardar(int CodEmpresa, FndCdpsTasaRefData Data)
         {
@@ -44,6 +45,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_CdpsTasas_Plan_Asignar")]
         public ErrorDto Fnd_CdpsTasas_Plan_Asignar(int CodEmpresa, string CodTasaRef, string CodPlan, string Usuario, int Accion)
         {
@@ -58,6 +60,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_CdpsTasas_Vencimiento_Guardar")]
         public ErrorDto Fnd_CdpsTasas_Vencimiento_Guardar(int CodEmpresa, string CodTasaRef, int IdCupon, int IdPlazo, decimal Tasa, string Usuario)
         {
@@ -65,6 +68,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_CdpsTasas_Estado_Actualizar")]
         public ErrorDto Fnd_CdpsTasas_Estado_Actualizar(int CodEmpresa, string CodTasaRef, bool Estado, string Notas, string Usuario)
         {
@@ -79,6 +83,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Fnd_CdpsTasas_Eliminar")]
         public ErrorDto Fnd_CdpsTasas_Eliminar(int CodEmpresa, string CodTasaRef, string Usuario)
         {

@@ -34,6 +34,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_ComisionesRemesa_Guardar")]
         public ErrorDto AF_ComisionesRemesa_Guardar(int CodEmpresa, string usuario, AfComisionDto comision)
         {
@@ -41,6 +42,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_ComisionesRemesa_Borrar")]
         public ErrorDto AF_ComisionesRemesa_Borrar(int CodEmpresa, string usuario, int cod_comision)
         {
@@ -66,6 +68,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_ComisionesGenera_Generar")]
         public ErrorDto AF_ComisionesGenera_Generar(int CodEmpresa, string usuario, int comision, List<AfComisionPromotorData> promotor)
         {
@@ -98,6 +101,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_ComisionesPago_Generar")]
         public ErrorDto AF_ComisionesPago_Generar(int CodEmpresa, string usuario, int comision, List<AfComisionPagoData> pagos)
         {

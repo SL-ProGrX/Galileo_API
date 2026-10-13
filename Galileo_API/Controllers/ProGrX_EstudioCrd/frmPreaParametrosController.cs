@@ -20,6 +20,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PreaParametros_Inicializar")]
         public ErrorDto<List<PreaParametroModel>> PreaParametros_Inicializar(int codEmpresa)
                => _bl.PreaParametros_Inicializar(codEmpresa);
@@ -30,6 +31,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
                  => _bl.PreaParametros_Grid_Obtener(codEmpresa);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PreaParametros_Parametro_Actualizar")]
         public ErrorDto PreaParametros_Parametro_Actualizar(int codEmpresa, [FromBody] PreaParametroActualizarRequest request)
             => _bl.PreaParametros_Parametro_Actualizar(codEmpresa, request);

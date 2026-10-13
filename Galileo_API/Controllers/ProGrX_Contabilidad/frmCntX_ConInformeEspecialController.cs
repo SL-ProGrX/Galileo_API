@@ -19,6 +19,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             _bl = new FrmCntxConInformeEspecialBL(config);
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cnt_ConsolidadoEspecial_Excel_Generar")]
         public ErrorDto<ArchivoGeneradoModel> Cnt_ConsolidadoEspecial_Excel_Generar(int CodEmpresa, string usuario, CntConsolidadoEspecialGenerarRequest request)
               => _bl.Cnt_ConsolidadoEspecial_Excel_Generar(CodEmpresa, request, usuario);

@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrCatalogoGrupos_Obtener(codEmpresa, activos);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoGrupos_Consulta_Calcular")]
         public ErrorDto<List<CrCatalogoGrupoConsultaData>> CrCatalogoGrupos_Consulta_Calcular(
             int codEmpresa,
@@ -34,6 +35,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrCatalogoGrupos_Consulta_Calcular(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoGrupos_Guardar")]
         public ErrorDto CrCatalogoGrupos_Guardar(
             int codEmpresa,
@@ -51,6 +53,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrCatalogoGrupos_AsignacionCatalogos_Obtener(codEmpresa, codGrupo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoGrupos_Asignacion_Guardar")]
         public ErrorDto CrCatalogoGrupos_Asignacion_Guardar(
             int codEmpresa,
@@ -67,6 +70,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrCatalogoGrupos_Diario_Obtener(codEmpresa, codGrupo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoGrupos_Diario_Guardar")]
         public ErrorDto CrCatalogoGrupos_Diario_Guardar(
             int codEmpresa,
@@ -75,6 +79,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrCatalogoGrupos_Diario_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrCatalogoGrupos_Eliminar")]
         public ErrorDto CrCatalogoGrupos_Eliminar(
             int codEmpresa, 

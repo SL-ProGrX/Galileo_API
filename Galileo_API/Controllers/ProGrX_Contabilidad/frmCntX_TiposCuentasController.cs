@@ -21,12 +21,14 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXTiposCuentas_Obtener(codEmpresa, codConta);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXTiposCuentas_Guardar")]
         public ErrorDto CntXTiposCuentas_Guardar(int codEmpresa, int codConta, string usuario, CntXTiposCuentasData request)
         {
             return _bl.CntXTiposCuentas_Guardar(codEmpresa, codConta, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntXTiposCuentas_Eliminar")]
         public ErrorDto CntXTiposCuentas_Eliminar(int codEmpresa, int codConta, string usuario, string tipoCuenta)
         {

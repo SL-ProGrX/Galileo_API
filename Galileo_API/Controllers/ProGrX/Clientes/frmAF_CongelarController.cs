@@ -52,6 +52,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_BloqueosCongelamientos_Guardar")]
         public ErrorDto<int> AF_BloqueosCongelamientos_Guardar(int CodEmpresa, string usuario, AFCongelarDto congelar)
         {
@@ -70,6 +71,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_CongelarCausaMant_Eliminar")]
         public ErrorDto AF_CongelarCausaMant_Eliminar(int CodEmpresa, string cod_causa)
         {
@@ -77,6 +79,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CongelarCausaMant_Guardar")]
         public ErrorDto AF_CongelarCausaMant_Guardar(int CodEmpresa, string usuario, AFCongelaCausaDto causa)
         {

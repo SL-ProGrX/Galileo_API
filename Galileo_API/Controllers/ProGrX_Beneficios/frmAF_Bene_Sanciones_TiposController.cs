@@ -39,18 +39,21 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Inserta un tipo de sanción (o actualiza si existe).</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfBeneTipoSancion_Insertar")]
         public ErrorDto AfBeneTipoSancion_Insertar(int CodCliente, [FromBody] AfTipoSancionesDto tipo_sancion)
             => _bl.AfBeneTipoSancion_Insertar(CodCliente, tipo_sancion);
 
         /// <summary>Actualiza un tipo de sanción.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPut("AfBeneTipoSancion_Actualizar")]
         public ErrorDto AfBeneTipoSancion_Actualizar(int CodCliente, [FromBody] AfTipoSancionesDto tipo_sancion)
             => _bl.AfBeneTipoSancion_Actualizar(CodCliente, tipo_sancion);
 
         /// <summary>Elimina un tipo de sanción.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfBeneTipoSancion_Eliminar")]
         public ErrorDto AfBeneTipoSancion_Eliminar(int CodCliente, int tipo_sancion)
             => _bl.AfBeneTipoSancion_Eliminar(CodCliente, tipo_sancion);

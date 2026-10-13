@@ -57,26 +57,31 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
             => _bl.AfiAsignaciones_Obtener(CodCliente, asigna, grupo);
 
         /// <summary>Guarda un grupo de beneficios (inserta o actualiza).</summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiBeneGrupo_Guardar")]
         public ErrorDto AfiBeneGrupo_Guardar(int CodCliente, [FromBody] AfiBeneGrupos grupo)
             => _bl.AfiBeneGrupo_Guardar(CodCliente, grupo);
 
         /// <summary>Elimina un grupo de beneficios.</summary>
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfiBeneGrupos_Eliminar")]
         public ErrorDto AfiBeneGrupos_Eliminar(int CodCliente, int cod_grupo)
             => _bl.AfiBeneGrupos_Eliminar(CodCliente, cod_grupo);
 
         /// <summary>Asocia un beneficio a un grupo.</summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiGrupoBeneficio_Insertar")]
         public ErrorDto AfiGrupoBeneficio_Insertar(int CodCliente, [FromBody] AfiGrupoBeneficioData grupo)
             => _bl.AfiGrupoBeneficio_Insertar(CodCliente, grupo);
 
         /// <summary>Desasocia un beneficio de un grupo.</summary>
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfiGrupoBeneficio_Eliminar")]
         public ErrorDto AfiGrupoBeneficio_Eliminar(int CodCliente, [FromBody] AfiGrupoBeneficioData grupo)
             => _bl.AfiGrupoBeneficio_Eliminar(CodCliente, grupo);
 
         /// <summary>Registra o retira una asignación de grupo por tipo.</summary>
+        [ValidateAntiForgeryToken]
         [HttpPut("AfiAsignaciones_Actualizar")]
         public ErrorDto AfiAsignaciones_Actualizar(int CodCliente, [FromBody] AfiAsignacionRequest request)
             => _bl.AfiAsignaciones_Actualizar(CodCliente, request);

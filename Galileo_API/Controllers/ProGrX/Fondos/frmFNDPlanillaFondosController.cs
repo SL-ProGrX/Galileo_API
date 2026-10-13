@@ -61,6 +61,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_PlanillaFondos_Deducciones_Cargar")]
         public ErrorDto<FndPlanillaFondosData> FND_PlanillaFondos_Deducciones_Cargar(int CodEmpresa, CargarDeduccionesRequest Request)
         {
@@ -68,6 +69,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_PlanillaFondos_Procesar")]
         public ErrorDto<object> FND_PlanillaFondos_Procesar(int CodEmpresa, string Request)
         {

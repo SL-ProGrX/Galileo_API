@@ -34,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Procesar")]
         public ErrorDto Procesar(int codEmpresa, int codContabilidad, int periodoAnio, int periodoMes,string usuario,
             ProcesarDiferencialRequestDto request)

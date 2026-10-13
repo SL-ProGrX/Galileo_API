@@ -26,6 +26,7 @@
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CrComitesParametros_Actualizar")]
         public ErrorDto CrComitesParametros_Actualizar(int CodEmpresa, CrComitesParametroActualizarRequest request)
         {

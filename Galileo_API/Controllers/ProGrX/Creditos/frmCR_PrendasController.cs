@@ -84,6 +84,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_Prendas_AvaluosLista(codEmpresa, prendaId);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prendas_AvaluoGuardar")]
         public ErrorDto<string> CR_Prendas_AvaluoGuardar(
             int codEmpresa,
@@ -92,6 +93,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_Prendas_AvaluoGuardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prendas_NotariadoGuardar")]
         public ErrorDto<string> CR_Prendas_NotariadoGuardar(
             int codEmpresa,
@@ -100,6 +102,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_Prendas_NotariadoGuardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prendas_NotaGuardar")]
         public ErrorDto<string> CR_Prendas_NotaGuardar(
             int codEmpresa,
@@ -108,6 +111,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_Prendas_NotaGuardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prendas_PolizaCoberturaGuardar")]
         public ErrorDto<string> CR_Prendas_PolizaCoberturaGuardar(
             int codEmpresa,
@@ -128,6 +132,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_Prendas_PolizaExternaLoad(codEmpresa, prendaId, polizaExtId);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prendas_Guardar")]
         public ErrorDto<long> CR_Prendas_Guardar(
             int codEmpresa,
@@ -136,6 +141,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_Prendas_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prendas_PolizaExternaGuardar")]
         public ErrorDto<string> CR_Prendas_PolizaExternaGuardar(
             int codEmpresa,
@@ -144,6 +150,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_Prendas_PolizaExternaGuardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CR_Prendas_Eliminar")]
         public ErrorDto CR_Prendas_Eliminar(int codEmpresa, [FromBody] CrPrendasEliminarRequest request)
         {

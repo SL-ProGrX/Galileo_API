@@ -19,6 +19,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcContratosPagadores_Lista")]
         public ErrorDto<List<CxcContratoPagadorDto>> CxcContratosPagadores_Lista(int codEmpresa, [FromBody] CxcContratoPagadorListaParams param)
         {
@@ -26,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcContratoPagador_Insertar")]
         public ErrorDto<bool> CxcContratoPagador_Insertar(int codEmpresa, [FromBody] CxcContratoPagadorSaveParams param)
         {
@@ -33,6 +35,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcContratoPagador_Eliminar")]
         public ErrorDto<bool> CxcContratoPagador_Eliminar(int codEmpresa, [FromBody] CxcContratoPagadorDeleteParams param)
         {

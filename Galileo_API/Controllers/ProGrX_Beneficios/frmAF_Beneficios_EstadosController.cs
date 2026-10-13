@@ -37,16 +37,19 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
             => _bl.BeneficiosEstados_Exportar(CodEmpresa, filtros);
 
         /// <summary>Inserta un estado de beneficio.</summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneficiosEstados_Agregar")]
         public ErrorDto BeneficiosEstados_Agregar(int CodEmpresa, [FromBody] BeneEstado request)
             => _bl.BeneficiosEstados_Agregar(CodEmpresa, request);
 
         /// <summary>Actualiza un estado de beneficio.</summary>
+        [ValidateAntiForgeryToken]
         [HttpPut("BeneficiosEstados_Actualizar")]
         public ErrorDto BeneficiosEstados_Actualizar(int CodEmpresa, [FromBody] BeneEstado request)
             => _bl.BeneficiosEstados_Actualizar(CodEmpresa, request);
 
         /// <summary>Elimina un estado de beneficio.</summary>
+        [ValidateAntiForgeryToken]
         [HttpDelete("BeneficiosEstados_Eliminar")]
         public ErrorDto BeneficiosEstados_Eliminar(int CodEmpresa, string id)
             => _bl.BeneficiosEstados_Eliminar(CodEmpresa, id);

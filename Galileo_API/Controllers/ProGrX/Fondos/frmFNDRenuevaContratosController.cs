@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_RenuevaContratos_Aplicar")]
         public ErrorDto Fnd_RenuevaContratos_Aplicar(int CodEmpresa, FndRenuevaContratosRequest Request)
         {

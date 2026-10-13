@@ -17,6 +17,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
    => _bl = new FrmCoCobroJudicialMasivoBL(config);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_CobroJudicialMasivo_CargarOperaciones")]
         public ErrorDto<CoProcesosMasivoCargaResponse> Co_CobroJudicialMasivo_CargarOperaciones(
                     int codEmpresa, [FromBody] CoProcesosMasivoCargaRequest request, string modulo)
@@ -28,6 +29,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
 
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_CobroJudicialMasivo_Procesar")]
         public ErrorDto<bool> Co_CobroJudicialMasivo_Procesar(int codEmpresa,  string usuario,string notas, string modulo )
               => _bl.Co_CobroJudicialMasivo_Procesar(codEmpresa, notas, usuario, modulo);

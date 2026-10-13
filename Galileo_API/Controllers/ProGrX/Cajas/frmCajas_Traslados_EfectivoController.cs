@@ -47,6 +47,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_TrasladosEfectivo_Resolucion_Aplicar")]
         public ErrorDto Cajas_TrasladosEfectivo_Resolucion_Aplicar(int CodEmpresa, CajasTeResolucionRequest Request)
         {
@@ -54,6 +55,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_TrasladosEfectivo_Registrar")]
         public ErrorDto Cajas_TrasladosEfectivo_Registrar(int CodEmpresa, string Movimiento, CajasTrasladosEfectivoDto Request)
         {

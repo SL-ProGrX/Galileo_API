@@ -35,6 +35,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
                     operacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "CrOperacionCtaBullet_Guardar")]
         public ErrorDto

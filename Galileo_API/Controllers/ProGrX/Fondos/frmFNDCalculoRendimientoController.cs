@@ -42,6 +42,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AplicarRendimientos")]
         public ErrorDto<FndRendimientoResultadoDto> AplicarRendimientos(int CodEmpresa, FndRendimientoRequestDto dto)
         {

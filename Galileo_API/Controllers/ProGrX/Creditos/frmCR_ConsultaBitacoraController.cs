@@ -25,6 +25,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ConsultaBitacora_Registro_Lista_Obtener")]
         public ErrorDto<CrConsultaBitacoraLista<CrConsultaBitacoraRegistroDto>> CR_ConsultaBitacora_Registro_Lista_Obtener(int CodEmpresa,  [FromBody] CrConsultaBitacoraRequest request)
         {
@@ -32,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ConsultaBitacora_Registro_Lista_Export")]
         public ErrorDto<CrConsultaBitacoraLista<CrConsultaBitacoraRegistroDto>> CR_ConsultaBitacora_Registro_Lista_Export(int CodEmpresa,[FromBody] CrConsultaBitacoraRequest request)
         {
@@ -39,6 +41,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ConsultaBitacora_Creditos_Lista_Obtener")]
         public ErrorDto<CrConsultaBitacoraLista<CrConsultaBitacoraCreditosDto>> CR_ConsultaBitacora_Creditos_Lista_Obtener(int CodEmpresa,[FromBody] CrConsultaBitacoraRequest request)
         {
@@ -46,6 +49,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ConsultaBitacora_Creditos_Lista_Export")]
         public ErrorDto<CrConsultaBitacoraLista<CrConsultaBitacoraCreditosDto>> CR_ConsultaBitacora_Creditos_Lista_Export(int CodEmpresa,[FromBody] CrConsultaBitacoraRequest request)
         {
@@ -53,6 +57,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ConsultaBitacora_Fondos_Lista_Obtener")]
         public ErrorDto<CrConsultaBitacoraLista<CrConsultaBitacoraFondosDto>> CR_ConsultaBitacora_Fondos_Lista_Obtener(int CodEmpresa,[FromBody] CrConsultaBitacoraRequest request)
         {
@@ -60,6 +65,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ConsultaBitacora_Fondos_Lista_Export")]
         public ErrorDto<CrConsultaBitacoraLista<CrConsultaBitacoraFondosDto>> CR_ConsultaBitacora_Fondos_Lista_Export(int CodEmpresa,[FromBody] CrConsultaBitacoraRequest request)
         {
@@ -67,6 +73,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ConsultaBitacora_Patrimonio_Lista_Obtener")]
         public ErrorDto<CrConsultaBitacoraLista<CrConsultaBitacoraPatrimonioDto>> CR_ConsultaBitacora_Patrimonio_Lista_Obtener(int CodEmpresa,[FromBody] CrConsultaBitacoraRequest request)
         {
@@ -74,6 +81,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ConsultaBitacora_Patrimonio_Lista_Export")]
         public ErrorDto<CrConsultaBitacoraLista<CrConsultaBitacoraPatrimonioDto>> CR_ConsultaBitacora_Patrimonio_Lista_Export(int CodEmpresa,[FromBody] CrConsultaBitacoraRequest request)
         {
@@ -81,6 +89,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ConsultaBitacora_Bancos_Lista_Obtener")]
         public ErrorDto<CrConsultaBitacoraLista<CrConsultaBitacoraBancosDto>> CR_ConsultaBitacora_Bancos_Lista_Obtener(int CodEmpresa,[FromBody] CrConsultaBitacoraRequest request)
         {
@@ -88,6 +97,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ConsultaBitacora_Bancos_Lista_Export")]
         public ErrorDto<CrConsultaBitacoraLista<CrConsultaBitacoraBancosDto>> CR_ConsultaBitacora_Bancos_Lista_Export(int CodEmpresa,[FromBody] CrConsultaBitacoraRequest request)
         {

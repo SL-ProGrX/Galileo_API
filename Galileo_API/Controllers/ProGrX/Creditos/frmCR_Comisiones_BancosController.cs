@@ -18,6 +18,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             _bl = new FrmCrComisionesBancosBl(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_frmCR_Comisiones_Bancos_Inicializar")]
         public ErrorDto<List<CrComisionesBancosItem>>
             CR_frmCR_Comisiones_Bancos_Inicializar(
@@ -36,6 +37,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_frmCR_Comisiones_Bancos_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_frmCR_Comisiones_Bancos_Actualizar")]
         public ErrorDto CR_frmCR_Comisiones_Bancos_Actualizar(
             int codEmpresa,

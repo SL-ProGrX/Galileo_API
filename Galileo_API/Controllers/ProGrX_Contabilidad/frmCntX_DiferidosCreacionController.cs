@@ -48,12 +48,14 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXDiferidosCreacion_Lista_Obtener(codEmpresa, codConta);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXDiferidosCreacion_Guardar")]
         public ErrorDto CntXDiferidosCreacion_Guardar(int codEmpresa, CntXDiferidosCreacionRequest request)
         {
             return _bl.CntXDiferidosCreacion_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntXDiferidosCreacion_Eliminar")]
         public ErrorDto CntXDiferidosCreacion_Eliminar(
             int codEmpresa, int codConta, string usuario, int codDifPlantilla, int codDiferido)

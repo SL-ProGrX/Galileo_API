@@ -33,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_CargaSaldosFavor_Retencion_Aplicar")]
         public ErrorDto<int> Cajas_CargaSaldosFavor_Retencion_Aplicar(
             int codEmpresa,
@@ -56,6 +57,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CargaSaldosFavor_TipoLiquidacion_Obtener")]
         public ErrorDto<List<CajasSaldoFavorTipoLiquidacionResult>> CargaSaldosFavor_TipoLiquidacion_Obtener(int codEmpresa, [FromBody] CajasSaldoFavorTipoLiquidacionParams param)
         {
@@ -63,6 +65,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CargaSaldosFavor_Consulta")]
         public ErrorDto<List<CajasSaldosFavorConsultaResult>> CargaSaldosFavor_Consulta([FromBody] CajasSaldosFavorConsultaParams param)
         {
@@ -70,6 +73,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CargaSaldosFavor_CuentasBancariasAut_Obtener")]
         public ErrorDto<List<CajasDepositosCuentaBancariaAutResult>> CargaSaldosFavor_CuentasBancariasAut_Obtener(int codEmpresa, [FromBody] CajasDepositosCuentaBancariaAutParams param)
         {
@@ -77,6 +81,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_DepositosTramiteIdentifica_Consulta")]
         public ErrorDto<List<CajasDepositosTramiteIdentificaResult>> Cajas_DepositosTramiteIdentifica_Consulta([FromBody] CajasDepositosTramiteIdentificaParams param)
         {
@@ -98,6 +103,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_DepositosCargado_Existe")]
         public ErrorDto<CajasDepositosCargadoResult?> Cajas_DepositosCargado_Existe([FromBody] CajasDepositosCargadoParams param)
         {
@@ -105,6 +111,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_DepositosTramite_Insertar")]
         public ErrorDto<bool> Cajas_DepositosTramite_Insertar([FromBody] CajasDepositosTramiteInsertParams param)
         {
@@ -112,6 +119,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_IdentificaTesDepositos")]
         public ErrorDto<bool> Cajas_IdentificaTesDepositos([FromBody] CajasIdentificaTesDepositosParams param)
         {
@@ -119,6 +127,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_DepositosTramiteInconsistencia_Insertar")]
         public ErrorDto<bool> Cajas_DepositosTramiteInconsistencia_Insertar([FromBody] CajasDepositosTramiteInconsistenciaInsertParams param)
         {
@@ -126,6 +135,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_SaldoFavorCarga")]
         public ErrorDto<bool> Cajas_SaldoFavorCarga([FromBody] CajasSaldoFavorCargaParams param)
         {
@@ -133,6 +143,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_IdentificaTesDepositos_Full")]
         public ErrorDto<bool> Cajas_IdentificaTesDepositos_Full([FromBody] CajasIdentificaTesDepositosFullParams param)
         {
@@ -140,6 +151,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_NotificaDepositos")]
         public ErrorDto<bool> Cajas_NotificaDepositos([FromBody] CajasNotificaDepositosParams param)
         {
@@ -147,6 +159,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_SaldoFavorLiquidacion")]
         public ErrorDto<bool> Cajas_SaldoFavorLiquidacion([FromBody] CajasSaldoFavorLiquidacionParams param)
         {
@@ -169,6 +182,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         /// Ejecuta la liquidación de un saldo a favor y retorna el documento generado.
         /// </summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_TransacSFLiq_Liquidar")]
         public ErrorDto<CajasTransacSFLiqLiquidarResult> Cajas_TransacSFLiq_Liquidar(
             [FromBody] CajasTransacSFLiqLiquidarParams request)

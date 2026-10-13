@@ -27,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         /// <param name="filtros">Filtros seleccionados en el monitor.</param>
         /// <returns>Operaciones encontradas.</returns>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Buscar")]
         public ErrorDto<List<ArfMonitorTablaDto>> Buscar(int codEmpresa,[FromBody] ArfMonitorFiltroDto filtros
         )

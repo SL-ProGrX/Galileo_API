@@ -18,18 +18,21 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             _bl = new FrmCrSeguimientoRetencionesBl(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoRetenciones_Inicializar")]
         public ErrorDto<CrSeguimientoRetencionesPantallaData> CR_SeguimientoRetenciones_Inicializar(
             int codEmpresa,
             [FromBody] CrSeguimientoRetencionesInicializarRequest request)
             => _bl.CR_SeguimientoRetenciones_Inicializar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoRetenciones_Guardar")]
         public ErrorDto CR_SeguimientoRetenciones_Guardar(
             int codEmpresa,
             [FromBody] CrSeguimientoRetencionesGuardarRequest request)
             => _bl.CR_SeguimientoRetenciones_Guardar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoRetenciones_Eliminar")]
         public ErrorDto CR_SeguimientoRetenciones_Eliminar(
             int codEmpresa,

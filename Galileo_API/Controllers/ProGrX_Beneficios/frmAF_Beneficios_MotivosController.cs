@@ -37,16 +37,19 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
             => _bl.BeneficiosMotivos_Exportar(CodEmpresa, filtros);
 
         /// <summary>Inserta un motivo de beneficio.</summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneficiosMotivos_Agregar")]
         public ErrorDto BeneficiosMotivos_Agregar(int CodEmpresa, [FromBody] BeneMotivos request)
             => _bl.BeneficiosMotivos_Agregar(CodEmpresa, request);
 
         /// <summary>Actualiza un motivo de beneficio.</summary>
+        [ValidateAntiForgeryToken]
         [HttpPut("BeneficiosMotivos_Actualizar")]
         public ErrorDto BeneficiosMotivos_Actualizar(int CodEmpresa, [FromBody] BeneMotivos request)
             => _bl.BeneficiosMotivos_Actualizar(CodEmpresa, request);
 
         /// <summary>Elimina un motivo de beneficio.</summary>
+        [ValidateAntiForgeryToken]
         [HttpDelete("BeneficiosMotivos_Eliminar")]
         public ErrorDto BeneficiosMotivos_Eliminar(int CodEmpresa, string id)
             => _bl.BeneficiosMotivos_Eliminar(CodEmpresa, id);

@@ -24,18 +24,21 @@ namespace Galileo_API.Controllers.ProGrX_CxC
             return _bl.ListarRegistrosIngresos(codEmpresa, operacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("GuardarRegistrosIngresos")]
         public ErrorDto<bool> GuardarRegistrosIngresos(int codEmpresa, CxCIngresoGuardarDto dto)
         {
             return _bl.GuardarRegistrosIngresos(codEmpresa, dto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("EliminarRegistroIngresos")]
         public ErrorDto<bool> EliminarRegistroIngresos(int codEmpresa, int operacion, int linea, string codCargo)
         {
             return _bl.EliminarRegistroIngresos(codEmpresa, operacion, linea, codCargo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ActualizarRegistroingreso")]
         public ErrorDto<bool> ActualizarRegistroingreso(int codEmpresa, int operacion, string usuario)
         {

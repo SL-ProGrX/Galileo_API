@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("FNDBeneficiarios_Contratos_Eliminar")]
         public ErrorDto FNDBeneficiarios_Contratos_Eliminar(int CodEmpresa, int consec, string usuario)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_Beneficiarios_Contratos_Guardar")]
         public ErrorDto FND_Beneficiarios_Contratos_Guardar(int CodEmpresa, string usuario, FndBeneficiariosContratosData beneficiario)
         {

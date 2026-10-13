@@ -34,18 +34,21 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Registra un requisito del beneficio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneRegistroRequisitos_Guardar")]
         public ErrorDto BeneRegistroRequisitos_Guardar([FromBody] BeneRequisitosGuardar requisito)
             => _bl.BeneRegistroRequisitos_Guardar(requisito);
 
         /// <summary>Elimina un requisito del beneficio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("BeneRegistroRequisitos_Eliminar")]
         public ErrorDto BeneRegistroRequisitos_Eliminar(int CodCliente, string cod_beneficio, int consec, string cod_requisito, string usuario)
             => _bl.BeneRegistroRequisitos_Eliminar(CodCliente, cod_beneficio, consec, cod_requisito, usuario);
 
         /// <summary>Asocia el archivo GA a un requisito del beneficio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneRegistroRequisito_Asociar")]
         public ErrorDto BeneRegistroRequisito_Asociar(string modulo, string TypeId, string requisito, [FromBody] DocumentosArchivoDto data)
             => _bl.BeneRegistroRequisito_Asociar(modulo, TypeId, requisito, data);

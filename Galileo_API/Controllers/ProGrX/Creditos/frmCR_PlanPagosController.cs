@@ -170,6 +170,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_PlanPagos_Activar")]
         public ErrorDto CR_PlanPagos_Activar(
             int CodEmpresa,
@@ -184,6 +185,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_PlanPagos_Revisar")]
         public ErrorDto CR_PlanPagos_Revisar(
             int CodEmpresa,
@@ -198,6 +200,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_PlanPagos_Email_Enviar")]
         public ErrorDto CR_PlanPagos_Email_Enviar(
             int CodEmpresa,

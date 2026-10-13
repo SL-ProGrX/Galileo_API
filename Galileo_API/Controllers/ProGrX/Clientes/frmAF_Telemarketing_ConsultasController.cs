@@ -53,6 +53,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Telemarketing_Clientes_Obtener")]
         public ErrorDto<List<AfTelemarketingClientesData>> AF_Telemarketing_Clientes_Obtener(int CodEmpresa, ClientesFiltros filtros)
         {

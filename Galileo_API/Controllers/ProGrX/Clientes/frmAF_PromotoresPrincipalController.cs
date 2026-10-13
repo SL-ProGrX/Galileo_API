@@ -68,6 +68,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Promotores_Guardar")]
         public ErrorDto AF_Promotores_Guardar(int CodEmpresa, string Usuario, AfPromotoresPrincipalDto Info)
         {
@@ -75,6 +76,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_Promotores_Eliminar")]
         public ErrorDto AF_Promotores_Eliminar(int CodEmpresa, string Usuario, int Codigo)
         {

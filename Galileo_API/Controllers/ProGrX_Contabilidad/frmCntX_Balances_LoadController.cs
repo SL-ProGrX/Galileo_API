@@ -37,12 +37,14 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             int historicoId)
             => _bl.CntX_Balances_Load_Historico_Consultar(codEmpresa, historicoId);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntX_Balances_Load_Archivo_Cargar")]
         public ActionResult<ErrorDto<List<CntXBalancesLoadResultadoDto>>> CntX_Balances_Load_Archivo_Cargar(
             int codEmpresa,
             CntXBalancesLoadArchivoCargarRequestDto request)
             => _bl.CntX_Balances_Load_Archivo_Cargar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntX_Balances_Load_Importar")]
         public ActionResult<ErrorDto<CntXBalancesLoadProcesoResultDto?>> CntX_Balances_Load_Importar(
             int codEmpresa,
@@ -55,12 +57,14 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             [FromQuery] CntXBalancesLoadProcesoRequestDto request)
             => _bl.CntX_Balances_Load_Importar_Validar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntX_Balances_Load_Inicializar")]
         public ActionResult<ErrorDto<CntXBalancesLoadProcesoResultDto?>> CntX_Balances_Load_Inicializar(
             int codEmpresa,
             CntXBalancesLoadProcesoRequestDto request)
             => _bl.CntX_Balances_Load_Inicializar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntX_Balances_Load_ImportarContaBase")]
         public ActionResult<ErrorDto<CntXBalancesLoadProcesoResultDto?>> CntX_Balances_Load_ImportarContaBase(
             int codEmpresa,

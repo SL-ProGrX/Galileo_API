@@ -40,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             => _bl.CrPrendasMonitor_UnidadesCilindraje_Obtener(codEmpresa, tipo);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CrPrendasMonitor_Consulta_Obtener")]
         public ErrorDto<List<CrPrendasMonitorConsultaData>> CrPrendasMonitor_Consulta_Obtener(
             int codEmpresa,

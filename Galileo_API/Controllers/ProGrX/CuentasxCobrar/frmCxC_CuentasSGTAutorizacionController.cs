@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCuentasSGTAutorizacion_Actualizar")]
         public ErrorDto CxCCuentasSGTAutorizacion_Actualizar(int codEmpresa, string usuario, string estado, int operacion, string notas)
         {

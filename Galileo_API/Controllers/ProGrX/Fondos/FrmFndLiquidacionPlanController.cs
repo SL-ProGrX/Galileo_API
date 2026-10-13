@@ -50,6 +50,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_LiquidacionPlanContratos_Buscar")]
         public ErrorDto<List<FndConsultaPlanRowDto>> FND_LiquidacionPlanContratos_Buscar(
           int CodEmpresa,
@@ -66,6 +67,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_LiquidacionPlan_Proceso_Iniciar")]
         public ErrorDto<FndLiquidacionPlanProcesoResult> FND_LiquidacionPlan_Proceso_Iniciar(
          int codEmpresa,
@@ -76,6 +78,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_LiquidacionPlan_Proceso_Continuar")]
         public ErrorDto<FndLiquidacionPlanProcesoResult> FND_LiquidacionPlan_Proceso_Continuar(
          int codEmpresa,
@@ -86,6 +89,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_LiquidacionPlan_ArchivoRef_Cargar")]
         public ErrorDto<int> FND_LiquidacionPlan_ArchivoRef_Cargar(
                int codEmpresa,

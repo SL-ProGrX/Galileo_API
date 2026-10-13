@@ -38,6 +38,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_SeguimientoEtiquetas_Aplicar")]
         public ErrorDto Prea_SeguimientoEtiquetas_Aplicar(int CodEmpresa,string usuario,[FromBody] PreaSeguimientoEtiquetasAplicarDto data)
         {

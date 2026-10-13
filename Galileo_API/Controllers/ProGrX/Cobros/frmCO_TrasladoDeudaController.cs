@@ -24,18 +24,21 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return BL.CO_TrasladoDeuda_Obtener(CodEmpresa, id_solicitud);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_TrasladoDeuda_Calcular")]
         public ErrorDto<CoTrasladoDeudaCalcularResponse> CO_TrasladoDeuda_Calcular(int CodEmpresa, CoTrasladoDeudaCalcularRequest data)
         {
             return BL.CO_TrasladoDeuda_Calcular(CodEmpresa, data);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_TrasladoDeuda_Aplicar")]
         public ErrorDto<CoTrasladoDeudaAplicarResponse> CO_TrasladoDeuda_Aplicar(int CodEmpresa, CoTrasladoDeudaAplicarRequest data)
         {
             return BL.CO_TrasladoDeuda_Aplicar(CodEmpresa, data);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_TrasladoDeuda_Export")]
         public ErrorDto<CoTrasladoDeudaExportResponse> CO_TrasladoDeuda_Export(int CodEmpresa, CoTrasladoDeudaExportRequest data)
         {

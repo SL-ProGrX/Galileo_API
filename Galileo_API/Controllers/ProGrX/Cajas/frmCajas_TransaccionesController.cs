@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasTransacciones_Servicios_Obtener")]
         public ErrorDto<List<CajasServicioResult>> CajasTransacciones_Servicios_Obtener(int codEmpresa, [FromBody] CajasServicioConsultaParams param)
         {
@@ -47,6 +48,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasTransacciones_Validacion")]
         public ErrorDto<CajasTransacValidacionResult?> CajasTransacciones_Validacion(int codEmpresa, [FromBody] CajasTransacValidacionParams param)
         {
@@ -54,6 +56,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasTransacciones_ServiciosDatos")]
         public ErrorDto<CajasServiciosDatosResult?> CajasTransacciones_ServiciosDatos(int codEmpresa, [FromBody] CajasServiciosDatosParams param)
         {
@@ -61,6 +64,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SifTransacciones_Insertar")]
         public ErrorDto<bool> SifTransacciones_Insertar(int codEmpresa, [FromBody] SifTransaccionInsertParams param)
         {
@@ -68,6 +72,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasServiciosTransac_Insertar")]
         public ErrorDto<bool> CajasServiciosTransac_Insertar(int codEmpresa, [FromBody] CajasServiciosTransacInsertParams param)
         {
@@ -75,6 +80,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SifDocsAsiento_Ejecutar")]
         public ErrorDto<SifDocsAsientoResult> SifDocsAsiento_Ejecutar(int codEmpresa, [FromBody] SifDocsAsientoParams param)
         {
@@ -82,6 +88,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDesglocePagosDocFinal_Ejecutar")]
         public ErrorDto<bool> CajasDesglocePagosDocFinal_Ejecutar(int codEmpresa, [FromBody] CajasDesglocePagosDocFinalParams param)
         {
@@ -89,6 +96,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasIntercambioRegistra")]
         public ErrorDto<bool> CajasIntercambioRegistra(int codEmpresa, [FromBody] CajasIntercambioRegistraParams param)
         {
@@ -96,6 +104,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasValoresTransitoRegistra")]
         public ErrorDto<bool> CajasValoresTransitoRegistra(int codEmpresa, [FromBody] CajasValoresTransitoRegistraParams param)
         {
@@ -103,6 +112,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasGeneralTE_Ejecutar")]
         public ErrorDto<bool> CajasGeneralTE_Ejecutar(int codEmpresa, [FromBody] CajasGeneralTEParams param)
         {
@@ -110,6 +120,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasReciboDigital")]
         public ErrorDto<bool> CajasReciboDigital(int codEmpresa, [FromBody] CajasReciboDigitalParams param)
         {

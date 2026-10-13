@@ -24,6 +24,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_PersonaTarjetas_Registro")]
         public ErrorDto AF_PersonaTarjetas_Registro(int CodEmpresa, PersonaTarjetaRegistroDto tarjeta)
         {

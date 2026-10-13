@@ -65,36 +65,42 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXAsientos_Consecutivo_Obtener(codEmpresa, codConta, tipoAsiento);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXAsientos_Guardar")]
         public ErrorDto CntXAsientos_Guardar(int codEmpresa, string usuario, bool edita, CntXAsientoGuardarRequest request)
         {
             return _bl.CntXAsientos_Guardar(codEmpresa, usuario, edita, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntXAsientos_Eliminar")]
         public ErrorDto CntXAsientos_Eliminar(int codEmpresa, int codConta, string tipoAsiento, string numAsiento, string ts, string usuario)
         {
             return _bl.CntXAsientos_Eliminar(codEmpresa, codConta, tipoAsiento, numAsiento, ts, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXAsientos_Autorizar")]
         public ErrorDto CntXAsientos_Autorizar(int codEmpresa, int codConta, string tipoAsiento, string numAsiento, string usuario)
         {
             return _bl.CntXAsientos_Autorizar(codEmpresa, codConta, tipoAsiento, numAsiento, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXAsientos_Copiar")]
         public ErrorDto CntXAsientos_Copiar(int codEmpresa, string usuario, CntXAsientoCopiarRequest request)
         {
             return _bl.CntXAsientos_Copiar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXAsientos_Reversar")]
         public ErrorDto CntXAsientos_Reversar(int codEmpresa, CntXAsientoData request)
         {
             return _bl.CntXAsientos_Reversar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXAsientos_Mayorizar")]
         public ErrorDto CntXAsientos_Mayorizar(int codEmpresa, CntXAsientoData request)
         {

@@ -28,6 +28,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CoAdvertenciasTipos_Guardar")]
         public ErrorDto CoAdvertenciasTipos_Guardar(int CodEmpresa, string usuario, CoAdvertenciasTiposData request)
         {
@@ -35,6 +36,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CoAdvertenciasTipos_Delete")]
         public ErrorDto CoAdvertenciasTipos_Delete(int CodEmpresa, string usuario, string cod_advertencia)
         {

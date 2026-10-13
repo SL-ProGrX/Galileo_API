@@ -25,10 +25,12 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<List<DropDownListaGenericaModel>> CR_CambioInfoEstadistica_DatosTipo_Obtener(int codEmpresa, string tipo)
            => _bl.CR_CambioInfoEstadistica_DatosTipo_Obtener(codEmpresa, tipo);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_CambioInfoEstadistica_Procesar")]
         public ErrorDto<bool> CR_CambioInfoEstadistica_Procesar(int codEmpresa, [FromBody] CrCambioInfoEstadisticaProcesarRequest request)
                => _bl.CR_CambioInfoEstadistica_Procesar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_CambioInfoEstadistica_CargarListado")]
         public ErrorDto<CrCambioInfoEstadisticaCargaListadoResponse> CR_CambioInfoEstadistica_CargarListado(int codEmpresa, [FromBody] CrCambioInfoEstadisticaCargaListadoRequest request)
               => _bl.CR_CambioInfoEstadistica_CargarListado(codEmpresa, request);

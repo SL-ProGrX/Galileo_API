@@ -22,6 +22,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<CrPrendasExtrasConsultaData> CR_Prendas_Extras_Consulta(int codEmpresa, long prendaId)
             => _bl.CR_Prendas_Extras_Consulta(codEmpresa, prendaId);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Prendas_Extras_Guardar")]
         public ErrorDto<CrPrendasExtrasGuardarData> CR_Prendas_Extras_Guardar(
             int codEmpresa,

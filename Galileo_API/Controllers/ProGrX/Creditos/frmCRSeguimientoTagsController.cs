@@ -64,6 +64,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoTags_Aplicar")]
         public ErrorDto<CrSeguimientoTagsAplicarResult> CR_SeguimientoTags_Aplicar(
             int CodEmpresa,

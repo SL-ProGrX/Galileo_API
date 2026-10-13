@@ -39,12 +39,14 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Guardar")]
         public ErrorDto AF_Persona_Guardar(int CodEmpresa, string request, string mov)
         {
             return _bl.AF_Persona_Guardar(CodEmpresa, request, mov);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Nombramientos_Add")]
         public ErrorDto AF_Persona_Nombramientos_Add(int CodEmpresa, string request, string mov)
         {
@@ -52,6 +54,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Relacion_Add")]
         public ErrorDto AF_Persona_Relacion_Add(int CodEmpresa, string request, string mov)
         {
@@ -59,6 +62,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Relacion_Del")]
         public ErrorDto AF_Persona_Relacion_Del(int CodEmpresa, int idRelacion, string usuario)
         {
@@ -66,6 +70,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Salarios_Add")]
         public ErrorDto AF_Persona_Salarios_Add(int CodEmpresa, string request, string mov)
         {
@@ -73,6 +78,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Ingresos_Economicos_Add")]
         public ErrorDto AF_Persona_Ingresos_Economicos_Add(int CodEmpresa, AfPersonaIngresoEconomicoAddDto request)
         {
@@ -80,6 +86,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Direccion_Add")]
         public ErrorDto AF_Persona_Direccion_Add(int CodEmpresa, string request, string mov)
         {
@@ -87,6 +94,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Escolaridad_Registra")]
         public ErrorDto AF_Persona_Escolaridad_Registra(int CodEmpresa, string request)
         {
@@ -94,6 +102,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Preferencias_Registra")]
         public ErrorDto AF_Persona_Preferencias_Registra(int CodEmpresa, string request)
         {
@@ -101,6 +110,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Canales_Registra")]
         public ErrorDto AF_Persona_Canales_Registra(int CodEmpresa, string request)
         {
@@ -108,6 +118,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Patrimonio_Vincula")]
         public ErrorDto AF_Persona_Patrimonio_Vincula(int CodEmpresa, AfPersonaPatrimonioVinculaDto req)
         {
@@ -115,6 +126,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Bienes_Registra")]
         public ErrorDto AF_Persona_Bienes_Registra(int CodEmpresa, string request)
         {
@@ -122,6 +134,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Productos_Registra")]
         public ErrorDto AF_Persona_Productos_Registra(int CodEmpresa, string request)
         {
@@ -129,6 +142,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_RegistroDefault")]
         public ErrorDto AF_RegistroDefault(int CodEmpresa, AfRegistroDefaultDto req)
         {
@@ -183,18 +197,21 @@ namespace Galileo.Controllers
             return _bl.AF_Persona_Relacion_List(CodEmpresa, cedula);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Indicadores_Registra")]
         public ErrorDto AF_Persona_Indicadores_Registra(int CodEmpresa, string request)
         {
             return _bl.AF_Persona_Indicadores_Registra(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_PrimeraDeduccion_Registra")]
         public ErrorDto AF_Persona_PrimeraDeduccion_Registra(int CodEmpresa, string cedula, string prideduc)
         {
             return _bl.AF_Persona_PrimeraDeduccion_Registra(CodEmpresa, cedula, prideduc);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Elimina")]
         public ErrorDto AF_Persona_Elimina(int CodEmpresa, string cedula)
         {
@@ -209,6 +226,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Validar")]
         public ErrorDto AF_Persona_Validar(int CodEmpresa, string req)
         {
@@ -223,6 +241,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Dimex_Add")]
         public ErrorDto AF_Persona_Dimex_Add(int CodEmpresa, string request)
         {
@@ -230,6 +249,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Direccion_Elimina")]
         public ErrorDto AF_Persona_Direccion_Elimina(int CodEmpresa, string cedula, string linea, string usuario)
         {
@@ -237,6 +257,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Motivos_Registra")]
         public ErrorDto AF_Persona_Motivos_Registra(int CodEmpresa, string request)
         {

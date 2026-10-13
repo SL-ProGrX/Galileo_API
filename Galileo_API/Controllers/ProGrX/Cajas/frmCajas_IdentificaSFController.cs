@@ -19,6 +19,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
             _bl = new FrmCajasIdentificaSfBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_CajasIdentificaSf_Identificar")]
         public ErrorDto Cajas_CajasIdentificaSf_Identificar(
           int codEmpresa,

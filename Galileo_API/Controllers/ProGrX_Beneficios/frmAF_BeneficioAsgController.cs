@@ -84,6 +84,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Cálculo de monto de la ayuda.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("fxMonto_Obtener")]
         public FxMontosResult fxMonto(int CodCliente, [FromBody] FxMontoModel datos)
             => _bl.fxMonto(CodCliente, datos);
@@ -114,6 +115,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Guarda la asignación del beneficio (monetario o de productos).</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfBeneficioAsg_Guardar")]
         public ErrorDto AfBeneficioAsg_Guardar(int CodCliente, string usuario, [FromBody] AfiBeneficioAsgInsertar beneficio)
             => _bl.AfBeneficioAsg_Guardar(CodCliente, usuario, beneficio);

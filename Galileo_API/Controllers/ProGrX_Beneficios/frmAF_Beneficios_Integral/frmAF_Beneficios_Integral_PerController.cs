@@ -81,12 +81,14 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Actualiza los datos de la persona.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Persona_Actualizar")]
         public ErrorDto Persona_Actualizar(int CodCliente, string cedula, string persona)
             => _bl.Persona_Actualizar(CodCliente, cedula, persona);
 
         /// <summary>Guarda (inserta o actualiza) un teléfono del socio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Telefono_Guardar")]
         public ErrorDto Telefono_Guardar(int CodCliente, [FromBody] AfiBeneTelefonoGuardar telefono)
             => _bl.Telefono_Guardar(CodCliente, telefono);
@@ -99,6 +101,7 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Elimina un teléfono del socio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Telefono_Eliminar")]
         public ErrorDto Telefono_Eliminar(int CodCliente, int id, string usuario)
             => _bl.Telefono_Eliminar(CodCliente, id, usuario);

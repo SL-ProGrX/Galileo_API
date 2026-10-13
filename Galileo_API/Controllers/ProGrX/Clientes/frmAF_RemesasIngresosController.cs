@@ -26,6 +26,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AFI_Remesa_Eliminar")]
         public ErrorDto AFI_Remesa_Eliminar(int CodEmpresa, string CodRemesa)
         {
@@ -33,6 +34,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AFI_Remesa_Registrar")]
         public ErrorDto AFI_Remesa_Registrar(int CodEmpresa, AdiRemesaIngRequestDto request)
         {
@@ -54,6 +56,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AFI_Remesa_Cerrar")]
         public ErrorDto AFI_Remesa_Cerrar(int codEmpresa, int codRemesa)
         {
@@ -61,6 +64,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AFI_Remesa_Cargar")]
         public ErrorDto AFI_Remesa_Cargar(int codEmpresa, int codRemesa, [FromBody] List<int> ingresosSeleccionados)
         {
@@ -76,6 +80,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPatch("AFI_Remesa_Reporte_Aplicar")]
         public ErrorDto AFI_Remesa_Reporte_Aplicar(int CodEmpresa, string usuario, int CodRemesa)
         {

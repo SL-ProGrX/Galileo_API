@@ -22,10 +22,12 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<List<CrPrendasTipoData>> CrPrendasTipos_Obtener(int codEmpresa)
             => _bl.CrPrendasTipos_Obtener(codEmpresa);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrPrendasTipos_Guardar")]
         public ErrorDto CrPrendasTipos_Guardar(int codEmpresa, [FromBody] CrPrendasTipoGuardarRequest request)
             => _bl.CrPrendasTipos_Guardar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrPrendasTipos_Eliminar")]
         public ErrorDto CrPrendasTipos_Eliminar(int codEmpresa, [FromBody] CrPrendasTipoEliminarRequest request)
             => _bl.CrPrendasTipos_Eliminar(codEmpresa, request);
@@ -36,6 +38,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             string request)
             => _bl.CrPrendasTipos_Asignacion_Obtener(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrPrendasTipos_Asignacion_Guardar")]
         public ErrorDto CrPrendasTipos_Asignacion_Guardar(
             int codEmpresa,

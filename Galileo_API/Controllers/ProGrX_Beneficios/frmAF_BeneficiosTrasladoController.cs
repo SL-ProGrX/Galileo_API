@@ -106,48 +106,56 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Cubo de beneficios (consulta detallada) por rango de fechas.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cubo_Beneficios_Obtener")]
         public ErrorDto<List<CuboBeneficiosData>> Cubo_Beneficios_Obtener(int CodCliente, [FromBody] CuboParametros remesa)
             => _bl.Cubo_Beneficios_Obtener(CodCliente, remesa);
 
         /// <summary>Inserta una remesa de traslado.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiRemesa_Insertar")]
         public ErrorDto AfiRemesa_Insertar(int CodCliente, [FromBody] AfiBeneficiosRemesasDto remesa)
             => _bl.AfiRemesa_Insertar(CodCliente, remesa);
 
         /// <summary>Actualiza una remesa de traslado.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPut("AfiRemesa_Actualizar")]
         public ErrorDto AfiRemesa_Actualizar(int CodCliente, [FromBody] AfiBeneficiosRemesasDto remesa)
             => _bl.AfiRemesa_Actualizar(CodCliente, remesa);
 
         /// <summary>Elimina una remesa de traslado.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfiRemesa_Eliminar")]
         public ErrorDto AfiRemesa_Eliminar(int CodCliente, long cod_remesa)
             => _bl.AfiRemesa_Eliminar(CodCliente, cod_remesa);
 
         /// <summary>Aplica una remesa a los beneficios seleccionados.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CargaCarga_Aplicar")]
         public ErrorDto CargaCarga_Aplicar(int CodCliente, [FromBody] string carga)
             => _bl.CargaCarga_Aplicar(CodCliente, carga);
 
         /// <summary>Cierra una remesa de traslado.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CargasCarga_Cerrar")]
         public ErrorDto CargasCarga_Cerrar(int CodCliente, string cod_remesa, string usuario)
             => _bl.CargasCarga_Cerrar(CodCliente, cod_remesa, usuario);
 
         /// <summary>Aplica el traslado a tesorería de los beneficios de una remesa.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiTraslado_Aplicar")]
         public Task<ErrorDto> AfiTraslado_Aplicar(int CodCliente, [FromBody] string traslado)
             => _bl.AfiTraslado_Aplicar(CodCliente, traslado);
 
         /// <summary>Genera un nuevo token para la liquidación.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Afi_LiqAsientoToken_Nuevo")]
         public ErrorDto Afi_LiqAsientoToken_Nuevo(int CodEmpresa, string usuario)
             => _bl.Afi_LiqAsientoToken_Nuevo(CodEmpresa, usuario);

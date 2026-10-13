@@ -67,6 +67,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
                 codEmpresa,
                 cedula);
         }
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_CajaChicaRetiro_Aplicar")]
         public ErrorDto<CajasCajaChicaAplicarDbResponseDto> Cajas_CajaChicaRetiro_Aplicar(CajasCajaChicaAplicarDbRequestDto req)
         {

@@ -86,6 +86,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost("GuardarAsiento")]
         public ErrorDto<bool> GuardarAsiento(CntxConAsientoGuardarDto request)
         {
@@ -93,6 +94,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("EliminarAsiento")]
         public ErrorDto<bool> EliminarAsiento(int codEmpresa,int codContabilidad, int codConsolida,string codAsiento,string usuario)
         {

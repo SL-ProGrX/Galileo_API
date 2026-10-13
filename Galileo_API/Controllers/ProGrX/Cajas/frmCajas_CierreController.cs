@@ -75,6 +75,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasCierre_Deposito_Guardar")]
         public ErrorDto CajasCierre_Deposito_Guardar(int CodEmpresa, CajasCierreDepositoRequest depositoRequest)
         {
@@ -82,6 +83,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasCierre_Preliminar_Aplicar")]
         public ErrorDto CajasCierre_Preliminar_Aplicar(int CodEmpresa, string Caja, int Apertura, string Usuario)
         {
@@ -89,6 +91,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasCierre_Aplicar")]
         public ErrorDto CajasCierre_Aplicar(int CodEmpresa, string Caja, int Apertura, string Usuario)
         {
@@ -96,6 +99,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasCierre_Denominacion_Registrar")]
         public ErrorDto CajasCierre_Denominacion_Registrar(int CodEmpresa, CajasCierreDenominacionRequest denominacionRequest)
         {

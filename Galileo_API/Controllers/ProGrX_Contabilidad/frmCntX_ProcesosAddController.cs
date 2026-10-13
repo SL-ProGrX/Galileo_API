@@ -21,6 +21,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXProcesosAdd_Obtener(codEmpresa, codConta);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXProcesosAdd_Procesar")]
         public ErrorDto CntXProcesosAdd_Procesar(int codEmpresa, CntXProcesarRequest req)
         {

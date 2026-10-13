@@ -47,12 +47,14 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXContabilidad_ConsolidaUnidadesList_Obtener(codEmpresa, codConta);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXContabilidades_Guardar")]
         public ErrorDto CntXContabilidades_Guardar(int codEmpresa, string usuario, bool edita, CntXContabilidadData request)
         {
             return _bl.CntXContabilidades_Guardar(codEmpresa, usuario, edita, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntXContabilidades_Eliminar")]
         public ErrorDto CntXContabilidades_Eliminar(int codEmpresa, int codConta, string usuario)
         {

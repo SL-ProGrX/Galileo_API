@@ -54,6 +54,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Calculadora_TasaRef_Obtener")]
         public ErrorDto<decimal> Fnd_Calculadora_TasaRef_Obtener(int CodEmpresa, CalculadoraTasaRefParams request)
         {
@@ -68,6 +69,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Calculadora_Inversiones_EmailEnviar")]
         public ErrorDto Fnd_Calculadora_Inversiones_EmailEnviar(int CodEmpresa, int CalculoId, string Usuario)
         {
