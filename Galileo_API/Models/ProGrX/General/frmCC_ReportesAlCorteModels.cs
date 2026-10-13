@@ -6,6 +6,25 @@ namespace Galileo.Models.GEN
         public string itmx { get; set; } = string.Empty;
     }
 
+    public sealed class CcReportesAlCorteInicializacionData
+    {
+        public List<CCGenericList> periodos { get; set; } = [];
+        public List<CCGenericList> instituciones { get; set; } = [];
+        public List<CCGenericList> profesiones { get; set; } = [];
+        public List<CCGenericList> sectores { get; set; } = [];
+        public List<CCGenericList> zonas { get; set; } = [];
+        public List<CCGenericList> estados_persona { get; set; } = [];
+        public List<CCGenericList> estados_civiles { get; set; } = [];
+        public List<CCGenericList> estados_laborales { get; set; } = [];
+    }
+
+    public sealed class CcReportesAlCorteProcesoRequest
+    {
+        public required string codigo_reporte { get; set; }
+        public required int anio { get; set; }
+        public required int mes { get; set; }
+    }
+
     public class CbrAnalisisCubosData
     {
         public int anio { get; set; }
