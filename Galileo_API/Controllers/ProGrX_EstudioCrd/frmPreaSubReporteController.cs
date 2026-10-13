@@ -18,6 +18,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             _bl = new FrmPreaSubReporteBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaSubReporte_Cargar")]
         public ErrorDto<FrmPreaSubReporteCargarResponse> Prea_frmPreaSubReporte_Cargar(
             int codEmpresa,
@@ -26,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaSubReporte_Cargar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaSubReporte_Imprimir_Obtener")]
         public ErrorDto<FrmPreaSubReporteImprimirResponse> Prea_frmPreaSubReporte_Imprimir_Obtener(
             int codEmpresa,

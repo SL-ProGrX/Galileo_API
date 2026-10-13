@@ -34,6 +34,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_RemesasLiquidaciones_Remesa_Guardar")]
         public ErrorDto AF_RemesasLiquidaciones_Remesa_Guardar(int CodEmpresa, AfRemesaLiquidacionDto remesa)
         {
@@ -41,6 +42,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_RemesasLiquidaciones_Remesa_Eliminar")]
         public ErrorDto AF_RemesasLiquidaciones_Remesa_Eliminar(int CodEmpresa, string usuario, int cod_remesa, string estado)
         {
@@ -73,6 +75,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_RemesasLiquidaciones_Carga_Cargar")]
         public ErrorDto AF_RemesasLiquidaciones_Carga_Cargar(int CodEmpresa, int remesa, string usuario, List<AfRemesasLiquiCargaLista> datos)
         {
@@ -80,6 +83,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPut("AF_RemesasLiquidaciones_Carga_Cerrar")]
         public ErrorDto AF_RemesasLiquidaciones_Carga_Cerrar(int CodEmpresa, int remesa, string usuario)
         {
@@ -98,6 +102,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPatch("AF_RemesasLiquidaciones_Reporte_Aplicar")]
         public ErrorDto AF_RemesasLiquidaciones_Reporte_Aplicar(int CodEmpresa, string usuario, int remesa)
         {

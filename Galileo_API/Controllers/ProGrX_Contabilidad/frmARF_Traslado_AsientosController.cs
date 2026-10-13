@@ -19,6 +19,7 @@ namespace Galileo_API.Controllers.ProGrX_Arrendamientos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Buscar")]
         public ErrorDto<List<ArfTrasladoTablaDto>> Buscar(int codEmpresa,[FromBody] ArfTrasladoFiltroDto filtros)
         {
@@ -26,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX_Arrendamientos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Trasladar")]
         public ErrorDto<bool> Trasladar(int codEmpresa, [FromBody] List<ArfTrasladoRequestDto> asientos)
         {

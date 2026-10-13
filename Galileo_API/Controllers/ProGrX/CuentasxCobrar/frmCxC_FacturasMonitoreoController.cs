@@ -60,6 +60,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCFacturasMonitoreoFacturas_Obtener")]
         public ErrorDto<List<CxCFacturasMonitoreoItemDto>> CxCFacturasMonitoreoFacturas_Obtener(
             int codEmpresa,
@@ -69,6 +70,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCFacturasMonitoreoDetalle_Obtener")]
         public ErrorDto<TablasListaGenericaModel> CxCFacturasMonitoreoDetalle_Obtener(
             int codEmpresa,
@@ -78,6 +80,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCFacturasMonitoreoEstado_Actualizar")]
         public ErrorDto<bool> CxCFacturasMonitoreoEstado_Actualizar(
             int codEmpresa,

@@ -28,6 +28,7 @@ namespace Galileo.Controllers
 
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AlertasTipos_Insertar")]
         public ErrorDto AlertasTipos_Insertar(int CodCliente, AlertasTiposDto request)
         {
@@ -36,6 +37,7 @@ namespace Galileo.Controllers
 
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AlertasTipos_Actualizar")]
         public ErrorDto AlertasTipos_Actualizar(int CodCliente, AlertasTiposDto request)
         {
@@ -44,6 +46,7 @@ namespace Galileo.Controllers
 
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AlertasTipos_Eliminar")]
         public ErrorDto AlertasTipos_Eliminar(int CodCliente, string tipoalerta)
         {
@@ -58,6 +61,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AlertasTiposJustificacion_Guardar")]
         public ErrorDto AlertasTiposJustificacion_Guardar(int CodCliente, [FromBody] AlertasTiposJustificacionDto request)
         {
@@ -65,6 +69,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AlertasTiposJustificacion_Eliminar")]
         public ErrorDto AlertasTiposJustificacion_Eliminar(int CodCliente, [FromBody] AlertasTiposJustificacionEliminarRequest request)
         {
@@ -79,6 +84,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AlertasTiposDetalle_Guardar")]
         public ErrorDto AlertasTiposDetalle_Guardar(int CodCliente, [FromBody] AlertasTiposDetalleDto request)
         {
@@ -86,6 +92,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AlertasTiposDetalle_Eliminar")]
         public ErrorDto AlertasTiposDetalle_Eliminar(int CodCliente, [FromBody] AlertasTiposDetalleEliminarRequest request)
         {

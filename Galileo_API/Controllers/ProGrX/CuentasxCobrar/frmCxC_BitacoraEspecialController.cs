@@ -42,6 +42,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCBitacoraEspecial_Actualizar")]
         public ErrorDto CxCBitacoraEspecial_Actualizar(int codEmpresa, string usuario, int idBitacora)
         {

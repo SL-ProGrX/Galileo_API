@@ -81,48 +81,56 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Inserta un beneficio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiBeneficios_Insertar")]
         public ErrorDto AfiBeneficios_Insertar(int CodCliente, [FromBody] AfiBeneficiosDto Beneficio)
             => _bl.AfiBeneficios_Insertar(CodCliente, Beneficio);
 
         /// <summary>Actualiza un beneficio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPut("AfiBeneficios_Actualiza")]
         public ErrorDto AfiBeneficios_Actualiza(int CodCliente, [FromBody] AfiBeneficiosDto Beneficio)
             => _bl.AfiBeneficios_Actualiza(CodCliente, Beneficio);
 
         /// <summary>Elimina un beneficio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfiBeneficios_Eliminar")]
         public ErrorDto AfiBeneficios_Eliminar(int CodCliente, string Cod_Beneficio)
             => _bl.AfiBeneficios_Eliminar(CodCliente, Cod_Beneficio);
 
         /// <summary>Asocia un grupo a un beneficio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiBeneGruposB_Insertar")]
         public ErrorDto AfiBeneGruposB_Insertar(int CodCliente, string cod_grupo, string cod_beneficio)
             => _bl.AfiBeneGruposB_Insertar(CodCliente, cod_grupo, cod_beneficio);
 
         /// <summary>Desasocia un grupo de un beneficio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfiBeneGruposB_Eliminar")]
         public ErrorDto AfiBeneGruposB_Eliminar(int CodCliente, string cod_grupo, string cod_beneficio)
             => _bl.AfiBeneGruposB_Eliminar(CodCliente, cod_grupo, cod_beneficio);
 
         /// <summary>Guarda un monto de beneficio (inserta o actualiza).</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiBeneficioMontos_Guardar")]
         public ErrorDto AfiBeneficioMontos_Guardar(int CodCliente, [FromBody] AfiBeneficioMontoData Monto)
             => _bl.AfiBeneficioMontos_Guardar(CodCliente, Monto);
 
         /// <summary>Elimina un monto de beneficio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfiBeneficioMontos_Eliminar")]
         public ErrorDto AfiBeneficioMontos_Eliminar(int CodCliente, int id_bene, string cod_beneficio)
             => _bl.AfiBeneficioMontos_Eliminar(CodCliente, id_bene, cod_beneficio);
 
         /// <summary>Guarda las fechas de pago automático.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiBeneFechasPago_Guardar")]
         public ErrorDto AfiBeneFechasPago_Guardar(int CodCliente, string Usuario, [FromBody] List<AfiBeneFechaPagoData> DataFechas)
             => _bl.AfiBeneFechasPago_Guardar(CodCliente, DataFechas, Usuario);

@@ -26,6 +26,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_ConMovCobro_Obtener")]
         public ErrorDto<List<FndConMovCobroResult>> Fnd_ConMovCobro_Obtener(
             int CodEmpresa, [FromBody] FndConMovCobroRequest request)
@@ -34,6 +35,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_ConMovCobro_SinContrato_Obtener")]
         public ErrorDto<List<FndConMovCobroResult>> Fnd_ConMovCobro_SinContrato_Obtener(
             int CodEmpresa, [FromBody] FndConMovCobroRequest request)
@@ -42,6 +44,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_AcreditaMovCbrPendiente")]
         public ErrorDto<bool> Fnd_AcreditaMovCbrPendiente(
             int CodEmpresa, [FromBody] FndAcreditaMovCbrPendienteRequest request)
@@ -50,6 +53,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_ConMovCobro_EntradaPlanilla_Obtener")]
         public ErrorDto<FndConMovCobroResumenResult?> Fnd_ConMovCobro_EntradaPlanilla_Obtener(
             int CodEmpresa, [FromBody] FndConMovCobroResumenRequest request)
@@ -58,6 +62,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_ConMovCobro_PlanillaRegistrada_Obtener")]
         public ErrorDto<FndConMovCobroResumenResult?> Fnd_ConMovCobro_PlanillaRegistrada_Obtener(
             int CodEmpresa, [FromBody] FndConMovCobroResumenRequest request)

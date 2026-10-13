@@ -32,6 +32,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_AntiguedadTipos_Guardar")]
         public ErrorDto Co_AntiguedadTipos_Guardar(int CodEmpresa, string usuario, FrmCOAntiguedadTipoData dto)
         {
@@ -39,6 +40,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Co_AntiguedadTipos_Eliminar")]
         public ErrorDto Co_AntiguedadTipos_Eliminar(int CodEmpresa, string usuario, string cod_antiguedad)
         {
@@ -53,6 +55,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_AntiguedadTipos_Detalle_Guardar")]
         public ErrorDto Co_AntiguedadTipos_Detalle_Guardar(int CodEmpresa, string usuario, FrmCOAntiguedadDetalleGuardarDto dto)
         {

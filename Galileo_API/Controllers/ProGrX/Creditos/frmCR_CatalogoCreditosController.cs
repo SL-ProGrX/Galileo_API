@@ -84,18 +84,21 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrCatalogoCreditos_Divisas_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCreditos_Asignacion_Guardar")]
         public ErrorDto CrCatalogoCreditos_Asignacion_Guardar(int codEmpresa, CrCatalogoCreditoAsignacionGuardarRequest request)
         {
             return _bl.CrCatalogoCreditos_Asignacion_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCreditos_BloqueUno_Guardar")]
         public ErrorDto CrCatalogoCreditos_BloqueUno_Guardar(int codEmpresa, CrCatalogoCreditoBloqueUnoGuardarRequest request)
         {
             return _bl.CrCatalogoCreditos_BloqueUno_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCreditos_Prioridad_Guardar")]
         public ErrorDto CrCatalogoCreditos_Prioridad_Guardar(int codEmpresa, CrCatalogoCreditoPrioridadGuardarRequest request)
         {
@@ -108,36 +111,42 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrCatalogoCreditos_RangosBase_Obtener(codEmpresa, codigo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCreditos_RangoBase_Guardar")]
         public ErrorDto<int> CrCatalogoCreditos_RangoBase_Guardar(int codEmpresa, CrCatalogoCreditoRangoBaseGuardarRequest request)
         {
             return _bl.CrCatalogoCreditos_RangoBase_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCreditos_RangoPlazo_Guardar")]
         public ErrorDto<int> CrCatalogoCreditos_RangoPlazo_Guardar(int codEmpresa, CrCatalogoCreditoRangoPlazoGuardarRequest request)
         {
             return _bl.CrCatalogoCreditos_RangoPlazo_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCreditos_RangoGarantia_Guardar")]
         public ErrorDto CrCatalogoCreditos_RangoGarantia_Guardar(int codEmpresa, CrCatalogoCreditoRangoGarantiaGuardarRequest request)
         {
             return _bl.CrCatalogoCreditos_RangoGarantia_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrCatalogoCreditos_RangoBase_Eliminar")]
         public ErrorDto CrCatalogoCreditos_RangoBase_Eliminar(int codEmpresa, string codigo, int consec, string usuario)
         {
             return _bl.CrCatalogoCreditos_RangoBase_Eliminar(codEmpresa, codigo, consec, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrCatalogoCreditos_RangoPlazo_Eliminar")]
         public ErrorDto CrCatalogoCreditos_RangoPlazo_Eliminar(int codEmpresa, string codigo, int consec, string usuario)
         {
             return _bl.CrCatalogoCreditos_RangoPlazo_Eliminar(codEmpresa, codigo, consec, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrCatalogoCreditos_RangoGarantia_Eliminar")]
         public ErrorDto CrCatalogoCreditos_RangoGarantia_Eliminar(int codEmpresa, string codigo, string garantia, string usuario)
         {
@@ -150,12 +159,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrCatalogoCreditos_RangosLiquidez_Obtener(codEmpresa, codigo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCreditos_LiquidezBono_Guardar")]
         public ErrorDto CrCatalogoCreditos_LiquidezBono_Guardar(int codEmpresa, CrCatalogoCreditoLiquidezBonoGuardarRequest request)
         {
             return _bl.CrCatalogoCreditos_LiquidezBono_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCreditos_LiquidezCapacidad_Guardar")]
         public ErrorDto CrCatalogoCreditos_LiquidezCapacidad_Guardar(int codEmpresa, CrCatalogoCreditoLiquidezCapacidadGuardarRequest request)
         {
@@ -168,30 +179,35 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrCatalogoCreditos_ComitesEstudio_Obtener(codEmpresa, codigo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCreditos_ComiteEstudio_Guardar")]
         public ErrorDto<int> CrCatalogoCreditos_ComiteEstudio_Guardar(int codEmpresa, CrCatalogoCreditoComiteEstudioGuardarRequest request)
         {
             return _bl.CrCatalogoCreditos_ComiteEstudio_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrCatalogoCreditos_ComiteEstudio_Eliminar")]
         public ErrorDto CrCatalogoCreditos_ComiteEstudio_Eliminar(int codEmpresa, string codigo, int id, string usuario)
         {
             return _bl.CrCatalogoCreditos_ComiteEstudio_Eliminar(codEmpresa, codigo, id, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCreditos_Guardar")]
         public ErrorDto CrCatalogoCreditos_Guardar(int codEmpresa, CrCatalogoCreditoGuardarRequest request)
         {
             return _bl.CrCatalogoCreditos_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCreditos_PeL_Guardar")]
         public ErrorDto CrCatalogoCreditos_PeL_Guardar(int codEmpresa, CrCatalogoCreditoPeLGuardarRequest request)
         {
             return _bl.CrCatalogoCreditos_PeL_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrCatalogoCreditos_Eliminar")]
         public ErrorDto CrCatalogoCreditos_Eliminar(int codEmpresa, string codigo, string usuario)
         {

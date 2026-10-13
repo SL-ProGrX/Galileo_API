@@ -25,6 +25,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CambioInfoEstadistica_Procesar")]
         public ErrorDto AF_CambioInfoEstadistica_Procesar(int CodEmpresa, string usuario, string vTipo, int vCodigo, List<AfCambioInfoEstadisticaDatos> cedulas)
         {

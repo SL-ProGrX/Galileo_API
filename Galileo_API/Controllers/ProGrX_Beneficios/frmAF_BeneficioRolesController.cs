@@ -47,16 +47,19 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
             => _bl.BeneficioGrupoData_Obtener(CodCliente);
 
         /// <summary>Asocia un usuario a un grupo de beneficios.</summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("GrupoUsuario_Insertar")]
         public ErrorDto GrupoUsuario_Insertar(int CodCliente, string usuario, string cod_grupo)
             => _bl.GrupoUsuario_Insertar(CodCliente, usuario, cod_grupo);
 
         /// <summary>Desasocia un usuario de un grupo de beneficios.</summary>
+        [ValidateAntiForgeryToken]
         [HttpDelete("GrupoUsuario_Eliminar")]
         public ErrorDto GrupoUsuario_Eliminar(int CodCliente, string usuario, string cod_grupo)
             => _bl.GrupoUsuario_Eliminar(CodCliente, usuario, cod_grupo);
 
         /// <summary>Guarda un grupo de beneficios (inserta o actualiza).</summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneficioGrupo_Guardar")]
         public ErrorDto BeneficioGrupo_Guardar(int CodCliente, [FromBody] BeneficioGrupoData grupo)
             => _bl.BeneficioGrupo_Guardar(CodCliente, grupo);

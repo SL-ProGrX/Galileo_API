@@ -35,6 +35,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Reportes_Seguridad_Grupos_Guardar")]
         public ErrorDto CR_Reportes_Seguridad_Grupos_Guardar(int CodEmpresa, string usuario, [FromBody] CrReportesSeguridadGrupoData grupo)
         {
@@ -67,6 +68,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Reportes_Seguridad_Miembros_Actualizar")]
         public ErrorDto CR_Reportes_Seguridad_Miembros_Actualizar(int CodEmpresa,[FromBody] CrReportesSeguridadMiembroActualizarRequest request)
         {
@@ -92,6 +94,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Reportes_Seguridad_Reportes_Actualizar")]
         public ErrorDto CR_Reportes_Seguridad_Reportes_Actualizar(int CodEmpresa,[FromBody] CrReportesSeguridadReporteActualizarRequest request)
         {
@@ -116,6 +119,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Reportes_Config_Grupos_Guardar")]
         public ErrorDto CR_Reportes_Config_Grupos_Guardar( int CodEmpresa,string usuario,[FromBody] CrReportesConfigGrupoData grupo)
         {
@@ -148,6 +152,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Reportes_Config_Miembros_Actualizar")]
         public ErrorDto CR_Reportes_Config_Miembros_Actualizar(int CodEmpresa,[FromBody] CrReportesConfigMiembroActualizarRequest request)
         {
@@ -173,6 +178,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Reportes_Config_Reportes_Actualizar_Lista")]
         public ErrorDto CR_Reportes_Config_Reportes_Actualizar_Lista(int CodEmpresa,[FromBody] CrReportesConfigReportesActualizarListaRequest request)
         {
@@ -180,6 +186,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Reportes_Config_Reportes_Guardar")]
         public ErrorDto CR_Reportes_Config_Reportes_Guardar(int CodEmpresa, [FromBody] CrReportesConfigReporteGuardarRequest request)
         {
@@ -496,6 +503,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
         #endregion
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Reportes_Informes_Generar")]
         public ErrorDto<CrReportesInformesGenerarResult> CR_Reportes_Informes_Generar(int CodEmpresa,[FromBody] CrReportesInformesGenerarRequest request)
         {

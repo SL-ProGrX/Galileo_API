@@ -25,6 +25,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_Parametros_Guardar")]
         public ErrorDto Cajas_Parametros_Guardar( int CodEmpresa,  CajasParametrosData parametro)
         {

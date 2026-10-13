@@ -20,6 +20,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_Bancos_Obtener")]
         public ErrorDto<List<AfLiquidacionBancos>> AF_Liquidacion_Bancos_Obtener(int CodEmpresa, [FromBody] AfLiquidacionBancosFiltro filtro)
         {
@@ -27,6 +28,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_Emite_TDoc")]
         public ErrorDto<List<AfLiquidacionEmiteTDoc>> AF_Liquidacion_Emite_TDoc(int CodEmpresa, [FromBody] AfLiquidacionEmiteTDocFiltro filtro)
         {
@@ -48,6 +50,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_CuentasBancarias_Obtener")]
         public ErrorDto<List<AfLiquidacionCuentaBancaria>> AF_Liquidacion_CuentasBancarias_Obtener(int CodEmpresa, [FromBody] AfLiquidacionCuentaBancariaFiltro filtro)
         {
@@ -83,6 +86,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_ActualizarEstadoRenuncias")]
         public ErrorDto<int> AF_Liquidacion_ActualizarEstadoRenuncias(int CodEmpresa)
         {
@@ -125,6 +129,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_Renta_Global")]
         public ErrorDto<AfLiquidacionRentaGlobal?> AF_Liquidacion_Renta_Global(int CodEmpresa, [FromBody] AfLiquidacionRentaGlobalFiltro filtro)
         {
@@ -132,6 +137,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_ListaPlanes")]
         public ErrorDto<List<AfLiquidacionListaPlanes>> AF_Liquidacion_ListaPlanes(int CodEmpresa, [FromBody] AfLiquidacionListaPlanesFiltro filtro)
         {
@@ -139,6 +145,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_CreditosPersona")]
         public ErrorDto<List<AfLiquidacionCreditosPersona>> AF_Liquidacion_CreditosPersona(int CodEmpresa, [FromBody] AfLiquidacionCreditosPersonaFiltro filtro)
         {
@@ -153,6 +160,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_RenunciaSIF_Insertar")]
         public ErrorDto<int> AF_Liquidacion_RenunciaSIF_Insertar(int CodEmpresa, [FromBody] AfRenunciaSifModel model)
         {
@@ -160,6 +168,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_RenunciaASE_Insertar")]
         public ErrorDto<int> AF_Liquidacion_RenunciaASE_Insertar(int CodEmpresa, [FromBody] AfRenunciaAseModel model)
         {
@@ -174,6 +183,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_Insertar")]
         public ErrorDto<int> AF_Liquidacion_Insertar(int CodEmpresa, [FromBody] AfLiquidacionInsertModel model)
         {
@@ -181,6 +191,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_Patrimonio_Aplicar")]
         public ErrorDto<bool> AF_Liquidacion_Patrimonio_Aplicar(int CodEmpresa, [FromBody] AfLiquidacionPatrimonioInput input)
         {
@@ -188,6 +199,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_LiquidaFondos_Insertar")]
         public ErrorDto<int> AF_LiquidaFondos_Insertar(int CodEmpresa, [FromBody] AfLiquidaFondosInsertModel model)
         {
@@ -195,6 +207,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_LiquidaPlanes_Ejecutar")]
         public ErrorDto<bool> AF_LiquidaPlanes_Ejecutar(int CodEmpresa, [FromBody] AfLiquidaPlanesInput input)
         {
@@ -202,6 +215,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_LiquidaDetalle_Insertar")]
         public ErrorDto<int> AF_LiquidaDetalle_Insertar(int CodEmpresa, [FromBody] AfLiquidaDetalleInsertModel model)
         {
@@ -209,6 +223,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_AbonosPlanPagos_Ejecutar")]
         public ErrorDto<bool> AF_Liquidacion_AbonosPlanPagos_Ejecutar(int CodEmpresa, [FromBody] AfLiquidacionPatrimonioInput input)
         {
@@ -216,6 +231,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Morosidad_Actualizar")]
         public ErrorDto<int> AF_Morosidad_Actualizar(int CodEmpresa, [FromBody] AfMorosidadModel model)
         {
@@ -223,6 +239,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Morosidad_Actualizar_Mora")]
         public ErrorDto<int> AF_Morosidad_Actualizar_Mora(int CodEmpresa, [FromBody] AfMorosidadPorMoraModel model)
         {
@@ -230,6 +247,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Morosidad_Insertar")]
         public ErrorDto<int> AF_Morosidad_Insertar(int CodEmpresa, [FromBody] AfMorosidadInsertModel model)
         {
@@ -244,6 +262,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_RegCreditos_Actualizar_Cartera")]
         public ErrorDto<int> AF_RegCreditos_Actualizar_Cartera(int CodEmpresa, [FromBody] AfRegCreditosActualizarModel model)
         {
@@ -251,6 +270,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_RegCreditos_Actualizar_RetenPlazo")]
         public ErrorDto<int> AF_RegCreditos_Actualizar_RetenPlazo(int CodEmpresa, [FromBody] AfRegCreditosActualizarModel model)
         {
@@ -258,6 +278,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_RegCreditos_Actualizar_RetenIndefinida")]
         public ErrorDto<int> AF_RegCreditos_Actualizar_RetenIndefinida(int CodEmpresa, [FromBody] AfRegCreditosActualizarModel model)
         {
@@ -265,6 +286,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CreditosDt_Insertar")]
         public ErrorDto<int> AF_CreditosDt_Insertar(int CodEmpresa, [FromBody] AfCreditosDtInsertModel model)
         {
@@ -272,6 +294,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_Asiento_Ejecutar")]
         public ErrorDto<bool> AF_Liquidacion_Asiento_Ejecutar(int CodEmpresa, int LiqConsec)
         {
@@ -279,6 +302,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_Traslado_OpEx_Ejecutar")]
         public ErrorDto<bool> AF_Liquidacion_Traslado_OpEx_Ejecutar(int CodEmpresa, int LiqConsec)
         {
@@ -286,6 +310,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_Fondos_Devolucion_Ejecutar")]
         public ErrorDto<bool> AF_Liquidacion_Fondos_Devolucion_Ejecutar(int CodEmpresa, int LiqConsec, string Usuario)
         {
@@ -293,6 +318,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Liquidacion_Bitacora_Insertar")]
         public ErrorDto AF_Liquidacion_Bitacora_Insertar(int CodEmpresa, string usuario, string detalle, string movimiento, int modulo = 7)
         {

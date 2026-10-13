@@ -45,6 +45,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Genera el pago de los beneficios.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiBeneficioPago_Generar")]
         public ErrorDto AfiBeneficioPago_Generar(int CodCliente, string usuario, [FromBody] List<AfiBenePago> tabla)
             => _bl.AfiBeneficioPago_Generar(CodCliente, usuario, tabla);

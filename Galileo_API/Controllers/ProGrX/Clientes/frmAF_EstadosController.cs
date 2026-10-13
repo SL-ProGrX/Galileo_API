@@ -25,6 +25,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Estados_Guardar")]
         public ErrorDto AF_Estados_Guardar(int CodEmpresa, string Usuario, AfEstadosDto Info)
         {
@@ -32,6 +33,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_Estados_Eliminar")]
         public ErrorDto AF_Estados_Eliminar(int CodEmpresa, string Usuario, string CodEstado)
         {
@@ -46,6 +48,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Estados_Movimientos_Registrar")]
         public ErrorDto AF_Estados_Movimientos_Registrar(int CodEmpresa, AfEstadosMovimientosDto Info)
         {
@@ -53,6 +56,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_Estados_Movimientos_Eliminar")]
         public ErrorDto AF_Estados_Movimientos_Eliminar(int CodEmpresa, string Lista)
         {
@@ -67,6 +71,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Estados_Entidad_Guardar")]
         public ErrorDto AF_Estados_Entidad_Guardar(int CodEmpresa, string Usuario, AfEstadosEntidadesDto Info)
         {
@@ -74,6 +79,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Estados_EntidadesTodas_Guardar")]
         public ErrorDto AF_Estados_EntidadesTodas_Guardar(int CodEmpresa, string Usuario, string CodEstado, bool Checked)
         {

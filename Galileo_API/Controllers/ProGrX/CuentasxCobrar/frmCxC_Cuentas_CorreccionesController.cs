@@ -123,6 +123,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxC_CuentasCorrecciones_Actualizar")]
         public ErrorDto CxC_CuentasCorrecciones_Actualizar(int codEmpresa, string usuario, [FromBody] CuentaPorCobrarData datos)
         {

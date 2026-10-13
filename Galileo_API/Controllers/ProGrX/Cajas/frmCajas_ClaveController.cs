@@ -23,6 +23,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
             return BL_Cajas_Clave.Cajas_Usuario_Obtener(codEmpresa, usuario);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_Cambio_Clave")]
         public ErrorDto<bool> Cajas_Cambio_Clave([FromQuery] int codEmpresa,
             [FromBody] CajasCambioClaveRequestDto request)

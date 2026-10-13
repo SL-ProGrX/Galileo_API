@@ -32,6 +32,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_ControlParametros_Guardar")]
         public ErrorDto Co_ControlParametros_Guardar(int CodEmpresa, [FromBody] CoControlParametrosGuardarRequest req)
         {

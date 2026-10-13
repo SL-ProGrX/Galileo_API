@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_SubCuentas_Guardar")]
         public ErrorDto FND_SubCuentas_Guardar(int CodEmpresa, string usuario, FndSubCuentasData data)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("FND_SubCuentas_Eliminar")]
         public ErrorDto FND_SubCuentas_Eliminar(int CodEmpresa, int consec, string usuario)
         {

@@ -48,6 +48,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Niveles_Grupo_Guardar")]
         public ErrorDto<CrNivelesGrupoDto> CR_Niveles_Grupo_Guardar(int CodEmpresa, string usuario, [FromBody] CrNivelesGrupoGuardarRequest request)
         {
@@ -60,6 +61,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Niveles_Grupo_Eliminar")]
         public ErrorDto CR_Niveles_Grupo_Eliminar(int CodEmpresa, int grupoId, string usuario)
         {
@@ -81,6 +83,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Niveles_Miembro_Asignar")]
         public ErrorDto CR_Niveles_Miembro_Asignar(int CodEmpresa, string usuario, [FromBody] CrNivelesAsignacionMiembroRequest request)
         {
@@ -93,6 +96,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Niveles_Linea_Asignar")]
         public ErrorDto CR_Niveles_Linea_Asignar(int CodEmpresa, string usuario, [FromBody] CrNivelesAsignacionLineaRequest request)
         {

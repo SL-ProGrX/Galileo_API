@@ -24,6 +24,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
             return _bl.Cajas_TiposCambios_Obtener(CodEmpresa, codContabilidad, cod_divisa, filtros);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_TiposCambios_Guardar")]
         public ErrorDto Cajas_TiposCambios_Guardar(int CodEmpresa,string usuario,CajasTiposCambiosData cambio)
         {
@@ -31,6 +32,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Cajas_TiposCambios_Eliminar")]
         public ErrorDto Cajas_TiposCambios_Eliminar( int CodEmpresa,string usuario,int codContabilidad,string cod_divisa,int id_cambio)
         {

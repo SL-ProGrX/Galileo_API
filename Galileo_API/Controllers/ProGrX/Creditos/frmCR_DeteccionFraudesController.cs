@@ -75,6 +75,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return BL.CR_DeteccionFraudes_Lineas_F4_Obtener(CodEmpresa,filtro);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_DeteccionFraudes_PrepararReporte")]
         public ErrorDto CR_DeteccionFraudes_PrepararReporte(int CodEmpresa,[FromBody] CrDeteccionFraudesReporteRequest request)
         {

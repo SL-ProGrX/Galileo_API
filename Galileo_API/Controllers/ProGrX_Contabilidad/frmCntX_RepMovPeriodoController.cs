@@ -43,6 +43,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntX_Areas_Listar(codEmpresa, codContabilidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("GenerarReporteRepmov")]
         public ErrorDto<bool> GenerarReporte(int codEmpresa, int codContabilidad, CntxRepMovPeriodoFiltroDto filtros)
         {

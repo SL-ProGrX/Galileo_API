@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCtaCatalogo_Cuentas_Guardar")]
         public ErrorDto CrCtaCatalogo_Cuentas_Guardar(int codEmpresa, CrCtaCatalogoCuentasGuardarRequest request)
         {

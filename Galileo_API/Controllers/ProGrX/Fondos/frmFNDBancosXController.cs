@@ -25,6 +25,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BancosX_Insertar")]
         public ErrorDto BancosX_Insertar(int codEmpresa)
         {
@@ -32,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPut("BancosX_Actualizar")]
         public ErrorDto BancosX_Actualizar(int codEmpresa, [FromBody] FndBancosXUpdateParam param)
         {

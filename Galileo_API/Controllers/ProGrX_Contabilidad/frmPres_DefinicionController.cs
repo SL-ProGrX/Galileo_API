@@ -45,6 +45,7 @@ namespace Galileo.Controllers
             return _bl.Pres_Definicion_scroll(CodEmpresa, scrollValue, CodCtaMask, CodContab);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Pres_VistaPresupuesto_Cuenta_SP")]
         [Authorize]
         public ErrorDto<List<VistaPresCuentaData>> Pres_VistaPresupuesto_Cuenta_SP(int CodEmpresa, PresCuenta request)

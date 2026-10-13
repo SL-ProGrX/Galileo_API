@@ -32,6 +32,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_Gestiones_Guardar")]
         public ErrorDto Co_Gestiones_Guardar(int CodEmpresa, string usuario, CoControlGestionesData gestion)
         {
@@ -39,6 +40,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Co_Gestiones_Eliminar")]
         public ErrorDto Co_Gestiones_Eliminar(int CodEmpresa, string usuario, string cod_gestion)
         {
@@ -67,6 +69,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_Seguridad_Asignacion_Guardar")]
         public ErrorDto Co_Seguridad_Asignacion_Guardar(int CodEmpresa, string usuario, CoControlGestionesSeguridadAsignacionDto dto)
         {

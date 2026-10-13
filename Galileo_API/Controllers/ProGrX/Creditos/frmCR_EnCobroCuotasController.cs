@@ -47,6 +47,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_EnCobroCuotas_Resumen_Lista_Obtener")]
         public ErrorDto<CrEnCobroCuotasListaResult<CrEnCobroCuotasResumenData>> CR_EnCobroCuotas_Resumen_Lista_Obtener(int CodEmpresa,[FromBody] CrEnCobroCuotasConsultaRequest request)
         {
@@ -54,6 +55,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_EnCobroCuotas_Resumen_Lista_Export")]
         public ErrorDto<CrEnCobroCuotasListaResult<CrEnCobroCuotasResumenData>> CR_EnCobroCuotas_Resumen_Lista_Export(int CodEmpresa,[FromBody] CrEnCobroCuotasConsultaRequest request)
         {
@@ -61,6 +63,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_EnCobroCuotas_Detalle_Lista_Obtener")]
         public ErrorDto<CrEnCobroCuotasListaResult<CrEnCobroCuotasDetalleData>> CR_EnCobroCuotas_Detalle_Lista_Obtener(int CodEmpresa,[FromBody] CrEnCobroCuotasConsultaRequest request)
         {
@@ -68,6 +71,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_EnCobroCuotas_Detalle_Lista_Export")]
         public ErrorDto<CrEnCobroCuotasListaResult<CrEnCobroCuotasDetalleData>> CR_EnCobroCuotas_Detalle_Lista_Export(int CodEmpresa,[FromBody] CrEnCobroCuotasConsultaRequest request)
         {
@@ -75,6 +79,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_EnCobroCuotas_Envio_Lista_Obtener")]
         public ErrorDto<CrEnCobroCuotasListaResult<CrEnCobroCuotasEnvioData>> CR_EnCobroCuotas_Envio_Lista_Obtener(int CodEmpresa,[FromBody] CrEnCobroCuotasConsultaRequest request)
         {
@@ -82,6 +87,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_EnCobroCuotas_Envio_Lista_Export")]
         public ErrorDto<CrEnCobroCuotasListaResult<CrEnCobroCuotasEnvioData>> CR_EnCobroCuotas_Envio_Lista_Export(int CodEmpresa,[FromBody] CrEnCobroCuotasConsultaRequest request)
         {
@@ -89,6 +95,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_EnCobroCuotas_Recepcion_Lista_Obtener")]
         public ErrorDto<CrEnCobroCuotasRecepcionResult> CR_EnCobroCuotas_Recepcion_Lista_Obtener(int CodEmpresa,[FromBody] CrEnCobroCuotasConsultaRequest request)
         {
@@ -96,6 +103,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_EnCobroCuotas_Recepcion_Lista_Export")]
         public ErrorDto<CrEnCobroCuotasRecepcionResult> CR_EnCobroCuotas_Recepcion_Lista_Export(int CodEmpresa,[FromBody] CrEnCobroCuotasConsultaRequest request)
         {
@@ -103,6 +111,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_EnCobroCuotas_Historial_Lista_Obtener")]
         public ErrorDto<CrEnCobroCuotasListaResult<CrEnCobroCuotasHistorialData>> CR_EnCobroCuotas_Historial_Lista_Obtener(int CodEmpresa,[FromBody] CrEnCobroCuotasConsultaRequest request)
         {
@@ -110,6 +119,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_EnCobroCuotas_Historial_Lista_Export")]
         public ErrorDto<CrEnCobroCuotasListaResult<CrEnCobroCuotasHistorialData>> CR_EnCobroCuotas_Historial_Lista_Export(int CodEmpresa,[FromBody] CrEnCobroCuotasConsultaRequest request)
         {
@@ -117,6 +127,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_EnCobroCuotas_ResumenDeductoras_Lista_Obtener")]
         public ErrorDto<CrEnCobroCuotasListaResult<CrEnCobroCuotasResumenDeductoraData>> CR_EnCobroCuotas_ResumenDeductoras_Lista_Obtener(int CodEmpresa,[FromBody] CrEnCobroCuotasConsultaRequest request)
         {
@@ -124,6 +135,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_EnCobroCuotas_ResumenDeductoras_Lista_Export")]
         public ErrorDto<CrEnCobroCuotasListaResult<CrEnCobroCuotasResumenDeductoraData>> CR_EnCobroCuotas_ResumenDeductoras_Lista_Export(int CodEmpresa,[FromBody] CrEnCobroCuotasConsultaRequest request)
         {
@@ -131,6 +143,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_EnCobroCuotas_Bitacora_Lista_Obtener")]
         public ErrorDto<CrEnCobroCuotasListaResult<CrEnCobroCuotasBitacoraData>> CR_EnCobroCuotas_Bitacora_Lista_Obtener(int CodEmpresa,
             [FromBody] CrEnCobroCuotasConsultaRequest request)
@@ -139,6 +152,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_EnCobroCuotas_Bitacora_Lista_Export")]
         public ErrorDto<CrEnCobroCuotasListaResult<CrEnCobroCuotasBitacoraData>> CR_EnCobroCuotas_Bitacora_Lista_Export(int CodEmpresa,[FromBody] CrEnCobroCuotasConsultaRequest request)
         {

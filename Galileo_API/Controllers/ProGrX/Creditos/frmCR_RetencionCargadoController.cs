@@ -38,6 +38,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             int codDeductora)
             => _bl.CrRetencionCargado_DeductoraDetalle_Obtener(codEmpresa, codigo, codDeductora);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrRetencionCargado_Cargar")]
         public ErrorDto<CrRetencionCargadoCargaData> CrRetencionCargado_Cargar(
             int codEmpresa,
@@ -45,6 +46,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             [FromBody] CrRetencionCargadoCargaRequest request)
             => _bl.CrRetencionCargado_Cargar(codEmpresa, usuario, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrRetencionCargado_Aplicar")]
         public ErrorDto CrRetencionCargado_Aplicar(
             int codEmpresa,

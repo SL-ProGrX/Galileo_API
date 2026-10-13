@@ -39,6 +39,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Pres_Usuarios_Registro_SP")]
         public ErrorDto Pres_Usuarios_Registro_SP(int CodEmpresa, PresUsuariosInsert request)
         {
@@ -46,6 +47,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Pres_Unidades_Registro_SP")]
         public ErrorDto Pres_Unidades_Registro_SP(int CodEmpresa, PresUnidadesInsert request)
         {

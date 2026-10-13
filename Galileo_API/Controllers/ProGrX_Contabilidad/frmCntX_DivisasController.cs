@@ -58,12 +58,14 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXDivisas_TipoCambio_Obtener(codEmpresa, codConta, codDivisa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXDivisas_Guardar")]
         public ErrorDto CntXDivisas_Guardar(int codEmpresa, string usuario, bool edita, CntXDivisaData request)
         {
             return _bl.CntXDivisas_Guardar(codEmpresa, usuario, edita, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntXDivisas_Eliminar")]
         public ErrorDto CntXDivisas_Eliminar(int codEmpresa, int codConta, string codDivisa, string usuario)
         {

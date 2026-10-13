@@ -37,6 +37,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_SegNiveles_Grupos_Guardar")]
         public ErrorDto Fnd_SegNiveles_Grupos_Guardar(int CodEmpresa, FndSegNivelesGrupoDto Data)
         {
@@ -44,6 +45,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Fnd_SegNiveles_Grupos_Eliminar")]
         public ErrorDto Fnd_SegNiveles_Grupos_Eliminar(int CodEmpresa, string CodGrupo, string Usuario)
         {
@@ -51,6 +53,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_SegNiveles_Planes_Actualizar")]
         public ErrorDto Fnd_SegNiveles_Planes_Actualizar(int CodEmpresa, FndSegNivelesPlanesDto Data)
         {
@@ -58,6 +61,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_SegNiveles_Usuarios_Actualizar")]
         public ErrorDto Fnd_SegNiveles_Usuarios_Actualizar(int CodEmpresa, FndSegNivelesUsuariosDto Data)
         {

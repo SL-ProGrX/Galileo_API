@@ -35,6 +35,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Comites_Guardar")]
         public ErrorDto<CrComitesGuardarResult> CR_Comites_Guardar(int CodEmpresa, string usuario, [FromBody] CrComitesGuardarRequest request)
         {
@@ -50,6 +51,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CR_Comites_Eliminar")]
         public ErrorDto CR_Comites_Eliminar(int CodEmpresa, int id_comite, string usuario)
         {
@@ -78,6 +80,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Comites_Garantias_Guardar")]
         public ErrorDto CR_Comites_Garantias_Guardar(int CodEmpresa, string usuario, [FromBody] CrComitesGarantiasGuardarRequest request)
         {
@@ -97,6 +100,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Comites_Lineas_Asignar")]
         public ErrorDto CR_Comites_Lineas_Asignar(int CodEmpresa, string usuario, [FromBody] CrComitesLineasAsignarRequest request)
         {

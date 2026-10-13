@@ -40,6 +40,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_SeguridadTasaPreferencial_Guardar")]
         public ErrorDto Fnd_SeguridadTasaPreferencial_Guardar(int CodEmpresa, FndSeguridadTasaPreferencialDto row, string usuario)
         {
@@ -47,6 +48,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Fnd_SeguridadTasaPreferencial_Eliminar")]
         public ErrorDto Fnd_SeguridadTasaPreferencial_Eliminar(int CodEmpresa, string tp_rol, string usuario)
         {
@@ -54,6 +56,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_SeguridadTasaPreferencial_RolPlan_Actualizar")]
         public ErrorDto Fnd_SeguridadTasaPreferencial_RolPlan_Actualizar(int CodEmpresa, FndSeguridadTasaPreferencialRolPlanDto data)
         {
@@ -61,6 +64,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_SeguridadTasaPreferencial_RolAutorizador_Actualizar")]
         public ErrorDto Fnd_SeguridadTasaPreferencial_RolAutorizador_Actualizar(int CodEmpresa, FndSeguridadTasaPreferencialRolAutorizadorDto data)
         {

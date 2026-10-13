@@ -55,6 +55,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
                 cod_beneficio);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("AF_BeneProdPago_Entrega_Procesar")]
         public ErrorDto AF_BeneProdPago_Entrega_Procesar(
             int CodEmpresa,

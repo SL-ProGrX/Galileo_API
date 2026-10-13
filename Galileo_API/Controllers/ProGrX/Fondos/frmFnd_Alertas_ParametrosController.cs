@@ -71,6 +71,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_AlertasParametros_Registrar")]
         public ErrorDto Fnd_AlertasParametros_Registrar(int codEmpresa, string usuario, FndalertasData alerta)
         {
@@ -78,6 +79,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_AlertasParametros_Alerta_Guardar")]
         public ErrorDto Fnd_AlertasParametros_Alerta_Guardar(int CodEmpresa, FndalertasData data)
         {
@@ -89,6 +91,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         #region EMAIL
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_AlertasEmail_Guardar")]
         public ErrorDto Fnd_AlertasEmail_Guardar(int codEmpresa, FndAlertasContactosDto contacto)
         {
@@ -96,6 +99,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_AlertasEmail_Eliminar")]
         public ErrorDto Fnd_AlertasEmail_Eliminar(int codEmpresa, string usuario, List<FndAlertasContactosDto> listaContactos)
         {
@@ -103,6 +107,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Fnd_AlertasEmailId_Eliminar")]
         public ErrorDto Fnd_AlertasEmailId_Eliminar(int codEmpresa, string usuario, int idregistro)
         {

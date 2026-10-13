@@ -18,6 +18,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasRoe_Consulta")]
         public ErrorDto<List<CajasRoeConsultaResult>> CajasRoe_Consulta(int codEmpresa, [FromBody] CajasRoeConsultaParams param)
         {
@@ -32,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasRoe_Imprime")]
         public ErrorDto<CajasRoeImprimeResult?> CajasRoe_Imprime(int codEmpresa, [FromBody] CajasRoeImprimeParams param)
         {

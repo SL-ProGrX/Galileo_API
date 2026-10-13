@@ -58,6 +58,7 @@
             return _bl.AF_CntXConCierre_ValidaPeriodo(codEmpresa, mes, anio, codContabilidad, soloAbierto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CntXConCierre_InsertarPeriodo")]        
         [Authorize]
         public ErrorDto AF_CntXConCierre_InsertarPeriodo(int codEmpresa, int anio, int mes, int codContabilidad)
@@ -65,6 +66,7 @@
             return _bl.AF_CntXConCierre_InsertarPeriodo(codEmpresa, anio, mes, codContabilidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CntXConCierre_InsertarMovimientos")]
         [Authorize]
         public ErrorDto AF_CntXConCierre_InsertarMovimientos(int codEmpresa, int codConsolida, int codContabilidad, int anio, int mes, int nivel)
@@ -72,6 +74,7 @@
             return _bl.AF_CntXConCierre_InsertarMovimientos(codEmpresa, codConsolida, codContabilidad, anio, mes, nivel);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("AF_CntXConCierre_ActualizarMovimiento")]
         [Authorize]
         public ErrorDto AF_CntXConCierre_ActualizarMovimiento(int codEmpresa, [FromBody] FrmCntXConCierreActualizarMovimientoRequest req)
@@ -93,6 +96,7 @@
             return _bl.AF_CntXConCierre_ObtenerContabilidadesPortal(codEmpresa, codConsolida, codPortal);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CntXConCierre_ExisteMovimientoConsolidado")]
         [Authorize]
         public ErrorDto AF_CntXConCierre_ExisteMovimientoConsolidado(int codEmpresa, [FromBody] FrmCntXConCierreExisteMovimientoRequest req)
@@ -100,6 +104,7 @@
             return _bl.AF_CntXConCierre_ExisteMovimientoConsolidado(codEmpresa, req);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CntXConCierre_InsertarMovimiento")]
         [Authorize]
         public ErrorDto AF_CntXConCierre_InsertarMovimiento(int codEmpresa, [FromBody] FrmCntXConCierreInsertarMovimientoRequest req)

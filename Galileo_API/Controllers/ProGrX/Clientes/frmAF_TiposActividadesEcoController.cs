@@ -25,6 +25,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_TiposActividadesEco_Guardar")]
         public ErrorDto AF_TiposActividadesEco_Guardar(int CodEmpresa, string Usuario, AfTiposActividadesEcoDto Info)
         {
@@ -32,6 +33,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_TiposActividadesEco_Eliminar")]
         public ErrorDto AF_TiposActividadesEco_Eliminar(int CodEmpresa, string Usuario, string CodActividad)
         {
@@ -46,6 +48,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_TiposActividadesEco_SubActividad_Guardar")]
         public ErrorDto AF_TiposActividadesEco_SubActividad_Guardar(int CodEmpresa, string Usuario, AfTiposActividadesEcoDto Info)
         {
@@ -53,6 +56,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_TiposActividadesEco_SubActividad_Eliminar")]
         public ErrorDto AF_TiposActividadesEco_SubActividad_Eliminar(int CodEmpresa, string Usuario, string CodActividad, string CodSubAct)
         {

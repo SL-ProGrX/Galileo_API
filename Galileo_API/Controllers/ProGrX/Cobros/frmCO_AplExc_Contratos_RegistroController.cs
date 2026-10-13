@@ -42,6 +42,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CO_AplExc_Contratos_Registro_Creditos_Obtener(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_AplExc_Contratos_Registro_Guardar")]
         public ErrorDto<CoAplExcContratosRegistroGuardarResponse> CO_AplExc_Contratos_Registro_Guardar(
             int CodEmpresa,
@@ -58,6 +59,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CO_AplExc_Contratos_Registro_Personas_F4_Obtener(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_AplExc_Contratos_Registro_Carga_Lote")]
         public ErrorDto<CoAplExcContratosRegistroCargaLoteResponse> CO_AplExc_Contratos_Registro_Carga_Lote(
     int CodEmpresa,

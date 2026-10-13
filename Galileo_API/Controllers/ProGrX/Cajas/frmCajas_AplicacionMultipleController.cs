@@ -38,6 +38,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
 
    
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_AM_Validar")]
         public ErrorDto<CajasAmValidacionDto> Cajas_AM_Validar(
             int codEmpresa,
@@ -56,6 +57,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
 
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_AM_Creditos_Pendientes")]
         public ErrorDto<List<CajasCreditoPendienteDto>> Cajas_AM_Creditos_Pendientes(
             int codEmpresa,
@@ -68,6 +70,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
 
  
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_AM_Creditos_Agregar")]
         public ErrorDto<bool> Cajas_AM_Creditos_Agregar(
             int codEmpresa,
@@ -80,6 +83,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
 
   
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_AM_Eliminar")]
         public ErrorDto<bool> Cajas_AM_Eliminar(
             int codEmpresa,
@@ -89,6 +93,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_AM_Aplicar")]
         public ErrorDto<long> Cajas_AM_Aplicar(
             int codEmpresa,

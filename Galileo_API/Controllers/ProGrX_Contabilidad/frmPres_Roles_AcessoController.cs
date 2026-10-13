@@ -25,6 +25,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Roles_Upsert")]
         public ErrorDto Roles_Upsert(int CodCliente, string usuario, RolesDto request)
         {
@@ -39,6 +40,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Rol_Miembros_Registro")]
         public ErrorDto Rol_Miembros_Registro(int CodCliente, string cod_contabilidad, string rol, string usuario, MiembrosRolDto request)
         {
@@ -60,6 +62,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Rol_Cuenta_Registra")]
         public ErrorDto Rol_Cuenta_Registra(int CodCliente, string cod_contabilidad, string rol, CuentaRolDto request)
         {
@@ -67,6 +70,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Rol_Cuenta_Elimina")]
         public ErrorDto Rol_Cuenta_Elimina(int CodCliente, string cod_contabilidad, string rol, CuentaRolDto request)
         {
@@ -74,6 +78,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Rol_Eliminar")]
         public ErrorDto Rol_Eliminar(int CodEmpresa, string codRol)
         {
@@ -88,6 +93,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Rol_Unidad_Registro")]
         public ErrorDto Rol_Unidad_Registro(int CodCliente, string cod_contabilidad, string rol, int boolasingado, UnidadesRolDto request)
         {
@@ -102,6 +108,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Rol_Unidad_CC_Registro")]
         public ErrorDto Rol_Unidad_CC_Registro(int CodCliente, string cod_contabilidad, string rol, string unidad, int boolasingado, CentroCosto request)
         {

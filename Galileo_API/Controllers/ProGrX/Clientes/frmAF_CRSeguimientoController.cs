@@ -19,6 +19,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Seguimiento_Obtener")]
         public ErrorDto<List<AfCrSeguimientoData>> AF_CR_Seguimiento_Obtener(int CodEmpresa, [FromBody] AfCrSeguimientoFiltros filtros)
         {
@@ -89,6 +90,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Seguimiento_Motivos_Registrar")]
         public ErrorDto AF_CR_Seguimiento_Motivos_Registrar(int CodEmpresa, [FromBody] AfCrSeguimientoMotivosRegistrar motivos)
         {
@@ -96,6 +98,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Seguimiento_Renuncia_Estado")]
         public ErrorDto AF_CR_Seguimiento_Renuncia_Estado(int CodEmpresa, [FromBody] AfCrSeguimientoRenunciaEstado estado)
         {

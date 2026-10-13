@@ -61,6 +61,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Reservas_Guardar")]
         public ErrorDto Fnd_Reservas_Guardar(int CodEmpresa, FndReservasDto Data)
         {
@@ -68,6 +69,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Fnd_Reservas_Eliminar")]
         public ErrorDto Fnd_Reservas_Eliminar(int CodEmpresa, string Reserva, string Usuario)
         {
@@ -75,6 +77,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Reservas_Cuentas_Registro")]
         public ErrorDto Fnd_Reservas_Cuentas_Registro(int CodEmpresa, string Reserva, string CodCuenta, string Usuario, string Accion)
         {
@@ -82,6 +85,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Reservas_Mov_Registro")]
         public ErrorDto Fnd_Reservas_Mov_Registro(int CodEmpresa, string Reserva, string Usuario, int Accion, FndReservaContenidoDto Filtros)
         {

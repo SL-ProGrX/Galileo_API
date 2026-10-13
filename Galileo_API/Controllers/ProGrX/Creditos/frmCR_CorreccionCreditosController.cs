@@ -45,18 +45,21 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             int direccion)
             => _bl.CR_CorreccionCreditos_Proceso_Obtener(codEmpresa, proceso, direccion);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CR_CorreccionCreditos_Cambio_Aplicar")]
         public ErrorDto<CrCorreccionCreditosResultado> CR_CorreccionCreditos_Cambio_Aplicar(
             int codEmpresa,
             CrCorreccionCreditosAplicarRequest request)
             => _bl.CR_CorreccionCreditos_Cambio_Aplicar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CR_CorreccionCreditos_Formalizacion_Anular")]
         public ErrorDto<CrCorreccionCreditosResultado> CR_CorreccionCreditos_Formalizacion_Anular(
             int codEmpresa,
             CrCorreccionCreditosAnularRequest request)
             => _bl.CR_CorreccionCreditos_Formalizacion_Anular(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CR_CorreccionCreditos_Operacion_Excluir")]
         public ErrorDto<CrCorreccionCreditosResultado> CR_CorreccionCreditos_Operacion_Excluir(
             int codEmpresa,

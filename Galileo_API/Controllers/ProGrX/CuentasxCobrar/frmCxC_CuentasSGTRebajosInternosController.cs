@@ -52,6 +52,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return BL.CxC_Cuentas_SGT_Rebajos_Existe_Obtener(CodEmpresa, Operacion, Operacion_Aplicada);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxC_Cuentas_SGT_Rebajos_Guardar")]
         public ErrorDto CxC_Cuentas_SGT_Rebajos_Guardar(
             int CodEmpresa,
@@ -62,6 +63,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return BL.CxC_Cuentas_SGT_Rebajos_Guardar(CodEmpresa, Usuario, Contabilidad, req);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxC_Cuentas_SGT_Rebajos_Eliminar")]
         public ErrorDto CxC_Cuentas_SGT_Rebajos_Eliminar(
            int CodEmpresa,

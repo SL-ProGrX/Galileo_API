@@ -102,6 +102,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CoControlLista_Personas_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_ControlLista_NotificarMarcados_Procesar")]
         public ErrorDto<int> CoControlLista_NotificarMarcados_Procesar(
                 int CodEmpresa,
@@ -145,6 +146,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.Co_ControlLista_Gestiones_Consulta(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_ControlLista_Notificacion_Procesar")]
         public ErrorDto<bool> CoControlLista_Notificacion_Procesar(
             int CodEmpresa,
@@ -176,6 +178,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CoControlLista_UsuariosTraslado_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_ControlLista_AplicarMarcados_Procesar")]
         public ErrorDto<bool> CoControlLista_AplicarMarcados_Procesar(
     int CodEmpresa,
@@ -184,6 +187,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CoControlLista_AplicarMarcados_Procesar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_ControlLista_TrasladarMarcados_Procesar")]
         public ErrorDto<bool> CoControlLista_TrasladarMarcados_Procesar(
             int CodEmpresa,
@@ -212,6 +216,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CoControlLista_GestionDetalle_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_ControlLista_Gestion_Procesar")]
         public ErrorDto<bool> CoControlLista_Gestion_Procesar(
             int CodEmpresa,
@@ -231,6 +236,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CoControlLista_ResumenCarteraUsuario_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_ControlLista_AnalisisCartera_Procesar")]
         public ErrorDto<CoControlListaAnalisisCarteraProcesarResponse> CoControlLista_AnalisisCartera_Procesar(
             int CodEmpresa)

@@ -24,6 +24,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CO_CobroFiadores_Aplicacion_Pendientes_Obtener(CodEmpresa);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_CobroFiadores_Aplicacion_Procesar")]
         public ErrorDto<CoCobroFiadoresAplicacionProcesarResponse> CO_CobroFiadores_Aplicacion_Procesar(int CodEmpresa,[FromBody] CoCobroFiadoresAplicacionProcesarRequest data)
         {
@@ -31,6 +32,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_CobroFiadores_Aplicacion_Cancelar")]
         public ErrorDto CO_CobroFiadores_Aplicacion_Cancelar(int CodEmpresa,[FromBody] CoCobroFiadoresAplicacionCancelarRequest data)
         {

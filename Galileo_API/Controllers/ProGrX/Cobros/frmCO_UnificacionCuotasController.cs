@@ -38,6 +38,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_UnificacionCuotas_Unificar")]
         public ErrorDto<CoUnificacionCuotasUnificarResponse> Co_UnificacionCuotas_Unificar([FromQuery] int CodEmpresa, [FromBody] CoUnificacionCuotasUnificarRequest req)
         {

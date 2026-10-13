@@ -20,6 +20,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcBancosAutorizados_InsertarFaltantes")]
         public ErrorDto<bool> CxcBancosAutorizados_InsertarFaltantes(int codEmpresa, [FromBody] CxcBancoAutorizadoInsertParams param)
         {
@@ -34,6 +35,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcBancosAutorizados_UpdateCheques")]
         public ErrorDto<bool> CxcBancosAutorizados_UpdateCheques(int codEmpresa, [FromBody] CxcBancoAutorizadoUpdateChequesParams param)
         {
@@ -41,6 +43,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcBancosAutorizados_UpdateTransferencias")]
         public ErrorDto<bool> CxcBancosAutorizados_UpdateTransferencias(int codEmpresa, [FromBody] CxcBancoAutorizadoUpdateTransferenciasParams param)
         {

@@ -64,12 +64,14 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXDiferidosPlantilla_Divisas_Obtener(codEmpresa, codConta);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXDiferidosPlantilla_Guardar")]
         public ErrorDto CntXDiferidosPlantilla_Guardar(int codEmpresa, CntXDiferidosPlantillaRequest request)
         {
             return _bl.CntXDiferidosPlantilla_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntXDiferidosPlantilla_Eliminar")]
         public ErrorDto CntXDiferidosPlantilla_Eliminar(int codEmpresa, int codConta, string usuario, int codDiferido)
         {

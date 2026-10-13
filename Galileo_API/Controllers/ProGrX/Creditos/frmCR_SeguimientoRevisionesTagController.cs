@@ -36,6 +36,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.Cr_SeguimientoRevisionesTag_Etiquetas_Obtener(codEmpresa, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoRevisionesTag_Operaciones_Obtener")]
         public ErrorDto<CrSeguimientoRevisionesTagOperacionesResponse> Cr_SeguimientoRevisionesTag_Operaciones_Obtener(
             int codEmpresa,
@@ -48,6 +49,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
 
         #region Detalle
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoRevisionesTag_DetalleCredito_Obtener")]
         public ErrorDto<CrSeguimientoRevisionesTagDetalleCreditoResponse> Cr_SeguimientoRevisionesTag_DetalleCredito_Obtener(
             int codEmpresa,
@@ -56,6 +58,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.Cr_SeguimientoRevisionesTag_DetalleCredito_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoRevisionesTag_Patrimonio_Obtener")]
         public ErrorDto<CrSeguimientoRevisionesTagPatrimonioResponse> Cr_SeguimientoRevisionesTag_Patrimonio_Obtener(
             int codEmpresa,
@@ -64,6 +67,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.Cr_SeguimientoRevisionesTag_Patrimonio_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoRevisionesTag_Deudas_Obtener")]
         public ErrorDto<CrSeguimientoRevisionesTagDeudasResponse> Cr_SeguimientoRevisionesTag_Deudas_Obtener(
             int codEmpresa,
@@ -72,6 +76,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.Cr_SeguimientoRevisionesTag_Deudas_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoRevisionesTag_Fianzas_Obtener")]
         public ErrorDto<CrSeguimientoRevisionesTagFianzasResponse> Cr_SeguimientoRevisionesTag_Fianzas_Obtener(
             int codEmpresa,
@@ -80,6 +85,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.Cr_SeguimientoRevisionesTag_Fianzas_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoRevisionesTag_Refundiciones_Obtener")]
         public ErrorDto<List<CrSeguimientoRevisionesTagRefundicionRow>> Cr_SeguimientoRevisionesTag_Refundiciones_Obtener(
             int codEmpresa,
@@ -88,6 +94,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.Cr_SeguimientoRevisionesTag_Refundiciones_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoRevisionesTag_Desembolsos_Obtener")]
         public ErrorDto<List<CrSeguimientoRevisionesTagDesembolsoRow>> Cr_SeguimientoRevisionesTag_Desembolsos_Obtener(
             int codEmpresa,
@@ -96,6 +103,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.Cr_SeguimientoRevisionesTag_Desembolsos_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoRevisionesTag_FiadorDetalle_Obtener")]
         public ErrorDto<CrSeguimientoRevisionesTagFiadorResponse> Cr_SeguimientoRevisionesTag_FiadorDetalle_Obtener(
             int codEmpresa,
@@ -104,6 +112,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.Cr_SeguimientoRevisionesTag_FiadorDetalle_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoRevisionesTag_FiadorClasificacion_Obtener")]
         public ErrorDto<List<CrSeguimientoRevisionesTagClasificacionRow>> Cr_SeguimientoRevisionesTag_FiadorClasificacion_Obtener(
             int codEmpresa,
@@ -112,6 +121,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.Cr_SeguimientoRevisionesTag_FiadorClasificacion_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoRevisionesTag_Personas_Obtener")]
         public ErrorDto<List<CrSeguimientoRevisionesTagPersonaRow>> Cr_SeguimientoRevisionesTag_Personas_Obtener(
     int codEmpresa,
@@ -124,6 +134,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
 
         #region Seguimiento
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoRevisionesTag_Seguimiento_Obtener")]
         public ErrorDto<CrSeguimientoRevisionesTagSeguimientoResponse> Cr_SeguimientoRevisionesTag_Seguimiento_Obtener(
             int codEmpresa,
@@ -136,6 +147,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
 
         #region Revision
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoRevisionesTag_Revision_Obtener")]
         public ErrorDto<CrSeguimientoRevisionesTagRevisionResponse> Cr_SeguimientoRevisionesTag_Revision_Obtener(
             int codEmpresa,
@@ -160,6 +172,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.Cr_SeguimientoRevisionesTag_Aviso_Obtener(codEmpresa, tagCodigo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoRevisionesTag_Aplicar")]
         public ErrorDto<CrSeguimientoRevisionesTagAplicarResponse> Cr_SeguimientoRevisionesTag_Aplicar(
             int codEmpresa,

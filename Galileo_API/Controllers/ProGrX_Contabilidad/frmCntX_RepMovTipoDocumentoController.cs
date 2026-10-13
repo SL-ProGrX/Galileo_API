@@ -24,6 +24,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             [FromQuery] int codContabilidad)
             => _bl.TiposAsiento_Lista(codEmpresa, codContabilidad);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Asientos_Lista")]
         public ActionResult<ErrorDto<List<CntXAsientoDto>>> Asientos_Lista(
             [FromQuery] int codEmpresa,

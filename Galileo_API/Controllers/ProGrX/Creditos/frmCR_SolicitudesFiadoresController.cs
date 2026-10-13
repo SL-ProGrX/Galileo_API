@@ -63,6 +63,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SolicitudesFiadores_Guardar")]
         public ErrorDto CR_SolicitudesFiadores_Guardar(
             int CodEmpresa,
@@ -72,6 +73,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SolicitudesFiadores_Eliminar")]
         public ErrorDto CR_SolicitudesFiadores_Eliminar(
             int CodEmpresa,

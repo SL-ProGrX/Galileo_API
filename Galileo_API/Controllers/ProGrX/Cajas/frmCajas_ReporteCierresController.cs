@@ -40,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_Cierre_Forzado")]
         public ErrorDto<bool> Cajas_Cierre_Forzado(int codEmpresa, string codCaja, int codApertura, string usuario)
         {
@@ -47,6 +48,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_Cierre_Recibe")]
         public ErrorDto<bool> Cajas_Cierre_Recibe(int codEmpresa, string codCaja, int codApertura, string usuario)
         {
@@ -54,6 +56,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_Cierre_Revisa")]
         public ErrorDto<bool> Cajas_Cierre_Revisa(int codEmpresa, string codCaja, int codApertura, string usuario)
         {
@@ -69,6 +72,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_Cierre_Forzar")]
         public ActionResult<ErrorDto<bool>> Cajas_Cierre_Forzar(int codEmpresa,string codCaja,int codApertura,string usuario)
         {
@@ -76,6 +80,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_Cierre_Verificacion")]
         public ErrorDto<CajasCierreVerificacionDto> Cajas_Cierre_Verificacion(int codEmpresa, string codCaja, int codApertura)
         {
@@ -83,6 +88,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_Cierre_Preliminar_Aplicar")]
         public ErrorDto<bool> Cajas_Cierre_Preliminar_Aplicar(int codEmpresa, string codCaja, int codApertura, string usuario)
         {

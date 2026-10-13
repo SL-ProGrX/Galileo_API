@@ -26,6 +26,7 @@
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoExc_Disponible_Guardar")]
         public ErrorDto CrCatalogoExc_Disponible_Guardar(int CodEmpresa, CrCatalogoExcDisponibleGuardarRequest request)
         {
@@ -33,6 +34,7 @@
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrCatalogoExc_Disponible_Eliminar")]
         public ErrorDto CrCatalogoExc_Disponible_Eliminar(int CodEmpresa, CrCatalogoExcDisponibleEliminarRequest request)
         {

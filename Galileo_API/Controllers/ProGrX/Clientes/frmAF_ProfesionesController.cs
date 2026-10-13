@@ -25,6 +25,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Profesiones_Guardar")]
         public ErrorDto AF_Profesiones_Guardar(int CodEmpresa, string Usuario, string Codigo, string Descripcion)
         {
@@ -32,6 +33,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_Profesiones_Eliminar")]
         public ErrorDto AF_Profesiones_Eliminar(int CodEmpresa, string Usuario, int Codigo, string Descripcion)
         {

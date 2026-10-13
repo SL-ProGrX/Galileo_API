@@ -46,6 +46,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_CatalogoCopia_Copiar")]
         public ErrorDto<CrCatalogoCopiaResultadoDto> CR_CatalogoCopia_Copiar(int CodEmpresa, [FromBody] CrCatalogoCopiaRequest request)
         {

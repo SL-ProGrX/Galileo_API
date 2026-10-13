@@ -64,12 +64,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<List<DropDownListaGenericaModel>> CrPeriodosGracia_Lineas_Obtener(int codEmpresa)
             => _bl.CrPeriodosGracia_Lineas_Obtener(codEmpresa);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrPeriodosGracia_Consulta_Obtener")]
         public ErrorDto<List<dynamic>> CrPeriodosGracia_Consulta_Obtener(
             int codEmpresa,
             [FromBody] CrPeriodosGraciaConsultaRequest request)
             => _bl.CrPeriodosGracia_Consulta_Obtener(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrPeriodosGracia_Aplicar_Ejecutar")]
         public ErrorDto CrPeriodosGracia_Aplicar_Ejecutar(
             int codEmpresa,

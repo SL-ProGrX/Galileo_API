@@ -37,18 +37,21 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrCatalogoDestinos_Asignados_Obtener(codEmpresa, codigo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoDestinos_Asignar")]
         public ErrorDto CrCatalogoDestinos_Asignar(int codEmpresa, string codDestino, string catalogo, bool isChecked)
         {
             return _bl.CrCatalogoDestinos_Asignar(codEmpresa, codDestino, catalogo, isChecked);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoDestinos_Guardar")]
         public ErrorDto CrCatalogoDestinos_Guardar(int codEmpresa, string usuario, CrCatalogoDestinoData request)
         {
             return _bl.CrCatalogoDestinos_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrCatalogoDestinos_Eliminar")]
         public ErrorDto CrCatalogoDestinos_Eliminar(int codEmpresa, string codDestino, string usuario)
         {

@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_Cartera_Guardar")]
         public ErrorDto Co_Cartera_Guardar(int CodEmpresa, string usuario, COCarteraClasificacionData cartera)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Co_Cartera_Eliminar")]
         public ErrorDto Co_Cartera_Eliminar(int CodEmpresa, string usuario, string cod_clasificacion)
         {
@@ -68,6 +70,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_Asignacion_Guardar")]
         public ErrorDto Co_Asignacion_Guardar(int CodEmpresa, string usuario, COCarteraAsignacionGuardarDto dto)
         {
@@ -75,6 +78,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_Asignacion_Bulk_Guardar")]
         public ErrorDto Co_Asignacion_Bulk_Guardar(int CodEmpresa, string usuario, COCarteraAsignacionBulkDto dto)
         {

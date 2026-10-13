@@ -22,12 +22,14 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.CrPreaTiposSalarios_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrPreaTiposSalarios_Guardar")]
         public ErrorDto CrPreaTiposSalarios_Guardar(int codEmpresa, string usuario, CrdPreaTiposSalariosData request)
         {
             return _bl.CrPreaTiposSalarios_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrPreaTiposSalarios_Eliminar")]
         public ErrorDto CrPreaTiposSalarios_Eliminar(int codEmpresa, string tipoSalario, string usuario)
         {

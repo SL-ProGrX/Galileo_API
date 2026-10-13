@@ -46,6 +46,7 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>[PENDIENTE] Guardado central del beneficio (requiere dependencias no migradas).</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneficioIntegralGeneral_Guardar")]
         public Task<ErrorDto<BeneficioGeneralDatos>> BeneficioIntegralGeneral_Guardar(int CodCliente, string fuente, [FromBody] BeneficioGeneralDatos beneficioGeneral)
             => _bl.BeneficioIntegralGeneral_Guardar(CodCliente, fuente, beneficioGeneral);
@@ -58,6 +59,7 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>[PENDIENTE] Notificación de resolución por correo (requiere servidor de reportes).</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneficioNotificaResolucion_Enviar")]
         public Task<ErrorDto> BeneficioNotificaResolucion_Enviar([FromBody] List<DocArchivoBeneIntegralDto> info)
             => _bl.BeneficioNotificaResolucion_Enviar(info);
@@ -100,12 +102,14 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Guarda el registro de mora del beneficio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneRegistroMora_Guardar")]
         public ErrorDto BeneRegistroMora_Guardar(int CodCliente, [FromBody] BeneRegistroMoraGuardar cobroMora)
             => _bl.BeneRegistroMora_Guardar(CodCliente, cobroMora);
 
         /// <summary>[PENDIENTE] Envío de boleta de cobro de mora por correo (requiere servidor de reportes).</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneRegistroMora_Enviar")]
         public Task<ErrorDto> BeneRegistroMora_Enviar([FromBody] DocArchivoBeneIntegralDto info)
             => _bl.BeneRegistroMora_Enviar(Convert.ToInt32(info.codCliente), info);

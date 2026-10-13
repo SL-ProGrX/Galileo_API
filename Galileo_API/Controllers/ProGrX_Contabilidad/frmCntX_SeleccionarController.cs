@@ -27,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntX_Seleccionar_Buscar(codEmpresa, usuario, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntX_Seleccionar_Seleccionar")]
         public ErrorDto<CntXParametrosDto> CntX_Seleccionar_Seleccionar(int codEmpresa, string usuario, int codContabilidad)
         {

@@ -53,6 +53,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
             return _bl.Cajas_SaldosFavor_Lista_Export(CodEmpresa, filtros);
         }
         
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_SaldosFavor_ValoresTransito_Autorizar")]
         [Authorize]
         public ErrorDto Cajas_SaldosFavor_ValoresTransito_Autorizar(int CodEmpresa,CajasSaldosFavorAutorizaRequest data)

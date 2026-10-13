@@ -25,6 +25,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_TiposSociedades_Guardar")]
         public ErrorDto AF_TiposSociedades_Guardar(int CodEmpresa, string Usuario, AfTiposSociedadesDto Info)
         {
@@ -32,6 +33,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_TiposSociedades_Eliminar")]
         public ErrorDto AF_TiposSociedades_Eliminar(int CodEmpresa, string Usuario, string CodSociedad)
         {

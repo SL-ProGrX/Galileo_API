@@ -33,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ComitesSemaforo_Guardar")]
         public ErrorDto CR_ComitesSemaforo_Guardar(int CodEmpresa, [FromBody] CrComitesSemaforoGuardarRequest request)
         {
@@ -54,6 +55,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ComitesSemaforo_Email_Agregar")]
         public ErrorDto CR_ComitesSemaforo_Email_Agregar(int CodEmpresa, [FromBody] CrComitesSemaforoEmailAgregarRequest request)
         {
@@ -61,6 +63,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ComitesSemaforo_Email_Eliminar")]
         public ErrorDto CR_ComitesSemaforo_Email_Eliminar(int CodEmpresa, [FromBody] CrComitesSemaforoEmailEliminarRequest request)
         {

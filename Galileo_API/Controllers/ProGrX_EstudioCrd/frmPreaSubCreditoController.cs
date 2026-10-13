@@ -27,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaSubCredito_Cargar(codEmpresa, usuario, cod_preanalisis);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaSubCredito_Aplicar")]
         public ErrorDto<FrmPreaSubCreditoAplicarResponse> Prea_frmPreaSubCredito_Aplicar(
             int codEmpresa,
@@ -35,6 +36,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaSubCredito_Aplicar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaSubCredito_Cuentas_Obtener")]
         public ErrorDto<FrmPreaSubCreditoCuentasResponse> Prea_frmPreaSubCredito_Cuentas_Obtener(
             int codEmpresa,

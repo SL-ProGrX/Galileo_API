@@ -124,6 +124,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Grupos_Guardar")]
         public ErrorDto AF_Grupos_Guardar(int CodEmpresa, AfGrupoConfiguracionDto grupo)
         {
@@ -131,6 +132,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_Grupos_Eliminar")]
         public ErrorDto AF_Grupos_Eliminar(int CodEmpresa, string cod_grupo)
         {
@@ -138,6 +140,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Miembros_Guardar")]
         public ErrorDto AF_Miembros_Guardar(int CodEmpresa, string cod_grupo, AfGrupoMiembroDto miembro)
         {
@@ -145,6 +148,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Reportes_Guardar")]
         public ErrorDto AF_Reportes_Guardar(int CodEmpresa, AfReporteDto reporte)
         {
@@ -152,6 +156,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Reportes_Grupo_Guardar")]
         public ErrorDto AF_Reportes_Grupo_Guardar(int CodEmpresa, AfSeguridadGrupoDto grupo)
         {
@@ -159,6 +164,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_Reportes_Grupo_Eliminar")]
         public ErrorDto AF_Reportes_Grupo_Eliminar(int CodEmpresa, int codgrupo)
         {
@@ -166,6 +172,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Reportes_Grupo_Miembros_Guardar")]
         public ErrorDto AF_Reportes_Grupo_Miembros_Guardar(int CodEmpresa, string cod_grupo, AfSeguridadMiembroDto miembroseguridad)
         {
@@ -173,6 +180,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Reportes_Seguridad_Guardar")]
         public ErrorDto AF_Reportes_Seguridad_Guardar(int CodEmpresa, string id_rep, string cod_grupo)
         {

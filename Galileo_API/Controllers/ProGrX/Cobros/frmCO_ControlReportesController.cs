@@ -31,6 +31,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return BL.CO_ControlReportes_Filtros_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_ControlReportes_Cubo_Procesar")]
         public ErrorDto CO_ControlReportes_Cubo_Procesar(
             int CodEmpresa,

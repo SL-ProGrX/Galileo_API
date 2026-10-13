@@ -25,6 +25,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FondosAplCreditos_Lista")]
         public ErrorDto<List<FndFondosAplCreditosListaResult>> FondosAplCreditos_Lista([FromBody] FndFondosAplCreditosListaParams param)
         {
@@ -32,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FondosAplCreditos_AplicacionGeneral")]
         public ErrorDto<FndFondosAplCreditosAplicacionGeneralResult> FondosAplCreditos_AplicacionGeneral([FromBody] FndFondosAplCreditosAplicacionGeneralParams param)
         {
@@ -39,6 +41,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FondosAplCreditos_Aplicacion")]
         public ErrorDto<FndFondosAplCreditosAplicacionResult> FondosAplCreditos_Aplicacion([FromBody] FndFondosAplCreditosAplicacionParams param, [FromQuery] int codEmpresa)
         {

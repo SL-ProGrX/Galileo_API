@@ -18,12 +18,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             _bl = new FrmCrConsultaFianzasBl(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrConsultaFianzas_Consulta_Obtener")]
         public ErrorDto<CrConsultaFianzasConsultaData> CrConsultaFianzas_Consulta_Obtener(
             int codEmpresa,
             [FromBody] CrConsultaFianzasConsultaRequest request)
             => _bl.CrConsultaFianzas_Consulta_Obtener(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrConsultaFianzas_Detalle_Obtener")]
         public ErrorDto<CrConsultaFianzasDetalleData> CrConsultaFianzas_Detalle_Obtener(
             int codEmpresa,

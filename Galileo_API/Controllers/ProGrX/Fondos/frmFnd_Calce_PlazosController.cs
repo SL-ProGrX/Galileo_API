@@ -24,6 +24,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
             return _BL.Periodos_Lista(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Proyeccion_Presupuesto")]
         public ErrorDto Proyeccion_Presupuesto(int CodEmpresa, int Anio, string Usuario, int Tipo)
         {

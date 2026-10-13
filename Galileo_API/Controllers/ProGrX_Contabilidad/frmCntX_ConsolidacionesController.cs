@@ -82,6 +82,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
                 codConsolida);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXConsolidaciones_Guardar")]
         public ErrorDto CntXConsolidaciones_Guardar(
             int codEmpresa,
@@ -91,6 +92,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXConsolidaciones_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXConsolidaciones_Borrar")]
         public ErrorDto CntXConsolidaciones_Borrar(
             int codEmpresa,

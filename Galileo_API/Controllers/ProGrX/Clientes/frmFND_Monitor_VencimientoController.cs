@@ -26,6 +26,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Planes_Obtener")]
         public ErrorDto<List<FndPlanesItem>> Fnd_Planes_Obtener(int CodEmpresa, [FromBody] FndPlanesObtenerRequest request)
         {
@@ -33,6 +34,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Vencimientos_Consulta")]
         public ErrorDto<List<FndVencimientosConsultaResult>> Fnd_Vencimientos_Consulta(
             int CodEmpresa, [FromBody] FndVencimientosConsultaRequest request)

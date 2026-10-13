@@ -28,6 +28,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_ControlComTabla_Guardar")]
         public ErrorDto CO_ControlComTabla_Guardar(int CodEmpresa, string usuario, CoControlComTablaData data)
         {
@@ -35,6 +36,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CO_ControlComTabla_Delete")]
         public ErrorDto CO_ControlComTabla_Delete(int CodEmpresa, string usuario, int id_Linea)
         {

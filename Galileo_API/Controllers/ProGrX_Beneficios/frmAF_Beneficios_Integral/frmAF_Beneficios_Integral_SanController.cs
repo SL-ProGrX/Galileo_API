@@ -39,6 +39,7 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Guarda (inserta o actualiza) la sanción del socio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneSancionesSocio_Guardar")]
         public ErrorDto BeneSancionesSocio_Guardar(int CodCliente, [FromBody] AfiBeneSancionesDto sancion)
             => _bl.BeneSancionesSocio_Guardar(CodCliente, sancion);

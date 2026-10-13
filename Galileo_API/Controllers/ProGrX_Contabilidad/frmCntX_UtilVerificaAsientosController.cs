@@ -16,6 +16,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         public FrmCntXUtilVerificaAsientosController(IConfiguration config) 
             => _bl = new FrmCntXUtilVerificaAsientosBl(config);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXAsientos_Verificar")]
         public ErrorDto CntXAsientos_Verificar(int codEmpresa, CntXAsientosVerificarRequest request)
         {

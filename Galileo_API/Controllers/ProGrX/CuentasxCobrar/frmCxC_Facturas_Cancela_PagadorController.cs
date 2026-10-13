@@ -41,6 +41,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return _bl.CxCFactCancPag_FacturasPendientes_Obtener(codEmpresa, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCFactCancPag_Abono_Registrar")]
         public ErrorDto CxCFactCancPag_Abono_Registrar(int codEmpresa, CxCFactCancPagRegistrarAbonoRequest request)
         {

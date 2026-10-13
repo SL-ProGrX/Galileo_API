@@ -22,6 +22,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_AplExc_Procesa_Aplicar")]
         public ErrorDto<CoAplExcProcesadosResult> CO_AplExc_Procesa_Aplicar(int CodEmpresa, ExcedenteAplicarRequest request)
         {

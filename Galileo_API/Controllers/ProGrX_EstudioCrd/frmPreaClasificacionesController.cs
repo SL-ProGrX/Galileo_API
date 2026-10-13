@@ -28,72 +28,84 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.PreaClasificacion_Catalogo_Obtener(codEmpresa, catalogo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PreaClasificacion_Razon_Guardar")]
         public ErrorDto PreaClasificacion_Razon_Guardar(int codEmpresa, string usuario, PreaClasificacionRazonData request)
         {
             return _bl.PreaClasificacion_Razon_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("PreaClasificacion_Razon_Eliminar")]
         public ErrorDto PreaClasificacion_Razon_Eliminar(int codEmpresa, string codRazon, string usuario)
         {
             return _bl.PreaClasificacion_Razon_Eliminar(codEmpresa, codRazon, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PreaClasificacion_Garantia_Guardar")]
         public ErrorDto PreaClasificacion_Garantia_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
         {
             return _bl.PreaClasificacion_Garantia_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("PreaClasificacion_Garantia_Eliminar")]
         public ErrorDto PreaClasificacion_Garantia_Eliminar(int codEmpresa, string codGarantia, string usuario)
         {
             return _bl.PreaClasificacion_Garantia_Eliminar(codEmpresa, codGarantia, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PreaClasificacion_Mora_Guardar")]
         public ErrorDto PreaClasificacion_Mora_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
         {
             return _bl.PreaClasificacion_Mora_Guardar(codEmpresa, usuario, request);
         }
         
+        [ValidateAntiForgeryToken]
         [HttpDelete("PreaClasificacion_Mora_Eliminar")]
         public ErrorDto PreaClasificacion_Mora_Eliminar(int codEmpresa, string codMora, string usuario)
         {
             return _bl.PreaClasificacion_Mora_Eliminar(codEmpresa, codMora, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PreaClasificacion_Capacidad_Guardar")]
         public ErrorDto PreaClasificacion_Capacidad_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
         {
             return _bl.PreaClasificacion_Capacidad_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("PreaClasificacion_Capacidad_Eliminar")]
         public ErrorDto PreaClasificacion_Capacidad_Eliminar(int codEmpresa, string codCapacidad, string usuario)
         {
             return _bl.PreaClasificacion_Capacidad_Eliminar(codEmpresa, codCapacidad, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PreaClasificacion_Endeudamiento_Guardar")]
         public ErrorDto PreaClasificacion_Endeudamiento_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
         {
             return _bl.PreaClasificacion_Endeudamiento_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("PreaClasificacion_Endeudamiento_Eliminar")]
         public ErrorDto PreaClasificacion_Endeudamiento_Eliminar(int codEmpresa, string codEndeudamiento, string usuario)
         {
             return _bl.PreaClasificacion_Endeudamiento_Eliminar(codEmpresa, codEndeudamiento, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PreaClasificacion_Historial_Guardar")]
         public ErrorDto PreaClasificacion_Historial_Guardar(int codEmpresa, string usuario, PreaClasificacionData request)
         {
             return _bl.PreaClasificacion_Historial_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("PreaClasificacion_Historial_Eliminar")]
         public ErrorDto PreaClasificacion_Historial_Eliminar(int codEmpresa, string codHistorial, string usuario)
         {
@@ -106,6 +118,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.PreaClasificacion_Garantia_Obtener(codEmpresa, codGarantia);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PreaClasificacion_Garantia_Asignar")]
         public ErrorDto PreaClasificacion_Garantia_Asignar(int codEmpresa, string codGarantia, string garantia, bool asignado)
         {

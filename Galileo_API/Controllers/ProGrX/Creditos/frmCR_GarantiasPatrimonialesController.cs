@@ -54,6 +54,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_GarantiasPatrimoniales_Guardar")]
         public ErrorDto CR_GarantiasPatrimoniales_Guardar(int CodEmpresa,string usuario,[FromBody] CrGarantiasPatrimonialesRegistroRequest request)
         {
@@ -61,6 +62,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_GarantiasPatrimoniales_Eliminar")]
         public ErrorDto CR_GarantiasPatrimoniales_Eliminar(int CodEmpresa,string usuario,[FromBody] CrGarantiasPatrimonialesRegistroRequest request)
         {

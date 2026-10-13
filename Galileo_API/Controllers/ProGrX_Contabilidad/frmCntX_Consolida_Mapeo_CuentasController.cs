@@ -24,12 +24,14 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             [FromQuery] int mContabilidad) 
             => _bl.ConsolidaMapeoCuentas_ObtenerUnidades(codEmpresa, mContabilidad);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ConsolidaMapeoCuentas_ImportaCargado")]
         public ActionResult<ErrorDto<ConsolidaMapeoImportaResultDto?>> ConsolidaMapeoCuentas_ImportaCargado(
             [FromQuery] int codEmpresa,
             [FromBody] ConsolidaMapeoImportaCargadoRequestDto request)
             => _bl.ConsolidaMapeoCuentas_ImportaCargado(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ConsolidaMapeoCuentas_ImportaMapeo")]
         public ActionResult<ErrorDto<bool>> ConsolidaMapeoCuentas_ImportaMapeo(
             [FromQuery] int codEmpresa,
@@ -54,6 +56,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             [FromQuery] string Usuario)
             => _bl.ConsolidaMapeoCuentas_ImportaValida(codEmpresa, Consolidadora, Unidad, Usuario);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ConsolidaMapeoCuentas_Importa")]
         public ActionResult<ErrorDto<ConsolidaMapeoImportaResultDto?>> ConsolidaMapeoCuentas_Importa(
             [FromQuery] int codEmpresa,
@@ -62,6 +65,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             [FromQuery] string Usuario)
             => _bl.ConsolidaMapeoCuentas_Importa(codEmpresa, Consolidadora, Unidad, Usuario);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ConsolidaMapeoCuentas_Inicializa")]
         public ActionResult<ErrorDto<ConsolidaMapeoImportaResultDto?>> ConsolidaMapeoCuentas_Inicializa(
             [FromQuery] int codEmpresa,
@@ -83,6 +87,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             [FromQuery] int mContabilidad)
             => _bl.ConsolidaMapeoCuentas_ContabilidadInfo(codEmpresa, mContabilidad);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ConsolidaMapeoCuentas_ImportaContaBaseMapeo")]
         public ActionResult<ErrorDto<bool>> ConsolidaMapeoCuentas_ImportaContaBaseMapeo(
             [FromQuery] int codEmpresa,

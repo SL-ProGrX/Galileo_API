@@ -17,6 +17,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             _bl = new FrmCoControlComGeneracionBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_ControlComGeneracion_Actualizar")]
         public ErrorDto Co_ControlComGeneracion_Actualizar(int CodEmpresa, string usuario)
         {

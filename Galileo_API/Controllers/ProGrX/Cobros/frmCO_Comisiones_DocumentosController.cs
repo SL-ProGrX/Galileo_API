@@ -26,6 +26,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_ComisionesDocumento_Insertar")]
         public ErrorDto CO_ComisionesDocumento_Insertar(int CodEmpresa, string usuario, string tipo_documento)
         {
@@ -33,6 +34,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CO_ComisionesDocumento_Delete")]
         public ErrorDto CO_ComisionesDocumento_Delete(int CodEmpresa, string usuario, string tipo_documento)
         {

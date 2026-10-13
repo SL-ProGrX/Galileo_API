@@ -32,6 +32,7 @@ namespace Galileo.Controllers
             return _bl.spPres_Ajustes_Permitidos_Obtener(CodEmpresa, codContab, codModelo, Usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Pres_ReporteBalanceEstado")]
         public ErrorDto<List<object>> Pres_ReporteBalanceEstado(int CodEmpresa, PresFiltrosReportes presFiltros)
         {

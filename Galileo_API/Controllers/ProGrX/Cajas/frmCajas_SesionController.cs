@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
             }
 
             [Authorize]
+            [ValidateAntiForgeryToken]
             [HttpPost("Cajas_Sesion_Inicia")]
             public ErrorDto Cajas_Sesion_Inicia(int codEmpresa, string caja, string usuario, int apertura, int tipoId, string cedula, string nombre)
             {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
             }
 
             [Authorize]
+            [ValidateAntiForgeryToken]
             [HttpPost("Cajas_Sesion_Finaliza")]
             public ErrorDto<CajasSesionFinalizaResultDto> Cajas_Sesion_Finaliza(int codEmpresa, int sesionId, string usuario)
             {

@@ -24,6 +24,7 @@ namespace Galileo.Controllers
             return _bl.PresAjustestTipos_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PRES_AjustesTipo_Eliminar")]
         [Authorize]
         public ErrorDto PresAjustesTipo_Eliminar(int CodEmpresa, string CodAjuste)
@@ -31,6 +32,7 @@ namespace Galileo.Controllers
             return _bl.PresAjustesTipo_Eliminar(CodEmpresa, CodAjuste);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PRES_AjustesTipo_Insertar")]
         [Authorize]
         public ErrorDto PresAjustesTipo_Insertar(int CodEmpresa, PresAjustestTiposDto Info)
@@ -38,6 +40,7 @@ namespace Galileo.Controllers
             return _bl.PresAjustesTipo_Insertar(CodEmpresa, Info);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PRES_AjustesTipo_Actualizar")]
         [Authorize]
         public ErrorDto PresAjustesTipo_Actualizar(int CodEmpresa, PresAjustestTiposDto Info)

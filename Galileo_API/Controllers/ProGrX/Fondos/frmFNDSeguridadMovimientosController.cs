@@ -26,6 +26,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
             return _BL.Seguridad_Planes_Obtener(CodEmpresa, cod_grupo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Seguridad_Planes_Marcar")]
         public ErrorDto<bool> Seguridad_Planes_Marcar(
             int CodEmpresa,
@@ -48,6 +49,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Seguridad_Usuarios_Marcar")]
         public ErrorDto<bool> Seguridad_Usuarios_Marcar(
             int CodEmpresa,
@@ -68,6 +70,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
             return _BL.Seguridad_Autorizadores_Obtener(CodEmpresa, cod_grupo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Seguridad_Autorizadores_Marcar")]
         public ErrorDto<bool> Seguridad_Autorizadores_Marcar(
             int CodEmpresa,
@@ -85,6 +88,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
             return _BL.Seguridad_Niveles_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Seguridad_Niveles_Guardar")]
         public ErrorDto<bool> Seguridad_Niveles_Guardar(
             int CodEmpresa,
@@ -94,6 +98,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
             return _BL.Seguridad_Niveles_Guardar(CodEmpresa, dto, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Seguridad_Niveles_Eliminar")]
         public ErrorDto<bool> Seguridad_Niveles_Eliminar(
             int CodEmpresa,

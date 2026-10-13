@@ -22,6 +22,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CO_AplFndContrApl_Informacion_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_AplFndContrApl_Aplicar")]
         public ErrorDto<CoAplFndContrAplicadosResult> CO_AplFndContrApl_Aplicar(int CodEmpresa, ContratosAplicarRequest request)
         {

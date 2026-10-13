@@ -80,6 +80,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         /// <summary>
         /// Simula cuotas/proyección (equivalente a txtCuotas_Change VB6), recomendado como POST por el tamaño del request.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasCrdAbonosSt_SimularCuotas")]
         [RequestSizeLimit(MaxBodyBytes)]
         public ErrorDto<SimularCuotasResponse> CajasCrdAbonosSt_SimularCuotas(int CodEmpresa, [FromBody] SimularCuotasRequest req)
@@ -122,6 +123,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         /// <summary>
         /// Recalcula cuota (equivalente a txtCompromiso_Change cuando chkRecalculaCuota=True).
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasCrdAbonosSt_RecalcularCuota")]
         [RequestSizeLimit(MaxBodyBytes)]
         public ErrorDto<RecalculaCuotaResponse> CajasCrdAbonosSt_RecalcularCuota(int CodEmpresa, [FromBody] RecalculaCuotaRequest req)
@@ -136,6 +138,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
 
         #region Aplicar abono
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasCrdAbonosSt_Abono_Aplica")]
         [RequestSizeLimit(MaxBodyBytes)]
         public ErrorDto CajasCrdAbonosSt_Abono_Aplica(int CodEmpresa, [FromBody] CajasCrdAbonoRequest request)
@@ -150,6 +153,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
 
         #region Bitácora + Documento (si se usan desde UI)
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Bitacora")]
         [RequestSizeLimit(MaxBodyBytes)]
         public ErrorDto Bitacora(int CodEmpresa, string usuario, string detalle)
@@ -157,6 +161,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
             return _bl.Bitacora(CodEmpresa, usuario, detalle);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("sbDocumentoAbono")]
         [RequestSizeLimit(MaxBodyBytes)]
         public ErrorDto sbDocumentoAbono(int CodEmpresa, [FromBody] DocumentoAbonoRequest req)

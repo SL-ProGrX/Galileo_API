@@ -28,6 +28,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CO_Aplica_Abonos_Balloons_Lista_Export(CodEmpresa, parametros);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_Aplica_Abonos_Balloons_Aplicar")]
         public ErrorDto<CoAplicaAbonosBalloonsAplicarResult> CO_Aplica_Abonos_Balloons_Aplicar(int CodEmpresa,[FromBody] CoAplicaAbonosBalloonsAplicarRequest? req)
         {

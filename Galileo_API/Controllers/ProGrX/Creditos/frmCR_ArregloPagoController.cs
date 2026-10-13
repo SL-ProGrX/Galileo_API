@@ -33,24 +33,28 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             bool tipoIntereses = false)
             => _bl.Cr_ArregloPago_Operacion_Obtener(codEmpresa, operacion, usuario, tipoIntereses);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_ArregloPago_Capitaliza_Aplicar")]
         public ErrorDto<CrArregloPagoAplicacionResultadoData> Cr_ArregloPago_Capitaliza_Aplicar(
             int codEmpresa,
             [FromBody] CrArregloPagoCapitalizaRequest request)
             => _bl.Cr_ArregloPago_Capitaliza_Aplicar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_ArregloPago_PeriodoGracia_Aplicar")]
         public ErrorDto Cr_ArregloPago_PeriodoGracia_Aplicar(
             int codEmpresa,
             [FromBody] CrArregloPagoPeriodoGraciaRequest request)
             => _bl.Cr_ArregloPago_PeriodoGracia_Aplicar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_ArregloPago_VencimientoIntereses_Aplicar")]
         public ErrorDto<CrArregloPagoAplicacionResultadoData> Cr_ArregloPago_VencimientoIntereses_Aplicar(
             int codEmpresa,
             [FromBody] CrArregloPagoVencimientoInteresesRequest request)
             => _bl.Cr_ArregloPago_VencimientoIntereses_Aplicar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_ArregloPago_AbonoEspecial_Aplicar")]
         public ErrorDto<CrArregloPagoAplicacionResultadoData> Cr_ArregloPago_AbonoEspecial_Aplicar(
             int codEmpresa,

@@ -29,6 +29,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CntX_Preliminar_Montar")]
         public ErrorDto<bool> CntX_Preliminar_Montar(
             int codEmpresa,
@@ -38,6 +39,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CntX_Movimientos_Restructurar")]
         public ErrorDto CntX_Movimientos_Restructurar(
             int codEmpresa,

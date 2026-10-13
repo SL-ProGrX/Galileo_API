@@ -26,6 +26,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_TasaPref_Autorizar")]
         public ErrorDto Fnd_TasaPref_Autorizar(int CodEmpresa, string Gestion, string Autorizador, List<FndTPListDto> Gestiones)
         {

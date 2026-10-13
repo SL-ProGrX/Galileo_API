@@ -29,6 +29,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXPlantillaRate_Detalle_Obtener(codEmpresa, codConta, codPlantilla);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXPlantillaRate_Generar")]
         public ErrorDto CntXPlantillaRate_Generar(int codEmpresa, CntXPlantillaRateGenerarRequest request)
         {

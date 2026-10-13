@@ -23,10 +23,12 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<List<CrCatalogoCargoData>> CrCatalogoCargos_Obtener(int codEmpresa)
             => _bl.CrCatalogoCargos_Obtener(codEmpresa);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCargos_Guardar")]
         public ErrorDto CrCatalogoCargos_Guardar(int codEmpresa, CrCatalogoCargoGuardarRequest request)
             => _bl.CrCatalogoCargos_Guardar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrCatalogoCargos_Eliminar")]
         public ErrorDto CrCatalogoCargos_Eliminar(int codEmpresa, CrCatalogoCargoEliminarRequest request)
             => _bl.CrCatalogoCargos_Eliminar(codEmpresa, request);
@@ -35,12 +37,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<List<CrCatalogoCargoArbolData>> CrCatalogoCargos_AsignacionArbol_Obtener(int codEmpresa)
             => _bl.CrCatalogoCargos_AsignacionArbol_Obtener(codEmpresa);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCargos_AsignacionCargos_Obtener")]
         public ErrorDto<List<CrCatalogoCargoAsignacionData>> CrCatalogoCargos_AsignacionCargos_Obtener(
             int codEmpresa,
             CrCatalogoCargoAsignacionObtenerRequest request)
             => _bl.CrCatalogoCargos_AsignacionCargos_Obtener(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCargos_Asignacion_Guardar")]
         public ErrorDto CrCatalogoCargos_Asignacion_Guardar(
             int codEmpresa,
@@ -51,18 +55,21 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<List<DropDownListaGenericaModel>> CrCatalogoCargos_TablaAplicacionCargos_Obtener(int codEmpresa)
             => _bl.CrCatalogoCargos_TablaAplicacionCargos_Obtener(codEmpresa);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCargos_TablaAplicacion_Obtener")]
         public ErrorDto<List<CrCatalogoCargoTablaAplicacionData>> CrCatalogoCargos_TablaAplicacion_Obtener(
             int codEmpresa,
             CrCatalogoCargoTablaAplicacionObtenerRequest request)
             => _bl.CrCatalogoCargos_TablaAplicacion_Obtener(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCargos_TablaAplicacion_Guardar")]
         public ErrorDto CrCatalogoCargos_TablaAplicacion_Guardar(
             int codEmpresa,
             CrCatalogoCargoTablaAplicacionGuardarRequest request)
             => _bl.CrCatalogoCargos_TablaAplicacion_Guardar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrCatalogoCargos_TablaAplicacion_Eliminar")]
         public ErrorDto CrCatalogoCargos_TablaAplicacion_Eliminar(
             int codEmpresa,

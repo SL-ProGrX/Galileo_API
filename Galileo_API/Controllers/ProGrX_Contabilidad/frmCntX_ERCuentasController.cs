@@ -27,10 +27,12 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         public ActionResult<ErrorDto<List<DropDownListaGenericaModel>>> CntXCuentasClasificacion([FromQuery] int codEmpresa, [FromQuery] int codContabilidad)
             => _bl.CntXCuentasClasificacion(codEmpresa, codContabilidad);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXInvPeriodico_Guardar")]
         public ActionResult<ErrorDto<bool>> CntXInvPeriodico_Guardar([FromQuery] int codEmpresa, [FromBody] CntXInvPeriodicoSaveParams param)
            => _bl.CntXInvPeriodico_Guardar(codEmpresa, param);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntXInvPeriodico_Eliminar")]
         public ActionResult<ErrorDto<bool>> CntXInvPeriodico_Eliminar([FromQuery] int codEmpresa, [FromBody] CntXInvPeriodicoDeleteParams param)
             => _bl.CntXInvPeriodico_Eliminar(codEmpresa, param);

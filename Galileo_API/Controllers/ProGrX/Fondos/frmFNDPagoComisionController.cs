@@ -30,6 +30,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_PagoComision_Generar")]
         public ErrorDto FND_PagoComision_Generar(int CodEmpresa, string Filtros, List<FndPagoComisionVendedorData> Vendedores)
         {

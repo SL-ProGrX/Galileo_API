@@ -37,6 +37,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
             => _bl.BeneficiosBancosX_Exportar(CodCliente, filtros);
 
         /// <summary>Actualiza la configuración de un banco (cheque/transferencia).</summary>
+        [ValidateAntiForgeryToken]
         [HttpPut("BeneficiosBancosX_Actualizar")]
         public ErrorDto<AfBeneficiosBancosData> BeneficiosBancosX_Actualizar(int CodCliente, [FromBody] AfBeneficiosBancosData data)
             => _bl.BeneficiosBancosX_Actualizar(CodCliente, data);

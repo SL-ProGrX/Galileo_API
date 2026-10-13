@@ -26,6 +26,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SolCreacionAgenda_Acta_Generar")]
         public ErrorDto<CrSolCreacionAgendaReporteData> CR_SolCreacionAgenda_Acta_Generar(int CodEmpresa, CrSolCreacionAgendaActaData acta)
         {

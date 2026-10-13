@@ -26,6 +26,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_PadronSalarios_Padron_Procesar")]
         public ErrorDto AF_PadronSalarios_Padron_Procesar(int CodEmpresa, string institucion, string usuario, List<AfPadronData> padron)
         {
@@ -33,6 +34,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_PadronSalarios_Salario_Procesar")]
         public ErrorDto AF_PadronSalarios_Salario_Procesar(int CodEmpresa, string institucion, string usuario, List<AfSalarioData> salario)
         {

@@ -38,6 +38,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             int operacion)
             => _bl.Cr_SeguimientoTramites_Operacion_Obtener(codEmpresa, operacion);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoTramites_Operaciones_Buscar")]
         public ErrorDto<CrSeguimientoTramitesOperacionBusquedaLista>
             Cr_SeguimientoTramites_Operaciones_Buscar(
@@ -52,6 +53,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             string direccion)
             => _bl.Cr_SeguimientoTramites_Operacion_Navegar(codEmpresa, operacion, direccion);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoTramites_Recepcion_Guardar")]
         public ErrorDto<CrSeguimientoTramitesRecepcionGuardarResult>
             Cr_SeguimientoTramites_Recepcion_Guardar(
@@ -172,6 +174,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
                 [FromQuery] CrSeguimientoTramitesRecepcionMontoCalcularRequest request)
             => _bl.Cr_SeguimientoTramites_Recepcion_Monto_Calcular(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Cr_SeguimientoTramites_MontoNoGravable_Actualizar")]
         public ErrorDto Cr_SeguimientoTramites_MontoNoGravable_Actualizar(
             int codEmpresa,
@@ -244,6 +247,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
                 codEmpresa,
                 operacion);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Cr_SeguimientoTramites_Formalizacion_Firma_Actualizar")]
         public ErrorDto Cr_SeguimientoTramites_Formalizacion_Firma_Actualizar(
             int codEmpresa,
@@ -257,6 +261,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
                 [FromQuery] CrSeguimientoTramitesFormalizacionResumenRequest request)
             => _bl.Cr_SeguimientoTramites_Formalizacion_Resumen_Obtener(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoTramites_Formalizacion_Aplicar")]
         public ErrorDto<CrSeguimientoTramitesFormalizacionResult>
             Cr_SeguimientoTramites_Formalizacion_Aplicar(
@@ -264,6 +269,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
                 CrSeguimientoTramitesFormalizacionAplicarRequest request)
             => _bl.Cr_SeguimientoTramites_Formalizacion_Aplicar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoTramites_Formalizacion_Anular")]
         public ErrorDto<CrSeguimientoTramitesFormalizacionResult>
             Cr_SeguimientoTramites_Formalizacion_Anular(
@@ -271,12 +277,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
                 CrSeguimientoTramitesFormalizacionAnularRequest request)
             => _bl.Cr_SeguimientoTramites_Formalizacion_Anular(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Cr_SeguimientoTramites_Formalizacion_Fechas_Actualizar")]
         public ErrorDto Cr_SeguimientoTramites_Formalizacion_Fechas_Actualizar(
             int codEmpresa,
             CrSeguimientoTramitesFormalizacionFechasRequest request)
             => _bl.Cr_SeguimientoTramites_Formalizacion_Fechas_Actualizar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Cr_SeguimientoTramites_Formalizacion_Indicadores_Actualizar")]
         public ErrorDto Cr_SeguimientoTramites_Formalizacion_Indicadores_Actualizar(
             int codEmpresa,

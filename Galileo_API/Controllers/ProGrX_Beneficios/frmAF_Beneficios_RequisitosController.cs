@@ -37,16 +37,19 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
             => _bl.AfBeneRequisitos_Exportar(CodCliente, filtros);
 
         /// <summary>Inserta un requisito (o actualiza si existe).</summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("AfBeneRequisitos_Insertar")]
         public ErrorDto AfBeneRequisitos_Insertar(int CodCliente, [FromBody] BeneRequisitosData requisito)
             => _bl.AfBeneRequisitos_Insertar(CodCliente, requisito);
 
         /// <summary>Actualiza un requisito.</summary>
+        [ValidateAntiForgeryToken]
         [HttpPut("AfBeneRequisitos_Actualizar")]
         public ErrorDto AfBeneRequisitos_Actualizar(int CodCliente, [FromBody] BeneRequisitosData requisito)
             => _bl.AfBeneRequisitos_Actualizar(CodCliente, requisito);
 
         /// <summary>Elimina un requisito.</summary>
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfBeneRequisitos_Eliminar")]
         public ErrorDto AfBeneRequisitos_Eliminar(int CodCliente, string cod_requisito)
             => _bl.AfBeneRequisitos_Eliminar(CodCliente, cod_requisito);

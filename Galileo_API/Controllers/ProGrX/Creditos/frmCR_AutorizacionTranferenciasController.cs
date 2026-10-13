@@ -43,6 +43,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CrAutorizacionTranferencias_OperacionTag_Registrar")]
         public ErrorDto CrAutorizacionTranferencias_OperacionTag_Registrar(int CodEmpresa, CrAutorizacionTranferenciasOperacionTagRegistrarRequest request)
         {

@@ -18,6 +18,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PresParametros_Guardar")]
         public ErrorDto PresParametros_Guardar(int CodEmpresa, PresParametrosDto parametros)
         {

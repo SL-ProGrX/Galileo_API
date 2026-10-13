@@ -30,12 +30,14 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntxPlantillaRate_Consulta_Obtener(codEmpresa, codPlantilla);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntxPlantillaRate_Guardar")]
         public ErrorDto CntxPlantillaRate_Guardar(int codEmpresa, bool existe, CntxPlantillaRateDto request)
         {
             return _bl.CntxPlantillaRate_Guardar(codEmpresa, existe, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntxPlantillaRate_Eliminar")]
         public ErrorDto CntxPlantillaRate_Eliminar(int codEmpresa, string usuario, int codPlantilla)
         {

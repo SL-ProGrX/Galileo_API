@@ -98,6 +98,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoDesembolsos_Guardar")]
         public ErrorDto<CrSeguimientoDesembolsosResumenDto> CR_SeguimientoDesembolsos_Guardar(
             int CodEmpresa,
@@ -107,6 +108,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoDesembolsos_Eliminar")]
         public ErrorDto<CrSeguimientoDesembolsosResumenDto> CR_SeguimientoDesembolsos_Eliminar(
             int CodEmpresa,

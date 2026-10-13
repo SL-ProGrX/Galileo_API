@@ -46,12 +46,14 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Guarda una observación del beneficio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneIntegralObservaciones_Guardar")]
         public ErrorDto BeneIntegralObservaciones_Guardar(int CodCliente, [FromBody] AfiBeneObservaciones observacion)
             => _bl.BeneIntegralObservaciones_Guardar(CodCliente, observacion);
 
         /// <summary>Elimina una observación del beneficio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("BeneIntegralObservaciones_Eliminar")]
         public ErrorDto BeneIntegralObservaciones_Eliminar(int CodCliente, int id_observacion, string usuario)
             => _bl.BeneIntegralObservaciones_Eliminar(CodCliente, id_observacion, usuario);
@@ -76,6 +78,7 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Aprueba de forma masiva los beneficios seleccionados.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneIntegral_AprobacionMasiva")]
         public ErrorDto BeneIntegral_AprobacionMasiva(int CodEmpresa, string lista)
             => _bl.BeneIntegral_AprobacionMasiva(CodEmpresa, lista);
@@ -88,12 +91,14 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Genera las solicitudes de depósito.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneSolicitudDeposito_Generar")]
         public ErrorDto BeneSolicitudDeposito_Generar(int CodEmpresa, string lista, int mes)
             => _bl.BeneSolicitudDeposito_Generar(CodEmpresa, lista, mes);
 
         /// <summary>Devuelve las solicitudes de depósito.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneSolicitudDeposito_Devolver")]
         public ErrorDto BeneSolicitudDeposito_Devolver(int CodEmpresa, string lista)
             => _bl.BeneSolicitudDeposito_Devolver(CodEmpresa, lista);
@@ -118,6 +123,7 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Envía la solicitud de bloqueo del asociado al Departamento de Cobros.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneSolicitudBloqueo_Enviar")]
         public async Task<ErrorDto> BeneSolicitudBloqueo_Enviar([FromBody] DocArchivoBeneIntegralDto info)
             => await _bl.BeneSolicitudBloqueo_Enviar(Convert.ToInt32(info.codCliente), info);

@@ -22,6 +22,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_Grupos_Guardar")]
         public ErrorDto CO_Grupos_Guardar(int CodEmpresa, CoGruposData data)
         {
@@ -29,6 +30,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CO_Grupos_Eliminar")]
         public ErrorDto CO_Grupos_Eliminar(int CodEmpresa, int GrupoId, string Usuario)
         {
@@ -43,6 +45,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_Grupos_Asignar")]
         public ErrorDto CO_Grupos_Asignar(int CodEmpresa, int GrupoId, string Tipo, string Codigo, bool IsChecked, string Usuario)
         {

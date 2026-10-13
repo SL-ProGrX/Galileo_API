@@ -34,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoEtiquetas_Aplicar")]
         public ErrorDto Cr_SeguimientoEtiquetas_Aplicar(int codEmpresa, CrSeguimientoEtiquetasAplicarRequest request)
         {

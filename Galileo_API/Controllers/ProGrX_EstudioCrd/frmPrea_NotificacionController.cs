@@ -18,6 +18,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             _bl = new FrmPreaNotificacionBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaNotificacion_Cargar")]
         public ErrorDto<FrmPreaNotificacionCargarResponse> Prea_frmPreaNotificacion_Cargar(
             int codEmpresa,
@@ -26,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaNotificacion_Cargar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaNotificacion_Notificar")]
         public ErrorDto<FrmPreaNotificacionEnviarResponse> Prea_frmPreaNotificacion_Notificar(
             int codEmpresa,

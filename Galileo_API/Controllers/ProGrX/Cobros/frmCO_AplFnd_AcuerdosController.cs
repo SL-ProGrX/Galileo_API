@@ -21,15 +21,18 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
                 => _bl.Co_AplFnd_Acuerdos_Consultar(codEmpresa, idAcuerdo);
        
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_AplFnd_Acuerdos_Guardar")]
         public ErrorDto<CoAplFndAcuerdosGuardarResponse> Co_AplFnd_Acuerdos_Guardar(int codEmpresa, [FromBody] CoAplFndAcuerdosDetalleResponse request)
                         => _bl.Co_AplFnd_Acuerdos_Guardar(codEmpresa, request);
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_AplFnd_Acuerdos_Listar")]
         public ErrorDto<List<CoAplFndAcuerdosGridResponse>> Co_AplFnd_Acuerdos_Listar(int codEmpresa, [FromBody] CoAplFndAcuerdosFiltroRequest request)
                 => _bl.Co_AplFnd_Acuerdos_Listar(codEmpresa, request);
        
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_AplFnd_Acuerdos_CargaMasiva")]
         public ErrorDto<CoAplFndAcuerdosCargaMasivaResponse> Co_AplFnd_Acuerdos_CargaMasiva(
             int codEmpresa, [FromBody] CoAplFndAcuerdosCargaMasivaRequest request)

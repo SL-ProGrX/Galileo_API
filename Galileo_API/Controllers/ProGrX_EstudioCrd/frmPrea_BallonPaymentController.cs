@@ -36,6 +36,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPrea_BallonPayment_TablaPagos_Obtener(codEmpresa, usuario, cod_preanalisis);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPrea_BallonPayment_Calcular")]
         public ErrorDto<FrmPreaBallonPaymentCalcularResponse> Prea_frmPrea_BallonPayment_Calcular(
             int codEmpresa,
@@ -44,6 +45,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPrea_BallonPayment_Calcular(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPrea_BallonPayment_Condiciones_Guardar")]
         public ErrorDto<FrmPreaBallonPaymentCondicionesGuardarResponse> Prea_frmPrea_BallonPayment_Condiciones_Guardar(
             int codEmpresa,
@@ -52,6 +54,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPrea_BallonPayment_Condiciones_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPrea_BallonPayment_Guardar")]
         public ErrorDto<FrmPreaBallonPaymentGuardarResponse> Prea_frmPrea_BallonPayment_Guardar(
             int codEmpresa,

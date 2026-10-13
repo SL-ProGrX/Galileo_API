@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_Remesas_Guardar")]
         public ErrorDto FND_Remesas_Guardar(int CodEmpresa, FndRemesasData RemesaData)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("FND_Remesas_Eliminar")]
         public ErrorDto FND_Remesas_Eliminar(int CodEmpresa, int Remesa, string Usuario)
         {
@@ -61,6 +63,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_Remesas_Carga_Procesar")]
         public ErrorDto FND_Remesas_Carga_Procesar(int CodEmpresa, int Remesa, string Usuario, List<int> ConsecSeleccionados)
         {
@@ -68,6 +71,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_Remesas_Carga_Cerrar")]
         public ErrorDto FND_Remesas_Carga_Cerrar(int CodEmpresa, int Remesa, string Usuario)
         {

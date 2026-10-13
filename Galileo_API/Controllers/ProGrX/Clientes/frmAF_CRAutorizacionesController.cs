@@ -18,6 +18,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CRAutorizaciones_Obtener")]
         public ErrorDto<List<AfCrAutorizacion>> AF_CRAutorizaciones_Obtener(int CodEmpresa, [FromBody] AfCrAutorizacionFiltros filtros)
         {
@@ -25,6 +26,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CRAutorizaciones_Autorizar")]
         public ErrorDto AF_CRAutorizaciones_Autorizar(int CodEmpresa, int CodRenuncia, string Observaciones, int pAutoriza, string Usuario)
         {

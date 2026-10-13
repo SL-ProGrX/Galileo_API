@@ -21,12 +21,14 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXCentrosCostos_Obtener(codEmpresa, codConta, activo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXCentrosCostos_Guardar")]
         public ErrorDto CntXCentrosCostos_Guardar(int codEmpresa, int codConta, string usuario, CntXCentroCostosData request)
         {
             return _bl.CntXCentrosCostos_Guardar(codEmpresa, codConta, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntXCentrosCostos_Eliminar")]
         public ErrorDto CntXCentrosCostos_Eliminar(int codEmpresa, int codConta, string usuario, string codCentroCosto)
         {
@@ -39,6 +41,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXCentrosCostos_Unidades_Obtener(codEmpresa, codConta, codCentroCosto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXCentrosCostos_Unidades_Asignar")]
         public ErrorDto CntXCentrosCostos_Unidades_Asignar(int codEmpresa, int codConta, string codCentroCosto, string codUnidad, bool itemChecked)
         {

@@ -65,6 +65,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_ConsultaContratos_Reversar")]
         public ErrorDto FND_ConsultaContratos_Reversar(int CodEmpresa, string usuario, string boleta)
         {

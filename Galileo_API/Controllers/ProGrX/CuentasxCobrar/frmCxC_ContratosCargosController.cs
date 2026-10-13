@@ -19,6 +19,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcCargos_Lista")]
         public ErrorDto<List<CxcCargoDto>> CxcCargos_Lista(int codEmpresa, string orden)
         {
@@ -26,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcContratoCargos_Lista")]
         public ErrorDto<List<CxcContratoCargoDto>> CxcContratoCargos_Lista(int codEmpresa, string codContrato)
         {
@@ -33,6 +35,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcContratoCargo_Guardar")]
         public ErrorDto<bool> CxcContratoCargo_Guardar(int codEmpresa, [FromBody] CxcContratoCargoSaveParams param)
         {
@@ -40,6 +43,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcContratoCargo_Eliminar")]
         public ErrorDto<bool> CxcContratoCargo_Eliminar(int codEmpresa, [FromBody] CxcContratoCargoDeleteParams param)
         {

@@ -41,6 +41,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrTasasPtsBonificacion_Definicion_Obtener(codEmpresa, cod_tasa_bono);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrTasasPtsBonificacion_Definicion_Guardar")]
         public ErrorDto CrTasasPtsBonificacion_Definicion_Guardar(
             int codEmpresa,
@@ -49,6 +50,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrTasasPtsBonificacion_Definicion_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrTasasPtsBonificacion_Definicion_Eliminar")]
         public ErrorDto CrTasasPtsBonificacion_Definicion_Eliminar(
             int codEmpresa,
@@ -65,6 +67,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrTasasPtsBonificacion_Membresias_Obtener(codEmpresa, cod_tasa_bono);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrTasasPtsBonificacion_Membresias_Guardar")]
         public ErrorDto CrTasasPtsBonificacion_Membresias_Guardar(
             int codEmpresa,
@@ -73,6 +76,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrTasasPtsBonificacion_Membresias_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrTasasPtsBonificacion_Membresias_Eliminar")]
         public ErrorDto CrTasasPtsBonificacion_Membresias_Eliminar(
             int codEmpresa,
@@ -89,6 +93,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrTasasPtsBonificacion_Destinos_Obtener(codEmpresa, cod_tasa_bono);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrTasasPtsBonificacion_Destinos_Guardar")]
         public ErrorDto CrTasasPtsBonificacion_Destinos_Guardar(
             int codEmpresa,
@@ -97,6 +102,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrTasasPtsBonificacion_Destinos_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrTasasPtsBonificacion_Destinos_Eliminar")]
         public ErrorDto CrTasasPtsBonificacion_Destinos_Eliminar(
             int codEmpresa,
@@ -113,6 +119,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrTasasPtsBonificacion_Liquidez_Obtener(codEmpresa, cod_tasa_bono);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrTasasPtsBonificacion_Liquidez_Guardar")]
         public ErrorDto CrTasasPtsBonificacion_Liquidez_Guardar(
             int codEmpresa,
@@ -121,6 +128,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrTasasPtsBonificacion_Liquidez_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrTasasPtsBonificacion_Liquidez_Eliminar")]
         public ErrorDto CrTasasPtsBonificacion_Liquidez_Eliminar(
             int codEmpresa,
@@ -146,6 +154,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrTasasPtsBonificacion_AsignacionPlanes_Obtener(codEmpresa, codigo, garantia);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrTasasPtsBonificacion_Asignaciones_Guardar")]
         public ErrorDto CrTasasPtsBonificacion_Asignaciones_Guardar(
             int codEmpresa,

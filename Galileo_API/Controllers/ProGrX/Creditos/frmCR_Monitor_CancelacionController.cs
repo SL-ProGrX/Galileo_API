@@ -18,6 +18,7 @@
             _bl = new FrmCrMonitorCancelacionBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrMonitorCancelacion_Obtener")]
         public ErrorDto<List<CrMonitorCancelacionModel>> CrMonitorCancelacion_Obtener(int CodEmpresa, CrMonitorCancelacionRequest request)
         {

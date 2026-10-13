@@ -41,6 +41,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PresAjustes_Guardar")]
         public ErrorDto PresAjustes_Guardar(int CodCliente, PresAjustesGuarda request)
         {
@@ -76,6 +77,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Pres_AjusteMasivo_Guardar")]
         public ErrorDto Pres_AjusteMasivo_Guardar(int CodEmpresa, int codContab, string codModelo, string usuario, DateTime periodo, List<PresCargaMasivaModel> datos)
         {

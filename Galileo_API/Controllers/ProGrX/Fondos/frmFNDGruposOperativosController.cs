@@ -39,6 +39,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_GruposOperativos_Guardar")]
         public ErrorDto Fnd_GruposOperativos_Guardar(int CodEmpresa, [FromBody] FndGrupoOperativoModel grupo)
         {
@@ -46,6 +47,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Fnd_GruposOperativos_Eliminar")]
         public ErrorDto Fnd_GruposOperativos_Eliminar(int CodEmpresa, string grupoCodigo, string usuario)
         {
@@ -53,6 +55,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_GruposOperativos_Planes_Obtener")]
         public ErrorDto<List<FndGrupoOperativoPlanResult>> Fnd_GruposOperativos_Planes_Obtener(
            int CodEmpresa, [FromBody] FndGrupoOperativoFiltroRequest request)
@@ -61,6 +64,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_GruposOperativos_Usuarios_Obtener")]
         public ErrorDto<List<FndGrupoOperativoUsuarioResult>> Fnd_GruposOperativos_Usuarios_Obtener(
             int CodEmpresa, [FromBody] FndGrupoOperativoFiltroRequest request)
@@ -69,6 +73,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_GruposOperativos_Conceptos_Obtener")]
         public ErrorDto<List<FndGrupoOperativoConceptoResult>> Fnd_GruposOperativos_Conceptos_Obtener(
             int CodEmpresa, [FromBody] FndGrupoOperativoFiltroRequest request)
@@ -77,6 +82,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_GruposOperativos_AsignarPlan")]
         public ErrorDto Fnd_GruposOperativos_AsignarPlan(int CodEmpresa, [FromBody] FndGrupoOperativoAsignarPlanRequest request)
         {
@@ -84,6 +90,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_GruposOperativos_AsignarUsuario")]
         public ErrorDto Fnd_GruposOperativos_AsignarUsuario(int CodEmpresa, [FromBody] FndGrupoOperativoAsignarUsuarioRequest request)
         {
@@ -91,6 +98,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_GruposOperativos_AsignarConcepto")]
         public ErrorDto Fnd_GruposOperativos_AsignarConcepto(int CodEmpresa, [FromBody] FndGrupoOperativoAsignarConceptoRequest request)
         {

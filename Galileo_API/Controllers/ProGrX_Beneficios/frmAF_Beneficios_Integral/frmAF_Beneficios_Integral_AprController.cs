@@ -39,6 +39,7 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Guarda un miembro del núcleo familiar.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("MiembroFamiliar_Guardar")]
         public ErrorDto MiembroFamiliar_Guardar(int CodCliente, [FromBody] BeneIntNucleoFamDto miembro)
             => _bl.MiembroFamiliar_Guardar(CodCliente, miembro);
@@ -51,6 +52,7 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Elimina un miembro del núcleo familiar.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("MiembroFamiliar_Eliminar")]
         public ErrorDto MiembroFamiliar_Eliminar(int CodCliente, long id, string usuario)
             => _bl.MiembroFamiliar_Eliminar(CodCliente, id, usuario);
@@ -63,12 +65,14 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Guarda la situación financiera del socio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SituacionFinanciera_Guardar")]
         public ErrorDto SituacionFinanciera_Guardar(int CodCliente, [FromBody] AfiBeneSocioFinanzasGuardar finanza)
             => _bl.SituacionFinanciera_Guardar(CodCliente, finanza);
 
         /// <summary>Elimina un registro de situación financiera.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("SituacionFinanciera_Eliminar")]
         public ErrorDto SituacionFinanciera_Eliminar(int CodCliente, int id, string usuario)
             => _bl.SituacionFinanciera_Eliminar(CodCliente, id, usuario);
@@ -99,12 +103,14 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Guarda una justificación.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneJustificacion_Guardar")]
         public ErrorDto BeneJustificacion_Guardar(int CodCliente, [FromBody] AfiBeneApreJustificacionGuardar justificacion)
             => _bl.BeneJustificacion_Guardar(CodCliente, justificacion);
 
         /// <summary>Elimina una justificación.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("BeneJustificacion_Eliminar")]
         public ErrorDto BeneJustificacion_Eliminar(int CodCliente, int id_justificacion, string usuario)
             => _bl.BeneJustificacion_Eliminar(CodCliente, id_justificacion, usuario);

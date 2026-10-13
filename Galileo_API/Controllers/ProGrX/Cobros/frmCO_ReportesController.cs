@@ -124,6 +124,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_Reportes_Cubo_Procesar")]
         public ErrorDto CO_Reportes_Cubo_Procesar(int CodEmpresa, string usuario)
         {

@@ -47,12 +47,14 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxC_Cuentas_Cargos_Guardar")]
         public ErrorDto CxC_Cuentas_Cargos_Guardar(int CodEmpresa, string usuario, [FromBody] CxCCuentasCargoGuardarRequest req)
         {
             return BL.CxC_Cuentas_Cargos_Guardar(CodEmpresa, usuario, req.cargo);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxC_Cuentas_Cargos_Eliminar")]
         public ErrorDto CxC_Cuentas_Cargos_Eliminar(int CodEmpresa, string usuario, [FromBody] CxCCuentasCargoEliminarRequest req)
         {

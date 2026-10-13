@@ -19,6 +19,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Buscar")]
         public ErrorDto<List<RastreoMovimientosTablaDto>> Buscar(int codEmpresa,[FromBody] RastreoMovimientosFiltroDto filtros)
         {

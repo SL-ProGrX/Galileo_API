@@ -25,11 +25,13 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.PreaConsultas_Catalogos_Obtener(codEmpresa);
         }
         
+        [ValidateAntiForgeryToken]
         [HttpPost("PreaConsultas_Grid_Obtener")]
         public ErrorDto<ConsultaLista> PreaConsultas_Grid_Obtener(int codEmpresa, bool esExportar, [FromBody] PreaConsultasFiltroRequest request)
         {
             return _bl.PreaConsultas_Grid_Obtener(codEmpresa, esExportar, request);
         }
+        [ValidateAntiForgeryToken]
         [HttpPost("PreaConsultas_Resumen_Obtener")]
         public ErrorDto<List<PreaConsultasResumenModel>> PreaConsultas_Resumen_Obtener(int codEmpresa, [FromBody] PreaConsultasFiltroRequest request)
         {

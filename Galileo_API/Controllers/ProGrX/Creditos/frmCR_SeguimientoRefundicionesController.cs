@@ -18,6 +18,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoRefundiciones_Inicializar")]
         public ErrorDto<CrSeguimientoRefundicionesInicializarDto> CR_SeguimientoRefundiciones_Inicializar(
             int CodEmpresa,
@@ -27,6 +28,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoRefundiciones_Lista_Obtener")]
         public ErrorDto<CrSeguimientoRefundicionesListaDto> CR_SeguimientoRefundiciones_Lista_Obtener(
             int CodEmpresa,
@@ -36,6 +38,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoRefundiciones_Lista_Exportar")]
         public ErrorDto<CrSeguimientoRefundicionesListaDto> CR_SeguimientoRefundiciones_Lista_Exportar(
             int CodEmpresa,
@@ -45,6 +48,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoRefundiciones_Prestamos_Obtener")]
         public ErrorDto<CrSeguimientoRefundicionesCreditosListaDto> CR_SeguimientoRefundiciones_Prestamos_Obtener(
             int CodEmpresa,
@@ -54,6 +58,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoRefundiciones_Prestamos_Exportar")]
         public ErrorDto<CrSeguimientoRefundicionesCreditosListaDto> CR_SeguimientoRefundiciones_Prestamos_Exportar(
             int CodEmpresa,
@@ -63,6 +68,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoRefundiciones_Terceros_Obtener")]
         public ErrorDto<CrSeguimientoRefundicionesCreditosListaDto> CR_SeguimientoRefundiciones_Terceros_Obtener(
             int CodEmpresa,
@@ -72,6 +78,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoRefundiciones_Terceros_Exportar")]
         public ErrorDto<CrSeguimientoRefundicionesCreditosListaDto> CR_SeguimientoRefundiciones_Terceros_Exportar(
             int CodEmpresa,
@@ -81,6 +88,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoRefundiciones_Refunde_Datos")]
         public ErrorDto<CrSeguimientoRefundicionDatosDto> CR_SeguimientoRefundiciones_Refunde_Datos(
             int CodEmpresa,
@@ -90,6 +98,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoRefundiciones_Guardar")]
         public ErrorDto CR_SeguimientoRefundiciones_Guardar(
             int CodEmpresa,
@@ -99,6 +108,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoRefundiciones_Eliminar")]
         public ErrorDto CR_SeguimientoRefundiciones_Eliminar(
             int CodEmpresa,
@@ -108,6 +118,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoRefundiciones_Actualizar")]
         public ErrorDto CR_SeguimientoRefundiciones_Actualizar(
             int CodEmpresa,

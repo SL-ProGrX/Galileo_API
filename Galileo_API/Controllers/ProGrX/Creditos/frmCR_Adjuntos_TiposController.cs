@@ -22,10 +22,12 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<List<CrAdjuntoTipoData>> CrAdjuntosTipos_Obtener(int codEmpresa)
             => _bl.CrAdjuntosTipos_Obtener(codEmpresa);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrAdjuntosTipos_Guardar")]
         public ErrorDto CrAdjuntosTipos_Guardar(int codEmpresa, CrAdjuntoTipoGuardarRequest request)
             => _bl.CrAdjuntosTipos_Guardar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrAdjuntosTipos_Eliminar")]
         public ErrorDto CrAdjuntosTipos_Eliminar(int codEmpresa, CrAdjuntoTipoEliminarRequest request)
             => _bl.CrAdjuntosTipos_Eliminar(codEmpresa, request);

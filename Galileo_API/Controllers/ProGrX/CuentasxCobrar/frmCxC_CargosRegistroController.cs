@@ -41,6 +41,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return _bl.CxCCargosRegistro_CargoReposicion_Obtener(codEmpresa, operacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCargosRegistro_Aplicar")]
         public ErrorDto CxCCargosRegistro_Aplicar(
             int codEmpresa, string usuario, CxCCargosRegistroAplicarRequest request)
