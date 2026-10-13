@@ -11,6 +11,7 @@ public sealed class AuthBL
 {
     private const string InvalidChallengeStatus = "invalidChallenge";
     private const string InvalidCodeStatus = "invalidCode";
+    private const string AccessDeniedStatus = "accessDenied";
     private const string AuthenticationUnavailableStatus = "authenticationUnavailable";
     private const string PasswordChangeFailedStatus = "passwordChangeFailed";
     private const string PolicyLookupFailureMessage = "No fue posible consultar las políticas de contraseña.";
@@ -158,7 +159,7 @@ public sealed class AuthBL
             {
                 return new AuthResponseDto
                 {
-                    Status = "accessDenied",
+                    Status = AccessDeniedStatus,
                     Detail = "El usuario no tiene acceso a la empresa seleccionada.",
                 };
             }
@@ -179,7 +180,7 @@ public sealed class AuthBL
             {
                 return new AuthResponseDto
                 {
-                    Status = "accessDenied",
+                    Status = AccessDeniedStatus,
                     Detail = $"Limitación de acceso: {accessLimit.Notas}",
                     PasswordExpiryNotice = seguridad.PasswordExpiryNotice,
                 };
@@ -342,7 +343,7 @@ public sealed class AuthBL
             ? null
             : new AuthResponseDto
             {
-                Status = "accessDenied",
+                Status = AccessDeniedStatus,
                 Detail = "Su usuario no tiene empresas asignadas para ingresar a Galileo. Solicite al administrador que le asigne una empresa.",
             };
     }
@@ -790,7 +791,7 @@ public sealed class AuthBL
             ? null
             : new AuthResponseDto
             {
-                Status = "accessDenied",
+                Status = AccessDeniedStatus,
                 Detail = permisos.ResultMsg,
             };
     }

@@ -67,11 +67,18 @@ namespace Galileo.BusinessLogic
                  usAdminClientesDto.R_LOCAL_GRANTS == 1 ||
                  usAdminClientesDto.R_LOCAL_KEY_RESET == 1);
 
-            accessPortal.ResultMsg = tienePermisoEmpresa
-                ? "OK"
-                : EmpresaId > 0
-                    ? "Este usuario no tiene permisos administrativos para la empresa seleccionada."
-                    : "Este usuario tiene acceso al portal, pero no cuenta con permisos administrativos asignados a ninguna empresa.";
+            if (tienePermisoEmpresa)
+            {
+                accessPortal.ResultMsg = "OK";
+            }
+            else if (EmpresaId > 0)
+            {
+                accessPortal.ResultMsg = "Este usuario no tiene permisos administrativos para la empresa seleccionada.";
+            }
+            else
+            {
+                accessPortal.ResultMsg = "Este usuario tiene acceso al portal, pero no cuenta con permisos administrativos asignados a ninguna empresa.";
+            }
 
             return accessPortal;
 
