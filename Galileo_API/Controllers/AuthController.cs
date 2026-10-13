@@ -42,6 +42,20 @@ public sealed class AuthController : ControllerBase
         return await Login(request, AuthApplications.SSecurity);
     }
 
+    [AllowAnonymous]
+    [HttpPost("Galileo/SwitchPreview")]
+    [HttpPost("SSecurity/SwitchPreview")]
+    public ActionResult<AuthResponseDto> SwitchPreview([FromBody] AuthLoginRequest request)
+    {
+        var response = _auth.PreviewAccountSwitch(request);
+        return response.Status switch
+        {
+            "switchPreview" => Ok(response),
+            AuthenticationUnavailableStatus => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
+            _ => Unauthorized(response),
+        };
+    }
+
     [Authorize]
     [HttpPost("Galileo/PreInitialize")]
     public ActionResult<AuthResponseDto> PreInitializeGalileo([FromBody] GalileoSecurityPreInitializeRequest request)

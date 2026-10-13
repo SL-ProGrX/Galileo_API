@@ -63,6 +63,32 @@ public sealed class AuthBL
         }
     }
 
+    public AuthResponseDto PreviewAccountSwitch(AuthLoginRequest request)
+    {
+        // Valida la contraseña y resuelve el nombre sin crear ni revocar sesiones.
+        // El inicio de sesión normal se ejecuta solo después de la confirmación.
+        if (!HasCredentials(request))
+        {
+            return InvalidCredentials();
+        }
+
+        var username = request.Usuario.Trim();
+        var credentialsError = ValidateCredentials(username, request.Clave);
+        if (credentialsError is not null)
+        {
+            return credentialsError;
+        }
+
+        try
+        {
+            return new AuthResponseDto { Status = "switchPreview", User = LoadUser(username) };
+        }
+        catch (Exception ex) when (ex is SqlException or InvalidOperationException)
+        {
+            return AuthenticationUnavailable(ex.Message);
+        }
+    }
+
     public AuthResponseDto PreInicializarGalileo(string username, string appVersion)
     {
         if (string.IsNullOrWhiteSpace(username) ||
