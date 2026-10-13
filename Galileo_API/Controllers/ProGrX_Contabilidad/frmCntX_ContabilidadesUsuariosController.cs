@@ -29,6 +29,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXContaUser_ObtenerRelaciones(codEmpresa, porContabilidad, valor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXContaUser_GuardarRelacion")]
         public ErrorDto CntXContaUser_GuardarRelacion(
             int codEmpresa, int codContabilidad, string usuario, string usuarioRegistro)
@@ -36,6 +37,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXContaUser_GuardarRelacion(codEmpresa, codContabilidad, usuario, usuarioRegistro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntXContaUser_EliminarRelacion")]
         public ErrorDto CntXContaUser_EliminarRelacion(int codEmpresa, int codContabilidad, string usuario)
         {

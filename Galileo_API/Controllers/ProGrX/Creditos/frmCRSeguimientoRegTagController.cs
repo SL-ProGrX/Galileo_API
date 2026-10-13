@@ -38,6 +38,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_SeguimientoRegTag_Operaciones_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoRegTag_Aplicar")]
         public ErrorDto CR_SeguimientoRegTag_Aplicar(
             int codEmpresa, [FromBody] CrSeguimientoRegTagAplicarRequest request)

@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_Token_Consulta")]
         public ErrorDto<List<TesTokenConsultaResult>> Tes_Token_Consulta([FromBody] TesTokenConsultaParams param)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TraspasoTesoreria_LiquidacionBancos_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_LiquidacionBancos_Obtener([FromBody] FndTraspasoTesoreriaFiltroParams param)
         {
@@ -47,6 +49,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TraspasoTesoreria_LiquidacionUsuarios_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_LiquidacionUsuarios_Obtener([FromBody] FndTraspasoTesoreriaFiltroParams param)
         {
@@ -54,6 +57,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TraspasoTesoreria_LiquidacionSistemas_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_LiquidacionSistemas_Obtener([FromBody] FndTraspasoTesoreriaFiltroParams param)
         {
@@ -61,6 +65,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TraspasoTesoreria_LiquidacionTokens_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_LiquidacionTokens_Obtener([FromBody] FndTraspasoTesoreriaFiltroParams param)
         {
@@ -68,6 +73,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TraspasoTesoreria_LiquidacionOficinas_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> TraspasoTesoreria_LiquidacionOficinas_Obtener([FromBody] FndTraspasoTesoreriaFiltroParams param)
         {
@@ -75,6 +81,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Tes_Token_New")]
         public ErrorDto<TesTokenNewResult> Tes_Token_New([FromBody] TesTokenNewParams param)
         {
@@ -82,6 +89,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TraspasoTesoreria_Fix")]
         public ErrorDto<FndTraspasoTesoreriaFixResult> TraspasoTesoreria_Fix([FromQuery] int codEmpresa)
         {
@@ -96,6 +104,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TraspasoTesoreria_LiquidacionConsulta")]
         public ErrorDto<List<FndTraspasoTesoreriaLiquidacionConsultaResult>> TraspasoTesoreria_LiquidacionConsulta([FromBody] FndTraspasoTesoreriaLiquidacionConsultaParams param)
         {
@@ -103,6 +112,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("RevisaDuplicadosEnLaRemesa")]
         public ErrorDto<List<FndTraspasoTesoreriaDuplicadosResult>> RevisaDuplicadosEnLaRemesa([FromBody] FndTraspasoTesoreriaDuplicadosParams param)
         {
@@ -110,6 +120,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("RetLiqTesoreria")]
         public ErrorDto<bool> RetLiqTesoreria([FromBody] FndRetLiqTesoreriaParams param)
         {
@@ -117,6 +128,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TraspasoTesoreria_Update")]
         public ErrorDto<bool> TraspasoTesoreria_Update([FromBody] FndTraspasoTesoreriaUpdateParams param)
         {
@@ -124,6 +136,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("RetLiqTesoreria_Unificado")]
         public ErrorDto<bool> RetLiqTesoreria_Unificado([FromBody] FndRetLiqTesoreriaUnificadoParams param)
         {
@@ -131,6 +144,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TraspasoTesoreria_LiquidacionDetalle")]
         public ErrorDto<List<FndTraspasoTesoreriaLiquidacionConsultaResult>> TraspasoTesoreria_LiquidacionDetalle([FromBody] FndTraspasoTesoreriaDetalleParams param)
         {
@@ -138,6 +152,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_TraspasoTesoreria_ProcesarLote")]
         public ErrorDto<FndTraspasoTesoreriaProcesarLoteResult> FND_TraspasoTesoreria_ProcesarLote(
             [FromBody] FndTraspasoTesoreriaProcesarLoteRequest request)
@@ -149,6 +164,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         /// Inicializa el proceso persistente de traspaso de tesorería.
         /// </summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_TraspasoTesoreria_Proceso_Iniciar")]
         public ErrorDto<FndTraspasoTesoreriaProcesoResult> FND_TraspasoTesoreria_Proceso_Iniciar(
             [FromQuery] int codEmpresa,
@@ -162,6 +178,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         /// Ejecuta el siguiente lote pendiente del traspaso de tesorería.
         /// </summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_TraspasoTesoreria_Proceso_Continuar")]
         public ErrorDto<FndTraspasoTesoreriaProcesoResult> FND_TraspasoTesoreria_Proceso_Continuar(
             [FromQuery] int codEmpresa,
@@ -175,6 +192,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         /// Obtiene la lista de remesas de traspaso a tesorería para el tab de Informes.
         /// </summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TraspasoTesoreria_Remesas_Obtener")]
         public ErrorDto<List<FndTraspasoTesoreriaRemesaResult>> TraspasoTesoreria_Remesas_Obtener(
             [FromBody] FndTraspasoTesoreriaRemesaParams param)

@@ -51,12 +51,14 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return BL.CO_Bancos_Dropdown_Obtener(CodEmpresa, usuario_sesion);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_Usuarios_Guardar")]
         public ErrorDto CO_Usuarios_Guardar(int CodEmpresa, CoControlUsuariosGuardarRequest req)
         {
             return BL.CO_Usuarios_Guardar(CodEmpresa, req);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CO_Usuarios_Eliminar")]
         public ErrorDto CO_Usuarios_Eliminar(int CodEmpresa, string usuario, string usuario_sesion)
         {
@@ -84,6 +86,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return BL.CO_Usuarios_Grupos_Lista_Obtener(CodEmpresa, usuario);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_Usuarios_Grupos_Asignar")]
         public ErrorDto CO_Usuarios_Grupos_Asignar(int CodEmpresa, CoControlUsuariosAsignacionRequest req)
         {
@@ -98,6 +101,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return BL.CO_Usuarios_Carteras_Lista_Obtener(CodEmpresa, usuario);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_Usuarios_Carteras_Asignar")]
         public ErrorDto CO_Usuarios_Carteras_Asignar(int CodEmpresa, CoControlUsuariosAsignacionRequest req)
         {

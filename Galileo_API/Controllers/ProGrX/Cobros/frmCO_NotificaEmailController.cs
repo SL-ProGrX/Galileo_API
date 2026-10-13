@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_NotificaEmail_Notificar_Bulk")]
         public ErrorDto Co_NotificaEmail_Notificar_Bulk(int CodEmpresa, string usuario, FrmCONotificaEmailNotificarBulkDto dto)
         {

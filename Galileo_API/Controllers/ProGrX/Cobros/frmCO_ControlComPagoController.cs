@@ -31,12 +31,14 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CO_ControlComPago_Remesa_Obtener(CodEmpresa, cod_remesa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_ControlComPago_Remesa_Guardar")]
         public ErrorDto<int> CO_ControlComPago_Remesa_Guardar(int CodEmpresa, string usuario, CoControlComPagoRemesaGuardarRequest request)
         {
             return _bl.CO_ControlComPago_Remesa_Guardar(CodEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CO_ControlComPago_Remesa_Eliminar")]
         public ErrorDto CO_ControlComPago_Remesa_Eliminar(int CodEmpresa, string usuario, int cod_remesa)
         {
@@ -67,12 +69,14 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CO_ControlComPago_CargaPendientes_Obtener(CodEmpresa, cod_remesa, id_banco);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_ControlComPago_Carga_Aplicar")]
         public ErrorDto<CoControlComPagoProcesoResult> CO_ControlComPago_Carga_Aplicar(int CodEmpresa, string usuario, CoControlComPagoCargaAplicarRequest request)
         {
             return _bl.CO_ControlComPago_Carga_Aplicar(CodEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_ControlComPago_Remesa_Cerrar")]
         public ErrorDto CO_ControlComPago_Remesa_Cerrar(int CodEmpresa, string usuario, int cod_remesa)
         {
@@ -85,6 +89,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CO_ControlComPago_TrasladoPendientes_Obtener(CodEmpresa, cod_remesa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_ControlComPago_Traslado_Aplicar")]
         public ErrorDto<CoControlComPagoProcesoResult> CO_ControlComPago_Traslado_Aplicar(int CodEmpresa, string usuario, CoControlComPagoTrasladoAplicarRequest request)
         {

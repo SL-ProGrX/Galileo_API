@@ -40,6 +40,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_Exclusion_Multas_List")]
         public ErrorDto<List<FndExclusionMultaDto>> FND_Exclusion_Multas_List(int CodEmpresa, FiltrosBuscarExclusionDto filtros)
         {
@@ -47,6 +48,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_Exclusion_Multas_Add")]
         public ErrorDto FND_Exclusion_Multas_Add(int CodEmpresa, RegistrarExclusionDto request)
         {

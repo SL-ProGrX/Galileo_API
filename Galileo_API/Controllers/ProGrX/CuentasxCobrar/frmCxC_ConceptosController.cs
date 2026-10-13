@@ -34,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcConceptos_Guardar")]
         public ErrorDto<bool> CxcConceptos_Guardar(int codEmpresa, [FromBody] CxcConceptoSaveParams param)
         {
@@ -41,6 +42,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcConceptos_Eliminar")]
         public ErrorDto<bool> CxcConceptos_Eliminar(int codEmpresa, [FromBody] CxcConceptoDeleteParams param)
         {
@@ -69,6 +71,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcConceptos_Contrato_Insertar")]
         public ErrorDto<bool> CxcConceptos_Contrato_Insertar(int codEmpresa, [FromBody] CxcConceptoContratoParams param)
         {
@@ -76,6 +79,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcConceptos_Contrato_Eliminar")]
         public ErrorDto<bool> CxcConceptos_Contrato_Eliminar(int codEmpresa, [FromBody] CxcConceptoContratoParams param)
         {
@@ -83,6 +87,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcConceptos_FacturaEstado_Insertar")]
         public ErrorDto<bool> CxcConceptos_FacturaEstado_Insertar(int codEmpresa, [FromBody] CxcConceptoFacturaEstadoParams param)
         {
@@ -90,6 +95,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcConceptos_FacturaEstado_Eliminar")]
         public ErrorDto<bool> CxcConceptos_FacturaEstado_Eliminar(int codEmpresa, [FromBody] CxcConceptoFacturaEstadoParams param)
         {
@@ -104,6 +110,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcConceptos_ActualizarPagadorDefault")]
         public ErrorDto<bool> CxcConceptos_ActualizarPagadorDefault(int codEmpresa, [FromBody] CxcConceptoPagadorDefaultParams param)
         {
@@ -125,6 +132,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcConceptos_Incobrable")]
         public ErrorDto<bool> CxcConceptos_Incobrable(int codEmpresa, [FromBody] CxcConceptoIncobrableParams param)
         {

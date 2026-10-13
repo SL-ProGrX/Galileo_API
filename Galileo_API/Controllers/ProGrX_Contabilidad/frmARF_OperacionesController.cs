@@ -55,12 +55,14 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.Unidades_Listar(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Guardar")]
         public ErrorDto<ArfOperacionGuardarResponseDto> Guardar(int codEmpresa, ArfOperacionGuardarRequestDto request)
         {
             return _bl.Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activar")]
         public ErrorDto Activar(int codEmpresa, ArfOperacionActivarRequestDto request)
         {
@@ -111,12 +113,14 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CierreActual_Obtener(codEmpresa, operacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cambio_Aplicar")]
         public ErrorDto Cambio_Aplicar(int codEmpresa, ArfOperacionCambioRequestDto request)
         {
             return _bl.Cambio_Aplicar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Finiquito_Aplicar")]
         public ErrorDto Finiquito_Aplicar(int codEmpresa, ArfOperacionFiniquitoRequestDto request)
         {

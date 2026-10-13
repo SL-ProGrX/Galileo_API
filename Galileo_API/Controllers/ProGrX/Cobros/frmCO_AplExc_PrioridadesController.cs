@@ -33,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_AplExc_Prioridades_Guardar")]
         public ErrorDto Co_AplExc_Prioridades_Guardar(int CodEmpresa, string usuario, [FromBody] COAplExcPrioridadData prioridad)
         {
@@ -40,6 +41,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Co_AplExc_Prioridades_Eliminar")]
         public ErrorDto Co_AplExc_Prioridades_Eliminar(int CodEmpresa, string usuario, string codigo)
         {

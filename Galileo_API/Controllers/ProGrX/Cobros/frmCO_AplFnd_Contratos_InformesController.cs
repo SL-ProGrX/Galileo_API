@@ -29,6 +29,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
               => _bl.Co_AplFnd_ContratosInformes_Aplicaciones_Obtener(codEmpresa);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_AplFnd_ContratosInformes_Bitacora_Registrar")]
         public ErrorDto Co_AplFnd_ContratosInformes_Bitacora_Registrar(int codEmpresa, string usuario, string strTipoMovimiento, string strDetalleMovimiento)
            => _bl.Co_AplFnd_ContratosInformes_Bitacora_Registrar(codEmpresa, usuario, strTipoMovimiento, strDetalleMovimiento);

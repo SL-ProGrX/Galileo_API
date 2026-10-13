@@ -27,6 +27,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Grupos_Guardar")]
         public ErrorDto<FndGrupoDto> Fnd_Grupos_Guardar(int CodEmpresa, FndGrupoDto grupo)
         {
@@ -34,6 +35,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Fnd_Grupos_Eliminar")]
         public ErrorDto Fnd_Grupos_Eliminar(int CodEmpresa, string CodGrupo)
         {
@@ -48,6 +50,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Grupos_ActualizarAsignacionPlan")]
         public ErrorDto Fnd_Grupos_ActualizarAsignacionPlan(int CodEmpresa, string CodGrupo, string CodPlan, int CodOperadora, bool Checked)
         {

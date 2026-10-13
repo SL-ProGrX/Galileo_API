@@ -46,6 +46,7 @@ namespace Galileo.Controllers
             return _bl.Pres_Modelo_scroll(CodEmpresa, scrollValue, CodModelo, CodContab);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Pres_Modelo_Insertar")]
         [Authorize]
         public ErrorDto Pres_Modelo_Insertar(int CodEmpresa, PresModeloInsert request)
@@ -53,6 +54,7 @@ namespace Galileo.Controllers
             return _bl.Pres_Modelo_Insertar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Pres_MapeaCuentasSinCentroCosto_SP")]
         [Authorize]
         public ErrorDto Pres_MapeaCuentasSinCentroCosto_SP(int CodEmpresa, string CodModelo, int CodContab, string Usuario)
@@ -60,6 +62,7 @@ namespace Galileo.Controllers
             return _bl.Pres_MapeaCuentasSinCentroCosto_SP(CodEmpresa, CodModelo, CodContab, Usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Pres_Model_Reiniciar")]
         [Authorize]
         public ErrorDto Pres_Model_Reiniciar(int CodEmpresa, string CodModelo)
@@ -109,6 +112,7 @@ namespace Galileo.Controllers
             return _bl.Pres_Modelo_AjUs_Usuarios_SP(CodEmpresa, CodModelo, CodContab, CodAjuste);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Pres_Modelo_AjUs_Registro_SP")]
         [Authorize]
         public ErrorDto Pres_Modelo_AjUs_Registro_SP(int CodEmpresa, PressModeloAjUsRegistro request)
@@ -116,6 +120,7 @@ namespace Galileo.Controllers
             return _bl.Pres_Modelo_AjUs_Registro_SP(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Pres_Modelo_Ajustes_Registro_SP")]
         [Authorize]
         public ErrorDto Pres_Modelo_Ajustes_Registro_SP(int CodEmpresa, PressModeloAjUsRegistro request)
@@ -123,6 +128,7 @@ namespace Galileo.Controllers
             return _bl.Pres_Modelo_Ajustes_Registro_SP(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Pres_Modelo_Usuarios_Registro_SP")]
         [Authorize]
         public ErrorDto Pres_Modelo_Usuarios_Registro_SP(int CodEmpresa, PressModeloAjUsRegistro request)
@@ -137,6 +143,7 @@ namespace Galileo.Controllers
             return _bl.Pres_Modelos_Lista(CodEmpresa, CodContab);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Pres_Model_Eliminar")]
         [Authorize]
         public ErrorDto Pres_Model_Eliminar(int CodEmpresa, string CodModelo)
@@ -158,6 +165,7 @@ namespace Galileo.Controllers
             return _bl.Pres_Modelo_Indicadores_Obtener(CodEmpresa, CodModelo, CodContab);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Pres_Modelo_Indicadores_Guardar")]
         [Authorize]
         public ErrorDto Pres_Modelo_Indicadores_Guardar(int CodEmpresa, PresModeloIndicadoresGuardarRequest request)
@@ -165,6 +173,7 @@ namespace Galileo.Controllers
             return _bl.Pres_Modelo_Indicadores_Guardar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Pres_Modelo_Copiar")]
         [Authorize]
         public ErrorDto Pres_Modelo_Copiar(PresModeloCopiar request)

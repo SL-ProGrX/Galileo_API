@@ -32,6 +32,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCClientesPersonasContratos_Guardar")]
         public ErrorDto CxCClientesPersonasContratos_Guardar(int codEmpresa, string usuario, [FromBody]  ClientesContratosData datos)
         {
@@ -39,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CxCClientesPersonas_Contratos_Eliminar")]
         public ErrorDto CxCClientesPersonas_Contratos_Eliminar(int codEmpresa, string usuario, string cedula, string contrato)
         {
@@ -46,6 +48,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CxCClientesPersonas_ContratosSuscripciones_Eliminar")]
         public ErrorDto CxCClientesPersonas_ContratosSuscripciones_Eliminar(int CodEmpresa, string usuario, string cedula, string contrato, string cargo)
         {
@@ -53,6 +56,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCClientesPersonas_ContratosSuscripciones_Insertar")]
         public ErrorDto CxCClientesPersonas_ContratosSuscripciones_Insertar(int CodEmpresa, string usuario, [FromBody] PersonasContratosSuscripcionesData datos)
         {
@@ -60,6 +64,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CxCClientesPersonas_ContratosPagadores_Eliminar")]
         public ErrorDto CxCClientesPersonas_ContratosPagadores_Eliminar(int CodEmpresa, string usuario, string cedula, string contrato, string cedula_pagador)
         {
@@ -67,6 +72,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCClientesPersonas_ContratosPagadores_Insertar")]
         public ErrorDto CxCClientesPersonas_ContratosPagadores_Insertar(int CodEmpresa, string usuario, PersonasContratosPagadoresData datos)
         {

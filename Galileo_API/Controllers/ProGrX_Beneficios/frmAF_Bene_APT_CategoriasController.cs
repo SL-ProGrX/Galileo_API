@@ -37,16 +37,19 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
             => _bl.CategoriasApremiante_Exportar(CodEmpresa, filtros);
 
         /// <summary>Inserta una categoría apremiante.</summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("CategoriasApremiante_Agregar")]
         public ErrorDto CategoriasApremiante_Agregar(int CodEmpresa, [FromBody] AptCategorias request)
             => _bl.CategoriasApremiante_Agregar(CodEmpresa, request);
 
         /// <summary>Actualiza una categoría apremiante.</summary>
+        [ValidateAntiForgeryToken]
         [HttpPut("CategoriasApremiante_Actualizar")]
         public ErrorDto CategoriasApremiante_Actualizar(int CodEmpresa, [FromBody] AptCategorias request)
             => _bl.CategoriasApremiante_Actualizar(CodEmpresa, request);
 
         /// <summary>Elimina una categoría apremiante.</summary>
+        [ValidateAntiForgeryToken]
         [HttpDelete("CategoriasApremiante_Eliminar")]
         public ErrorDto CategoriasApremiante_Eliminar(int CodEmpresa, int id)
             => _bl.CategoriasApremiante_Eliminar(CodEmpresa, id);

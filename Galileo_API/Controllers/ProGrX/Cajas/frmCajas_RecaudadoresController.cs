@@ -45,6 +45,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
             return _bl.Cajas_Recaudadores_Existe_Obtener(CodEmpresa, cod_recaudador);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_Recaudadores_Guardar")]
         [Authorize]
         public ErrorDto Cajas_Recaudadores_Guardar(int CodEmpresa, string usuario,CajasRecaudadorData recaudador)
@@ -52,6 +53,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
             return _bl.Cajas_Recaudadores_Guardar(CodEmpresa, usuario, recaudador);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Cajas_Recaudadores_Eliminar")]
         [Authorize]
         public ErrorDto Cajas_Recaudadores_Eliminar(int CodEmpresa,string usuario,string cod_recaudador)
@@ -66,6 +68,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
             return _bl.Cajas_Recaudadores_Contactos_Lista_Obtener(CodEmpresa, cod_recaudador);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_Recaudadores_Contactos_Guardar")]
         [Authorize]
         public ErrorDto Cajas_Recaudadores_Contactos_Guardar(int CodEmpresa,string usuario,CajasRecaudadorContactoData contacto)
@@ -73,6 +76,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
             return _bl.Cajas_Recaudadores_Contactos_Guardar(CodEmpresa, usuario, contacto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Cajas_Recaudadores_Contactos_Eliminar")]
         [Authorize]
         public ErrorDto Cajas_Recaudadores_Contactos_Eliminar(int CodEmpresa,string usuario,string cod_recaudador,int linea)
@@ -94,6 +98,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
             return _bl.Cajas_Recaudadores_Servicios_CajasVinculadas_Lista_Obtener(CodEmpresa,cod_recaudador,cod_servicio);
         }
         
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_Recaudadores_Servicios_CajasVinculadas_Guardar")]
         [Authorize]
         public ErrorDto Cajas_Recaudadores_Servicios_CajasVinculadas_Guardar(int CodEmpresa,string usuario,string cod_recaudador,string cod_servicio,string cod_caja,short asignada)

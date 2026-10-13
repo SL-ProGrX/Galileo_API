@@ -40,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_PrendasParametros_Catalogo_Guardar")]
         public ErrorDto CR_PrendasParametros_Catalogo_Guardar(int CodEmpresa, string usuario, [FromBody] CrPrendasCatalogoGuardarRequest request)
         {
@@ -47,6 +48,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_PrendasParametros_Catalogo_Eliminar")]
         public ErrorDto CR_PrendasParametros_Catalogo_Eliminar(int CodEmpresa, string usuario, [FromBody] CrPrendasCatalogoEliminarRequest request)
         {
@@ -68,6 +70,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_PrendasParametros_Coberturas_Guardar")]
         public ErrorDto CR_PrendasParametros_Coberturas_Guardar(int CodEmpresa, string usuario, [FromBody] CrPrendasCoberturaGuardarRequest request)
         {
@@ -75,6 +78,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_PrendasParametros_Coberturas_Eliminar")]
         public ErrorDto CR_PrendasParametros_Coberturas_Eliminar(int CodEmpresa, string usuario, [FromBody] CrPrendasCoberturaEliminarRequest request)
         {
@@ -110,6 +114,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_PrendasParametros_Comercializa_Guardar")]
         public ErrorDto CR_PrendasParametros_Comercializa_Guardar(int CodEmpresa, string usuario, [FromBody] CrPrendasComercializaGuardarRequest request)
         {
@@ -117,6 +122,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_PrendasParametros_Comercializa_Eliminar")]
         public ErrorDto CR_PrendasParametros_Comercializa_Eliminar(int CodEmpresa, string usuario, [FromBody] CrPrendasComercializaEliminarRequest request)
         {
@@ -166,6 +172,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_PrendasParametros_Unidades_Guardar")]
         public ErrorDto CR_PrendasParametros_Unidades_Guardar(int CodEmpresa, string usuario, [FromBody] CrPrendasUnidadGuardarRequest request)
         {
@@ -173,6 +180,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_PrendasParametros_Unidades_Eliminar")]
         public ErrorDto CR_PrendasParametros_Unidades_Eliminar(int CodEmpresa, string usuario, [FromBody] CrPrendasUnidadEliminarRequest request)
         {

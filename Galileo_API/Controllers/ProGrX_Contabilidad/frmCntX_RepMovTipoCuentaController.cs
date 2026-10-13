@@ -64,6 +64,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
                     cuenta);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "CntX_frmCntX_RepMovTipoCuenta_Reporte_Preparar")]
         public ErrorDto

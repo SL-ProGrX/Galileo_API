@@ -17,6 +17,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_CierreMensual_Aplicar")]
         public ErrorDto Fnd_CierreMensual_Aplicar(int CodEmpresa)
         {

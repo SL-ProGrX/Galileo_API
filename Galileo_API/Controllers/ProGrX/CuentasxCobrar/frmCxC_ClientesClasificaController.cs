@@ -24,6 +24,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCClientesClasifica_Guardar")]
         public ErrorDto CxCCargosTCxCClientesClasifica_Guardaripos_Guardar(int CodEmpresa, string usuario, [FromBody] CxCClientesClasificaData datos)
         {
@@ -31,6 +32,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CxCClientesClasifica_Eliminar")]
         public ErrorDto CxCClientesClasifica_Eliminar(int CodEmpresa, string usuario, string CodCategoria)
         {

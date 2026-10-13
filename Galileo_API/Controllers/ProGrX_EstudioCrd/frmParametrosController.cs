@@ -22,6 +22,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Parametros_ObtenerOtros(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Parametros_GuardarOtros")]
         public ErrorDto Parametros_GuardarOtros(
             int codEmpresa, string usuario, ParametrosOtrosGuardarRequest request)
@@ -36,6 +37,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Parametros_ObtenerCodigos(codEmpresa, garantia, orden);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Parametros_ActualizarCodigo")]
         public ErrorDto Parametros_ActualizarCodigo(
             int codEmpresa, string usuario, ParametrosCodigoActualizarRequest request)
@@ -50,6 +52,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Parametros_ObtenerMembresias(codEmpresa, garantia);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Parametros_GuardarMembresias")]
         public ErrorDto Parametros_GuardarMembresias(
             int codEmpresa, string usuario, ParametrosMembresiasGuardarRequest request)

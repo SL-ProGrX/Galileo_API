@@ -24,6 +24,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_ActivarYVincular")]
         public ErrorDto AF_Persona_ActivarYVincular(int CodEmpresa, string request)
         {

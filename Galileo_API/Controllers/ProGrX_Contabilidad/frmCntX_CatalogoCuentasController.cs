@@ -55,6 +55,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXCatalogoCuentaObtener(codEmpresa, codContabilidad, cuenta);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXCatalogoConsulta")]
         public ActionResult<ErrorDto<List<CntXCatalogoCuentaDto>>> CntXCatalogoConsulta([FromQuery] int codEmpresa, [FromBody] CntXCatalogoCuentasFiltroRequest filtro)
         {
@@ -67,72 +68,84 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXCatalogoDetalle(codEmpresa, codContabilidad, cuenta);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXCatalogoDetalleGuardar")]
         public ActionResult<ErrorDto<bool>> CntXCatalogoDetalleGuardar([FromQuery] int codEmpresa, [FromBody] CntXCatalogoCuentaDetalleGuardarRequest request)
         {
             return _bl.CntXCatalogoDetalleGuardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXCatalogoCuentaEstadoGuardar")]
         public ActionResult<ErrorDto<bool>> CntXCatalogoCuentaEstadoGuardar([FromQuery] int codEmpresa, [FromBody] CntXCatalogoCuentaEstadoRequest request)
         {
             return _bl.CntXCatalogoCuentaEstadoGuardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXCatalogoCuentaGuardar")]
         public ActionResult<ErrorDto<CntXCatalogoCuentaGuardarResponse>> CntXCatalogoCuentaGuardar([FromQuery] int codEmpresa, [FromBody] CntXCatalogoCuentaGuardarRequest request)
         {
             return _bl.CntXCatalogoCuentaGuardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntXCatalogoCuentaEliminar")]
         public ActionResult<ErrorDto<bool>> CntXCatalogoCuentaEliminar([FromQuery] int codEmpresa, [FromBody] CntXCatalogoCuentaEliminarRequest request)
         {
             return _bl.CntXCatalogoCuentaEliminar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXCatalogoMapeo")]
         public ActionResult<ErrorDto<bool>> CntXCatalogoMapeo([FromQuery] int codEmpresa, [FromBody] CntXCatalogoMapeoRequest request)
         {
             return _bl.CntXCatalogoMapeo(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXCatalogoBajaNivel")]
         public ActionResult<ErrorDto<CntXCatalogoBajaNivelDto>> CntXCatalogoBajaNivel([FromQuery] int codEmpresa, [FromBody] CntXCatalogoBajaNivelRequest request)
         {
             return _bl.CntXCatalogoBajaNivel(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXCatalogoFormatoActualizar")]
         public ActionResult<ErrorDto<bool>> CntXCatalogoFormatoActualizar([FromQuery] int codEmpresa, [FromBody] CntXCatalogoFormatoRequest request)
         {
             return _bl.CntXCatalogoFormatoActualizar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXCatalogoRevision")]
         public ActionResult<ErrorDto<bool>> CntXCatalogoRevision([FromQuery] int codEmpresa, [FromBody] CntXCatalogoRevisionRequest request)
         {
             return _bl.CntXCatalogoRevision(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXCatalogoTraduccionGuardar")]
         public ActionResult<ErrorDto<bool>> CntXCatalogoTraduccionGuardar([FromQuery] int codEmpresa, [FromBody] CntXCatalogoTraduccionGuardarRequest request)
         {
             return _bl.CntXCatalogoTraduccionGuardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntXCatalogoTraduccionEliminar")]
         public ActionResult<ErrorDto<bool>> CntXCatalogoTraduccionEliminar([FromQuery] int codEmpresa, [FromBody] CntXCatalogoTraduccionGuardarRequest request)
         {
             return _bl.CntXCatalogoTraduccionEliminar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXCatalogoProrrataGuardar")]
         public ActionResult<ErrorDto<bool>> CntXCatalogoProrrataGuardar([FromQuery] int codEmpresa, [FromBody] CntXCatalogoProrrataGuardarRequest request)
         {
             return _bl.CntXCatalogoProrrataGuardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntXCatalogoProrrataEliminar")]
         public ActionResult<ErrorDto<bool>> CntXCatalogoProrrataEliminar([FromQuery] int codEmpresa, [FromBody] CntXCatalogoProrrataGuardarRequest request)
         {

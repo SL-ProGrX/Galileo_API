@@ -18,6 +18,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             _BL = new PresAlertasJustificacionesBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PresAlertaJustificacionBit_Obtener")]
         public ErrorDto<List<PresAlertaJustificacionBitacoraData>> PresAlertaJustificacionBit_Obtener(PresAlertaJustificacionBitRequest resquest)
         {

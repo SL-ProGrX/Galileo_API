@@ -23,6 +23,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
          => _bl.Crd_ReversionCobroJudicial_Consultar(codEmpresa, usuario, codContabilidad, operacion);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_ReversionCobroJudicial_Reversar")]
         public ErrorDto<object> Crd_ReversionCobroJudicial_Reversar(int codEmpresa, [FromBody] CrdReversionCobroJudicialReversaRequest request)
              => _bl.Crd_ReversionCobroJudicial_Reversar(codEmpresa, request);

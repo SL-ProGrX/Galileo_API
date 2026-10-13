@@ -19,6 +19,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost]
         [Route("CntX_Movimientos_Consulta")]
         public ErrorDto<List<CntxMovimientoConsultaDto>> CntX_Movimientos_Consulta(

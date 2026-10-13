@@ -22,6 +22,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntxUtil_Contabilidades_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntxUtil_Contabilidades_Eliminar")]
         public ErrorDto<bool> CntxUtil_Contabilidades_Eliminar([FromBody] CntxUtilEliminaContabilidadesRequestDto request)
         {

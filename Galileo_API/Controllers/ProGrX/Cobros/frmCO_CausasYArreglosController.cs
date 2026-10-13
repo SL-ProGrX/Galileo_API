@@ -29,12 +29,14 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.Co_CausasMorosidad_Lista_Export(CodEmpresa, filtros);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_CausasMorosidad_Guardar")]
         public ErrorDto Co_CausasMorosidad_Guardar(int CodEmpresa, string usuario, COCausaMorosidadData causa)
         {
             return _bl.Co_CausasMorosidad_Guardar(CodEmpresa, usuario, causa);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Co_CausasMorosidad_Eliminar")]
         public ErrorDto Co_CausasMorosidad_Eliminar(int CodEmpresa, string usuario, string cod_causa)
         {
@@ -53,12 +55,14 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.Co_TiposArreglos_Lista_Export(CodEmpresa, filtros);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_TiposArreglos_Guardar")]
         public ErrorDto Co_TiposArreglos_Guardar(int CodEmpresa, string usuario, COArregloPagoTipoData tipo)
         {
             return _bl.Co_TiposArreglos_Guardar(CodEmpresa, usuario, tipo);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Co_TiposArreglos_Eliminar")]
         public ErrorDto Co_TiposArreglos_Eliminar(int CodEmpresa, string usuario, string cod_arreglo)
         {

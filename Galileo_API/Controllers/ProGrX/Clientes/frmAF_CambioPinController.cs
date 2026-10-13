@@ -43,12 +43,14 @@ namespace Galileo_API.Controllers.ProGrX.Clientes
             return result;
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Af_CambioPin_Bitacora")]
         public ErrorDto Af_CambioPin_Bitacora(int CodEmpresa, string usuario, string vTicket)
         {
             return _bl.Af_CambioPin_Bitacora(CodEmpresa, usuario, vTicket);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Af_CambioPin_RenovarClaveWeb")]
         public ErrorDto Af_CambioPin_RenovarClaveWeb(
           int CodEmpresa,
@@ -59,6 +61,7 @@ namespace Galileo_API.Controllers.ProGrX.Clientes
             return _bl.Af_CambioPin_RenovarClaveWeb(CodEmpresa, cedula, email, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Af_CambioPin_AplicarCambioPin")]
         public ErrorDto Af_CambioPin_AplicarCambioPin(
            int CodEmpresa,

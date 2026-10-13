@@ -15,6 +15,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
 
         public MCntXCalculosController(IConfiguration config) => _bl = new MCntXCalculosBl(config);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("SbCntX_RestructuraMovimientosRSM")]
         public ErrorDto SbCntX_RestructuraMovimientosRSM(
             int codEmpresa,
@@ -23,6 +24,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.SbCntX_RestructuraMovimientosRSM(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("SbCntX_PeriodoCierre")]
         public ErrorDto SbCntX_PeriodoCierre(
             int codEmpresa,
@@ -31,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.SbCntX_PeriodoCierre(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("SbCntX_CierreFiscal")]
         public ErrorDto SbCntX_CierreFiscal(
             int codEmpresa,

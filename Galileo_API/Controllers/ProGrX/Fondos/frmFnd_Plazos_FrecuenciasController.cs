@@ -25,6 +25,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PlazosVencimiento_Guardar")]
         public ErrorDto<FndPlazoVencimientoSaveResult> PlazosVencimiento_Guardar(int codEmpresa, string usuario, [FromBody] FndPlazoVencimientoModel plazo, [FromQuery] string mov)
         {
@@ -32,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("PlazosVencimiento_Eliminar")]
         public ErrorDto<FndPlazoVencimientoSaveResult> PlazosVencimiento_Eliminar(int codEmpresa, int idPlazo, string usuario)
         {
@@ -46,6 +48,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FrecuenciaCupon_Guardar")]
         public ErrorDto<FndFrecuenciaCuponSaveResult> FrecuenciaCupon_Guardar(int codEmpresa, string usuario, [FromBody] FndFrecuenciaCuponModel frecuencia, [FromQuery] string mov)
         {
@@ -53,6 +56,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("FrecuenciaCupon_Eliminar")]
         public ErrorDto<FndFrecuenciaCuponSaveResult> FrecuenciaCupon_Eliminar(int codEmpresa, int idFrecuenciaCupon, string usuario)
         {

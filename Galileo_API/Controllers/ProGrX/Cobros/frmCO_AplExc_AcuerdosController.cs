@@ -29,6 +29,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CoAplExcAcuerdos_Lista_Obtener(codEmpresa, filtro, estado);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CoAplExcAcuerdos_Guardar")]
         public ErrorDto CoAplExcAcuerdos_Guardar(int codEmpresa, CoAplExcAcuerdosData request)
         {

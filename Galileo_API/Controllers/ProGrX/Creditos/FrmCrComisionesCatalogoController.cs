@@ -22,10 +22,12 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<List<CrComisionesCatalogoData>> Cr_ComisionesCatalogo_Obtener(int codEmpresa)
             => _bl.Cr_ComisionesCatalogo_Obtener(codEmpresa);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_ComisionesCatalogo_Guardar")]
         public ErrorDto Cr_ComisionesCatalogo_Guardar(int codEmpresa, CrComisionesCatalogoGuardarRequest request)
             => _bl.Cr_ComisionesCatalogo_Guardar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Cr_ComisionesCatalogo_Eliminar")]
         public ErrorDto Cr_ComisionesCatalogo_Eliminar(int codEmpresa, CrComisionesCatalogoEliminarRequest request)
             => _bl.Cr_ComisionesCatalogo_Eliminar(codEmpresa, request);
@@ -36,12 +38,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             [FromQuery] CrComisionesCatalogoPorcentajesRequest request)
             => _bl.Cr_ComisionesCatalogo_Porcentajes_Obtener(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_ComisionesCatalogo_Porcentaje_Guardar")]
         public ErrorDto Cr_ComisionesCatalogo_Porcentaje_Guardar(
             int codEmpresa,
             CrComisionesCatalogoPorcentajeGuardarRequest request)
             => _bl.Cr_ComisionesCatalogo_Porcentaje_Guardar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Cr_ComisionesCatalogo_Porcentaje_Eliminar")]
         public ErrorDto Cr_ComisionesCatalogo_Porcentaje_Eliminar(
             int codEmpresa,
@@ -54,6 +58,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             [FromQuery] CrComisionesCatalogoLineasRequest request)
             => _bl.Cr_ComisionesCatalogo_Lineas_Obtener(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_ComisionesCatalogo_Linea_Asignar")]
         public ErrorDto Cr_ComisionesCatalogo_Linea_Asignar(
             int codEmpresa,

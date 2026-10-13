@@ -40,6 +40,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FndCuponesGestion_ConsultaVencimiento")]
         public ErrorDto<List<FndCuponesGestionVencimientoResult>> FndCuponesGestion_ConsultaVencimiento([FromBody] FndCuponesGestionVencimientoParams param)
         {
@@ -47,6 +48,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FndCuponesGestion_Liquida")]
         public ErrorDto<FndCuponesGestionLiquidaResult> FndCuponesGestion_Liquida([FromBody] FndCuponesGestionLiquidaParams param)
         {

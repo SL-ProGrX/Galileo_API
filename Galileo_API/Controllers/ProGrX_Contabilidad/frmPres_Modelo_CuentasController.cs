@@ -45,6 +45,7 @@ namespace Galileo.Controllers
             return _bl.Pres_CentroCosto_Obtener(CodEmpresa, CodContab, CodUnidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("spPres_Modelo_Cuentas_CargaDatos")]
         [Authorize]
         public ErrorDto spPres_Modelo_Cuentas_CargaDatos(int CodEmpresa, List<PresModeloCuentasImportData> request)
@@ -59,6 +60,7 @@ namespace Galileo.Controllers
             return _bl.spPres_Modelo_Cuentas_RevisaImport(CodEmpresa, CodContab, CodModelo, Usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("spPres_Modelo_Cuentas_Import")]
         [Authorize]
         public ErrorDto spPres_Modelo_Cuentas_Import(int CodEmpresa, int CodContab, string CodModelo, string Usuario)
@@ -66,6 +68,7 @@ namespace Galileo.Controllers
             return _bl.spPres_Modelo_Cuentas_Import(CodEmpresa, CodContab, CodModelo, Usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("spCntX_Periodo_Fiscal_Meses")]
         [Authorize]
         public ErrorDto<List<PresModeloCuentasImportData>> spCntX_Periodo_Fiscal_Meses(int CodEmpresa, int CodContab, string CodModelo, string Usuario, List<PresModeloCuentasHorizontal> request)

@@ -16,6 +16,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         public FrmCntXConciliacionMovController(IConfiguration config) => 
             _bl = new FrmCntXConciliacionMovBl(config);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXConciliacionMov_Conciliar")]
         public ErrorDto<CntXConciliacionResult> CntXConciliacionMov_Conciliar(int codEmpresa, CntXConciliacionMovRequest request)
         {

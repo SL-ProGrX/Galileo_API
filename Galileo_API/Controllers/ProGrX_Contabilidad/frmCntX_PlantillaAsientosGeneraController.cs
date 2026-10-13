@@ -26,10 +26,12 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         public ActionResult<ErrorDto<CntXPlantillaAsientosDto?>> CntXPlantillaAsientos_Get([FromQuery] int codEmpresa, [FromQuery] int codContabilidad, [FromQuery] string codPlantilla)
            => _bl.CntXPlantillaAsientos_Get(codEmpresa, codContabilidad, codPlantilla);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CntXPlantillaAsientos_UpdateConsecutivo")]
         public ActionResult<ErrorDto<bool>> CntXPlantillaAsientos_UpdateConsecutivo([FromQuery] int codEmpresa, [FromBody] CntXPlantillaAsientosUpdateParams param)
             => _bl.CntXPlantillaAsientos_UpdateConsecutivo(codEmpresa, param);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntxAsientos_Insert")]
         public ActionResult<ErrorDto<bool>> CntxAsientos_Insert([FromQuery] int codEmpresa, [FromBody] CntxAsientosInsertParams param)
             => _bl.CntxAsientos_Insert(codEmpresa, param);
@@ -38,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         public ActionResult<ErrorDto<List<CntXPlantillaDetalleDto>>> CntXPlantillaDetalle_Lista([FromQuery] int codEmpresa, [FromQuery] int codContabilidad, [FromQuery] string codPlantilla)
             => _bl.CntXPlantillaDetalle_Lista(codEmpresa, codContabilidad, codPlantilla);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntxAsientosDetalle_Insert")]
         public ActionResult<ErrorDto<bool>> CntxAsientosDetalle_Insert([FromQuery] int codEmpresa, [FromBody] CntxAsientosDetalleInsertParams param)
             => _bl.CntxAsientosDetalle_Insert(codEmpresa, param);

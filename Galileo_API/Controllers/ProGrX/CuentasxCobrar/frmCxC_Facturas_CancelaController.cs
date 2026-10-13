@@ -59,6 +59,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCFacturasCancelaFactura_Registrar")]
         public ErrorDto<bool> CxCFacturasCancelaFactura_Registrar(
             int codEmpresa,
@@ -68,6 +69,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCFacturasCancelaAbono_Registrar")]
         public ErrorDto<bool> CxCFacturasCancelaAbono_Registrar(
             int codEmpresa,

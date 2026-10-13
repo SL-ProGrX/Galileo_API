@@ -28,6 +28,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstadoPreanalisis_Cargar(codEmpresa, usuario, cod_preanalisis, tipo ?? string.Empty);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Prea_frmPreaEstadoPreanalisis_Guardar")]
         public ErrorDto<FrmPreaEstadoPreanalisisGuardarResponse> Prea_frmPreaEstadoPreanalisis_Guardar(
             int codEmpresa,
@@ -36,6 +37,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstadoPreanalisis_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstadoPreanalisis_Causa_Registrar")]
         public ErrorDto<FrmPreaEstadoPreanalisisCausaRegistrarResponse> Prea_frmPreaEstadoPreanalisis_Causa_Registrar(
             int codEmpresa,

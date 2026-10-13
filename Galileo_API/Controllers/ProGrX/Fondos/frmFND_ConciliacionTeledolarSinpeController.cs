@@ -18,6 +18,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("ConciliacionTeledolarSinpe_Obtener")]
         public ErrorDto<List<FndConciliacionTeledolarSinpeResult>> ConciliacionTeledolarSinpe_Obtener([FromBody] FndConciliacionTeledolarSinpeParams param)
         {

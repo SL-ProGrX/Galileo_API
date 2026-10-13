@@ -32,6 +32,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FondosAplConfigPrioridad_Add")]
         public ErrorDto<FondosAplConfigPrioridadAddResult?> FondosAplConfigPrioridad_Add([FromQuery] int codEmpresa, [FromBody] FondosAplConfigPrioridadAddParams param)
         {
@@ -39,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FondosAplConfigPrioridad_Del")]
         public ErrorDto<FondosAplConfigPrioridadDelResult?> FondosAplConfigPrioridad_Del([FromQuery] int codEmpresa, [FromBody] FondosAplConfigPrioridadDelParams param)
         {

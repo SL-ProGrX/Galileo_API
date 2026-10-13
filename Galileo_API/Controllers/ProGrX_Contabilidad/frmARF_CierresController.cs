@@ -21,6 +21,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.ARFCierres_CorteActual_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ARFCierres_Cerrar")]
         public ErrorDto ARFCierres_Cerrar(int codEmpresa, ArfCierreData request)
         {

@@ -39,6 +39,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ConsultaCrdExc_Formalizar")]
         public ErrorDto<CrConsultaCrdExcFormalizarDto> CR_ConsultaCrdExc_Formalizar(int CodEmpresa,[FromBody] CrConsultaCrdExcFormalizarRequest request)
         {

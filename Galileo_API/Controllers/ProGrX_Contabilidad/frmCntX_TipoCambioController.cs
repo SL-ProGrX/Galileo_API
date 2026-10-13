@@ -16,6 +16,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         public FrmCntXTipoCambioController(IConfiguration config)
             => _bl = new FrmCntXTipoCambioBl(config);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntX_TipoCambio_Inicializa")]
         public ErrorDto<CntXTipoCambioInicializaData> CntX_TipoCambio_Inicializa(
             int codEmpresa,

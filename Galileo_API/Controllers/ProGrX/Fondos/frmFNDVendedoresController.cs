@@ -49,6 +49,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Vendedores_Insertar")]
         public ErrorDto Fnd_Vendedores_Insertar(int CodEmpresa, FndVendedorDto request)
         {
@@ -56,6 +57,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPut("Fnd_Vendedores_Actualizar")]
         public ErrorDto Fnd_Vendedores_Actualizar(int CodEmpresa, FndVendedorDto request)
         {
@@ -63,6 +65,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Fnd_Vendedores_Eliminar")]
         public ErrorDto Fnd_Vendedores_Eliminar(int CodEmpresa, int cod_vendedor)
         {

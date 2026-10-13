@@ -24,6 +24,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Cajas_DesglocePago_Eliminar")]
         public ErrorDto Cajas_DesglocePago_Eliminar(int CodEmpresa, string CodCaja, int CodApertura, string Ticket, int Linea)
         {
@@ -65,6 +66,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_DesglocePago_Insert")]
         public ErrorDto Cajas_DesglocePago_Insert(int CodEmpresa, CajasDesglocePagoDto dto)
         {
@@ -72,6 +74,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPut("Cajas_DesglocePago_Update")]
         public ErrorDto Cajas_DesglocePago_Update(int CodEmpresa, CajasDesglocePagoDto dto)
         {
@@ -79,6 +82,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_DistribuyeSaldoFavor")]
         public ErrorDto Cajas_DistribuyeSaldoFavor(int CodEmpresa, DistribuyeSaldoFavorDto dto)
         {
@@ -86,6 +90,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_DesglocePago_Guardar")]
         public ErrorDto Cajas_DesglocePago_Guardar(int CodEmpresa, CajasDesglocePagoRequest request)
         {

@@ -21,6 +21,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Carga la información completa de un expediente de estudio de crédito.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Scroll")]
         public ErrorDto<FrmPreaEstudiov2ScrollResponse> Prea_frmPreaEstudiov2_Scroll(
             int codEmpresa,
@@ -33,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// Recalcula Cuota/Pólizas/Compromiso al cambiar Monto/Plazo/Tasa/Monto
         /// Construcción o una póliza.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Credito_Recalcular")]
         public ErrorDto<FrmPreaEstudiov2CreditoRecalculoResponse> Prea_frmPreaEstudiov2_Credito_Recalcular(
             int codEmpresa,
@@ -44,6 +46,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Borra un expediente (equivalente a sbBorrar en VB6).
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Borrar")]
         public ErrorDto<FrmPreaEstudiov2GuardarResponse> Prea_frmPreaEstudiov2_Borrar(
             int codEmpresa,
@@ -56,6 +59,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Guarda la grilla "Tabla de Salarios" (sbSalarios_Guardar en VB6).
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_TablaSalarios_Guardar")]
         public ErrorDto<List<FrmPreaEstudiov2SalarioDetalleDto>> Prea_frmPreaEstudiov2_TablaSalarios_Guardar(
             int codEmpresa,
@@ -67,6 +71,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Cambia oficina y ejecutivo colocador (btnOficinaCambia_Click en VB6).
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_OficinaEjecutivo_Cambiar")]
         public ErrorDto<string> Prea_frmPreaEstudiov2_OficinaEjecutivo_Cambiar(
             int codEmpresa,
@@ -75,6 +80,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_OficinaEjecutivo_Cambiar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Cargar")]
         public ErrorDto<FrmPreaEstudiov2CargaResponse> Prea_frmPreaEstudiov2_Cargar(
             int codEmpresa,
@@ -169,6 +175,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Calcula el Monto según el FORMULARIO de la Garantía (F01/F06).
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Garantia_Monto")]
         public ErrorDto<FrmPreaEstudiov2GarantiaMontoResponse> Prea_frmPreaEstudiov2_Garantia_Monto(
             int codEmpresa,
@@ -180,6 +187,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Calcula Monto/Tasa/Plazo de un Fondo de Ahorros (y su lista de contratos).
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Fondo_Calcular")]
         public ErrorDto<FrmPreaEstudiov2FondoCalcularResponse> Prea_frmPreaEstudiov2_Fondo_Calcular(
             int codEmpresa,
@@ -215,6 +223,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// Genera/valida el número de un nuevo sub-expediente (fiador), equivalente a
         /// seleccionar "Nuevo SubExpediente" en cboSubExpediente en VB6.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_SubExpediente_Generar")]
         public ErrorDto<FrmPreaEstudiov2SubExpedienteGenerarResponse> Prea_frmPreaEstudiov2_SubExpediente_Generar(
             int codEmpresa,
@@ -223,6 +232,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_SubExpediente_Generar(codEmpresa, expediente);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Hipotecario_SumarAvaluoCfia")]
         public ErrorDto<FrmPreaEstudiov2HipotecarioResponse> Prea_frmPreaEstudiov2_Hipotecario_SumarAvaluoCfia(
             int codEmpresa,
@@ -231,6 +241,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Hipotecario_SumarAvaluoCfia(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Hipotecario_CambiarEstado")]
         public ErrorDto<FrmPreaEstudiov2HipotecarioResponse> Prea_frmPreaEstudiov2_Hipotecario_CambiarEstado(
             int codEmpresa,
@@ -242,6 +253,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Cambia el expediente a estado abandonado.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Abandonar")]
         public ErrorDto<FrmPreaEstudiov2AbandonarResponse> Prea_frmPreaEstudiov2_Abandonar(
             int codEmpresa,
@@ -253,6 +265,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Guarda el preanálisis (nuevo o modificado).
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Guardar")]
         public ErrorDto<FrmPreaEstudiov2GuardarResponse> Prea_frmPreaEstudiov2_Guardar(
             int codEmpresa,
@@ -275,6 +288,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Agrega una deducción al expediente.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Deducciones_Agregar")]
         public ErrorDto<FrmPreaEstudiov2DeduccionesResponse> Prea_frmPreaEstudiov2_Deducciones_Agregar(
             int codEmpresa,
@@ -286,6 +300,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Borra una deducción (sbDeducciones_Borrar en VB6).
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Deducciones_Borrar")]
         public ErrorDto<FrmPreaEstudiov2DeduccionesResponse> Prea_frmPreaEstudiov2_Deducciones_Borrar(
             int codEmpresa,
@@ -305,6 +320,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Creditos_Consultar(codEmpresa, cod_preanalisis);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Creditos_Registrar")]
         public ErrorDto<FrmPreaEstudiov2CreditosResponse> Prea_frmPreaEstudiov2_Creditos_Registrar(
             int codEmpresa,
@@ -313,6 +329,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Creditos_Registrar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Creditos_Borrar")]
         public ErrorDto<FrmPreaEstudiov2CreditosResponse> Prea_frmPreaEstudiov2_Creditos_Borrar(
             int codEmpresa,
@@ -321,6 +338,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Creditos_Borrar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Prea_frmPreaEstudiov2_Creditos_BorrarFila")]
         public ErrorDto<FrmPreaEstudiov2CreditosResponse> Prea_frmPreaEstudiov2_Creditos_BorrarFila(
             int codEmpresa,
@@ -342,6 +360,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Refundiciones_Consultar(codEmpresa, cod_preanalisis, cod_garantia, fechaFormaliza);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Refundiciones_Actualizar")]
         public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_Actualizar(
             int codEmpresa,
@@ -352,6 +371,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Refundiciones_Actualizar(codEmpresa, request, cod_garantia, fechaFormaliza);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Refundiciones_ToggleAplica")]
         public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_ToggleAplica(
             int codEmpresa,
@@ -372,6 +392,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Fianzas_Consultar(codEmpresa, cod_preanalisis);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Fianzas_Actualizar")]
         public ErrorDto<FrmPreaEstudiov2FianzasResponse> Prea_frmPreaEstudiov2_Fianzas_Actualizar(
             int codEmpresa,
@@ -380,6 +401,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Fianzas_Actualizar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Fianzas_ToggleAplica")]
         public ErrorDto<FrmPreaEstudiov2FianzasResponse> Prea_frmPreaEstudiov2_Fianzas_ToggleAplica(
             int codEmpresa,
@@ -427,6 +449,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Guarda un desembolso del expediente.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Desembolsos_Guardar")]
         public ErrorDto<FrmPreaEstudiov2DesembolsosResponse> Prea_frmPreaEstudiov2_Desembolsos_Guardar(
             int codEmpresa,
@@ -438,6 +461,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Elimina un desembolso del expediente.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Desembolsos_Eliminar")]
         public ErrorDto<FrmPreaEstudiov2DesembolsosResponse> Prea_frmPreaEstudiov2_Desembolsos_Eliminar(
             int codEmpresa,
@@ -459,6 +483,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Historial_Consultar(codEmpresa, cod_preanalisis);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Etiqueta_Agregar")]
         public ErrorDto<FrmPreaEstudiov2HistorialResponse> Prea_frmPreaEstudiov2_Etiqueta_Agregar(
             int codEmpresa,
@@ -481,6 +506,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Guarda un archivo adjunto al expediente.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Adjunto_Guardar")]
         public ErrorDto<string> Prea_frmPreaEstudiov2_Adjunto_Guardar(
             int codEmpresa,
@@ -516,6 +542,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Elimina un archivo adjunto del expediente.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpDelete("Prea_frmPreaEstudiov2_Adjunto_Eliminar")]
         public ErrorDto<string> Prea_frmPreaEstudiov2_Adjunto_Eliminar(
             int codEmpresa,
@@ -539,6 +566,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Guarda observaciones del expediente.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Observaciones_Guardar")]
         public ErrorDto<string> Prea_frmPreaEstudiov2_Observaciones_Guardar(
             int codEmpresa,
@@ -550,6 +578,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Asigna comité resolutivo al expediente.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Comite_Asignar")]
         public ErrorDto<FrmPreaEstudiov2ComiteAsignarResponse> Prea_frmPreaEstudiov2_Comite_Asignar(
             int codEmpresa,
@@ -561,6 +590,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Copia un expediente existente.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Copiar")]
         public ErrorDto<FrmPreaEstudiov2CopiarResponse> Prea_frmPreaEstudiov2_Copiar(
             int codEmpresa,
@@ -572,6 +602,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Solicita el estado del expediente.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Solicitar")]
         public ErrorDto<FrmPreaEstudiov2SolicitarResponse> Prea_frmPreaEstudiov2_Solicitar(
             int codEmpresa,
@@ -583,6 +614,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Guarda la lista de incapacidades del expediente (sbIncapacidades_Guardar en VB6).
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Incapacidades_Guardar")]
         public ErrorDto<List<FrmPreaEstudiov2IncapacidadDto>> Prea_frmPreaEstudiov2_Incapacidades_Guardar(
             int codEmpresa,
@@ -594,6 +626,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Elimina incapacidades del expediente.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Incapacidades_Eliminar")]
         public ErrorDto<string> Prea_frmPreaEstudiov2_Incapacidades_Eliminar(
             int codEmpresa,
@@ -605,6 +638,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Guarda un extra del expediente.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Extras_Guardar")]
         public ErrorDto<string> Prea_frmPreaEstudiov2_Extras_Guardar(
             int codEmpresa,
@@ -613,6 +647,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstudiov2_Extras_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Extras_Borrar")]
         public ErrorDto<string> Prea_frmPreaEstudiov2_Extras_Borrar(
             int codEmpresa,
@@ -648,6 +683,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// <summary>
         /// Aplica un estado a los exámenes de prenda (btnP_Examenes_Click en VB6).
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEstudiov2_Prendario_Estado")]
         public ErrorDto<FrmPreaEstudiov2PrendarioEstadoResponse> Prea_frmPreaEstudiov2_Prendario_Estado(
             int codEmpresa,

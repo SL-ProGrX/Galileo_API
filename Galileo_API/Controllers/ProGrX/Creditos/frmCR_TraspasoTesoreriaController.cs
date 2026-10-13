@@ -35,6 +35,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_TraspasoTes_Remesa_Crear")]
         public ErrorDto<RemesaModel> Cr_TraspasoTes_Remesa_Crear(int CodEmpresa, [FromBody] RemesaRequest request, string usuario)
         {
@@ -42,6 +43,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPut("Cr_TraspasoTes_Remesa_Modificar")]
         public ErrorDto Cr_TraspasoTes_Remesa_Modificar(int CodEmpresa, [FromBody] RemesaRequest request, string usuario)
         {
@@ -49,6 +51,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Cr_TraspasoTes_Remesa_Eliminar")]
         public ErrorDto Cr_TraspasoTes_Remesa_Eliminar(int CodEmpresa, int cod_remesa, string usuario)
         {
@@ -74,6 +77,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_TraspasoTes_Carga_Ejecutar")]
         public ErrorDto Cr_TraspasoTes_Carga_Ejecutar(int CodEmpresa, [FromBody] CargaRequest request, string usuario)
         {
@@ -81,6 +85,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_TraspasoTes_Remesa_Cerrar")]
         public ErrorDto Cr_TraspasoTes_Remesa_Cerrar(int CodEmpresa, int cod_remesa, string usuario)
         {
@@ -106,6 +111,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_TraspasoTesToken_Nuevo")]
         public ErrorDto Cr_TraspasoTesToken_Nuevo(int CodEmpresa, string usuario)
         {
@@ -120,6 +126,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CrTraspasoTes_Traslado_Generar")]
         public ErrorDto CrTraspasoTes_Traslado_Generar(int CodEmpresa, int cod_remesa, string usuario, string? token)
         {
@@ -141,6 +148,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_TraspasoTes_Reactivacion_Ejecutar")]
         public ErrorDto Cr_TraspasoTes_Reactivacion_Ejecutar(int CodEmpresa, int id_solicitud, string usuario)
         {
@@ -159,6 +167,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_TraspasoTes_Cambio_Ejecutar")]
         public ErrorDto Cr_TraspasoTes_Cambio_Ejecutar(int CodEmpresa, [FromBody] CambioConceptoRequest request, string usuario)
         {
@@ -181,6 +190,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         #region aux.giro
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_TraspasoTes_AuxGiroExc_Autorizar")]
         public ErrorDto Cr_TraspasoTes_AuxGiroExc_Autorizar(int CodEmpresa, string usuario)
         {

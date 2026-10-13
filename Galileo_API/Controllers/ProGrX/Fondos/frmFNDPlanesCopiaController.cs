@@ -36,6 +36,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
 
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_Planes_Copiar")]
         public ErrorDto FND_Planes_Copiar(int CodEmpresa, string usuario, FndPlanesCopiaRequestDto dto)
         {

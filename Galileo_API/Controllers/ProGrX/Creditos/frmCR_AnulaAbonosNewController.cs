@@ -39,6 +39,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
                 });
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrAnulaAbonosNew_Aplicar")]
         public ErrorDto<CrAnulaAbonosNewAplicarResultadoData> CrAnulaAbonosNew_Aplicar(
             int codEmpresa,

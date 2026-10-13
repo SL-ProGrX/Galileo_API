@@ -29,6 +29,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXAsientos_ListaPendientes_Obtener(codEmpresa, codConta, tipoAsiento, anio, mes);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXAsientos_Autorizar")]
         public ErrorDto CntXAsientos_Autorizar(int codEmpresa, int codConta, string usuario, List<CntXAsientoAutorizacionData> lista)
         {

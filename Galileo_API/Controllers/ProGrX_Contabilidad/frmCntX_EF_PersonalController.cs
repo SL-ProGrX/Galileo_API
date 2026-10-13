@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXEfPersonal_Guardar")]
         public ErrorDto<bool> CntXEfPersonal_Guardar(int codEmpresa, string registroUsuario, [FromBody] CntXEfPersonalSaveParams param)
         {
@@ -36,6 +37,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXEfPersonal_Eliminar")]
         public ErrorDto<bool> CntXEfPersonal_Eliminar(int codEmpresa, string registroUsuario, [FromBody] CntXEfPersonalDeleteParams param)
         {
@@ -53,6 +55,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXEfSeccion_Guardar")]
         public ErrorDto<bool> CntXEfSeccion_Guardar(int codEmpresa, [FromBody] CntXEfSeccionSaveParams param)
         {
@@ -60,6 +63,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXEfSeccion_Eliminar")]
         public ErrorDto<bool> CntXEfSeccion_Eliminar(int codEmpresa, [FromBody] CntXEfSeccionDeleteParams param)
         {            
@@ -74,6 +78,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXEfCuentasDisponibles_Lista")]
         public ErrorDto<List<CntXCuentaDto>> CntXEfCuentasDisponibles_Lista(int codEmpresa, [FromBody] CntXCuentaFiltroParams param)
         {
@@ -95,6 +100,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXEfCuenta_Proc")]
         public ErrorDto<bool> CntXEfCuenta_Proc(int codEmpresa, [FromBody] CntXEfCuentaProcParams param)
         {
@@ -102,6 +108,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXEfFx_Proc")]
         public ErrorDto<bool> CntXEfFx_Proc(int codEmpresa, [FromBody] CntXEfFxProcParams param)
         {
@@ -109,6 +116,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXEfProcesa")]
         public ErrorDto<bool> CntXEfProcesa(int codEmpresa, [FromBody] CntXEfProcesaParams param)
         {

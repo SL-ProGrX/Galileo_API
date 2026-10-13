@@ -76,12 +76,14 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Agrega una orden de pago.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiBeneficioIntegralOrdenPago_Agregar")]
         public ErrorDto AfiBeneficioIntegralOrdenPago_Agregar(int CodCliente, [FromBody] AfiBeneIntegralOrP beneficio)
             => _bl.AfiBeneficioIntegralOrdenPago_Agregar(CodCliente, beneficio);
 
         /// <summary>Actualiza una orden de pago.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiBeneficioIntegralOrdenPago_Actualizar")]
         public ErrorDto AfiBeneficioIntegralOrdenPago_Actualizar(int CodCliente, [FromBody] AfiBeneIntegralOrP beneficio)
             => _bl.AfiBeneficioIntegralOrdenPago_Actualizar(CodCliente, beneficio);
@@ -94,18 +96,21 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Inserta una proyección de pago.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiBeneficioIntegralProyeccionPago_Insert")]
         public ErrorDto AfiBeneficioIntegralProyeccionPago_Insert(int CodCliente, [FromBody] AfiBenePagoProyecta beneficio)
             => _bl.AfiBeneficioIntegralProyeccionPago_Insertar(CodCliente, beneficio);
 
         /// <summary>Actualiza una proyección de pago.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiBeneficioIntegralProyeccionPago_Actualizar")]
         public ErrorDto AfiBeneficioIntegralProyeccionPago_Actualizar(int CodCliente, [FromBody] AfiBenePagoProyecta beneficio)
             => _bl.AfiBeneficioIntegralProyeccionPago_Actualizar(CodCliente, beneficio);
 
         /// <summary>Elimina una proyección de pago.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiBeneficioIntegralProyeccionPago_Eliminar")]
         public ErrorDto AfiBeneficioIntegralProyeccionPago_Eliminar(int CodCliente, int Plan_Id)
             => _bl.AfiBeneficioIntegralProyeccionPago_Eliminar(CodCliente, Plan_Id);

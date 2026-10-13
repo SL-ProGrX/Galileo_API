@@ -43,16 +43,19 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
             => _bl.AfBeneAptProUsuarios_Obtener(CodCliente);
 
         /// <summary>Inserta un profesional (o actualiza si existe).</summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("AfBeneAptPro_Insertar")]
         public ErrorDto AfBeneAptPro_Insertar(int CodCliente, [FromBody] BeneAptProfesionalesData profesional)
             => _bl.AfBeneAptPro_Insertar(CodCliente, profesional);
 
         /// <summary>Actualiza un profesional.</summary>
+        [ValidateAntiForgeryToken]
         [HttpPut("AfBeneAptPro_Actualizar")]
         public ErrorDto AfBeneAptPro_Actualizar(int CodCliente, [FromBody] BeneAptProfesionalesData profesional)
             => _bl.AfBeneAptPro_Actualizar(CodCliente, profesional);
 
         /// <summary>Elimina un profesional.</summary>
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfBeneAptPro_Eliminar")]
         public ErrorDto AfBeneAptPro_Eliminar(int CodCliente, int id_profesional)
             => _bl.AfBeneAptPro_Eliminar(CodCliente, id_profesional);

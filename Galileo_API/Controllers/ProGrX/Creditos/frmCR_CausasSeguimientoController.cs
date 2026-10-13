@@ -23,11 +23,13 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             int codEmpresa, string tipo)
             => _bl.CrCausasSeguimiento_Causas_Obtener(codEmpresa, tipo);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCausasSeguimiento_Causas_Guardar")]
         public ErrorDto CrCausasSeguimiento_Causas_Guardar(
             int codEmpresa, CrCausasSeguimientoGuardarRequest request)
             => _bl.CrCausasSeguimiento_Causas_Guardar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrCausasSeguimiento_Causas_Eliminar")]
         public ErrorDto CrCausasSeguimiento_Causas_Eliminar(
             int codEmpresa, CrCausasSeguimientoEliminarRequest request)

@@ -36,18 +36,21 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             string request)
             => _bl.CrSeguimientoReqCar_Cargos_Obtener(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrSeguimientoReqCar_Requisitos_Guardar")]
         public ErrorDto CrSeguimientoReqCar_Requisitos_Guardar(
             int codEmpresa,
             [FromBody] CrSeguimientoReqCarRequisitosGuardarRequest request)
             => _bl.CrSeguimientoReqCar_Requisitos_Guardar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrSeguimientoReqCar_Cargo_Aplicar")]
         public ErrorDto CrSeguimientoReqCar_Cargo_Aplicar(
             int codEmpresa,
             [FromBody] CrSeguimientoReqCarCargoAplicarRequest request)
             => _bl.CrSeguimientoReqCar_Cargo_Aplicar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrSeguimientoReqCar_Prima_Guardar")]
         public ErrorDto CrSeguimientoReqCar_Prima_Guardar(
             int codEmpresa,

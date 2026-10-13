@@ -43,6 +43,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _BL.CrAbonosComprobante_TiposDocumento_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrAbonosComprobante_Aplicar")]
         public ErrorDto<CrAbonosComprobanteAplicarResultadoData> CrAbonosComprobante_Aplicar(
             int codEmpresa,

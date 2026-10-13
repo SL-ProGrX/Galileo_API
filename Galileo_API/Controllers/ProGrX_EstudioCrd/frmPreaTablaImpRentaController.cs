@@ -22,12 +22,14 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.CrPreaTablaImpRenta_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrPreaTablaImpRenta_Guardar")]
         public ErrorDto CrPreaTablaImpRenta_Guardar(int codEmpresa, string usuario, CrdPreaTablaImpRentaData request)
         {
             return _bl.CrPreaTablaImpRenta_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrPreaTablaImpRenta_Eliminar")]
         public ErrorDto CrPreaTablaImpRenta_Eliminar(int codEmpresa, int idx, string usuario)
         {

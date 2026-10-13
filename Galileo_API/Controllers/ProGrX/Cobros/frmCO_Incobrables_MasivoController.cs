@@ -17,6 +17,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
    => _bl = new FrmCoIncobrablesMasivoBL(config);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_IncobrablesMasivo_CargarArchivo")]
         public ErrorDto<CoProcesosMasivoCargaResponse> Co_IncobrablesMasivo_CargarArchivo(
                     int codEmpresa, [FromBody] CoProcesosMasivoCargaRequest request, string modulo)
@@ -27,6 +28,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
        modulo  );
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Co_IncobrablesMasivo_Procesar")]
         public ErrorDto<bool> Co_IncobrablesMasivo_Procesar(int codEmpresa,  string usuario,string notas, string modulo)
               => _bl.Co_IncobrablesMasivo_Procesar(codEmpresa, notas, usuario, modulo);

@@ -24,6 +24,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCargosTipos_Guardar")]
         public ErrorDto CxCCargosTipos_Guardar(int CodEmpresa, string usuario, [FromBody] CxCCargosTiposData datos)
         {
@@ -31,6 +32,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CxCCargosTipos_Eliminar")]
         public ErrorDto CxCCargosTipos_Eliminar(int CodEmpresa, string usuario, string CodCargo)
         {

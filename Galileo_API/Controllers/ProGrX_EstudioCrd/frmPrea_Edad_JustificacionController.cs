@@ -18,6 +18,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             _bl = new FrmPreaEdadJustificacionBL(config); 
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEdadJustificacion_Cargar")]
         public ErrorDto<FrmPreaEdadJustificacionCargarResponse> Prea_frmPreaEdadJustificacion_Cargar(
             int codEmpresa,
@@ -26,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEdadJustificacion_Cargar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaEdadJustificacion_Guardar")]
         public ErrorDto<FrmPreaEdadJustificacionGuardarResponse> Prea_frmPreaEdadJustificacion_Guardar(
             int codEmpresa,

@@ -45,18 +45,21 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.Periodos_Obtener(codEmpresa, cod_contabilidad, estado);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ListarAsientos")]
         public ErrorDto<List<CntxAsientoRsmDto>> ListarAsientos(int codEmpresa, int cod_contabilidad, [FromBody] CntxExploradorFiltrosDto filtros)
         {
             return _bl.Asientos_Listar(codEmpresa, cod_contabilidad, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AsientoDetalle")]
         public ErrorDto<List<CntxAsientoDetDto>> AsientoDetalle(int codEmpresa, [FromBody] CntxExploradorFiltrosDto filtros)
         {
             return _bl.AsientoDetalle_Listar(codEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ConsultaAnalitica")]
         public ErrorDto<List<CntxConsultaAnaliticaDto>> ConsultaAnalitica(
             int codEmpresa,
@@ -66,6 +69,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.ConsultaAnalitica(codEmpresa, cod_contabilidad, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("MovimientosNodo")]
         public ErrorDto<CntxMovimientoNodoDto> MovimientosNodo(
             [FromBody] CntxMovimientoNodoRequest request)
@@ -164,6 +168,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.Asientos_Resumen(codEmpresa, cod_contabilidad, anio, mes);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Catalogo_Resumen")]
         public ErrorDto<List<CntxCatalogoResumenDto>> Catalogo_Resumen(CatalogoResumenRequest request)
         {
@@ -246,12 +251,14 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Asiento_Mayorizar")]
         public ErrorDto<bool> Asiento_Mayorizar(CntxMayorizarRequest dto)
         {
             return _bl.Asiento_Mayorizar(dto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Asiento_Borrar")]
         public ErrorDto<bool> Asiento_Borrar(CntxBorrarAsientoRequest dto)
         {

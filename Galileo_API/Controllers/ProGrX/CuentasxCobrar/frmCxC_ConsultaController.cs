@@ -62,6 +62,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("ConsultarFacturas")]
         public ErrorDto<List<CxCFacturaDto>> ConsultarFacturas(int codEmpresa,CxCFacturaFiltroDto filtro)
         {
@@ -83,6 +84,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("GuardarMensaje")]
         public ErrorDto<bool> GuardarMensaje(int codEmpresa,CxCMensajeAddDto dto)
         {
@@ -90,6 +92,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("EliminarMensaje")]
         public ErrorDto<bool> EliminarMensaje(int codEmpresa,CxCMensajeDeleteDto dto)
         {

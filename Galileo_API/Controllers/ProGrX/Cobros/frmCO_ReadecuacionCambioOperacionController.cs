@@ -23,6 +23,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CO_ReadecuacionCambioOperacion_Obtener(CodEmpresa, idTramite);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_ReadecuacionCambioOperacion_Aplicar")]
         public ErrorDto<CoReadecuacionCambioOperacionAplicarResponse> CO_ReadecuacionCambioOperacion_Aplicar([FromQuery] int CodEmpresa, [FromBody] CoReadecuacionCambioOperacionAplicarRequest req)
         {

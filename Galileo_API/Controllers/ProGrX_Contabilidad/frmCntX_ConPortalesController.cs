@@ -40,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXConPortales_Lista_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXConPortales_ProbarConexion")]
         public ErrorDto CntXConPortales_ProbarConexion(
             int codEmpresa,
@@ -48,6 +49,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXConPortales_ProbarConexion(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXConPortales_Contabilidades_Obtener")]
         public ErrorDto<List<CntXConPortalesContabilidadData>> CntXConPortales_Contabilidades_Obtener(
             int codEmpresa,
@@ -56,6 +58,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXConPortales_Contabilidades_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXConPortales_Guardar")]
         public ErrorDto CntXConPortales_Guardar(
             int codEmpresa,
@@ -65,6 +68,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXConPortales_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXConPortales_Borrar")]
         public ErrorDto CntXConPortales_Borrar(
             int codEmpresa,

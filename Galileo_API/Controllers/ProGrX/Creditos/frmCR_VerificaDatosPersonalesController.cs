@@ -47,12 +47,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_VerificaDatos_Nombramiento_Agregar")]
         public ErrorDto CR_VerificaDatos_Nombramiento_Agregar(int CodEmpresa, CrVerificaDatosNombramientoAgregarRequest req)
         {
             return BL.CR_VerificaDatos_Nombramiento_Agregar(CodEmpresa, req);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_VerificaDatos_Guardar")]
         public ErrorDto CR_VerificaDatos_Guardar(int CodEmpresa, CrVerificaDatosGuardarRequest req)
         {
@@ -99,6 +101,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return BL.CR_Distritos_Dropdown_Obtener(CodEmpresa, provincia, canton);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_VerificaDatos_Catalogo_Asignar")]
         public ErrorDto CR_VerificaDatos_Catalogo_Asignar(int CodEmpresa, CrVerificaDatosAsignarCatalogoRequest req)
         {

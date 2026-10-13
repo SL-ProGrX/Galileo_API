@@ -67,6 +67,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Notificaciones_Guardar")]
         public ErrorDto<int> Fnd_Notificaciones_Guardar(int CodEmpresa, FndNotificacionData data)
         {

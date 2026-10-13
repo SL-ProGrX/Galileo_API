@@ -59,6 +59,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Historial_Reimprimir")]
         public ErrorDto<object> Historial_Reimprimir(
             int codEmpresa,
@@ -82,6 +83,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CobroFiador_Cancelar")]
         public ErrorDto<string> CobroFiador_Cancelar(int codEmpresa, int operacion, string usuario)
         {
@@ -96,6 +98,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TrasladoDeuda_Revertir")]
         public ErrorDto<string> TrasladoDeuda_Revertir(int codEmpresa, [FromBody] COTrasladoDeudaRevertirRequestDto request)
         {
@@ -159,6 +162,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CambiarDeductora")]
         public ErrorDto<string> CambiarDeductora(int codEmpresa, COCambiarDeductoraRequestDto request)
         {
@@ -170,6 +174,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CambiarDeduccionPlanilla")]
         public ErrorDto<string> CambiarDeduccionPlanilla(int codEmpresa, COCambiarDeduccionPlanillaRequestDto request)
         {
@@ -181,6 +186,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("ValidarCongelamiento")]
         public ErrorDto<bool> ValidarCongelamiento(int codEmpresa, COValidarCongelamientoRequestDto request)
         {
@@ -189,6 +195,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("ValidarPasoCobroJudicial")]
         public ErrorDto<bool> ValidarPasoCobroJudicial(int codEmpresa, int operacion)
         {
@@ -196,6 +203,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CobroJudicial_Ejecutar")]
         public ErrorDto<object> CobroJudicial_Ejecutar(int codEmpresa, CobroJudicialRequestDto request)
         {

@@ -40,6 +40,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Ajustes_CambiarIdentificacion")]
         public ErrorDto AF_Ajustes_CambiarIdentificacion(int CodEmpresa, string cedula, int nuevoTipoId)
         {
@@ -47,6 +48,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Ajustes_CambiarEstado")]
         public ErrorDto AF_Ajustes_CambiarEstado(int CodEmpresa, string cedula, string nuevoEstado)
         {
@@ -54,6 +56,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Ajustes_CambiarInstitucion_ASECCSS")]
         public ErrorDto AF_Ajustes_CambiarInstitucion_ASECCSS(int CodEmpresa, string cedula, string cambiosJson)
         {
@@ -61,6 +64,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Ajustes_CambiarInstitucion")]
         public ErrorDto AF_Ajustes_CambiarInstitucion(int CodEmpresa, string cedula, string cambiosJson)
         {
@@ -75,6 +79,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Ajustes_Cambiar")]
         public ErrorDto AF_Ajustes_Cambiar(int CodEmpresa, string ajuste, int codigo)
         {

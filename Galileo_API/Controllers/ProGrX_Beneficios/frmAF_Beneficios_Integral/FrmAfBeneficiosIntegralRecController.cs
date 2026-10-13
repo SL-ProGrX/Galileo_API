@@ -33,12 +33,14 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Guarda (inserta o actualiza) el reconocimiento.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneReconocimiento_Guardar")]
         public ErrorDto BeneReconocimiento_Guardar(int CodCliente, [FromBody] AfiBeneReconocimientos reconocimiento)
             => _bl.BeneReconocimiento_Guardar(CodCliente, reconocimiento);
 
         /// <summary>Rechaza el expediente del reconocimiento.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneReconocimiento_Rechazar")]
         public ErrorDto BeneReconocimiento_Rechazar(int CodCliente, int id_beneficio, string usuario)
             => _bl.BeneReconocimiento_Rechazar(CodCliente, id_beneficio, usuario);

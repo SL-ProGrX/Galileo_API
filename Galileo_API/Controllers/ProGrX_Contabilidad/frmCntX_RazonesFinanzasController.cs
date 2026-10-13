@@ -28,6 +28,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         public ActionResult<ErrorDto<bool>> CntXRazonesFinanzas_Existe([FromQuery] int codEmpresa, [FromQuery] int codContabilidad)
             => _bl.CntXRazonesFinanzas_Existe(codEmpresa, codContabilidad);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXRazonesFinanzas_Guardar")]
         public ActionResult<ErrorDto<bool>> CntXRazonesFinanzas_Guardar([FromQuery] int codEmpresa, [FromBody] CntXRazonesFinanzasSaveParams param)
             => _bl.CntXRazonesFinanzas_Guardar(codEmpresa, param);
@@ -40,6 +41,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         public ActionResult<ErrorDto<List<CntXRazonFinancieraTipoDto>>> CntXRazonFinancieraTipos_Lista([FromQuery] int codEmpresa, [FromQuery] int codContabilidad)
             => _bl.CntXRazonFinancieraTipos_Lista(codEmpresa, codContabilidad);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXRazonFinanciera_Guardar")]
         public ActionResult<ErrorDto<bool>> CntXRazonFinanciera_Guardar([FromQuery] int codEmpresa, [FromBody] CntXRazonFinancieraSaveParams param)
             => _bl.CntXRazonFinanciera_Guardar(codEmpresa, param);
@@ -69,18 +71,22 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         public ActionResult<ErrorDto<int?>> CntXRazonDetalle_ValidaB([FromQuery] int codEmpresa, [FromQuery] int codContabilidad, [FromQuery] string codRazon, [FromQuery] int? excludeIdx)
             => _bl.CntXRazonDetalle_ValidaB(codEmpresa, codContabilidad, codRazon, excludeIdx);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXRazonDetalle_Insertar")]
         public ActionResult<ErrorDto<bool>> CntXRazonDetalle_Insertar([FromQuery] int codEmpresa,[FromBody] CntXRazonDetalleDto param)
             => _bl.CntXRazonDetalle_Insertar(codEmpresa, param);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CntXRazonDetalle_Actualizar")]
         public ActionResult<ErrorDto<bool>> CntXRazonDetalle_Actualizar([FromQuery] int codEmpresa,[FromBody] CntXRazonDetalleDto param)
             => _bl.CntXRazonDetalle_Actualizar(codEmpresa, param);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntXRazonDetalle_Eliminar")]
         public ActionResult<ErrorDto<bool>> CntXRazonDetalle_Eliminar([FromQuery] int codEmpresa, [FromQuery] int codContabilidad,[FromQuery] string codRazon, [FromQuery] int idx)
             => _bl.CntXRazonDetalle_Eliminar(codEmpresa, codContabilidad, codRazon, idx);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CntXRazonFinanciera_ActualizarNotas")]
         public ActionResult<ErrorDto<bool>> CntXRazonFinanciera_ActualizarNotas([FromQuery] int codEmpresa, [FromBody] CntXRazonNotasUpdateParams param)
             => _bl.CntXRazonFinanciera_ActualizarNotas(codEmpresa, param);
@@ -93,14 +99,17 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         public ActionResult<ErrorDto<List<DropDownListaGenericaModel>>> CntXRazonesConOperadorB_Lista([FromQuery] int codEmpresa, [FromQuery] int codContabilidad, [FromQuery] string? codGrupo = null)
             => _bl.CntXRazonesConOperadorB_Lista(codEmpresa, codContabilidad, codGrupo);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CntXRazonesReporte_Eliminar")]
         public ActionResult<ErrorDto<bool>> CntXRazonesReporte_Eliminar([FromQuery] int codEmpresa, [FromQuery] string usuario, [FromQuery] int codContabilidad)
            => _bl.CntXRazonesReporte_Eliminar(codEmpresa, usuario, codContabilidad);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXRazonesReporte_Insertar")]
         public ActionResult<ErrorDto<bool>> CntXRazonesReporte_Insertar([FromQuery] int codEmpresa, [FromBody] CntXRazonesReporteInsertParams param)
             => _bl.CntXRazonesReporte_Insertar(codEmpresa, param);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CntXRazonesReporte_ActualizarMes")]
         public ActionResult<ErrorDto<bool>> CntXRazonesReporte_ActualizarMes([FromQuery] int codEmpresa,[FromBody] CntXRazonesReporteUpdateParams param)
             => _bl.CntXRazonesReporte_ActualizarMes(codEmpresa, param);
@@ -121,6 +130,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
                 Unidad = unidad
             });
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CntXRazonFinanciera_ActualizarFormula")]
         public ActionResult<ErrorDto<bool>> CntXRazonFinanciera_ActualizarFormula([FromQuery] int codEmpresa, [FromBody] CntXRazonFormulaUpdateParams param)
             => _bl.CntXRazonFinanciera_ActualizarFormula(codEmpresa, param);

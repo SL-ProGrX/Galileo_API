@@ -33,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Puestos_Guardar")]
         public ErrorDto CR_Puestos_Guardar(int CodEmpresa, string usuario, [FromBody] CrComitesPuestoDto data)
         {
@@ -40,6 +41,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CR_Puestos_Eliminar")]
         public ErrorDto CR_Puestos_Eliminar(int CodEmpresa, string id_puesto, string usuario)
         {
@@ -61,6 +63,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Personas_Guardar")]
         public ErrorDto CR_Personas_Guardar(int CodEmpresa, string usuario, [FromBody] CrComitesPersonaDto data)
         {
@@ -68,6 +71,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CR_Personas_Eliminar")]
         public ErrorDto CR_Personas_Eliminar(int CodEmpresa, string cedula, string usuario)
         {
@@ -96,6 +100,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Asignacion_Miembros_Asignar")]
         public ErrorDto CR_Asignacion_Miembros_Asignar(int CodEmpresa, [FromBody] CrComitesAsignacionRequest request)
         {
@@ -110,6 +115,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Asignacion_Autorizadores_Asignar")]
         public ErrorDto CR_Asignacion_Autorizadores_Asignar(int CodEmpresa, [FromBody] CrComitesAsignacionRequest request)
         {

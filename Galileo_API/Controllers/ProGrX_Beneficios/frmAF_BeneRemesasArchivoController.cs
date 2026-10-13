@@ -51,12 +51,14 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Inserta o actualiza una remesa de archivo.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("RemesaArchivo_Guardar")]
         public ErrorDto RemesaArchivo_Guardar(int CodCliente, [FromBody] RmsRemesasData remesa)
             => _bl.RemesaArchivo_Guardar(CodCliente, remesa);
 
         /// <summary>Inserta el detalle de documentos de una remesa.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("RemesaDetalle_Guardar")]
         public ErrorDto RemesaDetalle_Guardar(int CodCliente, int idRemesa, string usuario, [FromBody] List<RmsRemesaDocuementos> documentos)
             => _bl.RemesaDetalle_Guardar(CodCliente, idRemesa, usuario, documentos);

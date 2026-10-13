@@ -27,6 +27,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_Parametros_Guardar")]
         public ErrorDto Fnd_Parametros_Guardar(int CodEmpresa, string usuario, FndParametrosDto data)
         {

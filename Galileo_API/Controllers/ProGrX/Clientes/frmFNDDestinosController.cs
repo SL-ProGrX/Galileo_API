@@ -27,6 +27,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_DestinosLista_Obtener")]
         public ErrorDto<FndDestinosLista> Fnd_DestinosLista_Obtener(int CodEmpresa, [FromBody] FiltrosLazyLoadData filtros)
         {
@@ -64,6 +65,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_PlanesLista_Obtener")]
         public ErrorDto<FndPlanesDestinoLista> Fnd_PlanesLista_Obtener(int CodEmpresa, string Cod_Destino, [FromBody] FiltrosLazyLoadData filtros)
         {

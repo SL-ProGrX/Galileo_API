@@ -40,6 +40,7 @@
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CrBitacoraEspecial_Registros_Obtener")]
         public ErrorDto<List<CrBitacoraEspecialRegistroModel>> CrBitacoraEspecial_Registros_Obtener(int CodEmpresa, CrBitacoraEspecialRegistrosObtenerRequest request)
         {
@@ -47,6 +48,7 @@
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CrBitacoraEspecial_Asignar")]
         public ErrorDto CrBitacoraEspecial_Asignar(int CodEmpresa, CrBitacoraEspecialAsignarRequest request)
         {

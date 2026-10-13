@@ -27,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return _bl.CxcOperacionMovimientos_Lista_Obtener(codEmpresa, operacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcCuentasAbono_Anular")]
         public ErrorDto CxcCuentasAbono_Anular(int codEmpresa, CxcAbonoAnularParams req)
         {

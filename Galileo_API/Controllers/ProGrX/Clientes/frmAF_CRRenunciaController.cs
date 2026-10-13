@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Renuncias_Bancos_Obtener")]
         public ErrorDto<List<AfRenunciaBancos>> AF_CR_Renuncias_Bancos_Obtener(int CodEmpresa, [FromBody] AfRenunciaBancoFiltro filtro)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Renuncias_Emite_TDoc")]
         public ErrorDto<List<AfRenunciaEmiteTDoc>> AF_CR_Renuncias_Emite_TDoc(int CodEmpresa, [FromBody] AfRenunciaEmiteTDocFiltro filtro)
         {
@@ -75,6 +77,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Renuncias_Liquida_ListaPlanes")]
         public ErrorDto<List<AfRenunciaLiquidaListaPlanes>> AF_CR_Renuncias_Liquida_ListaPlanes(int CodEmpresa, [FromBody] AfRenunciaLiquidaListaPlanesFiltro filtro)
         {
@@ -82,6 +85,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Renuncias_CuentasBancarias_Obtener")]
         public ErrorDto<List<AfRenunciaCuentaBancaria>> AF_CR_Renuncias_CuentasBancarias_Obtener(int CodEmpresa, [FromBody] AfRenunciaCuentaBancariaFiltro filtro)
         {
@@ -132,6 +136,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Renuncias_Renta_Global")]
         public ErrorDto<AfRenunciaRentaGlobal> AF_CR_Renuncias_Renta_Global(int CodEmpresa, [FromBody] AfRenunciaRentaGlobalFiltro filtro)
         {
@@ -139,6 +144,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Renuncias_Liquidacion_CreditosPersona")]
         public ErrorDto<List<AfRenunciaLiquidacionCreditosPersona>> AF_CR_Renuncias_Liquidacion_CreditosPersona(int CodEmpresa, [FromBody] AfRenunciaLiquidacionCreditosPersonaFiltro filtro)
         {
@@ -167,6 +173,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Renuncias_Liquidacion_Guarda")]
         public ErrorDto<int> AF_CR_Renuncias_Liquidacion_Guarda(int CodEmpresa, [FromBody] AfRenunciaLiquidacion request)
         {
@@ -174,6 +181,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Renuncias_Plan_Insertar")]
         public ErrorDto<bool> AF_CR_Renuncias_Plan_Insertar(int CodEmpresa, [FromBody] AfRenunciaPlan request)
         {
@@ -181,6 +189,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Renuncias_Abono_Insertar")]
         public ErrorDto<bool> AF_CR_Renuncias_Abono_Insertar(int CodEmpresa, [FromBody] AfRenunciaAbono request)
         {
@@ -198,6 +207,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
             _bl.AF_CR_Renuncias_Reingreso_Validar(CodEmpresa, cedula, usuario);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Renuncias_Proceso_Guardar")]
         public ErrorDto<int> AF_CR_Renuncias_Proceso_Guardar(int CodEmpresa, [FromBody] AfRenunciaProceso request) =>
             _bl.AF_CR_Renuncias_Proceso_Guardar(CodEmpresa, request);

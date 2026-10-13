@@ -37,11 +37,13 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
                  => _bl.Crd_Incobrables_Detalle_Obtener(codEmpresa, usuario, codContabilidad, idSolicitud, codIncobrable);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_Incobrables_Aplicar")]
         public ErrorDto<object> Crd_Incobrables_Aplicar(int codEmpresa, [FromBody] CrdIncobrableAplicarRequest request)
                    => _bl.Crd_Incobrables_Aplicar(codEmpresa, request);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_Incobrables_Reversar")]
         public ErrorDto<object> Crd_Incobrables_Reversar(int codEmpresa, [FromBody] CrdIncobrableReversaRequest request)
                  => _bl.Crd_Incobrables_Reversar(codEmpresa, request);

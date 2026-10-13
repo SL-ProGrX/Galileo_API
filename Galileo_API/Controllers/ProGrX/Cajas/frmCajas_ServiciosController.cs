@@ -67,6 +67,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
             return _bl.Cajas_Servicios_Conceptos_Existe_Obtener(CodEmpresa, cod_recaudador, cod_servicio);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_Servicios_Conceptos_Guardar")]
         [Authorize]
         public ErrorDto Cajas_Servicios_Conceptos_Guardar(int CodEmpresa, string usuario, CajasServiciosConceptosData servicio)
@@ -80,6 +81,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
             return _bl.Cajas_Servicios_Comisiones_Lista_Obtener(CodEmpresa, cod_recaudador, cod_servicio);
         }
         
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_Servicios_Comisiones_Guardar")]
         [Authorize]
         public ErrorDto Cajas_Servicios_Comisiones_Guardar(int CodEmpresa, string usuario, CajasServiciosComisionesData rango)
@@ -87,6 +89,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
             return _bl.Cajas_Servicios_Comisiones_Guardar(CodEmpresa, usuario, rango);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Cajas_Servicios_Comisiones_Eliminar")]
         [Authorize]
         public ErrorDto Cajas_Servicios_Comisiones_Eliminar(int CodEmpresa, string usuario, string cod_recaudador, string cod_servicio, int linea)
@@ -101,6 +104,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
             return _bl.Cajas_Servicios_CajasVinculadas_Lista_Obtener(CodEmpresa, cod_recaudador, cod_servicio);
         }
         
+        [ValidateAntiForgeryToken]
         [HttpPost("Cajas_Servicios_CajasVinculadas_Guardar")]
         [Authorize]
         public ErrorDto Cajas_Servicios_CajasVinculadas_Guardar(int CodEmpresa, string usuario, string cod_recaudador, string cod_servicio, string cod_caja, short asignada)

@@ -29,10 +29,12 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<List<DropDownListaGenericaModel>> CR_AbonoMasivo_Manual_Planes_Obtener(int codEmpresa, string operadora)
            => _bl.CR_AbonoMasivo_Manual_Planes_Obtener(codEmpresa, operadora);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_AbonoMasivo_Manual_ProcesarAbonosMasivos")]
         public ErrorDto<CrAplicacionAbonoMasivoProcesarResponse> CR_AbonoMasivo_Manual_ProcesarAbonosMasivos(int codEmpresa, [FromBody] CrAplicacionAbonoMasivoProcesarRequest request)
               => _bl.ProcesarAbonosMasivos(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_AbonoMasivo_Manual_CargaDeducciones_Procesar")]
         public ErrorDto<CrAplicacionAbonoMasivoResponse> CR_AbonoMasivo_Manual_CargaDeducciones_Procesar(int codEmpresa, [FromBody] CrAplicacionAbonoMasivoRequest request)
               => _bl.CR_AbonoMasivo_Manual_CargaDeducciones_Procesar(codEmpresa, request);

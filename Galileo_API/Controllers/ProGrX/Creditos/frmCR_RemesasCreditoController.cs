@@ -89,6 +89,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_RemesasCredito_Crear")]
         public ErrorDto<CrRemesasCreditoCrearResult> CR_RemesasCredito_Crear(int CodEmpresa, [FromBody] CrRemesasCreditoCrearRequest request)
         {
@@ -110,6 +111,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_RemesasCredito_Tags_Guardar")]
         public ErrorDto CR_RemesasCredito_Tags_Guardar(int CodEmpresa, [FromBody] CrRemesasCreditoTagGuardarRequest request)
         {
@@ -138,6 +140,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_RemesasCredito_ArchivoDigital_Recibir")]
         public ErrorDto CR_RemesasCredito_ArchivoDigital_Recibir(int CodEmpresa, [FromBody] CrRemesasCreditoArchivoDigitalRequest request)
         {
@@ -152,6 +155,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_RemesasCredito_Listados_Cargar")]
         public ErrorDto<CrRemesasCreditoListadoCargaResult> CR_RemesasCredito_Listados_Cargar(int CodEmpresa, [FromBody] CrRemesasCreditoListadoCargaRequest request)
         {
@@ -159,6 +163,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_RemesasCredito_Listados_Export")]
         public ErrorDto<CrRemesasCreditoListadoCargaResult> CR_RemesasCredito_Listados_Export(int CodEmpresa, [FromBody] CrRemesasCreditoListadoCargaRequest request)
         {
@@ -166,6 +171,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_RemesasCredito_Reporte_Datos_Obtener")]
         public ErrorDto<CrRemesasCreditoReporteDto> CR_RemesasCredito_Reporte_Datos_Obtener(int CodEmpresa, [FromBody] CrRemesasCreditoReporteRequest request)
         {

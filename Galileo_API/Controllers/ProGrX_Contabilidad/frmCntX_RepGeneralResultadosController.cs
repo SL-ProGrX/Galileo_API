@@ -33,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CntX_RepGeneralResultados_ValidarReporte")]
         public ErrorDto<CntXRepGeneralResultadosValidarResponseDto> CntX_RepGeneralResultados_ValidarReporte(int CodEmpresa,[FromBody] CntXRepGeneralResultadosValidarRequestDto data)
         {

@@ -33,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_Configuracion_Generales_Lista_Export(CodEmpresa);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Configuracion_Generales_Guardar")]
         public ErrorDto CR_Configuracion_Generales_Guardar(int CodEmpresa,string usuario,[FromBody] CrConfiguracionGeneralGuardarDto request)
         {
@@ -50,6 +51,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_Configuracion_Operativos_Obtener(CodEmpresa);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Configuracion_Operativos_Guardar")]
         public ErrorDto CR_Configuracion_Operativos_Guardar(int CodEmpresa,string usuario,[FromBody] CrConfiguracionOperativosGuardarDto request)
         {
@@ -73,6 +75,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_Configuracion_TiposDocumento_Dropdown_Obtener();
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Configuracion_FechaCorte_Guardar")]
         public ErrorDto CR_Configuracion_FechaCorte_Guardar(int CodEmpresa,string usuario,[FromBody] CrConfiguracionFechaCorteGuardarDto request)
         {
@@ -84,6 +87,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_Configuracion_FechaCorte_Guardar(CodEmpresa, request, usuario);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_Configuracion_TBP_Guardar")]
         public ErrorDto CR_Configuracion_TBP_Guardar(int CodEmpresa, string usuario,[FromBody] CrConfiguracionTbpGuardarDto request)
         {

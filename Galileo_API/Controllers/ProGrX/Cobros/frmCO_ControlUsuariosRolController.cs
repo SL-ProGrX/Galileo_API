@@ -54,6 +54,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_UsuariosRol_Antiguedad_Asignar")]
         public ErrorDto CO_UsuariosRol_Antiguedad_Asignar(int CodEmpresa, CoControlUsuariosRolAsignarAntiguedadRequest req)
         {
@@ -61,6 +62,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_UsuariosRol_Garantia_Asignar")]
         public ErrorDto CO_UsuariosRol_Garantia_Asignar(int CodEmpresa, CoControlUsuariosRolAsignarGarantiaRequest req)
         {
@@ -68,6 +70,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_UsuariosRol_Oficina_Asignar")]
         public ErrorDto CO_UsuariosRol_Oficina_Asignar(int CodEmpresa, CoControlUsuariosRolAsignarOficinaRequest req)
         {
@@ -75,6 +78,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_UsuariosRol_Institucion_Asignar")]
         public ErrorDto CO_UsuariosRol_Institucion_Asignar(int CodEmpresa, CoControlUsuariosRolAsignarInstitucionRequest req)
         {
@@ -82,6 +86,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_UsuariosRol_Copia")]
         public ErrorDto CO_UsuariosRol_Copia(int CodEmpresa, CoControlUsuariosRolCopiaRequest req)
         {
@@ -89,6 +94,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_UsuariosRol_Limpia")]
         public ErrorDto CO_UsuariosRol_Limpia(int CodEmpresa, CoControlUsuariosRolLimpiaRequest req)
         {

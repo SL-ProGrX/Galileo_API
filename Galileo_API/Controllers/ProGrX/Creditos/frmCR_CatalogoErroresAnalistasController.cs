@@ -26,6 +26,7 @@
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoErroresAnalistas_Guardar")]
         public ErrorDto CrCatalogoErroresAnalistas_Guardar(int CodEmpresa, CrCatalogoErroresAnalistasGuardarRequest request)
         {
@@ -33,6 +34,7 @@
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrCatalogoErroresAnalistas_Eliminar")]
         public ErrorDto CrCatalogoErroresAnalistas_Eliminar(int CodEmpresa, CrCatalogoErroresAnalistasEliminarRequest request)
         {

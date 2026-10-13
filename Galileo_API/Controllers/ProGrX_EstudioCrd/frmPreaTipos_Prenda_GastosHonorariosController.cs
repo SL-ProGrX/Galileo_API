@@ -32,6 +32,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_PreaTipos_Prenda_GastosHonorarios_Guardar")]
         public ErrorDto CR_PreaTipos_Prenda_GastosHonorarios_Guardar(int CodEmpresa, string usuario, string tipo, [FromBody] CrPreaConfigGuardarRequest request)
         {
@@ -39,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CR_PreaTipos_Prenda_GastosHonorarios_Eliminar")]
         public ErrorDto CR_PreaTipos_Prenda_GastosHonorarios_Eliminar(int CodEmpresa, string usuario, string tipo, int id)
         {

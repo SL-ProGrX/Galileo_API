@@ -32,6 +32,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
                 hasta, anio, mes);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost]
         [Route("Cntx_Util_Asientos_Eliminar")]
         public ErrorDto<bool> Eliminar([FromBody] CntxEliminarAsientosRequestDto request)

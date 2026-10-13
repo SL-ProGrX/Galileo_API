@@ -40,6 +40,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_ReportesGenerales_CuboAplicar")]
         public ErrorDto Fnd_ReportesGenerales_CuboAplicar(int CodEmpresa, FndReportesGeneralesCuboFiltros Filtros)
         {

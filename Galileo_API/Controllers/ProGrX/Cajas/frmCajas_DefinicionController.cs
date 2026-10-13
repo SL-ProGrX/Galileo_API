@@ -61,6 +61,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_ServicioAsignar_Insertar")]
         public ErrorDto<bool> CajasDefinicion_ServicioAsignar_Insertar(int codEmpresa, [FromBody] CajasServicioAsignarParams param)
         {
@@ -68,6 +69,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_ServicioAsignar_Eliminar")]
         public ErrorDto<bool> CajasDefinicion_ServicioAsignar_Eliminar(int codEmpresa, [FromBody] CajasServicioAsignarParams param)
         {
@@ -75,6 +77,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_AuxiliaresCatalogo_Obtener")]
         public ErrorDto<List<CajasAuxiliarAsignadoModel>> CajasDefinicion_AuxiliaresCatalogo_Obtener(int codEmpresa, [FromBody] CajasAuxiliarFiltroParams param)
         {
@@ -82,6 +85,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_AuxiliaresFondos_Obtener")]
         public ErrorDto<List<CajasAuxiliarAsignadoModel>> CajasDefinicion_AuxiliaresFondos_Obtener(int codEmpresa, [FromBody] CajasAuxiliarFiltroParams param)
         {
@@ -89,6 +93,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_AuxiliaresCxc_Obtener")]
         public ErrorDto<List<CajasAuxiliarAsignadoModel>> CajasDefinicion_AuxiliaresCxc_Obtener(int codEmpresa, [FromBody] CajasAuxiliarFiltroParams param)
         {
@@ -96,6 +101,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_AuxiliaresFfp_Obtener")]
         public ErrorDto<List<CajasAuxiliarAsignadoModel>> CajasDefinicion_AuxiliaresFfp_Obtener(int codEmpresa, [FromBody] CajasAuxiliarFiltroParams param)
         {
@@ -103,6 +109,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_AuxiliarAsignar_Eliminar")]
         public ErrorDto<bool> CajasDefinicion_AuxiliarAsignar_Eliminar(int codEmpresa, string usuario, [FromBody] CajasAuxiliarAsignarParams param)
         {
@@ -110,6 +117,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_AuxiliarAsignar_Insertar")]
         public ErrorDto<bool> CajasDefinicion_AuxiliarAsignar_Insertar(int codEmpresa, string usuario, [FromBody] CajasAuxiliarAsignarParams param)
         {
@@ -124,6 +132,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_FormaPagoAsignar_Insertar")]
         public ErrorDto<bool> CajasDefinicion_FormaPagoAsignar_Insertar(int codEmpresa, [FromBody] CajasFormaPagoAsignarParams param)
         {
@@ -131,6 +140,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_FormaPagoAsignar_Eliminar")]
         public ErrorDto<bool> CajasDefinicion_FormaPagoAsignar_Eliminar(int codEmpresa, [FromBody] CajasFormaPagoAsignarParams param)
         {
@@ -145,6 +155,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_DocumentoAsignar_Insertar")]
         public ErrorDto<bool> CajasDefinicion_DocumentoAsignar_Insertar(int codEmpresa, [FromBody] CajasDocumentoAsignarParams param)
         {
@@ -152,6 +163,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_DocumentoAsignar_Eliminar")]
         public ErrorDto<bool> CajasDefinicion_DocumentoAsignar_Eliminar(int codEmpresa, [FromBody] CajasDocumentoAsignarParams param)
         {
@@ -166,6 +178,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_Caja_Insertar")]
         public ErrorDto<bool> CajasDefinicion_Caja_Insertar(int codEmpresa, [FromBody] CajasDefinicionInsertParams param)
         {
@@ -173,6 +186,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_Caja_Copiar")]
         public ErrorDto<bool> CajasDefinicion_Caja_Copiar(int codEmpresa, [FromBody] CajasDefinicionCopiaParams param)
         {
@@ -180,6 +194,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_Caja_Eliminar")]
         public ErrorDto<bool> CajasDefinicion_Caja_Eliminar(int codEmpresa, string codCaja, string usuario)
         {

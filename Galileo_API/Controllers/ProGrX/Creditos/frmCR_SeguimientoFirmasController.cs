@@ -25,6 +25,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoFirmas_Guardar")]
         public ErrorDto CR_SeguimientoFirmas_Guardar(int CodEmpresa, CRSeguimientoFirmasData firmasData)
         {

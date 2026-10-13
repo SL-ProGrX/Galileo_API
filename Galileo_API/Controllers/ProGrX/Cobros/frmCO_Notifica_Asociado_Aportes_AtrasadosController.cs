@@ -37,6 +37,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_Notifica_Asociado_Aportes_Atrasados_Enviar")]
         public ErrorDto CO_Notifica_Asociado_Aportes_Atrasados_Enviar(int CodEmpresa,[FromBody] CoNotificaAsociadoAportesAtrasadosEnviarRequest? req)
         {

@@ -23,6 +23,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             [FromQuery] string tipo)
             => _bl.CrdPrea_Prendas_Gastos(codEmpresa, preanalisis, tipo);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrdPrea_AsignaHonorariosPren")]
         public ActionResult<ErrorDto<PreaAsignaHonorariosPrenResultDto>> CrdPrea_AsignaHonorariosPren(
             [FromQuery] int codEmpresa,

@@ -32,6 +32,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FndColaboradoresCc_Guardar")]
         public ErrorDto FndColaboradoresCc_Guardar(int CodEmpresa, string usuarioLogueado, [FromBody] FndColaboradoresCcData colaborador)
         {
@@ -39,6 +40,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("FndColaboradoresCc_Eliminar")]
         public ErrorDto FndColaboradoresCc_Eliminar(int CodEmpresa, string usuario)
         {

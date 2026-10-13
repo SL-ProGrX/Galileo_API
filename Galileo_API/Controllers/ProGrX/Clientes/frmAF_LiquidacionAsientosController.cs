@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_LiqAsientoToken_Nuevo")]
         public ErrorDto AF_LiqAsientoToken_Nuevo(int CodEmpresa, string usuario)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Af_LiquidacionAsientos_Generar")]
         public ErrorDto<AfLiquidacionAsientosGenerarResponse> Af_LiquidacionAsientos_Generar(
              int CodEmpresa,
@@ -49,6 +51,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Af_LiquidacionAsientos_Buscar")]
         public ErrorDto<List<AfLiquidacionAsientosRowDto>> Af_LiquidacionAsientos_Buscar(
                 int CodEmpresa,
@@ -58,6 +61,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Af_LiquidacionAsientos_Bancos")]
         public ErrorDto<List<DropDownListaGenericaModel>> Af_LiquidacionAsientos_Bancos(
               int CodEmpresa,
@@ -67,6 +71,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Af_LiquidacionAsientos_Usuarios")]
         public ErrorDto<List<DropDownListaGenericaModel>> Af_LiquidacionAsientos_Usuarios(
                int CodEmpresa,
@@ -76,6 +81,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Af_LiquidacionAsientos_Tokens")]
         public ErrorDto<List<DropDownListaGenericaModel>> Af_LiquidacionAsientos_Tokens(
                 int CodEmpresa,
@@ -85,6 +91,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Af_LiquidacionAsientos_Oficinas")]
         public ErrorDto<List<DropDownListaGenericaModel>> Af_LiquidacionAsientos_Oficinas(
             int CodEmpresa,

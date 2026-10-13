@@ -22,12 +22,14 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.CrPreaAcredores_ObtenerLista(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PreaAcredores_Guardar")]
         public ErrorDto PreaAcredores_Guardar(int codEmpresa, string usuario, CrdPreaAcredoresData request)
         {
             return _bl.CrPreaAcredores_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("PreaAcredores_Borrar")]
         public ErrorDto PreaAcredores_Borrar(int codEmpresa, string usuario, string codAcredor)
         {

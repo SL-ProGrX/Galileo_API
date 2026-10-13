@@ -25,6 +25,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             }
 
 
+            [ValidateAntiForgeryToken]
             [HttpPost("Crear")]
             public ErrorDto Crear(int codEmpresa, int codContabilidad, PeriodosDefinicionDto dto
             )

@@ -24,6 +24,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCParametros_Guardar")]
         public ErrorDto CxCParametros_Guardar(int CodEmpresa, string usuario, string valor, string codParametro)
         {

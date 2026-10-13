@@ -53,6 +53,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_Anulaciones_Anular")]
         public ErrorDto<object> FND_Anulaciones_Anular(int CodEmpresa, string Params, string Accion, string Notas)
         {

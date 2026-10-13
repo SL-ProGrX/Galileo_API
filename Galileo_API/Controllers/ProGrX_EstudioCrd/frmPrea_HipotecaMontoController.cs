@@ -27,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaHipotecaMonto_Lista_Obtener(codEmpresa, cod_preanalisis, tipo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaHipotecaMonto_Seleccion_Guardar")]
         public ErrorDto<FrmPreaHipotecaMontoGuardarResponse> Prea_frmPreaHipotecaMonto_Seleccion_Guardar(
             int codEmpresa,

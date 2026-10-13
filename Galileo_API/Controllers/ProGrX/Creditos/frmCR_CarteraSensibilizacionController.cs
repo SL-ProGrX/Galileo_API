@@ -37,12 +37,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             int codEmpresa)
             => _bl.CrCarteraSensibilizacion_Catalogo_Obtener(codEmpresa);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCarteraSensibilizacion_Buscar")]
         public ErrorDto<CrCarteraSensibilizacionResultadoData> CrCarteraSensibilizacion_Buscar(
             int codEmpresa,
             CrCarteraSensibilizacionRequest request)
             => _bl.CrCarteraSensibilizacion_Buscar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrCarteraSensibilizacion_Generar")]
         public ErrorDto<CrCarteraSensibilizacionGenerarData> CrCarteraSensibilizacion_Generar(
             int codEmpresa,

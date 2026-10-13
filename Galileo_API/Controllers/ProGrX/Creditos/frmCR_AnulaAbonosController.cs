@@ -24,6 +24,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_AnulaAbonos_ConsultarOperacion(codEmpresa, idSolicitud);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_AnulaAbonos_CuentaRecomendada")]
         [Authorize]
         public ErrorDto<string> CR_AnulaAbonos_CuentaRecomendada(int codEmpresa, [FromBody] CrAnulaAbonosCuentaRecomendadaRequest request)
@@ -31,6 +32,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_AnulaAbonos_CuentaRecomendada(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_AnulaAbonos_Procesar")]
         [Authorize]
         public ErrorDto<CrAnulaAbonosProcesarResponse> CR_AnulaAbonos_Procesar(int codEmpresa, [FromBody] CrAnulaAbonosProcesarRequest request)

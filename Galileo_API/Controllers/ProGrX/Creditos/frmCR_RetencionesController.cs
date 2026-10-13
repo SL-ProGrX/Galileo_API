@@ -95,6 +95,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.AF_CR_Retenciones_ObtenerSiguienteSolicitud(codEmpresa, idSolicitudActual, siguiente);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CR_Retenciones_InsertarCredito")]
         [Authorize]
         public ErrorDto AF_CR_Retenciones_InsertarCredito(int codEmpresa, [FromBody] InsertarCreditoRequest req)

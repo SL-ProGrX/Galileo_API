@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Guarda (inserta o actualiza) el registro Crece.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneSocioCrece_Guardar")]
         public ErrorDto BeneSocioCrece_Guardar(int CodCliente, [FromBody] AfiBeneSocioCreceDto beneficio)
             => _bl.BeneSocioCrece_Guardar(CodCliente, beneficio);
@@ -45,6 +46,7 @@ namespace Galileo.Controllers.ProGrX_Beneficios
 
         /// <summary>Guarda (inserta o actualiza) una sesión Crece.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneSocioCreceSesion_Guardar")]
         public ErrorDto BeneSocioCreceSesion_Guardar(int CodCliente, [FromBody] AfiBeneSocioCreceSesionesDto beneficio)
             => _bl.BeneSocioCreceSesion_Guardar(CodCliente, beneficio);

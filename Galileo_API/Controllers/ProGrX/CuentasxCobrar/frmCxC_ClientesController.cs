@@ -98,6 +98,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcPersona_Guardar")]
         public ErrorDto<bool> CxcPersona_Guardar(int codEmpresa, [FromBody] CxcPersonaSaveParams param)
         {
@@ -105,6 +106,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcPersona_Eliminar")]
         public ErrorDto<bool> CxcPersona_Eliminar(int codEmpresa, [FromBody] CxcPersonaDeleteParams param)
         {
@@ -140,6 +142,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcContratoPagador_Eliminar")]
         public ErrorDto<bool> CxcContratoPagador_Eliminar(int codEmpresa, [FromBody] CxcContratoPagadorDeleteParams param)
         {
@@ -147,6 +150,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcContratoSuscripcion_Eliminar")]
         public ErrorDto<bool> CxcContratoSuscripcion_Eliminar(int codEmpresa, [FromBody] CxcContratosSuscripcionDeleteParams param)
         {
@@ -168,6 +172,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcPersonaAutorizador_Guardar")]
         public ErrorDto<bool> CxcPersonaAutorizador_Guardar(int codEmpresa, [FromBody] CxcPersonaAutorizadorSaveParams param)
         {
@@ -182,6 +187,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcPersona_IdCambio")]
         public ErrorDto<bool> CxcPersona_IdCambio(int codEmpresa, [FromBody] CxcPersonaIdCambioParams param)
         {

@@ -18,6 +18,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             _bl = new FrmPreaFechaFormalizaBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaFechaFormaliza_Cargar")]
         public ErrorDto<FrmPreaFechaFormalizaCargarResponse> Prea_frmPreaFechaFormaliza_Cargar(
             int codEmpresa,
@@ -26,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaFechaFormaliza_Cargar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaFechaFormaliza_Calcular")]
         public ErrorDto<FrmPreaFechaFormalizaCalcularResponse> Prea_frmPreaFechaFormaliza_Calcular(
             int codEmpresa,
@@ -34,6 +36,7 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaFechaFormaliza_Calcular(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPreaFechaFormaliza_Cambiar")]
         public ErrorDto<FrmPreaFechaFormalizaCambiarResponse> Prea_frmPreaFechaFormaliza_Cambiar(
             int codEmpresa,

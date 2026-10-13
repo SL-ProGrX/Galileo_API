@@ -35,16 +35,19 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             => _bl.Contrato_PersonasPorContrato(codEmpresa, codContrato);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Contrato_PersonaPagador_Eliminar")]
         public ErrorDto<bool> Contrato_PersonaPagador_Eliminar(int codEmpresa, [FromBody] ContratoPersonaDeleteParams param)
             => _bl.Contrato_PersonaPagador_Eliminar(codEmpresa, param);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Contrato_PersonaSuscripcion_Eliminar")]
         public ErrorDto<bool> Contrato_PersonaSuscripcion_Eliminar(int codEmpresa, [FromBody] ContratoPersonaDeleteParams param)
             => _bl.Contrato_PersonaSuscripcion_Eliminar(codEmpresa, param);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Contrato_Persona_Eliminar")]
         public ErrorDto<bool> Contrato_Persona_Eliminar(int codEmpresa, [FromBody] ContratoPersonaDeleteParams param)
             => _bl.Contrato_Persona_Eliminar(codEmpresa, param);
@@ -55,6 +58,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             => _bl.Contrato_PagadoresPorContrato(codEmpresa, codContrato);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Contrato_Pagador_Eliminar")]
         public ErrorDto<bool> Contrato_Pagador_Eliminar(int codEmpresa, [FromBody] ContratoPersonaDeleteParams param)
             => _bl.Contrato_Pagador_Eliminar(codEmpresa, param);
@@ -65,6 +69,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             => _bl.Contrato_CargosPorContrato(codEmpresa, codContrato);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Contrato_Cargo_Eliminar")]
         public ErrorDto<bool> Contrato_Cargo_Eliminar(int codEmpresa, [FromBody] ContratoCargoDeleteParams param)
             => _bl.Contrato_Cargo_Eliminar(codEmpresa, param);
@@ -75,26 +80,31 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             => _bl.Contrato_ConceptosPorContrato(codEmpresa, codContrato);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Contrato_Concepto_Insertar")]
         public ErrorDto<bool> Contrato_Concepto_Insertar(int codEmpresa, [FromBody] ContratoConceptoParams param)
             => _bl.Contrato_Concepto_Insertar(codEmpresa, param);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Contrato_Concepto_Eliminar")]
         public ErrorDto<bool> Contrato_Concepto_Eliminar(int codEmpresa, [FromBody] ContratoConceptoParams param)
             => _bl.Contrato_Concepto_Eliminar(codEmpresa, param);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Contrato_Insertar")]
         public ErrorDto<bool> Contrato_Insertar(int codEmpresa, [FromBody] ContratoSaveParams param)
             => _bl.Contrato_Insertar(codEmpresa, param);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Contrato_Actualizar")]
         public ErrorDto<bool> Contrato_Actualizar(int codEmpresa, [FromBody] ContratoSaveParams param)
             => _bl.Contrato_Actualizar(codEmpresa, param);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Contrato_Eliminar")]
         public ErrorDto<bool> Contrato_Eliminar(int codEmpresa, [FromBody] ContratoDeleteParams param)
             => _bl.Contrato_Eliminar(codEmpresa, param);

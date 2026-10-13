@@ -24,6 +24,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_PoliticaPago_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_PoliticaPago_Guardar")]
         public ErrorDto CR_PoliticaPago_Guardar(
             int codEmpresa,
@@ -33,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_PoliticaPago_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CR_PoliticaPago_Eliminar")]
         public ErrorDto CR_PoliticaPago_Eliminar(
             int codEmpresa,
@@ -50,6 +52,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_PoliticaPago_Traslados_Obtener(codEmpresa, tipo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_PoliticaPago_Traslados_Guardar")]
         public ErrorDto CR_PoliticaPago_Traslados_Guardar(
             int codEmpresa,
@@ -59,6 +62,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_PoliticaPago_Traslados_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CR_PoliticaPago_Traslados_Eliminar")]
         public ErrorDto CR_PoliticaPago_Traslados_Eliminar(
             int codEmpresa,
@@ -68,6 +72,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_PoliticaPago_Traslados_Eliminar(codEmpresa, usuario, idSeq);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_PoliticaPago_TablasPago_Actualizar")]
         public ErrorDto CR_PoliticaPago_TablasPago_Actualizar(int codEmpresa, string usuario)
         {

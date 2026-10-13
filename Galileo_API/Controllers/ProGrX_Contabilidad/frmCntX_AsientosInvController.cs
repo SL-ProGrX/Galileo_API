@@ -84,6 +84,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "CntX_frmCntX_AsientosInv_Guardar")]
         public ErrorDto
@@ -97,6 +98,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete(
             "CntX_frmCntX_AsientosInv_Eliminar")]
         public ErrorDto

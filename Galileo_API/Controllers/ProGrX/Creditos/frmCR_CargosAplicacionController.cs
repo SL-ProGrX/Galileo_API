@@ -28,6 +28,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             int operacion)
             => _bl.Cr_CargosAplicacion_Operacion_Obtener(codEmpresa, operacion);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_CargosAplicacion_Aplicar")]
         public ErrorDto Cr_CargosAplicacion_Aplicar(
             int codEmpresa,

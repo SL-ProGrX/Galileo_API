@@ -26,6 +26,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_Autorizacion_Mov_Autoriza")]
         public ErrorDto Fnd_Autorizacion_Mov_Autoriza(int CodEmpresa, string pGestion, string pAutorizador, string? pNota, List<FndAutorizacionMovData> movimiento)
         {

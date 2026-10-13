@@ -25,6 +25,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CambioCedula_Aplicar")]
         public ErrorDto AF_CambioCedula_Aplicar(int CodEmpresa, string usuario, string cambioCedula)
         {

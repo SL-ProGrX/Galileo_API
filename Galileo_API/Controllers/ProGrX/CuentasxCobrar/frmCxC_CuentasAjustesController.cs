@@ -33,18 +33,21 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
             return _bl.CxCCuentasAjustes_Cargos_Obtener(codEmpresa, operacionId);
         }
         
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCuentasAjustes_Fecha_Aplicar")]
         public ErrorDto CxCCuentasAjustes_Fecha_Aplicar(int codEmpresa, CxCCuentasAjustesFechaRequest request)
         {
             return _bl.CxCCuentasAjustes_Fecha_Aplicar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCuentasAjustes_CuotasMora_Eliminar")]
         public ErrorDto CxCCuentasAjustes_CuotasMora_Eliminar(int codEmpresa, int operacionId, string usuario, List<CxCCuentasAjustesCuotasData> lista)
         {
             return _bl.CxCCuentasAjustes_CuotasMora_Eliminar(codEmpresa, operacionId, usuario, lista);
         }
         
+        [ValidateAntiForgeryToken]
         [HttpPost("CxCCuentasAjustes_Cargos_Eliminar")]
         public ErrorDto CxCCuentasAjustes_Cargos_Eliminar(int codEmpresa, int operacionId, string usuario, List<CxCCuentasAjustesCargosData> lista)
         {

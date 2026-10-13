@@ -42,6 +42,7 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Fnd_TrasladoFondos_Ejecutar")]
         public ErrorDto<FndTrasladoFondosResult> Fnd_TrasladoFondos_Ejecutar(int CodEmpresa, [FromBody] FndTrasladoFondosRequest request)
         {

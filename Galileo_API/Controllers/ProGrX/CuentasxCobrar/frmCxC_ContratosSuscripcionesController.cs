@@ -33,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcPersonaContrato_Guardar")]
         public ErrorDto<bool> CxcPersonaContrato_Guardar(int codEmpresa, [FromBody] CxcPersonaContratoSaveParams param)
         {
@@ -40,6 +41,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcPersonaContrato_Eliminar")]
         public ErrorDto<bool> CxcPersonaContrato_Eliminar(int codEmpresa, [FromBody] CxcPersonaContratoDeleteParams param)
         {
@@ -61,6 +63,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcPersonaContratoPagador_Insertar")]
         public ErrorDto<bool> CxcPersonaContratoPagador_Insertar(int codEmpresa, [FromBody] CxcPersonaContratoPagadorSaveParams param)
         {
@@ -68,6 +71,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcPersonaContratoPagador_Eliminar")]
         public ErrorDto<bool> CxcPersonaContratoPagador_Eliminar(int codEmpresa, [FromBody] CxcPersonaContratoPagadorDeleteParams param)
         {
@@ -89,6 +93,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcPersonaContratoSuscripcion_Insertar")]
         public ErrorDto<bool> CxcPersonaContratoSuscripcion_Insertar(int codEmpresa, [FromBody] CxcPersonaContratoSuscripcionSaveParams param)
         {
@@ -96,6 +101,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CxcPersonaContratoSuscripcion_Eliminar")]
         public ErrorDto<bool> CxcPersonaContratoSuscripcion_Eliminar(int codEmpresa, [FromBody] CxcPersonaContratoSuscripcionDeleteParams param)
         {

@@ -24,6 +24,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             int operacion)
             => _bl.Cr_SeguimientoAutorizaciones_Detalle_Obtener(codEmpresa, operacion);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_SeguimientoAutorizaciones_Autorizar")]
         public ErrorDto Cr_SeguimientoAutorizaciones_Autorizar(
             int codEmpresa,

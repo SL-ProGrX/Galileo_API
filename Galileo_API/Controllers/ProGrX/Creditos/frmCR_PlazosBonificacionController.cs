@@ -33,12 +33,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             string cod_plazo_bono)
             => _bl.CrPlazosBonificacion_Definicion_Obtener(codEmpresa, cod_plazo_bono);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrPlazosBonificacion_Definicion_Guardar")]
         public ErrorDto CrPlazosBonificacion_Definicion_Guardar(
             int codEmpresa,
             CrPlazosBonificacionDefinicionGuardarRequest request)
             => _bl.CrPlazosBonificacion_Definicion_Guardar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrPlazosBonificacion_Definicion_Eliminar")]
         public ErrorDto CrPlazosBonificacion_Definicion_Eliminar(
             int codEmpresa,
@@ -51,12 +53,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             string cod_plazo_bono)
             => _bl.CrPlazosBonificacion_Bonificaciones_Obtener(codEmpresa, cod_plazo_bono);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrPlazosBonificacion_Bonificaciones_Guardar")]
         public ErrorDto CrPlazosBonificacion_Bonificaciones_Guardar(
             int codEmpresa,
             CrPlazosBonificacionBonificacionGuardarRequest request)
             => _bl.CrPlazosBonificacion_Bonificaciones_Guardar(codEmpresa, request);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrPlazosBonificacion_Bonificaciones_Eliminar")]
         public ErrorDto CrPlazosBonificacion_Bonificaciones_Eliminar(
             int codEmpresa,
@@ -69,6 +73,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             string cod_plazo_bono)
             => _bl.CrPlazosBonificacion_Asignaciones_Obtener(codEmpresa, cod_plazo_bono);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrPlazosBonificacion_Asignaciones_Guardar")]
         public ErrorDto CrPlazosBonificacion_Asignaciones_Guardar(
             int codEmpresa,

@@ -20,11 +20,13 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoCausas_Obtener")]
         public ErrorDto<List<CrSeguimientoCausasData>> CR_SeguimientoCausas_Obtener(int codEmpresa, [FromBody] CrSeguimientoCausasObtenerRequest request)
             => _bl.CR_SeguimientoCausas_Obtener(codEmpresa, request);
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_SeguimientoCausas_Actualizar")]
         public ErrorDto<bool> CR_SeguimientoCausas_Actualizar(int codEmpresa, [FromBody] CrSeguimientoCausasActualizarRequest request)
              => _bl.CR_SeguimientoCausas_Actualizar(codEmpresa, request);

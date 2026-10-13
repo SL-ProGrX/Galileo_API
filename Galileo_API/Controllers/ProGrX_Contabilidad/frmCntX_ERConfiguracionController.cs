@@ -23,6 +23,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CargarTiposCuenta(codEmpresa, codContabilidad, tipo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("GuardarTiposCuenta")]
         public ErrorDto<bool> GuardarTiposCuenta(int codEmpresa,int codContabilidad,string usuario,string tipo, List<CntxTipoCuentaERDto> data)
         {

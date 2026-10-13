@@ -47,6 +47,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             [FromQuery] int areaActual)
             => _bl.AreaCuenta_Existe(codEmpresa, codigoConta, cuentaNodo, areaActual);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Area_Eliminar")]
         public ActionResult<ErrorDto<bool>> Area_Eliminar(
             [FromQuery] int codEmpresa,
@@ -54,6 +55,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             [FromQuery] int areaActual)
             => _bl.Area_Eliminar(codEmpresa, codigoConta, areaActual);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AreaCuenta_Insertar")]
         public ActionResult<ErrorDto<bool>> AreaCuenta_Insertar(
             [FromQuery] int codEmpresa,
@@ -77,6 +79,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             [FromQuery] int areaActual)
             => _bl.AreaCuenta_ExistePorCuenta(codEmpresa, codigoConta, codCuenta, areaActual);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AreaCuenta_InsertarMadre")]
         public ActionResult<ErrorDto<bool>> AreaCuenta_InsertarMadre(
             [FromQuery] int codEmpresa,
@@ -85,6 +88,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             [FromQuery] string cuentaMadre)
             => _bl.AreaCuenta_InsertarMadre(codEmpresa, codigoConta, areaActual, cuentaMadre);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AreaDefinicion_Insertar")]
         public ActionResult<ErrorDto<int>> AreaDefinicion_Insertar(
             [FromQuery] int codEmpresa,
@@ -107,6 +111,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             [FromQuery] string unidadActual)
             => _bl.CentroCostos_ListaPorUnidad(codEmpresa, codigoConta, unidadActual);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("AreaDefinicion_Eliminar")]
         public ActionResult<ErrorDto<bool>> AreaDefinicion_Eliminar(
             [FromQuery] int codEmpresa,

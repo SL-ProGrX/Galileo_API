@@ -45,6 +45,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Marca un ticket como visto.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPatch("MarcaVisto_Actualizar")]
         public ErrorDto MarcaVisto_Actualizar(int CodEmpresa, string ticket, string visto, string usuario)
             => _bl.MarcaVisto_Actualizar(CodEmpresa, ticket, visto, usuario);
@@ -57,6 +58,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Importa un ticket de Zoho como registro de beneficio.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("IncluirTicket_Guardar")]
         public ErrorDto IncluirTicket_Guardar(int CodEmpresa, [FromBody] ZohoTicketAdd jsonZoho)
             => _bl.IncluirTicket_Guardar(CodEmpresa, jsonZoho);

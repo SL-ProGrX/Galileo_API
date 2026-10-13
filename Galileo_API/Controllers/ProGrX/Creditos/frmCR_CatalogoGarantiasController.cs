@@ -24,12 +24,14 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrGarantiaTipos_Obtener(codEmpresa);
         }
         
+        [ValidateAntiForgeryToken]
         [HttpPost("CrGarantiaTipos_Guardar")]
         public ErrorDto CrGarantiaTipos_Guardar(int codEmpresa, string usuario, CrGarantiaTiposData request)
         {
             return _bl.CrGarantiaTipos_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CrGarantiaTipos_Eliminar")]
         public ErrorDto CrGarantiaTipos_Eliminar(int codEmpresa, string garantia, string usuario)
         {

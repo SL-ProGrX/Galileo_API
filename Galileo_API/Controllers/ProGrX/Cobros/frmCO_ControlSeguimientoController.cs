@@ -79,6 +79,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return BL.CO_ControlSeguimiento_HistOficiales_Lista_Export(CodEmpresa, parametros);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_ControlSeguimiento_HistOficiales_Actualizar")]
         public ErrorDto CO_ControlSeguimiento_HistOficiales_Actualizar(int CodEmpresa, CoControlSegHistOficialActualizarDto data)
         {
@@ -110,6 +111,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CO_ControlSeguimiento_Registrar")]
         public ErrorDto CO_ControlSeguimiento_Registrar(int CodEmpresa, CoControlSegRegistrarDto data)
         {

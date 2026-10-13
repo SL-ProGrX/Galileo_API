@@ -22,6 +22,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
                 => _bl.CoInsolventes_Buscar(codEmpresa, request);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CoInsolventes_Registrar")]
         public ErrorDto<CbrSpMovimientoResult> CoInsolventes_Registrar(
                  int codEmpresa,
@@ -30,6 +31,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
              => _bl.CoInsolventes_Registrar(codEmpresa, request, usuario);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CoInsolventes_Reversar")]
         public ErrorDto<CbrSpMovimientoResult> CoInsolventes_Reversar(
              int codEmpresa,

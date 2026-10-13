@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PromesasPago_Consulta")]
         public ErrorDto<List<PromesasPagoConsultaResult>> PromesasPago_Consulta([FromBody] PromesasPagoConsultaParams param)
         {

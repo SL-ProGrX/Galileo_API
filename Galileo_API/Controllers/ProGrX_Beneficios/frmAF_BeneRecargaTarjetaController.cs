@@ -69,24 +69,28 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Inserta una remesa de tarjetas.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiTarjetasRemesa_Insertar")]
         public ErrorDto AfiTarjetasRemesa_Insertar(int CodCliente, [FromBody] AfiBeneTarjetasRemesasData remesa)
             => _bl.AfiTarjetasRemesa_Insertar(CodCliente, remesa);
 
         /// <summary>Actualiza una remesa de tarjetas.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPut("AfiTarjetasRemesa_Actualizar")]
         public ErrorDto AfiTarjetasRemesa_Actualizar(int CodCliente, [FromBody] AfiBeneTarjetasRemesasData remesa)
             => _bl.AfiTarjetasRemesa_Actualizar(CodCliente, remesa);
 
         /// <summary>Elimina una remesa de tarjetas.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfiTarjetasRemesa_Eliminar")]
         public ErrorDto AfiTarjetasRemesa_Eliminar(int CodCliente, long cod_remesa)
             => _bl.AfiTarjetasRemesa_Eliminar(CodCliente, cod_remesa);
 
         /// <summary>Inserta una tarjeta de regalo.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiTarjetasRegalo_Insertar")]
         public ErrorDto AfiTarjetasRegalo_Insertar(
             int CodCliente,
@@ -97,6 +101,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Actualiza una tarjeta de regalo.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPut("AfiTarjetasRegalo_Actualizar")]
         public ErrorDto AfiTarjetasRegalo_Actualizar(
             int CodCliente,
@@ -107,6 +112,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Recarga las tarjetas de regalo.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiTarjetasRegalo_Recargar")]
         public ErrorDto AfiTarjetasRegalo_Recargar(
             int CodCliente,
@@ -117,12 +123,14 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Elimina una tarjeta de regalo.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfiTarjetasRegalo_Eliminar")]
         public ErrorDto AfiTarjetasRegalo_Eliminar(int CodCliente, int id_tr)
             => _bl.AfiTarjetasRegalo_Eliminar(CodCliente, id_tr);
 
         /// <summary>Envía por correo la solicitud de pago de recarga de tarjetas.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfiTarjetasRegaloRecargadas_Enviar")]
         public Task<ErrorDto> AfiTarjetasRegaloRecargadas_Enviar(int CodCliente, [FromBody] DocArchivoBeneRecargaTarjetaDto parametros)
             => _bl.AfiTarjetasRegaloRecargadas_Enviar(CodCliente, parametros);

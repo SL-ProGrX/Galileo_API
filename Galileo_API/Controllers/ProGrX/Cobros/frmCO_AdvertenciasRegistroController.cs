@@ -28,6 +28,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CoAdvertenciasRegistro_Guardar")]
         public ErrorDto<int> CoAdvertenciasRegistro_Guardar(int CodEmpresa, string usuario, CoAdvertenciasRegistroData datos)
         {
@@ -35,6 +36,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CoAdvertenciasRegistro_Delete")]
         public ErrorDto CoAdvertenciasRegistro_Delete(int CodEmpresa, string usuario, string cedula, string cod_advertencia, int linea)
         {
@@ -70,6 +72,7 @@ namespace Galileo.Controllers.ProGrX.Cobros
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CoAdvertenciasRegistroResolucion_Guardar")]
         public ErrorDto CoAdvertenciasRegistroResolucion_Guardar(int CodEmpresa, string usuario, CoAdvertenciasRegistroData datos)
         {

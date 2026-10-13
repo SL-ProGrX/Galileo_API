@@ -51,30 +51,35 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Inserta una categoría de beneficios.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneficiosCategorias_Agregar")]
         public ErrorDto BeneficiosCategorias_Agregar(int CodEmpresa, [FromBody] BeneCategoria request)
             => _bl.BeneficiosCategorias_Agregar(CodEmpresa, request);
 
         /// <summary>Actualiza una categoría de beneficios.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPut("BeneficiosCategorias_Actualizar")]
         public ErrorDto BeneficiosCategorias_Actualizar(int CodEmpresa, [FromBody] BeneCategoria request)
             => _bl.BeneficiosCategorias_Actualizar(CodEmpresa, request);
 
         /// <summary>Elimina una categoría de beneficios.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("BeneficiosCategorias_Eliminar")]
         public ErrorDto BeneficiosCategorias_Eliminar(int CodEmpresa, string id)
             => _bl.BeneficiosCategorias_Eliminar(CodEmpresa, id);
 
         /// <summary>Guarda una validación de categoría (inserta o actualiza).</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("BeneCategoriaValida_Guardar")]
         public ErrorDto BeneCategoriaValida_Guardar(int CodCliente, [FromBody] BeneCategoriaValidaLista valida)
             => _bl.BeneCategoriaValida_Guardar(CodCliente, valida);
 
         /// <summary>Registra los permisos de un usuario en una categoría.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("registroPermisosCategoria")]
         public ErrorDto registroPermisosCategoria(int CodCliente, string Cod_Categoria, [FromBody] BeneCategoriaPermisos request)
             => _bl.registroPermisosCategoria(CodCliente, Cod_Categoria, request);

@@ -17,10 +17,12 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             _bl = new FrmCntXDiferidosGeneracionBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Diferidos_Pendientes_Lista")]
         public ActionResult<ErrorDto<List<CntXDiferidoPendienteDto>>> Diferidos_Pendientes_Lista([FromQuery] int codEmpresa, [FromBody] CntXDiferidoPendienteParams param)
             => _bl.Diferidos_Pendientes_Lista(codEmpresa, param);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Diferido_Asiento")]
         public ActionResult<ErrorDto<CntXDiferidoAsientoResult?>> Diferido_Asiento([FromQuery] int codEmpresa, [FromBody] CntXDiferidoAsientoParams param)
             => _bl.Diferido_Asiento(codEmpresa, param);

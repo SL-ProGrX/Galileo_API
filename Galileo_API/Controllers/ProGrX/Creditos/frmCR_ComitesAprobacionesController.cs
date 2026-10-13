@@ -66,6 +66,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ComitesAprobaciones_Solicitudes_Obtener")]
         public ErrorDto<CrComitesAprobacionesSolicitudesLista> CR_ComitesAprobaciones_Solicitudes_Obtener(int CodEmpresa, [FromBody] CrComitesAprobacionesSolicitudRequest request)
         {
@@ -155,6 +156,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ComitesAprobaciones_Resolucion_Guardar")]
         public ErrorDto CR_ComitesAprobaciones_Resolucion_Guardar(int CodEmpresa, [FromBody] CrComitesAprobacionesResolucionRequest request)
         {
@@ -167,6 +169,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ComitesAprobaciones_Causas_Guardar")]
         public ErrorDto CR_ComitesAprobaciones_Causas_Guardar(int CodEmpresa, [FromBody] CrComitesAprobacionesCausasGuardarRequest request)
         {
@@ -186,6 +189,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ComitesAprobaciones_ActaNueva_Crear")]
         public ErrorDto<CrComitesAprobacionesActaActual> CR_ComitesAprobaciones_ActaNueva_Crear(int CodEmpresa, int id_comite, string usuario)
         {
@@ -193,6 +197,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ComitesAprobaciones_Acta_Guardar")]
         public ErrorDto CR_ComitesAprobaciones_Acta_Guardar(int CodEmpresa, [FromBody] CrComitesAprobacionesActaGuardarRequest request)
         {
@@ -205,6 +210,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ComitesAprobaciones_Acta_Cerrar")]
         public ErrorDto CR_ComitesAprobaciones_Acta_Cerrar(int CodEmpresa, int id_comite, string acta, string usuario)
         {
@@ -219,6 +225,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ComitesAprobaciones_ActaAsistencia_Guardar")]
         public ErrorDto CR_ComitesAprobaciones_ActaAsistencia_Guardar(int CodEmpresa, [FromBody] CrComitesAprobacionesActaAsistenciaGuardarRequest request)
         {

@@ -27,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Inserta un lote de beneficios.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Beneficio_Lote_Carga_Insertar")]
         public ErrorDto Beneficio_Lote_Carga_Insertar(int CodEmpresa, [FromBody] string beneficio)
             => _bl.Beneficio_Lote_Carga_Insertar(CodEmpresa, beneficio);
@@ -39,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
 
         /// <summary>Procesa un lote de beneficios.</summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Beneficio_Lote_Procesa")]
         public ErrorDto Beneficio_Lote_Procesa(int CodEmpresa, string cod_beneficio, string usuario, string Formato)
             => _bl.Beneficio_Lote_Procesa(CodEmpresa, cod_beneficio, usuario, Formato);

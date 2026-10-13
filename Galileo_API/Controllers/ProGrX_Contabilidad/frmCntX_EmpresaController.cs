@@ -21,6 +21,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXEmpresa_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CntXEmpresa_Guardar")]
         public ErrorDto CntXEmpresa_Guardar(int codEmpresa, string usuario, CntXEmpresaDto request)
         {

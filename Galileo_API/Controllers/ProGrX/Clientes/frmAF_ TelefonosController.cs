@@ -33,6 +33,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Telefono_Insertar")]
         public ErrorDto AF_Telefono_Insertar(int CodEmpresa, AfTelefonoGuardarRequest request)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Telefono_Actualizar")]
         public ErrorDto AF_Telefono_Actualizar(int CodEmpresa, AfTelefonoGuardarRequest request)
         {
@@ -47,6 +49,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Telefono_Eliminar")]
         public ErrorDto AF_Telefono_Eliminar(int CodEmpresa, int telefonoId)
         {

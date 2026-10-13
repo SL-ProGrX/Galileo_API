@@ -54,6 +54,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_CambioTasas_Linea_Describir(codEmpresa, codigo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_CambioTasas_Consultar")]
         public ErrorDto<CrCambioTasasConsultaResponse> CR_CambioTasas_Consultar(
             int codEmpresa,
@@ -62,6 +63,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_CambioTasas_Consultar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_CambioTasas_Aplicar")]
         public ErrorDto CR_CambioTasas_Aplicar(
             int codEmpresa,
