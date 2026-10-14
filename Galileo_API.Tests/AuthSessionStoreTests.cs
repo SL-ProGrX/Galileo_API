@@ -4,6 +4,8 @@ using Galileo.DataBaseTier.Auth;
 using Galileo.Controllers;
 using Galileo.Models.Auth;
 using Galileo_API.Filters;
+using Galileo.DataBaseTier;
+using Galileo_API.Controllers.ProGrX.Cajas;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +16,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
+using System.Security.Claims;
 
 namespace Galileo_API.Tests;
 
@@ -291,5 +294,52 @@ public sealed class AntiforgeryFailureDetailsFilterTests
     private sealed class FailedAntiforgeryResult : IActionResult, IAntiforgeryValidationFailedResult
     {
         public Task ExecuteResultAsync(ActionContext context) => Task.CompletedTask;
+    }
+}
+
+public sealed class EmpresaAccessFilterTests
+{
+    [Fact]
+    public async Task CajasRoeImprime_uses_existing_company_filter_and_client_query_name()
+    {
+        var method = typeof(FrmCajasRoeController).GetMethod("Cajas_Roe_spImprime_Ejecutar")!;
+        var companyParameter = method.GetParameters()[0];
+
+        Assert.Equal("CodEmpresa", companyParameter.Name);
+
+        var context = new ActionExecutingContext(
+            new ActionContext(new DefaultHttpContext(), new RouteData(), new ActionDescriptor()),
+            new List<IFilterMetadata>(),
+            new Dictionary<string, object?> { [companyParameter.Name!] = 42 },
+            new object());
+        var filter = new EmpresaAccessFilter(new ConfigurationBuilder().Build());
+        var actionExecuted = false;
+
+        await filter.OnActionExecutionAsync(context, () =>
+        {
+            actionExecuted = true;
+            return Task.FromResult(new ActionExecutedContext(context, new List<IFilterMetadata>(), new object()));
+        });
+
+        Assert.IsType<UnauthorizedResult>(context.Result);
+        Assert.False(actionExecuted);
+    }
+}
+
+public sealed class EmpresaSelectionAuthorizationTests
+{
+    [Fact]
+    public void Security_company_list_rejects_a_different_user()
+    {
+        var controller = new FrmPgxClientesClasificaController(new ConfigurationBuilder().Build())
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+        };
+        controller.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
+            new[] { new Claim("UserName", "pedro") }, "test"));
+
+        var result = controller.Cliente_Selecciona_ObtenerTodos("maria");
+
+        Assert.IsType<ForbidResult>(result.Result);
     }
 }

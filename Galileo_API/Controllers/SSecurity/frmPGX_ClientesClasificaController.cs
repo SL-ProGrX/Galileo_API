@@ -3,6 +3,7 @@ using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace Galileo.Controllers
 {
@@ -44,9 +45,17 @@ namespace Galileo.Controllers
 
         [HttpGet("Cliente_Selecciona_ObtenerTodos")]
         [Authorize]
-        public List<ClienteSelecciona> Cliente_Selecciona_ObtenerTodos(string usuario)
+        public ActionResult<List<ClienteSelecciona>> Cliente_Selecciona_ObtenerTodos(string usuario)
         {
-            return ClientesClasificaBL.Cliente_Selecciona_ObtenerTodos(usuario);
+            var usuarioAutenticado = User.FindFirst("UserName")?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+            if (string.IsNullOrWhiteSpace(usuarioAutenticado) ||
+                !string.Equals(usuarioAutenticado.Trim(), usuario?.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return Forbid();
+            }
+
+            return Ok(ClientesClasificaBL.Cliente_Selecciona_ObtenerTodos(usuarioAutenticado));
         }
     }
 }
