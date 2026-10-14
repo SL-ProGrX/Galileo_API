@@ -153,8 +153,9 @@ public sealed class AuthBL
             }
 
             var tieneAccesoEmpresa = empresas.Result.Any(empresa =>
-                (int.TryParse(empresa.Cod_Empresa, out var codEmpresa) && codEmpresa == request.EmpresaId) ||
-                (int.TryParse(empresa.CodEmpresa, out codEmpresa) && codEmpresa == request.EmpresaId));
+                string.Equals(empresa.usuario?.Trim(), username, StringComparison.OrdinalIgnoreCase) &&
+                ((int.TryParse(empresa.Cod_Empresa, out var codEmpresa) && codEmpresa == request.EmpresaId) ||
+                 (int.TryParse(empresa.CodEmpresa, out codEmpresa) && codEmpresa == request.EmpresaId)));
             if (!tieneAccesoEmpresa)
             {
                 return new AuthResponseDto
