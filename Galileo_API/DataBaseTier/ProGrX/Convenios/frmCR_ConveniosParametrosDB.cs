@@ -161,46 +161,61 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
         {
             var valor = (entrada ?? string.Empty).Trim();
 
-            switch ((tipo ?? string.Empty).Trim().ToUpperInvariant())
+            return (tipo ?? string.Empty).Trim().ToUpperInvariant() switch
             {
-                case "DEC":
-                case "POR":
-                    return decimal.TryParse(valor.Replace(",", "."), NumberStyles.Number,
-                            CultureInfo.InvariantCulture, out var dec)
-                        ? (true, dec.ToString(CultureInfo.InvariantCulture), null)
-                        : (false, string.Empty, MsgValorInvalido);
-
-                case "NUM":
-                    return long.TryParse(valor, NumberStyles.Integer, CultureInfo.InvariantCulture, out var num)
-                        ? (true, num.ToString(CultureInfo.InvariantCulture), null)
-                        : (false, string.Empty, MsgValorInvalido);
-
-                case "CTA":
-                    var cuenta = _cntLinkDb.fxgCntCuentaFormato(codEmpresa, false, valor, 0);
-                    return cuenta.Length > 0 && _cntLinkDb.fxgCntCuentaValida(codEmpresa, cuenta)
-                        ? (true, cuenta, null)
-                        : (false, string.Empty, MsgCuentaInvalida);
-
-                case "CHR":
-                    return valor.Contains('\'')
-                        ? (false, string.Empty, "El valor indicado contiene caracteres no válidos...!!!")
-                        : (true, valor, null);
-
-                case "PSN":
-                    var letra = valor.Length > 0 ? valor[..1].ToUpperInvariant() : string.Empty;
-                    return letra is "S" or "N"
-                        ? (true, letra, null)
-                        : (false, string.Empty, "El valor indicado no es válido > Indique [S] ó [N]...!!!");
-
-                case "DTS":
-                    return TryParseFecha(valor, out var fecha)
-                        ? (true, fecha.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture), null)
-                        : (false, string.Empty, "La Fecha indicada no es válida...!!!");
-
-                default:
-                    return (true, valor, null);
-            }
+                "DEC" or "POR" => NormalizarDecimal(valor),
+                "NUM" => NormalizarEntero(valor),
+                "CTA" => NormalizarCuenta(codEmpresa, valor),
+                "CHR" => NormalizarTexto(valor),
+                "PSN" => NormalizarSiNo(valor),
+                "DTS" => NormalizarFecha(valor),
+                _ => Valido(valor)
+            };
         }
+
+        private static (bool ok, string valor, string? mensaje) Valido(string valor)
+            => (true, valor, null);
+
+        private static (bool ok, string valor, string? mensaje) Invalido(string mensaje)
+            => (false, string.Empty, mensaje);
+
+        private static (bool ok, string valor, string? mensaje) NormalizarDecimal(string valor)
+            => decimal.TryParse(valor.Replace(",", "."), NumberStyles.Number, CultureInfo.InvariantCulture, out var dec)
+                ? Valido(dec.ToString(CultureInfo.InvariantCulture))
+                : Invalido(MsgValorInvalido);
+
+        private static (bool ok, string valor, string? mensaje) NormalizarEntero(string valor)
+            => long.TryParse(valor, NumberStyles.Integer, CultureInfo.InvariantCulture, out var num)
+                ? Valido(num.ToString(CultureInfo.InvariantCulture))
+                : Invalido(MsgValorInvalido);
+
+        private (bool ok, string valor, string? mensaje) NormalizarCuenta(int codEmpresa, string valor)
+        {
+            var cuenta = _cntLinkDb.fxgCntCuentaFormato(codEmpresa, false, valor, 0);
+
+            return cuenta.Length > 0 && _cntLinkDb.fxgCntCuentaValida(codEmpresa, cuenta)
+                ? Valido(cuenta)
+                : Invalido(MsgCuentaInvalida);
+        }
+
+        private static (bool ok, string valor, string? mensaje) NormalizarTexto(string valor)
+            => valor.Contains('\'')
+                ? Invalido("El valor indicado contiene caracteres no válidos...!!!")
+                : Valido(valor);
+
+        private static (bool ok, string valor, string? mensaje) NormalizarSiNo(string valor)
+        {
+            var letra = valor.Length > 0 ? valor[..1].ToUpperInvariant() : string.Empty;
+
+            return letra is "S" or "N"
+                ? Valido(letra)
+                : Invalido("El valor indicado no es válido > Indique [S] ó [N]...!!!");
+        }
+
+        private static (bool ok, string valor, string? mensaje) NormalizarFecha(string valor)
+            => TryParseFecha(valor, out var fecha)
+                ? Valido(fecha.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture))
+                : Invalido("La Fecha indicada no es válida...!!!");
 
         private static bool TryParseFecha(string valor, out DateTime fecha)
         {
