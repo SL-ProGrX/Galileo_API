@@ -161,6 +161,7 @@ public sealed class AuthController : ControllerBase
         return response.Status switch
         {
             "invalidCode" or "invalidChallenge" or AccountBlockedStatus or PasswordChangeRequiredStatus => Ok(response),
+            "accessDenied" => StatusCode(StatusCodes.Status403Forbidden, response),
             AuthenticationUnavailableStatus => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
             _ => Unauthorized(response),
         };
@@ -293,6 +294,7 @@ public sealed class AuthController : ControllerBase
         return response.Status switch
         {
             "mfaRequired" or PasswordChangeRequiredStatus or AccountBlockedStatus => Ok(response),
+            "accessDenied" => StatusCode(StatusCodes.Status403Forbidden, response),
             AuthenticationUnavailableStatus => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
             _ => Unauthorized(response),
         };
