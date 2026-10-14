@@ -34,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_ReportesRangosFecha_Filtros_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_ReportesRangosFecha_Reporte_Obtener")]
         public ErrorDto<FrmAhReportesRangosFechaReporteResponse> AH_ReportesRangosFecha_Reporte_Obtener(
             int CodEmpresa,

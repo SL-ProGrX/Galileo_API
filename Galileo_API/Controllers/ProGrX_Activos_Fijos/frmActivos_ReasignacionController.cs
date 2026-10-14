@@ -66,6 +66,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_Reasignacion_Motivos_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Reasignacion_CambioResponsable")]
         [Authorize]
         public ErrorDto<ActivosReasignacionesBoletaResult> Activos_Reasignacion_CambioResponsable(
@@ -103,6 +104,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
         
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Reasignacion_Boletas_Lote")]
         public ActionResult<ErrorDto<object>> Reasignacion_Boletas_Lote(int codEmpresa, ActivosReasignacionesBoletasLoteRequest request)
         {

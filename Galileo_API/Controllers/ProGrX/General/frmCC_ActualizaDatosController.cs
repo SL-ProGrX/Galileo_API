@@ -16,6 +16,7 @@ namespace Galileo_API.Controllers
             _bl = new FrmCcActualizaDatosBl(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_ActualizaDatos_Proceso_Ejecutar")]
         public ErrorDto
             CC_ActualizaDatos_Proceso_Ejecutar(

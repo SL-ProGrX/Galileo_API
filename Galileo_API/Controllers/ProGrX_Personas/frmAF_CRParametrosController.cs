@@ -25,6 +25,7 @@ namespace Galileo.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CRParametros_Guardar")]
         public ErrorDto AF_CRParametros_Guardar(int CodEmpresa, string usuario, [FromBody] AfCrParametrosData parametros)
         {

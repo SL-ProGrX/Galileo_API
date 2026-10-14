@@ -19,6 +19,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_GarantiaAvaluo_Obtener")]
         public ErrorDto<FrmVivGarantiaAvaluoRegistroResponse?> Viv_GarantiaAvaluo_Obtener(
     int codEmpresa,
@@ -27,6 +28,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.Viv_GarantiaAvaluo_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_GarantiaAvaluo_Guardar")]
         public ErrorDto Viv_GarantiaAvaluo_Guardar(
             int codEmpresa,
@@ -35,6 +37,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.Viv_GarantiaAvaluo_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_GarantiaAvaluoMonto_Guardar")]
         public ErrorDto<FrmVivGarantiaAvaluoMontoCambiarResponse?> Viv_GarantiaAvaluoMonto_Guardar(
             int codEmpresa,

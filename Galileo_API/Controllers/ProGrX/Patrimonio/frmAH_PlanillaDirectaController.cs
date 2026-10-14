@@ -45,6 +45,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
                 tipoAporte);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Ah_PlanillaDirecta_Cargado")]
         public ActionResult<ErrorDto<List<FrmAhPlanillaDirectaCargadoDto>>> Ah_PlanillaDirecta_Cargado(
             [FromQuery] int codEmpresa,
@@ -61,6 +62,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_PlanillaDirecta_Inconsistencias_Obtener(codEmpresa, numDoc);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Ah_PlanillaDirecta_Procesar")]
         public ActionResult<ErrorDto<FrmAhPlanillaDirectaProcesarResponse>> Ah_PlanillaDirecta_Procesar(
             [FromQuery] int codEmpresa,

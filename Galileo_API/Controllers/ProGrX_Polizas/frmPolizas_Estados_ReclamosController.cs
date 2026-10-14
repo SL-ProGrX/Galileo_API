@@ -34,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("EstadosReclamos_Guardar")]
         public ErrorDto<bool> EstadosReclamos_Guardar(int codEmpresa, [FromBody] PolizasEstadosReclamosSaveParams param)
         {
@@ -41,6 +42,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("EstadosReclamos_Eliminar")]
         public ErrorDto<bool> EstadosReclamos_Eliminar(int codEmpresa, [FromBody] PolizasEstadosReclamosDeleteParams param)
         {

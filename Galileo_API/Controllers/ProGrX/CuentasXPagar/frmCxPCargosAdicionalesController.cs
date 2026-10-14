@@ -24,24 +24,28 @@ namespace Galileo.Controllers
             return _bl.ObtenerCargosAdicionales(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ExisteCargoAdicional")]
         public ErrorDto ExisteCargoAdicional(int CodEmpresa, string CodCargo)
         {
             return _bl.ExisteCargoAdicional(CodEmpresa, CodCargo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("EliminarCargoAdicional")]
         public ErrorDto EliminarCargoAdicional(int CodEmpresa, string CodCargo)
         {
             return _bl.EliminarCargoAdicional(CodEmpresa, CodCargo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InsertarCargoAdicional")]
         public ErrorDto InsertarCargoAdicional(int CodEmpresa, CargosAdicionalDto Info)
         {
             return _bl.InsertarCargoAdicional(CodEmpresa, Info);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ActualizarCargoAdicional")]
         public ErrorDto ActualizarCargoAdicional(int CodEmpresa, CargosAdicionalDto Info)
         {

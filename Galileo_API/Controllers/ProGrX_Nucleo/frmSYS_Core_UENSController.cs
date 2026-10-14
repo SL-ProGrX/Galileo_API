@@ -23,6 +23,7 @@ namespace Galileo.Controllers
             return _bl.Core_UENS_Obtener(CodCliente, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Core_UENS_Upsert")]
         [Authorize]
         public ErrorDto Core_UENS_Upsert(int CodCliente, string usuario, CoreUeNsDto request)
@@ -30,6 +31,7 @@ namespace Galileo.Controllers
             return _bl.Core_UENS_Upsert(CodCliente, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Core_SubUnidad_Upsert")]
         [Authorize]
         public ErrorDto Core_SubUnidad_Upsert(int CodCliente, string usuario, string? unidad_anterior, CoreUeNsDto request)
@@ -37,6 +39,7 @@ namespace Galileo.Controllers
             return _bl.Core_SubUnidad_Upsert(CodCliente, usuario, unidad_anterior, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Core_SubCentroCosto_Upsert")]
         [Authorize]
         public ErrorDto Core_SubCentroCosto_Upsert(int CodCliente, string usuario, CoreUeNsDto request)
@@ -44,6 +47,7 @@ namespace Galileo.Controllers
             return _bl.Core_SubCentroCosto_Upsert(CodCliente, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Core_UENS_Delete")]
         [Authorize]
         public ErrorDto Core_UENS_Delete(int CodCliente, string cod_unidad)
@@ -51,6 +55,7 @@ namespace Galileo.Controllers
             return _bl.Core_UENS_Delete(CodCliente, cod_unidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Core_SubUnidad_Delete")]
         [Authorize]
         public ErrorDto Core_SubUnidad_Delete(int CodCliente, string cod_unidad, string cntx_unidad)
@@ -58,6 +63,7 @@ namespace Galileo.Controllers
             return _bl.Core_SubUnidad_Delete(CodCliente, cod_unidad, cntx_unidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Core_SubCentroCosto_Delete")]
         [Authorize]
         public ErrorDto Core_SubCentroCosto_Delete(int CodCliente, string cod_unidad)
@@ -72,6 +78,7 @@ namespace Galileo.Controllers
             return _bl.Core_Miembros_Obtener(CodCliente, cod_unidad, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Core_Miembros_Registro")]
         [Authorize]
         public ErrorDto Core_Miembros_Registro(int CodCliente, string cod_unidad, CoreUsuariosDto request)
@@ -86,6 +93,7 @@ namespace Galileo.Controllers
             return _bl.Core_Roles_Obtener(CodCliente, cod_unidad, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Core_Roles_Registro")]
         [Authorize]
         public ErrorDto Core_Roles_Registro(int CodCliente, string cod_unidad, CoreRolesDto request)

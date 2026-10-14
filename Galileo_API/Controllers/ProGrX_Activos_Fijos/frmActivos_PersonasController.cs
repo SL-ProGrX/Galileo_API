@@ -38,6 +38,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Personas_Guardar")]
         public ErrorDto Activos_Personas_Guardar(int CodEmpresa, string usuario,ActivosPersonasData persona)
         {
@@ -45,6 +46,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Activos_Personas_Eliminar")]
         public ErrorDto Activos_Personas_Eliminar(int CodEmpresa, string identificacion, string usuario)
         {
@@ -59,6 +61,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Personas_CambioDepto_Aplicar")]
         public ErrorDto<CambioDeptoResponse> Activos_Personas_CambioDepto_Aplicar(int CodEmpresa, string usuario, CambioDeptoRequest req)
         {
@@ -66,6 +69,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Personas_SincronizarRH")]
         public ErrorDto Activos_Personas_SincronizarRH(int CodEmpresa, string usuario)
         {
@@ -87,6 +91,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Personas_BoletaActivosAsignados_Lote")]
         public ActionResult<ErrorDto<object>> BoletaActivosAsignados_Lote(int codEmpresa, ActivosPersonasReporteLoteRequest request)
         {
@@ -94,6 +99,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Personas_ContratoResponsabilidad_Lote")]
         public ActionResult<ErrorDto<object>> ContratoResponsabilidad_Lote(int codEmpresa, ActivosPersonasReporteLoteRequest request)
         {

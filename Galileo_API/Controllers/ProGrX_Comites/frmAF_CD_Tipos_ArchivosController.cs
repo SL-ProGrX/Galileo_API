@@ -25,12 +25,14 @@ using Microsoft.AspNetCore.Mvc;
                 return _bl.TipoArchivoLista_Obtener(CodEmpresa, filtros);
             }
 
+            [ValidateAntiForgeryToken]
             [HttpPost("TipoArchivo_Guardar")]
             public ErrorDto TipoArchivo_Guardar(int CodEmpresa, string usuario, TipoArchivoData data)
             {
                 return _bl.TipoArchivo_Guardar(CodEmpresa, usuario, data);
             }
 
+            [ValidateAntiForgeryToken]
             [HttpDelete("TipoArchivo_Eliminar")]
             public ErrorDto TipoArchivo_Eliminar(int CodEmpresa, int id, string usuario)
             {

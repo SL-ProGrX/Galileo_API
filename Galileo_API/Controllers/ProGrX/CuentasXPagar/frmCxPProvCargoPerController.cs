@@ -53,18 +53,21 @@ namespace Galileo.Controllers
             return _bl.Pagos_Obtener(CodEmpresa, Cod_Proveedor, Id, pagina, paginacion, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cargo_Actualizar")]
         public ErrorDto Cargo_Actualizar(int CodEmpresa, CargoPerDto data)
         {
             return _bl.Cargo_Actualizar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cargo_Insertar")]
         public ErrorDto Cargo_Insertar(int CodEmpresa, CargoPerDto data)
         {
             return _bl.Cargo_Insertar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cargo_Eliminar")]
         public ErrorDto Cargo_Eliminar(int CodEmpresa, CargoPerDto data)
         {

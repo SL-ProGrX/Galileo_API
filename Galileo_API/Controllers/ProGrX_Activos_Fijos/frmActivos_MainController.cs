@@ -125,6 +125,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Main_Modificar")]
         public ErrorDto Activos_Main_Modificar(int CodEmpresa, MainGeneralData data, int aplicacionTotal, string usuario)
         {
@@ -132,6 +133,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Main_Guardar")]
         public ErrorDto Activos_Main_Guardar(int CodEmpresa, MainGeneralData data, string usuario)
         {
@@ -139,6 +141,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Activos_Main_Eliminar")]
         public ErrorDto Activos_Main_Eliminar(int CodEmpresa, string codigo, string usuario)
         {

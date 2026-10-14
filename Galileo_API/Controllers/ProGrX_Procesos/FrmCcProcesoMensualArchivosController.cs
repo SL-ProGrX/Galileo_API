@@ -23,6 +23,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
             _archivosBl = archivosBl;
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcProcesoMensual_GeneraDeducciones_Ejecutar")]
         public ErrorDto<CcProcesoMensualGeneraDeduccionesResponse> CcProcesoMensual_GeneraDeducciones_Ejecutar(
             int codEmpresa,
@@ -33,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("GenerarArchivo")]
         public ErrorDto<CcProcesoMensualArchivoGeneradoModel> GenerarArchivo_Ejecutar(
             int codEmpresa,

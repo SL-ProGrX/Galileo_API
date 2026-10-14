@@ -73,6 +73,7 @@ namespace Galileo_API.Controllers.ProGrX.ControlTramites
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_LiqSeguimientoRevisionesTag_Seleccion_Actualizar")]
         public ErrorDto<long?> FND_LiqSeguimientoRevisionesTag_Seleccion_Actualizar(int CodEmpresa, string? usuario, [FromBody] FndLiqSeguimientoRevisionesTagSeleccionRequest? request)
         {
@@ -80,6 +81,7 @@ namespace Galileo_API.Controllers.ProGrX.ControlTramites
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_LiqSeguimientoRevisionesTag_Aplicar")]
         public ErrorDto FND_LiqSeguimientoRevisionesTag_Aplicar(int CodEmpresa, string? usuario, [FromBody] FndLiqSeguimientoRevisionesTagAplicarRequest? request)
         {

@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.Viv_Coberturas_Cargar(codEmpresa, numero_operacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_CoberturasResumen_Obtener")]
         public ErrorDto<FrmVivCoberturasResumenResponse> Viv_CoberturasResumen_Obtener(
             int codEmpresa,

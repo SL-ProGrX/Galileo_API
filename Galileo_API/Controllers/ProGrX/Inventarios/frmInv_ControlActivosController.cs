@@ -23,6 +23,7 @@ namespace Galileo.Controllers
             return _bl.InvControlActivosLista_Obtener(CodEmpresa, usuario, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvControlActivos_Actualizar")]
         public ErrorDto InvControlActivos_Actualizar(int CodEmpresa, InvControlActivosDto activo)
         {

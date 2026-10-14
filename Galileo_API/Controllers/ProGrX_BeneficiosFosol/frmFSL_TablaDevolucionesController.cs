@@ -48,6 +48,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "FSL_TablaDevoluciones_Devolucion_Registrar")]
         public ErrorDto
@@ -62,6 +63,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut(
             "FSL_TablaDevoluciones_Devolucion_Actualizar")]
         public ErrorDto
@@ -76,6 +78,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete(
             "FSL_TablaDevoluciones_Devolucion_Eliminar")]
         public ErrorDto

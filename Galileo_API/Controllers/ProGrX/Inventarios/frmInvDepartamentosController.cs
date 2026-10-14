@@ -24,18 +24,21 @@ namespace Galileo.Controllers
             return DepartamentosBL.Departamentos_Obtener(CodCliente, pagina, paginacion, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Departamentos_Insertar")]
         public ErrorDto Departamentos_Insertar(int CodEmpresa, string usuario, DepartamentosDto request)
         {
             return DepartamentosBL.Departamentos_Insertar(CodEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Departamentos_Actualizar")]
         public ErrorDto Departamentos_Actualizar(int CodEmpresa, string usuario, DepartamentosDto request)
         {
             return DepartamentosBL.Departamentos_Actualizar(CodEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Departamentos_Eliminar")]
         public ErrorDto Departamentos_Eliminar(int CodEmpresa, string departamento, string usuario)
         {
@@ -48,12 +51,14 @@ namespace Galileo.Controllers
             return DepartamentosBL.Asignaciones_ObtenerTodos(CodEmpresa, departamento);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Asignaciones_Insertar")]
         public ErrorDto Asignaciones_Insertar(int CodEmpresa, AsignacionesDto request)
         {
             return DepartamentosBL.Asignaciones_Insertar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Asignaciones_Eliminar")]
         public ErrorDto Asignaciones_Eliminar(int CodEmpresa, string Cod_Departamento, string Cod_Prodclas)
         {

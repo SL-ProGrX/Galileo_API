@@ -25,12 +25,14 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Crd_PolizasProcEnvio_Catalogo_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_PolizasProcEnvio_GridMeta_Obtener")]
         public ErrorDto<CrdPolizaGridMetaResponseDto> Crd_PolizasProcEnvio_GridMeta_Obtener(int CodEmpresa, CrdPolizaGridMetaRequestDto req)
         {
             return _bl.Crd_PolizasProcEnvio_GridMeta_Obtener(CodEmpresa, req);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_PolizasProcEnvio_Consultar")]
         public ErrorDto<CrdPolizaConsultaResponseDto> Crd_PolizasProcEnvio_Consultar(
           int CodEmpresa,

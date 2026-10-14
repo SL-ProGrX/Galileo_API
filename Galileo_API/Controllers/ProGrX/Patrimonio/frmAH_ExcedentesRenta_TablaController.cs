@@ -25,6 +25,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_ExcedentesRentaTabla_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_ExcedentesRentaTabla_Guardar")]
         public ErrorDto AH_ExcedentesRentaTabla_Guardar(
             [FromQuery] int codEmpresa,
@@ -34,6 +35,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_ExcedentesRentaTabla_Guardar(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("AH_ExcedentesRentaTabla_Eliminar")]
         public ErrorDto AH_ExcedentesRentaTabla_Eliminar(
             [FromQuery] int codEmpresa,

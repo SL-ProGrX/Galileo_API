@@ -24,11 +24,13 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             => _bl.Enfermedades_Lista(codEmpresa);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Enfermedades_Guardar")]
         public ErrorDto<bool> Enfermedades_Guardar(int codEmpresa, [FromBody] EnfermedadVidaSaveParams param)
             => _bl.Enfermedades_Guardar(codEmpresa, param);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Enfermedades_Eliminar")]
         public ErrorDto<bool> Enfermedades_Eliminar(int codEmpresa, [FromBody] EnfermedadVidaDeleteParams param)
             => _bl.Enfermedades_Eliminar(codEmpresa, param);

@@ -36,6 +36,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.TES_transaccionesAsientos_Obtener(CodEmpresa, filtrosTransacciones, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Traslado_Generar")]
         public ErrorDto TES_Traslado_Generar(int CodEmpresa, string trasladoLista)
         {

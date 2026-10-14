@@ -51,12 +51,14 @@ namespace Galileo.Controllers
             return _bl.Cuentas_Obtener(CodEmpresa, Identificacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Proveedor_Actualizar")]
         public ErrorDto Proveedor_Actualizar(int CodEmpresa, ProveedorDto request)
         {
             return _bl.Proveedor_Actualizar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Proveedor_Insertar")]
         public ErrorDto Proveedor_Insertar(int CodEmpresa, ProveedorDto request)
         {
@@ -64,6 +66,7 @@ namespace Galileo.Controllers
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Proveedor_Borrar")]
         public ErrorDto Proveedor_Borrar(int CodEmpresa, int Cod_Proveedor)
         {
@@ -83,18 +86,21 @@ namespace Galileo.Controllers
             return _bl.Autorizaciones_Obtener(CodEmpresa, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Autorizacion_Actualizar")]
         public ErrorDto Autorizacion_Actualizar(int CodEmpresa, Autorizacion request)
         {
             return _bl.Autorizacion_Actualizar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Autorizacion_Insertar")]
         public ErrorDto Autorizacion_Insertar(int CodEmpresa, Autorizacion request)
         {
             return _bl.Autorizacion_Insertar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Autorizacion_Borrar")]
         public ErrorDto Autorizacion_Borrar(int CodEmpresa, Autorizacion request)
         {
@@ -113,6 +119,7 @@ namespace Galileo.Controllers
             return _bl.Suspensiones_Obtener(CodEmpresa, Cod_Proveedor, pagina, paginacion, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Suspencion_InsertUpdate")]
         public ErrorDto Suspencion_InsertUpdate(int CodEmpresa, Suspension request)
         {
@@ -155,6 +162,7 @@ namespace Galileo.Controllers
             return _bl.ProveedorEventosLista_Obtener(CodEmpresa, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ProveedorEventos_Asigna")]
         public ErrorDto ProveedorEventos_Asigna(int CodEmpresa, int Cod_Proveedor,
             int Evento, bool Activa, string usuario)
@@ -162,12 +170,14 @@ namespace Galileo.Controllers
             return _bl.ProveedorEventos_Asigna(CodEmpresa, Cod_Proveedor, Evento, Activa, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CxPProveedoresUsuario_Agregar")]
         public ErrorDto CxPProveedoresUsuario_Agregar(int CodEmpresa, ProveedorUsuariosListaDatos datos)
         {
             return _bl.CxPProveedoresUsuario_Agregar(CodEmpresa, datos);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ProveedorUsuario_RenovarClaveWeb")]
         public ErrorDto ProveedorUsuario_RenovarClaveWeb(
             [FromQuery] int CodEmpresa,

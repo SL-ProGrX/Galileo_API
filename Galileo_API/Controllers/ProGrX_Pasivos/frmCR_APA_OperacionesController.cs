@@ -57,6 +57,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
             return _bl.CR_APA_Operacion_Obtener(codEmpresa, cod_acreedor, operacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_APA_Operacion_Insertar")]
         public ErrorDto<int> CR_APA_Operacion_Insertar(
             int codEmpresa,
@@ -65,6 +66,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
             return _bl.CR_APA_Operacion_Insertar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CR_APA_Operacion_Actualizar")]
         public ErrorDto<int> CR_APA_Operacion_Actualizar(
             int codEmpresa,
@@ -73,6 +75,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
             return _bl.CR_APA_Operacion_Actualizar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CR_APA_Operacion_Cerrar")]
         public ErrorDto<int> CR_APA_Operacion_Cerrar(
             int codEmpresa,
@@ -151,6 +154,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
             return _bl.CR_APA_Operaciones_UltimoPago_Obtener(codEmpresa, cod_acreedor, operacion, npago);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_APA_Operaciones_Pago_Insertar")]
         public ErrorDto<int> CR_APA_Operaciones_Pago_Insertar(
             int codEmpresa,
@@ -167,6 +171,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
             return _bl.CR_APA_Operaciones_Autorizados_Obtener(codEmpresa, cod_acreedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CR_APA_Operaciones_Pago_Autorizado_Actualizar")]
         public ErrorDto<int> CR_APA_Operaciones_Pago_Autorizado_Actualizar(
             int codEmpresa,

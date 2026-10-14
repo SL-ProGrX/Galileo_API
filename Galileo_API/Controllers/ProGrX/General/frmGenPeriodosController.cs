@@ -23,6 +23,7 @@ namespace Galileo.Controllers
             return _bl.Periodos_ObtenerTodos(CodEmpresa, estado);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Periodo_Cerrar")]
         public ErrorDto Periodo_Cerrar(int CodEmpresa, PeriodoDto periodoDto)
         {

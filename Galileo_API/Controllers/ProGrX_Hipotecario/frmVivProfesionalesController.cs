@@ -18,6 +18,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             _bl = new FrmVivProfesionalesBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("VivContactos_Lista")]
         public ActionResult<ErrorDto<List<VivContactoDto>>> VivContactos_Lista(
             [FromQuery] int codEmpresa,
@@ -28,6 +29,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
         public ActionResult<ErrorDto<List<DropDownListaGenericaModel>>> VivTiposId_Lista([FromQuery] int codEmpresa)
             => _bl.VivTiposId_Lista(codEmpresa);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrdSgtBancos_Lista")]
         public ActionResult<ErrorDto<List<CrdSgtBancoDto>>> CrdSgtBancos_Lista(
             [FromQuery] int codEmpresa,
@@ -52,12 +54,14 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             [FromQuery] int vCodigo)
             => _bl.VivContactos_EmpresaLista(codEmpresa, vCodigo);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CrdVivContacto_Add")]
         public ActionResult<ErrorDto<CrdVivContactoAddResult>> CrdVivContacto_Add(
             [FromQuery] int codEmpresa,
             [FromBody] CrdVivContactoAddParams param)
             => _bl.CrdVivContacto_Add(codEmpresa, param);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("VivContacto_Delete")]
         public ActionResult<ErrorDto<bool>> VivContacto_Delete(
             [FromQuery] int codEmpresa,
@@ -70,6 +74,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             [FromQuery] int vCodigo)
             => _bl.VivContactos_JuridicosLista(codEmpresa, vCodigo);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("VivContacto_SetEmpresa")]
         public ActionResult<ErrorDto<bool>> VivContacto_SetEmpresa(
             [FromQuery] int codEmpresa,

@@ -18,6 +18,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             _bl = new FrmVivConsultaHonorariosDetalleBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_ConsultaHonorariosDetalle_Obtener")]
         public ErrorDto<FrmVivConsultaHonorariosDetalleResponse> Viv_ConsultaHonorariosDetalle_Obtener(
             int codEmpresa,

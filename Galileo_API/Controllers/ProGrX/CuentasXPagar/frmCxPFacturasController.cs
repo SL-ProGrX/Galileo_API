@@ -66,12 +66,14 @@ namespace Galileo.Controllers
             return _bl.FacturaAsientos_Obtener(CodEmpresa, Cod_Factura, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FacturaNumero_Cambiar")]
         public ErrorDto FacturaNumero_Cambiar(int CodEmpresa, FacturaCambioNo request)
         {
             return _bl.FacturaNumero_Cambiar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FacturaImpuesto_Actualizar")]
         public ErrorDto FacturaImpuesto_Actualizar(int CodEmpresa, FacturaImpuesto data)
         {
@@ -90,6 +92,7 @@ namespace Galileo.Controllers
             return _bl.ConsultaAscDesc(CodEmpresa, Cod_Factura, tipo, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Factura_Anular")]
         public ErrorDto Factura_Anular(int CodEmpresa, FacturaAnular data)
         {
@@ -127,36 +130,42 @@ namespace Galileo.Controllers
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("FacturaAsientos_Borrar")]
         public ErrorDto FacturaAsientos_Borrar(int CodEmpresa, string Cod_Factura, int Cod_Proveedor)
         {
             return _bl.FacturaAsientos_Borrar(CodEmpresa, Cod_Factura, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("SaldoPagarProv_Actualizar")]
         public ErrorDto SaldoPagarProv_Actualizar(int CodEmpresa, decimal Saldo, decimal Saldo_Divisa, int Cod_Proveedor)
         {
             return _bl.SaldoPagarProv_Actualizar(CodEmpresa, Saldo, Saldo_Divisa, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FacturaAsiento_Insertar")]
         public ErrorDto FacturaAsiento_Insertar(int CodEmpresa, AsientoFactura data)
         {
             return _bl.FacturaAsiento_Insertar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PagoContado_Insertar")]
         public ErrorDto PagoContado_Insertar(int CodEmpresa, PagoContado data)
         {
             return _bl.PagoContado_Insertar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Factura_Insertar")]
         public ErrorDto Factura_Insertar(int CodEmpresa, FacturaDto data)
         {
             return _bl.Factura_Insertar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FacturaCompleta_Insertar")]
         public ErrorDto FacturaCompleta_Insertar(int CodEmpresa, FacturaGuardarCompleta data)
         {

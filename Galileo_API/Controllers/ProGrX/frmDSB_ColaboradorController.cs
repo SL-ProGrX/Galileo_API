@@ -62,6 +62,7 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Colaborador_Foto_Cambia")]
         public ActionResult<ErrorDto<bool>> Colaborador_Foto_Cambia(
             int CodEmpresa,
@@ -92,6 +93,7 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Colaborador_Acceso")]
         public ActionResult<ErrorDto<ColaboradorAccesoData>> Colaborador_Acceso(
             int CodEmpresa,
@@ -109,6 +111,7 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Colaborador_Clave_Reestablece")]
         public ActionResult<ErrorDto<ColaboradorClaveReestableceData>> Colaborador_Clave_Reestablece(
             int CodEmpresa,
@@ -129,6 +132,7 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Colaborador_Clave_Cambia")]
         public ActionResult<ErrorDto<bool>> Colaborador_Clave_Cambia(
             int CodEmpresa,
@@ -146,6 +150,7 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Colaborador_Menu_Obtener")]
         public ActionResult<ErrorDto<List<Dictionary<string, object?>>>> Colaborador_Menu_Obtener(
             int CodEmpresa,
@@ -166,6 +171,7 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Colaborador_Autorizacion_Registrar")]
         public ActionResult<ErrorDto<bool>> Colaborador_Autorizacion_Registrar(
             int CodEmpresa,
@@ -183,6 +189,7 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Colaborador_Traslado_Gestionar")]
         public ActionResult<ErrorDto<bool>> Colaborador_Traslado_Gestionar(
             int CodEmpresa,
@@ -200,6 +207,7 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Colaborador_Traslado_Configuracion_Obtener")]
         public ActionResult<ErrorDto<ColaboradorTrasladoConfiguracionData>> Colaborador_Traslado_Configuracion_Obtener(
             int CodEmpresa,
@@ -217,6 +225,7 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Colaborador_Traslado_Registrar")]
         public ActionResult<ErrorDto<ColaboradorTrasladoRegistroData>> Colaborador_Traslado_Registrar(
             int CodEmpresa,
@@ -234,6 +243,7 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Colaborador_Traslado_Detalle_Obtener")]
         public ActionResult<ErrorDto<List<ColaboradorTrasladoPlacaData>>> Colaborador_Traslado_Detalle_Obtener(
             int CodEmpresa,
@@ -251,6 +261,7 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Colaborador_Reporte_Obtener")]
         public IActionResult Colaborador_Reporte_Obtener(
             int CodEmpresa,
@@ -332,6 +343,7 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Colaborador_Solicitud_Configuracion_Obtener")]
         public ActionResult<ErrorDto<ColaboradorSolicitudConfiguracionData>> Colaborador_Solicitud_Configuracion_Obtener(
             int CodEmpresa,
@@ -352,6 +364,7 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Colaborador_Solicitud_Dias_Obtener")]
         public ActionResult<ErrorDto<int>> Colaborador_Solicitud_Dias_Obtener(
             int CodEmpresa,
@@ -372,6 +385,7 @@ namespace Galileo.Controllers.ProGrX
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Colaborador_Solicitud_Registrar")]
         public ActionResult<ErrorDto<ColaboradorSolicitudRegistroData>> Colaborador_Solicitud_Registrar(
             int CodEmpresa,

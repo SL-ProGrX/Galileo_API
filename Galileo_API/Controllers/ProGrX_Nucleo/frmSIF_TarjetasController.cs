@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_Tarjetas_Guardar")]
         public ErrorDto SIF_Tarjetas_Guardar(int CodEmpresa, string usuario, [FromBody] SifTarjetasData tarjeta)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("SIF_Tarjetas_Eliminar")]
         public ErrorDto SIF_Tarjetas_Eliminar(int CodEmpresa, string usuario, string cod_tarjeta)
         {
@@ -47,6 +49,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_Tarjetas_Valida")]
         public ErrorDto SIF_Tarjetas_Valida(int CodEmpresa, [FromBody] SifTarjetasData tarjeta)
         {

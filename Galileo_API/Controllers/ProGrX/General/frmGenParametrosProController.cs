@@ -18,6 +18,7 @@ namespace Galileo.Controllers
             _bl = new FrmGenParametrosProBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Gen_ParametrosPro_Inicializar")]
         public ErrorDto Gen_ParametrosPro_Inicializar(int CodEmpresa)
         {
@@ -30,24 +31,28 @@ namespace Galileo.Controllers
             return _bl.Gen_ParametrosPro_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Gen_ParametrosProGeneral_Actualizar")]
         public ErrorDto Gen_ParametrosProGeneral_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
         {
             return _bl.Gen_ParametrosProGeneral_Actualizar(CodEmpresa, usuario, parametros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Gen_ParametrosProCxP_Actualizar")]
         public ErrorDto Gen_ParametrosProCxP_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
         {
             return _bl.Gen_ParametrosProCxP_Actualizar(CodEmpresa, usuario, parametros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Gen_ParametrosProInv_Actualizar")]
         public ErrorDto Gen_ParametrosProInv_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
         {
             return _bl.Gen_ParametrosProInv_Actualizar(CodEmpresa, usuario, parametros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Gen_ParametrosProPos_Actualizar")]
         public ErrorDto Gen_ParametrosProPos_Actualizar(int CodEmpresa, string usuario, GenParametrosProData parametros)
         {

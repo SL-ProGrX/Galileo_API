@@ -39,12 +39,14 @@ namespace Galileo_API.Controllers
             return _bl.TES_Tipos_Movimientos_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("BitacoraEspecial_Buscar")]
         public ErrorDto<List<BitacoraEspecialDto>> BitacoraEspecial_Buscar(int codEmpresa, [FromBody] FiltrosBitacoraEspecial filtros)
         {
             return _bl.BitacoraEspecial_Buscar(codEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Historial_Actualizar")]
         public ErrorDto TES_Historial_Actualizar(int codEmpresa, string id, string usuario, string nsolicitud)
         {

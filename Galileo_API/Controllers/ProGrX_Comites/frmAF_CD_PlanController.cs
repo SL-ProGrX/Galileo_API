@@ -31,12 +31,14 @@ namespace Galileo_API.Controllers.ProGrX_Comites
             return _bl.AfCdPlanMensajes_Lista_Obtener(codEmpresa, codComite);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdPlanMensaje_Guardar")]
         public ErrorDto AfCdPlanMensaje_Guardar(int codEmpresa, AfCdPlanMensajeData request)
         {
             return _bl.AfCdPlanMensaje_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfCdPlanMensajes_Eliminar")]
         public ErrorDto AfCdPlanMensajes_Eliminar(int codEmpresa, string codComite, int numMensaje)
         {

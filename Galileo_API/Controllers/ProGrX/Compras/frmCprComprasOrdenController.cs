@@ -34,12 +34,14 @@ namespace Galileo.Controllers
             return _bl.OrdenesDetalle_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ComprasOrden_Guardar")]
         public ErrorDto ComprasOrden_Guardar(int CodEmpresa, ComprasOrdenDatos orden)
         {
             return _bl.ComprasOrden_Guardar(CodEmpresa, orden);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPatch("ComprasOrden_Actualizar")]
         public ErrorDto ComprasOrden_Actualizar(int CodEmpresa, ComprasOrdenDatos orden)
         {
@@ -70,12 +72,14 @@ namespace Galileo.Controllers
             return _bl.FacturasAutorizar_Obtener(CodEmpresa, usuario, proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Factura_AutorizarRechazar")]
         public ErrorDto Factura_AutorizarRechazar(int CodEmpresa,string usuario, string cod, string cod_factura, string justificacion)
         {
             return _bl.Factura_AutorizarRechazar(CodEmpresa, usuario, cod, cod_factura, justificacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ValidaAutorizacion")]
         public ErrorDto ValidaAutorizacion(int CodEmpresa, string usuario, string cod_orden)
         {

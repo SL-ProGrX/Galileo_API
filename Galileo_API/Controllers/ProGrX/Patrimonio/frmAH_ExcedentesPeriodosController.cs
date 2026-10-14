@@ -50,6 +50,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_ExcedentesPeriodos_Resumen_Lista(codEmpresa, periodoId);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Ah_ExcedentesPeriodos_Insertar")]
         public ActionResult<ErrorDto<FrmAhExcedentesPeriodosGuardarResponse>> Ah_ExcedentesPeriodos_Insertar(
             [FromQuery] int codEmpresa,
@@ -58,6 +59,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_ExcedentesPeriodos_Insertar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Ah_ExcedentesPeriodos_Actualizar")]
         public ActionResult<ErrorDto<FrmAhExcedentesPeriodosGuardarResponse>> Ah_ExcedentesPeriodos_Actualizar(
             [FromQuery] int codEmpresa,
@@ -66,6 +68,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_ExcedentesPeriodos_Actualizar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Ah_ExcedentesPeriodos_Eliminar")]
         public ActionResult<ErrorDto<bool>> Ah_ExcedentesPeriodos_Eliminar(
             [FromQuery] int codEmpresa,
@@ -75,6 +78,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_ExcedentesPeriodos_Eliminar(codEmpresa, periodoId, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Ah_ExcedentesPeriodos_BaseAplicacion_Actualizar")]
         public ActionResult<ErrorDto<bool>> Ah_ExcedentesPeriodos_BaseAplicacion_Actualizar(
             [FromQuery] int codEmpresa,
@@ -83,6 +87,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_ExcedentesPeriodos_BaseAplicacion_Actualizar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Ah_ExcedentesPeriodos_EstadoNota_Actualizar")]
         public ActionResult<ErrorDto<bool>> Ah_ExcedentesPeriodos_EstadoNota_Actualizar(
             [FromQuery] int codEmpresa,
@@ -91,6 +96,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_ExcedentesPeriodos_EstadoNota_Actualizar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Ah_ExcedentesPeriodos_RecalcularBase")]
         public ActionResult<ErrorDto<bool>> Ah_ExcedentesPeriodos_RecalcularBase(
             [FromQuery] int codEmpresa,
@@ -99,6 +105,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_ExcedentesPeriodos_RecalcularBase(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Ah_ExcedentesPeriodos_Visibilidad_Actualizar")]
         public ActionResult<ErrorDto<bool>> Ah_ExcedentesPeriodos_Visibilidad_Actualizar(
     [FromQuery] int codEmpresa,

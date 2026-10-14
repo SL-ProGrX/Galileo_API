@@ -64,6 +64,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     codExpediente);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "FSL_ExpedienteGestiones_Gestion_Agregar")]
         public ErrorDto

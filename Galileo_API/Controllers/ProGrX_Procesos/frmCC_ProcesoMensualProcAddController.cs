@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_PlanillaProcesosComplementarios_Guardar")]
         public ErrorDto CC_PlanillaProcesosComplementarios_Guardar(int CodEmpresa, string usuario, CcPlanillaProcesosComplementariosData data)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CC_PlanillaProcesosComplementarios_Eliminar")]
         public ErrorDto CC_PlanillaProcesosComplementarios_Eliminar(int CodEmpresa, string transaccion, int proc_num, string ejecucion_tipo, string usuario)
         {

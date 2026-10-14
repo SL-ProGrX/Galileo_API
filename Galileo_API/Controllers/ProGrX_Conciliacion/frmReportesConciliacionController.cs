@@ -116,6 +116,7 @@ namespace Galileo_API.Controllers.ProGrX.Conciliacion
             return _bl.CC_ReportesEstudio_Cuenta_Descripcion_Obtener(CodEmpresa, cuenta, codContabilidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_ReportesEstudio_Auxiliar_Generar")]
         [Authorize]
         public ErrorDto<CcReportesEstudioAuxiliarGenerarResult> CC_ReportesEstudio_Auxiliar_Generar(int CodEmpresa, [FromBody] CcReportesEstudioAuxiliarGenerarRequest? request)
@@ -128,6 +129,7 @@ namespace Galileo_API.Controllers.ProGrX.Conciliacion
         {
             return _bl.CC_ReportesEstudio_Carteras_Lista_Obtener(CodEmpresa);
         }
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_ReportesEstudio_Especial_Generar")]
         [Authorize]
         public ErrorDto<CcReportesEstudioEspecialReporteDto> CC_ReportesEstudio_Especial_Generar(int CodEmpresa, [FromBody] CcReportesEstudioEspecialRequest? request)

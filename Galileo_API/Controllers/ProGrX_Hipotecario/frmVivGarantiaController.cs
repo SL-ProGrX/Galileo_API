@@ -21,6 +21,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
 
         #region Principal
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_Garantia_Principal_Cargar")]
         public ErrorDto<FrmVivGarantiaPrincipalResponse> Viv_GarantiaPrincipal_Cargar(
             int codEmpresa,
@@ -29,6 +30,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.Viv_GarantiaPrincipal_Cargar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_Garantia_Guardar")]
         public ErrorDto<FrmVivGarantiaGuardarResponse> Viv_GarantiaGuardar(
     int codEmpresa,
@@ -41,6 +43,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
 
         #region General
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_Garantia_General_Listar")]
         public ErrorDto<List<FrmVivGarantiaGeneralItem>> Viv_GarantiaGeneral_Listar(
             int codEmpresa,
@@ -53,6 +56,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
 
         #region Garantia
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_GarantiaDetalle_Obtener")]
         public ErrorDto<FrmVivGarantiaDetalleResponse?> Viv_GarantiaDetalle_Obtener(
     int codEmpresa,
@@ -78,6 +82,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.Viv_GarantiaDistritos_Obtener(codEmpresa, provincia, canton);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_GarantiaProfesionales_Buscar")]
         public ErrorDto<FrmVivGarantiaProfesionalesBuscarResponse> Viv_GarantiaProfesionales_Buscar(
     int codEmpresa,
@@ -88,6 +93,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
         #endregion
 
         #region Derechos
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_GarantiaDerechos_Listar")]
         public ErrorDto<List<FrmVivGarantiaDerechoDuenoItem>> Viv_GarantiaDerechos_Listar(
             int codEmpresa,
@@ -96,6 +102,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.Viv_GarantiaDerechos_Listar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_GarantiaSocio_Obtener")]
         public ErrorDto<FrmVivGarantiaSocioItem?> Viv_GarantiaSocio_Obtener(
     int codEmpresa,
@@ -104,6 +111,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.Viv_GarantiaSocio_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_GarantiaSocios_Buscar")]
         public ErrorDto<FrmVivGarantiaSociosBuscarResponse> Viv_GarantiaSocios_Buscar(
     int codEmpresa,
@@ -112,6 +120,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.Viv_GarantiaSocios_Buscar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_GarantiaDerecho_Guardar")]
         public ErrorDto Viv_GarantiaDerecho_Guardar(
     int codEmpresa,
@@ -120,6 +129,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.Viv_GarantiaDerecho_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_GarantiaDerecho_Borrar")]
         public ErrorDto Viv_GarantiaDerecho_Borrar(
             int codEmpresa,
@@ -132,6 +142,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
 
         #region Historial del Tramite
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_GarantiaHistorial_Obtener")]
         public ErrorDto<FrmVivGarantiaHistorialResponse> Viv_GarantiaHistorial_Obtener(
     int codEmpresa,
@@ -144,6 +155,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
 
         #region Fincas
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_GarantiaFincasAsociadas_Listar")]
         public ErrorDto<List<FrmVivGarantiaFincaAsociadaItem>> Viv_GarantiaFincasAsociadas_Listar(
     int codEmpresa,
@@ -156,6 +168,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
 
         #region Notas
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_GarantiaNotas_Listar")]
         public ErrorDto<List<FrmVivGarantiaNotaTramiteItem>> Viv_GarantiaNotas_Listar(
     int codEmpresa,

@@ -22,12 +22,14 @@ namespace Galileo_API.Controllers.ProGrX_Personas
             return _bl.AF_Sectores_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Sectores_Guardar")]
         public ErrorDto AF_Sectores_Guardar([FromQuery] int codEmpresa, [FromQuery] string usuario, [FromBody] SectoresData sector)
         {
             return _bl.AF_Sectores_Guardar(codEmpresa, usuario, sector);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_Sectores_Eliminar")]
         public ErrorDto AF_Sectores_Eliminar([FromQuery] int codEmpresa, [FromQuery] string usuario, [FromQuery] int codSector)
         {

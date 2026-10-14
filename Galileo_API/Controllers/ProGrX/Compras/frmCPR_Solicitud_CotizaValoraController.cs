@@ -23,12 +23,14 @@ namespace Galileo.Controllers
             return _bl.CprSolicitudProveedoresLista_Obtener(CodEmpresa, consulta, cpr_id);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprSolicitudProveedor_Invitar")]
         public ErrorDto CprSolicitudProveedor_Invitar(int CodEmpresa, CprSolicitudProvDto proveedor)
         {
             return _bl.CprSolicitudProveedor_Invitar(CodEmpresa, proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CprSolicitudProveedor_Eliminar")]
         public ErrorDto CprSolicitudProveedor_Eliminar(int CodEmpresa, int proveedor_codigo, int cpr_id)
         {
@@ -55,6 +57,7 @@ namespace Galileo.Controllers
             return _bl.CprSolicitudProvValItemData_Obtener(CodEmpresa, parametros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprSolicitudProvCotizacion_Enviar")]
         public Task<ErrorDto> CprSolicitudProvCotizacion_Enviar(int CodEmpresa, int cpr_id, string cod_proveedor)
         {
@@ -62,6 +65,7 @@ namespace Galileo.Controllers
         }
 
        
+        [ValidateAntiForgeryToken]
         [HttpPost("CprSolicitudValoracion_Guardar")]
         public ErrorDto CprSolicitudValoracion_Guardar(int CodEmpresa, CprSolicitusValoracionGuardar datos)
         {

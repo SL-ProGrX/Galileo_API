@@ -35,6 +35,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             string identificacion) =>
             _bl.CC_Poliza_Beneficiarios_Padron_Obtener(identificacion);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_Poliza_Beneficiarios_Guardar")]
         public ErrorDto CC_Poliza_Beneficiarios_Guardar(
             int codEmpresa,

@@ -47,6 +47,7 @@ namespace Galileo.Controllers
             return _bl.Activos_Deterioros_Activos_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Deterioros_Guardar")]
         public ErrorDto Activos_Deterioros_Guardar(int CodEmpresa, string usuario, ActivosDeterioroData data)
         {
@@ -64,6 +65,7 @@ namespace Galileo.Controllers
             return _bl.Activos_Deterioros_ActivosNombre_Consultar(CodEmpresa, placa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Activos_Deterioros_Eliminar")]
         public ErrorDto Activos_Deterioros_Eliminar(int CodEmpresa, string usuario, string placa, int Id_AddRet)
         {

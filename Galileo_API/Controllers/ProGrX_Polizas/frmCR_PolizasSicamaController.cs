@@ -31,6 +31,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.fxFechaServidor(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_PolizasSicama_Genera")]
         public ErrorDto<bool> Cr_PolizasSicama_Genera(
             int codEmpresa,
@@ -40,6 +41,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Cr_PolizasSicama_Genera(codEmpresa, fechaCorte, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_PolizasSicama_Envio_Consulta")]
         public ErrorDto<List<CrPolizasSicamaEnvioRow>> Cr_PolizasSicama_Envio_Consulta(
          int CodEmpresa,
@@ -49,6 +51,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Cr_PolizasSicama_Envio_Consulta(CodEmpresa, Usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_PolizasSicama_Consulta_Obtener")]
         public ErrorDto<List<CrPolizasSicamaEnvioRow>> Cr_PolizasSicama_Consulta_Obtener(
            int CodEmpresa,
@@ -68,6 +71,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Cr_PolizasSicama_Beneficiarios_Lista(CodEmpresa, Usuario, poliza);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_PolizasSicama_PlanillaDirecta_Sube")]
         public ErrorDto Cr_FndPlanillaDirecta_Sube(
           int CodEmpresa,
@@ -77,6 +81,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Cr_FndPlanillaDirecta_Sube(CodEmpresa, Usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_PolizasSicama_PlanillaDirecta_Consulta")]
         public ErrorDto<List<CrFndPlanillaDirectaConsultaRowDto>>
             Cr_FndPlanillaDirecta_Consulta(

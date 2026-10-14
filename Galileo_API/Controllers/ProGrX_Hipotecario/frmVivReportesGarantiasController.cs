@@ -25,12 +25,14 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
             return _bl.FrmVivReportesGarantias_Combo_Obtener(CodEmpresa, tipo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FrmVivReportesGarantias_Reporte_Generar")]
         public ErrorDto<VivReporteGarantiasResponse> FrmVivReportesGarantias_Reporte_Generar(int CodEmpresa,[FromBody] VivReporteGarantiasRequest request)
         {
             return _bl.FrmVivReportesGarantias_Reporte_Generar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FrmVivReportesGarantias_ProdAcum_Generar")]
         public ErrorDto<VivReporteGarantiasResponse> FrmVivReportesGarantias_ProdAcum_Generar(int CodEmpresa,[FromBody] VivReporteGarantiasProdAcumRequest request)
         {

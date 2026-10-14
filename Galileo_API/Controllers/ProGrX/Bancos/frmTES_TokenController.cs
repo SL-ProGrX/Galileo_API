@@ -25,6 +25,7 @@ namespace Galileo_API.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPut("TES_Token_Cerrar")]
         public ErrorDto TES_Token_Cerrar(int CodEmpresa, string Id)
         {
@@ -39,6 +40,7 @@ namespace Galileo_API.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Token_Pen_Incluir")]
         public ErrorDto TES_Token_Pen_Incluir(int CodEmpresa, string token, List<string> solicitudes)
         {
@@ -46,6 +48,7 @@ namespace Galileo_API.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_Token_Crear")]
         public ErrorDto TES_Token_Crear(int CodEmpresa, string Usuario)
         {

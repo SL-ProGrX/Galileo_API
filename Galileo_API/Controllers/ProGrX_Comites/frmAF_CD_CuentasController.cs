@@ -98,12 +98,14 @@ namespace Galileo_API.Controllers.ProGrX_Comites
                 return _bl.AfCdCantidadAsociados_Obtener(codEmpresa, codComite);
             }
 
+            [ValidateAntiForgeryToken]
             [HttpDelete("AfCdCuenta_Descartar")]
             public ErrorDto AfCdCuenta_Descartar(int codEmpresa, int operacion, string usuario)
             {
                 return _bl.AfCdCuenta_Descartar(codEmpresa, operacion, usuario);
             }
 
+            [ValidateAntiForgeryToken]
             [HttpPost("AfCdCuenta_Guardar")]
             public ErrorDto AfCdCuenta_Guardar(int codEmpresa, string usuario, AfCdCuentaRequest request)
             {

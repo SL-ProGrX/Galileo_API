@@ -57,6 +57,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
                 => _bl.Cr_PolizasReportes_Inicializar(codEmpresa, usuario, codContabilidad);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_PolizasReportes_ReporteConfig_Obtener")]
         public ErrorDto<CrdPolizasReporteConfigResponse> Crd_PolizasReportes_ReporteConfig_Obtener(int codEmpresa, [FromBody] CrdPolizasReportesRequest request, string usuario, string nombreEmpresa)
              => _bl.Crd_PolizasReportes_ReporteConfig_Obtener(codEmpresa, request, usuario, nombreEmpresa);

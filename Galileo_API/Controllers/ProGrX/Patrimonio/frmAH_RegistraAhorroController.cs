@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_RegistraAhorro_Cargar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_RegistraAhorro_Gestion_Registrar")]
         public ErrorDto<FrmAhRegistraAhorroGestionResponse> AH_RegistraAhorro_Gestion_Registrar(
             [FromQuery] int codEmpresa,
@@ -42,6 +43,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_RegistraAhorro_Gestion_Estado(codEmpresa, gestionId);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_RegistraAhorro_Aplicar")]
         public ErrorDto<FrmAhRegistraAhorroAplicarResponse> AH_RegistraAhorro_Aplicar(
             [FromQuery] int codEmpresa,

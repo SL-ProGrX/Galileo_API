@@ -30,18 +30,21 @@ namespace Galileo.Controllers
             return _bl.Marcas_ObtenerTodos(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Marcas_Insertar")]
         public ErrorDto Marcas_Insertar(int CodEmpresa, MarcasDto request)
         {
             return _bl.Marcas_Insertar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Marcas_Actualizar")]
         public ErrorDto Marcas_Actualizar(int CodEmpresa, MarcasDto request)
         {
             return _bl.Marcas_Actualizar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Marcas_Eliminar")]
         public ErrorDto Marcas_Eliminar(int CodEmpresa, string marca)
         {

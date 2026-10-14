@@ -85,6 +85,7 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_frmFNDSeguimientoRevisionesTags_Omision_Cambiar")]
         public ErrorDto<FndSeguimientoRevisionOmisionCambiarData>
             FND_frmFNDSeguimientoRevisionesTags_Omision_Cambiar(
@@ -96,6 +97,7 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_frmFNDSeguimientoRevisionesTags_Aplicar")]
         public ErrorDto
             FND_frmFNDSeguimientoRevisionesTags_Aplicar(

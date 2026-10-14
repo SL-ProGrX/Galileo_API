@@ -43,6 +43,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_Autorizadores_Lista(codEmpresa, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Ah_Autorizadores_Insertar")]
         public ActionResult<ErrorDto<FrmAhAutorizadoresGuardarResponse>> Ah_Autorizadores_Insertar(
             [FromQuery] int codEmpresa,
@@ -51,6 +52,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_Autorizadores_Insertar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Ah_Autorizadores_Actualizar")]
         public ActionResult<ErrorDto<FrmAhAutorizadoresGuardarResponse>> Ah_Autorizadores_Actualizar(
             [FromQuery] int codEmpresa,
@@ -59,6 +61,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_Autorizadores_Actualizar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Ah_Autorizadores_Eliminar")]
         public ActionResult<ErrorDto<bool>> Ah_Autorizadores_Eliminar(
             [FromQuery] int codEmpresa,

@@ -66,6 +66,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Poliza_Reclamo_Load(codEmpresa, reclamoId);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Poliza_Reclamo_Nuevo")]
         public ErrorDto<PolizaReclamoFormularioResponse> Poliza_Reclamo_Nuevo(
             int codEmpresa,
@@ -109,6 +110,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Poliza_Reclamo_Etiquetas_Lista(codEmpresa, reclamoId);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Poliza_Reclamo_Actualiza_Datos_Vida")]
         public ErrorDto Poliza_Reclamo_Actualiza_Datos_Vida(
             int codEmpresa,
@@ -117,6 +119,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Poliza_Reclamo_Actualiza_Datos_Vida(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Poliza_Reclamo_Actualiza_Datos_Incendio")]
         public ErrorDto Poliza_Reclamo_Actualiza_Datos_Incendio(
             int codEmpresa,
@@ -125,6 +128,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Poliza_Reclamo_Actualiza_Datos_Incendio(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Poliza_Reclamo_Actualiza_Recepcion")]
         public ErrorDto Poliza_Reclamo_Actualiza_Recepcion(
             int codEmpresa,
@@ -133,6 +137,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Poliza_Reclamo_Actualiza_Recepcion(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Poliza_Reclamo_Seguimiento_Manual_Guardar")]
         public ErrorDto Poliza_Reclamo_Seguimiento_Manual_Guardar(
             int codEmpresa,
@@ -141,6 +146,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Poliza_Reclamo_Seguimiento_Manual_Add(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Poliza_Reclamo_Fondo_Creacion")]
         public ErrorDto<PolizaReclamoFondoCrearResponse> Poliza_Reclamo_Fondo_Creacion(
             int codEmpresa,
@@ -149,6 +155,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Poliza_Reclamo_Fondo_Creacion(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Poliza_Reclamo_Fondo_Aportacion")]
         public ErrorDto<PolizaReclamoFondoAportacionResponse> Poliza_Reclamo_Fondo_Aportacion(
             int codEmpresa,
@@ -156,6 +163,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         {
             return _bl.Poliza_Reclamo_Fondo_Aportacion(codEmpresa, request);
         }
+        [ValidateAntiForgeryToken]
         [HttpPost("Poliza_Reclamo_Desembolsos_Aplica")]
         public ErrorDto<PolizaReclamoDesembolsoAplicaResponse> Poliza_Reclamo_Desembolsos_Aplica(
             int codEmpresa,
@@ -164,6 +172,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Poliza_Reclamo_Desembolsos_Aplica(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Poliza_Reclamo_Etiqueta_Manual_Guardar")]
         public ErrorDto Poliza_Reclamo_Etiqueta_Manual_Guardar(
             int codEmpresa,
@@ -172,6 +181,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Poliza_Reclamo_Etiqueta_Manual_Add(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Poliza_Reclamo_Guardar")]
         public ErrorDto<PolizaReclamoAddResponse> Poliza_Reclamo_Guardar(
                 int codEmpresa,

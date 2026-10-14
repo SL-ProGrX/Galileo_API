@@ -41,6 +41,7 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
             string cod_acreedor)
             => _bl.CR_APA_OperacionRenumera_Operaciones_Obtener(codEmpresa, cod_acreedor);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_APA_OperacionRenumera_Aplicar")]
         public ErrorDto<FrmCrApaOperacionRenumeraResultadoDto> CR_APA_OperacionRenumera_Aplicar(
             int codEmpresa,

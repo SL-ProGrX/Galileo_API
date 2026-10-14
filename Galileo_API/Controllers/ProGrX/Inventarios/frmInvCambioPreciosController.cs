@@ -45,6 +45,7 @@ namespace Galileo.Controllers
                     CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "INV_CambioPrecios_Archivo_Cargar")]
         public ErrorDto<
@@ -59,6 +60,7 @@ namespace Galileo.Controllers
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut(
             "INV_CambioPrecios_Archivo_Procesar")]
         public ErrorDto
@@ -88,6 +90,7 @@ namespace Galileo.Controllers
                     codProveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut(
             "INV_CambioPrecios_Factura_Precios_Actualizar")]
         public ErrorDto

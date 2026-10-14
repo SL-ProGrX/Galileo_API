@@ -72,6 +72,7 @@ namespace Galileo.Controllers
                     codContabilidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "INV_Parametros_Actualizar")]
         public ErrorDto

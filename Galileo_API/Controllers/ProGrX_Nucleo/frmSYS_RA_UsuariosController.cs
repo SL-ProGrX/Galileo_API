@@ -26,6 +26,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sys_RA_Usuarios_Asigna")]
         public ErrorDto Sys_RA_Usuarios_Asigna(int CodEmpresa, string ra_usuario, string usuario, bool accion)
         {

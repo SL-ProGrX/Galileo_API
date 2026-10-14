@@ -37,6 +37,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_CambioVU_MetodosDepreciacion_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_CambioVU_Aplicar")]
         public ErrorDto<CambioVidaUtilAplicarResponse> Activos_CambioVU_Aplicar(
             int CodEmpresa,

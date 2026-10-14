@@ -44,6 +44,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CprProveedores_Guardar")]
         public ErrorDto CprProveedores_Guardar(int CodEmpresa, bool vEdita, CprProveedoresDto proveedor)
         {
@@ -51,6 +52,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("CprProveedores_Eliminar")]
         public ErrorDto CprProveedores_Eliminar(int CodEmpresa, string codigo)
         {

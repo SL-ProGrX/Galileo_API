@@ -18,6 +18,7 @@ namespace Galileo.Controllers
             _bl = new FrmCxPAnticiposBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ExeAnticipos")]
         public ErrorDto ExeAnticipos(int CodCliente, string filtros)
         {
@@ -36,6 +37,7 @@ namespace Galileo.Controllers
             return _bl.ObtenerAdelantosRegistrados(CodCliente, Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ObtenerHistorialDePagos")]
         public ErrorDto<List<HistorialPagoDto>> ObtenerHistorialDePagos(int CodCliente, int Proveedor, string Anticipos)
         {

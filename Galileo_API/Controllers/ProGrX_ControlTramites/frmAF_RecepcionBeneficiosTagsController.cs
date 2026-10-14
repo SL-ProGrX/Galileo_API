@@ -55,6 +55,7 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_frmAF_RecepcionBeneficiosTags_Movimiento_Aplicar")]
         public ErrorDto<AfRecepcionBeneficiosTagsAplicarResponse>
             AF_frmAF_RecepcionBeneficiosTags_Movimiento_Aplicar(

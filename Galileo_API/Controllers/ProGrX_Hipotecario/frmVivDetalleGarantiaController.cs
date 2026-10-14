@@ -33,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_DetalleGarantia_Guardar")]
         public ErrorDto Viv_DetalleGarantia_Guardar(int CodEmpresa, string usuario, [FromBody] VivDetalleGarantiaGuardarDto data)
         {
@@ -49,6 +50,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_DetalleGarantia_Eliminar")]
         public ErrorDto Viv_DetalleGarantia_Eliminar(int CodEmpresa, [FromBody] VivDetalleGarantiaEliminarDto data)
         {

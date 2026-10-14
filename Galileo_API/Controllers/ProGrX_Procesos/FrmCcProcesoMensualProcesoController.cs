@@ -31,6 +31,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         /// <summary>
         /// POST: Inicia un proceso resiliente o retorna uno existente si está activo.
         /// </summary>
+        [ValidateAntiForgeryToken]
         [HttpPost("ProcesoIniciar")]
         [Authorize]
         public ErrorDto<CcProcesoMensualProcesoResultado> ProcesoIniciar(

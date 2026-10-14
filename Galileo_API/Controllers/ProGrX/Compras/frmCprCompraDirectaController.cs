@@ -30,12 +30,14 @@ namespace Galileo.Controllers
             return _bl.CompraDirectaDetalle_Obtener(CodEmpresa, filtros, CodFactura, Codproveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CompraDirecta_Insertar")]
         public ErrorDto CompraDirecta_Insertar(int CodEmpresa, CompraDirectaInsert orden)
         {
             return _bl.CompraDirecta_Insertar(CodEmpresa, orden);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("CostoArticulos_Actualiza")]
         public ErrorDto CostoArticulos_Actualiza(int CodEmpresa, string Usuario, string CodCompra)
         {

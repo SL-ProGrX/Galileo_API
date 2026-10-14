@@ -72,30 +72,35 @@ namespace Galileo_API.Controllers.ProGrX_Pasivos
             return _bl.CR_APA_CortesGarantias_Totales_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_APA_CortesGarantias_Guardar")]
         public ErrorDto CR_APA_CortesGarantias_Guardar(int codEmpresa, FrmCrApaCortesGarantiasGuardarRequest request)
         {
             return _bl.CR_APA_CortesGarantias_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_APA_CortesGarantias_Cerrar")]
         public ErrorDto CR_APA_CortesGarantias_Cerrar(int codEmpresa, FrmCrApaCortesGarantiasClaveRequest request)
         {
             return _bl.CR_APA_CortesGarantias_Cerrar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_APA_CortesGarantias_Actualizar")]
         public ErrorDto CR_APA_CortesGarantias_Actualizar(int codEmpresa, FrmCrApaCortesGarantiasClaveRequest request)
         {
             return _bl.CR_APA_CortesGarantias_Actualizar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CR_APA_CortesGarantias_Excluir")]
         public ErrorDto CR_APA_CortesGarantias_Excluir(int codEmpresa, [FromBody] FrmCrApaCortesGarantiasExcluirRequest request)
         {
             return _bl.CR_APA_CortesGarantias_Excluir(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_APA_CortesGarantias_Incluir")]
         public ErrorDto CR_APA_CortesGarantias_Incluir(int codEmpresa, FrmCrApaCortesGarantiasIncluirRequest request)
         {

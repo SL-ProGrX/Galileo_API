@@ -22,6 +22,7 @@ namespace Galileo.Controllers
             _bl = new FrmInvVentasEnLineaSincBl(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "INV_VentasEnLineaSinc_CatalogoExistencias_Sincronizar")]
         public ErrorDto<InvVentasEnLineaSincData>
@@ -35,6 +36,7 @@ namespace Galileo.Controllers
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "INV_VentasEnLineaSinc_VentasExistencias_Sincronizar")]
         public ErrorDto<InvVentasEnLineaSincData>

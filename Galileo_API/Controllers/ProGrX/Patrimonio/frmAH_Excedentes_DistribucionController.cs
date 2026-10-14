@@ -62,6 +62,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_Excedentes_Distribucion_Monto_Guardar")]
         public ErrorDto AH_Excedentes_Distribucion_Monto_Guardar(int CodEmpresa,string usuario,[FromBody] AHExcMontoDto dto)
         {
@@ -69,6 +70,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_Excedentes_Distribucion_Monto_Eliminar")]
         public ErrorDto AH_Excedentes_Distribucion_Monto_Eliminar(int CodEmpresa, string usuario, [FromBody] AHExcMontoDto dto)
         {

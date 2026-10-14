@@ -27,12 +27,14 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sif_Oficinas_Guardar")]
         public ErrorDto Sif_Oficinas_Guardar(int CodEmpresa, SifOficinasData oficinaDatos)
         {
             return _bl.Sif_Oficinas_Guardar(CodEmpresa, oficinaDatos);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sif_Oficinas_ActualizarDatos")]
         public ErrorDto Sif_Oficinas_ActualizarDatos(int CodEmpresa, SifOficinasData oficinaDatos)
         {
@@ -77,6 +79,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sif_OficinasMiembros_Agregar")]
         public ErrorDto Sif_OficinasMiembros_Agregar(int CodEmpresa, string oficina, string usuario, bool apoyo, string usuarioRegistro, bool accion)
         {

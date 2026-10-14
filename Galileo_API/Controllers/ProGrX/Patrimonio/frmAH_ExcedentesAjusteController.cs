@@ -18,6 +18,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             _bl = new FrmAhExcedentesAjusteBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_ExcedentesAjuste_Cargar")]
         public ErrorDto<FrmAhExcedentesAjusteCargarResponse> AH_ExcedentesAjuste_Cargar(
             [FromQuery] int codEmpresa,
@@ -33,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_ExcedentesAjuste_Periodos_Lista(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_ExcedentesAjuste_Pendientes_Lista")]
         public ErrorDto<List<FrmAhExcedentesAjustePendienteDto>> AH_ExcedentesAjuste_Pendientes_Lista(
             [FromQuery] int codEmpresa,
@@ -49,6 +51,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_ExcedentesAjuste_Cedula_Consultar(codEmpresa, cedula);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_ExcedentesAjuste_Guardar")]
         public ErrorDto<FrmAhExcedentesAjusteProcesoResponse> AH_ExcedentesAjuste_Guardar(
             [FromQuery] int codEmpresa,
@@ -57,6 +60,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_ExcedentesAjuste_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("AH_ExcedentesAjuste_Eliminar")]
         public ErrorDto<FrmAhExcedentesAjusteProcesoResponse> AH_ExcedentesAjuste_Eliminar(
             [FromQuery] int codEmpresa,

@@ -67,6 +67,7 @@ namespace Galileo.Controllers
             return _bl.ObtenerOrdenCompraDev(CodEmpresa, CodFactura, CodProveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Devolucion_Guardar")]
         public ErrorDto Devolucion_Guardar(int CodEmpresa, DevolucionInsert orden)
         {

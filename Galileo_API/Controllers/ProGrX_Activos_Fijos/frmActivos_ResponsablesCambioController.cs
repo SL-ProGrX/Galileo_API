@@ -68,6 +68,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_ResponsablesCambio_Boleta_Existe_Obtener(CodEmpresa, cod_traslado);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_ResponsablesCambio_Boleta_Guardar")]
         [Authorize]
         public ErrorDto<ActivosResponsablesCambioBoletaResult> Activos_ResponsablesCambio_Boleta_Guardar(int CodEmpresa, ActivosResponsablesCambioBoleta boleta)
@@ -75,6 +76,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_ResponsablesCambio_Boleta_Guardar(CodEmpresa, boleta);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_ResponsablesCambio_Boleta_Placa_Guardar")]
         [Authorize]
         public ErrorDto Activos_ResponsablesCambio_Boleta_Placa_Guardar(int CodEmpresa, ActivosResponsablesCambioPlacaGuardarRequest data)
@@ -82,6 +84,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_ResponsablesCambio_Boleta_Placa_Guardar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_ResponsablesCambio_Boleta_Procesar")]
         [Authorize]
         public ErrorDto Activos_ResponsablesCambio_Boleta_Procesar(int CodEmpresa, string cod_traslado, string usuario)
@@ -89,6 +92,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_ResponsablesCambio_Boleta_Procesar(CodEmpresa, cod_traslado, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_ResponsablesCambio_Boleta_Descartar")]
         [Authorize]
         public ErrorDto Activos_ResponsablesCambio_Boleta_Descartar(int CodEmpresa, string cod_traslado, string usuario)

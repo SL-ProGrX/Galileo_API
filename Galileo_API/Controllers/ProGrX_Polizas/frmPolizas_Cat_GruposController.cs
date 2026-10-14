@@ -30,11 +30,13 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             => _bl.PolizaGrupos_Existe(codEmpresa, id);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PolizaGrupos_Guardar")]
         public ErrorDto<bool> PolizaGrupos_Guardar(int codEmpresa, [FromBody] PolizaGrupoSaveParams param)
             => _bl.PolizaGrupos_Guardar(codEmpresa, param);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("PolizaGrupos_Eliminar")]
         public ErrorDto<bool> PolizaGrupos_Eliminar(int codEmpresa, [FromBody] PolizaGrupoDeleteParams param)
             => _bl.PolizaGrupos_Eliminar(codEmpresa, param);

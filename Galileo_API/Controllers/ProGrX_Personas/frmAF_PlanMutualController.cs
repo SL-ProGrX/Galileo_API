@@ -47,6 +47,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_PlanMutualPersona_Guardar")]
         public ErrorDto AF_PlanMutualPersona_Guardar(int CodEmpresa, string plan, string usuario, AfPlanMutualPersonasData persona)
         {
@@ -54,6 +55,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_PlanMutual_Guardar")]
         public ErrorDto AF_PlanMutual_Guardar(int CodEmpresa, string usuario, AfPlanMutualDto plan)
         {
@@ -61,6 +63,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_PlanMutual_Eliminar")]
         public ErrorDto AF_PlanMutual_Eliminar(int CodEmpresa, string usuario, string plan)
         {
@@ -68,6 +71,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPut("AF_PlanMutual_Actualizar")]
         public ErrorDto AF_PlanMutual_Actualizar(int CodEmpresa, string usuario, string plan)
         {

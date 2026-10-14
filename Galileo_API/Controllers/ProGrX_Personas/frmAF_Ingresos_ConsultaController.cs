@@ -18,6 +18,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Ingresos_Consulta")]
         public ErrorDto<IngresosConsultaLista> AF_Ingresos_Consulta(int CodEmpresa, [FromBody] IngresosConsultaFiltro filtro)
         {

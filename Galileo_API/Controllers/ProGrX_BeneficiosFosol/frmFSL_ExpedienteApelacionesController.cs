@@ -93,6 +93,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     codComite);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "FSL_ExpedienteApelaciones_Miembro_Validar")]
         public ErrorDto
@@ -107,6 +108,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "FSL_ExpedienteApelaciones_Apelacion_Agregar")]
         public ErrorDto
@@ -121,6 +123,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut(
             "FSL_ExpedienteApelaciones_Resolucion_Guardar")]
         public ErrorDto

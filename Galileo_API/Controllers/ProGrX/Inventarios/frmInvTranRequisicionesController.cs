@@ -51,6 +51,7 @@ namespace Galileo.Controllers
                 CodRequisicion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvTranRequisicion_Insertar")]
         public ErrorDto InvTranRequisicion_Insertar(
             int CodEmpresa,
@@ -59,6 +60,7 @@ namespace Galileo.Controllers
             return _bl.InvTranRequisicion_Insertar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvTranRequisicion_Actualizar")]
         public ErrorDto InvTranRequisicion_Actualizar(
             int CodEmpresa,
@@ -67,6 +69,7 @@ namespace Galileo.Controllers
             return _bl.InvTranRequisicion_Actualizar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvTranRequesicion_Eliminar")]
         public ErrorDto InvTranRequesicion_Eliminar(
             int CodEmpresa,
@@ -77,6 +80,7 @@ namespace Galileo.Controllers
                 CodRequisicion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvRequesicionProduc_Insertar")]
         public ErrorDto InvRequesicionProduc_Insertar(
             int CodEmpresa,
@@ -117,6 +121,7 @@ namespace Galileo.Controllers
                 estado);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvRequisicionProduc_Eliminar")]
         public ErrorDto InvRequisicionProduc_Eliminar(
             int CodEmpresa,

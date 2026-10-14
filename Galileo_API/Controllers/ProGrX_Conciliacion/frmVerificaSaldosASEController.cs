@@ -32,6 +32,7 @@ namespace Galileo_API.Controllers.ProGrX.Conciliacion
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("ASE_VerificaSaldos_Lista_Obtener")]
         public ErrorDto<AseVerificaSaldosListaResult> ASE_VerificaSaldos_Lista_Obtener(int CodEmpresa, [FromBody] AseVerificaSaldosListaRequest? request)
         {
@@ -39,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX.Conciliacion
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("ASE_VerificaSaldos_Lista_Export")]
         public ErrorDto<AseVerificaSaldosListaResult> ASE_VerificaSaldos_Lista_Export(int CodEmpresa, [FromBody] AseVerificaSaldosListaRequest? request)
         {

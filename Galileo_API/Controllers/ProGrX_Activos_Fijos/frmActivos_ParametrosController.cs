@@ -26,6 +26,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Parametros_EstablecerMes")]
         public ErrorDto Activos_Parametros_EstablecerMes(int CodEmpresa, DateTime periodo)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Parametros_Guardar")]
         public ErrorDto Activos_Parametros_Guardar(int CodEmpresa, string usuario, ActivosParametrosData datos)
         {

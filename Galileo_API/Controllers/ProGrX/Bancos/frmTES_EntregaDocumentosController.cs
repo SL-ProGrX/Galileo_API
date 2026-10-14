@@ -36,6 +36,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             return _bl.listaPendientes_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_documentosPendientes_Guardar")]
         public ErrorDto TES_documentosPendientes_Guardar(int CodEmpresa, string trasladoLista, string estadoCheck, string usuario)
         {

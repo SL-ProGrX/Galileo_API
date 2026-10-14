@@ -80,6 +80,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
                 periodoId);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("AH_ExcedentesMensuales_Mensual_BaseAplicacion_Actualizar")]
         public ErrorDto AH_ExcedentesMensuales_Mensual_BaseAplicacion_Actualizar(
         [FromQuery] int codEmpresa,
@@ -100,6 +101,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_ExcedentesMensuales_Mensual_Valida(codEmpresa, periodoId, corte);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_ExcedentesMensuales_Mensual_Aplicar")]
         public ErrorDto<FrmAhExcedentesMensualesMensualResultadoDto?> AH_ExcedentesMensuales_Mensual_Aplicar(
     [FromQuery] int codEmpresa,
@@ -133,6 +135,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_ExcedentesMensuales_Cierre_Valida(codEmpresa, periodoId);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_ExcedentesMensuales_Cierre_Aplicar")]
         public ErrorDto AH_ExcedentesMensuales_Cierre_Aplicar(
     [FromQuery] int codEmpresa,
@@ -164,6 +167,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_ExcedentesMensuales_Aplicaciones_ProcesosPendientes_Lista(codEmpresa, periodoId);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_ExcedentesMensuales_Aplicaciones_Salidas_Separa")]
         public ErrorDto AH_ExcedentesMensuales_Aplicaciones_Salidas_Separa(
     [FromQuery] int codEmpresa,
@@ -180,6 +184,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_ExcedentesMensuales_Aplicaciones_SalidasPendientes_Lista(codEmpresa, periodoId);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_ExcedentesMensuales_Aplicaciones_Salidas_Fondos")]
         public ErrorDto AH_ExcedentesMensuales_Aplicaciones_Salidas_Fondos(
     [FromQuery] int codEmpresa,
@@ -211,6 +216,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
                 detalle);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_ExcedentesMensuales_Bitacora_Registrar")]
         public ErrorDto AH_ExcedentesMensuales_Bitacora_Registrar(
     [FromQuery] int codEmpresa,
@@ -221,6 +227,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_ExcedentesMensuales_Aplicaciones_Proceso_Ejecutar")]
         public ErrorDto<FrmAhExcedentesMensualesAplicacionProcesoResponse?> AH_ExcedentesMensuales_Aplicaciones_Proceso_Ejecutar(
     [FromQuery] int codEmpresa,

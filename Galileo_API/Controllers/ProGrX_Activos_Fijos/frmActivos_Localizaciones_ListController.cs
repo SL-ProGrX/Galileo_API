@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Localizaciones_Guardar")]
         public ErrorDto Activos_Localizaciones_Guardar(int CodEmpresa, string usuario, ActivosLocalizacionesData localizacion)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Activos_Localizaciones_Eliminar")]
         public ErrorDto Activos_Localizaciones_Eliminar(int CodEmpresa, string cod_localiza, string usuario)
         {

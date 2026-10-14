@@ -40,6 +40,7 @@ namespace Galileo.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_NoticaNoCotizantes_Estadistica_Actualizar")]
         public ErrorDto AF_NoticaNoCotizantes_Estadistica_Actualizar(int CodEmpresa)
         {
@@ -47,6 +48,7 @@ namespace Galileo.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_NoticaNoCotizantes_Asociados_Notificar")]
         public ErrorDto AF_NoticaNoCotizantes_Asociados_Notificar(int CodEmpresa, List<AfAsociadosSinAportesDto> Lista, int Aviso, string Usuario)
         {

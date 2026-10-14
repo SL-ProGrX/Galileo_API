@@ -24,6 +24,7 @@ namespace Galileo.Controllers
             return _bl.NotasEstados_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("NotasEstados_Insertar")]
         public ErrorDto NotasEstados_Insertar(int CodCliente, SifEmpresaDto notas)
         {

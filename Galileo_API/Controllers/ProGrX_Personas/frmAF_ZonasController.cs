@@ -31,12 +31,14 @@ namespace Galileo_API.Controllers.ProGrX_Personas
             return _bl.AF_Zonas_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Zonas_Guardar")]
         public ErrorDto AF_Zonas_Guardar(int codEmpresa, string usuario, [FromBody] ZonasData zona)
         {
             return _bl.AF_Zonas_Guardar(codEmpresa, usuario, zona);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_Zonas_Eliminar")]
         public ErrorDto AF_Zonas_Eliminar(int codEmpresa, string usuario, string codZona)
         {
@@ -61,12 +63,14 @@ namespace Galileo_API.Controllers.ProGrX_Personas
             return _bl.AF_Zonas_InstitucionesAsignadas_Obtener(codEmpresa, codZona);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Zonas_InstitucionAsignar_Registrar")]
         public ErrorDto AF_Zonas_InstitucionAsignar_Registrar(int codEmpresa, string codZona, int codInstitucion, bool asignar, string usuario)
         {
             return _bl.AF_Zonas_InstitucionAsignar_Registrar(codEmpresa, codZona, codInstitucion, asignar, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Zonas_UsuarioAsignar_Registrar")]
         public ErrorDto AF_Zonas_UsuarioAsignar_Registrar(int codEmpresa, string codZona, string codUsuario, bool asignar, string usuario)
         {

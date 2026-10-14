@@ -65,6 +65,7 @@ namespace Galileo.Controllers
             return _bl.INV_TomaFisica_Producto_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("INV_TomaFisica_Guardar")]
         public ErrorDto<int> INV_TomaFisica_Guardar(
             int CodEmpresa,
@@ -73,6 +74,7 @@ namespace Galileo.Controllers
             return _bl.INV_TomaFisica_Guardar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("INV_TomaFisica_Eliminar")]
         public ErrorDto INV_TomaFisica_Eliminar(
             int CodEmpresa,
@@ -85,6 +87,7 @@ namespace Galileo.Controllers
                 usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("INV_TomaFisica_Barras_Guardar")]
         public ErrorDto INV_TomaFisica_Barras_Guardar(
             int CodEmpresa,
@@ -93,6 +96,7 @@ namespace Galileo.Controllers
             return _bl.INV_TomaFisica_Barras_Guardar(CodEmpresa, linea);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("INV_TomaFisica_InventarioLogico_Obtener")]
         public ErrorDto<List<TomaFisicaDetalleDto>>
             INV_TomaFisica_InventarioLogico_Obtener(
@@ -104,6 +108,7 @@ namespace Galileo.Controllers
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("INV_TomaFisica_Comparar")]
         public ErrorDto<List<TomaFisicaDetalleDto>> INV_TomaFisica_Comparar(
             int CodEmpresa,

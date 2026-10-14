@@ -31,6 +31,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_Declaraciones_Registro_Obtener(CodEmpresa, id_declara);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Declaraciones_Registro_Guardar")]
         [Authorize]
         public ErrorDto<ActivosDeclaracionResult> Activos_Declaraciones_Registro_Guardar(int CodEmpresa, ActivosDeclaracionGuardarRequest data)
@@ -38,6 +39,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_Declaraciones_Registro_Guardar(CodEmpresa, data);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Activos_Declaraciones_Registro_Eliminar")]
         [Authorize]
         public ErrorDto Activos_Declaraciones_Registro_Eliminar(int CodEmpresa, int id_declara, string usuario)
@@ -45,6 +47,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_Declaraciones_Registro_Eliminar(CodEmpresa, id_declara, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Declaraciones_Registro_Cerrar")]
         [Authorize]
         public ErrorDto Activos_Declaraciones_Registro_Cerrar(int CodEmpresa, int id_declara, string usuario)
@@ -52,6 +55,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_Declaraciones_Registro_Cerrar(CodEmpresa, id_declara, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Declaraciones_Registro_Procesar")]
         [Authorize]
         public ErrorDto Activos_Declaraciones_Registro_Procesar(int CodEmpresa, int id_declara, string usuario)

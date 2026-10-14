@@ -60,6 +60,7 @@ namespace Galileo.Controllers
                     CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "INV_MargenUtilidad_Cambios_Aplicar")]
         public ErrorDto

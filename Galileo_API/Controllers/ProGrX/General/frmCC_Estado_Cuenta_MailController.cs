@@ -31,6 +31,7 @@ namespace Galileo_API.Controllers.ProGrX.General
                 cedula);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "CC_Estado_Cuenta_Mail_Enviar")]
         public ErrorDto CC_Estado_Cuenta_Mail_Enviar(

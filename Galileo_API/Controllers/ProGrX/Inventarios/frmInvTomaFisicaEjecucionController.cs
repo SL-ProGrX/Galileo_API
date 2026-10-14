@@ -29,6 +29,7 @@ namespace Galileo.Controllers
             return _bl.Obtener_Salidas(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ProcesarTomaFisica")]
         public ErrorDto ProcesarTomaFisica(int CodEmpresa, int consecutivo, string usuario, string cod_entrada, string cod_salida)
         {

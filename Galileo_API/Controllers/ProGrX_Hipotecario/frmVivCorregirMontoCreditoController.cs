@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.Viv_CorregirMontoCredito_Obtener(codEmpresa, numero_operacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Viv_CorregirMontoCredito_Guardar")]
         public ErrorDto<FrmVivCorregirMontoCreditoGuardarResponse> Viv_CorregirMontoCredito_Guardar(
             int codEmpresa,

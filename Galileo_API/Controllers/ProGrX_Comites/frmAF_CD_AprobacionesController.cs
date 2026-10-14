@@ -31,12 +31,14 @@ namespace Galileo_API.Controllers.ProGrX_Comites
             return _bl.Bancos(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Aprobar")]
         public ErrorDto<bool> Aprobar(AfcdAprobacionRequest req)
         {
             return _bl.Aprobar(req);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Rechazar")]
         public ErrorDto<bool> Rechazar(AfcdRechazoRequest req)
         {

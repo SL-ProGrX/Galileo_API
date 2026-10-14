@@ -46,6 +46,7 @@ namespace Galileo.Controllers
             return _bl.INV_Unidades_Catalogo_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("INV_Unidades_Registrar")]
         public ErrorDto INV_Unidades_Registrar(
             int CodEmpresa,
@@ -56,6 +57,7 @@ namespace Galileo.Controllers
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("INV_Unidades_Actualizar")]
         public ErrorDto INV_Unidades_Actualizar(
             int CodEmpresa,
@@ -66,6 +68,7 @@ namespace Galileo.Controllers
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("INV_Unidades_Eliminar")]
         public ErrorDto INV_Unidades_Eliminar(
             int CodEmpresa,

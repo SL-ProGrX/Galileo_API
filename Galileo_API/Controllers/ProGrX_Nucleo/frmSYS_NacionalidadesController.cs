@@ -40,6 +40,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sys_Nacionalidades_Valida")]
         public ErrorDto Sys_Nacionalidades_Valida(int CodEmpresa, [FromBody] SysNacionalidadesData nacionalidad)
         {

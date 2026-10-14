@@ -26,6 +26,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Suspendidos_Gestion_Registrar")]
         public ErrorDto AF_Suspendidos_Gestion_Registrar(int CodEmpresa, string Cedula, int Accion, string Notas, string Usuario)
         {
@@ -33,6 +34,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Suspendidos_Archivo_Cargar")]
         public ErrorDto<List<AfSuspendidosArchivoDto>> AF_Suspendidos_Archivo_Cargar(int CodEmpresa, int Valor, string Usuario, string Lista)
         {
@@ -40,6 +42,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Suspendidos_Archivo_Procesar")]
         public ErrorDto AF_Suspendidos_Archivo_Procesar(int CodEmpresa, int Valor, string Usuario)
         {

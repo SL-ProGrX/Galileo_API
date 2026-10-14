@@ -29,12 +29,14 @@ namespace Galileo.Controllers
             return BL_GG_PE_Perspectivas.PePerspectiva_Scroll(CodEmpresa, scroll, perspectiva);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PePerspectiva_Guardar")]
         public ErrorDto PePerspectiva_Guardar(int CodEmpresa, PePerspectivasDto perspectiva)
         {
             return BL_GG_PE_Perspectivas.PePerspectiva_Guardar(CodEmpresa, perspectiva);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("PePerspectiva_Eliminar")]
         public ErrorDto PePerspectiva_Eliminar(int CodEmpresa, int perspectiva)
         {

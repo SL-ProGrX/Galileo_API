@@ -31,18 +31,21 @@ namespace Galileo.Controllers
             return _bl.TipoProducto_ObtenerTodos(CodEmpresa, cod_contabilidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TipoProducto_Insertar")]
         public ErrorDto TipoProducto_Insertar(int CodEmpresa, TipoProductoDto request)
         {
             return _bl.TipoProducto_Insertar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TipoProducto_Actualizar")]
         public ErrorDto TipoProducto_Actualizar(int CodEmpresa, TipoProductoDto request)
         {
             return _bl.TipoProducto_Actualizar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TipoProducto_Eliminar")]
         public ErrorDto TipoProducto_Eliminar(int CodEmpresa, string producto)
         {
@@ -61,12 +64,14 @@ namespace Galileo.Controllers
             return _bl.TipoProductoSub_ObtenerTodos(CodEmpresa, Cod_Prodclas);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TipoProductoSub_Insertar")]
         public ErrorDto TipoProductoSub_Insertar(int CodEmpresa, TipoProductoSubDto request)
         {
             return _bl.TipoProductoSub_Insertar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TipoProductoSub_Actualizar")]
         public ErrorDto TipoProductoSub_Actualizar(int CodEmpresa, TipoProductoSubDto request)
         {

@@ -17,6 +17,7 @@ namespace Galileo.Controllers
             _bl = new FrmInvTransacAutorizaBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvTransacAutoriza")]
         public ErrorDto InvTransacAutoriza_Actualizar(int CodEmpresa, InvTransacAutoriza request)
         {
