@@ -23,7 +23,8 @@ namespace Galileo.DataBaseTier
 
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
-            var isAuthenticated = context.HttpContext.User?.Identity?.IsAuthenticated ?? false;
+            var user = context.HttpContext.User;
+            var isAuthenticated = user.Identity?.IsAuthenticated ?? false;
 
             // sacar CodEmpresa del request (query/route/body)
             var codEmpresa = TryGetCodEmpresa(context);
@@ -41,14 +42,8 @@ namespace Galileo.DataBaseTier
             }
 
             // sacar userId del token (sub)
-            string? userIdStr = null;
-            var user = context.HttpContext.User;
-            if (user != null)
-            {
-                userIdStr = user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            var userIdStr = user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                          ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            }
-
 
             if (!int.TryParse(userIdStr, out var userId))
             {
