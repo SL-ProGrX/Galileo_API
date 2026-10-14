@@ -78,7 +78,9 @@ namespace Galileo.DataBaseTier
                         Usuario = usuario
                     };
 
-                    response.Result = connection.Query<ClientesEmpresasObtenerDto>("spPGX_Usuario_Consultar_Clientes", values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<ClientesEmpresasObtenerDto>("spPGX_Usuario_Consultar_Clientes", values, commandType: CommandType.StoredProcedure)
+                        .Where(empresa => string.Equals(empresa.usuario?.Trim(), usuario.Trim(), StringComparison.OrdinalIgnoreCase))
+                        .ToList();
                 }
             }
             catch (Exception ex)

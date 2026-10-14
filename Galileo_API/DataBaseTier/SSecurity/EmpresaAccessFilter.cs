@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Galileo.BusinessLogic;
+using Galileo.Models.Auth;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -9,11 +11,13 @@ namespace Galileo.DataBaseTier
     public class EmpresaAccessFilter : IAsyncActionFilter
     {
         private readonly PerfilUsuarioDB _seguridad;
+        private readonly IConfiguration _config;
         private const string CodEmpresaKey = "CodEmpresa";
         private const string EmpresaCodKey = "empresaCod";
 
         public EmpresaAccessFilter(IConfiguration config)
         {
+            _config = config;
             _seguridad = new PerfilUsuarioDB(config);
         }
 
@@ -52,8 +56,26 @@ namespace Galileo.DataBaseTier
                 return;
             }
 
-            // validar permiso
-            if (!_seguridad.UsuarioTieneAccesoAEmpresa(userId, codEmpresa.Value))
+            // Cada aplicación usa su propia fuente de permisos por empresa.
+            var aplicacion = user?.FindFirst("app")?.Value;
+            var tieneAcceso = false;
+            if (string.Equals(aplicacion, AuthApplications.Galileo, StringComparison.OrdinalIgnoreCase))
+            {
+                tieneAcceso = _seguridad.UsuarioTieneAccesoAEmpresa(userId, codEmpresa.Value);
+            }
+            else if (string.Equals(aplicacion, AuthApplications.SSecurity, StringComparison.OrdinalIgnoreCase))
+            {
+                var usuario = user?.FindFirst("UserName")?.Value;
+                if (!string.IsNullOrWhiteSpace(usuario))
+                {
+                    var permisos = new SeguridadPortalBl(_config).sbAdmin_Rols_Load(usuario, codEmpresa.Value);
+                    tieneAcceso = string.Equals(permisos.ResultMsg, "OK", StringComparison.Ordinal) &&
+                        (permisos.Admin_Portal || permisos.Rol_DirGlobal || permisos.Rol_AdminView ||
+                         permisos.Rol_LocalUsers || permisos.Rol_Permisos || permisos.Rol_ResetKeys);
+                }
+            }
+
+            if (!tieneAcceso)
             {
                 context.Result = new ForbidResult();
                 return;

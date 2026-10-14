@@ -179,11 +179,28 @@ namespace Galileo.DataBaseTier
 
                     data = connection.Query<ClienteSelecciona>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
 
+                    // La selección solo ofrece empresas asignadas al usuario,
+                    // aunque el procedimiento administrativo devuelva otras.
+                    var empresasAsignadas = new LogonDB(_config).ClientesObtener(usuario);
+                    if (empresasAsignadas.Code is < 0 || empresasAsignadas.Result is null)
+                    {
+                        throw new InvalidOperationException("No fue posible validar las empresas asignadas al usuario.");
+                    }
+
+                    var codigosAsignados = empresasAsignadas.Result
+                        .Select(empresa => int.TryParse(empresa.Cod_Empresa, out var codigo)
+                            ? codigo
+                            : int.TryParse(empresa.CodEmpresa, out codigo) ? codigo : 0)
+                        .Where(codigo => codigo > 0)
+                        .ToHashSet();
+                    data = data.Where(empresa => codigosAsignados.Contains(empresa.Cod_Empresa)).ToList();
+
                 }
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                data = new List<ClienteSelecciona>();
             }
             return data;
         }

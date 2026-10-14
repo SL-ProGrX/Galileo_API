@@ -71,9 +71,9 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
 
         [ValidateAntiForgeryToken]
         [HttpPost("Cajas_Roe_spImprime_Ejecutar")]
-        public ErrorDto<SpResultadoModel> Cajas_Roe_spImprime_Ejecutar(int cod_empresa,CajasRoeImprimeParamsModel p)
+        public ErrorDto<SpResultadoModel> Cajas_Roe_spImprime_Ejecutar(int CodEmpresa,CajasRoeImprimeParamsModel p)
         {
-            return _bl.Cajas_Roe_spImprime_Ejecutar(cod_empresa, p);
+            return _bl.Cajas_Roe_spImprime_Ejecutar(CodEmpresa, p);
         }
     }
 }
