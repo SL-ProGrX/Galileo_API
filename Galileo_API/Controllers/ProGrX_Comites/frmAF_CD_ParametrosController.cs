@@ -21,6 +21,7 @@ namespace Galileo_API.Controllers.ProGrX_Comites
         public ActionResult<ErrorDto<List<AfCdParametroDto>>> AfCdParametros_Lista([FromQuery] int codEmpresa)
             => _bl.AfCdParametros_Lista(codEmpresa);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdParametros_Update")]
         public ActionResult<ErrorDto<bool>> AfCdParametros_Update([FromQuery] int codEmpresa, [FromBody] AfCdParametroUpdateDto dto)
             => _bl.AfCdParametros_Update(codEmpresa, dto);

@@ -25,12 +25,14 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Cr_PolProcPrevista_PolizaFacturables_Lista(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_PolProcPrevista_Corte_Detalle_Cargar")]
         public ErrorDto Cr_PolProcPrevista_Corte_Detalle_Cargar(int CodEmpresa, string usuario, CrPolProcPrevistaDetalleAddRequest request)
         {
             return _bl.Cr_PolProcPrevista_Corte_Detalle_Cargar(CodEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_PolProcPrevista_Corte_Detalle_Eliminar")]
         public ErrorDto Cr_PolProcPrevista_Corte_Detalle_Eliminar(int CodEmpresa, string usuario, CrPolProcPrevistaDetalleEliminarRequest request)
         {
@@ -46,6 +48,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Cr_PolProcPrevista_Corte_Detalle_Consulta(CodEmpresa, codPoliza, corte);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cr_PolProcPrevista_Corte_Concilia_Consulta")]
         public ErrorDto<List<CrPolProcPrevistaConciliaDto>> Cr_PolProcPrevista_Corte_Concilia_Consulta(
          int CodEmpresa,

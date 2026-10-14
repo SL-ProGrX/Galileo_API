@@ -59,15 +59,18 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         public ErrorDto<PolizaAseguradoraCorte?> Crd_PolizaProcRecepcion_Corte_Validar(int codEmpresa, DateTime corte, string codPoliza, int idFactura)
             => _bl.Crd_PolizaProcRecepcion_Corte_Validar(codEmpresa, corte, codPoliza, idFactura);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_PolizaProcRecepcion_Archivo_Cargar")]
         public ErrorDto<PolizaAseguradoraCorte?> Crd_PolizaProcRecepcion_Archivo_Cargar(int codEmpresa, string usuario, [FromBody] PolizaArchivoCargarRequest request)
             => _bl.Crd_PolizaProcRecepcion_Archivo_Cargar(codEmpresa, usuario, request);
 
         // POST (no DELETE): mismo estandar que Bancos_Cargado y Proc_Prevista para eliminaciones por lote con cuerpo.
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_PolizaProcRecepcion_Detalle_Eliminar")]
         public ErrorDto<string> Crd_PolizaProcRecepcion_Detalle_Eliminar(int codEmpresa, string usuario, [FromBody] PolizaDetalleEliminarRequest request)
             => _bl.Crd_PolizaProcRecepcion_Detalle_Eliminar(codEmpresa, usuario, request);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_PolizaProcRecepcion_Factura_Generar")]
         public ErrorDto<PolizaAseguradoraCorte?> Crd_PolizaProcRecepcion_Factura_Generar(int codEmpresa, string usuario, [FromBody] PolizaAseguradoraCorteData datos)
             => _bl.Crd_PolizaProcRecepcion_Factura_Generar(codEmpresa, usuario, datos);

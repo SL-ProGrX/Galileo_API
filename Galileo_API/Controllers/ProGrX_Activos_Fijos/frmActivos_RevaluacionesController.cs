@@ -17,6 +17,7 @@ namespace Galileo.Controllers
             _bl = new FrmActivosRevaluacionesBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Revaluaciones_Guardar")]
         public ErrorDto Activos_Revaluaciones_Guardar(int CodEmpresa, string usuario, ActivosRevaluacionData data)
         {
@@ -29,6 +30,7 @@ namespace Galileo.Controllers
             return _bl.Activos_Revaluaciones_Historico_Consultar(CodEmpresa, placa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Activos_Revaluaciones_Eliminar")]
         public ErrorDto Activos_Revaluaciones_Eliminar(int CodEmpresa, string placa, int Id_AddRet, string usuario)
         {

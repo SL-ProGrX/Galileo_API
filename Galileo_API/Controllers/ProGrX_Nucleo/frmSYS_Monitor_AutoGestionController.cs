@@ -75,12 +75,14 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sys_Monitor_AutoGestion_Resolucion_Aplicar")]
         public ErrorDto<MonitorAutoGestionResolucionResponse> Sys_Monitor_AutoGestion_Resolucion_Aplicar(int CodEmpresa, MonitorAutoGestionResolucionRequest dto)
         {
             return BL.Sys_Monitor_AutoGestion_Resolucion_Aplicar(CodEmpresa, dto);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sys_Monitor_AutoGestion_Adjuntos_Fix")]
         public ErrorDto Sys_Monitor_AutoGestion_Adjuntos_Fix(int CodEmpresa)
         {

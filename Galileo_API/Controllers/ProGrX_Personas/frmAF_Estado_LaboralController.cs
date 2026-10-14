@@ -25,6 +25,7 @@ namespace Galileo_API.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_EstadoLaboral_Guardar")]
         public ErrorDto AF_EstadoLaboral_Guardar(int codEmpresa, string usuario, EstadoLaboralData estado)
         {
@@ -32,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_EstadoLaboral_Eliminar")]
         public ErrorDto AF_EstadoLaboral_Eliminar(int codEmpresa, string usuario, string estadoLaboral)
         {

@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_ConciliadorPatronal_Instituciones_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Ah_ConciliadorPatronal_Cargado")]
         public static ActionResult<ErrorDto<List<FrmAhConciliadorPatronalHistoricoDto>>> Ah_ConciliadorPatronal_Cargado(
             [FromQuery] int codEmpresa,
@@ -34,6 +35,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return FrmAhConciliadorPatronalBL.Ah_ConciliadorPatronal_Cargado(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Ah_ConciliadorPatronal_Aplicar")]
         public ActionResult<ErrorDto<FrmAhConciliadorPatronalAplicarResponse>> Ah_ConciliadorPatronal_Aplicar(
             [FromQuery] int codEmpresa,
@@ -42,6 +44,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_ConciliadorPatronal_Aplicar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Ah_ConciliadorPatronal_Conciliacion_Obtener")]
         public ActionResult<ErrorDto<List<FrmAhConciliadorPatronalConciliacionDto>>> Ah_ConciliadorPatronal_Conciliacion_Obtener(
             [FromQuery] int codEmpresa,
@@ -50,6 +53,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_ConciliadorPatronal_Conciliacion_Obtener(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Ah_ConciliadorPatronal_Resultados_Obtener")]
         public ActionResult<ErrorDto<List<FrmAhConciliadorPatronalResultadoDto>>> Ah_ConciliadorPatronal_Resultados_Obtener(
             [FromQuery] int codEmpresa,

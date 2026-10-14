@@ -27,6 +27,7 @@ namespace Galileo.Controllers
         }
          
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sys_Educacion_Guardar")]
         public ErrorDto  Sys_Educacion_Guardar(int CodEmpresa, string usuario, SysEducacionData datos)
         {
@@ -34,6 +35,7 @@ namespace Galileo.Controllers
         }
        
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Sys_Educacion_Eliminar")]
         public ErrorDto Sys_Educacion_Eliminar(int CodEmpresa, string usuario, string cod_Educ, string tipo)
         {
@@ -49,6 +51,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sys_EducacionDetalle_Asignar")]
         public ErrorDto Sys_EducacionDetalle_Asignar(int CodEmpresa, string usuario , string cod_DetalleEduc, string cod_Educ, bool accion)
         {

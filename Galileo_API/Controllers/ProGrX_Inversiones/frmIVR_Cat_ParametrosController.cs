@@ -22,6 +22,7 @@ namespace Galileo_API.Controllers.ProGrX_Inversiones
             _bl = new FrmIvrCatParametrosBl(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("IVR_Cat_Parametros_Inicializar")]
         public ErrorDto IVR_Cat_Parametros_Inicializar(
             [FromQuery] int codEmpresa)
@@ -39,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX_Inversiones
                 codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("IVR_Cat_Parametros_Actualizar")]
         public ErrorDto IVR_Cat_Parametros_Actualizar(
             [FromQuery] int codEmpresa,

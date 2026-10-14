@@ -21,18 +21,21 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
         public ActionResult<ErrorDto<List<RemesasTesoreriaObtenerDto>>> RemesasTesoreria_Obtener([FromQuery] int codEmpresa)
             => _bl.RemesasTesoreria_Obtener(codEmpresa);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("RemesasTesoreria_Insertar")]
         public ActionResult<ErrorDto<int>> RemesasTesoreria_Insertar(
             [FromQuery] int codEmpresa,
             [FromBody] RemesaTesoreriaUpsertDto dto)
             => _bl.RemesasTesoreria_Insertar(codEmpresa, dto);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("RemesasTesoreria_Actualizar")]
         public ActionResult<ErrorDto<bool>> RemesasTesoreria_Actualizar(
             [FromQuery] int codEmpresa,
             [FromBody] RemesaTesoreriaUpsertDto dto)
             => _bl.RemesasTesoreria_Actualizar(codEmpresa, dto);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("RemesasTesoreriaDetalle_Eliminar")]
         public ActionResult<ErrorDto<bool>> RemesasTesoreriaDetalle_Eliminar(
             [FromQuery] int codEmpresa,
@@ -57,6 +60,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             [FromQuery] int remesaSeleccionada)
             => _bl.RemesasTesoreria_ValidarAbierta(codEmpresa, remesaSeleccionada);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("RemesasTesoreria_CargarDesembolso")]
         public ActionResult<ErrorDto<bool>> RemesasTesoreria_CargarDesembolso(
             [FromQuery] int codEmpresa,
@@ -64,6 +68,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             [FromQuery] int codigoDesembolso)
             => _bl.RemesasTesoreria_CargarDesembolso(codEmpresa, remesaSeleccionada, codigoDesembolso);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("RemesasTesoreria_Cerrar")]
         public ActionResult<ErrorDto<bool>> RemesasTesoreria_Cerrar(
             [FromQuery] int codEmpresa,
@@ -83,6 +88,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             [FromQuery] int remesaSeleccionada)
             => _bl.RemesasTesoreria_ValidarCerrada(codEmpresa, remesaSeleccionada);
 
+        [ValidateAntiForgeryToken]
         [HttpPut("RemesasTesoreria_ActualizarProceso")]
         public ActionResult<ErrorDto<bool>> RemesasTesoreria_ActualizarProceso(
             [FromQuery] int codEmpresa,

@@ -19,6 +19,7 @@ namespace Galileo.Controllers
             _bl = new FrmGenEnlacesCreditoBl(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Gen_EnlacesCredito_Sincronizar")]
         public ErrorDto Gen_EnlacesCredito_Sincronizar(int CodEmpresa)
         {
@@ -43,6 +44,7 @@ namespace Galileo.Controllers
             return _bl.Gen_EnlacesCreditoCatalogo_Obtener(CodEmpresa, cod_institucion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Gen_EnlacesCredito_Actualizar")]
         public ErrorDto Gen_EnlacesCredito_Actualizar(int CodEmpresa, GenEnlacesCreditoData enlace)
         {

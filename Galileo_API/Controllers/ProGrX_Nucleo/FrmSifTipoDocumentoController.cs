@@ -41,6 +41,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_tipoDocumento_Guardar")]
         public ErrorDto SIF_tipoDocumento_Guardar(int CodEmpresa, string usuario, SifTipoDocumentoData tipoDoc, int accion)
         {
@@ -55,6 +56,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_TipoDocumentosConceptosRelacionados_Guardar")]
         public ErrorDto SIF_TipoDocumentosConceptosRelacionados_Guardar(int CodEmpresa, string usuario, string cod_concepto, string tipoDoc, string accion)
         {
@@ -69,6 +71,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_tipoDocumento_ArchivoEspecial_Guardar")]
         [Consumes("multipart/form-data")]
         public ErrorDto<SifTipoDocumentoArchivoData> SIF_tipoDocumento_ArchivoEspecial_Guardar(int CodEmpresa, string usuario, IFormFile file, bool sobrescribir = false)

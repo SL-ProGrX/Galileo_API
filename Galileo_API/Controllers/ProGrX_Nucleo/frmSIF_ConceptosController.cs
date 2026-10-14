@@ -31,6 +31,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sif_Conceptos_Guardar")]
         public ErrorDto Sif_Conceptos_Guardar(int CodEmpresa, string usuario, SifConceptoData concepto)
         {
@@ -38,6 +39,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Sif_Conceptos_Eliminar")]
         public ErrorDto Sif_Conceptos_Eliminar(int CodEmpresa, string usuario, string concepto)
         {
@@ -59,6 +61,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sif_ConceptosDocumentos_Asociar")]
         public ErrorDto Sif_ConceptosDocumentos_Asociar(int CodEmpresa, string usuario, string cod_concepto, string tipo_documento)
         {
@@ -66,6 +69,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Sif_ConceptosDocumentos_Desasociar")]
         public ErrorDto Sif_ConceptosDocumentos_Desasociar(int CodEmpresa, string usuario, string cod_concepto, string tipo_documento)
         {

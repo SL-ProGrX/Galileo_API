@@ -35,24 +35,28 @@ namespace Galileo.Controllers
             return _bl.InvTranES_scroll(CodEmpresa, scrollValue, CodBoleta, TipoTran);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvTranES_Insertar")]
         public ErrorDto InvTranES_Insertar(int CodEmpresa, string TipoTran, TranESData request)
         {
             return _bl.InvTranES_Insertar(CodEmpresa, TipoTran, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvTranES_Actualizar")]
         public ErrorDto InvTranES_Actualizar(int CodEmpresa, TranESUpdate request)
         {
             return _bl.InvTranES_Actualizar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvTranES_Eliminar")]
         public ErrorDto InvTranES_Eliminar(int CodEmpresa, string CodBoleta, string TipoTran)
         {
             return _bl.InvTranES_Eliminar(CodEmpresa, CodBoleta, TipoTran);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvProducLineas_Insertar")]
         public ErrorDto InvProducLineas_Insertar(int CodEmpresa, string CodBoleta, string TipoTran, List<InvProducLineasInsert> request)
         {
@@ -65,6 +69,7 @@ namespace Galileo.Controllers
             return _bl.InvTranPlantilla_Obtener(CodEmpresa, TipoTran, CodBoleta, GeneraUser, GeneraFecha);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("InvProducLineas_Eliminar")]
         public ErrorDto InvProducLineas_Eliminar(int CodEmpresa, string CodBoleta, string TipoTran, int Linea)
         {

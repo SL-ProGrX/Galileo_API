@@ -50,12 +50,14 @@ namespace Galileo_API.Controllers
             return _bl.TES_Tipos_Documentos_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Desembolsos_Buscar")]
         public ErrorDto<DesembolsosLista> Desembolsos_Buscar(int codEmpresa, int CodConta, [FromBody] FiltrosBusqueda filtros)
         {
             return _bl.Desembolsos_Buscar(codEmpresa, CodConta, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Desembolsos_Exportar")]
         public ErrorDto<List<Desembolsos>> Desembolsos_Exportar(int codEmpresa, int CodConta, FiltrosBusqueda filtros)
         {

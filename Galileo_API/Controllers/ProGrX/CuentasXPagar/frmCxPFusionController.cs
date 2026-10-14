@@ -24,6 +24,7 @@ namespace Galileo.Controllers
             return _bl.Proveedores_Obtener(CodCliente, pagina, paginacion, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Fusion_Aplicar")]
         public ErrorDto Fusion_Aplicar(int CodCliente, int proveedor, List<CxpProveedorData> proveedores)
         {

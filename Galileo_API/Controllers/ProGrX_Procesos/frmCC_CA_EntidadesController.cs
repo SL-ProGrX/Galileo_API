@@ -21,12 +21,14 @@ namespace Galileo.Controllers
             return _bl.CC_CA_Entidades_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_CA_Entidad_Guardar")]
         public ErrorDto frmCC_CA_Entidad_Guardar(int CodEmpresa, string usuario, CaEntidadData request)
         {
             return _bl.frmCC_CA_Entidad_Guardar(CodEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CC_CA_Entidad_Eliminar")]
         public ErrorDto CC_CA_Entidad_Delete(int CodEmpresa, string Usuario, string Codigo)
         {

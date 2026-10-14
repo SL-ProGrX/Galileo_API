@@ -87,6 +87,7 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "AF_frmAF_BenSeguimientoRevisionesTag_Omision_Cambiar")]
         public ErrorDto<AfBenSeguimientoOmisionCambiarData>
@@ -100,6 +101,7 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "AF_frmAF_BenSeguimientoRevisionesTag_Aplicar")]
         public ErrorDto

@@ -23,12 +23,14 @@ namespace Galileo.Controllers
             return _bl.PeObjetivosEstrategicosLista_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ObjetivosEstrategicos_Guardar")]
         public ErrorDto ObjetivosEstrategicos_Guardar(int CodEmpresa, PeObjetivosEstrategicosDto objetivo)
         {
             return _bl.ObjetivosEstrategicos_Guardar(CodEmpresa, objetivo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("ObjetivosEstrategicos_Eliminar")]
         public ErrorDto ObjetivosEstrategicos_Eliminar(int CodEmpresa, int objetivo_id)
         {

@@ -18,6 +18,7 @@ namespace Galileo.Controllers
             _bl = new FrmInvTransacProcesaBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvTransacProcesa")]
         public ErrorDto InvTransacProcesa(int CodEmpresa, InvTransacProcesa request)
         {

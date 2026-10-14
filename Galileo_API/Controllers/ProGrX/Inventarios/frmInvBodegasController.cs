@@ -60,6 +60,7 @@ namespace Galileo.Controllers
                 tipo_transaccion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("INV_Bodegas_Registrar")]
         public ErrorDto INV_Bodegas_Registrar(
             int CodEmpresa,
@@ -70,6 +71,7 @@ namespace Galileo.Controllers
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("INV_Bodegas_Actualizar")]
         public ErrorDto INV_Bodegas_Actualizar(
             int CodEmpresa,
@@ -80,6 +82,7 @@ namespace Galileo.Controllers
                 request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("INV_Bodegas_Eliminar")]
         public ErrorDto INV_Bodegas_Eliminar(
             int CodEmpresa,
@@ -90,6 +93,7 @@ namespace Galileo.Controllers
                 cod_bodega);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("INV_Bodegas_Permiso_Actualizar")]
         public ErrorDto INV_Bodegas_Permiso_Actualizar(
             int CodEmpresa,

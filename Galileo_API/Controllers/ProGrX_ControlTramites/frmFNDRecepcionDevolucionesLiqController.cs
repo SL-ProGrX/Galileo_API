@@ -37,6 +37,7 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
                 numeroBoleta);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_frmFNDRecepcionDevolucionesLiq_Aplicar")]
         public ErrorDto<FndRecepcionDevolucionesLiqAplicarData>
             FND_frmFNDRecepcionDevolucionesLiq_Aplicar(

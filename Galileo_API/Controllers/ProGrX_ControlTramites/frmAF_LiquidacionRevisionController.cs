@@ -84,6 +84,7 @@
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_LiquidacionRevision_Omision_Insertar")]
         public ErrorDto<AfLiquidacionRevisionOmisionInsertarModel?> AF_LiquidacionRevision_Omision_Insertar(
             int CodEmpresa,
@@ -93,6 +94,7 @@
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_LiquidacionRevision_Omision_Eliminar")]
         public ErrorDto AF_LiquidacionRevision_Omision_Eliminar(
             int CodEmpresa,
@@ -102,6 +104,7 @@
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_LiquidacionRevision_Omisiones_Aplicar")]
         public ErrorDto AF_LiquidacionRevision_Omisiones_Aplicar(
             int CodEmpresa,
@@ -111,6 +114,7 @@
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_LiquidacionRevision_Aplicar")]
         public ErrorDto AF_LiquidacionRevision_Aplicar(
             int CodEmpresa,

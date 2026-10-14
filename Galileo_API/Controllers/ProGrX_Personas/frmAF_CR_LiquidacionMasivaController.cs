@@ -19,6 +19,7 @@ namespace Galileo.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_LiquidacionMasiva_Obtener")]
         public ErrorDto<List<AfLiquidacionMasiva>> AF_LiquidacionMasiva_Obtener(int CodEmpresa, [FromBody] AfLiquidacionMasivaFiltros Filtro)
         {
@@ -44,6 +45,7 @@ namespace Galileo.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_LiquidacionMasiva")]
         public ErrorDto AF_LiquidacionMasiva(int CodEmpresa, int RenunciaId, string Usuario, short S06 = 1)
         {
@@ -51,6 +53,7 @@ namespace Galileo.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_LiquidacionMasiva_Proceso_Iniciar")]
         public ErrorDto<AfLiqMasivaProgreso> AF_LiquidacionMasiva_Proceso_Iniciar(int CodEmpresa, [FromBody] AfLiqMasivaIniciarRequest request)
         {
@@ -58,6 +61,7 @@ namespace Galileo.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_LiquidacionMasiva_Proceso_ProcesarLote")]
         public ErrorDto<AfLiqMasivaProgreso> AF_LiquidacionMasiva_Proceso_ProcesarLote(int CodEmpresa, Guid ProcesoId, int Tamano)
         {

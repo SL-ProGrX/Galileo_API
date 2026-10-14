@@ -24,11 +24,13 @@ namespace Galileo_API.Controllers.ProGrX_Comites
           => _bl.AfCdTiposEstadosLista_Obtener(codEmpresa, filtros, esExportar);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdTiposEstados_Guardar")]
         public ErrorDto AfCdTiposEstados_Guardar(int codEmpresa, string usuario, [FromBody] CdTiposEstadosData datos)
                  => _bl.AfCdTiposEstados_Guardar(codEmpresa, usuario, datos);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfCdTiposEstados_Eliminar")]
         public ErrorDto AfCdTiposEstados_Eliminar(int codEmpresa, string usuario, string codTipoCuenta)
                   => _bl.AfCdTiposEstados_Eliminar(codEmpresa, usuario, codTipoCuenta);

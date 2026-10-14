@@ -25,6 +25,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CanalesTipos_Guardar")]
         public ErrorDto AF_CanalesTipos_Guardar(int CodEmpresa, string usuario, CanalTipoData canalTipo)
         {
@@ -32,6 +33,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_CanalesTipos_Eliminar")]
         public ErrorDto AF_CanalesTipos_Eliminar(int CodEmpresa, string usuario, string canalTipo)
         {

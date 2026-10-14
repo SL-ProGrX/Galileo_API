@@ -36,6 +36,7 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
             return _bl.VivMantenimiento_Lista_Obtener(codEmpresa, tag, key);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("VivMantenimiento_ZonaContacto_Asignar")]
         public ErrorDto VivMantenimiento_ZonaContacto_Asignar(int codEmpresa, VivMantenimientoZonaContactoAsignarRequest request)
         {

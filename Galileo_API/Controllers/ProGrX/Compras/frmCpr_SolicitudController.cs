@@ -36,12 +36,14 @@ namespace Galileo.Controllers
             return _bl.CprSolicitud_Scroll(CodEmpresa, scroll, usuario, codigo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprSolicitud_Guardar")]
         public ErrorDto CprSolicitud_Guardar(int CodEmpresa, bool Edita, CprSolicitudDto solicitud)
         {
             return _bl.CprSolicitud_Guardar(CodEmpresa, Edita, solicitud);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CprSolicitud_Eliminar")]
         public ErrorDto CprSolicitud_Eliminar(int CodEmpresa, int cpr_id)
         {
@@ -54,12 +56,14 @@ namespace Galileo.Controllers
             return _bl.CprSolicitudBs_Obtener(CodEmpresa, cpr_id, cod_unidad);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprSolicitudBs_Guardar")]
         public ErrorDto CprSolicitudBs_Guardar(int CodEmpresa, bool editaBs, CprSolicitudBsDto solicitud)
         {
             return _bl.CprSolicitudBs_Guardar(CodEmpresa, editaBs, solicitud);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CprSolicitudBs_Eliminar")]
         public ErrorDto CprSolicitudBs_Eliminar(int CodEmpresa, int cpr_id, string cod_producto, string cod_unidad)
         {
@@ -109,6 +113,7 @@ namespace Galileo.Controllers
             return _bl.CprSolicitudCotizacionBs_Obtener(CodEmpresa, cpr_id, cod_unidad, cod_cotizacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AutorizaSolicitud")]
         public ErrorDto AutorizaSolicitud(int CodEmpresa, int CPR_ID, string usuario)
         {
@@ -116,6 +121,7 @@ namespace Galileo.Controllers
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost("DeniegaSolicitud")]
         public ErrorDto DeniegaSolicitud(int CodEmpresa, int CPR_ID, string usuario, string detalle_seguimiento)
         {

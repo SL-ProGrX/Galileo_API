@@ -25,6 +25,7 @@ namespace Galileo.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_CRMotivos_Guardar")]
         public ActionResult<ErrorDto> AF_CRMotivos_Guardar(int CodEmpresa, string usuario, [FromBody] AfCrMotivosData motivo)
         {
@@ -32,6 +33,7 @@ namespace Galileo.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_CRMotivos_Eliminar")]
         public ActionResult<ErrorDto> AF_CRMotivos_Eliminar(int CodEmpresa, string cod_motivo, string usuario)
         {

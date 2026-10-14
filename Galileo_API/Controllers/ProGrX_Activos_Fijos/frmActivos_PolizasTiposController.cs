@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_PolizasTipos_Guardar")]
         public ErrorDto Activos_PolizasTipos_Guardar(int CodEmpresa, string usuario, ActivosPolizasTiposData tipoPoliza)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Activos_PolizasTipos_Eliminar")]
         public ErrorDto Activos_PolizasTipos_Eliminar(int CodEmpresa, string usuario, string tipo_poliza)
         {

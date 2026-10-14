@@ -41,6 +41,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Unidades_Guardar")]
         public ErrorDto AF_Unidades_Guardar(int CodEmpresa, int rbTipo, bool Editar, AfUnidadesDto Info, string Usuario)
         {
@@ -48,6 +49,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_Unidades_Eliminar")]
         public ErrorDto AF_Unidades_Eliminar(int CodEmpresa, int rbTipo, string Codigo, string Usuario)
         {

@@ -24,6 +24,7 @@ namespace Galileo.Controllers
             return _bl.ObtenerTiposOrdenes(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cpr_TiposOrden_Guardar")]
         public ErrorDto Cpr_TiposOrden_Guardar(
             int CodEmpresa,
@@ -33,6 +34,7 @@ namespace Galileo.Controllers
             return _bl.Cpr_TiposOrden_Guardar(CodEmpresa, usuario, tipoOrden);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Cpr_TiposOrden_Eliminar")]
         public ErrorDto Cpr_TiposOrden_Eliminar(
             int CodEmpresa,

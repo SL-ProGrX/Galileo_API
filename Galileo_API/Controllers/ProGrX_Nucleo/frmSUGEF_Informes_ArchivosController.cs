@@ -31,6 +31,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SUGEFInformesArchivos_Corte_Procesar")]
         public ErrorDto SUGEFInformesArchivos_Corte_Procesar(int CodEmpresa, string Usuario, DateTime Corte, string Descripcion, DateTime RngInicio, DateTime RngCorte)
         {
@@ -38,6 +39,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SUGEFInformesArchivos_Archivo")]
         public IActionResult SUGEFInformesArchivos_Archivo(int CodEmpresa, string Usuario, DateTime Corte)
         {

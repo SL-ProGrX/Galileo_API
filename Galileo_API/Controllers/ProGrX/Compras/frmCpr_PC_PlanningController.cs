@@ -59,18 +59,21 @@ namespace Galileo.Controllers
             return PC_PlanningBL.CprBitacora_Obtener(CodEmpresa, parametros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprPlanCompras_Insert")]
         public ErrorDto CprPlanCompras_Insert(int CodEmpresa, CprPlanComprasDto request)
         {
             return PC_PlanningBL.CprPlanCompras_Insert(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprPlanCompras_Update")]
         public ErrorDto CprPlanCompras_Update(int CodEmpresa, CprPlanComprasDto request)
         {
             return PC_PlanningBL.CprPlanCompras_Update(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprPlanDT_Upsert")]
         public ErrorDto CprPlanDT_Upsert(int CodEmpresa, string parametros, List<CprPlanDTCortesDto> cortes)
         {
@@ -83,6 +86,7 @@ namespace Galileo.Controllers
             return PC_PlanningBL.CprPlanCompras_PlanesEstrategicos(CodEmpresa, planCompras);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprPlanCompras_AgregarSeleccion")]
         public ErrorDto<int> CprPlanCompras_AgregarSeleccion(int CodEmpresa, List<CprSeleccionDto> planEst)
         {

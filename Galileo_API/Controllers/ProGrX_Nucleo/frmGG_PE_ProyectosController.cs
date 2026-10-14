@@ -22,12 +22,14 @@ namespace Galileo.Controllers
             return BL_GG_PE_Proyectos.PeProyectoLista_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PeProyecto_Guardar")]
         public ErrorDto PeProyecto_Guardar(int CodEmpresa, PeProyectosDto proyectos)
         {
             return BL_GG_PE_Proyectos.PeProyecto_Guardar(CodEmpresa, proyectos);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("PeProyecto_Eliminar")]
         public ErrorDto PeProyecto_Eliminar(int CodEmpresa, int proyecto_id)
         {
@@ -40,6 +42,7 @@ namespace Galileo.Controllers
             return BL_GG_PE_Proyectos.PeObservacionesProyectos_Obtener(CodEmpresa, proyecto_id);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PeObjetivoProyecto_Asociar")]
         public ErrorDto PeObjetivoProyecto_Asociar(int CodEmpresa, int proyecto_id, int objetivo_id, string usuario)
         {

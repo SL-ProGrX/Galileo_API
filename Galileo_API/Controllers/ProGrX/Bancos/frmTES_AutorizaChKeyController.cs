@@ -20,6 +20,7 @@ namespace Galileo.Controllers.ProGrX.Bancos
         }
 
         
+        [ValidateAntiForgeryToken]
         [HttpPost("TES_AutorizaChKey_Cambiar")]
         public ErrorDto TES_AutorizaChKey_Cambiar(AutorizaChKeyData usuario)
         {

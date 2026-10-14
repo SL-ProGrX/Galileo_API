@@ -38,6 +38,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sys_MensajesPortal_Mensaje_Guardar")]
         public ErrorDto Sys_MensajesPortal_Mensaje_Guardar(int CodEmpresa,[FromBody] SysMensajesPortalDetalleModel dto,string usuario)
         {
@@ -45,6 +46,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Sys_MensajesPortal_Mensaje_Eliminar")]
         public ErrorDto Sys_MensajesPortal_Mensaje_Eliminar(int CodEmpresa, string codigo, string usuario)
         {
@@ -87,6 +89,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sys_MensajesPortal_Portal_Guardar")]
         public ErrorDto Sys_MensajesPortal_Portal_Guardar(
             int CodEmpresa,

@@ -29,11 +29,13 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             => _bl.Siniestros_Existe(codEmpresa, id);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Siniestros_Guardar")]
         public ErrorDto<bool> Siniestros_Guardar(int codEmpresa, [FromBody] SiniestroTipoSaveParams param)
             => _bl.Siniestros_Guardar(codEmpresa, param);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Siniestros_Eliminar")]
         public ErrorDto<bool> Siniestros_Eliminar(int codEmpresa, [FromBody] SiniestroTipoDeleteParams param)
             => _bl.Siniestros_Eliminar(codEmpresa, param);

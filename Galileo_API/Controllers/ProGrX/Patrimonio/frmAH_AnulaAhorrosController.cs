@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
         public ErrorDto<List<FrmAhAnulaAhorrosMovimientoResponse>> Ah_AnulaAhorros_Movimientos_Obtener(int CodEmpresa, string Cedula, string TipoRubro)
             => _bl.Ah_AnulaAhorros_Movimientos_Obtener(CodEmpresa, Cedula, TipoRubro);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Ah_AnulaAhorros_Procesar")]
         public ErrorDto<FrmAhAnulaAhorrosProcesarResponse> Ah_AnulaAhorros_Procesar(int CodEmpresa, FrmAhAnulaAhorrosProcesarRequest request)
             => _bl.Ah_AnulaAhorros_Procesar(CodEmpresa, request);

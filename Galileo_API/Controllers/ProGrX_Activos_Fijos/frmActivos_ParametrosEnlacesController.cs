@@ -17,6 +17,7 @@ namespace Galileo.Controllers
         }
              
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_ParametrosEnlaces_Proveedores_Guardar")]
         public ErrorDto Activos_ParametrosEnlaces_Proveedores_Guardar(int CodEmpresa)
         {

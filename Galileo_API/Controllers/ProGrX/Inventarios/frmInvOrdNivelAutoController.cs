@@ -38,12 +38,14 @@ namespace Galileo.Controllers
             return _bl.Autorizador_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Autorizador_Insertar")]
         public ErrorDto Autorizador_Insertar(int CodEmpresa, AutorizadorDto request)
         {
             return _bl.Autorizador_Insertar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Autorizador_Eliminar")]
         public ErrorDto Autorizador_Eliminar(int CodEmpresa, AutorizadorDto request)
         {
@@ -66,6 +68,7 @@ namespace Galileo.Controllers
             return _bl.UsuariosACargo_Obtener(CodEmpresa, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("UsuarioACargo_Actualizar")]
         public ErrorDto UsuarioACargo_Actualizar(int CodEmpresa, UsuarioaCargoDto request)
         {
@@ -88,12 +91,14 @@ namespace Galileo.Controllers
             return _bl.UsuariosCambioFecha_Obtener(CodEmpresa, tipo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CambioFechas_Insertar")]
         public ErrorDto CambioFechas_Insertar(int CodEmpresa, UsuarioaCambioFechaDto request)
         {
             return _bl.CambioFechas_Insertar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CambioFechas_Eliminar")]
         public ErrorDto CambioFechas_Eliminar(int CodEmpresa, UsuarioaCambioFechaDto request)
         {

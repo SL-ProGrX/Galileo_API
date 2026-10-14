@@ -39,6 +39,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
         /// <param name="encargado"></param>
         /// <returns></returns>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_Excedentes_Encargados_Guardar")]
         public ErrorDto AH_Excedentes_Encargados_Guardar( int CodEmpresa,string usuario,[FromBody] EncargadoExcedenteDto encargado)
         {
@@ -53,6 +54,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
         /// <param name="usuario"></param>
         /// <returns></returns>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AH_Excedentes_Encargados_Eliminar")]
         public ErrorDto AH_Excedentes_Encargados_Eliminar(int CodEmpresa,string usuarioEncargado,string usuario)
         {

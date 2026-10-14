@@ -32,6 +32,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_Emisores_Guardar")]
         public ErrorDto SIF_Emisores_Guardar(int CodEmpresa, string usuario, [FromBody] SifEmisoresData emisor)
         {
@@ -39,6 +40,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_Emisores_Valida")]
         public ErrorDto SIF_Emisores_Valida(int CodEmpresa, [FromBody] SifEmisoresData emisor)
         {
@@ -46,6 +48,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("SIF_Emisores_Eliminar")]
         public ErrorDto SIF_Emisores_Eliminar(int CodEmpresa, string usuario, string cod_emisor)
         {
@@ -60,6 +63,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_EmisorTarjeta_Asignar")]
         public ErrorDto SIF_EmisorTarjeta_Asignar(int CodEmpresa, string usuario, [FromBody] SifEmisorTarjetaData asignacion)
         {
@@ -67,6 +71,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SIF_EmisorTarjeta_Desasignar")]
         public ErrorDto SIF_EmisorTarjeta_Desasignar(int CodEmpresa, string usuario, [FromBody] SifEmisorTarjetaData asignacion)
         {

@@ -29,12 +29,14 @@ namespace Galileo.Controllers
             return _bl.top1EventoObtener(CodCliente, Scroll, cod_evento);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Evento_Guardar")]
         public ErrorDto Evento_Guardar(int CodCliente, CxPEventos evento)
         {
             return _bl.Evento_Guardar(CodCliente, evento);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Evento_Eliminar")]
         public ErrorDto Evento_Eliminar(int CodCliente, string cod_evento)
         {
@@ -47,6 +49,7 @@ namespace Galileo.Controllers
             return _bl.ObtenerProveedoresEvento(CodEmpresa, cod_evento ?? string.Empty);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AsignaEventoProveedor")]
         public ErrorDto AsignaEventoProveedor(int CodCliente, int proveedor, string evento, int activa, string usuario)
         {

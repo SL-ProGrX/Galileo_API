@@ -39,6 +39,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_ExcedentesTiposSalidas_Bancos_Lista(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Ah_ExcedentesTiposSalidas_Insertar")]
         public ActionResult<ErrorDto<FrmAhExcedentesTiposSalidasGuardarResponse>> Ah_ExcedentesTiposSalidas_Insertar(
             [FromQuery] int codEmpresa,
@@ -47,6 +48,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_ExcedentesTiposSalidas_Insertar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Ah_ExcedentesTiposSalidas_Actualizar")]
         public ActionResult<ErrorDto<FrmAhExcedentesTiposSalidasGuardarResponse>> Ah_ExcedentesTiposSalidas_Actualizar(
             [FromQuery] int codEmpresa,
@@ -55,6 +57,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_ExcedentesTiposSalidas_Actualizar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Ah_ExcedentesTiposSalidas_Eliminar")]
         public ActionResult<ErrorDto<bool>> Ah_ExcedentesTiposSalidas_Eliminar(
             [FromQuery] int codEmpresa,

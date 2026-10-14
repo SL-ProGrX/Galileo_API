@@ -24,24 +24,28 @@ namespace Galileo.Controllers
             return _bl.UsuariosAutorizadores_Obtener(CodEmpresa, Filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("OrdenAutousers_Insertar")]
         public ErrorDto OrdenAutousers_Insertar(int CodEmpresa, string usuario, string usuario_asignado)
         {
             return _bl.OrdenAutousers_Insertar(CodEmpresa, usuario, usuario_asignado);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("OrdenAutousers_Eliminar")]
         public ErrorDto OrdenAutousers_Eliminar(int CodEmpresa, string usuario, string usuario_asignado)
         {
             return _bl.OrdenAutousers_Eliminar(CodEmpresa, usuario, usuario_asignado);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("OrdenAutorizadores_Insertar")]
         public ErrorDto OrdenAutorizadores_Insertar(int CodEmpresa, string usuario)
         {
             return _bl.OrdenAutorizadores_Insertar(CodEmpresa, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("OrdenAutorizadores_Eliminar")]
         public ErrorDto OrdenAutorizadores_Eliminar(int CodEmpresa, string usuario)
         {
@@ -66,12 +70,14 @@ namespace Galileo.Controllers
             return _bl.ListaAutousers_Obtener(CodEmpresa, usuario, filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FechaCambioAutorizadores_Insertar")]
         public ErrorDto FechaCambioAutorizadores_Insertar(int CodEmpresa, string usuario, string registro_usuario)
         {
             return _bl.FechaCambioAutorizadores_Insertar(CodEmpresa, usuario, registro_usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("FechaCambioAutorizadores_Eliminar")]
         public ErrorDto FechaCambioAutorizadores_Eliminar(int CodEmpresa, string usuario)
         {
@@ -90,24 +96,28 @@ namespace Galileo.Controllers
             return _bl.obtenerRangoUsuarios(CodCliente, cod_rango, cod_uen,filtro);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("registroRangosUsuarios")]
         public ErrorDto registroRangosUsuarios(int CodCliente, string cod_rango, RangosUsuariosDto request)
         {
             return _bl.registroRangosUsuarios(CodCliente, cod_rango, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Rangos_Agregar")]
         public ErrorDto Rangos_Agregar(int CodEmpresa, RangosDto request)
         {
             return _bl.Rangos_Agregar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPatch("Rangos_Actualizar")]
         public ErrorDto Rangos_Actualizar(int CodEmpresa, RangosDto request)
         {
             return _bl.Rangos_Actualizar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Rangos_Eliminar")]
         public ErrorDto Rangos_Eliminar(int CodEmpresa, string id)
         {

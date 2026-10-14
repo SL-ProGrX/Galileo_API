@@ -24,12 +24,14 @@ namespace Galileo.Controllers
             return _bl.ObtenerParametros(CodCliente);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ExecParametros")]
         public ErrorDto ExecParametros(int CodCliente)
         {
             return _bl.ExecParametros(CodCliente);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ActualizarParametros")]
         public ErrorDto ActualizarParametros(int CodCliente, string Usuario, string Valor, string Parametro)
         {

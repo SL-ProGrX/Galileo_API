@@ -41,12 +41,14 @@ namespace Galileo.Controllers
             return _bl.Producto_ObtenerDetalle(CodEmpresa, Cod_Producto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Producto_Actualizar")]
         public ErrorDto Producto_Actualizar(int CodEmpresa, ProductoDto request)
         {
             return _bl.Producto_Actualizar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Producto_Insertar")]
         public ErrorDto Producto_Insertar(int CodEmpresa, ProductoDto request)
         {
@@ -71,18 +73,21 @@ namespace Galileo.Controllers
             return _bl.DescuentoProducto_ObtenerTodos(CodEmpresa, Cod_Producto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("DescuentoProducto_Agregar")]
         public ErrorDto DescuentoProducto_Agregar(int CodEmpresa, DescuentoProducto request)
         {
             return _bl.DescuentoProducto_Agregar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("DescuentoProducto_Actualizar")]
         public ErrorDto DescuentoProducto_Actualizar(int CodEmpresa, DescuentoProducto request)
         {
             return _bl.DescuentoProducto_Actualizar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("DescuentoProducto_Eliminar")]
         public ErrorDto DescuentoProducto_Eliminar(int CodEmpresa, DescuentoProducto request)
         {
@@ -94,18 +99,21 @@ namespace Galileo.Controllers
             return _bl.BonificacionProducto_ObtenerTodos(CodEmpresa, Cod_Producto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("BonificacionProducto_Agregar")]
         public ErrorDto BonificacionProducto_Agregar(int CodEmpresa, BonificacionProducto request)
         {
             return _bl.BonificacionProducto_Agregar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("BonificacionProducto_Actualizar")]
         public ErrorDto BonificacionProducto_Actualizar(int CodEmpresa, BonificacionProducto request)
         {
             return _bl.BonificacionProducto_Actualizar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("BonificacionProducto_Eliminar")]
         public ErrorDto BonificacionProducto_Eliminar(int CodEmpresa, BonificacionProducto request)
         {
@@ -118,24 +126,28 @@ namespace Galileo.Controllers
             return _bl.ProveedorProducto_ObtenerTodos(CodEmpresa, Cod_Producto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ProveedorProducto_Eliminar")]
         public ErrorDto ProveedorProducto_Eliminar(int CodEmpresa, ProveedorProducto request)
         {
             return _bl.ProveedorProducto_Eliminar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ProveedorProducto_Insertar")]
         public ErrorDto ProveedorProducto_Insertar(int CodEmpresa, ProveedorProducto request)
         {
             return _bl.ProveedorProducto_Insertar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("BarrasProducto_Actualizar")]
         public ErrorDto BarrasProducto_Actualizar(int CodEmpresa, string codigoBarras, string Cod_Producto)
         {
             return _bl.BarrasProducto_Actualizar(CodEmpresa, codigoBarras, Cod_Producto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("BodegaExistenciaProducto_Obtener")]
         public ErrorDto<List<BodegaExistenciaProducto>> BodegaExistenciaProducto_Obtener(int CodEmpresa, BodegaExistenciaProducto request)
         {
@@ -148,18 +160,21 @@ namespace Galileo.Controllers
             return _bl.SimilaresProducto_ObtenerTodos(CodEmpresa, Cod_Producto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("PrecioProducto_AgregarActualizar")]
         public ErrorDto PrecioProducto_AgregarActualizar(int CodEmpresa, PrecioProducto request)
         {
             return _bl.PrecioProducto_AgregarActualizar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("SimilaresProducto_Actualizar")]
         public ErrorDto SimilaresProducto_Actualizar(int CodEmpresa, SimilarProducto request)
         {
             return _bl.SimilaresProducto_Actualizar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("SimilaresProducto_Eliminar")]
         public ErrorDto SimilaresProducto_Eliminar(int CodEmpresa, SimilarProducto request)
         {
@@ -178,6 +193,7 @@ namespace Galileo.Controllers
             return _bl.UensProducto_Obtener(CodEmpresa, Cod_Producto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("UensProducto_Actualizar")]
         public ErrorDto UensProducto_Actualizar(int CodEmpresa, UensProductos request)
         {
@@ -190,6 +206,7 @@ namespace Galileo.Controllers
             return _bl.TipoActivoLista_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("producto_Eliminar")]
         public ErrorDto producto_Eliminar(int CodEmpresa, string cod_producto)
         {

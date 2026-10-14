@@ -31,18 +31,21 @@ namespace Galileo.Controllers
             return _bl.ObtenerProveedores(CodCliente);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TipoProveedor_Actualizar")]
         public ErrorDto TipoProveedor_Actualizar(TiposProveedorDto request)
         {
             return _bl.TipoProveedor_Actualizar(request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TipoProveedor_Eliminar")]
         public ErrorDto TipoProveedor_Eliminar(TiposProveedorDto request)
         {
             return _bl.TipoProveedor_Eliminar(request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TipoProveedor_Insertar")]
         public ErrorDto TipoProveedor_Insertar(TiposProveedorDto request)
         {

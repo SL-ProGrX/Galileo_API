@@ -29,12 +29,14 @@ namespace Galileo.Controllers
             return _bl.Frm_Sys_Ra_Autorizadores_Obtener(CodEmpresa, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Frm_Sys_Ra_Autorizadores_Insertar")]
         public ErrorDto Frm_Sys_Ra_Autorizadores_Insertar(int CodCliente, AutorizadoresExpDto autorizador)
         {
             return _bl.Frm_Sys_Ra_Autorizadores_Insertar(CodCliente, autorizador);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Frm_Sys_Ra_Autorizadores_Actualizar")]
         public ErrorDto Frm_Sys_Ra_Autorizadores_Actualizar(int CodEmpresa, AutorizadoresExpDto request)
         {

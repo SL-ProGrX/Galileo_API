@@ -20,6 +20,7 @@ namespace Galileo_API.Controllers.ProGrX_Conciliacion
             _bl = new FrmCierreMensualAseBl(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "Conciliacion_CierreMensualASE_Cierre_Ejecutar")]
         public ErrorDto

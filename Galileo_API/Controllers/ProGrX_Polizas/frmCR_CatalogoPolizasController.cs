@@ -56,6 +56,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_CatalogoPolizas_ActualizarMasivo")]
         public ErrorDto<bool> Crd_CatalogoPolizas_ActualizarMasivo(int CodEmpresa, string usuario)
         {
@@ -70,6 +71,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _BL.Crd_CatalogoPolizas_Acreedores_Obtener(CodEmpresa, cod_poliza);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_CatalogoPolizas_Acreedor_Asignar")]
         public ErrorDto<bool> Crd_CatalogoPolizas_Acreedor_Asignar(int CodEmpresa, string usuario, CrdCatalogoPolizasAcreedorAsignarReq req)
         {
@@ -83,6 +85,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _BL.Crd_CatalogoPolizas_Garantias_Listar(CodEmpresa, cod_poliza);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_CatalogoPolizas_Garantia_Asignar")]
         public ErrorDto<CrdCatalogoPolizasGarantiaAsignaDto?>
        Crd_CatalogoPolizas_Garantia_Asignar(
@@ -118,6 +121,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _BL.Crd_CatalogoPolizas_Asignacion_Obtener(CodEmpresa, codigo, cod_destino, garantia);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_CatalogoPolizas_Asignacion_Actualizar")]
         public ErrorDto Crd_CatalogoPolizas_Asignacion_Actualizar(
            int CodEmpresa,
@@ -127,6 +131,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _BL.Crd_CatalogoPolizas_Asignacion_Actualizar(CodEmpresa, usuario, datos);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_CatalogoPolizas_Guardar")]
         public ErrorDto Crd_CatalogoPolizas_Guardar(int CodEmpresa, string usuario, CrdCatalogoPolizasGuardarDto dto)
         {
@@ -143,6 +148,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _BL.Crd_PolizasAcreedores_Grid_Obtener(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Crd_PolizasAcreedores_Eliminar")]
         public ErrorDto Crd_PolizasAcreedores_Eliminar(
                int CodEmpresa,
@@ -152,6 +158,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _BL.Crd_PolizasAcreedores_Eliminar(CodEmpresa, usuario, cod_acreedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Crd_PolizasAcreedores_Guardar")]
         public ErrorDto Crd_PolizasAcreedores_Guardar(
             int CodEmpresa,

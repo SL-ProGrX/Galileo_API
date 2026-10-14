@@ -31,6 +31,7 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
             return _bl.VivTiposDesembolsos_Obtener(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("VivParametros_Guardar")]
         public ErrorDto VivParametros_Guardar(int codEmpresa, string usuario, VivParametrosData request)
         {

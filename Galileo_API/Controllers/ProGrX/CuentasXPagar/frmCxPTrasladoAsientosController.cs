@@ -28,6 +28,7 @@ namespace Galileo.Controllers
             return _bl.Desbalanceados_Obtener(CodEmpresa, Inicio, Corte);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Reactivar")]
         public ErrorDto Reactivar(int CodEmpresa, string Inicio, string Corte)
         {
@@ -40,12 +41,14 @@ namespace Galileo.Controllers
             return _bl.fxValidaPeriodoAsiento(CodEmpresa, Fecha);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CasosCero_Borrar")]
         public ErrorDto CasosCero_Borrar(int CodEmpresa)
         {
             return _bl.CasosCero_Borrar(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AsientoIndividual_Procesar")]
         public ErrorDto AsientoIndividual_Procesar(int CodEmpresa,int cod_contabilidad, AsientoInfo data)
         {

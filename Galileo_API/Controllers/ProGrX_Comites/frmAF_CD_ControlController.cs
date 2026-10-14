@@ -19,6 +19,7 @@ namespace Galileo_API.Controllers.ProGrX_CxC
             _bl = new FrmAfCdControlBl(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Listar")]
         public ErrorDto<List<AfcdCuentaDto>> Listar(int codEmpresa, AfcdCuentaFiltroDto filtro)
         {

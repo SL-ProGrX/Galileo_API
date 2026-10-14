@@ -60,6 +60,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
                 transaccion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcProcesoMensual_CargarDeducciones")]
         [RequestSizeLimit(MaxCargaDeduccionesBytes)]
         public ErrorDto<CcProcesoMensualCargaDeduccionesResponse> CcProcesoMensual_CargarDeducciones(
@@ -69,6 +70,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
         }
 
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcProcesoMensual_CambiarFechaProceso_Ejecutar")]
         public ErrorDto<CcProcesoMensualCambiarFechaResponse> CcProcesoMensual_CambiarFechaProceso_Ejecutar(int codEmpresa, [FromBody] CcProcesoMensualCambiarFechaRequest request)
         {
@@ -97,24 +99,28 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
                 codInstitucion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcProcesoMensual_DesglosarPlanilla_Ejecutar")]
         public ErrorDto<CcProcesoMensualDesglosePlanillaResponse> CcProcesoMensual_DesglosarPlanilla_Ejecutar([FromBody] CcProcesoMensualDesgloseRequest request)
         {
             return _bl.CcProcesoMensual_DesglosarPlanilla_Ejecutar(request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcProcesoMensual_Ahorros_Aplicar")]
         public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_Ahorros_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             return _bl.CcProcesoMensual_Ahorros_Aplicar(codEmpresa, codInstitucion, fechaProceso, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcProcesoMensual_AhorrosInconsistencias_Aplicar")]
         public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_AhorrosInconsistencias_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             return _bl.CcProcesoMensual_AhorrosInconsistencias_Aplicar(codEmpresa, codInstitucion, fechaProceso, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcProcesoMensual_AhorrosDevoluciones_Aplicar")]
         public ErrorDto<CcProcesoMensualAhorros> CcProcesoMensual_AhorrosDevoluciones_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
@@ -127,24 +133,28 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
             return _bl.CcProcesoMensual_ParametrosAhorroReporte_Obtener(codEmpresa, codInstitucion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcProcesoMensual_CrAbonos_Aplicar")]
         public ErrorDto<CcProcesoMensualCreditosAplicacionResponse> CcProcesoMensual_CrAbonos_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, DateTime fechaSistema, string usuario)
         {
             return _bl.CcProcesoMensual_CrAbonos_Aplicar(codEmpresa, codInstitucion, fechaProceso, fechaSistema, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcProcesoMensual_CrdReporteInconsistencia_Aplicar")]
         public ErrorDto<CcProcesoMensualCreditosAplicacionResponse> CcProcesoMensual_CrdReporteInconsistencia_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             return _bl.CcProcesoMensual_CrdReporteInconsistencia_Aplicar(codEmpresa, codInstitucion, fechaProceso, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcProcesoMensual_CrdCalculoInteresesMoratorios_Aplicar")]
         public ErrorDto<CcProcesoMensualCreditosAplicacionResponse> CcProcesoMensual_CrdCalculoInteresesMoratorios_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {
             return _bl.CcProcesoMensual_CrdCalculoInteresesMoratorios_Aplicar(codEmpresa, codInstitucion, fechaProceso, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CcProcesoMensual_CrdRecalculoSaldoMes_Aplicar")]
         public ErrorDto<CcProcesoMensualCreditosAplicacionResponse> CcProcesoMensual_CrdRecalculoSaldoMes_Aplicar(int codEmpresa, int codInstitucion, decimal fechaProceso, string usuario)
         {

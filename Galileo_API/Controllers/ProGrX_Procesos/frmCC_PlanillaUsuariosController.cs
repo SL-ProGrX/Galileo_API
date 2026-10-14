@@ -32,6 +32,7 @@ namespace Galileo.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_Planilla_Aplica")]
         public ErrorDto CC_Planilla_Aplica(int CodEmpresa, string usuario, CCPlanillaAplicaRequest req)
         {
@@ -39,6 +40,7 @@ namespace Galileo.Controllers.ProGrX_Procesos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_Planilla_Todos_Aplica")]
         public ErrorDto CC_Planilla_Todos_Aplica(int CodEmpresa, string usuario, CCPlanillaTodosRequest req)
         {

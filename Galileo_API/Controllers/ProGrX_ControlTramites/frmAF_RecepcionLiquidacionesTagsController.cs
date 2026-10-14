@@ -53,6 +53,7 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
                     movimiento);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "AF_frmAF_RecepcionLiquidacionesTag_Movimiento_Aplicar")]
         public ErrorDto<

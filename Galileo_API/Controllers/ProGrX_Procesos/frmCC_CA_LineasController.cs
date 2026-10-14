@@ -23,12 +23,14 @@ namespace Galileo.Controllers
             return _bl.CC_CA_Lineas_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_CA_Lineas_Guardar")]
         public ErrorDto CC_CA_Lineas_Guardar(int CodEmpresa, string usuario, CcCaLineasData request)
         {
             return _bl.CC_CA_Lineas_Guardar(CodEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CC_CA_CatalogoLineas_Delete")]
         public ErrorDto CC_CA_CatalogoLineas_Delete(int CodEmpresa, string Usuario, string cod_linea)
         {
@@ -63,18 +65,21 @@ namespace Galileo.Controllers
             return _bl.CC_CA_CatalogoAsignaciones_Obtener(CodEmpresa, tipoOrigen, codigoOrigen);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_CA_LineasDetalle_Insertar")]
         public ErrorDto CC_CA_LineasDetalle_Insertar(int CodEmpresa, string usuario, string cod_linea, string codigo)
         {
             return _bl.CC_CA_LineasDetalle_Insertar(CodEmpresa, usuario, cod_linea, codigo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CC_CA_LineasDetalle_Delete")]
         public ErrorDto CC_CA_LineasDetalle_Delete(int CodEmpresa, string usuario, string cod_linea, string codigo)
         {
             return _bl.CC_CA_LineasDetalle_Delete(CodEmpresa, usuario, cod_linea, codigo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CC_CA_Asignacion_Guardar")]
         public ErrorDto CC_CA_Asignacion_Guardar([FromBody] CcCaAsignacionGuardarRequest request)
         {

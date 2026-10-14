@@ -32,6 +32,7 @@ namespace Galileo_API.Controllers.ProGrX_Hipotecario
             return _bl.VivTramiteNotas_ObtenerLista(codEmpresa, idGarantia, profesional);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("VivTramiteNotas_Guardar")]
         public ErrorDto VivTramiteNotas_Guardar(
             int codEmpresa, string usuario, VivTramiteNotaGuardarRequest request)

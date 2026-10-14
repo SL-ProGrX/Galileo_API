@@ -35,24 +35,28 @@ namespace Galileo.Controllers
             return _bl.InvUbicacion_scroll(CodEmpresa, scrollValue, CodAsignaUbicacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvAsignaUbicacion_Insertar")]
         public ErrorDto InvAsignaUbicacion_Insertar(int CodEmpresa, AsignaUbicacionDto request)
         {
             return _bl.InvAsignaUbicacion_Insertar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvAsignaUbicacion_Actualizar")]
         public ErrorDto InvAsignaUbicacion_Actualizar(int CodEmpresa, AsignaUbicacionDto request)
         {
             return _bl.InvAsignaUbicacion_Actualizar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvAsignaUbicacion_Eliminar")]
         public ErrorDto InvAsignaUbicacion_Eliminar(int CodEmpresa, int CodAsignaUbicacion)
         {
             return _bl.InvAsignaUbicacion_Eliminar(CodEmpresa, CodAsignaUbicacion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvAsignaUbicacionProduc_Insertar")]
         public ErrorDto InvRequesicionProduc_Insertar(int CodEmpresa, int CodRequisicion, List<AsignaUbicacionDetalleDto> producLineas)
         {
@@ -65,12 +69,14 @@ namespace Galileo.Controllers
             return _bl.InvAsignaUbicacion_Lista(CodEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvAsignacionUbicacion_CerrarOrden_Finalizar")]
         public ErrorDto InvAsignacionUbicacion_CerrarOrden_Finalizar(int CodEmpresa, int codigoAsignaUbicacion, string Usuario, string Estado)
         {
             return _bl.InvAsignacionUbicacion_CerrarOrden_Finalizar(CodEmpresa, codigoAsignaUbicacion, Usuario, Estado);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("InvAsignaUbicacionnProduc_Eliminar")]
         public ErrorDto InvAsignaUbicacionnProduc_Eliminar(int CodEmpresa, int CodAsignaUbicacion, int Linea)
         {

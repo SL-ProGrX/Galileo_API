@@ -97,6 +97,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     codRemesa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "FSL_RemesasPago_Remesa_Registrar")]
         public ErrorDto
@@ -110,6 +111,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut(
             "FSL_RemesasPago_Remesa_Actualizar")]
         public ErrorDto
@@ -123,6 +125,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete(
             "FSL_RemesasPago_Remesa_Eliminar")]
         public ErrorDto
@@ -138,6 +141,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "FSL_RemesasPago_Remesa_Cerrar")]
         public ErrorDto
@@ -151,6 +155,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "FSL_RemesasPago_Cargas_Aplicar")]
         public ErrorDto
@@ -164,6 +169,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "FSL_RemesasPago_Traslado_Aplicar")]
         public ErrorDto

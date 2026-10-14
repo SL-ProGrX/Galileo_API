@@ -61,12 +61,14 @@ using Microsoft.AspNetCore.Mvc;
                 return _bl.AfCdFacturas_Obtener(codEmpresa, operacion);
             }
 
+            [ValidateAntiForgeryToken]
             [HttpPost("AfCdDetalleLiquidacion_Guardar")]
             public ErrorDto AfCdDetalleLiquidacion_Guardar(int codEmpresa, string usuario, AfCdFacturaData request)
             {
                 return _bl.AfCdDetalleLiquidacion_Guardar(codEmpresa, usuario, request);
             }
             
+            [ValidateAntiForgeryToken]
             [HttpDelete("AfCdDetalleLiquidacion_Eliminar")]
             public ErrorDto AfCdDetalleLiquidacion_Eliminar(int codEmpresa, int operacion, string documento, string usuario)
             {
@@ -79,18 +81,21 @@ using Microsoft.AspNetCore.Mvc;
                 return _bl.AfCdDetalleLiquidacion_Montos_Obtener(codEmpresa, operacion);
             }
 
+            [ValidateAntiForgeryToken]
             [HttpPost("AfCdLiquidacion_Detallar")]
             public ErrorDto AfCdLiquidacion_Detallar(int codEmpresa, int operacion)
             {
                 return _bl.AfCdLiquidacion_Detallar(codEmpresa, operacion);
             }
         
+            [ValidateAntiForgeryToken]
             [HttpPost("AfCdLiquidacionOperacion_Liquidar")]
             public ErrorDto<object> AfCdLiquidacionOperacion_Liquidar(int codEmpresa, int operacion, string usuario, string notas)
             {
                 return _bl.AfCdLiquidacionOperacion_Liquidar(codEmpresa, operacion, usuario, notas);
             }
 
+            [ValidateAntiForgeryToken]
             [HttpPost("AfCdLiquidacion_Historico_Imprimir")]
             public ErrorDto<object> AfCdLiquidacion_Historico_Imprimir(int codEmpresa, int col, string opRef, string codigoComite, string usuario)
             {

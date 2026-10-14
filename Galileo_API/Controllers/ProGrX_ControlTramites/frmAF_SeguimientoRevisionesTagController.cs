@@ -74,12 +74,14 @@ namespace Galileo_API.Controllers.ProGrX.ControlTramites
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_SeguimientoRevisionesTag_Aplicar")]
         public ErrorDto AF_SeguimientoRevisionesTag_Aplicar(int CodEmpresa, string? usuario, [FromBody] AfSeguimientoRevisionesTagAplicarRequest? request)
         {
             return _bl.AF_SeguimientoRevisionesTag_Aplicar(CodEmpresa, usuario, request);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_SeguimientoRevisionesTag_Seleccion_Actualizar")]
         public ErrorDto<long?> AF_SeguimientoRevisionesTag_Seleccion_Actualizar(int CodEmpresa,string? usuario,[FromBody] AfSeguimientoRevisionesTagSeleccionRequest? request)
         {

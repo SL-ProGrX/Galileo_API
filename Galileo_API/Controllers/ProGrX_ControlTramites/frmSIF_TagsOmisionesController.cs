@@ -26,6 +26,7 @@
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SifTagsOmisiones_Guardar")]
         public ErrorDto SifTagsOmisiones_Guardar(int CodEmpresa, SifTagsOmisionesGuardarRequest request)
         {
@@ -33,6 +34,7 @@
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("SifTagsOmisiones_Eliminar")]
         public ErrorDto SifTagsOmisiones_Eliminar(int CodEmpresa, SifTagsOmisionesEliminarRequest request)
         {
@@ -56,6 +58,7 @@
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("SifTagsOmisiones_Asignacion_Guardar")]
         public ErrorDto SifTagsOmisiones_Asignacion_Guardar(
             int CodEmpresa,

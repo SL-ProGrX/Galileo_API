@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Departamentos_Guardar")]
         public ErrorDto Activos_Departamentos_Guardar(int CodEmpresa, string usuario, ActivosDepartamentosData departamento)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Activos_Departamentos_Eliminar")]
         public ErrorDto Activos_Departamentos_Eliminar(int CodEmpresa, string usuario, string cod_departamento)
         {
@@ -82,6 +84,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_Secciones_Guardar")]
         public ErrorDto Activos_Secciones_Guardar(int CodEmpresa, string usuario, ActivosSeccionesData seccion)
         {
@@ -89,6 +92,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Activos_Secciones_Eliminar")]
         public ErrorDto Activos_Secciones_Eliminar(int CodEmpresa, string usuario, string cod_departamento, string cod_seccion)
         {

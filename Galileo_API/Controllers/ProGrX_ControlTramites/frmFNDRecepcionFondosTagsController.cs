@@ -80,6 +80,7 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FND_frmFNDRecepcionFondosTags_Movimiento_Aplicar")]
         public ErrorDto<FndRecepcionFondosTagsAplicarResponse>
             FND_frmFNDRecepcionFondosTags_Movimiento_Aplicar(

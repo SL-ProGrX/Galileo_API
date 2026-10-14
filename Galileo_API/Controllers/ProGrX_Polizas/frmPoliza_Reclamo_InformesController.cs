@@ -50,6 +50,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Poliza_Reclamo_Informes_Causas_Lista(CodEmpresa, codPoliza);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Poliza_Reclamo_Informes_Preparar_Filtros")]
         public ErrorDto Poliza_Reclamo_Informes_Preparar_Filtros(
           int CodEmpresa, string usuario, PolizaReclamoInformesPrepararFiltrosRequest request)

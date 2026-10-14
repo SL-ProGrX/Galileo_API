@@ -54,6 +54,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_TiposActivos_Scroll(CodEmpresa, scroll, tipo_activo);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Activos_TiposActivo_Guardar")]
         [Authorize]
         public ErrorDto Activos_TiposActivo_Guardar(int CodEmpresa, ActivosTiposActivosData tiposActivoData)
@@ -61,6 +62,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
             return _bl.Activos_TiposActivos_Guardar(CodEmpresa, tiposActivoData);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("Activos_TiposActivo_Eliminar")]
         [Authorize]
         public ErrorDto Activos_TiposActivo_Eliminar(int CodEmpresa, string usuario, string tipo_activo)

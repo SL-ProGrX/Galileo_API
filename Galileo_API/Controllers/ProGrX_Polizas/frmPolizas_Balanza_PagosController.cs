@@ -25,11 +25,13 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             => _bl.Polizas_Combo_Lista(codEmpresa);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Poliza_Informe_Balance_Pago_Resumen")]
         public ErrorDto<List<PolizaBalancePagoResumenDto>> Poliza_Informe_Balance_Pago_Resumen(int codEmpresa, [FromBody] PolizaBalancePagoParams param)
             => _bl.Poliza_Informe_Balance_Pago_Resumen(codEmpresa, param);
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Poliza_Informe_Balance_Pago_Detalle")]
         public ErrorDto<List<PolizaBalancePagoDetalleDto>> Poliza_Informe_Balance_Pago_Detalle(int codEmpresa, [FromBody] PolizaBalancePagoParams param)
             => _bl.Poliza_Informe_Balance_Pago_Detalle(codEmpresa, param);

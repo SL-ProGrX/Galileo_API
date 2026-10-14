@@ -31,6 +31,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sif_EntidadesCancela_Guardar")]
         public ErrorDto Sif_EntidadesCancela_Guardar(int CodEmpresa, string usuario, SifEntidadesCancelaData entidad)
         {
@@ -38,6 +39,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Sif_EntidadesCancela_Eliminar")]
         public ErrorDto Sif_EntidadesCancela_Eliminar(int CodEmpresa, string entidad, string usuario)
         {

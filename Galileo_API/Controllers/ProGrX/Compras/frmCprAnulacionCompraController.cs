@@ -47,12 +47,14 @@ namespace Galileo.Controllers
             return _bl.Compra_Obtener(CodEmpresa, codCompra);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Compra_Anular")]
         public ErrorDto Compra_Anular(int CodEmpresa, CompraAnulacionDto compraDto)
         {
             return _bl.Compra_Anular(CodEmpresa, compraDto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Compra_Anulacion_Datos_Obtener")]
         public ErrorDto<CompraAnulacionDatosDto> Compra_Anulacion_Datos_Obtener(int CodEmpresa, CompraAnulacionDatosRequestDto compraAnulacionDatosRequestDto)
         {

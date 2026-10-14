@@ -67,6 +67,7 @@ namespace Galileo_API.Controllers.ProGrX_ControlTramites
                     request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost(
             "CR_frmCR_SeguimientoRecepcionTag_Movimiento_Aplicar")]
         public ErrorDto<

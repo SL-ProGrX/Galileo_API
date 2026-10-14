@@ -20,6 +20,7 @@ namespace Galileo_API.Controllers.ProGrX.General
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CcAnomaliasSaldosMenores_Obtener")]
         public ErrorDto<List<CcAnomaliaCreditoItemDto>> CcAnomaliasSaldosMenores_Obtener(int codEmpresa, CcAnomaliaFiltroDto filtro)
         {
@@ -27,6 +28,7 @@ namespace Galileo_API.Controllers.ProGrX.General
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CcAnomaliasSaldosNegativos_Obtener")]
         public ErrorDto<List<CcAnomaliaCreditoItemDto>> CcAnomaliasSaldosNegativos_Obtener(int codEmpresa, CcAnomaliaFiltroDto filtro)
         {
@@ -55,6 +57,7 @@ namespace Galileo_API.Controllers.ProGrX.General
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CcAnomaliasMoraMenor_Obtener")]
         public ErrorDto<List<CcAnomaliaCreditoItemDto>> CcAnomaliasMoraMenor_Obtener(int codEmpresa, CcAnomaliaFiltroDto filtro)
         {
@@ -62,6 +65,7 @@ namespace Galileo_API.Controllers.ProGrX.General
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CcAnomaliasCtaDerivadaMenor_Obtener")]
         public ErrorDto<List<CcAnomaliaCtaDerivadaItemDto>> CcAnomaliasCtaDerivadaMenor_Obtener(int codEmpresa, CcAnomaliaCtaDerivadaFiltroDto filtro)
         {
@@ -82,6 +86,7 @@ namespace Galileo_API.Controllers.ProGrX.General
         /// Corrige saldos menores (VB6 sbCorrigeSaldoMenor).
         /// </summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CcAnomaliasSaldosMenores_Corregir")]
         public ErrorDto<CcAnomaliaSaldosMenoresCorregirResultado> CcAnomaliasSaldosMenores_Corregir(
             int codEmpresa,
@@ -94,6 +99,7 @@ namespace Galileo_API.Controllers.ProGrX.General
         /// Corrige saldos negativos (VB6 sbCorrigeSaldoNegativo).
         /// </summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CcAnomaliasSaldosNegativos_Corregir")]
         public ErrorDto<CcAnomaliaSaldosNegativosCorregirResultado> CcAnomaliasSaldosNegativos_Corregir(
             int codEmpresa,
@@ -106,6 +112,7 @@ namespace Galileo_API.Controllers.ProGrX.General
         /// Corrige mora menor (VB6 sbCorrigeMora). Solo aplica si SysPlanPagos = 0.
         /// </summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CcAnomaliasMoraMenor_Corregir")]
         public ErrorDto<CcAnomaliaMoraMenorCorregirResultado> CcAnomaliasMoraMenor_Corregir(
             int codEmpresa,
@@ -118,6 +125,7 @@ namespace Galileo_API.Controllers.ProGrX.General
         /// Corrige cta. derivada menor (VB6 sbCtaDerivada_Corrige → spSys_Creditos_Clean_Ctas_Menores).
         /// </summary>
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CcAnomaliasCtaDerivadaMenor_Corregir")]
         public ErrorDto<CcAnomaliaCtaDerivadaCorregirResultado> CcAnomaliasCtaDerivadaMenor_Corregir(
             int codEmpresa,

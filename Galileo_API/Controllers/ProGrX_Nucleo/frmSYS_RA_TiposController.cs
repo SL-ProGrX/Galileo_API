@@ -25,6 +25,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Sys_RaTipos_Guardar")]
         public ErrorDto Sys_RaTipos_Guardar(int CodEmpresa, string usuario, SysRaTiposData tipo)
         {
@@ -32,6 +33,7 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("Sys_RaTipos_Eliminar")]
         public ErrorDto Sys_RaTipos_Eliminar(int CodEmpresa, string usuario, string tipo_id)
         {

@@ -45,6 +45,7 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FE_Corte_Registrar")]
         public ErrorDto FE_Corte_Registrar(int CodEmpresa, FeRegistrarCorteDto dto)
         {
@@ -118,6 +119,7 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FE_Configuracion_Guardar")]
         public ErrorDto FE_Configuracion_Guardar(int CodEmpresa, FeConfiguracionGuardarDto data)
         {
@@ -125,12 +127,14 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FE_Configuracion_Eliminar")]
         public ErrorDto FE_Configuracion_Eliminar(int CodEmpresa, string codigo, string usuario)
         {
             return BL.FE_Configuracion_Eliminar(CodEmpresa, codigo, usuario);
         }
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [HttpPost("FE_Clientes_Sincronizar")]
         public ErrorDto FE_Clientes_Sincronizar(int CodEmpresa, string cod_cliente, string usuario)
         {
@@ -144,6 +148,7 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FE_Exclusion_Procesar")]
         public ErrorDto FE_Exclusion_Procesar(int CodEmpresa, string cod_cliente, string codigo, string movimiento, string tipo, string usuario)
         {
@@ -151,6 +156,7 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("FE_Reactivacion_Ejecutar")]
         public ErrorDto FE_Reactivacion_Ejecutar(int CodEmpresa, DateTime fecha_inicio, DateTime fecha_corte, string usuario)
         {

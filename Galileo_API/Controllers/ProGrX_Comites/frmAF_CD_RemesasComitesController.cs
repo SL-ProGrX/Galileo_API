@@ -22,10 +22,12 @@ namespace Galileo_API.Controllers.ProGrX_Comites
         public ActionResult<ErrorDto<List<AfCdRemesaTesDto>>> AfCdRemesasTes_Lista([FromQuery] int codEmpresa)
             => _bl.AfCdRemesasTes_Lista(codEmpresa);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdRemesasTes_Guardar")]
         public ActionResult<ErrorDto<bool>> AfCdRemesasTes_Guardar([FromQuery] int codEmpresa, [FromBody] AfCdRemesaTesSaveDto dto)
             => _bl.AfCdRemesasTes_Guardar(codEmpresa, dto);
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("AfCdRemesasTes_Eliminar")]
         public ActionResult<ErrorDto<bool>> AfCdRemesasTes_Eliminar([FromQuery] int codEmpresa, [FromQuery] int codRemesa)
             => _bl.AfCdRemesasTes_Eliminar(codEmpresa, codRemesa);
@@ -73,12 +75,14 @@ namespace Galileo_API.Controllers.ProGrX_Comites
             [FromQuery] int idBanco)
             => _bl.AfCdRemesasTes_ObtenerRemesaPorBanco(codEmpresa, codRemesa, idBanco);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdRemesasTes_CuentaRemesaSp")]
         public ActionResult<ErrorDto<bool>> AfCdRemesasTes_CuentaRemesaSp(
             [FromQuery] int codEmpresa,
             [FromBody] AfCdCuentaRemesaSpParams param)
             => _bl.AfCdRemesasTes_CuentaRemesaSp(codEmpresa, param);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdRemesasTes_ActualizarEstado")]
         public ActionResult<ErrorDto<bool>> AfCdRemesasTes_ActualizarEstado(
             [FromQuery] int codEmpresa,
@@ -86,6 +90,7 @@ namespace Galileo_API.Controllers.ProGrX_Comites
             [FromQuery] string estado)
             => _bl.AfCdRemesasTes_ActualizarEstado(codEmpresa, codRemesa, estado);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdCuentas_ActualizarEstadoPorRemesa")]
         public ActionResult<ErrorDto<bool>> AfCdCuentas_ActualizarEstadoPorRemesa(
             [FromQuery] int codEmpresa,
@@ -93,12 +98,14 @@ namespace Galileo_API.Controllers.ProGrX_Comites
             [FromQuery] string estado)
             => _bl.AfCdCuentas_ActualizarEstadoPorRemesa(codEmpresa, codRemesa, estado);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdRemesasTes_Filtradas")]
         public ActionResult<ErrorDto<List<AfCdRemesaTesDto>>> AfCdRemesasTes_Filtradas(
             [FromQuery] int codEmpresa,
             [FromBody] AfCdRemesaTesFiltroParams filtro)
             => _bl.AfCdRemesasTes_Filtradas(codEmpresa, filtro);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdRemesasComiteDetalle_Lista")]
         public ActionResult<ErrorDto<List<AfCdRemesaComiteDetalleDto>>> AfCdRemesasComiteDetalle_Lista(
             [FromQuery] int codEmpresa,
@@ -124,10 +131,12 @@ namespace Galileo_API.Controllers.ProGrX_Comites
         public ActionResult<ErrorDto<TesTokenConsecDto>> TesTokens_ObtenerConsec([FromQuery] int codEmpresa, [FromQuery] string fecha)
             => _bl.TesTokens_ObtenerConsec(codEmpresa, fecha);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TesTokens_Insertar")]
         public ActionResult<ErrorDto<bool>> TesTokens_Insertar([FromQuery] int codEmpresa, [FromBody] TesTokenInsertDto dto)
             => _bl.TesTokens_Insertar(codEmpresa, dto);
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdRemesasTes_Desembolso")]
         public ActionResult<ErrorDto<bool>> AfCdRemesasTes_Desembolso(
             [FromQuery] int codEmpresa,

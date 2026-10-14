@@ -6,9 +6,11 @@ namespace Galileo.BusinessLogic
     public class SeguridadPortalBl
     {
         readonly SeguridadPortalDb SecurityDb;
+        private readonly IConfiguration _config;
 
         public SeguridadPortalBl(IConfiguration config)
         {
+            _config = config;
             SecurityDb = new SeguridadPortalDb(config);
         }
 
@@ -65,13 +67,90 @@ namespace Galileo.BusinessLogic
                  usAdminClientesDto.R_LOCAL_GRANTS == 1 ||
                  usAdminClientesDto.R_LOCAL_KEY_RESET == 1);
 
-            accessPortal.ResultMsg = tienePermisoEmpresa
-                ? "OK"
-                : "Este usuario no tiene permisos administrativos para la empresa seleccionada!";
+            if (tienePermisoEmpresa)
+            {
+                accessPortal.ResultMsg = "OK";
+            }
+            else if (EmpresaId > 0)
+            {
+                accessPortal.ResultMsg = "Este usuario no tiene permisos administrativos para la empresa seleccionada.";
+            }
+            else
+            {
+                accessPortal.ResultMsg = "Este usuario tiene acceso al portal, pero no cuenta con permisos administrativos asignados a ninguna empresa.";
+            }
 
             return accessPortal;
 
         }//end sbAdmin_Rols_Load
+
+        /// <summary>
+        /// Determina si el usuario tiene permisos efectivos para ingresar al portal SSecurity
+        /// antes de que la autenticación cree una sesión persistente. Los roles específicos
+        /// por empresa se validan únicamente en las empresas disponibles para ese usuario.
+        /// </summary>
+        public AdminAccessDto AccesoEfectivoPortalObtener(string pUsuario)
+        {
+            var accesoGeneral = sbAdmin_Rols_Load(pUsuario, 0);
+            if (TienePermisoHabilitante(accesoGeneral))
+            {
+                return accesoGeneral;
+            }
+
+            if (SecurityDb.UsuarioObtenerKeyAdmin(pUsuario) <= 0)
+            {
+                return accesoGeneral;
+            }
+
+            var empresas = new LogonDB(_config).ClientesObtener(pUsuario);
+            if (empresas.Code is < 0 || empresas.Result is null)
+            {
+                throw new InvalidOperationException(
+                    empresas.Description ?? "No fue posible consultar las empresas disponibles para validar el acceso a SSecurity.");
+            }
+
+            var empresaIds = new HashSet<int> { 0 };
+            foreach (var empresa in empresas.Result)
+            {
+                var codigo = !string.IsNullOrWhiteSpace(empresa.Cod_Empresa)
+                    ? empresa.Cod_Empresa
+                    : empresa.CodEmpresa;
+                if (int.TryParse(codigo, out var empresaId) && empresaId > 0)
+                {
+                    empresaIds.Add(empresaId);
+                }
+            }
+
+            foreach (var empresaId in empresaIds)
+            {
+                if (empresaId == 0)
+                {
+                    continue;
+                }
+
+                var accesoEmpresa = sbAdmin_Rols_Load(pUsuario, empresaId);
+                if (TienePermisoHabilitante(accesoEmpresa))
+                {
+                    return accesoEmpresa;
+                }
+            }
+
+            return new AdminAccessDto
+            {
+                ResultMsg = "Este usuario no tiene permisos administrativos para ingresar al portal!",
+            };
+        }
+
+        private static bool TienePermisoHabilitante(AdminAccessDto permisos)
+        {
+            return string.Equals(permisos.ResultMsg, "OK", StringComparison.Ordinal) &&
+                (permisos.Admin_Portal ||
+                 permisos.Rol_DirGlobal ||
+                 permisos.Rol_AdminView ||
+                 permisos.Rol_LocalUsers ||
+                 permisos.Rol_Permisos ||
+                 permisos.Rol_ResetKeys);
+        }
 
         public SbgSegInicializaResultDto sbgSEGInicializa(string pUsuario, string AppName, string AppVersion) //Falta AppStatusObtener de Seguridad_PortalDB 
         {

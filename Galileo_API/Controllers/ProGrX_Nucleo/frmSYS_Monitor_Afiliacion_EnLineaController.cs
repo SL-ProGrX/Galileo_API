@@ -18,6 +18,7 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
         }
 
             [Authorize]
+            [ValidateAntiForgeryToken]
             [HttpPost("Buscar")]
             public ErrorDto<List<AfiliacionTablaDto>> Buscar(int codEmpresa,AfiliacionFiltroDto filtros)
             {
@@ -39,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
             }
 
             [Authorize]
+            [ValidateAntiForgeryToken]
             [HttpPost("Resolver")]
             public ErrorDto Resolver(int codEmpresa,long solicitudId,string estado,string usuario)
             {

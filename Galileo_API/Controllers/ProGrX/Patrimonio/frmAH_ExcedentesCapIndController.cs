@@ -18,6 +18,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             _bl = new FrmAhExcedentesCapIndBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_ExcedentesCapInd_Cargar")]
         public ErrorDto<FrmAhExcedentesCapIndCargarResponse> AH_ExcedentesCapInd_Cargar(
             [FromQuery] int codEmpresa,
@@ -26,6 +27,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_ExcedentesCapInd_Cargar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_ExcedentesCapInd_Capitalizaciones_Lista")]
         public ErrorDto<List<FrmAhExcedentesCapIndListadoDto>> AH_ExcedentesCapInd_Capitalizaciones_Lista(
             [FromQuery] int codEmpresa,
@@ -42,6 +44,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_ExcedentesCapInd_Cedula_Consultar(codEmpresa, cedula);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_ExcedentesCapInd_Guardar")]
         public ErrorDto<FrmAhExcedentesCapIndProcesoResponse> AH_ExcedentesCapInd_Guardar(
             [FromQuery] int codEmpresa,
@@ -50,6 +53,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_ExcedentesCapInd_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("AH_ExcedentesCapInd_Eliminar")]
         public ErrorDto<FrmAhExcedentesCapIndProcesoResponse> AH_ExcedentesCapInd_Eliminar(
             [FromQuery] int codEmpresa,

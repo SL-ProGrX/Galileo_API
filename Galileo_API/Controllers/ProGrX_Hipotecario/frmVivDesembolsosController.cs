@@ -28,6 +28,7 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
             return _bl.Operaciones_Listar(codEmpresa);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("ConsultaDesembolso_Listar")]
         public ErrorDto<List<ConsultaDesembolsoDto>> ConsultaDesembolso_Listar(
             int codEmpresa,
@@ -93,6 +94,7 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("ActivarDesembolsoPendiente")]
         public ErrorDto<bool> ActivarDesembolsoPendiente(int codEmpresa, ActivarDesembolsoPendienteRequestDto request)
         {
@@ -100,6 +102,7 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Pendiente_Cambiar")]
         public ErrorDto<CambioPendienteResponseDto> Pendiente_Cambiar(int codEmpresa, CambioPendienteRequestDto request)
         {
@@ -107,6 +110,7 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Pendiente_Agregar")]
         public ErrorDto<bool> Pendiente_Agregar(int codEmpresa, AgregarPendienteRequestDto request)
         {
@@ -114,6 +118,7 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("DesembolsoDetalle_Guardar")]
         public ErrorDto<bool> DesembolsoDetalle_Guardar(int codEmpresa, List<DesembolsoDetalleDto> detalles)
         {
@@ -121,6 +126,7 @@ namespace Galileo_API.Controllers.ProGrX.Hipotecario
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("Desembolso_Guardar")]
         public ErrorDto<int> Desembolso_Guardar(int codEmpresa, ViviendaDesembolsoRequestDto request)
         {

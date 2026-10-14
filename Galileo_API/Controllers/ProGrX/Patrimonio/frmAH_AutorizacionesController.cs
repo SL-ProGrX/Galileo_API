@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.Ah_Autorizaciones_Obtener(codEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Ah_Autorizaciones_Procesar")]
         public ActionResult<ErrorDto<FrmAhAutorizacionesProcesarResponse>> Ah_Autorizaciones_Procesar(
             [FromQuery] int codEmpresa,

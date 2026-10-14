@@ -26,6 +26,7 @@ namespace Galileo_API.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Preferencias_Guardar")]
         public ErrorDto AF_Preferencias_Guardar(int codEmpresa, string usuario, PreferenciaTipoData preferenciaTipo)
         {
@@ -33,6 +34,7 @@ namespace Galileo_API.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_Preferencias_Eliminar")]
         public ErrorDto AF_Preferencias_Eliminar(int codEmpresa, string usuario, string codPreferencia)
         {

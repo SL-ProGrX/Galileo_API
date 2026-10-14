@@ -18,6 +18,7 @@ namespace Galileo.Controllers
             _bl = new FrmInvTransacQryBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("TransacInv_Obtener")]
         public ErrorDto<TransacQryDataList> TransacInv_Obtener(int CodEmpresa, TransacQryParametros parametros)
         {

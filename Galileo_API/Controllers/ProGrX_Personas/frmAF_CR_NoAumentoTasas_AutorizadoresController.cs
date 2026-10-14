@@ -25,6 +25,7 @@ namespace Galileo_API.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_NAT_Autorizadores_Asignar")]
         public ErrorDto AF_NAT_Autorizadores_Asignar(int CodEmpresa, string A_Usuario, string Mov, string usuario)
         {

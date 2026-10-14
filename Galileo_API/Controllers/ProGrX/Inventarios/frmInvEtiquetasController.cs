@@ -17,6 +17,7 @@ namespace Galileo.Controllers
             _bl = new FrmInvEtiquetasBL(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("GenerateSato")]
         public ErrorDto<List<ProductData>> GenerateSato(int CodEmpresa, GenerateSatoRequest request)
         {

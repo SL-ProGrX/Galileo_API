@@ -29,12 +29,14 @@ namespace Galileo.Controllers
             return _bl.Cargador_Factura_ObtenerPorId(CodEmpresa, id);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cargador_Facturas_Guardar")]
         public ErrorDto Cargador_Facturas_Guardar(int CodEmpresa, CprFacturasXmlDto request)
         {
             return _bl.Cargador_Facturas_Guardar(CodEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Cargador_Facturas_Actualizar")]
         public ErrorDto Cargador_Facturas_Actualizar(int CodEmpresa, CprFacturasXmlDto request)
         {

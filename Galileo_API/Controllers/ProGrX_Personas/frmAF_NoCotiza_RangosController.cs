@@ -25,6 +25,7 @@ namespace Galileo_API.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_NoCotizaRangos_Guardar")]
         public ErrorDto AF_NoCotizaRangos_Guardar(int codEmpresa, string usuario, NoCotizaRangosData rango)
         {
@@ -32,6 +33,7 @@ namespace Galileo_API.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_NoCotizaRangos_Eliminar")]
         public ErrorDto AF_NoCotizaRangos_Eliminar(int codEmpresa, string usuario, int lineaId)
         {

@@ -46,6 +46,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AFI_Afiliacion_Recepcion_Aplica")]
         public ErrorDto AFI_Afiliacion_Recepcion_Aplica(int CodEmpresa, int boleta, string usuario)
         {
@@ -54,6 +55,7 @@ namespace Galileo.Controllers.ProGrx_Personas
 
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AFI_Afiliacion_Revision_Aplica")]
         public ErrorDto AFI_Afiliacion_Revision_Aplica(int codEmpresa, int consec, string estado, string usuario, string? nota)
         {
@@ -68,6 +70,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AFI_Afiliacion_Revision_Reversar")]
         public ErrorDto AFI_Afiliacion_Revision_Reversar(int CodEmpresa, int boleta, string usuario, string nota)
         {
@@ -75,6 +78,7 @@ namespace Galileo.Controllers.ProGrx_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AFI_Afiliacion_Recepcion_Agregar")]
         public ErrorDto AFI_Afiliacion_Recepcion_Agregar(int CodEmpresa, int boleta, string usuario)
         {

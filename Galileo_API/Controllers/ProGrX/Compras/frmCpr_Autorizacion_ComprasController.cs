@@ -23,12 +23,14 @@ namespace Galileo.Controllers
             return _bl.SolicitudAutorizacion_Obtener(CodCliente, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AutorizaSolicitudes")]
         public ErrorDto AutorizaSolicitudes(int CodCliente, string solicitudes, string usuario)
         {
             return _bl.AutorizaSolicitudes(CodCliente, solicitudes, usuario);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("RechazaSolicitudes")]
         public ErrorDto RechazaSolicitudes(int CodCliente, string solicitudes, string justificacion, string usuario)
         {

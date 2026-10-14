@@ -33,6 +33,7 @@ namespace Galileo.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AF_Catalogos_Guardar")]
         public ErrorDto AF_Catalogos_Guardar(int CodEmpresa, string usuario, CatalogoData catalogo)
         {
@@ -40,6 +41,7 @@ namespace Galileo.Controllers.ProGrX_Personas
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AF_Catalogos_Eliminar")]
         public ErrorDto AF_Catalogos_Eliminar(int CodEmpresa, string usuario, int lineaId)
         {

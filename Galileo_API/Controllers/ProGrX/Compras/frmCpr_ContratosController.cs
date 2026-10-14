@@ -30,18 +30,21 @@ namespace Galileo.Controllers
             return _bl.CprContratosLista_Obtener(CodEmpresa, filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprContrato_Insertar")]
         public ErrorDto CprContrato_Insertar(int CodEmpresa, CprContratosDto contrato)
         {
             return _bl.CprContrato_Insertar(CodEmpresa, contrato);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprContrato_Actualizar")]
         public ErrorDto CprContrato_Actualizar(int CodEmpresa, CprContratosDto contrato)
         {
             return _bl.CprContrato_Actualizar(CodEmpresa, contrato);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CprContrato_Eliminar")]
         public ErrorDto CprContrato_Eliminar(int CodEmpresa, string cod_contrato, string usuario)
         {
@@ -54,12 +57,14 @@ namespace Galileo.Controllers
             return _bl.CprContrato_Adendums_Obtener(CodEmpresa, cod_contrato);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprContrato_Adendum_Guardar")]
         public ErrorDto CprContrato_Adendum_Guardar(int CodEmpresa, CprContratosAdendumsDto adendum)
         {
             return _bl.CprContrato_Adendum_Guardar(CodEmpresa, adendum);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CprContrato_Adendum_Eliminar")]
         public ErrorDto CprContrato_Adendum_Eliminar(int CodEmpresa, int id_adendum, string usuario)
         {
@@ -72,12 +77,14 @@ namespace Galileo.Controllers
             return _bl.CprContrato_Estados_Obtener(CodEmpresa, cod_contrato);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprContrato_Estados_Guardar")]
         public ErrorDto CprContrato_Estados_Guardar(int CodEmpresa, CprContratosEstadosDto estado)
         {
             return _bl.CprContrato_Estados_Guardar(CodEmpresa, estado);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CprContrato_Estados_Eliminar")]
         public ErrorDto CprContrato_Estados_Eliminar(int CodEmpresa, int linea_id, string usuario)
         {
@@ -90,12 +97,14 @@ namespace Galileo.Controllers
             return _bl.CprContrato_Productos_Obtener(CodEmpresa, cod_contrato);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprContrato_Producto_Guardar")]
         public ErrorDto CprContrato_Producto_Guardar(int CodEmpresa, CprContratosProductosDto producto)
         {
             return _bl.CprContrato_Producto_Guardar(CodEmpresa, producto);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CprContrato_Producto_Eliminar")]
         public ErrorDto CprContrato_Producto_Eliminar(int CodEmpresa, int linea_id, string usuario)
         {
@@ -108,12 +117,14 @@ namespace Galileo.Controllers
             return _bl.CprContrato_Prorroga_Obtener(CodEmpresa, cod_contrato);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprContrato_Prorroga_Guardar")]
         public ErrorDto CprContrato_Prorroga_Guardar(int CodEmpresa, CprContratosProrrogasDto prorroga)
         {
             return _bl.CprContrato_Prorroga_Guardar(CodEmpresa, prorroga);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CprContrato_Prorroga_Eliminar")]
         public ErrorDto CprContrato_Prorroga_Eliminar(int CodEmpresa, int id_prorroga, string usuario)
         {
@@ -126,6 +137,7 @@ namespace Galileo.Controllers
             return _bl.CprContrato_Bitacora_Obtener(CodEmpresa, cod_contrato);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("CprContratoNotificacion_Enviar")]
         public Task<ErrorDto> CprContratoNotificacion_Enviar(int CodEmpresa, string cod_contrato, string mensaje, string usuario)
         {

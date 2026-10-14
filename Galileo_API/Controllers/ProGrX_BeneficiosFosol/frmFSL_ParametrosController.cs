@@ -20,6 +20,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
             _bl = new FrmFslParametrosBl(config);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FSL_Parametros_Inicializar")]
         public ErrorDto FSL_Parametros_Inicializar(
             int CodCliente)
@@ -39,6 +40,7 @@ namespace Galileo_API.Controllers.ProGrX_BeneficiosFosol
                 filtros);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPut("FSL_Parametros_Actualizar")]
         public ErrorDto FSL_Parametros_Actualizar(
             int CodCliente,

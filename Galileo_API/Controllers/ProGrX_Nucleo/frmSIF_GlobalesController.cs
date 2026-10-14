@@ -16,6 +16,7 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
         [HttpGet("Sif_Globales_Obtener")]
         public ErrorDto<List<SifVariableGlobalDto>> Obtener() => _bl.Obtener();
 
+        [ValidateAntiForgeryToken]
         [HttpPut("Sif_Globales_Guardar")]
         public ErrorDto Guardar(int CodEmpresa, string usuario, SifVariableGlobalDto dato) =>
             _bl.Guardar(CodEmpresa, usuario, dato);

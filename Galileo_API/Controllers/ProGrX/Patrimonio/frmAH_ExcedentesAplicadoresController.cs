@@ -24,12 +24,14 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             return _bl.AH_Excedentes_Aplicadores_Lista_Obtener(CodEmpresa);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("AH_Excedentes_Aplicadores_Guardar")]
         public ErrorDto AH_Excedentes_Aplicadores_Guardar(int CodEmpresa,string usuario, [FromBody] ExcedenteAplicadorDto aplicador)
         {
             return _bl.AH_Excedentes_Aplicadores_Guardar(CodEmpresa,usuario,aplicador);
         }
         [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpDelete("AH_Excedentes_Aplicadores_Eliminar")]
         public ErrorDto AH_Excedentes_Aplicadores_Eliminar(int CodEmpresa,string usuarioAplicador,string usuario)
         {

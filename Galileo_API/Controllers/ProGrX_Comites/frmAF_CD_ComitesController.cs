@@ -70,18 +70,21 @@ namespace Galileo_API.Controllers.ProGrX_Comites
             return _bl.AfCdComites_Scroll(codEmpresa, codComite, direccion);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdComites_Guardar")]
         public ErrorDto<bool> AfCdComites_Guardar(int codEmpresa, AfCdComiteGuardarRequest request)
         {
             return _bl.AfCdComites_Guardar(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdComites_Asociar")]
         public ErrorDto<bool> AfCdComites_Asociar(int codEmpresa, string tipo, AfCdComiteAsociacionRequest request)
         {
             return _bl.AfCdComites_Asociar(codEmpresa, tipo, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdComites_EliminarAsociacion")]
         public ErrorDto<bool> AfCdComites_EliminarAsociacion(int codEmpresa, string tipo, AfCdComiteAsociacionRequest request)
         {
@@ -100,12 +103,14 @@ namespace Galileo_API.Controllers.ProGrX_Comites
             return _bl.AfCdComites_DatosMiembro(codEmpresa, cedula, codComite);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdComites_GuardarMiembro")]
         public ErrorDto<bool> AfCdComites_GuardarMiembro(int codEmpresa, AfCdComiteMiembroGuardarRequest request)
         {
             return _bl.AfCdComites_GuardarMiembro(codEmpresa, request);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("AfCdComites_EliminarMiembro")]
         public ErrorDto<bool> AfCdComites_EliminarMiembro(int codEmpresa, string codComite, string cedula, string usuario)
         {

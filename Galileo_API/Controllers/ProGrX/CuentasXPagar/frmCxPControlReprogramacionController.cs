@@ -35,6 +35,7 @@ namespace Galileo.Controllers
             return _bl.PagoMontos_Obtener(CodEmpresa, Cod_Factura, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("FacturaMonto_Ajuste")]
         public ErrorDto FacturaMonto_Ajuste(int CodEmpresa, AjusteFactura data)
         {
@@ -65,12 +66,14 @@ namespace Galileo.Controllers
             return _bl.FacturaDatos_Obtener(CodEmpresa, Cod_Factura, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpDelete("CargosPagos_Borrar")]
         public ErrorDto CargosPagos_Borrar(int CodEmpresa, int Pago, string Cod_Factura, int Cod_Proveedor)
         {
             return _bl.CargosPagos_Borrar(CodEmpresa, Pago, Cod_Factura, Cod_Proveedor);
         }
 
+        [ValidateAntiForgeryToken]
         [HttpPost("Reprogramacion_Aplicar")]
         public ErrorDto Reprogramacion_Aplicar(int CodEmpresa, ReprogramacionAplicar data)
         {
