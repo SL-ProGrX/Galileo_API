@@ -164,7 +164,7 @@ namespace Galileo.DataBaseTier
 
         public List<ClienteSelecciona> Cliente_Selecciona_ObtenerTodos(string usuario)
         {
-            List<ClienteSelecciona> data = new List<ClienteSelecciona>();
+            List<ClienteSelecciona> data;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
@@ -188,9 +188,20 @@ namespace Galileo.DataBaseTier
                     }
 
                     var codigosAsignados = empresasAsignadas.Result
-                        .Select(empresa => int.TryParse(empresa.Cod_Empresa, out var codigo)
-                            ? codigo
-                            : int.TryParse(empresa.CodEmpresa, out codigo) ? codigo : 0)
+                        .Select(empresa =>
+                        {
+                            if (int.TryParse(empresa.Cod_Empresa, out var codigo))
+                            {
+                                return codigo;
+                            }
+
+                            if (int.TryParse(empresa.CodEmpresa, out codigo))
+                            {
+                                return codigo;
+                            }
+
+                            return 0;
+                        })
                         .Where(codigo => codigo > 0)
                         .ToHashSet();
                     data = data.Where(empresa => codigosAsignados.Contains(empresa.Cod_Empresa)).ToList();

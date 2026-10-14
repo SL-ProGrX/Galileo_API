@@ -57,7 +57,7 @@ namespace Galileo.DataBaseTier
             }
 
             // Cada aplicación usa su propia fuente de permisos por empresa.
-            var aplicacion = user?.FindFirst("app")?.Value;
+            var aplicacion = user.FindFirst("app")?.Value;
             var tieneAcceso = false;
             if (string.Equals(aplicacion, AuthApplications.Galileo, StringComparison.OrdinalIgnoreCase))
             {
@@ -65,7 +65,7 @@ namespace Galileo.DataBaseTier
             }
             else if (string.Equals(aplicacion, AuthApplications.SSecurity, StringComparison.OrdinalIgnoreCase))
             {
-                var usuario = user?.FindFirst("UserName")?.Value;
+                var usuario = user.FindFirst("UserName")?.Value;
                 if (!string.IsNullOrWhiteSpace(usuario))
                 {
                     var permisos = new SeguridadPortalBl(_config).sbAdmin_Rols_Load(usuario, codEmpresa.Value);
