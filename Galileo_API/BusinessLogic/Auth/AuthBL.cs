@@ -1,4 +1,5 @@
 using Galileo.DataBaseTier;
+using Galileo.BusinessLogic;
 using Galileo.Models;
 using Galileo.Models.Auth;
 using Microsoft.Data.SqlClient;
@@ -10,6 +11,7 @@ public sealed class AuthBL
 {
     private const string InvalidChallengeStatus = "invalidChallenge";
     private const string InvalidCodeStatus = "invalidCode";
+    private const string AccessDeniedStatus = "accessDenied";
     private const string AuthenticationUnavailableStatus = "authenticationUnavailable";
     private const string PasswordChangeFailedStatus = "passwordChangeFailed";
     private const string PolicyLookupFailureMessage = "No fue posible consultar las políticas de contraseña.";
@@ -17,6 +19,7 @@ public sealed class AuthBL
     private readonly LogonDB _logonDb;
     private readonly PerfilUsuarioDB _perfilDb;
     private readonly SeguridadPortalDb _seguridadPortalDb;
+    private readonly SeguridadPortalBl _seguridadPortalBl;
     private readonly CambiarContrasenaDB _cambiarContrasenaDb;
     private readonly AccessTokenService _accessTokenService;
     private readonly AuthSessionStore _sessionStore;
@@ -31,6 +34,7 @@ public sealed class AuthBL
         _logonDb = new LogonDB(configuration);
         _perfilDb = new PerfilUsuarioDB(configuration);
         _seguridadPortalDb = new SeguridadPortalDb(configuration);
+        _seguridadPortalBl = new SeguridadPortalBl(configuration);
         _cambiarContrasenaDb = new CambiarContrasenaDB(configuration);
         _accessTokenService = accessTokenService;
         _sessionStore = sessionStore;
@@ -155,7 +159,7 @@ public sealed class AuthBL
             {
                 return new AuthResponseDto
                 {
-                    Status = "accessDenied",
+                    Status = AccessDeniedStatus,
                     Detail = "El usuario no tiene acceso a la empresa seleccionada.",
                 };
             }
@@ -176,7 +180,7 @@ public sealed class AuthBL
             {
                 return new AuthResponseDto
                 {
-                    Status = "accessDenied",
+                    Status = AccessDeniedStatus,
                     Detail = $"Limitación de acceso: {accessLimit.Notas}",
                     PasswordExpiryNotice = seguridad.PasswordExpiryNotice,
                 };
@@ -298,7 +302,19 @@ public sealed class AuthBL
     {
         if (!IsSSecurity(application))
         {
+            var accesoEmpresas = ValidarEmpresasAsignadasGalileo(user);
+            if (accesoEmpresas is not null)
+            {
+                return accesoEmpresas;
+            }
+
             return CreateAuthenticatedResponse(user, application);
+        }
+
+        var accessDenied = ValidarAccesoSSecurity(user);
+        if (accessDenied is not null)
+        {
+            return accessDenied;
         }
 
         var tfa = _logonDb.TFA_Data_Load(user.Usuario);
@@ -308,6 +324,28 @@ public sealed class AuthBL
         }
 
         return await CreateMfaChallengeAsync(user, application, tfa);
+    }
+
+    private AuthResponseDto? ValidarEmpresasAsignadasGalileo(AuthUserDto user)
+    {
+        var empresas = _logonDb.ClientesObtener(user.Usuario);
+        if (empresas.Code is < 0 || empresas.Result is null)
+        {
+            throw new InvalidOperationException("No fue posible validar las empresas asignadas al usuario.");
+        }
+
+        var tieneEmpresaAsignada = empresas.Result.Any(empresa =>
+            !string.IsNullOrWhiteSpace(empresa.usuario) &&
+            ((int.TryParse(empresa.Cod_Empresa, out var codigoEmpresa) && codigoEmpresa > 0) ||
+             (int.TryParse(empresa.CodEmpresa, out codigoEmpresa) && codigoEmpresa > 0)));
+
+        return tieneEmpresaAsignada
+            ? null
+            : new AuthResponseDto
+            {
+                Status = AccessDeniedStatus,
+                Detail = "Su usuario no tiene empresas asignadas para ingresar a Galileo. Solicite al administrador que le asigne una empresa.",
+            };
     }
 
     private async Task<AuthResponseDto> CreateMfaChallengeAsync(AuthUserDto user, string application, TfaData tfa)
@@ -685,6 +723,12 @@ public sealed class AuthBL
 
     private AuthResponseDto CompleteSSecurityAuthentication(AuthUserDto user, string authenticationMethod)
     {
+        var accessDenied = ValidarAccesoSSecurity(user);
+        if (accessDenied is not null)
+        {
+            return accessDenied;
+        }
+
         var bloqueo = _seguridadPortalDb.UsuarioBloqueoObtener(user.Usuario);
         if (bloqueo.Bloqueo == 1)
         {
@@ -738,6 +782,18 @@ public sealed class AuthBL
         }
 
         return response;
+    }
+
+    private AuthResponseDto? ValidarAccesoSSecurity(AuthUserDto user)
+    {
+        var permisos = _seguridadPortalBl.AccesoEfectivoPortalObtener(user.Usuario);
+        return string.Equals(permisos.ResultMsg, "OK", StringComparison.Ordinal)
+            ? null
+            : new AuthResponseDto
+            {
+                Status = AccessDeniedStatus,
+                Detail = permisos.ResultMsg,
+            };
     }
 
     public bool TryRefresh(string refreshToken, string application, out AuthSessionResponse response, out string replacementRefreshToken)
