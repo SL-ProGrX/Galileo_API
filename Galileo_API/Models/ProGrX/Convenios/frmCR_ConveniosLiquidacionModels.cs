@@ -19,6 +19,27 @@ namespace Galileo_API.Models.ProGrX.Convenios
     }
 
     /// <summary>
+    /// Campos de la orden que comparten la consulta (sbConsultaOrden) y el guardado (sbGuardaOrden).
+    /// </summary>
+    public abstract class CrLiqOrdenCamposComunes
+    {
+        public string notas { get; set; } = string.Empty;
+        public string documento { get; set; } = string.Empty;
+        public DateTime? fecha_inicio { get; set; }
+        public DateTime? fecha_corte { get; set; }
+        public decimal? recaudacion_cargos { get; set; }
+        public decimal? recaudacion_cuotas { get; set; }
+        public decimal? recaudacion_devolucion { get; set; }
+        public decimal? nuevos_creditos { get; set; }
+        public decimal? comisiones_recaudacion { get; set; }
+        public decimal? comisiones_nuevos_creditos { get; set; }
+        public decimal? total_reserva { get; set; }
+        public decimal? total_rebajos_cxp { get; set; }
+        public decimal? retencion_ahorros { get; set; }
+        public decimal? total_pagar { get; set; }
+    }
+
+    /// <summary>
     /// Fila del tab Órdenes (sbConsultaOrdenes).
     /// </summary>
     public class CrLiqOrdenListaData
@@ -47,26 +68,12 @@ namespace Galileo_API.Models.ProGrX.Convenios
     /// <summary>
     /// Orden completa para el tab Liquidación (sbConsultaOrden).
     /// </summary>
-    public class CrLiqOrdenData
+    public class CrLiqOrdenData : CrLiqOrdenCamposComunes
     {
         public int cod_orden { get; set; }
         public string cod_convenio { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
         public string estado_desc { get; set; } = string.Empty;
-        public string notas { get; set; } = string.Empty;
-        public string documento { get; set; } = string.Empty;
-        public DateTime? fecha_inicio { get; set; }
-        public DateTime? fecha_corte { get; set; }
-        public decimal? recaudacion_cargos { get; set; }
-        public decimal? recaudacion_cuotas { get; set; }
-        public decimal? recaudacion_devolucion { get; set; }
-        public decimal? nuevos_creditos { get; set; }
-        public decimal? comisiones_recaudacion { get; set; }
-        public decimal? comisiones_nuevos_creditos { get; set; }
-        public decimal? total_reserva { get; set; }
-        public decimal? total_rebajos_cxp { get; set; }
-        public decimal? retencion_ahorros { get; set; }
-        public decimal? total_pagar { get; set; }
         public decimal? iva_total { get; set; }
         public decimal? iva_referencia_crd { get; set; }
         public decimal? flotante_alcobro { get; set; }
@@ -93,24 +100,10 @@ namespace Galileo_API.Models.ProGrX.Convenios
     /// <summary>
     /// Entrada para Guardar y Cerrar (sbGuardaOrden). Los valores nulos se toman como 0.
     /// </summary>
-    public class CrLiqOrdenGuardarRequest
+    public class CrLiqOrdenGuardarRequest : CrLiqOrdenCamposComunes
     {
         public string cod_convenio { get; set; } = string.Empty;
         public int? cod_orden { get; set; }
-        public string notas { get; set; } = string.Empty;
-        public string documento { get; set; } = string.Empty;
-        public DateTime? fecha_inicio { get; set; }
-        public DateTime? fecha_corte { get; set; }
-        public decimal? recaudacion_cargos { get; set; }
-        public decimal? recaudacion_cuotas { get; set; }
-        public decimal? recaudacion_devolucion { get; set; }
-        public decimal? nuevos_creditos { get; set; }
-        public decimal? comisiones_recaudacion { get; set; }
-        public decimal? comisiones_nuevos_creditos { get; set; }
-        public decimal? total_reserva { get; set; }
-        public decimal? total_rebajos_cxp { get; set; }
-        public decimal? retencion_ahorros { get; set; }
-        public decimal? total_pagar { get; set; }
         public decimal? iva_referencia_crd { get; set; }
         public decimal? flotante_alcobro { get; set; }
         public int? apl_com_informativa { get; set; }
