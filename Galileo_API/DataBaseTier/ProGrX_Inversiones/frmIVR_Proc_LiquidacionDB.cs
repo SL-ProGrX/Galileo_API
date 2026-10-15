@@ -18,11 +18,13 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
 
         private const string TipoReferencia = "L";
         private const string ConceptoLiquidacion = "Liq";
-        private const string TipoMovimientoLiquidacion = "L";
 
         private const string EstadoSolicitud = "S";
         private const string EstadoAplicado = "A";
         private const string EstadoAnulado = "X";
+        private const string TipoMovimientoLiquidacion = "L";
+
+        private const string MensajeSatisfactoriamente = "satisfactoriamente.";
 
         private const string MensajeInversionRequerida =
             "El n&uacute;mero de inversi&oacute;n es requerido.";
@@ -356,7 +358,7 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
 
             return DbHelper.OkResponse(
                 "Registro bancario eliminado "
-                + "satisfactoriamente.");
+                + MensajeSatisfactoriamente);
         }
 
         /// <summary>
@@ -673,7 +675,7 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
                     Code = 0,
                     Description =
                         "Liquidaci&oacute;n eliminada "
-                        + "satisfactoriamente.",
+                        + MensajeSatisfactoriamente,
                     Result =
                         IVR_Proc_Liquidacion_Resultado_Crear(
                             request.transac_id ?? 0,
@@ -702,11 +704,11 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
                     estadoResultado);
 
             response.Description =
-                estado == EstadoAplicado
-                    ? "Transacci&oacute;n procesada "
-                      + "satisfactoriamente."
-                    : "Solicitud registrada "
-                      + "satisfactoriamente.";
+             estado == EstadoAplicado
+                 ? "Transacci&oacute;n procesada "
+                   + MensajeSatisfactoriamente
+                 : "Solicitud registrada "
+                   + MensajeSatisfactoriamente;
 
             return response;
         }
@@ -952,13 +954,12 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
                     MensajeMontoRequerido);
             }
 
-            if (request.int_acum == null ||
-                request.intereses == null ||
-                request.principal == null)
+            var montosValidation =
+                IVR_Proc_Liquidacion_Montos_Validar(request);
+
+            if (montosValidation != null)
             {
-                return IVR_Proc_Liquidacion_Error_Crear(
-                    "Los montos de la liquidaci&oacute;n "
-                    + "son requeridos.");
+                return montosValidation;
             }
 
             if (string.IsNullOrWhiteSpace(request.divisa))
@@ -977,6 +978,25 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
             {
                 return IVR_Proc_Liquidacion_Error_Crear(
                     MensajeUsuarioRequerido);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Valida los montos requeridos de la liquidación.
+        /// </summary>
+        private static ErrorDto<IvrProcLiquidacionGuardarData>?
+            IVR_Proc_Liquidacion_Montos_Validar(
+                IvrProcLiquidacionGuardarRequest request)
+        {
+            if (request.int_acum == null ||
+                request.intereses == null ||
+                request.principal == null)
+            {
+                return IVR_Proc_Liquidacion_Error_Crear(
+                    "Los montos de la liquidaci&oacute;n "
+                    + "son requeridos.");
             }
 
             return null;
