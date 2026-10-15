@@ -20,13 +20,13 @@
 
         public decimal tipo_cambio { get; set; } = 1;
 
-        public decimal importe_local { get; set; }
+        public decimal importe_local { get; set; } = 0;
 
-        public decimal registrado { get; set; }
+        public decimal registrado { get; set; } = 0;
 
-        public decimal pendiente { get; set; }
+        public decimal pendiente { get; set; } = 0;
 
-        public int transac_id { get; set; }
+        public int transac_id { get; set; } = 0;
 
         public string estado { get; set; } = "S";
 
@@ -40,7 +40,7 @@
 
     public sealed class IvrProcLiquidacionInversionData
     {
-        public int titulo_id { get; set; }
+        public int titulo_id { get; set; } = 0;
 
         public string administrador_desc { get; set; } =
             string.Empty;
@@ -76,18 +76,18 @@
     {
         public DateTime fecha_corte { get; set; }
 
-        public decimal mnt_total { get; set; }
+        public decimal mnt_total { get; set; } = 0;
 
-        public decimal mnt_interes_apl { get; set; }
+        public decimal mnt_interes_apl { get; set; } = 0;
 
-        public decimal mnt_interes { get; set; }
+        public decimal mnt_interes { get; set; } = 0;
 
-        public decimal mnt_principal { get; set; }
+        public decimal mnt_principal { get; set; } = 0;
     }
 
     public sealed class IvrProcLiquidacionTransaccionData
     {
-        public int transac_id { get; set; }
+        public int transac_id { get; set; } = 0;
 
         public string tipo_mov_desc { get; set; } =
             string.Empty;
@@ -147,7 +147,7 @@
 
     public sealed class IvrProcLiquidacionGuardarData
     {
-        public int transac_id { get; set; }
+        public int transac_id { get; set; } = 0;
 
         public string estado { get; set; } =
             string.Empty;
