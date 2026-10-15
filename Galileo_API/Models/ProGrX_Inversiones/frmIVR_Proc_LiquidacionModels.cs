@@ -63,7 +63,7 @@
         public string cod_divisa { get; set; } =
             string.Empty;
 
-        public decimal tipo_cambio { get; set; }
+        public decimal tipo_cambio { get; set; } = 0;
 
         public string estado { get; set; } =
             string.Empty;
@@ -94,7 +94,7 @@
 
         public DateTime? registro_fecha { get; set; }
 
-        public decimal importe { get; set; }
+        public decimal importe { get; set; } = 0;
 
         public string cta_mask { get; set; } =
             string.Empty;
@@ -113,9 +113,9 @@
         public string cod_divisa { get; set; } =
             string.Empty;
 
-        public decimal tipo_cambio { get; set; }
+        public decimal tipo_cambio { get; set; } = 0;
 
-        public decimal monto { get; set; }
+        public decimal monto { get; set; } = 0;
     }
 
     public sealed class IvrProcLiquidacionGuardarRequest
@@ -162,7 +162,7 @@
             transacciones
         { get; set; } = [];
 
-        public decimal registrado { get; set; }
+        public decimal registrado { get; set; } = 0;
     }
 
     public sealed class
