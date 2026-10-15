@@ -62,6 +62,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
         private const string CampoDestino = "Destino";
         private const string CampoTotalRecaudado = "TOTAL_RECAUDADO";
         private const string CampoTotalNeto = "TOTAL_NETO";
+        private const string CampoNeto = "Neto";
+        private const string CampoLineaDesc = "LineaDesc";
+        private const string CampoIdSolicitud = "id_Solicitud";
 
         // Encabezados de columna (lado izquierdo del mapeo).
         private const string HeaderMonto = "Monto";
@@ -73,6 +76,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
         private const string HeaderNombre = "Nombre";
         private const string HeaderInstitucion = "Institución";
         private const string HeaderDestino = "Destino";
+        private const string HeaderNeto = "Neto";
+        private const string HeaderOperacion = "Operación";
+        private const string HeaderGarantia = "Garantía";
+        private const string HeaderCodigo = "Código";
+        private const string HeaderConcepto = "Concepto";
 
         public static CrLiqDetalleConsultaSpec Obtener(CrLiqDetalleRubro rubro, char informe)
             => rubro switch
@@ -128,9 +136,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
                 Col("Cargo", "cod_cargo"),
                 Col(HeaderDescripcion, "Descripcion"),
                 Monto(HeaderRecaudado, CampoCargo),
-                Col("Operación", "id_Solicitud"),
-                Col(HeaderLinea, "LineaDesc"),
-                Col("Garantía", "Garantia"),
+                Col(HeaderOperacion, CampoIdSolicitud),
+                Col(HeaderLinea, CampoLineaDesc),
+                Col(HeaderGarantia, "Garantia"),
                 Col(HeaderIdentificacion, CampoCedula, Center),
                 Col(HeaderNombre, CampoNombre),
                 Col("Mnt. Crd", "montoapr", Left, CrLiqDetalleFormato.Crudo),
@@ -150,7 +158,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
                 Col(HeaderDescripcion, "LineaX"),
                 Monto(HeaderRecaudado, CampoTotalRecaudado),
                 Monto(HeaderComision, CampoComision),
-                Monto("Neto", CampoTotalNeto),
+                Monto(HeaderNeto, CampoTotalNeto),
                 Col(HeaderInstitucion, null)
             });
 
@@ -159,15 +167,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             CampoMonto, CampoComision, false, -1,
             new[]
             {
-                Col("Operación", "id_Solicitud"),
+                Col(HeaderOperacion, CampoIdSolicitud),
                 Col(HeaderLinea, CampoCodigo),
                 Monto(HeaderRecaudado, CampoMonto),
                 Fecha("Fecha", "fecha", Right),
                 Col(HeaderDescripcion, "LineaX"),
-                Col("Garantía", "GarantiaDesc"),
+                Col(HeaderGarantia, "GarantiaDesc"),
                 Col(HeaderIdentificacion, CampoCedula, Center),
                 Col(HeaderNombre, CampoNombre),
-                Col("Concepto", "concepto"),
+                Col(HeaderConcepto, "concepto"),
                 Col("Tipo Doc.", "Tcon"),
                 Col("Documento", "Ncon"),
                 Col(HeaderInstitucion, CampoInstitucion)
@@ -178,11 +186,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             CampoTotalRecaudado, CampoComision, false, -1,
             new[]
             {
-                Col("Código", CampoCodigo),
+                Col(HeaderCodigo, CampoCodigo),
                 Col(HeaderDescripcion, CampoInstitucion),
                 Monto(HeaderRecaudado, CampoTotalRecaudado),
                 Monto(HeaderComision, CampoComision),
-                Monto("Neto", CampoTotalNeto)
+                Monto(HeaderNeto, CampoTotalNeto)
             });
 
         // Devoluciones (también Comisión Devolución).
@@ -191,11 +199,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             CampoTotalRecaudado, CampoComision, true, 5,
             new[]
             {
-                Col("Concepto", "Retencion_Codigo"),
+                Col(HeaderConcepto, "Retencion_Codigo"),
                 Col(HeaderDescripcion, "RetencionConcepto"),
                 Monto(HeaderRecaudado, CampoTotalRecaudado),
                 Monto(HeaderComision, CampoComision),
-                Monto("Neto", CampoTotalNeto),
+                Monto(HeaderNeto, CampoTotalNeto),
                 Col(HeaderInstitucion, null)
             });
 
@@ -205,7 +213,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             new[]
             {
                 Col("Num.Liq.", "Consec"),
-                Col("Concepto", "Retencion_Codigo"),
+                Col(HeaderConcepto, "Retencion_Codigo"),
                 Monto(HeaderRecaudado, CampoMonto),
                 Fecha("Fecha", "fecha", Right),
                 Col(HeaderDescripcion, "RetencionConcepto"),
@@ -222,11 +230,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             CampoTotalRecaudado, CampoComision, false, -1,
             new[]
             {
-                Col("Código", CampoCodigo),
+                Col(HeaderCodigo, CampoCodigo),
                 Col(HeaderDescripcion, CampoInstitucion),
                 Monto(HeaderRecaudado, CampoTotalRecaudado),
                 Monto(HeaderComision, CampoComision),
-                Monto("Neto", CampoTotalNeto)
+                Monto(HeaderNeto, CampoTotalNeto)
             });
 
         // Nuevos créditos (también Comisión Créditos).
@@ -236,10 +244,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             new[]
             {
                 Col(HeaderLinea, CampoCodigo),
-                Col(HeaderDescripcion, "LineaDesc"),
+                Col(HeaderDescripcion, CampoLineaDesc),
                 Monto(HeaderMonto, CampoMonto),
                 Monto(HeaderComision, CampoComision),
-                Monto("Neto", "Neto"),
+                Monto(HeaderNeto, CampoNeto),
                 Col(HeaderDestino, CampoDestino),
                 Col(HeaderInstitucion, CampoInstitucion)
             });
@@ -249,17 +257,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             CampoMonto, CampoComision, false, -1,
             new[]
             {
-                Col("Operación", "id_Solicitud"),
+                Col(HeaderOperacion, CampoIdSolicitud),
                 Col(HeaderLinea, CampoCodigo, Center),
-                Col(HeaderDescripcion, "LineaDesc"),
+                Col(HeaderDescripcion, CampoLineaDesc),
                 Col(HeaderDestino, CampoDestino),
                 Monto(HeaderMonto, CampoMonto),
                 Monto(HeaderComision, CampoComision),
-                Monto("Neto", "Neto"),
+                Monto(HeaderNeto, CampoNeto),
                 Fecha("Fec.Rev.", "Fecha_Revision"),
                 Fecha("Fec.Form.", "fechaforp"),
                 Col("No.Documento", "Documento"),
-                Col("Garantía", "Garantia"),
+                Col(HeaderGarantia, "Garantia"),
                 Col(HeaderIdentificacion, CampoCedula, Center),
                 Col(HeaderNombre, CampoNombre),
                 Col(HeaderInstitucion, "InstitucionDesc")
@@ -270,11 +278,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             CampoMonto, CampoComision, false, -1,
             new[]
             {
-                Col("Código", "cod_Institucion"),
+                Col(HeaderCodigo, "cod_Institucion"),
                 Col(HeaderDescripcion, CampoInstitucion),
                 Monto(HeaderMonto, CampoMonto),
                 Monto(HeaderComision, CampoComision),
-                Monto("Neto", "Neto")
+                Monto(HeaderNeto, CampoNeto)
             });
     }
 }
