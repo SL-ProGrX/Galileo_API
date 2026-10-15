@@ -104,14 +104,19 @@ public sealed class SqlAuthSessionRepository
     public bool RecordActivity(string sessionId, string application)
     {
         const string sql = """
+            DECLARE @updated TABLE (SessionId char(32));
+
             UPDATE dbo.PGX_AuthSessions
                SET LastActivityAtUtc = SYSUTCDATETIME(),
                    IdleExpiresAtUtc = CASE WHEN @idleMinutes IS NULL THEN IdleExpiresAtUtc
                        ELSE DATEADD(minute, @idleMinutes, SYSUTCDATETIME()) END
+            OUTPUT inserted.SessionId INTO @updated
              WHERE SessionId = @id AND Application = @app AND RevokedAtUtc IS NULL
                AND RefreshExpiresAtUtc > SYSUTCDATETIME()
                AND (IdleExpiresAtUtc IS NULL OR IdleExpiresAtUtc > SYSUTCDATETIME())
                AND (AbsoluteExpiresAtUtc IS NULL OR AbsoluteExpiresAtUtc > SYSUTCDATETIME());
+
+            SELECT COUNT(*) FROM @updated;
             """;
         using var connection = new SqlConnection(_connectionString);
         using var command = new SqlCommand(sql, connection);
@@ -119,7 +124,7 @@ public sealed class SqlAuthSessionRepository
         command.Parameters.Add("@app", SqlDbType.VarChar, 20).Value = application;
         command.Parameters.Add("@idleMinutes", SqlDbType.Int).Value = _idleMinutes is int idle ? idle : DBNull.Value;
         connection.Open();
-        return command.ExecuteNonQuery() == 1;
+        return (int)command.ExecuteScalar()! == 1;
     }
 
     public bool IsActive(string sessionId)
