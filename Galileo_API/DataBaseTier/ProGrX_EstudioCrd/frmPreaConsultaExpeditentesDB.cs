@@ -21,7 +21,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             int codEmpresa,
             string? buscar,
             int pagina,
-            int paginacion)
+            int paginacion,
+            string? sortField = null,
+            int sortOrder = -1)
         {
             var result = new ErrorDto<FrmPreaConsultaExpeditentesListaResponse>
             {
@@ -38,6 +40,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 var like = string.IsNullOrWhiteSpace(filtro) ? null : $"%{filtro}%";
                 var offset = pagina;
                 var fetch = paginacion;
+                sortField = sortField?.Trim().ToLowerInvariant();
+                sortOrder = sortOrder == 1 ? 1 : -1;
 
                 const string sqlCount = @"SELECT COUNT(*) FROM CRD_PREA_PREANALISIS
                                           WHERE (@like IS NULL
@@ -63,12 +67,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                        OR COD_PREANALISIS_REF LIKE @like
                        OR NOMBRE LIKE @like
                        OR CEDULA LIKE @like)
-                    ORDER BY COD_PREANALISIS DESC
+                    ORDER BY
+                        CASE WHEN @sortField = 'cod_preanalisis' AND @sortOrder = 1 THEN COD_PREANALISIS END ASC,
+                        CASE WHEN @sortField = 'cod_preanalisis' AND @sortOrder = -1 THEN COD_PREANALISIS END DESC,
+                        CASE WHEN @sortField = 'nombre' AND @sortOrder = 1 THEN NOMBRE END ASC,
+                        CASE WHEN @sortField = 'nombre' AND @sortOrder = -1 THEN NOMBRE END DESC,
+                        CASE WHEN @sortField = 'cedula' AND @sortOrder = 1 THEN CEDULA END ASC,
+                        CASE WHEN @sortField = 'cedula' AND @sortOrder = -1 THEN CEDULA END DESC,
+                        CASE WHEN @sortField = 'fecha_creacion' AND @sortOrder = 1 THEN FECHA_CREACION END ASC,
+                        CASE WHEN @sortField = 'fecha_creacion' AND @sortOrder = -1 THEN FECHA_CREACION END DESC,
+                        CASE WHEN @sortField = 'estado' AND @sortOrder = 1 THEN ESTADO END ASC,
+                        CASE WHEN @sortField = 'estado' AND @sortOrder = -1 THEN ESTADO END DESC,
+                        COD_PREANALISIS DESC
                     OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
 
                 var items = connection.Query<FrmPreaConsultaExpeditentesItemData>(
                     sql,
-                    new { like, offset, fetch }
+                    new { like, offset, fetch, sortField, sortOrder }
                 ).ToList();
 
                 result.Result = new FrmPreaConsultaExpeditentesListaResponse
