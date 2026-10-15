@@ -91,6 +91,68 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             return respuesta;
         }
 
+        public bool PerteneceExpediente(int codEmpresa, string expediente, string cedula)
+        {
+            using var connection = _portalDb.CreateConnection(codEmpresa);
+            return connection.ExecuteScalar<int>(
+                """
+                SELECT COUNT(1) FROM CRD_PREA_PREANALISIS
+                WHERE COD_PREANALISIS = @Expediente AND CEDULA = @Cedula
+                """, new { Expediente = expediente, Cedula = cedula }) > 0;
+        }
+
+        public PreaScoreCrediticioRegistroDto Guardar(
+            int codEmpresa, string expediente, string cedula, string usuario,
+            PreaScoreCrediticioDetalleDto detalle)
+        {
+            using var connection = _portalDb.CreateConnection(codEmpresa);
+            connection.Open();
+            using var transaction = connection.BeginTransaction();
+            var parametros = new DynamicParameters();
+            parametros.Add("Expediente", expediente, DbType.AnsiString, size: 20);
+            parametros.Add("Cedula", cedula, DbType.AnsiString);
+            parametros.Add("Usuario", usuario, DbType.String, size: 30);
+            var existe = connection.ExecuteScalar<int>(
+                """
+                SELECT COUNT(1) FROM CRD_PREA_PREANALISIS WITH (UPDLOCK, HOLDLOCK)
+                WHERE COD_PREANALISIS = @Expediente AND CEDULA = @Cedula
+                """, parametros, transaction);
+            if (existe == 0)
+                throw new InvalidOperationException("La identificación del expediente cambió durante la consulta del score.");
+
+            var maestro = connection.QuerySingle<PreaScoreCrediticioRegistroDto>(
+                """
+                INSERT INTO CrdPreaScoresCrediticiosMaestro
+                    (CodPreanalisis, TipoScore, FechaRegistra, UsuarioRegistra)
+                OUTPUT INSERTED.Id AS id, INSERTED.CodPreanalisis AS cod_preanalisis,
+                       INSERTED.TipoScore AS tipo_score, INSERTED.FechaRegistra AS fecha_registra,
+                       INSERTED.UsuarioRegistra AS usuario_registra
+                VALUES (@Expediente, 1, SYSDATETIME(), @Usuario);
+                """, parametros, transaction);
+
+            var datos = new DynamicParameters();
+            datos.Add("IdMaestro", maestro.id, DbType.Int32);
+            datos.Add("Modelo", detalle.modelo, DbType.AnsiString, size: 25);
+            datos.Add("Objetivo", detalle.objetivo, DbType.AnsiString, size: 25);
+            datos.Add("ProbabilidadDefecto", detalle.probabilidad_defecto, DbType.Decimal, precision: 18, scale: 6);
+            datos.Add("DecisionBinaria", detalle.decision_binaria, DbType.Boolean);
+            datos.Add("Veredicto", detalle.veredicto, DbType.AnsiString, size: 100);
+            datos.Add("CategoriaRiesgo", detalle.categoria_riesgo, DbType.String, size: 30);
+            datos.Add("UmbralAplicado", detalle.umbral_aplicado, DbType.Decimal, precision: 18, scale: 6);
+            detalle.id = connection.QuerySingle<int>(
+                """
+                INSERT INTO CrdPreaScoresCrediticiosDetalle
+                    (IdMaestro, Modelo, Objetivo, ProbabilidadDefecto, DecisionBinaria,
+                     Veredicto, CategoriaRiesgo, UmbralAplicado)
+                OUTPUT INSERTED.Id
+                VALUES (@IdMaestro, @Modelo, @Objetivo, @ProbabilidadDefecto, @DecisionBinaria,
+                        @Veredicto, @CategoriaRiesgo, @UmbralAplicado);
+                """, datos, transaction);
+            maestro.detalles.Add(detalle);
+            transaction.Commit();
+            return maestro;
+        }
+
         private sealed class ScoreDetalleFila
         {
             public int id { get; set; }
