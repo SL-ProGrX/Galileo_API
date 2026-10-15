@@ -47,8 +47,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
     /// </summary>
     internal static class CrLiqDetalleEspecificaciones
     {
+        private const string Left = "left";
         private const string Right = "right";
         private const string Center = "center";
+
+        // Nombres de campos del SP (lado derecho del mapeo).
+        private const string CampoCargo = "cargo";
+        private const string CampoMonto = "Monto";
+        private const string CampoCedula = "Cedula";
+        private const string CampoNombre = "Nombre";
+        private const string CampoCodigo = "Codigo";
+        private const string CampoComision = "Comision";
+        private const string CampoInstitucion = "Institucion";
+        private const string CampoDestino = "Destino";
+        private const string CampoTotalRecaudado = "TOTAL_RECAUDADO";
+        private const string CampoTotalNeto = "TOTAL_NETO";
+
+        // Encabezados de columna (lado izquierdo del mapeo).
+        private const string HeaderMonto = "Monto";
+        private const string HeaderDescripcion = "Descripción";
+        private const string HeaderRecaudado = "Recaudado";
+        private const string HeaderComision = "Comisión";
+        private const string HeaderLinea = "Línea";
+        private const string HeaderIdentificacion = "Identificación";
+        private const string HeaderNombre = "Nombre";
+        private const string HeaderInstitucion = "Institución";
+        private const string HeaderDestino = "Destino";
 
         public static CrLiqDetalleConsultaSpec Obtener(CrLiqDetalleRubro rubro, char informe)
             => rubro switch
@@ -77,179 +101,179 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
         private static CrLiqDetalleColumnaSpec Col(
             string header,
             string? campo,
-            string align = "left",
+            string align = Left,
             CrLiqDetalleFormato formato = CrLiqDetalleFormato.Texto)
             => new(header, campo, align, formato);
 
         private static CrLiqDetalleColumnaSpec Monto(string header, string campo)
             => Col(header, campo, Right, CrLiqDetalleFormato.Monto);
 
-        private static CrLiqDetalleColumnaSpec Fecha(string header, string campo, string align = "left")
+        private static CrLiqDetalleColumnaSpec Fecha(string header, string campo, string align = Left)
             => Col(header, campo, align, CrLiqDetalleFormato.Fecha);
 
         // Cargos de formalización: spConvenios_Orden_Cargos_Formaliza (no filtra por institución).
         private static readonly CrLiqDetalleConsultaSpec CargosResumen = new(
-            "spConvenios_Orden_Cargos_Formaliza", null, true, "cargo", null, false, -1,
+            "spConvenios_Orden_Cargos_Formaliza", null, true, CampoCargo, null, false, -1,
             new[]
             {
                 Col("Cargo", "cod_cargo"),
-                Col("Descripción", "Descripcion"),
-                Monto("Monto", "cargo")
+                Col(HeaderDescripcion, "Descripcion"),
+                Monto(HeaderMonto, CampoCargo)
             });
 
         private static readonly CrLiqDetalleConsultaSpec CargosDetalle = new(
-            "spConvenios_Orden_Cargos_Formaliza", null, true, "cargo", null, false, -1,
+            "spConvenios_Orden_Cargos_Formaliza", null, true, CampoCargo, null, false, -1,
             new[]
             {
                 Col("Cargo", "cod_cargo"),
-                Col("Descripción", "Descripcion"),
-                Monto("Recaudado", "cargo"),
+                Col(HeaderDescripcion, "Descripcion"),
+                Monto(HeaderRecaudado, CampoCargo),
                 Col("Operación", "id_Solicitud"),
-                Col("Línea", "LineaDesc"),
+                Col(HeaderLinea, "LineaDesc"),
                 Col("Garantía", "Garantia"),
-                Col("Identificación", "Cedula", Center),
-                Col("Nombre", "Nombre"),
-                Col("Mnt. Crd", "montoapr", "left", CrLiqDetalleFormato.Crudo),
+                Col(HeaderIdentificacion, CampoCedula, Center),
+                Col(HeaderNombre, CampoNombre),
+                Col("Mnt. Crd", "montoapr", Left, CrLiqDetalleFormato.Crudo),
                 Col("Mnt. Girado.", "monto_girado", Right, CrLiqDetalleFormato.Crudo),
                 Fecha("Formalizado", "fechaforp", Right),
                 Fecha("Revisado", "Fecha_Revision"),
-                Col("Línea.Cod.", "Codigo")
+                Col("Línea.Cod.", CampoCodigo)
             });
 
         // Recaudación (también Comisión Recaudación y Reservas).
         private static readonly CrLiqDetalleConsultaSpec RecaudacionResumen = new(
             "spConvenios_Orden_Recaudacion", "spConvenios_Orden_Recaudacion_Institucion", true,
-            "TOTAL_RECAUDADO", "Comision", true, 5,
+            CampoTotalRecaudado, CampoComision, true, 5,
             new[]
             {
-                Col("Línea", "Codigo"),
-                Col("Descripción", "LineaX"),
-                Monto("Recaudado", "TOTAL_RECAUDADO"),
-                Monto("Comisión", "Comision"),
-                Monto("Neto", "TOTAL_NETO"),
-                Col("Institución", null)
+                Col(HeaderLinea, CampoCodigo),
+                Col(HeaderDescripcion, "LineaX"),
+                Monto(HeaderRecaudado, CampoTotalRecaudado),
+                Monto(HeaderComision, CampoComision),
+                Monto("Neto", CampoTotalNeto),
+                Col(HeaderInstitucion, null)
             });
 
         private static readonly CrLiqDetalleConsultaSpec RecaudacionDetalle = new(
             "spConvenios_Orden_Recaudacion", "spConvenios_Orden_Recaudacion_Institucion", true,
-            "Monto", "Comision", false, -1,
+            CampoMonto, CampoComision, false, -1,
             new[]
             {
                 Col("Operación", "id_Solicitud"),
-                Col("Línea", "Codigo"),
-                Monto("Recaudado", "Monto"),
+                Col(HeaderLinea, CampoCodigo),
+                Monto(HeaderRecaudado, CampoMonto),
                 Fecha("Fecha", "fecha", Right),
-                Col("Descripción", "LineaX"),
+                Col(HeaderDescripcion, "LineaX"),
                 Col("Garantía", "GarantiaDesc"),
-                Col("Identificación", "Cedula", Center),
-                Col("Nombre", "Nombre"),
+                Col(HeaderIdentificacion, CampoCedula, Center),
+                Col(HeaderNombre, CampoNombre),
                 Col("Concepto", "concepto"),
                 Col("Tipo Doc.", "Tcon"),
                 Col("Documento", "Ncon"),
-                Col("Institución", "Institucion")
+                Col(HeaderInstitucion, CampoInstitucion)
             });
 
         private static readonly CrLiqDetalleConsultaSpec RecaudacionInstitucion = new(
             "spConvenios_Orden_Recaudacion_Institucion_Rsm", null, false,
-            "TOTAL_RECAUDADO", "Comision", false, -1,
+            CampoTotalRecaudado, CampoComision, false, -1,
             new[]
             {
-                Col("Código", "Codigo"),
-                Col("Descripción", "Institucion"),
-                Monto("Recaudado", "TOTAL_RECAUDADO"),
-                Monto("Comisión", "Comision"),
-                Monto("Neto", "TOTAL_NETO")
+                Col("Código", CampoCodigo),
+                Col(HeaderDescripcion, CampoInstitucion),
+                Monto(HeaderRecaudado, CampoTotalRecaudado),
+                Monto(HeaderComision, CampoComision),
+                Monto("Neto", CampoTotalNeto)
             });
 
         // Devoluciones (también Comisión Devolución).
         private static readonly CrLiqDetalleConsultaSpec DevolucionResumen = new(
             "spConvenios_Orden_Devolucion", "spConvenios_Orden_Devolucion_Institucion", true,
-            "TOTAL_RECAUDADO", "Comision", true, 5,
+            CampoTotalRecaudado, CampoComision, true, 5,
             new[]
             {
                 Col("Concepto", "Retencion_Codigo"),
-                Col("Descripción", "RetencionConcepto"),
-                Monto("Recaudado", "TOTAL_RECAUDADO"),
-                Monto("Comisión", "Comision"),
-                Monto("Neto", "TOTAL_NETO"),
-                Col("Institución", null)
+                Col(HeaderDescripcion, "RetencionConcepto"),
+                Monto(HeaderRecaudado, CampoTotalRecaudado),
+                Monto(HeaderComision, CampoComision),
+                Monto("Neto", CampoTotalNeto),
+                Col(HeaderInstitucion, null)
             });
 
         private static readonly CrLiqDetalleConsultaSpec DevolucionDetalle = new(
             "spConvenios_Orden_Devolucion", "spConvenios_Orden_Devolucion_Institucion", true,
-            "Monto", "Comision", false, -1,
+            CampoMonto, CampoComision, false, -1,
             new[]
             {
                 Col("Num.Liq.", "Consec"),
                 Col("Concepto", "Retencion_Codigo"),
-                Monto("Recaudado", "Monto"),
+                Monto(HeaderRecaudado, CampoMonto),
                 Fecha("Fecha", "fecha", Right),
-                Col("Descripción", "RetencionConcepto"),
-                Col("Identificación", "Cedula", Center),
-                Col("Nombre", "Nombre"),
+                Col(HeaderDescripcion, "RetencionConcepto"),
+                Col(HeaderIdentificacion, CampoCedula, Center),
+                Col(HeaderNombre, CampoNombre),
                 Col("Operadora", "cod_Operadora"),
                 Col("Plan", "PlanDesc"),
                 Col("Contrato", "cod_Contrato"),
-                Col("Institución", "Institucion")
+                Col(HeaderInstitucion, CampoInstitucion)
             });
 
         private static readonly CrLiqDetalleConsultaSpec DevolucionInstitucion = new(
             "spConvenios_Orden_Devolucion_Institucion_Rsm", null, false,
-            "TOTAL_RECAUDADO", "Comision", false, -1,
+            CampoTotalRecaudado, CampoComision, false, -1,
             new[]
             {
-                Col("Código", "Codigo"),
-                Col("Descripción", "Institucion"),
-                Monto("Recaudado", "TOTAL_RECAUDADO"),
-                Monto("Comisión", "Comision"),
-                Monto("Neto", "TOTAL_NETO")
+                Col("Código", CampoCodigo),
+                Col(HeaderDescripcion, CampoInstitucion),
+                Monto(HeaderRecaudado, CampoTotalRecaudado),
+                Monto(HeaderComision, CampoComision),
+                Monto("Neto", CampoTotalNeto)
             });
 
         // Nuevos créditos (también Comisión Créditos).
         private static readonly CrLiqDetalleConsultaSpec CreditosResumen = new(
             "spConvenios_Orden_Creditos", "spConvenios_Orden_Creditos_Institucion", true,
-            "Monto", "Comision", true, 6,
+            CampoMonto, CampoComision, true, 6,
             new[]
             {
-                Col("Línea", "Codigo"),
-                Col("Descripción", "LineaDesc"),
-                Monto("Monto", "Monto"),
-                Monto("Comisión", "Comision"),
+                Col(HeaderLinea, CampoCodigo),
+                Col(HeaderDescripcion, "LineaDesc"),
+                Monto(HeaderMonto, CampoMonto),
+                Monto(HeaderComision, CampoComision),
                 Monto("Neto", "Neto"),
-                Col("Destino", "Destino"),
-                Col("Institución", "Institucion")
+                Col(HeaderDestino, CampoDestino),
+                Col(HeaderInstitucion, CampoInstitucion)
             });
 
         private static readonly CrLiqDetalleConsultaSpec CreditosDetalle = new(
             "spConvenios_Orden_Creditos", "spConvenios_Orden_Creditos_Institucion", true,
-            "Monto", "Comision", false, -1,
+            CampoMonto, CampoComision, false, -1,
             new[]
             {
                 Col("Operación", "id_Solicitud"),
-                Col("Línea", "Codigo", Center),
-                Col("Descripción", "LineaDesc"),
-                Col("Destino", "Destino"),
-                Monto("Monto", "Monto"),
-                Monto("Comisión", "Comision"),
+                Col(HeaderLinea, CampoCodigo, Center),
+                Col(HeaderDescripcion, "LineaDesc"),
+                Col(HeaderDestino, CampoDestino),
+                Monto(HeaderMonto, CampoMonto),
+                Monto(HeaderComision, CampoComision),
                 Monto("Neto", "Neto"),
                 Fecha("Fec.Rev.", "Fecha_Revision"),
                 Fecha("Fec.Form.", "fechaforp"),
                 Col("No.Documento", "Documento"),
                 Col("Garantía", "Garantia"),
-                Col("Identificación", "Cedula", Center),
-                Col("Nombre", "Nombre"),
-                Col("Institución", "InstitucionDesc")
+                Col(HeaderIdentificacion, CampoCedula, Center),
+                Col(HeaderNombre, CampoNombre),
+                Col(HeaderInstitucion, "InstitucionDesc")
             });
 
         private static readonly CrLiqDetalleConsultaSpec CreditosInstitucion = new(
             "spConvenios_Orden_Creditos_Institucion_Rsm", null, false,
-            "Monto", "Comision", false, -1,
+            CampoMonto, CampoComision, false, -1,
             new[]
             {
                 Col("Código", "cod_Institucion"),
-                Col("Descripción", "Institucion"),
-                Monto("Monto", "Monto"),
-                Monto("Comisión", "Comision"),
+                Col(HeaderDescripcion, CampoInstitucion),
+                Monto(HeaderMonto, CampoMonto),
+                Monto(HeaderComision, CampoComision),
                 Monto("Neto", "Neto")
             });
     }
