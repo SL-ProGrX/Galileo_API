@@ -566,10 +566,50 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             EXEC spCbr_Cobro_Fiadores_List @operacion
         ";
 
-                response.Result = cn.Query<COCobroFiadorDbRow>(
+                var filas = cn.Query<COCobroFiadorDbRow>(
                     sql,
                     new { operacion }
-                ).Select(row => new COCobroFiadorRowDto
+                ).ToList();
+
+                if (filas.Count == 0)
+                {
+                    const string sqlOperacionesGeneradas = @"
+                        SELECT
+                            rc.id_solicitud AS Id_Solicitud,
+                            RTRIM(rc.codigo) AS Codigo,
+                            RTRIM(rc.cedula) AS Cedula,
+                            RTRIM(ISNULL(s.nombre, '')) AS Nombre,
+                            ISNULL(rc.cuota, 0) AS Cuota,
+                            CAST(0 AS decimal(18, 2)) AS Recaudado,
+                            CAST(0 AS decimal(18, 2)) AS Aplicado,
+                            CAST(0 AS decimal(18, 2)) AS Devuelto,
+                            rc.fechares AS Inicio,
+                            ultimoMovimiento.ULTMOV,
+                            CASE
+                                WHEN rc.estado = 'C' THEN 'CANCELADO'
+                                WHEN rc.estado = 'A' OR rc.estadosol = 'F' THEN 'ACTIVO'
+                                ELSE RTRIM(ISNULL(rc.estado, ''))
+                            END AS Estado_Desc
+                        FROM reg_creditos rc
+                        LEFT JOIN socios s
+                            ON s.cedula = rc.cedula
+                        OUTER APPLY
+                        (
+                            SELECT MAX(cd.fechas) AS ULTMOV
+                            FROM creditos_dt cd
+                            WHERE cd.id_solicitud = rc.id_solicitud
+                        ) ultimoMovimiento
+                        WHERE rc.referencia = @operacion
+                        ORDER BY rc.id_solicitud;
+                    ";
+
+                    filas = cn.Query<COCobroFiadorDbRow>(
+                        sqlOperacionesGeneradas,
+                        new { operacion }
+                    ).ToList();
+                }
+
+                response.Result = filas.Select(row => new COCobroFiadorRowDto
                 {
                     operacion = row.Id_Solicitud,
                     linea = row.Codigo?.Trim() ?? string.Empty,
