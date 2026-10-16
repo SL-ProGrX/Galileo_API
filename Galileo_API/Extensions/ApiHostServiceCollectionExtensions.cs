@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
@@ -101,8 +102,7 @@ public static class ApiHostServiceCollectionExtensions
             });
             options.AddPolicy("auth-activity", context =>
                 RateLimitPartition.GetFixedWindowLimiter(
-                    context.User.FindFirst("sid")?.Value ??
-                        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    GetAuthActivityPartitionKey(context),
                     _ => new FixedWindowRateLimiterOptions
                     {
                         PermitLimit = 20,
@@ -112,6 +112,30 @@ public static class ApiHostServiceCollectionExtensions
         });
 
         return services;
+    }
+
+    private static string GetAuthActivityPartitionKey(HttpContext context)
+    {
+        var sessionId = context.User.FindFirst("sid")?.Value;
+        if (!string.IsNullOrWhiteSpace(sessionId)) return $"sid:{sessionId}";
+
+        var application = context.Request.Query["application"].ToString();
+        var cookieName = application.ToLowerInvariant() switch
+        {
+            "galileo" => "pgx_galileo_refresh",
+            "ssecurity" => "pgx_ssecurity_refresh",
+            _ => string.Empty,
+        };
+        var refreshToken = cookieName.Length > 0
+            ? context.Request.Cookies[cookieName]
+            : null;
+        if (!string.IsNullOrWhiteSpace(refreshToken))
+        {
+            var tokenHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(refreshToken)));
+            return $"refresh:{application.ToLowerInvariant()}:{tokenHash}";
+        }
+
+        return $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
     }
 
     public static void EnsureDevelopmentJwtSecret(
