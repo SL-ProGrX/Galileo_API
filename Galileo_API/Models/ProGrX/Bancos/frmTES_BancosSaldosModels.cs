@@ -23,7 +23,16 @@
         public DateTime fecha { get; set; }
         public string usuario { get; set; } = string.Empty;
         public decimal cheques_pendientes { get; set; }
-        public decimal dp_cajas { get; set; } = 0;
+        public decimal diferencia { get; set; }
+
+        // Conserva el mapeo de la columna legacy del procedimiento almacenado.
+        [System.Text.Json.Serialization.JsonIgnore]
+        [Newtonsoft.Json.JsonIgnore]
+        public decimal dp_cajas
+        {
+            get => diferencia;
+            set => diferencia = value;
+        }
     }
 
     public class TesBancosSaldosCierresDto

@@ -12,7 +12,6 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
     public class FrmPreaEstudiov2Controller : ControllerBase
     {
         private readonly FrmPreaEstudiov2BL _bl;
-
         public FrmPreaEstudiov2Controller(IConfiguration config)
         {
             _bl = new FrmPreaEstudiov2BL(config);

@@ -20,9 +20,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             int codEmpresa,
             string? buscar,
             int pagina,
-            int paginacion)
+            int paginacion,
+            string? sortField = null,
+            int sortOrder = -1)
         {
-            return _db.Prea_frmPreaConsultaExpeditentes_Lista_Obtener(codEmpresa, buscar, pagina, paginacion);
+            return _db.Prea_frmPreaConsultaExpeditentes_Lista_Obtener(
+                codEmpresa, buscar, pagina, paginacion, sortField, sortOrder);
         }
     }
 }
