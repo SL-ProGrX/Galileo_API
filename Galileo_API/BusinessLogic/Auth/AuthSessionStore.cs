@@ -11,6 +11,8 @@ namespace Galileo.BusinessLogic.Auth;
 /// </summary>
 public sealed class AuthSessionStore
 {
+    private const string Unidentified = "No identificado";
+
     private readonly SqlAuthSessionRepository? _sql;
     private readonly object _sync = new();
     private readonly Dictionary<string, SessionState> _sessionsByRefreshHash = new(StringComparer.Ordinal);
@@ -52,11 +54,11 @@ public sealed class AuthSessionStore
             CreateOpaqueToken(),
             authenticationMethod)
         {
-            BrowserName = clientInfo?.BrowserName ?? "No identificado",
+            BrowserName = clientInfo?.BrowserName ?? Unidentified,
             BrowserVersion = clientInfo?.BrowserVersion,
-            OperatingSystem = clientInfo?.OperatingSystem ?? "No identificado",
+            OperatingSystem = clientInfo?.OperatingSystem ?? Unidentified,
             OperatingSystemVersion = clientInfo?.OperatingSystemVersion,
-            DeviceType = clientInfo?.DeviceType ?? "No identificado",
+            DeviceType = clientInfo?.DeviceType ?? Unidentified,
             ClientIpAddress = clientInfo?.ClientIpAddress,
         };
 
@@ -160,11 +162,15 @@ public sealed class AuthSessionStore
                 };
             }
 
-            var reason = session.Revoked
-                ? session.RevocationReason ?? "revoked"
-                : session.ExpiresAtUtc <= DateTime.UtcNow
-                    ? AuthSessionEndReasons.RefreshExpired
-                    : null;
+            string? reason = null;
+            if (session.Revoked)
+            {
+                reason = session.RevocationReason ?? "revoked";
+            }
+            else if (session.ExpiresAtUtc <= DateTime.UtcNow)
+            {
+                reason = AuthSessionEndReasons.RefreshExpired;
+            }
 
             return new AuthSessionStatusDto
             {
@@ -315,11 +321,11 @@ public sealed class AuthSessionStore
         public bool Used { get; set; }
         public bool Revoked { get; set; }
         public string? RevocationReason { get; set; }
-        public string BrowserName { get; init; } = "No identificado";
+        public string BrowserName { get; init; } = Unidentified;
         public string? BrowserVersion { get; init; }
-        public string OperatingSystem { get; init; } = "No identificado";
+        public string OperatingSystem { get; init; } = Unidentified;
         public string? OperatingSystemVersion { get; init; }
-        public string DeviceType { get; init; } = "No identificado";
+        public string DeviceType { get; init; } = Unidentified;
         public string? ClientIpAddress { get; init; }
     }
 

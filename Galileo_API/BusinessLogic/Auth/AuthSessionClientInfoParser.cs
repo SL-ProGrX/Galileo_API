@@ -8,15 +8,20 @@ public static partial class AuthSessionClientInfoParser
 {
     private const int MaxVersionLength = 20;
 
-    public static AuthSessionClientInfo Parse(string? userAgent, IPAddress? remoteIpAddress)
+    public static AuthSessionClientInfo Parse(
+        string? userAgent,
+        IPAddress? remoteIpAddress,
+        string? clientPlatform = null)
     {
         var agent = userAgent ?? string.Empty;
         if (agent.Length > 2048)
         {
             agent = agent[..2048];
         }
+        var isIPad = string.Equals(clientPlatform, "iPadOS", StringComparison.OrdinalIgnoreCase) ||
+            agent.Contains("iPad", StringComparison.OrdinalIgnoreCase);
         var browser = ParseBrowser(agent);
-        var operatingSystem = ParseOperatingSystem(agent);
+        var operatingSystem = ParseOperatingSystem(agent, isIPad);
         var remoteIp = remoteIpAddress?.IsIPv4MappedToIPv6 == true
             ? remoteIpAddress.MapToIPv4()
             : remoteIpAddress;
@@ -26,7 +31,7 @@ public static partial class AuthSessionClientInfoParser
             browser.Version,
             operatingSystem.Name,
             operatingSystem.Version,
-            ParseDeviceType(agent),
+            ParseDeviceType(agent, isIPad),
             remoteIp?.ToString());
     }
 
@@ -54,10 +59,13 @@ public static partial class AuthSessionClientInfoParser
         return ("No identificado", null);
     }
 
-    private static (string Name, string? Version) ParseOperatingSystem(string agent)
+    private static (string Name, string? Version) ParseOperatingSystem(string agent, bool isIPad)
     {
+        if (isIPad)
+        {
+            return ("iPadOS", null);
+        }
         if (agent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
-            agent.Contains("iPad", StringComparison.OrdinalIgnoreCase) ||
             agent.Contains("iPod", StringComparison.OrdinalIgnoreCase))
         {
             return ("iOS", ParseVersion(IosVersion().Match(agent).Groups[1].Value));
@@ -92,9 +100,9 @@ public static partial class AuthSessionClientInfoParser
     private static string LimitVersion(string value) =>
         value.Length <= MaxVersionLength ? value : value[..MaxVersionLength];
 
-    private static string ParseDeviceType(string agent)
+    private static string ParseDeviceType(string agent, bool isIPad)
     {
-        if (agent.Contains("iPad", StringComparison.OrdinalIgnoreCase) ||
+        if (isIPad ||
             (agent.Contains("Android", StringComparison.OrdinalIgnoreCase) &&
              !agent.Contains("Mobile", StringComparison.OrdinalIgnoreCase)))
         {

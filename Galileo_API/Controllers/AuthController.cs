@@ -37,18 +37,20 @@ public sealed class AuthController : ControllerBase
     [HttpPost("Galileo/Login")]
     public async Task<ActionResult<AuthResponseDto>> GalileoLogin(
         [FromBody] AuthLoginRequest request,
-        [FromHeader(Name = "User-Agent")] string? userAgent)
+        [FromHeader(Name = "User-Agent")] string? userAgent,
+        [FromHeader(Name = "X-Client-Platform")] string? clientPlatform)
     {
-        return await Login(request, AuthApplications.Galileo, userAgent);
+        return await Login(request, AuthApplications.Galileo, userAgent, clientPlatform);
     }
 
     [AllowAnonymous]
     [HttpPost("SSecurity/Login")]
     public async Task<ActionResult<AuthResponseDto>> SSecurityLogin(
         [FromBody] AuthLoginRequest request,
-        [FromHeader(Name = "User-Agent")] string? userAgent)
+        [FromHeader(Name = "User-Agent")] string? userAgent,
+        [FromHeader(Name = "X-Client-Platform")] string? clientPlatform)
     {
-        return await Login(request, AuthApplications.SSecurity, userAgent);
+        return await Login(request, AuthApplications.SSecurity, userAgent, clientPlatform);
     }
 
     [AllowAnonymous]
@@ -159,9 +161,10 @@ public sealed class AuthController : ControllerBase
     [HttpPost("SSecurity/Mfa/Verify")]
     public ActionResult<AuthResponseDto> VerifyMfa(
         [FromBody] MfaVerifyRequest request,
-        [FromHeader(Name = "User-Agent")] string? userAgent)
+        [FromHeader(Name = "User-Agent")] string? userAgent,
+        [FromHeader(Name = "X-Client-Platform")] string? clientPlatform)
     {
-        var response = _auth.VerifyMfa(request, GetSessionClientInfo(userAgent));
+        var response = _auth.VerifyMfa(request, GetSessionClientInfo(userAgent, clientPlatform));
         if (response.Status == "authenticated")
         {
             RevokePreviousBrowserSession(AuthApplications.SSecurity);
@@ -369,9 +372,16 @@ public sealed class AuthController : ControllerBase
         return NoContent();
     }
 
-    private async Task<ActionResult<AuthResponseDto>> Login(AuthLoginRequest request, string application, string? userAgent)
+    private async Task<ActionResult<AuthResponseDto>> Login(
+        AuthLoginRequest request,
+        string application,
+        string? userAgent,
+        string? clientPlatform)
     {
-        var response = await _auth.LoginAsync(request, application, GetSessionClientInfo(userAgent));
+        var response = await _auth.LoginAsync(
+            request,
+            application,
+            GetSessionClientInfo(userAgent, clientPlatform));
         if (response.Status == "authenticated" && !string.IsNullOrWhiteSpace(response.AccessToken))
         {
             RevokePreviousBrowserSession(application);
@@ -388,11 +398,12 @@ public sealed class AuthController : ControllerBase
         };
     }
 
-    private AuthSessionClientInfo GetSessionClientInfo(string? userAgent)
+    private AuthSessionClientInfo GetSessionClientInfo(string? userAgent, string? clientPlatform)
     {
         return AuthSessionClientInfoParser.Parse(
             userAgent,
-            HttpContext.Connection.RemoteIpAddress);
+            HttpContext.Connection.RemoteIpAddress,
+            clientPlatform);
     }
 
     private void SetRefreshCookie(string application, string? refreshToken)
