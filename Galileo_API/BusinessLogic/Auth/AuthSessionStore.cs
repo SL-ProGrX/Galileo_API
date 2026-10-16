@@ -36,7 +36,12 @@ public sealed class AuthSessionStore
         _sql = new SqlAuthSessionRepository(configuration);
     }
 
-    public SessionState CreateSession(AuthUserDto user, string application, TimeSpan lifetime, string authenticationMethod)
+    public SessionState CreateSession(
+        AuthUserDto user,
+        string application,
+        TimeSpan lifetime,
+        string authenticationMethod,
+        AuthSessionClientInfo? clientInfo = null)
     {
         var now = DateTime.UtcNow;
         var session = new SessionState(
@@ -45,7 +50,15 @@ public sealed class AuthSessionStore
             application,
             now.Add(lifetime),
             CreateOpaqueToken(),
-            authenticationMethod);
+            authenticationMethod)
+        {
+            BrowserName = clientInfo?.BrowserName ?? "No identificado",
+            BrowserVersion = clientInfo?.BrowserVersion,
+            OperatingSystem = clientInfo?.OperatingSystem ?? "No identificado",
+            OperatingSystemVersion = clientInfo?.OperatingSystemVersion,
+            DeviceType = clientInfo?.DeviceType ?? "No identificado",
+            ClientIpAddress = clientInfo?.ClientIpAddress,
+        };
 
         if (_sql is not null)
         {
@@ -112,7 +125,7 @@ public sealed class AuthSessionStore
     {
         if (_sql is not null)
         {
-            _sql.Revoke(Hash(rawRefreshToken));
+            _sql.Revoke(Hash(rawRefreshToken), AuthSessionEndReasons.Logout);
             return;
         }
 
@@ -121,8 +134,43 @@ public sealed class AuthSessionStore
             if (_sessionsByRefreshHash.TryGetValue(Hash(rawRefreshToken), out var session))
             {
                 session.Revoked = true;
+                session.RevocationReason = AuthSessionEndReasons.Logout;
                 _revokedSessionIds.Add(session.SessionId);
             }
+        }
+    }
+
+    public AuthSessionStatusDto GetStatusByRefreshToken(string rawRefreshToken, string application)
+    {
+        var hash = Hash(rawRefreshToken);
+        if (_sql is not null)
+        {
+            return _sql.GetStatusByRefreshHash(hash, application);
+        }
+
+        lock (_sync)
+        {
+            if (!_sessionsByRefreshHash.TryGetValue(hash, out var session) ||
+                !string.Equals(session.Application, application, StringComparison.OrdinalIgnoreCase))
+            {
+                return new AuthSessionStatusDto
+                {
+                    Status = "ended",
+                    Reason = AuthSessionEndReasons.SessionNotFound,
+                };
+            }
+
+            var reason = session.Revoked
+                ? session.RevocationReason ?? "revoked"
+                : session.ExpiresAtUtc <= DateTime.UtcNow
+                    ? AuthSessionEndReasons.RefreshExpired
+                    : null;
+
+            return new AuthSessionStatusDto
+            {
+                Status = reason is null ? "active" : "ended",
+                Reason = reason,
+            };
         }
     }
 
@@ -134,6 +182,24 @@ public sealed class AuthSessionStore
         }
 
         return IsSessionActive(sessionId);
+    }
+
+    public IReadOnlyList<UserSessionDto> ListActiveForUser(int userId, string currentSessionId, string application)
+    {
+        if (_sql is null)
+        {
+            throw new InvalidOperationException("La consulta de sesiones requiere AuthSessions:Store=Sql.");
+        }
+        return _sql.ListActiveForUser(userId, currentSessionId, application);
+    }
+
+    public bool RevokeForUser(int userId, string sessionId, string application)
+    {
+        if (_sql is null)
+        {
+            throw new InvalidOperationException("La revocación de sesiones requiere AuthSessions:Store=Sql.");
+        }
+        return _sql.RevokeForUser(userId, sessionId, application);
     }
 
     public bool IsSessionActive(string sessionId)
@@ -248,6 +314,13 @@ public sealed class AuthSessionStore
     {
         public bool Used { get; set; }
         public bool Revoked { get; set; }
+        public string? RevocationReason { get; set; }
+        public string BrowserName { get; init; } = "No identificado";
+        public string? BrowserVersion { get; init; }
+        public string OperatingSystem { get; init; } = "No identificado";
+        public string? OperatingSystemVersion { get; init; }
+        public string DeviceType { get; init; } = "No identificado";
+        public string? ClientIpAddress { get; init; }
     }
 
     public sealed record ChallengeState(

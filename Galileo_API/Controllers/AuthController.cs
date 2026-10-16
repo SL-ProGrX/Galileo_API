@@ -3,6 +3,7 @@ using Galileo.Models.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Security.Claims;
 
 namespace Galileo.Controllers;
 
@@ -15,31 +16,39 @@ public sealed class AuthController : ControllerBase
     private const string SSecurityRefreshCookie = "pgx_ssecurity_refresh";
     private const string GalileoDeviceCookie = "pgx_galileo_device";
     private const string AuthenticationUnavailableStatus = "authenticationUnavailable";
+    private const string InvalidApplicationStatus = "invalidApplication";
     private const string PasswordChangeRequiredStatus = "passwordChangeRequired";
     private const string AccountBlockedStatus = "accountBlocked";
     private readonly AuthBL _auth;
+    private readonly ILogger<AuthController>? _logger;
     private readonly int _refreshTokenDays;
 
     public AuthController(
         AuthBL auth,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ILogger<AuthController>? logger = null)
     {
         _auth = auth;
+        _logger = logger;
         _refreshTokenDays = Math.Clamp(configuration.GetValue<int?>("Jwt:RefreshTokenDays") ?? 7, 1, 30);
     }
 
     [AllowAnonymous]
     [HttpPost("Galileo/Login")]
-    public async Task<ActionResult<AuthResponseDto>> GalileoLogin([FromBody] AuthLoginRequest request)
+    public async Task<ActionResult<AuthResponseDto>> GalileoLogin(
+        [FromBody] AuthLoginRequest request,
+        [FromHeader(Name = "User-Agent")] string? userAgent)
     {
-        return await Login(request, AuthApplications.Galileo);
+        return await Login(request, AuthApplications.Galileo, userAgent);
     }
 
     [AllowAnonymous]
     [HttpPost("SSecurity/Login")]
-    public async Task<ActionResult<AuthResponseDto>> SSecurityLogin([FromBody] AuthLoginRequest request)
+    public async Task<ActionResult<AuthResponseDto>> SSecurityLogin(
+        [FromBody] AuthLoginRequest request,
+        [FromHeader(Name = "User-Agent")] string? userAgent)
     {
-        return await Login(request, AuthApplications.SSecurity);
+        return await Login(request, AuthApplications.SSecurity, userAgent);
     }
 
     [AllowAnonymous]
@@ -148,9 +157,11 @@ public sealed class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("SSecurity/Mfa/Verify")]
-    public ActionResult<AuthResponseDto> VerifyMfa([FromBody] MfaVerifyRequest request)
+    public ActionResult<AuthResponseDto> VerifyMfa(
+        [FromBody] MfaVerifyRequest request,
+        [FromHeader(Name = "User-Agent")] string? userAgent)
     {
-        var response = _auth.VerifyMfa(request);
+        var response = _auth.VerifyMfa(request, GetSessionClientInfo(userAgent));
         if (response.Status == "authenticated")
         {
             RevokePreviousBrowserSession(AuthApplications.SSecurity);
@@ -219,7 +230,7 @@ public sealed class AuthController : ControllerBase
         [FromQuery] string application,
         [FromHeader(Name = "X-Auth-Refresh")] string? csrfHeader)
     {
-        if (!IsSupportedApplication(application)) return BadRequest(new { status = "invalidApplication" });
+        if (!IsSupportedApplication(application)) return BadRequest(new { status = InvalidApplicationStatus });
 
         if (!string.Equals(csrfHeader, "1", StringComparison.Ordinal))
         {
@@ -243,12 +254,41 @@ public sealed class AuthController : ControllerBase
         return Ok(response);
     }
 
+    [AllowAnonymous]
+    [EnableRateLimiting("auth-activity")]
+    [HttpGet("SessionStatus")]
+    public ActionResult<AuthSessionStatusDto> SessionStatus([FromQuery] string application)
+    {
+        if (!IsSupportedApplication(application)) return BadRequest(new { status = InvalidApplicationStatus });
+
+        var cookieName = GetCookieName(application);
+        if (!Request.Cookies.TryGetValue(cookieName, out var refreshToken) || string.IsNullOrWhiteSpace(refreshToken))
+        {
+            return Ok(new AuthSessionStatusDto
+            {
+                Status = "ended",
+                Reason = AuthSessionEndReasons.SessionNotFound,
+            });
+        }
+
+        try
+        {
+            return Ok(_auth.GetSessionStatus(refreshToken, application));
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or Microsoft.Data.SqlClient.SqlException)
+        {
+            _logger?.LogError(ex, "No fue posible verificar la sesión del usuario autenticado.");
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new { status = "sessionStatusUnavailable" });
+        }
+    }
+
     [Authorize]
     [EnableRateLimiting("auth-activity")]
     [HttpPost("Activity")]
     public IActionResult Activity([FromQuery] string application)
     {
-        if (!IsSupportedApplication(application)) return BadRequest(new { status = "invalidApplication" });
+        if (!IsSupportedApplication(application)) return BadRequest(new { status = InvalidApplicationStatus });
 
         var sessionId = User.FindFirst("sid")?.Value;
         if (string.IsNullOrWhiteSpace(sessionId) ||
@@ -262,11 +302,59 @@ public sealed class AuthController : ControllerBase
             : Unauthorized(new { status = "sessionExpired" });
     }
 
+    [Authorize]
+    [HttpGet("Sessions")]
+    public ActionResult<IReadOnlyList<UserSessionDto>> GetSessions()
+    {
+        if (!TryGetSessionIdentity(out var userId, out var currentSessionId, out var application)) return Forbid();
+        try
+        {
+            return Ok(_auth.ListActiveSessions(userId, currentSessionId, application));
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or Microsoft.Data.SqlClient.SqlException)
+        {
+            _logger?.LogError(ex, "No fue posible consultar las sesiones del usuario autenticado.");
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new { status = "sessionsUnavailable", detail = "No fue posible consultar las sesiones." });
+        }
+    }
+
+    [Authorize]
+    [HttpDelete("Sessions/{sessionId}")]
+    public IActionResult RevokeSession(string sessionId)
+    {
+        if (!TryGetSessionIdentity(out var userId, out var currentSessionId, out var application)) return Forbid();
+        if (sessionId.Length != 32 || !sessionId.All(Uri.IsHexDigit)) return BadRequest();
+        if (string.Equals(sessionId, currentSessionId, StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new { status = "useLogoutForCurrentSession" });
+        }
+        try
+        {
+            return _auth.RevokeSession(userId, sessionId, application) ? NoContent() : NotFound();
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or Microsoft.Data.SqlClient.SqlException)
+        {
+            _logger?.LogError(ex, "No fue posible cerrar una sesión del usuario autenticado.");
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new { status = "sessionsUnavailable", detail = "No fue posible cerrar la sesión." });
+        }
+    }
+
+    private bool TryGetSessionIdentity(out int userId, out string sessionId, out string application)
+    {
+        var rawUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        sessionId = User.FindFirst("sid")?.Value ?? string.Empty;
+        application = User.FindFirst("app")?.Value ?? string.Empty;
+        return int.TryParse(rawUserId, out userId) && userId > 0 && sessionId.Length == 32
+            && IsSupportedApplication(application);
+    }
+
     [AllowAnonymous]
     [HttpPost("Logout")]
     public IActionResult Logout([FromQuery] string application)
     {
-        if (!IsSupportedApplication(application)) return BadRequest(new { status = "invalidApplication" });
+        if (!IsSupportedApplication(application)) return BadRequest(new { status = InvalidApplicationStatus });
 
         // AutoValidateAntiforgeryToken valida globalmente las operaciones POST.
         // El marcador X-Auth-Refresh es necesario para Refresh, pero duplicaría
@@ -281,9 +369,9 @@ public sealed class AuthController : ControllerBase
         return NoContent();
     }
 
-    private async Task<ActionResult<AuthResponseDto>> Login(AuthLoginRequest request, string application)
+    private async Task<ActionResult<AuthResponseDto>> Login(AuthLoginRequest request, string application, string? userAgent)
     {
-        var response = await _auth.LoginAsync(request, application);
+        var response = await _auth.LoginAsync(request, application, GetSessionClientInfo(userAgent));
         if (response.Status == "authenticated" && !string.IsNullOrWhiteSpace(response.AccessToken))
         {
             RevokePreviousBrowserSession(application);
@@ -298,6 +386,13 @@ public sealed class AuthController : ControllerBase
             AuthenticationUnavailableStatus => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
             _ => Unauthorized(response),
         };
+    }
+
+    private AuthSessionClientInfo GetSessionClientInfo(string? userAgent)
+    {
+        return AuthSessionClientInfoParser.Parse(
+            userAgent,
+            HttpContext.Connection.RemoteIpAddress);
     }
 
     private void SetRefreshCookie(string application, string? refreshToken)

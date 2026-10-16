@@ -42,7 +42,10 @@ public sealed class AuthBL
         _galileoAppName = configuration["AppSettings:GalileoAppName"] ?? "Galileo";
     }
 
-    public async Task<AuthResponseDto> LoginAsync(AuthLoginRequest request, string application)
+    public async Task<AuthResponseDto> LoginAsync(
+        AuthLoginRequest request,
+        string application,
+        AuthSessionClientInfo? clientInfo = null)
     {
         if (!HasCredentials(request))
         {
@@ -59,7 +62,7 @@ public sealed class AuthBL
         try
         {
             var user = LoadUser(username);
-            return await CompleteLoginAsync(user, application);
+            return await CompleteLoginAsync(user, application, clientInfo);
         }
         catch (Exception ex) when (ex is SqlException or InvalidOperationException)
         {
@@ -299,7 +302,10 @@ public sealed class AuthBL
         };
     }
 
-    private async Task<AuthResponseDto> CompleteLoginAsync(AuthUserDto user, string application)
+    private async Task<AuthResponseDto> CompleteLoginAsync(
+        AuthUserDto user,
+        string application,
+        AuthSessionClientInfo? clientInfo)
     {
         if (!IsSSecurity(application))
         {
@@ -309,7 +315,7 @@ public sealed class AuthBL
                 return accesoEmpresas;
             }
 
-            return CreateAuthenticatedResponse(user, application);
+            return CreateAuthenticatedResponse(user, application, clientInfo: clientInfo);
         }
 
         var accessDenied = ValidarAccesoSSecurity(user);
@@ -321,7 +327,7 @@ public sealed class AuthBL
         var tfa = _logonDb.TFA_Data_Load(user.Usuario);
         if (!tfa.tfa_ind)
         {
-            return CompleteSSecurityAuthentication(user, "pwd");
+            return CompleteSSecurityAuthentication(user, "pwd", clientInfo);
         }
 
         return await CreateMfaChallengeAsync(user, application, tfa);
@@ -390,7 +396,7 @@ public sealed class AuthBL
         return string.Equals(application, AuthApplications.SSecurity, StringComparison.OrdinalIgnoreCase);
     }
 
-    public AuthResponseDto VerifyMfa(MfaVerifyRequest request)
+    public AuthResponseDto VerifyMfa(MfaVerifyRequest request, AuthSessionClientInfo? clientInfo = null)
     {
         if (request is null || string.IsNullOrWhiteSpace(request.ChallengeToken) || string.IsNullOrWhiteSpace(request.Codigo) ||
             !_sessionStore.TryGetChallenge(request.ChallengeToken, AuthApplications.SSecurity, out var challenge) ||
@@ -423,7 +429,7 @@ public sealed class AuthBL
 
         try
         {
-            return CompleteSSecurityAuthentication(challenge.User, "pwd,mfa");
+            return CompleteSSecurityAuthentication(challenge.User, "pwd,mfa", clientInfo);
         }
         catch (Exception ex) when (ex is SqlException or InvalidOperationException)
         {
@@ -722,7 +728,10 @@ public sealed class AuthBL
         return result.ToString();
     }
 
-    private AuthResponseDto CompleteSSecurityAuthentication(AuthUserDto user, string authenticationMethod)
+    private AuthResponseDto CompleteSSecurityAuthentication(
+        AuthUserDto user,
+        string authenticationMethod,
+        AuthSessionClientInfo? clientInfo)
     {
         var accessDenied = ValidarAccesoSSecurity(user);
         if (accessDenied is not null)
@@ -768,7 +777,11 @@ public sealed class AuthBL
             };
         }
 
-        var response = CreateAuthenticatedResponse(user, AuthApplications.SSecurity, authenticationMethod);
+        var response = CreateAuthenticatedResponse(
+            user,
+            AuthApplications.SSecurity,
+            authenticationMethod,
+            clientInfo);
         if (vencimiento.Renovacion == 1)
         {
             response = new AuthResponseDto
@@ -816,15 +829,39 @@ public sealed class AuthBL
         _sessionStore.Revoke(refreshToken);
     }
 
+    public AuthSessionStatusDto GetSessionStatus(string refreshToken, string application)
+    {
+        return _sessionStore.GetStatusByRefreshToken(refreshToken, application);
+    }
+
     public bool RecordActivity(string sessionId, string application)
     {
         return _sessionStore.RecordActivity(sessionId, application);
     }
 
-    private AuthResponseDto CreateAuthenticatedResponse(AuthUserDto user, string application, string authenticationMethod = "pwd")
+    public IReadOnlyList<UserSessionDto> ListActiveSessions(int userId, string currentSessionId, string application)
+    {
+        return _sessionStore.ListActiveForUser(userId, currentSessionId, application);
+    }
+
+    public bool RevokeSession(int userId, string sessionId, string application)
+    {
+        return _sessionStore.RevokeForUser(userId, sessionId, application);
+    }
+
+    private AuthResponseDto CreateAuthenticatedResponse(
+        AuthUserDto user,
+        string application,
+        string authenticationMethod = "pwd",
+        AuthSessionClientInfo? clientInfo = null)
     {
         var refreshDays = Math.Clamp(_jwtSettings.RefreshTokenDays, 1, 30);
-        var session = _sessionStore.CreateSession(user, application, TimeSpan.FromDays(refreshDays), authenticationMethod);
+        var session = _sessionStore.CreateSession(
+            user,
+            application,
+            TimeSpan.FromDays(refreshDays),
+            authenticationMethod,
+            clientInfo);
         var token = _accessTokenService.CreateAccessToken(user, application, session.SessionId, authenticationMethod);
 
         return new AuthResponseDto
