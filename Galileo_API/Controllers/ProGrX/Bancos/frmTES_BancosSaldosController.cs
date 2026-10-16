@@ -45,9 +45,9 @@ namespace Galileo_API.Controllers
         }
 
         [HttpGet("TES_BancosSaldos_Historico_Obtener")]
-        public ErrorDto<TablasListaGenericaModel> TES_BancosSaldos_Historico_Obtener(int CodEmpresa, int Banco, string Filtros)
+        public ErrorDto<TablasListaGenericaModel> TES_BancosSaldos_Historico_Obtener(int CodEmpresa, int Banco, string Filtros, string? CodGrupo = null)
         {
-            return _bancosSaldosBL.TES_BancosSaldos_Historico_Obtener(CodEmpresa, Banco, Filtros);
+            return _bancosSaldosBL.TES_BancosSaldos_Historico_Obtener(CodEmpresa, Banco, Filtros, CodGrupo);
         }
 
         [HttpGet("TES_BancosSaldos_Cierres_Obtener")]
