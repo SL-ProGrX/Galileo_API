@@ -189,7 +189,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
                         resultado,
                         "Monto actualizado satisfactoriamente.");
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse
                     <CrConveniosAhorrosData?>(ex.Message);
