@@ -51,7 +51,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         {
             return _esDesarrollo
                 && _config.GetValue<bool>("CreditForce:AllowCertificateNameMismatchInDevelopment")
-                && baseUri.Host == "172.16.70.42"
+                && string.Equals(
+                    baseUri.Host,
+                    _config["CreditForce:DevelopmentHost"],
+                    StringComparison.OrdinalIgnoreCase)
                 && baseUri.Port == 8443;
         }
 

@@ -3,7 +3,6 @@ using Galileo_API.BusinessLogic.ProGrX_EstudioCrd;
 using Galileo_API.Models.ProGrX_EstudioCrd;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Galileo_API.Controllers.ProGrX_EstudioCrd
 {
@@ -13,35 +12,9 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
     public class FrmPreaEstudiov2Controller : ControllerBase
     {
         private readonly FrmPreaEstudiov2BL _bl;
-        private readonly FrmPreaEstudiov2ScoreCrediticioBL _scoreCrediticioBl;
-
-        [HttpGet("Prea_frmPreaEstudiov2_ScoreCrediticio_Consultar")]
-        public ErrorDto<PreaScoreCrediticioHistorialDto> Prea_frmPreaEstudiov2_ScoreCrediticio_Consultar(
-            int codEmpresa,
-            [FromQuery] string cod_preanalisis,
-            [FromQuery] string cedula)
-        {
-            return _scoreCrediticioBl.Consultar(codEmpresa, cod_preanalisis, cedula);
-        }
-
-        [ValidateAntiForgeryToken]
-        [HttpPost("Prea_frmPreaEstudiov2_ScoreCrediticio_Actualizar")]
-        public Task<ErrorDto<PreaScoreCrediticioRegistroDto>> Prea_frmPreaEstudiov2_ScoreCrediticio_Actualizar(
-            int codEmpresa,
-            [FromBody] PreaScoreCrediticioRequest request,
-            CancellationToken cancellationToken)
-        {
-            var usuario = User.FindFirst("UserName")?.Value
-                ?? User.FindFirst(ClaimTypes.Name)?.Value
-                ?? string.Empty;
-            var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
-            return _scoreCrediticioBl.ActualizarAsync(codEmpresa, request, usuario, ip, cancellationToken);
-        }
-
-        public FrmPreaEstudiov2Controller(IConfiguration config, IHostEnvironment environment)
+        public FrmPreaEstudiov2Controller(IConfiguration config)
         {
             _bl = new FrmPreaEstudiov2BL(config);
-            _scoreCrediticioBl = new FrmPreaEstudiov2ScoreCrediticioBL(config, environment);
         }
 
         /// <summary>

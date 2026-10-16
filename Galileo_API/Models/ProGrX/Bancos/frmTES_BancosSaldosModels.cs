@@ -30,6 +30,7 @@
         [Newtonsoft.Json.JsonIgnore]
         public decimal dp_cajas
         {
+            get => diferencia;
             set => diferencia = value;
         }
     }

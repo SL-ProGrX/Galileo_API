@@ -30,7 +30,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 };
             }
 
-            if (codEmpresa <= 0 || string.IsNullOrWhiteSpace(codPreanalisis)
+            if (string.IsNullOrWhiteSpace(codPreanalisis)
                 || codPreanalisis.Trim().Length > 20 || string.IsNullOrWhiteSpace(cedula))
             {
                 return new ErrorDto<PreaScoreCrediticioHistorialDto>
@@ -55,7 +55,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 respuesta.Description = MensajeEmpresaNoHabilitada;
                 return respuesta;
             }
-            if (codEmpresa <= 0 || request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis)
+            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis)
                 || request.cod_preanalisis.Trim().Length > 20 || string.IsNullOrWhiteSpace(request.cedula)
                 || string.IsNullOrWhiteSpace(usuario) || usuario.Length > 30)
             {
