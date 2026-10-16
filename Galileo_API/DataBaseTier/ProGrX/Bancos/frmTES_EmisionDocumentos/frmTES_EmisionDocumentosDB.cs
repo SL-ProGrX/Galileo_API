@@ -1495,12 +1495,10 @@ where nsolicitud in ";
             using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
-                string query = $@"select COUNT(*) FROM Tes_Transacciones where Autoriza='S' 
-                             AND Fecha_Autorizacion is not null AND USUARIO_AUTORIZA_ESPECIAL = @usuario";
-
-                var parametros = new { usuario = usuario };
-
-                int especial = connection.Query<int>(query, parametros).FirstOrDefault();
+                // Misma regla que usan las consultas de bancos, documentos y solicitudes:
+                // solo cuenta mientras existan solicitudes especiales pendientes de emitir.
+                int especial = MTesoreria.TES_EmisionDocumento_UsuarioEsEspecial(
+                    connection, (usuario ?? string.Empty).ToUpperInvariant()) ? 1 : 0;
 
                 return new ErrorDto<int>
                 {
