@@ -148,7 +148,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         private static void ValidarResultado(bool tieneError, JsonElement? error, string recibida, string solicitada)
         {
             if (tieneError)
-                throw new InvalidOperationException($"CreditForce devolvió un error: {error?.ToString()}");
+                throw new InvalidOperationException($"CreditForce devolvió un error: {error}");
             if (!string.Equals(NormalizarIdentificacion(recibida), solicitada, StringComparison.Ordinal))
                 throw new InvalidOperationException("La identificación devuelta por CreditForce no coincide con la solicitada.");
         }
