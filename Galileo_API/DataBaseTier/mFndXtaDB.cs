@@ -61,7 +61,7 @@ namespace Galileo.DataBaseTier
                 return connection.QueryFirstOrDefault<string>(sql, parametros)
                     ?? string.Empty;
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 _ = ex.Message;
                 return string.Empty;
