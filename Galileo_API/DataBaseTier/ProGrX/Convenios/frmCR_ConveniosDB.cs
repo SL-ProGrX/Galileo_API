@@ -17,7 +17,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
         private const int VModulo = 16;
         private const string MensajeNoMasConvenios = "No existen más convenios para navegar.";
         private const string MensajeNoMasRegistros = "No existen más registros para navegar.";
-
+        private const string ConvenioNoEncontrado = "Convenio no encontrado.";
+        private const string RegistraWEB = "REGISTRA - WEB";
+        private const string EliminaWEB = "ELIMINA - WEB";
+        private const string LaDireccionNoEsValida = "La dirección de navegación no es válida.";
+        private const string InformacionActualizadaSatisfactoriamente = "Información actualizada satisfactoriamente.";
         private const string ConvenioDetalleSelectSql = @"
             SELECT
                 RTRIM(C.COD_CONVENIO) AS cod_convenio,
@@ -50,7 +54,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
 
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _securityMainDb;
-        private readonly MFndXtaDB _mFndXta;
         private readonly MProGrxMain _mProGrxMain;
         /// <summary>
         /// Gestiona el acceso a datos del registro de convenios.
@@ -59,7 +62,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
         {
             _portalDB = new PortalDB(config);
             _securityMainDb = new MSecurityMainDb(config);
-            _mFndXta = new MFndXtaDB(config);
             _mProGrxMain = new MProGrxMain(config);
         }
 
@@ -166,7 +168,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             return connection.QueryFirstOrDefault<int?>(sql, parametros).HasValue;
         }
 
-        private void RegistrarBitacora(int codEmpresa, string? usuario, string movimiento, string detalle)
+        private void RegistrarBitacora(int codEmpresa,string? usuario, string movimiento,string detalle)
         {
             try
             {
@@ -179,8 +181,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
                     Modulo = VModulo
                 });
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Trace.TraceError(
+                    $"Error al registrar bitácora. Empresa: {codEmpresa}, " +
+                    $"Movimiento: {movimiento}. Detalle: {ex}");
             }
         }
 
@@ -320,7 +325,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             {
                 CrConvenioDto? convenio = ObtenerConvenio(connection, codConvenio);
                 return convenio == null
-                    ? DbHelper.CreateErrorResponse<CrConvenioDto>("Convenio no encontrado.", -2)
+                    ? DbHelper.CreateErrorResponse<CrConvenioDto>(ConvenioNoEncontrado, -2)
                     : DbHelper.CreateOkResponse(convenio);
             });
         }
@@ -442,7 +447,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
         /// <param name="usuario"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto<CrConvenioDto> CR_Convenios_Guardar(int CodEmpresa, string? usuario, CrConveniosGuardarRequest? request)
+        public ErrorDto<CrConvenioDto> CR_Convenios_Guardar(
+     int CodEmpresa,
+     string? usuario,
+     CrConveniosGuardarRequest? request)
         {
             CrConvenioDto? convenio = request?.convenio;
 
@@ -452,8 +460,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
                 return DbHelper.CreateErrorResponse<CrConvenioDto>(validacion, -2);
 
             if (convenio == null)
-                return DbHelper.CreateErrorResponse<CrConvenioDto>("Debe indicar la información del convenio.", -2);
+                return DbHelper.CreateErrorResponse<CrConvenioDto>(
+                    "Debe indicar la información del convenio.",
+                    -2);
 
+            bool vEdita = request?.v_edita == true;
+
+            return Ejecutar(
+                CodEmpresa,
+                connection => GuardarConvenio(
+                    connection,
+                    CodEmpresa,
+                    usuario,
+                    vEdita,
+                    convenio));
+        }
+        private ErrorDto<CrConvenioDto> GuardarConvenio(SqlConnection connection,int codEmpresa,string? usuario, bool vEdita, CrConvenioDto convenio)
+        {
             string codigo = NormalizarCodigo(convenio.cod_convenio);
             string tipo = NormalizarCodigo(convenio.tipo_convenio);
             string cedula = NormalizarCodigo(convenio.cedula);
@@ -461,87 +484,89 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             string contrato = convenio.contrato_numero.Trim();
             string usuarioRegistro = NormalizarUsuario(usuario);
 
-            return Ejecutar(CodEmpresa, connection =>
+            bool existe = ExisteConvenio(connection, codigo);
+
+            if (vEdita && !existe)
             {
-                bool existe = ExisteConvenio(connection, codigo);
+                return DbHelper.CreateErrorResponse<CrConvenioDto>(
+                    "El convenio que desea modificar no existe.",
+                    -2);
+            }
 
-                if (request?.v_edita == true && !existe)
+            if (!vEdita && existe)
+            {
+                return DbHelper.CreateErrorResponse<CrConvenioDto>(
+                    "El código del convenio ya se encuentra registrado.",
+                    -2);
+            }
+
+            var parametros = new
+            {
+                CodConvenio = codigo,
+                TipoConvenio = tipo,
+                Descripcion = descripcion,
+                Cedula = cedula,
+                CodProveedor = convenio.cod_proveedor,
+                ContratoNumero = contrato,
+                FechaInicio = convenio.fecha_inicio,
+                FechaVencimiento = convenio.fecha_vencimiento,
+                Activo = convenio.activo,
+                Usuario = usuarioRegistro,
+                PorcComisionCreditos = convenio.porc_comision_creditos,
+                PorcComisionRecaudacion = convenio.porc_comision_recaudacion,
+                ReservasPorc = convenio.reservas_porc,
+                ReservaTope = convenio.reserva_tope,
+                ComisionInformativa = convenio.comision_informativa,
+                CobraCreditosAnulados = convenio.cobra_creditos_anulados
+            };
+
+            try
+            {
+                string sql = vEdita
+                    ? SqlActualizaConvenio
+                    : SqlInsertaConvenio;
+
+                int afectados = connection.Execute(sql, parametros);
+
+                if (afectados <= 0)
                 {
+                    string mensaje = vEdita
+                        ? "No fue posible actualizar el convenio."
+                        : "No fue posible registrar el convenio.";
+
                     return DbHelper.CreateErrorResponse<CrConvenioDto>(
-                        "El convenio que desea modificar no existe.",
-                        -2);
+                        mensaje,
+                        -1);
                 }
+            }
+            catch (SqlException ex)
+            {
+                return CrearErrorSqlGuardarConvenio(ex);
+            }
 
-                if (request?.v_edita != true && existe)
-                {
-                    return DbHelper.CreateErrorResponse<CrConvenioDto>(
-                        "El código del convenio ya se encuentra registrado.",
-                        -2);
-                }
+            string movimiento = vEdita
+                ? "MODIFICA - WEB"
+                : RegistraWEB;
 
-                var parametros = new
-                {
-                    CodConvenio = codigo,
-                    TipoConvenio = tipo,
-                    Descripcion = descripcion,
-                    Cedula = cedula,
-                    CodProveedor = convenio.cod_proveedor,
-                    ContratoNumero = contrato,
-                    FechaInicio = convenio.fecha_inicio,
-                    FechaVencimiento = convenio.fecha_vencimiento,
-                    Activo = convenio.activo,
-                    Usuario = usuarioRegistro,
-                    PorcComisionCreditos = convenio.porc_comision_creditos,
-                    PorcComisionRecaudacion = convenio.porc_comision_recaudacion,
-                    ReservasPorc = convenio.reservas_porc,
-                    ReservaTope = convenio.reserva_tope,
-                    ComisionInformativa = convenio.comision_informativa,
-                    CobraCreditosAnulados = convenio.cobra_creditos_anulados
-                };
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                movimiento,
+                $"Convenio: {codigo}");
 
-                try
-                {
-                    string sql = request?.v_edita == true
-                        ? CrearSqlActualizaConvenio()
-                        : CrearSqlInsertaConvenio();
+            CrConvenioDto? resultado =
+                ObtenerConvenio(connection, codigo);
 
-                    int afectados = connection.Execute(sql, parametros);
+            if (resultado == null)
+            {
+                return DbHelper.CreateErrorResponse<CrConvenioDto>(
+                    "La información fue procesada, pero no fue posible recuperar el convenio guardado.",
+                    -1);
+            }
 
-                    if (afectados <= 0)
-                    {
-                        return DbHelper.CreateErrorResponse<CrConvenioDto>(
-                            request?.v_edita == true
-                                ? "No fue posible actualizar el convenio."
-                                : "No fue posible registrar el convenio.",
-                            -1);
-                    }
-                }
-                catch (SqlException ex)
-                {
-                    return CrearErrorSqlGuardarConvenio(ex);
-                }
-
-                string movimiento = request?.v_edita == true
-                    ? "MODIFICA - WEB"
-                    : "REGISTRA - WEB";
-
-                RegistrarBitacora(
-                    CodEmpresa,
-                    usuario,
-                    movimiento,
-                    $"Convenio: {codigo}");
-
-                CrConvenioDto? resultado =
-                    ObtenerConvenio(connection, codigo);
-
-                return resultado == null
-                    ? DbHelper.CreateErrorResponse<CrConvenioDto>(
-                        "La información fue procesada, pero no fue posible recuperar el convenio guardado.",
-                        -1)
-                    : DbHelper.CreateOkResponse(
-                        resultado,
-                        "Información guardada satisfactoriamente.");
-            });
+            return DbHelper.CreateOkResponse(
+                resultado,
+                "Información guardada satisfactoriamente.");
         }
         private static ErrorDto<CrConvenioDto> CrearErrorSqlGuardarConvenio(SqlException ex)
         {
@@ -591,42 +616,42 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
                 const string sql = "DELETE CRD_CONVENIOS WHERE COD_CONVENIO = @CodConvenio;";
                 int afectados = connection.Execute(sql, new { CodConvenio = codigo });
                 if (afectados == 0)
-                    return DbHelper.ErrorResponse("Convenio no encontrado.", -2);
-                RegistrarBitacora(CodEmpresa, usuario, "ELIMINA - WEB", $"Convenio: {codigo}");
+                    return DbHelper.ErrorResponse(ConvenioNoEncontrado, -2);
+                RegistrarBitacora(CodEmpresa, usuario, EliminaWEB, $"Convenio: {codigo}");
                 return DbHelper.OkResponse("Convenio eliminado satisfactoriamente.");
             });
         }
 
-        private static string CrearSqlActualizaConvenio() => @"
-            UPDATE CRD_CONVENIOS SET
-                TIPO_CONVENIO = @TipoConvenio, DESCRIPCION = @Descripcion, CEDULA = @Cedula,
-                COD_PROVEEDOR = @CodProveedor, CONTRATO_NUMERO = @ContratoNumero,
-                FECHA_INICIO = @FechaInicio, FECHA_VENCIMIENTO = @FechaVencimiento,
-                ACTIVO = @Activo, MODIFICA_FECHA = dbo.MyGetdate(), MODIFICA_USUARIO = @Usuario,
-                PORC_COMISION_CREDITOS = @PorcComisionCreditos,
-                PORC_COMISION_RECAUDACION = @PorcComisionRecaudacion,
-                RESERVAS_PORC = @ReservasPorc, RESERVA_TOPE = @ReservaTope,
-                COMISION_INFORMATIVA = @ComisionInformativa,
-                COBRA_CREDITOS_ANULADOS = @CobraCreditosAnulados
-            WHERE COD_CONVENIO = @CodConvenio;";
+        private const string SqlActualizaConvenio = @"
+        UPDATE CRD_CONVENIOS SET
+            TIPO_CONVENIO = @TipoConvenio, DESCRIPCION = @Descripcion, CEDULA = @Cedula,
+            COD_PROVEEDOR = @CodProveedor, CONTRATO_NUMERO = @ContratoNumero,
+            FECHA_INICIO = @FechaInicio, FECHA_VENCIMIENTO = @FechaVencimiento,
+            ACTIVO = @Activo, MODIFICA_FECHA = dbo.MyGetdate(), MODIFICA_USUARIO = @Usuario,
+            PORC_COMISION_CREDITOS = @PorcComisionCreditos,
+            PORC_COMISION_RECAUDACION = @PorcComisionRecaudacion,
+            RESERVAS_PORC = @ReservasPorc, RESERVA_TOPE = @ReservaTope,
+            COMISION_INFORMATIVA = @ComisionInformativa,
+            COBRA_CREDITOS_ANULADOS = @CobraCreditosAnulados
+        WHERE COD_CONVENIO = @CodConvenio;";
 
-        private static string CrearSqlInsertaConvenio() => @"
-            INSERT CRD_CONVENIOS
-            (
-                COD_CONVENIO, TIPO_CONVENIO, DESCRIPCION, CEDULA, COD_PROVEEDOR,
-                CONTRATO_NUMERO, FECHA_INICIO, FECHA_VENCIMIENTO, ACTIVO,
-                REGISTRO_FECHA, REGISTRO_USUARIO, MODIFICA_FECHA, MODIFICA_USUARIO,
-                PORC_COMISION_CREDITOS, PORC_COMISION_RECAUDACION, RESERVAS_PORC,
-                RESERVA_TOPE, ULTIMO_CORTE, COMISION_INFORMATIVA, COBRA_CREDITOS_ANULADOS
-            )
-            VALUES
-            (
-                @CodConvenio, @TipoConvenio, @Descripcion, @Cedula, @CodProveedor,
-                @ContratoNumero, @FechaInicio, @FechaVencimiento, @Activo,
-                dbo.MyGetdate(), @Usuario, dbo.MyGetdate(), @Usuario,
-                @PorcComisionCreditos, @PorcComisionRecaudacion, @ReservasPorc,
-                @ReservaTope, dbo.MyGetdate(), @ComisionInformativa, @CobraCreditosAnulados
-            );";
+        private const string SqlInsertaConvenio = @"
+        INSERT CRD_CONVENIOS
+        (
+            COD_CONVENIO, TIPO_CONVENIO, DESCRIPCION, CEDULA, COD_PROVEEDOR,
+            CONTRATO_NUMERO, FECHA_INICIO, FECHA_VENCIMIENTO, ACTIVO,
+            REGISTRO_FECHA, REGISTRO_USUARIO, MODIFICA_FECHA, MODIFICA_USUARIO,
+            PORC_COMISION_CREDITOS, PORC_COMISION_RECAUDACION, RESERVAS_PORC,
+            RESERVA_TOPE, ULTIMO_CORTE, COMISION_INFORMATIVA, COBRA_CREDITOS_ANULADOS
+        )
+        VALUES
+        (
+            @CodConvenio, @TipoConvenio, @Descripcion, @Cedula, @CodProveedor,
+            @ContratoNumero, @FechaInicio, @FechaVencimiento, @Activo,
+            dbo.MyGetdate(), @Usuario, dbo.MyGetdate(), @Usuario,
+            @PorcComisionCreditos, @PorcComisionRecaudacion, @ReservasPorc,
+            @ReservaTope, dbo.MyGetdate(), @ComisionInformativa, @CobraCreditosAnulados
+        );";
 
         #endregion
 
@@ -713,7 +738,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             if (direccion != 1 && direccion != 2)
             {
                 return DbHelper.CreateErrorResponse<CrConveniosF4Data>(
-                    "La dirección de navegación no es válida.",
+                    LaDireccionNoEsValida,
                     -2);
             }
 
@@ -795,7 +820,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
                     if (!ExisteConvenio(connection, convenio))
                     {
                         return DbHelper.ErrorResponse(
-                            "Convenio no encontrado.",
+                            ConvenioNoEncontrado,
                             -2);
                     }
 
@@ -874,12 +899,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
                         CodEmpresa,
                         usuario,
                         request?.asigna == true
-                            ? "REGISTRA - WEB"
-                            : "ELIMINA - WEB",
+                            ? RegistraWEB
+                            : EliminaWEB,
                         $"Convenio: {convenio} - Recaudación: {codigo}");
 
                     return DbHelper.OkResponse(
-                        "Información actualizada satisfactoriamente.");
+                        InformacionActualizadaSatisfactoriamente);
                 });
         }
 
@@ -942,7 +967,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             if (direccion != 1 && direccion != 2)
             {
                 return DbHelper.CreateErrorResponse<CrConveniosF4Data>(
-                    "La dirección de navegación no es válida.", -2);
+                    LaDireccionNoEsValida, -2);
             }
 
             return Ejecutar(CodEmpresa, connection =>
@@ -987,37 +1012,82 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
         /// <param name="usuario"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto CR_Convenios_Devoluciones_Actualizar(int CodEmpresa, string? usuario, CrConveniosDevolucionesActualizarRequest? request)
+        public ErrorDto CR_Convenios_Devoluciones_Actualizar(int CodEmpresa,string? usuario,CrConveniosDevolucionesActualizarRequest? request)
         {
             string convenio = NormalizarCodigo(request?.cod_convenio);
             string codigo = NormalizarCodigo(request?.retencion_codigo);
+
             if (string.IsNullOrWhiteSpace(convenio) || string.IsNullOrWhiteSpace(codigo))
-                return DbHelper.ErrorResponse("Debe indicar el convenio y el concepto de devolución.", -2);
+                return DbHelper.ErrorResponse(
+                    "Debe indicar el convenio y el concepto de devolución.",
+                    -2);
 
-            return Ejecutar(CodEmpresa, connection =>
-            {
-                if (!ExisteConvenio(connection, convenio))
-                    return DbHelper.ErrorResponse("Convenio no encontrado.", -2);
-                if (request?.asigna == true && !ExisteConceptoDevolucion(connection, codigo))
-                    return DbHelper.ErrorResponse("El concepto de devolución indicado no está activo.", -2);
+            bool asigna = request?.asigna == true;
 
-                const string existeOtro = "SELECT TOP 1 1 FROM CRD_CONVENIOS_DEVOLUCION WHERE RETENCION_CODIGO = @Codigo AND COD_CONVENIO <> @Convenio;";
-                if (request?.asigna == true && ExisteRegistro(connection, existeOtro, new { Codigo = codigo, Convenio = convenio }))
-                    return DbHelper.ErrorResponse("El código ya está asignado a otro convenio.", -2);
-
-                string sql = request?.asigna == true
-                    ? @"IF NOT EXISTS (SELECT 1 FROM CRD_CONVENIOS_DEVOLUCION WHERE RETENCION_CODIGO = @Codigo AND COD_CONVENIO = @Convenio)
-                        INSERT CRD_CONVENIOS_DEVOLUCION(COD_CONVENIO, RETENCION_CODIGO, REGISTRO_FECHA, REGISTRO_USUARIO)
-                        VALUES(@Convenio, @Codigo, dbo.MyGetdate(), @Usuario);"
-                    : "DELETE CRD_CONVENIOS_DEVOLUCION WHERE COD_CONVENIO = @Convenio AND RETENCION_CODIGO = @Codigo;";
-                int afectados = connection.Execute(sql, new { Codigo = codigo, Convenio = convenio, Usuario = NormalizarUsuario(usuario) });
-                if (request?.asigna != true && afectados == 0)
-                    return DbHelper.ErrorResponse("El concepto de devolución no se encuentra asociado al convenio.", -2);
-                RegistrarBitacora(CodEmpresa, usuario, request?.asigna == true ? "REGISTRA - WEB" : "ELIMINA - WEB", $"Convenio: {convenio} - Devolución: {codigo}");
-                return DbHelper.OkResponse("Información actualizada satisfactoriamente.");
-            });
+            return Ejecutar(
+                CodEmpresa,
+                connection => ActualizarDevolucion(
+                    connection,
+                    CodEmpresa,
+                    usuario,
+                    convenio,
+                    codigo,
+                    asigna));
         }
+        private ErrorDto ActualizarDevolucion(SqlConnection connection, int codEmpresa,string? usuario,string convenio,string codigo, bool asigna)
+        {
+            if (!ExisteConvenio(connection, convenio))
+                return DbHelper.ErrorResponse(
+                    ConvenioNoEncontrado,
+                    -2);
 
+            if (asigna && !ExisteConceptoDevolucion(connection, codigo))
+                return DbHelper.ErrorResponse(
+                    "El concepto de devolución indicado no está activo.",
+                    -2);
+
+            const string existeOtro =
+                "SELECT TOP 1 1 FROM CRD_CONVENIOS_DEVOLUCION WHERE RETENCION_CODIGO = @Codigo AND COD_CONVENIO <> @Convenio;";
+
+            if (asigna && ExisteRegistro(
+                connection,
+                existeOtro,
+                new { Codigo = codigo, Convenio = convenio }))
+            {
+                return DbHelper.ErrorResponse(
+                    "El código ya está asignado a otro convenio.",
+                    -2);
+            }
+
+            string sql = asigna
+                ? @"IF NOT EXISTS (SELECT 1 FROM CRD_CONVENIOS_DEVOLUCION WHERE RETENCION_CODIGO = @Codigo AND COD_CONVENIO = @Convenio)
+            INSERT CRD_CONVENIOS_DEVOLUCION(COD_CONVENIO, RETENCION_CODIGO, REGISTRO_FECHA, REGISTRO_USUARIO)
+            VALUES(@Convenio, @Codigo, dbo.MyGetdate(), @Usuario);"
+                : "DELETE CRD_CONVENIOS_DEVOLUCION WHERE COD_CONVENIO = @Convenio AND RETENCION_CODIGO = @Codigo;";
+
+            int afectados = connection.Execute(
+                sql,
+                new
+                {
+                    Codigo = codigo,
+                    Convenio = convenio,
+                    Usuario = NormalizarUsuario(usuario)
+                });
+
+            if (!asigna && afectados == 0)
+                return DbHelper.ErrorResponse(
+                    "El concepto de devolución no se encuentra asociado al convenio.",
+                    -2);
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                asigna ? RegistraWEB : EliminaWEB,
+                $"Convenio: {convenio} - Devolución: {codigo}");
+
+            return DbHelper.OkResponse(
+                InformacionActualizadaSatisfactoriamente);
+        }
         #endregion
 
         #region Créditos
@@ -1160,7 +1230,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             if (direccion != 1 && direccion != 2)
             {
                 return DbHelper.CreateErrorResponse<CrConveniosF4Data>(
-                    "La dirección de navegación no es válida.", -2);
+                    LaDireccionNoEsValida, -2);
             }
 
             if (string.IsNullOrWhiteSpace(codigo) && direccion == 2)
@@ -1209,7 +1279,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             if (direccion != 1 && direccion != 2)
             {
                 return DbHelper.CreateErrorResponse<CrConveniosF4Data>(
-                    "La dirección de navegación no es válida.", -2);
+                    LaDireccionNoEsValida, -2);
             }
 
             if (string.IsNullOrWhiteSpace(codigo) && direccion == 2)
@@ -1254,7 +1324,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             return Ejecutar(codEmpresa, connection =>
             {
                 if (!ExisteConvenio(connection, convenio))
-                    return DbHelper.ErrorResponse("Convenio no encontrado.", -2);
+                    return DbHelper.ErrorResponse(ConvenioNoEncontrado, -2);
                 if (asigna && !ExisteLineaCredito(connection, codigo))
                     return DbHelper.ErrorResponse("La línea de crédito indicada no está activa.", -2);
 
@@ -1273,8 +1343,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
                 int afectados = connection.Execute(sql, new { Codigo = codigo, Convenio = convenio, CombinaDestino = combinaDestino, Usuario = NormalizarUsuario(usuario) });
                 if (!asigna && afectados == 0)
                     return DbHelper.ErrorResponse("La línea de crédito no se encuentra asociada al convenio.", -2);
-                RegistrarBitacora(codEmpresa, usuario, asigna ? "REGISTRA - WEB" : "ELIMINA - WEB", $"Convenio: {convenio} - Línea de crédito: {codigo}");
-                return DbHelper.OkResponse("Información actualizada satisfactoriamente.");
+                RegistrarBitacora(codEmpresa, usuario, asigna ? RegistraWEB : EliminaWEB, $"Convenio: {convenio} - Línea de crédito: {codigo}");
+                return DbHelper.OkResponse(InformacionActualizadaSatisfactoriamente);
             });
         }
 
@@ -1283,7 +1353,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             return Ejecutar(codEmpresa, connection =>
             {
                 if (!ExisteConvenio(connection, convenio))
-                    return DbHelper.ErrorResponse("Convenio no encontrado.", -2);
+                    return DbHelper.ErrorResponse(ConvenioNoEncontrado, -2);
                 if (asigna && !ExisteDestinoCredito(connection, codigo))
                     return DbHelper.ErrorResponse("El destino de crédito indicado no existe.", -2);
 
@@ -1299,8 +1369,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
                 int afectados = connection.Execute(sql, new { Codigo = codigo, Convenio = convenio, Usuario = NormalizarUsuario(usuario) });
                 if (!asigna && afectados == 0)
                     return DbHelper.ErrorResponse("El destino de crédito no se encuentra asociado al convenio.", -2);
-                RegistrarBitacora(codEmpresa, usuario, asigna ? "REGISTRA - WEB" : "ELIMINA - WEB", $"Convenio: {convenio} - Destino de crédito: {codigo}");
-                return DbHelper.OkResponse("Información actualizada satisfactoriamente.");
+                RegistrarBitacora(codEmpresa, usuario, asigna ? RegistraWEB : EliminaWEB, $"Convenio: {convenio} - Destino de crédito: {codigo}");
+                return DbHelper.OkResponse(InformacionActualizadaSatisfactoriamente);
             });
         }
 
@@ -1362,7 +1432,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             if (direccion != 1 && direccion != 2)
             {
                 return DbHelper.CreateErrorResponse<CrConveniosF4Data>(
-                    "La dirección de navegación no es válida.",
+                    LaDireccionNoEsValida,
                     -2);
             }
 
@@ -1420,32 +1490,78 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
         {
             string convenio = NormalizarCodigo(request?.cod_convenio);
             string codigo = NormalizarCodigo(request?.cod_cargo);
+
             if (string.IsNullOrWhiteSpace(convenio) || string.IsNullOrWhiteSpace(codigo))
-                return DbHelper.ErrorResponse("Debe indicar el convenio y el cargo.", -2);
+                return DbHelper.ErrorResponse(
+                    "Debe indicar el convenio y el cargo.",
+                    -2);
 
-            return Ejecutar(CodEmpresa, connection =>
-            {
-                if (!ExisteConvenio(connection, convenio))
-                    return DbHelper.ErrorResponse("Convenio no encontrado.", -2);
-                if (request?.asigna == true && !ExisteCargo(connection, codigo))
-                    return DbHelper.ErrorResponse("El cargo indicado no existe.", -2);
-                const string existeOtro = "SELECT TOP 1 1 FROM CRD_CONVENIOS_CARGOS WHERE COD_CARGO = @Codigo AND COD_CONVENIO <> @Convenio;";
-                if (request?.asigna == true && ExisteRegistro(connection, existeOtro, new { Codigo = codigo, Convenio = convenio }))
-                    return DbHelper.ErrorResponse("El cargo ya está asignado a otro convenio.", -2);
+            bool asigna = request?.asigna == true;
 
-                string sql = request?.asigna == true
-                    ? @"IF NOT EXISTS (SELECT 1 FROM CRD_CONVENIOS_CARGOS WHERE COD_CARGO = @Codigo AND COD_CONVENIO = @Convenio)
-                        INSERT CRD_CONVENIOS_CARGOS(COD_CARGO, COD_CONVENIO, REGISTRO_FECHA, REGISTRO_USUARIO)
-                        VALUES(@Codigo, @Convenio, dbo.MyGetdate(), @Usuario);"
-                    : "DELETE CRD_CONVENIOS_CARGOS WHERE COD_CARGO = @Codigo AND COD_CONVENIO = @Convenio;";
-                int afectados = connection.Execute(sql, new { Codigo = codigo, Convenio = convenio, Usuario = NormalizarUsuario(usuario) });
-                if (request?.asigna != true && afectados == 0)
-                    return DbHelper.ErrorResponse("El cargo no se encuentra asociado al convenio.", -2);
-                RegistrarBitacora(CodEmpresa, usuario, request?.asigna == true ? "REGISTRA - WEB" : "ELIMINA - WEB", $"Convenio: {convenio} - Cargo: {codigo}");
-                return DbHelper.OkResponse("Información actualizada satisfactoriamente.");
-            });
+            return Ejecutar(
+                CodEmpresa,
+                connection => ActualizarCargo(
+                    connection,
+                    CodEmpresa,
+                    usuario,
+                    convenio,
+                    codigo,
+                    asigna));
         }
+        private ErrorDto ActualizarCargo(SqlConnection connection, int codEmpresa,string? usuario, string convenio,  string codigo, bool asigna)
+        {
+            if (!ExisteConvenio(connection, convenio))
+                return DbHelper.ErrorResponse(
+                    ConvenioNoEncontrado,
+                    -2);
 
+            if (asigna && !ExisteCargo(connection, codigo))
+                return DbHelper.ErrorResponse(
+                    "El cargo indicado no existe.",
+                    -2);
+
+            const string existeOtro =
+                "SELECT TOP 1 1 FROM CRD_CONVENIOS_CARGOS WHERE COD_CARGO = @Codigo AND COD_CONVENIO <> @Convenio;";
+
+            if (asigna && ExisteRegistro(
+                connection,
+                existeOtro,
+                new { Codigo = codigo, Convenio = convenio }))
+            {
+                return DbHelper.ErrorResponse(
+                    "El cargo ya está asignado a otro convenio.",
+                    -2);
+            }
+
+            string sql = asigna
+                ? @"IF NOT EXISTS (SELECT 1 FROM CRD_CONVENIOS_CARGOS WHERE COD_CARGO = @Codigo AND COD_CONVENIO = @Convenio)
+            INSERT CRD_CONVENIOS_CARGOS(COD_CARGO, COD_CONVENIO, REGISTRO_FECHA, REGISTRO_USUARIO)
+            VALUES(@Codigo, @Convenio, dbo.MyGetdate(), @Usuario);"
+                : "DELETE CRD_CONVENIOS_CARGOS WHERE COD_CARGO = @Codigo AND COD_CONVENIO = @Convenio;";
+
+            int afectados = connection.Execute(
+                sql,
+                new
+                {
+                    Codigo = codigo,
+                    Convenio = convenio,
+                    Usuario = NormalizarUsuario(usuario)
+                });
+
+            if (!asigna && afectados == 0)
+                return DbHelper.ErrorResponse(
+                    "El cargo no se encuentra asociado al convenio.",
+                    -2);
+
+            RegistrarBitacora(
+                codEmpresa,
+                usuario,
+                asigna ? RegistraWEB : EliminaWEB,
+                $"Convenio: {convenio} - Cargo: {codigo}");
+
+            return DbHelper.OkResponse(
+                InformacionActualizadaSatisfactoriamente);
+        }
         #endregion
 
         #region Rebajas de CxP
@@ -1492,7 +1608,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             return Ejecutar(CodEmpresa, connection =>
             {
                 if (!ExisteConvenio(connection, convenio))
-                    return DbHelper.ErrorResponse("Convenio no encontrado.", -2);
+                    return DbHelper.ErrorResponse(ConvenioNoEncontrado, -2);
                 if (request?.asigna == true && !ExisteCargoCxp(connection, cargo))
                     return DbHelper.ErrorResponse("El cargo de CxP indicado no está activo.", -2);
                 string sql = request?.asigna == true
@@ -1503,8 +1619,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
                 int afectados = connection.Execute(sql, new { Cargo = cargo, Convenio = convenio, Usuario = NormalizarUsuario(usuario) });
                 if (request?.asigna != true && afectados == 0)
                     return DbHelper.ErrorResponse("El cargo de CxP no se encuentra asociado al convenio.", -2);
-                RegistrarBitacora(CodEmpresa, usuario, request?.asigna == true ? "REGISTRA - WEB" : "ELIMINA - WEB", $"Convenio: {convenio} - Rebaja CxP: {cargo}");
-                return DbHelper.OkResponse("Información actualizada satisfactoriamente.");
+                RegistrarBitacora(CodEmpresa, usuario, request?.asigna == true ? RegistraWEB : EliminaWEB, $"Convenio: {convenio} - Rebaja CxP: {cargo}");
+                return DbHelper.OkResponse(InformacionActualizadaSatisfactoriamente);
             });
         }
 
@@ -1602,7 +1718,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             if (direccion != 1 && direccion != 2)
             {
                 return DbHelper.CreateErrorResponse<CrConveniosAhorroPlanData>(
-                    "La dirección de navegación no es válida.",
+                    LaDireccionNoEsValida,
                     -2);
             }
 
@@ -1727,7 +1843,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
             return Ejecutar(CodEmpresa, connection =>
             {
                 if (!ExisteConvenio(connection, convenio))
-                    return DbHelper.ErrorResponse("Convenio no encontrado.", -2);
+                    return DbHelper.ErrorResponse(ConvenioNoEncontrado, -2);
                 var parametros = new DynamicParameters();
                 parametros.Add("@Convenio", convenio, DbType.String);
                 parametros.Add("@Plan", plan, DbType.String);
@@ -1735,8 +1851,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Convenios
                 parametros.Add("@Monto", request?.mensualidad ?? 0, DbType.Decimal);
                 parametros.Add("@Tipo", request?.asigna == true ? "M" : "E", DbType.StringFixedLength);
                 connection.Execute("spConvenios_FondosPool", parametros, commandType: CommandType.StoredProcedure);
-                RegistrarBitacora(CodEmpresa, usuario, request?.asigna == true ? "REGISTRA - WEB" : "ELIMINA - WEB", $"Convenio: {convenio} - Plan de ahorro: {plan}");
-                return DbHelper.OkResponse("Información actualizada satisfactoriamente.");
+                RegistrarBitacora(CodEmpresa, usuario, request?.asigna == true ? RegistraWEB : EliminaWEB, $"Convenio: {convenio} - Plan de ahorro: {plan}");
+                return DbHelper.OkResponse(InformacionActualizadaSatisfactoriamente);
             });
         }
 

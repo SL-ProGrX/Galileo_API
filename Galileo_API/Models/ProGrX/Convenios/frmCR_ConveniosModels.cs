@@ -18,30 +18,30 @@
         public string contrato_numero { get; set; } = string.Empty;
         public DateTime? fecha_inicio { get; set; }
         public DateTime? fecha_vencimiento { get; set; }
-        public bool activo { get; set; }
-        public decimal porc_comision_creditos { get; set; }
-        public decimal porc_comision_recaudacion { get; set; }
-        public decimal reservas_porc { get; set; }
-        public decimal reservas_retenidas { get; set; }
-        public decimal reservas_ejecutado { get; set; }
-        public decimal reservas_saldo { get; set; }
+        public bool? activo { get; set; }
+        public decimal? porc_comision_creditos { get; set; }
+        public decimal? porc_comision_recaudacion { get; set; }
+        public decimal? reservas_porc { get; set; }
+        public decimal? reservas_retenidas { get; set; }
+        public decimal? reservas_ejecutado { get; set; }
+        public decimal? reservas_saldo { get; set; }
         public DateTime? reservas_corte { get; set; }
-        public decimal reserva_tope { get; set; }
+        public decimal? reserva_tope { get; set; }
         public DateTime? ultimo_corte { get; set; }
-        public bool comision_informativa { get; set; }
-        public bool cobra_creditos_anulados { get; set; }
+        public bool? comision_informativa { get; set; }
+        public bool? cobra_creditos_anulados { get; set; }
     }
 
     public sealed class CrConveniosGuardarRequest
     {
-        public bool v_edita { get; set; }
+        public bool? v_edita { get; set; }
         public CrConvenioDto convenio { get; set; } = new();
     }
 
     public class CrConveniosScrollRequest
     {
         public string? cod_convenio { get; set; }
-        public int direccion { get; set; }
+        public int? direccion { get; set; }
     }
 
     public sealed class CrConveniosF4Data
@@ -73,13 +73,13 @@
     {
         public string cod_convenio { get; set; } = string.Empty;
         public string codigo { get; set; } = string.Empty;
-        public bool asigna { get; set; }
+        public bool? asigna { get; set; }
     }
 
     public sealed class CrConveniosRecaudacionScrollRequest
     {
         public string? codigo { get; set; } = string.Empty;
-        public int direccion { get; set; }
+        public int? direccion { get; set; }
     }
 
     public sealed class CrConveniosDevolucionesData
@@ -94,13 +94,13 @@
     {
         public string cod_convenio { get; set; } = string.Empty;
         public string retencion_codigo { get; set; } = string.Empty;
-        public bool asigna { get; set; }
+        public bool? asigna { get; set; }
     }
 
     public sealed class CrConveniosDevolucionesScrollRequest
     {
         public string? retencion_codigo { get; set; } = string.Empty;
-        public int direccion { get; set; }
+        public int? direccion { get; set; }
     }
 
     public sealed class CrConveniosCreditoData
@@ -133,7 +133,7 @@
 
         public string? codigo { get; set; }
 
-        public int direccion { get; set; }
+        public int? direccion { get; set; }
     }
 
     public sealed class CrConveniosCreditosActualizarRequest
@@ -141,8 +141,8 @@
         public string cod_convenio { get; set; } = string.Empty;
         public string tipo { get; set; } = "C";
         public string codigo { get; set; } = string.Empty;
-        public bool combina_destino { get; set; }
-        public bool asigna { get; set; }
+        public bool? combina_destino { get; set; }
+        public bool? asigna { get; set; }
     }
 
     public sealed class CrConveniosCargoData
@@ -156,13 +156,13 @@
     {
         public string cod_convenio { get; set; } = string.Empty;
         public string cod_cargo { get; set; } = string.Empty;
-        public bool asigna { get; set; }
+        public bool? asigna { get; set; }
     }
 
     public sealed class CrConveniosCargosScrollRequest
     {
         public string? cod_cargo { get; set; } = string.Empty;
-        public int direccion { get; set; }
+        public int? direccion { get; set; }
     }
 
     public sealed class CrConveniosRebajasCxpData
@@ -179,7 +179,7 @@
     {
         public string cod_convenio { get; set; } = string.Empty;
         public string cod_cargo { get; set; } = string.Empty;
-        public bool asigna { get; set; }
+        public bool? asigna { get; set; }
     }
 
     public sealed class CrConveniosAhorrosData
@@ -210,13 +210,13 @@
     {
         public string? cod_convenio { get; set; }
         public string? cod_plan { get; set; }
-        public int direccion { get; set; }
+        public int? direccion { get; set; }
     }
 
     public sealed class CrConveniosAhorrosContratosBusquedaRequest
     {
         public string cod_convenio { get; set; } = string.Empty;
-        public bool terceros { get; set; }
+        public bool? terceros { get; set; }
         public string? texto { get; set; }
         public FiltrosLazyLoadData filtros { get; set; } = new();
     }
@@ -235,9 +235,9 @@
     {
         public string cod_convenio { get; set; } = string.Empty;
         public string cod_plan { get; set; } = string.Empty;
-        public int cod_contrato { get; set; }
-        public decimal mensualidad { get; set; }
-        public bool asigna { get; set; }
+        public int? cod_contrato { get; set; }
+        public decimal? mensualidad { get; set; }
+        public bool? asigna { get; set; }
     }
 
     public sealed class CrConveniosOrdenesListaRequest
