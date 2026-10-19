@@ -12,6 +12,7 @@
     {
         public int idx { get; set; }
         public int id_banco { get; set; }
+        public string banco { get; set; } = string.Empty;
         public DateTime inicio { get; set; }
         public DateTime corte { get; set; }
         public decimal saldo_inicial { get; set; }
