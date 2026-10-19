@@ -208,14 +208,26 @@ FROM dbo.fxSinpe_ValidaCredito(
                     REGISTROUSUARIO = request.Rastro?.Usuario
                 });
 
-                var codigoError = Convert.ToInt32((object?)valida?.CODIGO_ERROR);
-                var detalle = Convert.ToString((object?)valida?.DETALLE) ?? string.Empty;
-
-                if (codigoError > 0)
+                if (valida == null)
                 {
+                    // La función no devolvió fila: falla técnica, no un rechazo de negocio.
                     resultado.Add(new CoreInterno.CL_ResultadoValidacion
                     {
                         Resultado = CoreInterno.E_Resultado.Error,
+                        MotivoError = -1
+                    });
+                    continue;
+                }
+
+                var codigoError = Convert.ToInt32((object?)valida.CODIGO_ERROR);
+                var detalle = Convert.ToString((object?)valida.DETALLE) ?? string.Empty;
+
+                if (codigoError > 0)
+                {
+                    // Rechazo de negocio (cuenta inexistente, moneda, monto, servicio, etc.), no error técnico.
+                    resultado.Add(new CoreInterno.CL_ResultadoValidacion
+                    {
+                        Resultado = CoreInterno.E_Resultado.Rechazo,
                         MotivoError = codigoError,
                         InformacionAdicional = new CL_Adicional_Info[]
                         {
@@ -320,7 +332,24 @@ WHERE REFERENCIA_SINPE = @referencia;";
 
             foreach (var s in transacciones)
             {
-                var codigoReferencia = NormalizarCodigoReferencia(s.CodigoReferencia);
+                string codigoReferencia;
+                try
+                {
+                    codigoReferencia = NormalizarCodigoReferencia(s.CodigoReferencia);
+                }
+                catch (ArgumentException)
+                {
+                    // Referencia inválida en una transacción no debe tumbar el lote completo.
+                    resultado.Add(new CoreInterno.CL_RespuestaTransaccion
+                    {
+                        Resultado = CoreInterno.E_Resultado.Error,
+                        MotivoError = -1,
+                        ComprobanteInterno = string.Empty,
+                        IdRelacionCliente = string.Empty
+                    });
+
+                    continue;
+                }
 
                 int solicitud = connection.QueryFirstOrDefault<int>(
                     querySolicitud,
@@ -330,8 +359,8 @@ WHERE REFERENCIA_SINPE = @referencia;";
                 {
                     resultado.Add(new CoreInterno.CL_RespuestaTransaccion
                     {
-                        Resultado = CoreInterno.E_Resultado.Error,
-                        MotivoError = -1,
+                        Resultado = CoreInterno.E_Resultado.Rechazo,
+                        MotivoError = 28,
                         ComprobanteInterno = codigoReferencia,
                         IdRelacionCliente = string.Empty,
                         InformacionAdicional = new CL_Adicional_Info[]
@@ -354,8 +383,8 @@ WHERE REFERENCIA_SINPE = @referencia;";
                 {
                     resultado.Add(new CoreInterno.CL_RespuestaTransaccion
                     {
-                        Resultado = CoreInterno.E_Resultado.Error,
-                        MotivoError = -1,
+                        Resultado = CoreInterno.E_Resultado.Rechazo,
+                        MotivoError = 28,
                         ComprobanteInterno = codigoReferencia,
                         IdRelacionCliente = string.Empty
                     });
@@ -395,7 +424,8 @@ WHERE REFERENCIA_SINPE = @referencia;";
 
                 int motivoRechazo = Convert.ToInt32((object?)res?.MOT_RECHAZO);
                 bool rechazo = motivoRechazo > 0;
-                string idCliente = Convert.ToString((object?)res?.ID_REFERENCIA) ?? string.Empty;
+                // Comprobante interno: código que genera el sistema interno (COD_TRANSITO); vacío si se rechazó.
+                string comprobanteInterno = Convert.ToString((object?)res?.ID_REFERENCIA) ?? string.Empty;
 
                 resultado.Add(new CoreInterno.CL_RespuestaTransaccion
                 {
@@ -403,8 +433,8 @@ WHERE REFERENCIA_SINPE = @referencia;";
                         ? CoreInterno.E_Resultado.Rechazo
                         : CoreInterno.E_Resultado.Exitoso,
                     MotivoError = rechazo ? motivoRechazo : 0,
-                    ComprobanteInterno = codigoReferencia,
-                    IdRelacionCliente = idCliente,
+                    ComprobanteInterno = comprobanteInterno,
+                    IdRelacionCliente = string.IsNullOrWhiteSpace(s.IdRelacionCliente) ? codigoReferencia : s.IdRelacionCliente,
                     InformacionAdicional = new CL_Adicional_Info[]
                     {
                         new CL_Adicional_Info
@@ -441,14 +471,25 @@ WHERE REFERENCIA_SINPE = @referencia;";
             var resultado = new List<CoreInterno.CL_ResultadoActualizacion>();
             using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-            foreach (var s in transacciones)
+            foreach (var referencia in transacciones.Select(s => s.CodigoReferencia))
             {
-                var codigoReferencia = NormalizarCodigoReferencia(s.CodigoReferencia);
+                string codigoReferencia;
+                try
+                {
+                    codigoReferencia = NormalizarCodigoReferencia(referencia);
+                }
+                catch (ArgumentException)
+                {
+                    // Una referencia inválida no puede corresponder a ninguna transacción; no debe tumbar el lote.
+                    resultado.Add(CrearResultadoActualizacionNoExiste(referencia ?? string.Empty));
+                    continue;
+                }
+
                 var solicitud = ObtenerMovimientoTransito(connection, codigoReferencia);
 
                 if (solicitud == null)
                 {
-                    resultado.Add(CrearResultadoActualizacionError(codigoReferencia));
+                    resultado.Add(CrearResultadoActualizacionNoExiste(codigoReferencia));
                     continue;
                 }
 
@@ -481,14 +522,24 @@ WHERE REFERENCIA_SINPE = @referencia;";
             var resultado = new List<CoreInterno.CL_ResultadoActualizacion>();
             using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-            foreach (var s in transacciones)
+            foreach (var idRelacionCliente in transacciones.Select(s => s.IdRelacionCliente))
             {
-                var codigoReferencia = NormalizarCodigoReferencia(s.IdRelacionCliente);
+                string codigoReferencia;
+                try
+                {
+                    codigoReferencia = NormalizarCodigoReferencia(idRelacionCliente);
+                }
+                catch (ArgumentException)
+                {
+                    resultado.Add(CrearResultadoActualizacionNoExiste(idRelacionCliente ?? string.Empty));
+                    continue;
+                }
+
                 var solicitud = ObtenerMovimientoTransito(connection, codigoReferencia);
 
                 if (solicitud == null)
                 {
-                    resultado.Add(CrearResultadoActualizacionError(codigoReferencia));
+                    resultado.Add(CrearResultadoActualizacionNoExiste(codigoReferencia));
                     continue;
                 }
 
@@ -563,7 +614,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                     {
                         CuentaIBAN = result.CUENTA_IBAN,
                         DesProducto = result.DesProducto,
-                        Estado = (result.ESTADO == "A")? 1 : 0,
+                        Estado = MapearEstadoCuentaIBAN(Convert.ToString((object?)result.ESTADO)),
                         IdTitular = result.IdTitular,
                         Moneda = result.MONEDA,
                         NombreTitular = result.NombreTitular,
@@ -578,6 +629,8 @@ WHERE REFERENCIA_SINPE = @referencia;";
                     };
                 }
 
+                // KINDO: cuenta inexistente se informa tambien en la propiedad Estado (28).
+                cuenta.Estado = 28;
                 return new CoreInterno.CuentaIBAN_Response()
                 {
                     CuentaIBAN = cuenta,
@@ -592,7 +645,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                     Resultado = false
                 };
             }
-            catch
+            catch (Exception ex)
             {
                 return new CoreInterno.CuentaIBAN_Response()
                 {
@@ -601,8 +654,8 @@ WHERE REFERENCIA_SINPE = @referencia;";
                     {
                         new CL_Error()
                         {
-                            NumError = 28,
-                            Descripcion = "La cuenta IBAN no existe."
+                            NumError = -1,
+                            Descripcion = ex.Message
                         }
                     },
                     Resultado = false
@@ -633,7 +686,12 @@ WHERE REFERENCIA_SINPE = @referencia;";
                     };
                 }
 
-                int codigoResultado = Convert.ToInt32(result.CodigoResultado);
+                // Dapper expone las columnas con el nombre exacto del SP (distingue mayúsculas); se lee sin distinguirlas
+                // y tolerando que el SP no devuelva alguna columna.
+                var fila = new Dictionary<string, object?>((IDictionary<string, object>)result, StringComparer.OrdinalIgnoreCase);
+                int codigoResultado = fila.TryGetValue("CodigoResultado", out var codigo) && codigo != null
+                    ? Convert.ToInt32(codigo)
+                    : 0;
 
                 if (codigoResultado > 0)
                 {
@@ -647,37 +705,28 @@ WHERE REFERENCIA_SINPE = @referencia;";
                     };
                 }
 
-                var identificacion = Inferir((string)result.CEDULA).Codigo;
-                string cedulaIBAN = result.CEDULA;
+                string cedulaIBAN = Convert.ToString(fila.GetValueOrDefault("CEDULA")) ?? string.Empty;
+                int tipoId = Convert.ToInt32(Inferir(cedulaIBAN).Codigo);
+                string? nombre = Convert.ToString(fila.GetValueOrDefault("NOMBRE"));
 
-                result.IdTitular = cedulaIBAN;
-                result.TipoId = Convert.ToInt32(identificacion);
-
-                if (string.IsNullOrEmpty((string?)result.NOMBRE))
+                if (string.IsNullOrEmpty(nombre))
                 {
-                    result.NOMBRE = ValidoNombreCuenta(
-                        CodEmpresa,
-                        result.TipoId,
-                        ((string)result.CEDULA)
-                    );
+                    nombre = ValidoNombreCuenta(CodEmpresa, tipoId, cedulaIBAN);
                 }
 
-                result.IdTitular = MaskSinpeId(
-                    result.TipoId,
-                    ((string)result.IdTitular)
-                );
-
-                if (string.IsNullOrEmpty((string?)result.NOMBRE))
+                if (string.IsNullOrEmpty(nombre))
                 {
-                    result.NOMBRE = "Desconocido en " + result.IdTitular;
+                    nombre = "Desconocido en " + MaskSinpeId(tipoId, cedulaIBAN);
                 }
+
+                var moneda = fila.GetValueOrDefault("Moneda");
 
                 return new CoreInterno.CL_ObtieneInfoCuenta
                 {
                     Resultado = CoreInterno.E_Resultado.Exitoso,
                     Estado = CoreInterno.E_Estado.Activa,
-                    Moneda = result.Moneda == null ? 0 : Convert.ToInt32(result.Moneda),
-                    NombreTitular = result.NOMBRE,
+                    Moneda = moneda == null ? 0 : Convert.ToInt32(moneda),
+                    NombreTitular = nombre,
                     MotivoError = 0
                 };
             }
@@ -687,9 +736,35 @@ WHERE REFERENCIA_SINPE = @referencia;";
                 {
                     Resultado = CoreInterno.E_Resultado.Error,
                     Estado = CoreInterno.E_Estado.NoActiva,
-                    MotivoError = 28
+                    MotivoError = -1
                 };
             }
+        }
+
+        // MOV_SINPE_TIPOS según fxSinpe_ValidaCredito/Debito: 0 ambos, 1 solo crédito, 2 solo débito, 3 ninguno.
+        private static CoreInterno.E_MovimientosPermitidosProducto MapearMovimientosPermitidos(object? tipoSinpe)
+        {
+            if (tipoSinpe == null || tipoSinpe is DBNull)
+                return CoreInterno.E_MovimientosPermitidosProducto.Ninguno;
+
+            return Convert.ToInt32(tipoSinpe) switch
+            {
+                0 => CoreInterno.E_MovimientosPermitidosProducto.Ambos,
+                1 => CoreInterno.E_MovimientosPermitidosProducto.Acreditar,
+                2 => CoreInterno.E_MovimientosPermitidosProducto.Debitar,
+                _ => CoreInterno.E_MovimientosPermitidosProducto.Ninguno
+            };
+        }
+
+        // Estados de cuenta spec 10.2: 1 Activa, 23 Cerrada, 31 Bloqueada.
+        private static int MapearEstadoCuentaIBAN(string? estado)
+        {
+            return (estado ?? string.Empty).Trim().ToUpperInvariant() switch
+            {
+                "A" => 1,
+                "C" or "L" => 23,   // Cerrada / Liquidada
+                _ => 31             // B bloqueada, R retenido, N en trámite, vacío solicitado: no operativas
+            };
         }
 
         private static CoreInterno.E_Estado MapearEstadoObtieneInfoCuenta(int codigoResultado)
@@ -735,7 +810,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                 resultado.MotivoError = valida;
                 resultado.Resultado = (valida == 0)
                     ? CoreInterno.E_Resultado.Exitoso
-                    : CoreInterno.E_Resultado.Error;
+                    : CoreInterno.E_Resultado.Rechazo;
 
                 return resultado;
             }
@@ -744,7 +819,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                 return new CoreInterno.CL_ValidaCuenta
                 {
                     Resultado = CoreInterno.E_Resultado.Error,
-                    MotivoError = 28
+                    MotivoError = -1
                 };
             }
         }
@@ -908,24 +983,25 @@ WHERE REFERENCIA_SINPE = @referencia;";
                 }
 
                 var estado = Convert.ToInt32(result.Estado);
-                var codMotivo = Convert.ToString(result.CodMotivoRechazo) ?? "ERROR";
-                var motivo = Convert.ToString(result.MotivoRechazo) ?? "Error";
-                var numRef = Convert.ToString(result.NumRefProcesamiento) ?? Guid.NewGuid().ToString();
+                // Estados 1 y 2 = autorizada: el motivo de rechazo solo aplica cuando la transacción se rechaza (3).
+                var autorizada = estado == 1 || estado == 2;
+                var numRef = Convert.ToString((object?)result.NumRefProcesamiento) ?? Guid.NewGuid().ToString();
 
                 return new CoreInterno.ValidacionPerfilTrx_Response
                 {
-                    Resultado = estado == 1,
+                    // Resultado indica que la solicitud se procesó; la decisión va en Autorizacion.Estado.
+                    Resultado = true,
                     Autorizacion = new CoreInterno.CL_AutorizacionPerfilTrx
                     {
                         Estado = estado,
-                        CodMotivoRechazo = codMotivo,
-                        MotivoRechazo = motivo,
+                        CodMotivoRechazo = autorizada ? null : Convert.ToString((object?)result.CodMotivoRechazo),
+                        MotivoRechazo = autorizada ? null : Convert.ToString((object?)result.MotivoRechazo),
                         NumRefProcesamiento = numRef
                     },
                     Errores = null
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return new CoreInterno.ValidacionPerfilTrx_Response
                 {
@@ -934,7 +1010,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                     {
                         Estado = 0,
                         CodMotivoRechazo = "ERROR",
-                        MotivoRechazo = ex.Message,
+                        MotivoRechazo = "Error al validar el perfil transaccional.",
                         NumRefProcesamiento = Guid.NewGuid().ToString()
                     },
                     Errores = null
@@ -1065,9 +1141,38 @@ WHERE REFERENCIA_SINPE = @referencia;";
             var resultado = new CoreInterno.SaldoDisponibleResponse();
             try
             {
+                // Solo se aceptan las monedas disponibles: 1 (COL) y 2 (USD).
+                if (Request.codigoMoneda != 1 && Request.codigoMoneda != 2)
+                {
+                    return new CoreInterno.SaldoDisponibleResponse
+                    {
+                        disponible = false,
+                        SaldoDisponibleResult = CoreInterno.E_Resultado.Rechazo
+                    };
+                }
+
                 using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var cedulaFormateada = formateoCedula(Request.identificacion);
+
+                // Cuenta inexistente, cerrada/bloqueada, de otra persona o en otra moneda: sin saldo disponible (rechazo).
+                var motivoCuenta = connection.QueryFirstOrDefault<int>(
+                    "SELECT dbo.fxSINPE_ValidaCuenta(@CUENTA, 'D', @CEDULA, @MONEDA)",
+                    new
+                    {
+                        CUENTA = Request.cuentaIBAN,
+                        CEDULA = cedulaFormateada,
+                        MONEDA = Request.codigoMoneda
+                    });
+
+                if (motivoCuenta != 0)
+                {
+                    return new CoreInterno.SaldoDisponibleResponse
+                    {
+                        disponible = false,
+                        SaldoDisponibleResult = CoreInterno.E_Resultado.Rechazo
+                    };
+                }
 
                 var query = $@"exec sp_Sinpe_SaldoDisponible
                                         @Identificacion ,
@@ -1192,7 +1297,7 @@ WHERE REFERENCIA_SINPE = @referencia;";
                                 CodigoMoneda = prod.MonedaServicio,
                                 Saldo = prod.Saldo,
                                 CuentaCliente = prod.CuentaCliente,
-                                MovimientosPermitidos = CoreInterno.E_MovimientosPermitidosProducto.Ambos,
+                                MovimientosPermitidos = MapearMovimientosPermitidos(prod.MOV_SINPE_TIPOS),
                             });
                         }
                     }
@@ -2258,11 +2363,11 @@ WHERE COD_EMPRESA = @codEmpresa;";
             }
         }
 
-        private static CoreInterno.CL_ResultadoActualizacion CrearResultadoActualizacionError(string codigoReferencia)
+        private static CoreInterno.CL_ResultadoActualizacion CrearResultadoActualizacionNoExiste(string codigoReferencia)
         {
             return new CoreInterno.CL_ResultadoActualizacion
             {
-                Resultado = CoreInterno.E_ResultadoActualizacion.Error,
+                Resultado = CoreInterno.E_ResultadoActualizacion.NoExiste,
                 IdRelacionCliente = codigoReferencia
             };
         }
@@ -2286,7 +2391,7 @@ WHERE COD_EMPRESA = @codEmpresa;";
 SELECT TOP (1)
     RECHAZO_CODIGO,
     COD_REFERENCIA,
-    COMPRONANTE_INTERNO,
+    COMPROBANTE_INTERNO AS COMPRONANTE_INTERNO,
     COD_TRANSITO,
     RECHAZO_DESC
 FROM SINPE_MOV_TRANSITO
