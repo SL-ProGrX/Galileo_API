@@ -22,6 +22,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         private readonly MSecurityMainDb _securityMainDb;
         private readonly MRecibos _mRecibos;
 
+        /// <summary>
+        /// Inicializa el acceso a datos del formulario con sus dependencias.
+        /// </summary>
+        /// <param name="config">Configuración de conexiones y servicios.</param>
         public FrmCxCAbonoLoteDb(IConfiguration config)
             : this(
                 new PortalDB(config),
@@ -30,6 +34,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
         }
 
+        /// <summary>
+        /// Inicializa el acceso a datos con dependencias proporcionadas.
+        /// </summary>
+        /// <param name="portalDb">Acceso común a consultas del portal.</param>
+        /// <param name="securityMainDb">Acceso a seguridad y bitácora.</param>
+        /// <param name="mRecibos">Servicio de generación de recibos.</param>
         public FrmCxCAbonoLoteDb(
             PortalDB portalDb,
             MSecurityMainDb securityMainDb,
@@ -67,6 +77,26 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 _portalDb,
                 codEmpresa,
                 sql);
+        }
+
+        /// <summary>
+        /// Obtiene el derecho configurado para aplicar abonos por lote.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="usuario">Usuario de la sesión.</param>
+        /// <returns>Valor del derecho configurado.</returns>
+        public int CxC_AbonoLote_Derecho_Aplicar_Obtener(
+            int codEmpresa,
+            string usuario)
+        {
+            return _securityMainDb.Derecho(new ParametrosAccesoDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = CxC_AbonoLote_Texto_Normalizar(usuario),
+                Modulo = ModuloCuentasPorCobrar,
+                FormName = "frmCxC_AbonoLote",
+                Boton = "Aplicar"
+            });
         }
 
         /// <summary>
@@ -213,6 +243,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 return CxC_AbonoLote_Error_Crear(validacion, -2);
             }
 
+            if (CxC_AbonoLote_Derecho_Aplicar_Obtener(
+                    codEmpresa,
+                    request.usuario) <= 0)
+            {
+                return CxC_AbonoLote_Error_Crear(
+                    "El usuario no tiene permiso para aplicar abonos por lote.",
+                    -2);
+            }
+
             try
             {
                 var tipoDocumento = CxC_AbonoLote_Texto_Normalizar(
@@ -263,6 +302,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             }
         }
 
+        /// <summary>
+        /// Ejecuta el lote completo dentro de una única transacción SQL.
+        /// </summary>
+        /// <param name="connection">Conexión abierta a la empresa.</param>
+        /// <param name="request">Datos del lote que se debe aplicar.</param>
+        /// <param name="tipoDocumento">Tipo del documento generado.</param>
+        /// <param name="numeroDocumento">Consecutivo del documento.</param>
+        /// <returns>Resultado consolidado del lote aplicado.</returns>
         private static CxCAbonoLoteAplicarData
             CxC_AbonoLote_Transaccion_Ejecutar(
                 SqlConnection connection,
@@ -310,12 +357,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             {
                 tipo_documento = tipoDocumento,
                 numero_documento = numeroDocumento,
-                total_aplicado = request.facturas.Sum(
-                    factura => factura.monto),
+                total_aplicado = CxC_AbonoLote_Monto_Redondear(
+                    request.facturas.Sum(factura => factura.monto)),
                 cantidad_facturas = request.facturas.Count
             };
         }
 
+        /// <summary>
+        /// Confirma que una factura siga pendiente y conserve su monto.
+        /// </summary>
+        /// <param name="connection">Conexión utilizada por el lote.</param>
+        /// <param name="transaction">Transacción activa del lote.</param>
+        /// <param name="request">Datos generales del lote.</param>
+        /// <param name="factura">Factura que se debe validar.</param>
         private static void CxC_AbonoLote_FacturaActual_Validar(
             SqlConnection connection,
             SqlTransaction transaction,
@@ -355,7 +409,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     $"La factura {factura.cod_factura} ya no se encuentra pendiente.");
             }
 
-            if (facturaActual.monto != factura.monto)
+            if (CxC_AbonoLote_Monto_Redondear(facturaActual.monto)
+                != CxC_AbonoLote_Monto_Redondear(factura.monto))
             {
                 throw new InvalidOperationException(
                     $"El monto pendiente de la factura "
@@ -364,6 +419,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             }
         }
 
+        /// <summary>
+        /// Ejecuta el abono ordinario de una factura seleccionada.
+        /// </summary>
+        /// <param name="connection">Conexión utilizada por el lote.</param>
+        /// <param name="transaction">Transacción activa del lote.</param>
+        /// <param name="request">Datos generales del lote.</param>
+        /// <param name="factura">Factura que se debe abonar.</param>
+        /// <param name="tipoDocumento">Tipo del documento generado.</param>
+        /// <param name="numeroDocumento">Consecutivo del documento.</param>
+        /// <param name="fechaServidor">Fecha transaccional del servidor.</param>
         private static void CxC_AbonoLote_AbonoOrdinario_Ejecutar(
             SqlConnection connection,
             SqlTransaction transaction,
@@ -397,7 +462,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         request.usuario),
                     tipoDocumento,
                     numeroDocumento,
-                    abono = factura.monto,
+                    abono = CxC_AbonoLote_Monto_Redondear(factura.monto),
                     fecha = fechaServidor,
                     caja = CxC_AbonoLote_Texto_Normalizar(request.caja),
                     movimiento = MovimientoHaber,
@@ -406,6 +471,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 transaction);
         }
 
+        /// <summary>
+        /// Genera el asiento contable correspondiente al lote aplicado.
+        /// </summary>
+        /// <param name="connection">Conexión utilizada por el lote.</param>
+        /// <param name="transaction">Transacción activa del lote.</param>
+        /// <param name="request">Datos generales del lote.</param>
+        /// <param name="tipoDocumento">Tipo del documento generado.</param>
+        /// <param name="numeroDocumento">Consecutivo del documento.</param>
         private static void CxC_AbonoLote_Asiento_Ejecutar(
             SqlConnection connection,
             SqlTransaction transaction,
@@ -441,6 +514,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 transaction);
         }
 
+        /// <summary>
+        /// Registra en bitácora la cancelación de cuentas del cliente.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="usuario">Usuario que aplicó el lote.</param>
+        /// <param name="cedula">Identificación del cliente.</param>
         private void CxC_AbonoLote_Bitacora_Registrar(
             int codEmpresa,
             string usuario,
@@ -459,6 +538,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             });
         }
 
+        /// <summary>
+        /// Valida los filtros requeridos para consultar facturas.
+        /// </summary>
+        /// <param name="request">Filtros enviados por la pantalla.</param>
+        /// <returns>Mensaje de validación o texto vacío.</returns>
         private static string
             CxC_AbonoLote_FacturasFiltro_Validar(
                 CxCAbonoLoteFacturasRequest request)
@@ -476,6 +560,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return string.Empty;
         }
 
+        /// <summary>
+        /// Valida los datos y totales requeridos para aplicar el lote.
+        /// </summary>
+        /// <param name="request">Datos del lote que se debe validar.</param>
+        /// <returns>Mensaje de validación o texto vacío.</returns>
         private static string CxC_AbonoLote_Aplicacion_Validar(
             CxCAbonoLoteAplicarRequest request)
         {
@@ -555,15 +644,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 return "Existen facturas duplicadas en la selección.";
             }
 
-            var totalFacturas = request.facturas.Sum(
-                factura => factura.monto);
+            var totalFacturas = CxC_AbonoLote_Monto_Redondear(
+                request.facturas.Sum(factura => factura.monto));
 
             if (totalFacturas <= 0)
             {
                 return "El total de las facturas debe ser mayor que cero.";
             }
 
-            if (request.total_detallado != totalFacturas)
+            if (CxC_AbonoLote_Monto_Redondear(request.total_detallado)
+                != totalFacturas)
             {
                 return "No se ha recaudado el total a cancelar de "
                     + "las facturas seleccionadas.";
@@ -572,6 +662,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return string.Empty;
         }
 
+        /// <summary>
+        /// Construye una respuesta de error estándar para la aplicación.
+        /// </summary>
+        /// <param name="mensaje">Detalle del error.</param>
+        /// <param name="codigo">Código funcional del error.</param>
+        /// <returns>Respuesta de error normalizada.</returns>
         private static ErrorDto<CxCAbonoLoteAplicarData>
             CxC_AbonoLote_Error_Crear(
                 string mensaje,
@@ -583,10 +679,26 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 new CxCAbonoLoteAplicarData());
         }
 
+        /// <summary>
+        /// Normaliza texto opcional para enviarlo a base de datos.
+        /// </summary>
+        /// <param name="valor">Texto que se debe normalizar.</param>
+        /// <returns>Texto sin espacios laterales y nunca nulo.</returns>
         private static string CxC_AbonoLote_Texto_Normalizar(
             string? valor)
         {
             return (valor ?? string.Empty).Trim();
+        }
+
+        /// <summary>
+        /// Redondea un monto a la precisión monetaria del formulario.
+        /// </summary>
+        /// <param name="valor">Monto que se debe redondear.</param>
+        /// <returns>Monto redondeado a dos decimales.</returns>
+        private static decimal CxC_AbonoLote_Monto_Redondear(
+            decimal valor)
+        {
+            return Math.Round(valor, 2, MidpointRounding.AwayFromZero);
         }
 
         private sealed class CxCAbonoLoteFacturaActualData

@@ -4,6 +4,7 @@ using Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar;
 using Galileo_API.Models.ProGrX.CuentasxCobrar;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
 {
@@ -25,6 +26,15 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
                 int codEmpresa)
         {
             return _bl.CxC_AbonoLote_Clientes_Obtener(codEmpresa);
+        }
+
+        [HttpGet("CxC_AbonoLote_Derecho_Aplicar_Obtener")]
+        public int CxC_AbonoLote_Derecho_Aplicar_Obtener(
+            int codEmpresa)
+        {
+            return _bl.CxC_AbonoLote_Derecho_Aplicar_Obtener(
+                codEmpresa,
+                UsuarioAutenticado_Obtener());
         }
 
         [HttpGet("CxC_AbonoLote_Divisas_Obtener")]
@@ -67,9 +77,18 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
                 int codEmpresa,
                 CxCAbonoLoteAplicarRequest request)
         {
+            request.usuario = UsuarioAutenticado_Obtener();
+
             return _bl.CxC_AbonoLote_Aplicar(
                 codEmpresa,
                 request);
+        }
+
+        private string UsuarioAutenticado_Obtener()
+        {
+            return User.FindFirst("UserName")?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value
+                ?? string.Empty;
         }
     }
 }
