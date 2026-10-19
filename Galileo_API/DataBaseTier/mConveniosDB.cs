@@ -10,35 +10,38 @@ namespace Galileo_API.DataBaseTier
     /// </summary>
     public class MConveniosDB
     {
+        private const string ColDescripcionMin = "descripcion";
+        private const string ColDescripcion = "Descripcion";
+
         private readonly PortalDB _portalDb;
 
         private static readonly Dictionary<string, ComboCatalogo> CombosCatalogo = new(StringComparer.OrdinalIgnoreCase)
         {
-            ["INSTITUCIONES"] = new("instituciones", "cod_institucion", "descripcion"),
+            ["INSTITUCIONES"] = new("instituciones", "cod_institucion", ColDescripcionMin),
             ["PROMOTORES"] = new("promotores", "ID_PROMOTOR", "Nombre"),
-            ["PROFESIONES"] = new("AFI_PROFESIONES", "COD_PROFESION", "descripcion"),
-            ["SECTORES"] = new("AFI_SECTORES", "COD_SECTOR", "descripcion"),
-            ["BANCOS"] = new("Tes_Bancos", "id_banco", "descripcion"),
-            ["PROVINCIAS"] = new("provincias", "provincia", "descripcion"),
-            ["CANTONES"] = new("cantones", "canton", "descripcion", FiltraPorProvincia: true),
-            ["DISTRITOS"] = new("distritos", "distrito", "descripcion", FiltraPorProvincia: true, FiltraPorCanton: true),
+            ["PROFESIONES"] = new("AFI_PROFESIONES", "COD_PROFESION", ColDescripcionMin),
+            ["SECTORES"] = new("AFI_SECTORES", "COD_SECTOR", ColDescripcionMin),
+            ["BANCOS"] = new("Tes_Bancos", "id_banco", ColDescripcionMin),
+            ["PROVINCIAS"] = new("provincias", "provincia", ColDescripcionMin),
+            ["CANTONES"] = new("cantones", "canton", ColDescripcionMin, FiltraPorProvincia: true),
+            ["DISTRITOS"] = new("distritos", "distrito", ColDescripcionMin, FiltraPorProvincia: true, FiltraPorCanton: true),
         };
 
         private static readonly Dictionary<string, CodigoTabla> CodigosTabla = new(StringComparer.OrdinalIgnoreCase)
         {
-            ["Proveedores"] = new("cxp_proveedores", "Cod_proveedor", "Descripcion"),
-            ["Productos"] = new("pv_Productos", "cod_Producto", "Descripcion"),
-            ["CargosProv"] = new("cxp_cargos", "Cod_cargo", "Descripcion"),
-            ["Unidades"] = new("pv_unidades", "Cod_Unidad", "Descripcion"),
-            ["Marcas"] = new("pv_marcas", "Cod_Marca", "Descripcion"),
-            ["LineaProducto"] = new("pv_prod_clasifica", "cod_prodclas", "Descripcion"),
-            ["Bancos"] = new("Tes_Bancos", "id_banco", "Descripcion"),
+            ["Proveedores"] = new("cxp_proveedores", "Cod_proveedor", ColDescripcion),
+            ["Productos"] = new("pv_Productos", "cod_Producto", ColDescripcion),
+            ["CargosProv"] = new("cxp_cargos", "Cod_cargo", ColDescripcion),
+            ["Unidades"] = new("pv_unidades", "Cod_Unidad", ColDescripcion),
+            ["Marcas"] = new("pv_marcas", "Cod_Marca", ColDescripcion),
+            ["LineaProducto"] = new("pv_prod_clasifica", "cod_prodclas", ColDescripcion),
+            ["Bancos"] = new("Tes_Bancos", "id_banco", ColDescripcion),
             ["Clientes"] = new("pv_clientes", "cedula", "nombre"),
-            ["Bodegas"] = new("pv_bodegas", "cod_bodega", "Descripcion"),
-            ["Precios"] = new("pv_tipos_precios", "cod_precio", "Descripcion"),
+            ["Bodegas"] = new("pv_bodegas", "cod_bodega", ColDescripcion),
+            ["Precios"] = new("pv_tipos_precios", "cod_precio", ColDescripcion),
             ["Agentes"] = new("pv_agentes", "cod_agente", "Nombre"),
             ["Cajas"] = new("pv_cajas", "cod_caja", "Nombre"),
-            ["Cuentas"] = new("CntX_cuentas", "cod_Cuenta", "Descripcion", PorContabilidad: true),
+            ["Cuentas"] = new("CntX_cuentas", "cod_Cuenta", ColDescripcion, PorContabilidad: true),
         };
 
         public MConveniosDB(IConfiguration config)
@@ -110,16 +113,14 @@ namespace Galileo_API.DataBaseTier
             }
 
             var porCodigo = tipoDC == "D";
-            var columnaRetorno = porCodigo ? config.Descripcion : config.Codigo;
-            var columnaFiltro = porCodigo ? config.Codigo : config.Descripcion;
-            var filtroContabilidad = config.PorContabilidad ? " and cod_contabilidad = @codContabilidad" : string.Empty;
+            var sql = porCodigo ? config.SqlPorCodigo : config.SqlPorDescripcion;
 
             try
             {
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 var valor = conn.Query<string?>(
-                    $"select convert(varchar(max), {columnaRetorno}) from {config.Tabla} where {columnaFiltro} = @valor{filtroContabilidad};",
+                    sql,
                     new { valor = codDes.Trim(), codContabilidad }).FirstOrDefault();
 
                 var resultado = porCodigo ? (valor ?? string.Empty).Trim() : (valor ?? string.Empty);
@@ -144,10 +145,8 @@ namespace Galileo_API.DataBaseTier
                 return DbHelper.CreateErrorResponse<List<MConveniosCatalogoItem>>("El catálogo indicado no es válido.", -2, new());
             }
 
-            var (where, parametros) = ConstruirFiltrosCombo(catalogo, provincia, canton);
-            var sql = $"select convert(varchar(max), {catalogo.Llave}) as Llave, {catalogo.Descripcion} as Descripcion from {catalogo.Tabla}"
-                    + (where.Count > 0 ? $" where {string.Join(" and ", where)} order by {catalogo.Descripcion}" : string.Empty)
-                    + ";";
+            var (usaProvincia, usaCanton, parametros) = ConstruirFiltrosCombo(catalogo, provincia, canton);
+            var sql = catalogo.ObtenerSql(usaProvincia, usaCanton);
 
             try
             {
@@ -169,38 +168,71 @@ namespace Galileo_API.DataBaseTier
             }
         }
 
-        private static (List<string> where, DynamicParameters parametros) ConstruirFiltrosCombo(ComboCatalogo catalogo, int? provincia, string? canton)
+        private static (bool usaProvincia, bool usaCanton, DynamicParameters parametros) ConstruirFiltrosCombo(ComboCatalogo catalogo, int? provincia, string? canton)
         {
-            var where = new List<string>();
             var parametros = new DynamicParameters();
+            var usaProvincia = catalogo.FiltraPorProvincia && provincia.HasValue;
+            var usaCanton = catalogo.FiltraPorCanton && !string.IsNullOrWhiteSpace(canton);
 
-            if (catalogo.FiltraPorProvincia && provincia.HasValue)
+            if (usaProvincia)
             {
-                where.Add("provincia = @provincia");
-                parametros.Add("provincia", provincia.Value);
+                parametros.Add("provincia", provincia!.Value);
             }
 
-            if (catalogo.FiltraPorCanton && !string.IsNullOrWhiteSpace(canton))
+            if (usaCanton)
             {
-                where.Add("canton = @canton");
-                parametros.Add("canton", canton.Trim());
+                parametros.Add("canton", canton!.Trim());
             }
 
-            return (where, parametros);
+            return (usaProvincia, usaCanton, parametros);
         }
 
+        /// <summary>
+        /// Los nombres de tabla y columna salen solo de las listas fijas de esta clase; el SQL de cada
+        /// catálogo se arma una sola vez al declararlo y los valores del usuario viajan como parámetros.
+        /// </summary>
         private sealed record ComboCatalogo(
             string Tabla,
             string Llave,
             string Descripcion,
             bool FiltraPorProvincia = false,
-            bool FiltraPorCanton = false);
+            bool FiltraPorCanton = false)
+        {
+            private readonly string[] _sqlPorFiltro = ArmarSqlPorFiltro(Tabla, Llave, Descripcion);
+
+            public string ObtenerSql(bool usaProvincia, bool usaCanton)
+                => _sqlPorFiltro[(usaProvincia ? 1 : 0) + (usaCanton ? 2 : 0)];
+
+            private static string[] ArmarSqlPorFiltro(string tabla, string llave, string descripcion)
+            {
+                var select = string.Concat("select convert(varchar(max), ", llave, ") as Llave, ", descripcion, " as Descripcion from ", tabla);
+                var orden = string.Concat(" order by ", descripcion, ";");
+                return
+                [
+                    select + ";",
+                    select + " where provincia = @provincia" + orden,
+                    select + " where canton = @canton" + orden,
+                    select + " where provincia = @provincia and canton = @canton" + orden
+                ];
+            }
+        }
 
         private sealed record CodigoTabla(
             string Tabla,
             string Codigo,
             string Descripcion,
-            bool PorContabilidad = false);
+            bool PorContabilidad = false)
+        {
+            public string SqlPorCodigo { get; } = ArmarSql(Tabla, Descripcion, Codigo, PorContabilidad);
+
+            public string SqlPorDescripcion { get; } = ArmarSql(Tabla, Codigo, Descripcion, PorContabilidad);
+
+            private static string ArmarSql(string tabla, string columnaRetorno, string columnaFiltro, bool porContabilidad)
+            {
+                var filtroContabilidad = porContabilidad ? " and cod_contabilidad = @codContabilidad" : string.Empty;
+                return string.Concat("select convert(varchar(max), ", columnaRetorno, ") from ", tabla, " where ", columnaFiltro, " = @valor", filtroContabilidad, ";");
+            }
+        }
     }
 
     /// <summary>

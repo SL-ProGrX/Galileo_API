@@ -82,10 +82,13 @@ namespace Galileo_API.Models.ProGrX.Convenios
     public class CrCargosCxPRegistroRequest
     {
         public string cod_convenio { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public int cod_orden { get; set; }
         /// <summary>Transacción del cargo pendiente; 0 si el rebajo no proviene de uno.</summary>
+        [System.Text.Json.Serialization.JsonRequired]
         public int id_transac { get; set; }
         public string cod_cargo { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto { get; set; }
         public string? documento { get; set; }
         public string? detalle { get; set; }
@@ -98,10 +101,14 @@ namespace Galileo_API.Models.ProGrX.Convenios
     public class CrCargosCxPEdicionRequest
     {
         public string cod_convenio { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public int cod_orden { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int num_linea { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int id_transac { get; set; }
         public string cod_cargo { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal monto { get; set; }
         public string? documento { get; set; }
         public string? detalle { get; set; }
@@ -114,7 +121,9 @@ namespace Galileo_API.Models.ProGrX.Convenios
     public class CrCargosCxPBorradoRequest
     {
         public string cod_convenio { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public int cod_orden { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int num_linea { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
