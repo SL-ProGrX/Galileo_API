@@ -37,10 +37,10 @@ namespace Galileo_API.BusinessLogic
             return _bancosSaldosDb.TES_BancosSaldos_Monitoreo_Actualizar(CodEmpresa, Banco, Monitoreo);
         }
 
-        public ErrorDto<TablasListaGenericaModel> TES_BancosSaldos_Historico_Obtener(int CodEmpresa, int Banco, string jfiltros)
+        public ErrorDto<TablasListaGenericaModel> TES_BancosSaldos_Historico_Obtener(int CodEmpresa, int Banco, string jfiltros, string? CodGrupo = null)
         {
             FiltrosLazyLoadData filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
-            return _bancosSaldosDb.TES_BancosSaldos_Historico_Obtener(CodEmpresa, Banco, filtros);
+            return _bancosSaldosDb.TES_BancosSaldos_Historico_Obtener(CodEmpresa, Banco, filtros, CodGrupo);
         }
 
         public ErrorDto<TesBancosSaldosCierresDto> TES_BancosSaldos_Cierres_Obtener(int CodEmpresa, int Banco)
