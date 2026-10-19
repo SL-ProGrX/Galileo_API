@@ -193,7 +193,8 @@ FETCH NEXT @fetch ROWS ONLY;";
         public ErrorDto<TablasListaGenericaModel> TES_BancosSaldos_Historico_Obtener(
     int CodEmpresa,
     int Banco,
-    FiltrosLazyLoadData filtros)
+    FiltrosLazyLoadData filtros,
+    string? CodGrupo = null)
         {
             filtros ??= new FiltrosLazyLoadData();
 
@@ -278,15 +279,15 @@ FETCH NEXT @fetch ROWS ONLY;";
                    PARÁMETROS SP
                    ========================================================= */
 
-                var parameters = new
+                object ParametrosSp(int banco, int desde, int cantidad) => new
                 {
-                    Banco,
+                    Banco = banco,
                     Filtro = filtro,
                     FiltrarFechas = filtrarFechas,
                     FechaInicio = fechaInicio,
                     FechaCorte = fechaCorte,
-                    Offset = offset,
-                    Fetch = fetch,
+                    Offset = desde,
+                    Fetch = cantidad,
                     Columna = columna,
                     Direccion = direccion,
                     Tipo_periodo = filtrosFechas.tipo_periodo,
@@ -298,29 +299,54 @@ FETCH NEXT @fetch ROWS ONLY;";
                    EJECUTAR SP
                    ========================================================= */
 
-                using var multi = conn.QueryMultiple(
-                    "dbo.spTES_W_BancosSaldos_Historico_Obtener",
-                    parameters,
-                    commandType: CommandType.StoredProcedure,
-                    commandTimeout: 60
-                );
-
-
-                /* =========================================================
-                   RESULTADO 1: TOTAL
-                   ========================================================= */
-
-                response.Result.total =
-                    multi.ReadSingle<int>();
-
+                if (Banco > 0)
+                {
+                    var (total, lista) = HistoricoBanco(conn, ParametrosSp(Banco, offset, fetch));
+                    response.Result.total = total;
+                    response.Result.lista = lista;
+                    return response;
+                }
 
                 /* =========================================================
-                   RESULTADO 2: LISTA
+                   TODOS LOS BANCOS (opcionalmente de una entidad)
                    ========================================================= */
 
-                response.Result.lista =
-                    multi.Read<TesBancosSaldosHistoricoDto>()
-                         .ToList();
+                var bancos = conn.Query<(int id_banco, string descripcion)>(
+                    @"select id_banco, rtrim(descripcion) as descripcion
+                      from Tes_Bancos
+                      where monitoreo = 1
+                        and (@grupo is null or cod_grupo = @grupo)",
+                    new { grupo = string.IsNullOrWhiteSpace(CodGrupo) ? null : CodGrupo }).ToList();
+
+                var acumulado = new List<TesBancosSaldosHistoricoDto>();
+                foreach (var (idBanco, descripcion) in bancos)
+                {
+                    var (_, listaBanco) = HistoricoBanco(conn, ParametrosSp(idBanco, 0, int.MaxValue));
+                    listaBanco.ForEach(x => x.banco = descripcion);
+                    acumulado.AddRange(listaBanco);
+                }
+
+                var ordenada = columna switch
+                {
+                    "ID_BANCO" => acumulado.OrderBy(x => x.id_banco),
+                    "USUARIO" => acumulado.OrderBy(x => x.usuario),
+                    "INICIO" => acumulado.OrderBy(x => x.inicio),
+                    "CORTE" => acumulado.OrderBy(x => x.corte),
+                    _ => acumulado.OrderBy(x => x.idx)
+                };
+                var resultado = direccion == "ASC" ? ordenada : (columna switch
+                {
+                    "ID_BANCO" => acumulado.OrderByDescending(x => x.id_banco),
+                    "USUARIO" => acumulado.OrderByDescending(x => x.usuario),
+                    "INICIO" => acumulado.OrderByDescending(x => x.inicio),
+                    "CORTE" => acumulado.OrderByDescending(x => x.corte),
+                    _ => acumulado.OrderByDescending(x => x.idx)
+                });
+
+                response.Result.total = acumulado.Count;
+                response.Result.lista = fetch > 0
+                    ? resultado.Skip(offset).Take(fetch).ToList()
+                    : resultado.ToList();
             }
             catch (Exception ex)
             {
@@ -330,6 +356,19 @@ FETCH NEXT @fetch ROWS ONLY;";
             }
 
             return response;
+        }
+
+        private static (int total, List<TesBancosSaldosHistoricoDto> lista) HistoricoBanco(IDbConnection conn, object parametros)
+        {
+            using var multi = conn.QueryMultiple(
+                "dbo.spTES_W_BancosSaldos_Historico_Obtener",
+                parametros,
+                commandType: CommandType.StoredProcedure,
+                commandTimeout: 60);
+
+            var total = multi.ReadSingle<int>();
+            var lista = multi.Read<TesBancosSaldosHistoricoDto>().ToList();
+            return (total, lista);
         }
 
         /// <summary>
