@@ -170,7 +170,7 @@
 
     public sealed class IvrCatAdministradorCuentaContableData
     {
-        public bool es_valida { get; set; }
+        public bool es_valida { get; set; } = false;
 
         public string cod_cuenta { get; set; } =
             string.Empty;
@@ -196,7 +196,7 @@
         public string cod_divisa { get; set; } =
             string.Empty;
 
-        public bool cuenta_interbanca { get; set; }
+        public bool cuenta_interbanca { get; set; } = false;
 
         public string cuenta_interbanca_desc
         {
@@ -226,7 +226,7 @@
         public string descripcion { get; set; } =
             string.Empty;
 
-        public bool asignado { get; set; }
+        public bool asignado { get; set; } = false;
     }
 
     public sealed class
@@ -238,7 +238,7 @@
         public string cod_administrador { get; set; } =
             string.Empty;
 
-        public bool asignado { get; set; }
+        public bool asignado { get; set; } = false;
 
         public string usuario { get; set; } =
             string.Empty;
@@ -252,7 +252,7 @@
         public string descripcion { get; set; } =
             string.Empty;
 
-        public bool asignado { get; set; }
+        public bool asignado { get; set; } = false;
     }
 
     public sealed class
@@ -264,7 +264,7 @@
         public string cod_instrumento { get; set; } =
             string.Empty;
 
-        public bool asignado { get; set; }
+        public bool asignado { get; set; } = false;
 
         public string usuario { get; set; } =
             string.Empty;
