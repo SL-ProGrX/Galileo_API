@@ -471,17 +471,17 @@ WHERE REFERENCIA_SINPE = @referencia;";
             var resultado = new List<CoreInterno.CL_ResultadoActualizacion>();
             using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-            foreach (var s in transacciones)
+            foreach (var referencia in transacciones.Select(s => s.CodigoReferencia))
             {
                 string codigoReferencia;
                 try
                 {
-                    codigoReferencia = NormalizarCodigoReferencia(s.CodigoReferencia);
+                    codigoReferencia = NormalizarCodigoReferencia(referencia);
                 }
                 catch (ArgumentException)
                 {
                     // Una referencia inválida no puede corresponder a ninguna transacción; no debe tumbar el lote.
-                    resultado.Add(CrearResultadoActualizacionNoExiste(s.CodigoReferencia ?? string.Empty));
+                    resultado.Add(CrearResultadoActualizacionNoExiste(referencia ?? string.Empty));
                     continue;
                 }
 
@@ -522,16 +522,16 @@ WHERE REFERENCIA_SINPE = @referencia;";
             var resultado = new List<CoreInterno.CL_ResultadoActualizacion>();
             using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-            foreach (var s in transacciones)
+            foreach (var idRelacionCliente in transacciones.Select(s => s.IdRelacionCliente))
             {
                 string codigoReferencia;
                 try
                 {
-                    codigoReferencia = NormalizarCodigoReferencia(s.IdRelacionCliente);
+                    codigoReferencia = NormalizarCodigoReferencia(idRelacionCliente);
                 }
                 catch (ArgumentException)
                 {
-                    resultado.Add(CrearResultadoActualizacionNoExiste(s.IdRelacionCliente ?? string.Empty));
+                    resultado.Add(CrearResultadoActualizacionNoExiste(idRelacionCliente ?? string.Empty));
                     continue;
                 }
 
