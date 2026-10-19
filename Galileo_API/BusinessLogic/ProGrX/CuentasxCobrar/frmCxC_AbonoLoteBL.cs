@@ -20,6 +20,15 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
             return _db.CxC_AbonoLote_Clientes_Obtener(codEmpresa);
         }
 
+        public int CxC_AbonoLote_Derecho_Aplicar_Obtener(
+            int codEmpresa,
+            string usuario)
+        {
+            return _db.CxC_AbonoLote_Derecho_Aplicar_Obtener(
+                codEmpresa,
+                usuario);
+        }
+
         public ErrorDto<List<DropDownListaGenericaModel>>
             CxC_AbonoLote_Divisas_Obtener(
                 int codEmpresa,
