@@ -26,7 +26,7 @@ namespace Galileo_API.Controllers.ProGrX.Convenios
         [HttpGet("CrConveniosReportes_Catalogo_Describe")]
         public ErrorDto<CrConveniosReportesCatalogoData> CrConveniosReportes_Catalogo_Describe(
             [FromQuery] int codEmpresa,
-            [FromQuery] string codigo)
+            [FromQuery] string codigo) 
             => _bl.CrConveniosReportes_Catalogo_Describe(codEmpresa, codigo);
     }
 }
