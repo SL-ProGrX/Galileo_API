@@ -162,7 +162,7 @@
         public string tes_emitir { get; set; } =
             string.Empty;
 
-        public int tes_banco { get; set; }
+        public int tes_banco { get; set; } = 0;
 
         public string usuario { get; set; } =
             string.Empty;
