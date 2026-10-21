@@ -34,6 +34,16 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
             return _db.CajasTransacciones_Documentos_Obtener(codEmpresa, codCaja);
         }
 
+        public ErrorDto<List<DropDownListaGenericaModel>> CajasTransacciones_TiposPagoTarjeta_Obtener(int codEmpresa)
+        {
+            return _db.CajasTransacciones_TiposPagoTarjeta_Obtener(codEmpresa);
+        }
+
+        public ErrorDto CajasTransacciones_ConsultaIntegrada_Ejecutar(int codEmpresa, string cedula, string usuario)
+        {
+            return _db.CajasTransacciones_ConsultaIntegrada_Ejecutar(codEmpresa, cedula, usuario);
+        }
+
         public ErrorDto<CajasTransacValidacionResult?> CajasTransacciones_Validacion(
             int codEmpresa,
             CajasTransacValidacionParams param)

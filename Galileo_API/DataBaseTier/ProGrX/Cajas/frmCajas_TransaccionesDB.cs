@@ -89,6 +89,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         /// <summary>
+        /// Obtiene los tipos de pago para tarjeta de crédito (Pago mínimo, Pago de contado, Otro monto).
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <returns>Lista de tipos de pago.</returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> CajasTransacciones_TiposPagoTarjeta_Obtener(int codEmpresa)
+        {
+            var query = @"select cast(ID_TIPO_PAGO_TARJETA as varchar(10)) as item, rtrim(DESCRIPCION) as descripcion
+                          from CNTX_TIPO_PAGOS_TARJETA
+                          order by ID_TIPO_PAGO_TARJETA";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query);
+        }
+
+        /// <summary>
+        /// Ejecuta spSys_Consulta_Integrada para actualizar los datos de la persona. No devuelve información.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="cedula">Cédula de la persona.</param>
+        /// <param name="usuario">Usuario que ejecuta la consulta.</param>
+        /// <returns>Resultado de la ejecución.</returns>
+        public ErrorDto CajasTransacciones_ConsultaIntegrada_Ejecutar(int codEmpresa, string cedula, string usuario)
+        {
+            var query = "exec spSys_Consulta_Integrada @cedula = @Cedula, @Usuario = @Usuario";
+            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, new { Cedula = cedula.Trim(), Usuario = usuario });
+        }
+
+        /// <summary>
         /// Ejecuta el procedimiento de validación y advertencias para la caja.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
