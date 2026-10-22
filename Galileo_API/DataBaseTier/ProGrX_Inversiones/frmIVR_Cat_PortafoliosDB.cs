@@ -192,7 +192,7 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
                 new { cod_portafolio = codPortafolio!.Trim() });
 
             return ResultadoMovimiento(
-                codEmpresa, resultado, usuario!, "Elimina", codPortafolio!,
+                codEmpresa, resultado, usuario!, "Elimina", codPortafolio,
                 "El portafolio indicado no existe.");
         }
 
@@ -202,29 +202,36 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
             string sql,
             bool nuevo)
         {
-            var validacion = ValidarIdentificacion(request?.Cod_Portafolio, request?.Usuario);
+            if (request == null)
+            {
+                return DbHelper.ErrorResponse(
+                    "Los datos del portafolio son requeridos.", CodigoMensajeControlado);
+            }
+
+            var req = request;
+            var validacion = ValidarIdentificacion(req.Cod_Portafolio, req.Usuario);
             if (validacion != null)
             {
                 return validacion;
             }
 
             var codigo = nuevo
-                ? request!.Cod_Portafolio.Trim().ToUpperInvariant()
-                : request!.Cod_Portafolio.Trim();
+                ? req.Cod_Portafolio.Trim().ToUpperInvariant()
+                : req.Cod_Portafolio.Trim();
 
             var resultado = DbHelper.ExecuteNonQueryWithResult(
                 _portalDb, codEmpresa, sql,
                 new
                 {
                     cod_portafolio = codigo,
-                    descripcion = request.Descripcion ?? string.Empty,
-                    desc_corta = request.Desc_Corta ?? string.Empty,
-                    activo = request.Activo,
-                    usuario = request.Usuario.Trim()
+                    descripcion = req.Descripcion ?? string.Empty,
+                    desc_corta = req.Desc_Corta ?? string.Empty,
+                    activo = req.Activo,
+                    usuario = req.Usuario.Trim()
                 });
 
             return ResultadoMovimiento(
-                codEmpresa, resultado, request.Usuario,
+                codEmpresa, resultado, req.Usuario,
                 nuevo ? "Registra" : "Modifica", codigo,
                 nuevo ? "El portafolio indicado ya existe."
                     : "El portafolio indicado no existe.");

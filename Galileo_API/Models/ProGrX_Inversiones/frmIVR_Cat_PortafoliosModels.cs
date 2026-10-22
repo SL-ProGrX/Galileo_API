@@ -5,7 +5,7 @@ namespace Galileo.Models.ProGrX_Inversiones
         public string Cod_Portafolio { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string Desc_Corta { get; set; } = string.Empty;
-        public bool Activo { get; set; }
+        public bool? Activo { get; set; }
     }
 
     public sealed class IvrCatPortafolioAdministradorDto
