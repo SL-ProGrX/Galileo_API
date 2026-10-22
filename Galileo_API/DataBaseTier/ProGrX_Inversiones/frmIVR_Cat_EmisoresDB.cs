@@ -1,20 +1,16 @@
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Inversiones;
-using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier.ProGrX_Inversiones
 {
-    public sealed class FrmIvrCatEmisoresDb
+    public sealed class FrmIvrCatEmisoresDb : InversionesCatalogoDbBase
     {
-        private const int CodigoMensajeControlado = -2;
-        private readonly PortalDB _portalDb;
-        private readonly MSecurityMainDb _securityMainDb;
-
         public FrmIvrCatEmisoresDb(IConfiguration config)
+            : base(
+                config,
+                "El código del emisor es requerido.",
+                "Emisor de Titulos Valores: ")
         {
-            ArgumentNullException.ThrowIfNull(config);
-            _portalDb = new PortalDB(config);
-            _securityMainDb = new MSecurityMainDb(config);
         }
 
         /// <summary>
@@ -149,7 +145,8 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
             string? codEmisor,
             string? usuario)
         {
-            var validacion = ValidarIdentificacion(codEmisor, usuario);
+            var validacion = ValidarIdentificacion(
+                codEmisor, usuario);
             if (validacion != null)
             {
                 return validacion;
@@ -182,7 +179,8 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
             }
 
             var req = request;
-            var validacion = ValidarIdentificacion(req.Cod_Emisor, req.Usuario);
+            var validacion = ValidarIdentificacion(
+                req.Cod_Emisor, req.Usuario);
             if (validacion != null)
             {
                 return validacion;
@@ -208,51 +206,6 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
                 nuevo ? "Registra" : "Modifica", codigo,
                 nuevo ? "El emisor indicado ya existe."
                     : "El emisor indicado no existe.");
-        }
-
-        private ErrorDto ResultadoMovimiento(
-            int codEmpresa,
-            ErrorDto<int> resultado,
-            string usuario,
-            string movimiento,
-            string codigo,
-            string mensajeSinCambios)
-        {
-            if (resultado.Code != 0)
-            {
-                return DbHelper.ErrorResponse(
-                    resultado.Description ?? "No fue posible completar el proceso.");
-            }
-            if (resultado.Result == 0)
-            {
-                return DbHelper.ErrorResponse(mensajeSinCambios, CodigoMensajeControlado);
-            }
-
-            _ = _securityMainDb.Bitacora(new BitacoraInsertarDto
-            {
-                EmpresaId = codEmpresa,
-                Usuario = usuario.Trim().ToUpperInvariant(),
-                Modulo = 22,
-                Movimiento = movimiento,
-                DetalleMovimiento = $"Emisor de Titulos Valores: {codigo.Trim()}"
-            });
-
-            return DbHelper.OkResponse("Proceso concluido satisfactoriamente.");
-        }
-
-        private static ErrorDto? ValidarIdentificacion(string? codigo, string? usuario)
-        {
-            if (string.IsNullOrWhiteSpace(codigo))
-            {
-                return DbHelper.ErrorResponse(
-                    "El código del emisor es requerido.", CodigoMensajeControlado);
-            }
-            if (string.IsNullOrWhiteSpace(usuario))
-            {
-                return DbHelper.ErrorResponse(
-                    "El usuario es requerido.", CodigoMensajeControlado);
-            }
-            return null;
         }
     }
 }
