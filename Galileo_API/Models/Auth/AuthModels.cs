@@ -102,7 +102,7 @@ public sealed class AuthSessionStatusDto
     public string? Reason { get; init; }
 }
 
-public sealed class UserSessionDto
+public class UserSessionDto
 {
     public string SessionId { get; init; } = string.Empty;
     public string AuthenticationMethod { get; init; } = string.Empty;
@@ -119,6 +119,49 @@ public sealed class UserSessionDto
     public DateTime? AbsoluteExpiresAtUtc { get; init; }
     public bool IsCurrent { get; init; }
 }
+
+public sealed class AdminSessionQueryDto
+{
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 25;
+    public string Application { get; set; } = "all";
+    public string Status { get; set; } = "all";
+    public string? Search { get; set; }
+    public DateTime? FromUtc { get; set; }
+    public DateTime? ToUtc { get; set; }
+}
+
+public sealed class AdminSessionPageDto
+{
+    public IReadOnlyList<AdminAuthSessionDto> Items { get; init; } = Array.Empty<AdminAuthSessionDto>();
+    public int Page { get; init; }
+    public int PageSize { get; init; }
+    public int TotalCount { get; init; }
+    public int ActiveCount { get; init; }
+    public int StartedLast24Hours { get; init; }
+    public int RevokedLast24Hours { get; init; }
+}
+
+public sealed class AdminAuthSessionDto : UserSessionDto
+{
+    public int UserId { get; init; }
+    public string UserName { get; init; } = string.Empty;
+    public string DisplayName { get; init; } = string.Empty;
+    public string Application { get; init; } = string.Empty;
+    public DateTime? RevokedAtUtc { get; init; }
+    public string? RevocationReason { get; init; }
+    public string? AdminRevocationReason { get; init; }
+    public string? RevokedByUserName { get; init; }
+    public string Status { get; init; } = string.Empty;
+}
+
+public sealed class AdminSessionRevokeRequestDto
+{
+    public string Application { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
+}
+
+public sealed record AdminSessionRevokeResult(string Status);
 
 public sealed class GalileoSecurityInitializeRequest
 {
