@@ -17,6 +17,8 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Galileo_API.Tests;
 
@@ -122,6 +124,53 @@ public sealed class AuthSessionStoreTests
             store.RevokeAllSession("other-session", AuthApplications.SSecurity, 7, "admin", "security review"));
 
         Assert.Contains("AuthSessions:Store=Sql", error.Message);
+    }
+}
+
+public sealed class AuthSessionDtoSerializationTests
+{
+    [Theory]
+    [InlineData(typeof(UserSessionDto), false)]
+    [InlineData(typeof(AdminAuthSessionDto), true)]
+    public void Session_response_preserves_flat_json_contract(Type responseType, bool includeAdminDetails)
+    {
+        var expected = JsonNode.Parse("""
+            {
+                "sessionId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "authenticationMethod": "password",
+                "browserName": "Firefox",
+                "browserVersion": "158.0",
+                "operatingSystem": "macOS",
+                "operatingSystemVersion": "10",
+                "deviceType": "Computadora",
+                "clientIpAddress": "127.0.0.1",
+                "createdAtUtc": "2026-10-22T12:00:00Z",
+                "lastActivityAtUtc": "2026-10-22T12:05:00Z",
+                "refreshExpiresAtUtc": "2026-10-29T12:00:00Z",
+                "idleExpiresAtUtc": "2026-10-22T12:35:00Z",
+                "absoluteExpiresAtUtc": "2026-10-22T20:00:00Z",
+                "isCurrent": false
+            }
+            """)!.AsObject();
+
+        if (includeAdminDetails)
+        {
+            expected["userId"] = 7;
+            expected["userName"] = "tester";
+            expected["displayName"] = "Test User";
+            expected["application"] = AuthApplications.Galileo;
+            expected["revokedAtUtc"] = "2026-10-22T12:10:00Z";
+            expected["revocationReason"] = AuthSessionEndReasons.AdminRevoked;
+            expected["adminRevocationReason"] = "Solicitud de seguridad";
+            expected["revokedByUserName"] = "admin";
+            expected["status"] = "revoked";
+        }
+
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var session = JsonSerializer.Deserialize(expected.ToJsonString(), responseType, options);
+        var actual = JsonSerializer.SerializeToNode(session, responseType, options);
+
+        Assert.True(JsonNode.DeepEquals(expected, actual), actual?.ToJsonString());
     }
 }
 

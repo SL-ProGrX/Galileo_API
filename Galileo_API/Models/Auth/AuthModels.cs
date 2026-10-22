@@ -102,7 +102,7 @@ public sealed class AuthSessionStatusDto
     public string? Reason { get; init; }
 }
 
-public sealed class UserSessionDto
+public class UserSessionDto
 {
     public string SessionId { get; init; } = string.Empty;
     public string AuthenticationMethod { get; init; } = string.Empty;
@@ -142,31 +142,17 @@ public sealed class AdminSessionPageDto
     public int RevokedLast24Hours { get; init; }
 }
 
-public sealed class AdminAuthSessionDto
+public sealed class AdminAuthSessionDto : UserSessionDto
 {
-    public string SessionId { get; init; } = string.Empty;
     public int UserId { get; init; }
     public string UserName { get; init; } = string.Empty;
     public string DisplayName { get; init; } = string.Empty;
     public string Application { get; init; } = string.Empty;
-    public string AuthenticationMethod { get; init; } = string.Empty;
-    public string BrowserName { get; init; } = string.Empty;
-    public string? BrowserVersion { get; init; }
-    public string OperatingSystem { get; init; } = string.Empty;
-    public string? OperatingSystemVersion { get; init; }
-    public string DeviceType { get; init; } = string.Empty;
-    public string? ClientIpAddress { get; init; }
-    public DateTime CreatedAtUtc { get; init; }
-    public DateTime LastActivityAtUtc { get; init; }
-    public DateTime RefreshExpiresAtUtc { get; init; }
-    public DateTime? IdleExpiresAtUtc { get; init; }
-    public DateTime? AbsoluteExpiresAtUtc { get; init; }
     public DateTime? RevokedAtUtc { get; init; }
     public string? RevocationReason { get; init; }
     public string? AdminRevocationReason { get; init; }
     public string? RevokedByUserName { get; init; }
     public string Status { get; init; } = string.Empty;
-    public bool IsCurrent { get; init; }
 }
 
 public sealed class AdminSessionRevokeRequestDto
