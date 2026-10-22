@@ -219,7 +219,7 @@ namespace Galileo.Models.ProGrX_Inversiones
 
     public sealed class IvrRecTitulosGuardarRequest
     {
-        public long titulo_id { get; set; }
+        public required long titulo_id { get; set; }
         public string tipo_instrumento { get; set; } = string.Empty;
         public string cod_instrumento { get; set; } = string.Empty;
         public string cod_categoria { get; set; } = string.Empty;
@@ -230,46 +230,46 @@ namespace Galileo.Models.ProGrX_Inversiones
         public string cod_reserva { get; set; } = string.Empty;
         public string cod_divisa { get; set; } = string.Empty;
         public string cod_periodicidad { get; set; } = string.Empty;
-        public int base_intereses { get; set; }
+        public required int base_intereses { get; set; }
         public string operacion { get; set; } = string.Empty;
         public string serie { get; set; } = string.Empty;
         public string isin { get; set; } = string.Empty;
         public string cusip { get; set; } = string.Empty;
         public string ejecutivo_cuenta { get; set; } = string.Empty;
         public string detalle { get; set; } = string.Empty;
-        public DateTime fecha_compra { get; set; }
+        public required DateTime fecha_compra { get; set; }
         public DateTime? fecha_vencimiento { get; set; }
-        public decimal tipo_cambio { get; set; }
-        public decimal tasa_inicial { get; set; }
-        public decimal precio { get; set; }
-        public decimal valor_facial { get; set; }
-        public decimal valor_transado { get; set; }
-        public decimal comision_puesto { get; set; }
-        public decimal comision_bnv { get; set; }
-        public decimal iva { get; set; }
+        public required decimal tipo_cambio { get; set; }
+        public required decimal tasa_inicial { get; set; }
+        public required decimal precio { get; set; }
+        public required decimal valor_facial { get; set; }
+        public required decimal valor_transado { get; set; }
+        public required decimal comision_puesto { get; set; }
+        public required decimal comision_bnv { get; set; }
+        public required decimal iva { get; set; }
         public string ib_documento { get; set; } = string.Empty;
-        public decimal rend_neto { get; set; }
-        public decimal rend_nominal { get; set; }
-        public decimal tir { get; set; }
-        public decimal tasa_efectiva { get; set; }
-        public decimal isr_monto { get; set; }
-        public decimal participacion_valor { get; set; }
-        public decimal participacion_numero { get; set; }
-        public bool calcula_intereses { get; set; }
+        public required decimal rend_neto { get; set; }
+        public required decimal rend_nominal { get; set; }
+        public required decimal tir { get; set; }
+        public required decimal tasa_efectiva { get; set; }
+        public required decimal isr_monto { get; set; }
+        public required decimal participacion_valor { get; set; }
+        public required decimal participacion_numero { get; set; }
+        public required bool calcula_intereses { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 
     public sealed class IvrRecTitulosTransaccionEliminarRequest
     {
-        public long titulo_id { get; set; }
-        public long transac_id { get; set; }
+        public required long titulo_id { get; set; }
+        public required long transac_id { get; set; }
     }
 
     public sealed class IvrRecTitulosAccionRequest
     {
-        public long titulo_id { get; set; }
+        public required long titulo_id { get; set; }
         public string usuario { get; set; } = string.Empty;
-        public decimal tasa_efectiva { get; set; }
+        public required decimal tasa_efectiva { get; set; }
     }
 
     public sealed class IvrRecTitulosGuardarData

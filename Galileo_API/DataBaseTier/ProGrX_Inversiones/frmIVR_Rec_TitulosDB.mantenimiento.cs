@@ -138,13 +138,20 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
                         transacId = request.transac_id,
                     }));
 
-            return response.Code != 0
-                ? DbHelper.ErrorResponse(response.Description ?? "No fue posible eliminar la adquisición.")
-                : response.Result == 0
-                    ? DbHelper.ErrorResponse(
-                        "No se localizó una adquisición eliminable.",
-                        CodigoValidacion)
-                    : DbHelper.OkResponse("Adquisición eliminada satisfactoriamente.");
+            if (response.Code != 0)
+            {
+                return DbHelper.ErrorResponse(
+                    response.Description ?? "No fue posible eliminar la adquisición.");
+            }
+
+            if (response.Result == 0)
+            {
+                return DbHelper.ErrorResponse(
+                    "No se localizó una adquisición eliminable.",
+                    CodigoValidacion);
+            }
+
+            return DbHelper.OkResponse("Adquisición eliminada satisfactoriamente.");
         }
 
         /// <summary>

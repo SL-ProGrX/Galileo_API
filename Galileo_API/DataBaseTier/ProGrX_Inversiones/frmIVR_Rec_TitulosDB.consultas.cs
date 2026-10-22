@@ -189,7 +189,7 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
             if (!IVR_Rec_Titulos_Id_Valido(tituloId))
             {
                 return DbHelper.CreateErrorResponse<IvrRecTitulosData?>(
-                    "El número de inversión no es válido.",
+                    MensajeInversionInvalida,
                     CodigoValidacion);
             }
 
@@ -441,7 +441,7 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
             if (!IVR_Rec_Titulos_Id_Valido(tituloId))
             {
                 return DbHelper.CreateErrorResponse<List<IvrRecTitulosFondoData>>(
-                    "El número de inversión no es válido.",
+                    MensajeInversionInvalida,
                     CodigoValidacion,
                     []);
             }
@@ -534,7 +534,7 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
             if (!IVR_Rec_Titulos_Id_Valido(tituloId))
             {
                 return DbHelper.CreateErrorResponse<List<IvrRecTitulosAsientoData>>(
-                    "El número de inversión no es válido.",
+                    MensajeInversionInvalida,
                     CodigoValidacion,
                     []);
             }
@@ -646,7 +646,7 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
             if (!IVR_Rec_Titulos_Id_Valido(tituloId))
             {
                 return DbHelper.CreateErrorResponse<List<T>>(
-                    "El número de inversión no es válido.",
+                    MensajeInversionInvalida,
                     CodigoValidacion,
                     []);
             }

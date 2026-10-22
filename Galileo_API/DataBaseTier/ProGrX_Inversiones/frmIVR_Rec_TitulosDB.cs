@@ -5,6 +5,7 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
     public sealed partial class FrmIvrRecTitulosDb
     {
         private const int CodigoValidacion = -2;
+        private const string MensajeInversionInvalida = "El número de inversión no es válido.";
         private readonly PortalDB _portalDb;
 
         public FrmIvrRecTitulosDb(IConfiguration config)
