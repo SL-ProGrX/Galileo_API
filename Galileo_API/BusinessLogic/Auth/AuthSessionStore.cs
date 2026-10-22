@@ -208,6 +208,29 @@ public sealed class AuthSessionStore
         return _sql.RevokeForUser(userId, sessionId, application);
     }
 
+    public AdminSessionPageDto ListAllSessions(AdminSessionQueryDto query, string currentSessionId)
+    {
+        if (_sql is null)
+        {
+            throw new InvalidOperationException("El control global de sesiones requiere AuthSessions:Store=Sql.");
+        }
+        return _sql.ListAllSessions(query, currentSessionId);
+    }
+
+    public AdminSessionRevokeResult RevokeAllSession(
+        string sessionId,
+        string application,
+        int adminUserId,
+        string adminUserName,
+        string reason)
+    {
+        if (_sql is null)
+        {
+            throw new InvalidOperationException("El control global de sesiones requiere AuthSessions:Store=Sql.");
+        }
+        return _sql.RevokeAllSession(sessionId, application, adminUserId, adminUserName, reason);
+    }
+
     public bool IsSessionActive(string sessionId)
     {
         if (_sql is not null)
