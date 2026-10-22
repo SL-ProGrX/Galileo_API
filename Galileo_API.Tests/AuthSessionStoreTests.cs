@@ -101,6 +101,28 @@ public sealed class AuthSessionStoreTests
 
         Assert.Throws<InvalidOperationException>(() => new SqlAuthSessionRepository(configuration));
     }
+
+    [Fact]
+    public void Global_session_listing_fails_closed_without_sql_persistence()
+    {
+        var store = new AuthSessionStore();
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            store.ListAllSessions(new AdminSessionQueryDto(), "current-session"));
+
+        Assert.Contains("AuthSessions:Store=Sql", error.Message);
+    }
+
+    [Fact]
+    public void Global_session_revocation_fails_closed_without_sql_persistence()
+    {
+        var store = new AuthSessionStore();
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            store.RevokeAllSession("other-session", AuthApplications.SSecurity, 7, "admin", "security review"));
+
+        Assert.Contains("AuthSessions:Store=Sql", error.Message);
+    }
 }
 
 public sealed class AuthControllerCookieTests
@@ -142,6 +164,52 @@ public sealed class AuthControllerCookieTests
                 controller.HttpContext.Response.Headers.SetCookie,
                 cookie => cookie is not null &&
                     cookie.Contains($"Path={expectedPath}", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("Jwt__Secret", originalSigningKey);
+        }
+    }
+
+    [Fact]
+    public void Galileo_token_cannot_use_global_ssecurity_session_list()
+    {
+        var originalSigningKey = Environment.GetEnvironmentVariable("Jwt__Secret");
+        Environment.SetEnvironmentVariable("Jwt__Secret", new string('g', 64));
+
+        try
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Jwt:Issuer"] = "tests",
+                    ["Jwt:Audience"] = "tests",
+                })
+                .Build();
+            var auth = new AuthBL(
+                configuration,
+                new AccessTokenService(configuration),
+                new AuthSessionStore(configuration));
+            var controller = new AuthController(auth, configuration)
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext
+                    {
+                        User = new ClaimsPrincipal(new ClaimsIdentity(
+                        [
+                            new Claim(ClaimTypes.NameIdentifier, "7"),
+                            new Claim("UserName", "tester"),
+                            new Claim("sid", new string('a', 32)),
+                            new Claim("app", AuthApplications.Galileo),
+                        ], "test")),
+                    },
+                },
+            };
+
+            var result = controller.GetAllSessions(new AdminSessionQueryDto());
+
+            Assert.IsType<ForbidResult>(result.Result);
         }
         finally
         {

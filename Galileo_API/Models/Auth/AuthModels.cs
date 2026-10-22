@@ -120,6 +120,63 @@ public sealed class UserSessionDto
     public bool IsCurrent { get; init; }
 }
 
+public sealed class AdminSessionQueryDto
+{
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 25;
+    public string Application { get; set; } = "all";
+    public string Status { get; set; } = "all";
+    public string? Search { get; set; }
+    public DateTime? FromUtc { get; set; }
+    public DateTime? ToUtc { get; set; }
+}
+
+public sealed class AdminSessionPageDto
+{
+    public IReadOnlyList<AdminAuthSessionDto> Items { get; init; } = Array.Empty<AdminAuthSessionDto>();
+    public int Page { get; init; }
+    public int PageSize { get; init; }
+    public int TotalCount { get; init; }
+    public int ActiveCount { get; init; }
+    public int StartedLast24Hours { get; init; }
+    public int RevokedLast24Hours { get; init; }
+}
+
+public sealed class AdminAuthSessionDto
+{
+    public string SessionId { get; init; } = string.Empty;
+    public int UserId { get; init; }
+    public string UserName { get; init; } = string.Empty;
+    public string DisplayName { get; init; } = string.Empty;
+    public string Application { get; init; } = string.Empty;
+    public string AuthenticationMethod { get; init; } = string.Empty;
+    public string BrowserName { get; init; } = string.Empty;
+    public string? BrowserVersion { get; init; }
+    public string OperatingSystem { get; init; } = string.Empty;
+    public string? OperatingSystemVersion { get; init; }
+    public string DeviceType { get; init; } = string.Empty;
+    public string? ClientIpAddress { get; init; }
+    public DateTime CreatedAtUtc { get; init; }
+    public DateTime LastActivityAtUtc { get; init; }
+    public DateTime RefreshExpiresAtUtc { get; init; }
+    public DateTime? IdleExpiresAtUtc { get; init; }
+    public DateTime? AbsoluteExpiresAtUtc { get; init; }
+    public DateTime? RevokedAtUtc { get; init; }
+    public string? RevocationReason { get; init; }
+    public string? AdminRevocationReason { get; init; }
+    public string? RevokedByUserName { get; init; }
+    public string Status { get; init; } = string.Empty;
+    public bool IsCurrent { get; init; }
+}
+
+public sealed class AdminSessionRevokeRequestDto
+{
+    public string Application { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
+}
+
+public sealed record AdminSessionRevokeResult(string Status);
+
 public sealed class GalileoSecurityInitializeRequest
 {
     public required int EmpresaId { get; set; }
