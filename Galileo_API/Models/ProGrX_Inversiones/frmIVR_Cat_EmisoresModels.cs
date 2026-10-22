@@ -22,7 +22,7 @@ namespace Galileo.Models.ProGrX_Inversiones
         public string Cod_Emisor { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string Cod_Sector { get; set; } = string.Empty;
-        public bool Activo { get; set; }
+        public bool? Activo { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 }
