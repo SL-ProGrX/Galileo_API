@@ -4,6 +4,8 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Microsoft.AspNetCore.Authorization;
+using Galileo.Models.Auth;
+using System.Security.Claims;
 
 namespace Galileo.Controllers
 {
@@ -13,9 +15,11 @@ namespace Galileo.Controllers
     public class FrmUsUsuariosController : ControllerBase
     {
         readonly FrmUsUsuariosBl UsuariosBL;
+        private readonly IConfiguration _config;
 
         public FrmUsUsuariosController(IConfiguration config)
         {
+            _config = config;
             UsuariosBL = new FrmUsUsuariosBl(config);
         }
 
@@ -55,9 +59,31 @@ namespace Galileo.Controllers
 
 
         [HttpPost("UsuarioGuardarActualizar")]
-        public ErrorDto UsuarioGuardarActualizar(UsuarioModel usuarioModel)
+        public ActionResult<ErrorDto> UsuarioGuardarActualizar(UsuarioModel usuarioModel)
         {
-            return UsuariosBL.UsuarioGuardarActualizar(usuarioModel);
+            var actor = User.FindFirst("UserName")?.Value ?? User.FindFirst(ClaimTypes.Name)?.Value;
+            if (string.IsNullOrWhiteSpace(actor) ||
+                !string.Equals(User.FindFirst("app")?.Value, AuthApplications.SSecurity, StringComparison.OrdinalIgnoreCase))
+                return Forbid();
+            if (usuarioModel.EmpresaId < 0)
+                return BadRequest();
+
+            try
+            {
+                var permissions = new SeguridadPortalBl(_config).sbAdmin_Rols_Load(actor, usuarioModel.EmpresaId);
+                if (!permissions.Admin_Portal && !(usuarioModel.EmpresaId > 0 && permissions.Rol_LocalUsers))
+                    return Forbid();
+
+                usuarioModel.UsuarioRegistro = actor.Trim();
+                return Ok(UsuariosBL.UsuarioGuardarActualizar(usuarioModel,
+                    permissions.Admin_Portal || permissions.Rol_AdminView,
+                    permissions.Admin_Portal || permissions.Rol_DirGlobal));
+            }
+            catch (Exception ex)
+            {
+                return Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                    title: "No fue posible validar los permisos para guardar el usuario.", detail: ex.GetBaseException().Message);
+            }
         }
 
         
