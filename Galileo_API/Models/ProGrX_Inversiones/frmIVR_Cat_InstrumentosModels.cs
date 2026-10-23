@@ -6,11 +6,17 @@ namespace Galileo.Models.ProGrX_Inversiones
         public string descripcion { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
         public string tipo_form { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public decimal base_intereses { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int base_dias { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool valoriza { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int dias_valoriza { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool activo { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public bool isNew { get; set; }
     }
 
