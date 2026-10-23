@@ -80,7 +80,10 @@ namespace Galileo_API.DataBaseTier
             string.Equals(tipo, "TR", StringComparison.OrdinalIgnoreCase)
                 ? SinpeTipo.TR
                 : SinpeTipo.PIN;
-        //TODO: pendiente de resolver
+
+        /// <summary>
+        /// Validación de transacción no implementada para Coope San Gabriel.
+        /// </summary>
         public ErrorDto fxValidacionSinpeTransaccion(int CodEmpresa, string cedula, string cuenta, string usuario)
         {
             try

@@ -13,13 +13,6 @@ namespace Galileo_API.DataBaseTier
             int docBase,
             int contador)
         {
-            Parametros parametros = new()
-            {
-                codEmpresa = codEmpresa,
-                nSolicitud = nSolicitud,
-                usuario = usuario,
-                fecha = fecha
-            };
             return null;
         }
     }
