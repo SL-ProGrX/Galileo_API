@@ -57,5 +57,29 @@ namespace Galileo.Controllers
 
             return Ok(ClientesClasificaBL.Cliente_Selecciona_ObtenerTodos(usuarioAutenticado));
         }
+
+        [HttpGet("Cliente_Selecciona_ObtenerPagina")]
+        [Authorize]
+        public ActionResult<ClienteSeleccionaPagina> Cliente_Selecciona_ObtenerPagina(
+            [FromQuery] string? usuario,
+            [FromQuery] string? filtro = "",
+            [FromQuery] int pagina = 1)
+        {
+            var usuarioAutenticado = User.FindFirst("UserName")?.Value
+                ?? User.FindFirst(ClaimTypes.Name)?.Value;
+            if (string.IsNullOrWhiteSpace(usuarioAutenticado) ||
+                string.IsNullOrWhiteSpace(usuario) ||
+                !string.Equals(usuarioAutenticado.Trim(), usuario.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return Forbid();
+            }
+
+            if (pagina < 1)
+            {
+                return BadRequest("El número de página debe ser mayor que cero.");
+            }
+
+            return Ok(ClientesClasificaBL.Cliente_Selecciona_ObtenerPagina(usuarioAutenticado, filtro, pagina));
+        }
     }
 }

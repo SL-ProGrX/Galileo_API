@@ -895,4 +895,16 @@ namespace Galileo.Models.ProGrX.Credito
         public int? tipo_Id_R { get; set; }
         public string? tipo_Id_Desc { get; set; }
     }
+
+    public sealed class CrConsultaTarjetaCreditoData
+    {
+        public string operacion { get; set; } = string.Empty;
+        public string num_Documento { get; set; } = string.Empty;
+        public string fecha_Pago { get; set; } = string.Empty;
+        public decimal monto { get; set; }
+        public decimal saldo { get; set; }
+        public decimal cuota { get; set; }
+        public int moraDias { get; set; }
+        public string estado { get; set; } = string.Empty;
+    }
 }

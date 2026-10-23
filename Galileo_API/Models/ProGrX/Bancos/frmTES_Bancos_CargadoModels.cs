@@ -290,6 +290,7 @@
 
     public class TesBancosCargadoChequeCambiadoDto
     {
+        public long? IdCarga { get; set; }
         public DateTime? FechaTransaccion { get; set; }
         public string? Documento { get; set; }
         public string? NumeroCheque { get; set; }

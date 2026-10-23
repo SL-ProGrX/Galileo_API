@@ -42,8 +42,9 @@ namespace Galileo.DataBaseTier
                         Maquina = cuentaUsuarioRevisarDto.Maquina,
                     };
 
-                    resultado.Code = connection.Execute(procedure, datosCtaRevisar, commandType: CommandType.StoredProcedure);
-                    resultado.Description = "Ok";
+                    _ = connection.Execute(procedure, datosCtaRevisar, commandType: CommandType.StoredProcedure);
+                    resultado.Code = 0;
+                    resultado.Description = "OK";
                 }
             }
             catch (Exception ex)

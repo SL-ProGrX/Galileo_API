@@ -51,6 +51,16 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             return await _reclasificacionDb.TES_Reclasificacion_CambiaSolicitud(CodEmpresa, data);
         }
 
+        public ErrorDto<bool> TES_Reclasificacion_EsAutorizador(int CodEmpresa, string usuario)
+        {
+            return _reclasificacionDb.TES_Reclasificacion_EsAutorizador(CodEmpresa, usuario);
+        }
+
+        public async Task<ErrorDto> TES_Reclasificacion_CambiaCedula(int CodEmpresa, TesReclasificaCedulaModel data)
+        {
+            return await _reclasificacionDb.TES_Reclasificacion_CambiaCedula(CodEmpresa, data);
+        }
+
         public ErrorDto<TablasListaGenericaModel> TES_Solicitudes_Obtener(int CodEmpresa, string jFiltro)
         {
             FiltrosLazyLoadData filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jFiltro) ?? new FiltrosLazyLoadData();

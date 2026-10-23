@@ -65,6 +65,19 @@ namespace Galileo_API.Controllers
             return await _ReclasificacionBL.TES_Reclasificacion_CambiaSolicitud(CodEmpresa, data);
         }
 
+        [HttpGet("TES_Reclasificacion_EsAutorizador")]
+        public ErrorDto<bool> TES_Reclasificacion_EsAutorizador(int CodEmpresa, string usuario)
+        {
+            return _ReclasificacionBL.TES_Reclasificacion_EsAutorizador(CodEmpresa, usuario);
+        }
+
+        [ValidateAntiForgeryToken]
+        [HttpPost("TES_Reclasificacion_CambiaCedula")]
+        public async Task<ErrorDto> TES_Reclasificacion_CambiaCedula(int CodEmpresa, TesReclasificaCedulaModel data)
+        {
+            return await _ReclasificacionBL.TES_Reclasificacion_CambiaCedula(CodEmpresa, data);
+        }
+
         [HttpGet("TES_Solicitudes_Obtener")]
         public ErrorDto<TablasListaGenericaModel> TES_Solicitudes_Obtener(int CodEmpresa, string filtro)
         {

@@ -53,7 +53,7 @@ namespace Galileo.DataBaseTier
                     return response;
                 }
 
-                response.Code = 1;
+                response.Code = 0;
                 response.Description = "Ok";
                 return response;
             }
@@ -98,10 +98,10 @@ namespace Galileo.DataBaseTier
                     EMAIL = request.Email,
                 };
 
-                resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure)
-                                      .FirstOrDefault();
-
-                resp.Description = "Ok";
+                var resultCode = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure)
+                                           .FirstOrDefault();
+                resp.Code = resultCode < 0 ? resultCode : 0;
+                resp.Description = resultCode < 0 ? $"El procedimiento rechazó la actualización (código {resultCode})." : "OK";
                 return resp;
             }
             catch

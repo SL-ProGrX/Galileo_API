@@ -329,6 +329,20 @@ namespace Galileo.Controllers.ProGrX.Credito
 
         #endregion
 
+        #region Tarjeta de Crédito
+
+        [Authorize]
+        [HttpGet("CR_ConsultaCrd_TarjetaCredito_Obtener")]
+        public ErrorDto<List<CrConsultaTarjetaCreditoData>> CR_ConsultaCrd_TarjetaCredito_Obtener(
+            int CodEmpresa,
+            string cedula,
+            string usuario)
+        {
+            return _BL.CR_ConsultaCrd_TarjetaCredito_Obtener(CodEmpresa, cedula, usuario);
+        }
+
+        #endregion
+
         #region Renuncias
 
         [Authorize]

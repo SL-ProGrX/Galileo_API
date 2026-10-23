@@ -93,7 +93,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     {
                         DepositosXml = depositosXml,
                         RetencionCodigo = request.RetencionCodigo.Trim(),
-                        Usuario = request.Usuario.Trim()
+                        Usuario = request.Usuario.Trim(),
+                        Contabilidad = request.codContabilidad
                     },
                     commandType: System.Data.CommandType.StoredProcedure));
         }

@@ -13,6 +13,8 @@
         public string TelCelular { get; set; } = string.Empty;
         public string TelTrabajo { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+        // Null distinguishes older clients that do not send the department.
+        public string? CodDepartamento { get; set; }
         public string Notas { get; set; } = string.Empty;
         public string UsuarioRegistro { get; set; } = string.Empty;
         public bool? ModoEdicion { get; set; }
