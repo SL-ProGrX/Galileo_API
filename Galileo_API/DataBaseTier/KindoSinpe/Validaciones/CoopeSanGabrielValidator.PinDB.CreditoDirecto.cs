@@ -7,7 +7,7 @@ namespace Galileo_API.DataBaseTier
 {
     public partial class CoopeSanGabrielValidator
     {
-        public ErrorDto fxTesEmisionSinpeCreditoDirecto(
+        public ErrorDto fxTesEmisionSinpeCreditoDirectoTemp(
            int codEmpresa,
            int nSolicitud,
            DateTime fecha,

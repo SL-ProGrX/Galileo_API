@@ -159,7 +159,161 @@ Tipo de Moneda: {account.CurrencyCode} Entidad: {account.EntityCode}-{account.En
             _mKindo.fxTesActualizaHolderId(codEmpresa, solicitud, holder);
         }
 
-       
+
+        private ErrorDto<RespuestaRegistro>? ProcesarRespuestaProveedor(Parametros parametros, ReqBase context, dynamic solicitud, dynamic resp, int canal, string codReferencia)
+        {
+            if (resp?.Errors?.Length > 0)
+                fxGuardaID_RespuestaSinpe(parametros.codEmpresa, resp.Errors[0].Code, parametros.nSolicitud.ToString(), codReferencia);
+
+            if (resp is not null && resp.IsSuccessful)
+            {
+                _mKindo.RegistraMovTransito(parametros.codEmpresa, codReferencia, context.UserCode, canal, resp, solicitud);
+                return null;
+            }
+
+            var errores = resp?.Errors;
+            var tieneErrores = errores is not null && errores.Length > 0;
+            var code = tieneErrores ? errores![0].Code : -1;
+            var msg = tieneErrores ? errores![0].Message : "Error al enviar solicitud a SINPE.";
+            _mKindo.RegistraMovTransito(parametros.codEmpresa, codReferencia, context.UserCode, canal, resp, solicitud);
+
+            return new ErrorDto<RespuestaRegistro>
+            {
+                Code = -1,
+                Description = "Error al enviar solicitud",
+                Result = new RespuestaRegistro
+                {
+                    MotivoError = code,
+                    CodigoReferencia = "",
+                    MotivoErrorInterno = msg
+                }
+            };
+        }
+
+
+        #region Utilidades / Persistencia
+
+        private void fxGuardaID_RespuestaSinpe(int codEmpresa, int codigo, string nSolicitud, string? referenciaSinpe = null)
+        {
+            const string qryExistSinpe = "SELECT COUNT(*) FROM SINPE_MOTIVOS WHERE cod_motivo = @codigo";
+            var existe = DbHelper.ExecuteSingleQuery<int>(_portalDB, codEmpresa, qryExistSinpe, 0, new { codigo });
+            if (existe.Result == 0)
+            {
+                //Agredo codigo de rechazo no existente en tabla de motivos SINPE para referencia
+                const string insertMotivo = @"INSERT INTO SINPE_MOTIVOS (cod_motivo, descripcion, activo) VALUES (@codigo, @descripcion, 1)";
+                DbHelper.ExecuteNonQuery(_portalDB, codEmpresa, insertMotivo, new { codigo, descripcion = $"Rechazo SINPE código {codigo}" });
+            }
+
+
+            const string query = @"UPDATE TES_TRANSACCIONES SET
+                    ID_RECHAZO = @codigo, REFERENCIA_SINPE = COALESCE(@referenciaSinpe, REFERENCIA_SINPE)
+                    WHERE NSOLICITUD = @nsolicitud";
+
+            var parametros = new
+            {
+                codigo,
+                referenciaSinpe,
+                nsolicitud = nSolicitud
+            };
+
+            DbHelper.ExecuteNonQuery(_portalDB, codEmpresa, query, parametros);
+        }
+
+
+
+        #endregion
+
+        #region Construcción requests (PIN / DTR)
+
+        private ReqSendingDynamic BuildPinRequest(ReqBase context, int codEmpresa, dynamic solicitud, string codReferencia)
+        {
+            var req = BuildBaseRequest(context);
+
+            req.Transfer = new Galileo.Models.KindoSinpe.PINTransfer
+            {
+                ChannelRefNumber = codReferencia,
+                Amount = solicitud.Monto,
+                CurrencyCode = MKindoServiceDb.GetCurrencyCodeDes(solicitud.Divisa),
+                Description = BuildDescription(solicitud),
+                OriginEntityIBAN = solicitud.CuentaOrigen,
+                OriginCustomer = BuildOriginCustomer(codEmpresa, solicitud),
+                DestinationCustomer = BuildDestinationCustomer(solicitud),
+                CustomData = BuildCustomData(),
+
+            };
+
+            return req;
+        }
+
+        private ReqSendingDynamic BuildDtrRequest(ReqBase context, int codEmpresa, dynamic solicitud, string codReferencia)
+        {
+            var req = BuildBaseRequest(context);
+
+            req.Debit = new DTR
+            {
+                ChannelRefNumber = codReferencia,
+                Amount = solicitud.Monto,
+                CurrencyCode = MKindoServiceDb.GetCurrencyCodeDes(solicitud.Divisa),
+                Description = BuildDescription(solicitud),
+                OriginCustomer = BuildOriginCustomer(codEmpresa, solicitud),
+                DestinationCustomer = BuildDestinationCustomer(solicitud),
+            };
+
+            return req;
+        }
+
+        private static ReqSendingDynamic BuildBaseRequest(ReqBase context)
+        {
+            return new ReqSendingDynamic
+            {
+                HostId = context.HostId,
+                OperationId = context.OperationId,
+                ClientIPAddress = context.ClientIPAddress,
+                CultureCode = context.CultureCode,
+                UserCode = context.UserCode,
+                CoreIntegrationPoint = 1,
+                CostCenter = 1,
+            };
+        }
+
+        private static string BuildDescription(dynamic s) =>
+            $"{s.Detalle1}{s.Detalle2}{s.Detalle3}{s.Detalle4}";
+
+        private Galileo.Models.KindoSinpe.OriginCustomer BuildOriginCustomer(int codEmpresa, dynamic s)
+        {
+            var ced = (s.CedulaOrigen as string ?? "").Replace("-", "");
+            var info = MKindoServiceDb.Inferir(ced);
+
+            return new Galileo.Models.KindoSinpe.OriginCustomer
+            {
+                Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(info.Codigo), ced),
+                IdType = Convert.ToInt32(info.Codigo),
+                Name = s.NombreOrigen,
+                IBAN = s.CuentaOrigen,
+                DebitIBAN = _mKindo.fxSinpe_Valida_MovimientosPermitidos(codEmpresa, s.CuentaOrigen),
+                Email = (s.CorreoNotifica as string ?? "").Trim()
+            };
+        }
+
+        private static Galileo.Models.KindoSinpe.DestinationCustomer BuildDestinationCustomer(dynamic s)
+        {
+            var ced = (s.Codigo as string ?? "").Replace("-", "");
+            var info = MKindoServiceDb.Inferir(ced);
+
+            return new Galileo.Models.KindoSinpe.DestinationCustomer
+            {
+                Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(info.Codigo), ced),
+                IdType = Convert.ToInt32(info.Codigo),
+                Name = s.Beneficiario,
+                IBAN = s.Cuenta,
+                Email = s.CorreoNotifica
+            };
+        }
+
+        private static List<Galileo.Models.KindoSinpe.CustomField> BuildCustomData() =>
+            new() { new Galileo.Models.KindoSinpe.CustomField { Name = "Galileo", Value = "CSG" } };
+
+        #endregion
     }
-    
+
 }
