@@ -222,18 +222,11 @@ namespace Galileo.DataBaseTier
         /// <returns>Detalle del proveedor.</returns>
         public ErrorDto<ProveedorDto> ProveedorDetalle_Obtener(int CodEmpresa, int Cod_Proveedor)
         {
-            var result = DbHelper.ExecuteSingleQuery<ProveedorDto>(
-                CreatePortalDb(),
-                CodEmpresa,
-                @"SELECT P.*, RTRIM(C.descripcion) AS TipoProv,
-                         ISNULL(Cta.Descripcion, '') AS CuentaConta,
-                         dbo.fxSys_Cuenta_Bancos_Desc(P.cod_Banco) AS Banco_Desc
-                  FROM cxp_proveedores P
-                  INNER JOIN cxp_prov_clas C ON P.cod_clasificacion = C.cod_clasificacion
-                  LEFT JOIN CntX_Cuentas Cta ON P.cod_Cuenta = Cta.cod_Cuenta AND Cta.cod_contabilidad = 1
-                  WHERE P.cod_proveedor = @Cod_Proveedor",
-                null,
-                new { Cod_Proveedor });
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+                connection.QueryFirstOrDefault<ProveedorDto>(
+                    "[spCxP_Proveedor_Load]",
+                    new { Proveedor = Cod_Proveedor },
+                    commandType: CommandType.StoredProcedure));
 
             if (result.Code == 0 && result.Result is not null)
             {
