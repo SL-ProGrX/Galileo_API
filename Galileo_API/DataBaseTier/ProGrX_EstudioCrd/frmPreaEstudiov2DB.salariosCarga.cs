@@ -3,6 +3,7 @@ using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 
 namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 {
@@ -57,7 +58,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 componente_adicional_base = extrasFijas,
                 // Replica el calculo cliente de VB6: txtCompAdicional = base * porc / 100
                 componentes_adicionales = Math.Round(extrasFijas * porcComponenteAdicional / 100m, 2),
-                total_extras = GetDecimal(row, "REBAJO_EXTRAS"),
+                // VB6: sbExtras_Calcula totaliza la columna Monto de la grilla.
+                total_extras = detalle.Extras.Sum(extra => extra.monto),
                 tabla_salarios = detalle.TablaSalarios,
                 extras = detalle.Extras,
                 incapacidades = detalle.Incapacidades,
