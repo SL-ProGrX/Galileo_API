@@ -55,7 +55,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
         /// Normaliza el tipo de documento a su código interno.
         /// Acepta tanto el código como la descripción utilizada por RRHH.
         /// </summary>
-        private string NormalizarTipoDocumento(string? tipoDocumento)
+        private static string NormalizarTipoDocumento(string? tipoDocumento)
         {
             var value = NormalizarTexto(tipoDocumento);
 
