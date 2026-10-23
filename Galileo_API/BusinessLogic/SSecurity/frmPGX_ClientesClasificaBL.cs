@@ -32,5 +32,10 @@ namespace Galileo.BusinessLogic
         {
             return ClientesClasificaDB.Cliente_Selecciona_ObtenerTodos(usuario);
         }
+
+        public ClienteSeleccionaPagina Cliente_Selecciona_ObtenerPagina(string usuario, string? filtro, int pagina)
+        {
+            return ClientesClasificaDB.Cliente_Selecciona_ObtenerPagina(usuario, filtro, pagina);
+        }
     }
 }

@@ -120,7 +120,7 @@ namespace Galileo.DataBaseTier
                                 connection.Execute(strSQL, new { Provincia = dto.Provincia, Descripcion = dto.Descripcion });
                                 ////Bitacora("Modifica", "Provincia : " + dto.Provincia);
                             }
-                            result.Code = 1;
+                            result.Code = 0;
                             result.Description = "Ok";
                             break;
 
@@ -138,7 +138,7 @@ namespace Galileo.DataBaseTier
                                 strSQL = "UPDATE cantones SET descripcion = @Descripcion WHERE Provincia = @TagProvincia AND Canton = @Canton";
                                 connection.Execute(strSQL, new { TagProvincia = dto.TagProvincia, Canton = dto.Canton, Descripcion = dto.Descripcion });
                             }
-                            result.Code = 1;
+                            result.Code = 0;
                             result.Description = "Ok";
                             break;
 
@@ -156,7 +156,7 @@ namespace Galileo.DataBaseTier
                                 strSQL = "UPDATE distritos SET descripcion = @Descripcion WHERE Provincia = @TagProvincia AND Canton = @TagCanton AND Distrito = @Distrito";
                                 connection.Execute(strSQL, new { TagProvincia = dto.TagProvincia, TagCanton = dto.TagCanton, Distrito = dto.Distrito, Descripcion = dto.Descripcion });
                             }
-                            result.Code = 1;
+                            result.Code = 0;
                             result.Description = "Ok";
                             break;
                     }

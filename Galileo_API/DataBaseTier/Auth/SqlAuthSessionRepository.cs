@@ -8,6 +8,7 @@ namespace Galileo.DataBaseTier.Auth;
 /// <summary>Persistence for authenticated sessions; callers generate opaque tokens and pass only SHA-256 hashes.</summary>
 public sealed class SqlAuthSessionRepository
 {
+    private const string UnidentifiedValue = "No identificado";
     private readonly string _connectionString;
     private readonly int? _idleMinutes;
     private readonly int? _absoluteHours;
@@ -231,11 +232,11 @@ public sealed class SqlAuthSessionRepository
         {
             SessionId = sessionId,
             AuthenticationMethod = reader.GetString(1),
-            BrowserName = reader.IsDBNull(2) ? "No identificado" : reader.GetString(2),
+            BrowserName = reader.IsDBNull(2) ? UnidentifiedValue : reader.GetString(2),
             BrowserVersion = reader.IsDBNull(3) ? null : reader.GetString(3),
-            OperatingSystem = reader.IsDBNull(4) ? "No identificado" : reader.GetString(4),
+            OperatingSystem = reader.IsDBNull(4) ? UnidentifiedValue : reader.GetString(4),
             OperatingSystemVersion = reader.IsDBNull(5) ? null : reader.GetString(5),
-            DeviceType = reader.IsDBNull(6) ? "No identificado" : reader.GetString(6),
+            DeviceType = reader.IsDBNull(6) ? UnidentifiedValue : reader.GetString(6),
             ClientIpAddress = reader.IsDBNull(7) ? null : reader.GetString(7),
             CreatedAtUtc = DateTime.SpecifyKind(reader.GetDateTime(8), DateTimeKind.Utc),
             LastActivityAtUtc = DateTime.SpecifyKind(reader.GetDateTime(9), DateTimeKind.Utc),
@@ -268,6 +269,239 @@ public sealed class SqlAuthSessionRepository
         connection.Open();
         return (int)command.ExecuteScalar()! == 1;
     }
+
+    public AdminSessionPageDto ListAllSessions(AdminSessionQueryDto query, string currentSessionId)
+    {
+        const string sql = """
+            DECLARE @now datetime2(7) = @nowUtc;
+
+            SELECT
+                COALESCE(SUM(CASE WHEN RevokedAtUtc IS NULL
+                    AND RefreshExpiresAtUtc > @now
+                    AND (IdleExpiresAtUtc IS NULL OR IdleExpiresAtUtc > @now)
+                    AND (AbsoluteExpiresAtUtc IS NULL OR AbsoluteExpiresAtUtc > @now)
+                    THEN 1 ELSE 0 END), 0) AS ActiveCount,
+                COALESCE(SUM(CASE WHEN CreatedAtUtc >= DATEADD(hour, -24, @now)
+                    THEN 1 ELSE 0 END), 0) AS StartedLast24Hours,
+                COALESCE(SUM(CASE WHEN RevokedAtUtc >= DATEADD(hour, -24, @now)
+                    THEN 1 ELSE 0 END), 0) AS RevokedLast24Hours
+              FROM dbo.PGX_AuthSessions;
+
+            SELECT session.SessionId, session.UserId, session.UserName, session.DisplayName,
+                   session.Application, session.AuthenticationMethod, session.BrowserName,
+                   session.BrowserVersion, session.OperatingSystem, session.OperatingSystemVersion,
+                   session.DeviceType, session.ClientIpAddress, session.CreatedAtUtc,
+                   session.LastActivityAtUtc, session.RefreshExpiresAtUtc, session.IdleExpiresAtUtc,
+                   session.AbsoluteExpiresAtUtc, session.RevokedAtUtc, session.RevocationReason,
+                   audit.Reason AS AdminRevocationReason, audit.AdminUserName AS RevokedByUserName
+              INTO #FilteredSessions
+              FROM dbo.PGX_AuthSessions AS session
+              OUTER APPLY
+              (
+                  SELECT TOP (1) Reason, AdminUserName
+                    FROM dbo.PGX_AuthSessionAdminAudit
+                   WHERE SessionId = session.SessionId AND Outcome = 'revoked'
+                   ORDER BY OccurredAtUtc DESC, AuditId DESC
+              ) AS audit
+             WHERE (@application = 'all' OR session.Application = @application)
+               AND (@fromUtc IS NULL OR session.CreatedAtUtc >= @fromUtc)
+               AND (@toUtc IS NULL OR session.CreatedAtUtc <= @toUtc)
+               AND (@search IS NULL OR UserName LIKE @search ESCAPE '~'
+                    OR DisplayName LIKE @search ESCAPE '~'
+                    OR ClientIpAddress LIKE @search ESCAPE '~'
+                    OR BrowserName LIKE @search ESCAPE '~'
+                    OR DeviceType LIKE @search ESCAPE '~')
+               AND (@status = 'all'
+                    OR (@status = 'active' AND session.RevokedAtUtc IS NULL
+                        AND session.RefreshExpiresAtUtc > @now
+                        AND (session.IdleExpiresAtUtc IS NULL OR session.IdleExpiresAtUtc > @now)
+                        AND (session.AbsoluteExpiresAtUtc IS NULL OR session.AbsoluteExpiresAtUtc > @now))
+                    OR (@status = 'revoked' AND session.RevokedAtUtc IS NOT NULL)
+                    OR (@status = 'expired' AND session.RevokedAtUtc IS NULL
+                        AND (session.RefreshExpiresAtUtc <= @now
+                             OR (session.IdleExpiresAtUtc IS NOT NULL AND session.IdleExpiresAtUtc <= @now)
+                             OR (session.AbsoluteExpiresAtUtc IS NOT NULL AND session.AbsoluteExpiresAtUtc <= @now))));
+
+            SELECT COUNT(*) AS TotalCount FROM #FilteredSessions;
+
+            SELECT SessionId, UserId, UserName, DisplayName, Application,
+                   AuthenticationMethod, BrowserName, BrowserVersion, OperatingSystem,
+                   OperatingSystemVersion, DeviceType, ClientIpAddress, CreatedAtUtc,
+                   LastActivityAtUtc, RefreshExpiresAtUtc, IdleExpiresAtUtc,
+                   AbsoluteExpiresAtUtc, RevokedAtUtc, RevocationReason,
+                   AdminRevocationReason, RevokedByUserName,
+                   CASE WHEN RevokedAtUtc IS NOT NULL THEN 'revoked'
+                        WHEN RefreshExpiresAtUtc <= @now
+                          OR (IdleExpiresAtUtc IS NOT NULL AND IdleExpiresAtUtc <= @now)
+                          OR (AbsoluteExpiresAtUtc IS NOT NULL AND AbsoluteExpiresAtUtc <= @now)
+                            THEN 'expired'
+                        ELSE 'active' END AS Status
+              FROM #FilteredSessions
+             ORDER BY LastActivityAtUtc DESC, CreatedAtUtc DESC, SessionId DESC
+             OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;
+
+            DROP TABLE #FilteredSessions;
+            """;
+
+        using var connection = new SqlConnection(_connectionString);
+        using var command = new SqlCommand(sql, connection);
+        var now = DateTime.UtcNow;
+        object search = string.IsNullOrWhiteSpace(query.Search)
+            ? DBNull.Value
+            : $"%{EscapeLikeFilter(query.Search.Trim())}%";
+        command.Parameters.Add("@nowUtc", SqlDbType.DateTime2).Value = now;
+        command.Parameters.Add("@application", SqlDbType.VarChar, 20).Value = query.Application;
+        command.Parameters.Add("@status", SqlDbType.VarChar, 20).Value = query.Status;
+        command.Parameters.Add("@search", SqlDbType.NVarChar, 320).Value = search;
+        command.Parameters.Add("@fromUtc", SqlDbType.DateTime2).Value = query.FromUtc is DateTime fromUtc
+            ? fromUtc
+            : DBNull.Value;
+        command.Parameters.Add("@toUtc", SqlDbType.DateTime2).Value = query.ToUtc is DateTime toUtc
+            ? toUtc
+            : DBNull.Value;
+        command.Parameters.Add("@offset", SqlDbType.Int).Value = (query.Page - 1) * query.PageSize;
+        command.Parameters.Add("@pageSize", SqlDbType.Int).Value = query.PageSize;
+
+        connection.Open();
+        using var reader = command.ExecuteReader();
+        reader.Read();
+        var activeCount = reader.GetInt32(0);
+        var startedLast24Hours = reader.GetInt32(1);
+        var revokedLast24Hours = reader.GetInt32(2);
+
+        reader.NextResult();
+        reader.Read();
+        var totalCount = reader.GetInt32(0);
+
+        reader.NextResult();
+        var sessions = new List<AdminAuthSessionDto>();
+        while (reader.Read())
+        {
+            sessions.Add(MapAdminSession(reader, currentSessionId));
+        }
+
+        return new AdminSessionPageDto
+        {
+            Items = sessions,
+            Page = query.Page,
+            PageSize = query.PageSize,
+            TotalCount = totalCount,
+            ActiveCount = activeCount,
+            StartedLast24Hours = startedLast24Hours,
+            RevokedLast24Hours = revokedLast24Hours,
+        };
+    }
+
+    public AdminSessionRevokeResult RevokeAllSession(
+        string sessionId,
+        string application,
+        int adminUserId,
+        string adminUserName,
+        string reason)
+    {
+        const string sql = """
+            SET XACT_ABORT ON;
+            DECLARE @now datetime2(7) = SYSUTCDATETIME();
+            DECLARE @targetUserId int = NULL;
+            DECLARE @targetUserName nvarchar(150) = NULL;
+            DECLARE @targetDisplayName nvarchar(250) = NULL;
+            DECLARE @targetRevokedAtUtc datetime2(7) = NULL;
+            DECLARE @targetRefreshExpiresAtUtc datetime2(7) = NULL;
+            DECLARE @targetIdleExpiresAtUtc datetime2(7) = NULL;
+            DECLARE @targetAbsoluteExpiresAtUtc datetime2(7) = NULL;
+            DECLARE @result varchar(20);
+
+            SELECT @targetUserId = UserId,
+                   @targetUserName = UserName,
+                   @targetDisplayName = DisplayName,
+                   @targetRevokedAtUtc = RevokedAtUtc,
+                   @targetRefreshExpiresAtUtc = RefreshExpiresAtUtc,
+                   @targetIdleExpiresAtUtc = IdleExpiresAtUtc,
+                   @targetAbsoluteExpiresAtUtc = AbsoluteExpiresAtUtc
+              FROM dbo.PGX_AuthSessions WITH (UPDLOCK, HOLDLOCK)
+             WHERE SessionId = @sessionId AND Application = @application;
+
+            IF @targetUserId IS NULL
+                SET @result = 'not-found';
+            ELSE IF @targetRevokedAtUtc IS NOT NULL
+                 OR @targetRefreshExpiresAtUtc <= @now
+                 OR (@targetIdleExpiresAtUtc IS NOT NULL AND @targetIdleExpiresAtUtc <= @now)
+                 OR (@targetAbsoluteExpiresAtUtc IS NOT NULL AND @targetAbsoluteExpiresAtUtc <= @now)
+                SET @result = 'already-ended';
+            ELSE
+            BEGIN
+                UPDATE dbo.PGX_AuthSessions
+                   SET RevokedAtUtc = @now, RevocationReason = @revocationReason
+                 WHERE SessionId = @sessionId AND Application = @application
+                   AND RevokedAtUtc IS NULL;
+                SET @result = CASE WHEN @@ROWCOUNT = 1 THEN 'revoked' ELSE 'already-ended' END;
+            END;
+
+            INSERT INTO dbo.PGX_AuthSessionAdminAudit
+                (AdminUserId, AdminUserName, SessionId, TargetUserId, TargetUserName,
+                 TargetDisplayName, Application, Reason, Outcome, OccurredAtUtc)
+            VALUES
+                (@adminUserId, @adminUserName, @sessionId, @targetUserId, @targetUserName,
+                 @targetDisplayName, @application, @reason, @result, @now);
+
+            SELECT @result;
+            """;
+
+        using var connection = new SqlConnection(_connectionString);
+        using var command = new SqlCommand(sql, connection);
+        command.Parameters.Add("@sessionId", SqlDbType.Char, 32).Value = sessionId;
+        command.Parameters.Add("@application", SqlDbType.VarChar, 20).Value = application;
+        command.Parameters.Add("@adminUserId", SqlDbType.Int).Value = adminUserId;
+        command.Parameters.Add("@adminUserName", SqlDbType.NVarChar, 150).Value = adminUserName;
+        command.Parameters.Add("@reason", SqlDbType.NVarChar, 300).Value = reason;
+        command.Parameters.Add("@revocationReason", SqlDbType.VarChar, 50).Value = AuthSessionEndReasons.AdminRevoked;
+        connection.Open();
+        using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
+        command.Transaction = transaction;
+        var outcome = (string?)command.ExecuteScalar() ?? "not-found";
+        transaction.Commit();
+        return new AdminSessionRevokeResult(outcome);
+    }
+
+    private static AdminAuthSessionDto MapAdminSession(SqlDataReader reader, string currentSessionId)
+    {
+        var sessionId = reader.GetString(0).Trim();
+        var userName = reader.IsDBNull(2) ? UnidentifiedValue : reader.GetString(2);
+        return new AdminAuthSessionDto
+        {
+            SessionId = sessionId,
+            UserId = reader.GetInt32(1),
+            UserName = userName,
+            DisplayName = reader.IsDBNull(3) ? userName : reader.GetString(3),
+            Application = reader.GetString(4),
+            AuthenticationMethod = reader.GetString(5),
+            BrowserName = reader.IsDBNull(6) ? UnidentifiedValue : reader.GetString(6),
+            BrowserVersion = reader.IsDBNull(7) ? null : reader.GetString(7),
+            OperatingSystem = reader.IsDBNull(8) ? UnidentifiedValue : reader.GetString(8),
+            OperatingSystemVersion = reader.IsDBNull(9) ? null : reader.GetString(9),
+            DeviceType = reader.IsDBNull(10) ? UnidentifiedValue : reader.GetString(10),
+            ClientIpAddress = reader.IsDBNull(11) ? null : reader.GetString(11),
+            CreatedAtUtc = AsUtc(reader.GetDateTime(12)),
+            LastActivityAtUtc = AsUtc(reader.GetDateTime(13)),
+            RefreshExpiresAtUtc = AsUtc(reader.GetDateTime(14)),
+            IdleExpiresAtUtc = reader.IsDBNull(15) ? null : AsUtc(reader.GetDateTime(15)),
+            AbsoluteExpiresAtUtc = reader.IsDBNull(16) ? null : AsUtc(reader.GetDateTime(16)),
+            RevokedAtUtc = reader.IsDBNull(17) ? null : AsUtc(reader.GetDateTime(17)),
+            RevocationReason = reader.IsDBNull(18) ? null : reader.GetString(18),
+            AdminRevocationReason = reader.IsDBNull(19) ? null : reader.GetString(19),
+            RevokedByUserName = reader.IsDBNull(20) ? null : reader.GetString(20),
+            Status = reader.GetString(21),
+            IsCurrent = string.Equals(sessionId, currentSessionId, StringComparison.Ordinal),
+        };
+    }
+
+    private static DateTime AsUtc(DateTime value) => DateTime.SpecifyKind(value, DateTimeKind.Utc);
+
+    private static string EscapeLikeFilter(string value) => value
+        .Replace("~", "~~", StringComparison.Ordinal)
+        .Replace("%", "~%", StringComparison.Ordinal)
+        .Replace("_", "~_", StringComparison.Ordinal)
+        .Replace("[", "~[", StringComparison.Ordinal);
 
     private static int? ReadPositiveLimit(IConfiguration configuration, string key)
     {
