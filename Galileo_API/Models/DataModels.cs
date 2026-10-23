@@ -227,6 +227,7 @@
         public string? estado { get; set; }
         public bool? autoGestion { get; set; }
         public bool? ventas { get; set; }
+        public bool? conSaldo { get; set; }
         public string? filtro { get; set; }
         public int? pagina { get; set; }
         public int? paginacion { get; set; }

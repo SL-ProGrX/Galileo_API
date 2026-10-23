@@ -32,6 +32,16 @@ namespace Galileo.BusinessLogic.ProGrX.CxP
             return _db.TiposProveedor_Obtener(CodEmpresa);
         }
 
+        public ErrorDto<List<TipoIdentificacionProveedor>> TiposIdentificacion_Obtener(int CodEmpresa)
+        {
+            return _db.TiposIdentificacion_Obtener(CodEmpresa);
+        }
+
+        public ErrorDto<List<TipoIvaProveedor>> TiposIVA_Obtener(int CodEmpresa)
+        {
+            return _db.TiposIVA_Obtener(CodEmpresa);
+        }
+
         public ErrorDto<List<CuentaDesembolso>> CuentasDesembolso_Obtener(int CodEmpresa)
         {
             return _db.CuentasDesembolso_Obtener(CodEmpresa);
