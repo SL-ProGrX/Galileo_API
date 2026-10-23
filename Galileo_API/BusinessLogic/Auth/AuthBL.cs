@@ -849,6 +849,26 @@ public sealed class AuthBL
         return _sessionStore.RevokeForUser(userId, sessionId, application);
     }
 
+    public bool IsPortalAdministrator(string userName)
+    {
+        return !string.IsNullOrWhiteSpace(userName) && _seguridadPortalDb.Sys_Portal_Admin_Valid(userName);
+    }
+
+    public AdminSessionPageDto ListAllSessions(AdminSessionQueryDto query, string currentSessionId)
+    {
+        return _sessionStore.ListAllSessions(query, currentSessionId);
+    }
+
+    public AdminSessionRevokeResult RevokeAllSession(
+        string sessionId,
+        string application,
+        int adminUserId,
+        string adminUserName,
+        string reason)
+    {
+        return _sessionStore.RevokeAllSession(sessionId, application, adminUserId, adminUserName, reason);
+    }
+
     private AuthResponseDto CreateAuthenticatedResponse(
         AuthUserDto user,
         string application,
