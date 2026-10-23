@@ -19,13 +19,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
 
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _securityMainDb;
-        private readonly MRRHHDB _mRRHHDB;
 
         public FrmRHCatEntidadesDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
             _securityMainDb = new MSecurityMainDb(config);
-            _mRRHHDB = new MRRHHDB(config);
         }
 
         #region Helpers privados
@@ -66,7 +64,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                 return value.ToUpperInvariant();
             }
 
-            return NormalizarTexto(_mRRHHDB.fxTipoDocumento(value))
+            return NormalizarTexto(MrrhhDb.fxTipoDocumento(value))
                 .ToUpperInvariant();
         }
 

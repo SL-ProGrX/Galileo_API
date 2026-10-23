@@ -1,15 +1,8 @@
 ﻿namespace Galileo.DataBaseTier
 {
-    public class MRRHHDB
+    public static class MrrhhDb
     {
-        private readonly PortalDB _portalDb;
-
-        public MRRHHDB(IConfiguration config)
-        {
-            _portalDb = new PortalDB(config);
-        }
-
-        public string fxTipoDocumento(string? tipo)
+        public static string fxTipoDocumento(string? tipo)
         {
             return (tipo ?? string.Empty).Trim() switch
             {
