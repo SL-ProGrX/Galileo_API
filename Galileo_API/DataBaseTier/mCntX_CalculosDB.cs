@@ -617,7 +617,8 @@ namespace Galileo_API.DataBaseTier
                     CentroCosto = request.centro_costo ?? "0x0",
                     DivisaOrigen = request.divisa_origen,
                     Pendientes = request.pendientes
-                });
+                },
+                commandTimeout: 180);
         }
 
         public ErrorDto SbCntX_PeriodoCierre(int codEmpresa, CntXCalculosPeriodoProcesoRequest request)
