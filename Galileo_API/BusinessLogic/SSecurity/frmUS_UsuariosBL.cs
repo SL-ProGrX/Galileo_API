@@ -40,9 +40,9 @@ namespace Galileo.BusinessLogic
             return UsuariosDB.UsuarioConsultar(paramUsuario, codEmpresa, AdminView, DirGlobal);
         }
 
-        public ErrorDto UsuarioGuardarActualizar(UsuarioModel usuarioDto)
+        public ErrorDto UsuarioGuardarActualizar(UsuarioModel usuarioDto, bool adminView, bool dirGlobal)
         {
-            return UsuariosDB.UsuarioGuardarActualizar(usuarioDto);
+            return UsuariosDB.UsuarioGuardarActualizar(usuarioDto, adminView, dirGlobal);
         }
 
         public ErrorDto<List<UsuarioClienteDto>> UsuarioClientesConsultar(string nombreUsuario)

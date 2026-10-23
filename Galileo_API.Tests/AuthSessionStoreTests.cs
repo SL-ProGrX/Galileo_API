@@ -1,3 +1,6 @@
+using Galileo.BusinessLogic;
+using Galileo.Models.Security;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using Galileo.BusinessLogic.Auth;
 using Galileo.DataBaseTier.Auth;
@@ -17,6 +20,8 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Galileo_API.Tests;
 
@@ -101,6 +106,75 @@ public sealed class AuthSessionStoreTests
 
         Assert.Throws<InvalidOperationException>(() => new SqlAuthSessionRepository(configuration));
     }
+
+    [Fact]
+    public void Global_session_listing_fails_closed_without_sql_persistence()
+    {
+        var store = new AuthSessionStore();
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            store.ListAllSessions(new AdminSessionQueryDto(), "current-session"));
+
+        Assert.Contains("AuthSessions:Store=Sql", error.Message);
+    }
+
+    [Fact]
+    public void Global_session_revocation_fails_closed_without_sql_persistence()
+    {
+        var store = new AuthSessionStore();
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            store.RevokeAllSession("other-session", AuthApplications.SSecurity, 7, "admin", "security review"));
+
+        Assert.Contains("AuthSessions:Store=Sql", error.Message);
+    }
+}
+
+public sealed class AuthSessionDtoSerializationTests
+{
+    [Theory]
+    [InlineData(typeof(UserSessionDto), false)]
+    [InlineData(typeof(AdminAuthSessionDto), true)]
+    public void Session_response_preserves_flat_json_contract(Type responseType, bool includeAdminDetails)
+    {
+        var expected = JsonNode.Parse("""
+            {
+                "sessionId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "authenticationMethod": "password",
+                "browserName": "Firefox",
+                "browserVersion": "158.0",
+                "operatingSystem": "macOS",
+                "operatingSystemVersion": "10",
+                "deviceType": "Computadora",
+                "clientIpAddress": "127.0.0.1",
+                "createdAtUtc": "2026-10-22T12:00:00Z",
+                "lastActivityAtUtc": "2026-10-22T12:05:00Z",
+                "refreshExpiresAtUtc": "2026-10-29T12:00:00Z",
+                "idleExpiresAtUtc": "2026-10-22T12:35:00Z",
+                "absoluteExpiresAtUtc": "2026-10-22T20:00:00Z",
+                "isCurrent": false
+            }
+            """)!.AsObject();
+
+        if (includeAdminDetails)
+        {
+            expected["userId"] = 7;
+            expected["userName"] = "tester";
+            expected["displayName"] = "Test User";
+            expected["application"] = AuthApplications.Galileo;
+            expected["revokedAtUtc"] = "2026-10-22T12:10:00Z";
+            expected["revocationReason"] = AuthSessionEndReasons.AdminRevoked;
+            expected["adminRevocationReason"] = "Solicitud de seguridad";
+            expected["revokedByUserName"] = "admin";
+            expected["status"] = "revoked";
+        }
+
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var session = JsonSerializer.Deserialize(expected.ToJsonString(), responseType, options);
+        var actual = JsonSerializer.SerializeToNode(session, responseType, options);
+
+        Assert.True(JsonNode.DeepEquals(expected, actual), actual?.ToJsonString());
+    }
 }
 
 public sealed class AuthControllerCookieTests
@@ -142,6 +216,52 @@ public sealed class AuthControllerCookieTests
                 controller.HttpContext.Response.Headers.SetCookie,
                 cookie => cookie is not null &&
                     cookie.Contains($"Path={expectedPath}", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("Jwt__Secret", originalSigningKey);
+        }
+    }
+
+    [Fact]
+    public void Galileo_token_cannot_use_global_ssecurity_session_list()
+    {
+        var originalSigningKey = Environment.GetEnvironmentVariable("Jwt__Secret");
+        Environment.SetEnvironmentVariable("Jwt__Secret", new string('g', 64));
+
+        try
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Jwt:Issuer"] = "tests",
+                    ["Jwt:Audience"] = "tests",
+                })
+                .Build();
+            var auth = new AuthBL(
+                configuration,
+                new AccessTokenService(configuration),
+                new AuthSessionStore(configuration));
+            var controller = new AuthController(auth, configuration)
+            {
+                ControllerContext = new ControllerContext
+                {
+                    HttpContext = new DefaultHttpContext
+                    {
+                        User = new ClaimsPrincipal(new ClaimsIdentity(
+                        [
+                            new Claim(ClaimTypes.NameIdentifier, "7"),
+                            new Claim("UserName", "tester"),
+                            new Claim("sid", new string('a', 32)),
+                            new Claim("app", AuthApplications.Galileo),
+                        ], "test")),
+                    },
+                },
+            };
+
+            var result = controller.GetAllSessions(new AdminSessionQueryDto());
+
+            Assert.IsType<ForbidResult>(result.Result);
         }
         finally
         {
@@ -342,4 +462,75 @@ public sealed class EmpresaSelectionAuthorizationTests
 
         Assert.IsType<ForbidResult>(result.Result);
     }
+}
+
+public sealed class DepartamentosTests
+{
+    private static IConfiguration Configuration() => new ConfigurationBuilder()
+        .AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:DefaultConnString"] = "Server=localhost;Database=test;Integrated Security=true"
+        }).Build();
+
+    [Fact]
+    public void DepartmentValidationNormalizesInputBeforePersistence()
+    {
+        var request = new DepartamentoRequest { Cod_Departamento = "  FIN  ", Descripcion = "  Finanzas  ", Activo = 1 };
+
+        Assert.Null(FrmUsDepartamentosBl.Validar(request));
+        Assert.Equal("FIN", request.Cod_Departamento);
+        Assert.Equal("Finanzas", request.Descripcion);
+    }
+
+    [Theory]
+    [InlineData("", "Finanzas", 1)]
+    [InlineData("12345678901", "Finanzas", 1)]
+    [InlineData("FIN", "   ", 1)]
+    [InlineData("FIN", "Finanzas", 2)]
+    public void InvalidDepartmentIsRejected(string code, string description, short active)
+    {
+        Assert.NotNull(FrmUsDepartamentosBl.Validar(new DepartamentoRequest
+        {
+            Cod_Departamento = code, Descripcion = description, Activo = active
+        }));
+    }
+
+    [Fact]
+    public void DefaultDepartmentCannotBeDeletedOrInactivated()
+    {
+        var service = new FrmUsDepartamentosBl(Configuration());
+
+        Assert.Equal(-1, service.Departamento_Eliminar(" 00 ").Code);
+        Assert.Equal(-1, service.Departamento_Guardar(new DepartamentoRequest
+        {
+            Cod_Departamento = "00", Descripcion = "No Indica", Activo = 0
+        }, "Admin", false).Code);
+    }
+
+    [Theory]
+    [InlineData(null, "ssecurity")]
+    [InlineData("Admin", "galileo")]
+    public void DepartmentMaintenanceRejectsMissingOrWrongApplicationIdentity(string? userName, string application)
+    {
+        var controller = new FrmUsDepartamentosController(Configuration(), NullLogger<FrmUsDepartamentosController>.Instance)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext() }
+        };
+        var claims = new List<Claim> { new("app", application) };
+        if (userName is not null)
+            claims.Add(new Claim("UserName", userName));
+        controller.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "test"));
+
+        Assert.IsType<ForbidResult>(controller.Departamento_ObtenerTodos().Result);
+    }
+
+    [Fact]
+    public void OlderUserPayloadCanOmitDepartment()
+    {
+        var user = System.Text.Json.JsonSerializer.Deserialize<UsuarioModel>("{\"UserName\":\"legacy\"}");
+
+        Assert.NotNull(user);
+        Assert.Null(user.CodDepartamento);
+    }
+
 }

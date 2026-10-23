@@ -73,14 +73,16 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="usuarioDto"></param>
         /// <returns></returns>
-        public ErrorDto UsuarioGuardarActualizar(UsuarioModel usuarioDto)
+        public ErrorDto UsuarioGuardarActualizar(UsuarioModel usuarioDto, bool adminView, bool dirGlobal)
         {
             ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-
+                    connection.Open();
+                    using var transaction = connection.BeginTransaction();
+                    var departamento = ValidarDepartamentoUsuario(connection, transaction, usuarioDto, adminView, dirGlobal);
                     var procedure = "[spPGX_W_Usuario_Guardar_Actualizar]";
 
                     var parameters = new DynamicParameters();
@@ -108,7 +110,15 @@ namespace Galileo.DataBaseTier
 
 
                     // Execute the stored procedure
-                    connection.Execute(procedure, parameters, commandType: CommandType.StoredProcedure);
+                    connection.Execute(procedure, parameters, transaction, commandType: CommandType.StoredProcedure);
+
+                    const string departmentSql = "UPDATE dbo.US_USUARIOS SET COD_DEPARTAMENTO = @Departamento WHERE UserID = @UserId;";
+                    var userId = parameters.Get<int>("@UserId");
+                    if (userId <= 0 || connection.Execute(departmentSql,
+                        new { Departamento = departamento, UserId = userId }, transaction) != 1)
+                        throw new InvalidOperationException("No fue posible guardar el departamento del usuario.");
+
+                    transaction.Commit();
 
                     // Retrieve the output values
                     var esAdminPortal = parameters.Get<bool>("@EsAdminPortal");
@@ -143,6 +153,41 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
+        private static string? ValidarDepartamentoUsuario(SqlConnection connection, SqlTransaction transaction,
+            UsuarioModel usuario, bool adminView, bool dirGlobal)
+        {
+            UsuarioModel? existing = null;
+            if (usuario.ModoEdicion == true)
+            {
+                const string userSql = """
+                    SELECT UserID AS UserId, Usuario AS UserName, COD_DEPARTAMENTO AS CodDepartamento
+                    FROM dbo.US_USUARIOS U WITH (UPDLOCK, HOLDLOCK)
+                    WHERE UserID = @UserId AND Usuario = @UserName
+                      AND (@AdminView = 1 OR ISNULL(KEY_ADMIN, 0) = 0)
+                      AND (@DirGlobal = 1 OR EXISTS
+                          (SELECT 1 FROM dbo.PGX_CLIENTES_USERS C WHERE C.USUARIO = U.USUARIO AND C.COD_EMPRESA = @EmpresaId));
+                    """;
+                existing = connection.QuerySingleOrDefault<UsuarioModel>(userSql,
+                    new { usuario.UserId, usuario.UserName, usuario.EmpresaId, AdminView = adminView, DirGlobal = dirGlobal }, transaction);
+                if (existing is null)
+                    throw new InvalidOperationException("El usuario no existe o no tiene permisos para modificarlo.");
+            }
+
+            if (usuario.CodDepartamento is null && existing is not null)
+                return existing.CodDepartamento;
+
+            var codigo = usuario.CodDepartamento?.Trim() ?? "00";
+            if (codigo.Length is 0 or > 10)
+                throw new InvalidOperationException("Seleccione un departamento válido.");
+
+            const string departmentSql = "SELECT ACTIVO FROM dbo.US_DEPARTAMENTOS WITH (UPDLOCK, HOLDLOCK) WHERE COD_DEPARTAMENTO = @Codigo;";
+            var activo = connection.QuerySingleOrDefault<short?>(departmentSql, new { Codigo = codigo }, transaction);
+            var isUnchanged = existing is not null && string.Equals(existing.CodDepartamento?.Trim(), codigo, StringComparison.OrdinalIgnoreCase);
+            if (activo is null || (activo != 1 && !isUnchanged))
+                throw new InvalidOperationException("El departamento no existe o está inactivo. Actualice el catálogo antes de guardar.");
+            return codigo;
+        }
+
 
         /// <summary>
         /// Consulta un usuario 
@@ -168,6 +213,12 @@ namespace Galileo.DataBaseTier
                         DirGlobal = DirGlobal
                     };
                     result = connection.QueryFirstOrDefault<UsuarioModel>(procedure, values, commandType: CommandType.StoredProcedure);
+
+                    if (result is not null)
+                    {
+                        const string departmentSql = "SELECT COD_DEPARTAMENTO FROM dbo.US_USUARIOS WHERE UserID = @UserId;";
+                        result.CodDepartamento = connection.QuerySingleOrDefault<string>(departmentSql, new { result.UserId });
+                    }
 
                     if (result != null && result.FechaIngreso != null)
                     {
@@ -205,6 +256,7 @@ namespace Galileo.DataBaseTier
                         DirGlobal = DirGlobal
                     };
                     result = connection.Query<UsuarioModel>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    CompletarDepartamentosUsuarios(connection, result);
                 }
             }
             catch (Exception ex)
@@ -231,7 +283,8 @@ namespace Galileo.DataBaseTier
                         CASE WHEN U.ESTADO = 'A' THEN 'Activo' ELSE 'Inactivo' END AS Estado,
                         U.Registro_Fecha AS FechaIngreso,
                         U.Fecha_Mod AS FechaUltimo,
-                        U.Contabiliza AS ContabilizaCobranza
+                        U.Contabiliza AS ContabilizaCobranza,
+                        U.COD_DEPARTAMENTO AS CodDepartamento
                     FROM US_USUARIOS U
                     INNER JOIN PGX_CLIENTES_USERS C ON C.USUARIO = U.USUARIO
                         AND C.COD_EMPRESA = @CodEmpresa
@@ -244,6 +297,20 @@ namespace Galileo.DataBaseTier
                 return DbHelper.CreateErrorResponse<List<UsuarioModel>>(ex.Message);
             }
             return DbHelper.CreateOkResponse(result);
+        }
+
+        private static void CompletarDepartamentosUsuarios(SqlConnection connection, List<UsuarioModel> usuarios)
+        {
+            const string sql = "SELECT UserID AS UserId, COD_DEPARTAMENTO AS CodDepartamento FROM dbo.US_USUARIOS WHERE UserID IN @UserIds;";
+            var usuariosPorId = usuarios.ToLookup(usuario => usuario.UserId);
+            foreach (var ids in usuariosPorId.Select(group => group.Key).Chunk(1000))
+            {
+                foreach (var item in connection.Query<UsuarioModel>(sql, new { UserIds = ids }))
+                {
+                    foreach (var usuario in usuariosPorId[item.UserId])
+                        usuario.CodDepartamento = item.CodDepartamento;
+                }
+            }
         }
 
         public ErrorDto<List<UsuarioClienteDto>> UsuarioClientesConsultar(string nombreUsuario)
@@ -529,9 +596,9 @@ namespace Galileo.DataBaseTier
                         UsuarioRegistra = usuarioClienteRolAsignaDto.UsuarioRegistra,
                         TipoMov = usuarioClienteRolAsignaDto.Estado
                     };
-                    resp.Code = connection.Execute(procedure, values, commandType: CommandType.StoredProcedure);
-                    resp.Description = "Ok";
-                    resp.Description = string.Empty;
+                    _ = connection.Execute(procedure, values, commandType: CommandType.StoredProcedure);
+                    resp.Code = 0;
+                    resp.Description = "OK";
                 }
             }
             catch (Exception ex)

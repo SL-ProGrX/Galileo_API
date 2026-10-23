@@ -19,6 +19,7 @@ public sealed class AuthController : ControllerBase
     private const string InvalidApplicationStatus = "invalidApplication";
     private const string PasswordChangeRequiredStatus = "passwordChangeRequired";
     private const string AccountBlockedStatus = "accountBlocked";
+    private const string SessionsUnavailableStatus = "sessionsUnavailable";
     private readonly AuthBL _auth;
     private readonly ILogger<AuthController>? _logger;
     private readonly int _refreshTokenDays;
@@ -318,7 +319,7 @@ public sealed class AuthController : ControllerBase
         {
             _logger?.LogError(ex, "No fue posible consultar las sesiones del usuario autenticado.");
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
-                new { status = "sessionsUnavailable", detail = "No fue posible consultar las sesiones." });
+                new { status = SessionsUnavailableStatus, detail = "No fue posible consultar las sesiones." });
         }
     }
 
@@ -340,9 +341,146 @@ public sealed class AuthController : ControllerBase
         {
             _logger?.LogError(ex, "No fue posible cerrar una sesión del usuario autenticado.");
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
-                new { status = "sessionsUnavailable", detail = "No fue posible cerrar la sesión." });
+                new { status = SessionsUnavailableStatus, detail = "No fue posible cerrar la sesión." });
         }
     }
+
+    [Authorize]
+    [HttpGet("Admin/Sessions")]
+    public ActionResult<AdminSessionPageDto> GetAllSessions([FromQuery] AdminSessionQueryDto query)
+    {
+        try
+        {
+            if (!TryGetPortalAdminIdentity(out _, out _, out var currentSessionId))
+            {
+                return Forbid();
+            }
+
+            var validationMessage = ValidateAdminSessionQuery(query);
+            if (validationMessage is not null)
+            {
+                return BadRequest(new { status = "invalidSessionQuery", detail = validationMessage });
+            }
+
+            return Ok(_auth.ListAllSessions(query, currentSessionId));
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or Microsoft.Data.SqlClient.SqlException)
+        {
+            _logger?.LogError(ex, "No fue posible consultar el control global de sesiones.");
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new { status = SessionsUnavailableStatus, detail = ex.GetBaseException().Message });
+        }
+    }
+
+    [Authorize]
+    [HttpDelete("Admin/Sessions/{sessionId}")]
+    public IActionResult RevokeAnySession(string sessionId, [FromBody] AdminSessionRevokeRequestDto request)
+    {
+        try
+        {
+            if (!TryGetPortalAdminIdentity(out var adminUserId, out var adminUserName, out var currentSessionId))
+            {
+                return Forbid();
+            }
+
+            if (sessionId.Length != 32 || !sessionId.All(Uri.IsHexDigit)) return BadRequest();
+            if (string.Equals(sessionId, currentSessionId, StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new { status = "useLogoutForCurrentSession" });
+            }
+
+            var application = request.Application?.Trim().ToLowerInvariant() ?? string.Empty;
+            if (!IsSupportedApplication(application))
+            {
+                return BadRequest(new { status = "invalidApplication" });
+            }
+
+            var reason = request.Reason?.Trim() ?? string.Empty;
+            if (reason.Length is < 5 or > 300)
+            {
+                return BadRequest(new { status = "invalidReason", detail = "Indique un motivo entre 5 y 300 caracteres." });
+            }
+
+            var result = _auth.RevokeAllSession(
+                sessionId,
+                application,
+                adminUserId,
+                adminUserName,
+                reason);
+
+            return result.Status switch
+            {
+                "revoked" => NoContent(),
+                "already-ended" => Conflict(new { status = result.Status }),
+                _ => NotFound(new { status = "sessionNotFound" }),
+            };
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or Microsoft.Data.SqlClient.SqlException)
+        {
+            _logger?.LogError(ex, "No fue posible revocar una sesión desde el control global.");
+            return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                new { status = SessionsUnavailableStatus, detail = ex.GetBaseException().Message });
+        }
+    }
+
+    private bool TryGetPortalAdminIdentity(out int userId, out string userName, out string sessionId)
+    {
+        var rawUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        userName = User.FindFirst("UserName")?.Value ?? string.Empty;
+        sessionId = User.FindFirst("sid")?.Value ?? string.Empty;
+        var application = User.FindFirst("app")?.Value ?? string.Empty;
+        if (!int.TryParse(rawUserId, out userId) || userId <= 0 ||
+            string.IsNullOrWhiteSpace(userName) || sessionId.Length != 32 ||
+            !string.Equals(application, AuthApplications.SSecurity, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return _auth.IsPortalAdministrator(userName);
+    }
+
+    private static string? ValidateAdminSessionQuery(AdminSessionQueryDto query)
+    {
+        query.Application = query.Application?.Trim().ToLowerInvariant() ?? string.Empty;
+        query.Status = query.Status?.Trim().ToLowerInvariant() ?? string.Empty;
+        query.Search = string.IsNullOrWhiteSpace(query.Search) ? null : query.Search.Trim();
+
+        if (query.Page is < 1 or > 100_000 || query.PageSize is not (10 or 25 or 30 or 50 or 100))
+        {
+            return "La página o la cantidad de resultados no es válida.";
+        }
+
+        if (query.Application is not ("all" or AuthApplications.Galileo or AuthApplications.SSecurity))
+        {
+            return "La aplicación indicada no es válida.";
+        }
+
+        if (query.Status is not ("all" or "active" or "revoked" or "expired"))
+        {
+            return "El estado indicado no es válido.";
+        }
+
+        if (query.Search?.Length > 150)
+        {
+            return "El texto de búsqueda no puede superar 150 caracteres.";
+        }
+
+        query.FromUtc = NormalizeUtc(query.FromUtc);
+        query.ToUtc = NormalizeUtc(query.ToUtc);
+        if (query.FromUtc is DateTime fromUtc && query.ToUtc is DateTime toUtc && fromUtc > toUtc)
+        {
+            return "La fecha inicial no puede ser posterior a la fecha final.";
+        }
+
+        return null;
+    }
+
+    private static DateTime? NormalizeUtc(DateTime? value) => value?.Kind switch
+    {
+        DateTimeKind.Local => value.Value.ToUniversalTime(),
+        DateTimeKind.Unspecified => DateTime.SpecifyKind(value.Value, DateTimeKind.Utc),
+        _ => value,
+    };
 
     private bool TryGetSessionIdentity(out int userId, out string sessionId, out string application)
     {
