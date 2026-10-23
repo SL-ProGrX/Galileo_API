@@ -39,6 +39,18 @@ namespace Galileo.Controllers
             return _bl.TiposProveedor_Obtener(CodEmpresa);
         }
 
+        [HttpGet("TiposIdentificacion_Obtener")]
+        public ErrorDto<List<TipoIdentificacionProveedor>> TiposIdentificacion_Obtener(int CodEmpresa)
+        {
+            return _bl.TiposIdentificacion_Obtener(CodEmpresa);
+        }
+
+        [HttpGet("TiposIVA_Obtener")]
+        public ErrorDto<List<TipoIvaProveedor>> TiposIVA_Obtener(int CodEmpresa)
+        {
+            return _bl.TiposIVA_Obtener(CodEmpresa);
+        }
+
         [HttpGet("CuentasDesembolso_Obtener")]
         public ErrorDto<List<CuentaDesembolso>> CuentasDesembolso_Obtener(int CodEmpresa)
         {
