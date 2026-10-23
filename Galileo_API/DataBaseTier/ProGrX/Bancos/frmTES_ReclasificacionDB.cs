@@ -343,6 +343,52 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         }
 
         /// <summary>
+        /// Indica si el usuario es un autorizador activo (tes_autorizaciones, estado 'A').
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        public ErrorDto<bool> TES_Reclasificacion_EsAutorizador(int CodEmpresa, string usuario)
+        {
+            return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
+            {
+                const string query = @"select count(1) from tes_autorizaciones where nombre = @usuario and estado = 'A'";
+
+                return conn.QuerySingle<int>(query, new { usuario }) > 0;
+            });
+        }
+
+        /// <summary>
+        /// Cambia cédula, cuenta IBAN y email de la solicitud, previa validación de la clave del autorizador.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public async Task<ErrorDto> TES_Reclasificacion_CambiaCedula(int CodEmpresa, TesReclasificaCedulaModel data)
+        {
+            try
+            {
+                using (var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa))
+                {
+                    var auth = await conn.QueryFirstOrDefaultAsync<dynamic>(
+                        FrmTesAutorizacionSql.Query_Autorizaciones,
+                        new { clave = data.clave, usuario = data.usuario });
+
+                    if (auth == null)
+                    {
+                        return DbHelper.ErrorResponse("Contraseña incorrecta, o el usuario no es un autorizador activo.");
+                    }
+                }
+
+                return await TES_Reclasificacion_CambiaSolicitud(CodEmpresa, data);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Método para obtener la lista de solicitudes de tesorería
         /// </summary>
         /// <param name="CodEmpresa"></param>

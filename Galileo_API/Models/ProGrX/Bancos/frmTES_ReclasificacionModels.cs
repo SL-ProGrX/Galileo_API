@@ -57,6 +57,11 @@ namespace Galileo.Models.ProGrX.Bancos
         public bool emailValido { get; set; } = false;
     }
 
+    public class TesReclasificaCedulaModel : TesReclasificaSolicitudModel
+    {
+        public string? clave { get; set; }
+    }
+
     // =========================
     // Solicitudes
     // =========================

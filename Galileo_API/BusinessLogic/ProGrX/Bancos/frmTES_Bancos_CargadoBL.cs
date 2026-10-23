@@ -180,6 +180,19 @@ namespace Galileo_API.BusinessLogic
         }
 
         /// <summary>
+        /// Consulta la información de una carga de cheques ya existente, sin insertar detalle.
+        /// </summary>
+        public ErrorDto<List<TesBancosCargadoChequeCambiadoDto>>
+            TES_BancosCargado_ChequesCambiados_Refrescar(
+                int CodEmpresa,
+                int idCarga)
+        {
+            return _Db.TES_BancosCargado_ChequesCambiados_Refrescar(
+                CodEmpresa,
+                idCarga);
+        }
+
+        /// <summary>
         /// Asocia los cheques cambiados con las solicitudes localizadas.
         /// </summary>
         public ErrorDto TES_BancosCargado_ChequesCambiados_Procesar(
