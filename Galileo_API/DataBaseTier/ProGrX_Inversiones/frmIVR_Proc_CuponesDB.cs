@@ -1004,14 +1004,13 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
             }
 
             if (requiereDocumento
-                && string.IsNullOrWhiteSpace(
-                    request.documento))
+                && string.IsNullOrWhiteSpace(request.documento))
             {
                 return IVR_Proc_Cupones_Error_Crear(
                     MensajeDocumentoRequerido);
             }
 
-            if (request.cupon is null or <= 0)
+            if (request.cupon.GetValueOrDefault() <= 0)
             {
                 return IVR_Proc_Cupones_Error_Crear(
                     MensajeMontoRequerido);
