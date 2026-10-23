@@ -83,8 +83,9 @@ namespace Galileo.DataBaseTier
                         APP_NOMBRE = "ProGrX_WEB"
                     };
 
-                    resp.Code = connection.Execute(strSQL, parameters);
-                    resp.Description = "Ok";
+                    _ = connection.Execute(strSQL, parameters);
+                    resp.Code = 0;
+                    resp.Description = "OK";
                 }
             }
             catch (SecurityException ex)
