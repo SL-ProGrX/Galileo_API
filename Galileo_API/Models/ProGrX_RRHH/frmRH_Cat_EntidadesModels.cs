@@ -15,7 +15,7 @@
 
         public string estado { get; set; } = string.Empty;
 
-        public bool asoc_solidarista { get; set; }
+        public bool? asoc_solidarista { get; set; }
 
         public string emitir { get; set; } = string.Empty;
 
@@ -54,7 +54,7 @@
     {
         public string? cod_er { get; set; } = string.Empty;
 
-        public int direccion { get; set; }
+        public int? direccion { get; set; }
     }
 
     /// <summary>
@@ -170,6 +170,6 @@
 
         public string cod_concepto { get; set; } = string.Empty;
 
-        public bool asignar { get; set; }
+        public bool? asignar { get; set; }
     }
 }

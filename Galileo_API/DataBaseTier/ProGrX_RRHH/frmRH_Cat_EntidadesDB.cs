@@ -444,13 +444,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                     -1,
                     new RhCatEntidadData());
             }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<RhCatEntidadData>(
-                    ex.Message,
-                    -1,
-                    new RhCatEntidadData());
-            }
         }
 
         /// <summary>
@@ -496,13 +489,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                     codigo);
             }
             catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<RhCatEntidadData>(
-                    ex.Message,
-                    -1,
-                    new RhCatEntidadData());
-            }
-            catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<RhCatEntidadData>(
                     ex.Message,
@@ -558,14 +544,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                 return DbHelper.CreateOkResponse(lista);
             }
             catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<
-                    List<RhCatEntidadBusquedaData>>(
-                    ex.Message,
-                    -1,
-                    new List<RhCatEntidadBusquedaData>());
-            }
-            catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<
                     List<RhCatEntidadBusquedaData>>(
@@ -690,11 +668,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                     "Información guardada satisfactoriamente.");
             }
             catch (SqlException ex)
-            {
-                return DbHelper.ErrorResponse(
-                    ex.Message);
-            }
-            catch (Exception ex)
             {
                 return DbHelper.ErrorResponse(
                     ex.Message);
@@ -927,14 +900,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                     -1,
                     new List<RhCatEntidadBancoData>());
             }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<
-                    List<RhCatEntidadBancoData>>(
-                    ex.Message,
-                    -1,
-                    new List<RhCatEntidadBancoData>());
-            }
         }
         private sealed class BancoSgtData
         {
@@ -1031,14 +996,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                     -1,
                     resultado);
             }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<
-                    RhCatEntidadCuentasLista>(
-                    ex.Message,
-                    -1,
-                    resultado);
-            }
         }
 
         #endregion
@@ -1117,14 +1074,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                     -1,
                     resultado);
             }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<
-                    RhCatEntidadConceptosLista>(
-                    ex.Message,
-                    -1,
-                    resultado);
-            }
         }
 
         /// <summary>
@@ -1137,9 +1086,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
         /// <param name="request"></param>
         /// <returns></returns>
         public ErrorDto RH_CatEntidades_Concepto_Actualizar(
-            int CodEmpresa,
-            string? usuario,
-            RhCatEntidadConceptoActualizarRequest? request)
+    int CodEmpresa,
+    string? usuario,
+    RhCatEntidadConceptoActualizarRequest? request)
         {
             var validacion =
                 ValidarConceptoActualizar(request);
@@ -1162,11 +1111,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                 var codConcepto =
                     NormalizarTexto(request.cod_concepto);
 
+                bool asignar = request.asignar == true;
+
                 var filas = ActualizarConcepto(
                     connection,
                     codEr,
                     codConcepto,
-                    request.asignar);
+                    asignar);
 
                 if (filas <= 0)
                 {
@@ -1176,16 +1127,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                 }
 
                 return DbHelper.OkResponse(
-                    request.asignar
+                    asignar
                         ? "Concepto asignado correctamente."
                         : "Concepto desasignado correctamente.");
             }
             catch (SqlException ex)
-            {
-                return DbHelper.ErrorResponse(
-                    ex.Message);
-            }
-            catch (Exception ex)
             {
                 return DbHelper.ErrorResponse(
                     ex.Message);
