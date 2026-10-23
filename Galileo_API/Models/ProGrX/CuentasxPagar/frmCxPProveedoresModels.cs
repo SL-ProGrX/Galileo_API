@@ -54,7 +54,9 @@
         public bool Web_Ferias { get; set; } = false;
         public string HaciendaTipoRegimen { get; set; } = "T";
         public int HaciendaImpuestos { get; set; } = 1;
+        [System.Text.Json.Serialization.JsonRequired]
         public int I_Extranjero { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
         public int I_Convenio { get; set; }
         public string Cod_IVA { get; set; } = string.Empty;
         public Nullable<DateTime> registro_fecha { get; set; }
