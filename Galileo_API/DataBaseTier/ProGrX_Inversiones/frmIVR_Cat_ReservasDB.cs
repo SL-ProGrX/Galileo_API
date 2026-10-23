@@ -277,6 +277,7 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
 
             var resultado = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
             {
+                connection.Open();
                 using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
                 var reserva = req.Cod_Reserva.Trim();
                 const string sqlReserva = "SELECT COUNT(*) FROM IVR_RESERVAS WHERE COD_RESERVA = @reserva;";
