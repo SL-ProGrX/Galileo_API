@@ -16,4 +16,12 @@
         public string Nombre_Largo { get; set; } = string.Empty;
         public string Nombre_Corto { get; set; } = string.Empty;
     }
+
+    public class ClienteSeleccionaPagina
+    {
+        public List<ClienteSelecciona> Empresas { get; set; } = [];
+        public int TotalRegistros { get; set; }
+        public int Pagina { get; set; }
+        public int TamanoPagina { get; set; }
+    }
 }

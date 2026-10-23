@@ -23,7 +23,7 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
                 connection.QueryFirst<int>("spPersona_Portal_Sincroniza", commandType: CommandType.StoredProcedure);
-                resp.Code = 1;
+                resp.Code = 0;
                 resp.Description = "Ok";
             }
             catch (Exception ex)
@@ -51,7 +51,7 @@ namespace Galileo.DataBaseTier
                         };
                         // Lógica para el Paso 1
                         connection.Execute("spPortal_Sincroniza_WebApps", values, commandType: CommandType.StoredProcedure);
-                        resp.Code = 1;
+                        resp.Code = 0;
                         resp.Description = "Paso 1 ok";
                     }
                 }
@@ -98,7 +98,7 @@ namespace Galileo.DataBaseTier
                                                commandType: CommandType.StoredProcedure);
                         }
 
-                        resp.Code = 1;
+                        resp.Code = 0;
                         resp.Description = "Paso 2 ok";
                     }
                 }
@@ -115,7 +115,7 @@ namespace Galileo.DataBaseTier
                             Cedula = ""
                         };
                         connection.Execute("spPortal_Sincroniza_WebApps", values, commandType: CommandType.StoredProcedure);
-                        resp.Code = 1;
+                        resp.Code = 0;
                         resp.Description = "Paso 3 ok";
                     }
                 }

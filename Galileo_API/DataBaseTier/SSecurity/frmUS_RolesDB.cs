@@ -63,7 +63,7 @@ namespace Galileo.DataBaseTier
                             strSQL = "update us_roles set cod_empresa = null where cod_rol = @CodRol";
                             connection.Execute(strSQL, new { req.CodRol });
                             RegistrarBitacora(req, "ELIMINA", $"Cliente desvinculado del rol: {req.CodRol}");
-                            resp.Code = 1;
+                            resp.Code = 0;
                             resp.Description = "Cliente Desvinculado al Rol, satisfactoriamente!";
                             break;
 
@@ -162,7 +162,7 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                resp.Code = 1;
+                resp.Code = -1;
                 resp.Description = ex.Message;
             }
             return resp;

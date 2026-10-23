@@ -164,56 +164,91 @@ namespace Galileo.DataBaseTier
 
         public List<ClienteSelecciona> Cliente_Selecciona_ObtenerTodos(string usuario)
         {
-            List<ClienteSelecciona> data;
-            try
+            return Cliente_Selecciona_ObtenerPagina(usuario, string.Empty, 1).Empresas;
+        }
+
+        public ClienteSeleccionaPagina Cliente_Selecciona_ObtenerPagina(string usuario, string? filtro, int pagina)
+        {
+            const int tamanoPagina = 30;
+            var textoFiltro = filtro?.Trim() ?? string.Empty;
+            var filtroSql = string.IsNullOrEmpty(textoFiltro) ? string.Empty : $"%{textoFiltro}%";
+            var offset = (long)(pagina - 1) * tamanoPagina;
+            var esAdministradorPortal = new SeguridadPortalDb(_config).Sys_Portal_Admin_Valid(usuario);
+            using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
+                if (esAdministradorPortal)
                 {
-                    var procedure = "[spSEG_Admin_Client_Access_List]";
-                    var values = new
+                    const string where = "WHERE (@Filtro = '' OR CONVERT(varchar(20), [COD_EMPRESA]) LIKE @Filtro " +
+                        "OR [NOMBRE_CORTO] LIKE @Filtro OR [NOMBRE_LARGO] LIKE @Filtro)";
+                    var parametros = new { Filtro = filtroSql, Offset = offset, TamanoPagina = tamanoPagina };
+                    var totalRegistros = connection.QuerySingle<int>(
+                        $"SELECT COUNT(1) FROM [PGX_Portal].[dbo].[PGX_CLIENTES] {where}",
+                        parametros);
+                    var empresas = connection.Query<ClienteSelecciona>(
+                        $"SELECT [COD_EMPRESA] AS Cod_Empresa, [NOMBRE_LARGO] AS Nombre_Largo, [NOMBRE_CORTO] AS Nombre_Corto " +
+                        $"FROM [PGX_Portal].[dbo].[PGX_CLIENTES] {where} " +
+                        "ORDER BY [COD_EMPRESA] OFFSET @Offset ROWS FETCH NEXT @TamanoPagina ROWS ONLY",
+                        parametros).ToList();
+
+                    return new ClienteSeleccionaPagina
                     {
-                        Usuario = usuario,
-                        Filtro = "",
-                        Top = 30,
+                        Empresas = empresas,
+                        TotalRegistros = totalRegistros,
+                        Pagina = pagina,
+                        TamanoPagina = tamanoPagina,
                     };
-
-                    data = connection.Query<ClienteSelecciona>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
-
-                    // La selección solo ofrece empresas asignadas al usuario,
-                    // aunque el procedimiento administrativo devuelva otras.
-                    var empresasAsignadas = new LogonDB(_config).ClientesObtener(usuario);
-                    if (empresasAsignadas.Code is < 0 || empresasAsignadas.Result is null)
-                    {
-                        throw new InvalidOperationException("No fue posible validar las empresas asignadas al usuario.");
-                    }
-
-                    var codigosAsignados = empresasAsignadas.Result
-                        .Select(empresa =>
-                        {
-                            if (int.TryParse(empresa.Cod_Empresa, out var codigo))
-                            {
-                                return codigo;
-                            }
-
-                            if (int.TryParse(empresa.CodEmpresa, out codigo))
-                            {
-                                return codigo;
-                            }
-
-                            return 0;
-                        })
-                        .Where(codigo => codigo > 0)
-                        .ToHashSet();
-                    data = data.Where(empresa => codigosAsignados.Contains(empresa.Cod_Empresa)).ToList();
-
                 }
+
+                var procedure = "[spSEG_Admin_Client_Access_List]";
+                var values = new
+                {
+                    Usuario = usuario,
+                    Filtro = textoFiltro,
+                    Top = tamanoPagina,
+                };
+
+                var data = connection.Query<ClienteSelecciona>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+
+                // Los administradores por empresa solo pueden elegir empresas asignadas.
+                var empresasAsignadas = new LogonDB(_config).ClientesObtener(usuario);
+                if (empresasAsignadas.Code is < 0 || empresasAsignadas.Result is null)
+                {
+                    throw new InvalidOperationException("No fue posible validar las empresas asignadas al usuario.");
+                }
+
+                var codigosAsignados = empresasAsignadas.Result
+                    .Select(empresa =>
+                    {
+                        if (int.TryParse(empresa.Cod_Empresa, out var codigo))
+                        {
+                            return codigo;
+                        }
+
+                        if (int.TryParse(empresa.CodEmpresa, out codigo))
+                        {
+                            return codigo;
+                        }
+
+                        return 0;
+                    })
+                    .Where(codigo => codigo > 0)
+                    .ToHashSet();
+                var empresasFiltradas = data
+                    .Where(empresa => codigosAsignados.Contains(empresa.Cod_Empresa))
+                    .Where(empresa => string.IsNullOrEmpty(textoFiltro) ||
+                        empresa.Cod_Empresa.ToString().Contains(textoFiltro, StringComparison.OrdinalIgnoreCase) ||
+                        empresa.Nombre_Corto.Contains(textoFiltro, StringComparison.OrdinalIgnoreCase) ||
+                        empresa.Nombre_Largo.Contains(textoFiltro, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                return new ClienteSeleccionaPagina
+                {
+                    Empresas = empresasFiltradas.Skip((int)Math.Min(offset, int.MaxValue)).Take(tamanoPagina).ToList(),
+                    TotalRegistros = empresasFiltradas.Count,
+                    Pagina = pagina,
+                    TamanoPagina = tamanoPagina,
+                };
             }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-                data = new List<ClienteSelecciona>();
-            }
-            return data;
         }
 
         public ErrorDto Cliente_Clasifica_Guardar(ClienteClasifica request)

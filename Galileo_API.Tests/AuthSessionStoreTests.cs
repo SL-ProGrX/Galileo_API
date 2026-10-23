@@ -1,3 +1,6 @@
+using Galileo.BusinessLogic;
+using Galileo.Models.Security;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using Galileo.BusinessLogic.Auth;
 using Galileo.DataBaseTier.Auth;
@@ -459,4 +462,75 @@ public sealed class EmpresaSelectionAuthorizationTests
 
         Assert.IsType<ForbidResult>(result.Result);
     }
+}
+
+public sealed class DepartamentosTests
+{
+    private static IConfiguration Configuration() => new ConfigurationBuilder()
+        .AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:DefaultConnString"] = "Server=localhost;Database=test;Integrated Security=true"
+        }).Build();
+
+    [Fact]
+    public void DepartmentValidationNormalizesInputBeforePersistence()
+    {
+        var request = new DepartamentoRequest { Cod_Departamento = "  FIN  ", Descripcion = "  Finanzas  ", Activo = 1 };
+
+        Assert.Null(FrmUsDepartamentosBl.Validar(request));
+        Assert.Equal("FIN", request.Cod_Departamento);
+        Assert.Equal("Finanzas", request.Descripcion);
+    }
+
+    [Theory]
+    [InlineData("", "Finanzas", 1)]
+    [InlineData("12345678901", "Finanzas", 1)]
+    [InlineData("FIN", "   ", 1)]
+    [InlineData("FIN", "Finanzas", 2)]
+    public void InvalidDepartmentIsRejected(string code, string description, short active)
+    {
+        Assert.NotNull(FrmUsDepartamentosBl.Validar(new DepartamentoRequest
+        {
+            Cod_Departamento = code, Descripcion = description, Activo = active
+        }));
+    }
+
+    [Fact]
+    public void DefaultDepartmentCannotBeDeletedOrInactivated()
+    {
+        var service = new FrmUsDepartamentosBl(Configuration());
+
+        Assert.Equal(-1, service.Departamento_Eliminar(" 00 ").Code);
+        Assert.Equal(-1, service.Departamento_Guardar(new DepartamentoRequest
+        {
+            Cod_Departamento = "00", Descripcion = "No Indica", Activo = 0
+        }, "Admin", false).Code);
+    }
+
+    [Theory]
+    [InlineData(null, "ssecurity")]
+    [InlineData("Admin", "galileo")]
+    public void DepartmentMaintenanceRejectsMissingOrWrongApplicationIdentity(string? userName, string application)
+    {
+        var controller = new FrmUsDepartamentosController(Configuration(), NullLogger<FrmUsDepartamentosController>.Instance)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext() }
+        };
+        var claims = new List<Claim> { new("app", application) };
+        if (userName is not null)
+            claims.Add(new Claim("UserName", userName));
+        controller.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "test"));
+
+        Assert.IsType<ForbidResult>(controller.Departamento_ObtenerTodos().Result);
+    }
+
+    [Fact]
+    public void OlderUserPayloadCanOmitDepartment()
+    {
+        var user = System.Text.Json.JsonSerializer.Deserialize<UsuarioModel>("{\"UserName\":\"legacy\"}");
+
+        Assert.NotNull(user);
+        Assert.Null(user.CodDepartamento);
+    }
+
 }
