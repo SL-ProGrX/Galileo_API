@@ -24,6 +24,11 @@ namespace Galileo.DataBaseTier
 
         public static IActionResult Error(string message, int status = 500)
             => new ObjectResult(new { Code = -1, Description = message }) { StatusCode = status };
+
+        /// <summary>
+        /// Referencia corta que relaciona la respuesta del cliente con el detalle registrado en el log del servidor.
+        /// </summary>
+        public static string NuevaReferencia() => Guid.NewGuid().ToString("N")[..8];
     }
 }
 

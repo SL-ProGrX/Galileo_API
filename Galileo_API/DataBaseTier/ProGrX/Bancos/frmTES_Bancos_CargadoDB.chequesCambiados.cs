@@ -54,17 +54,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         transaction);
                 }
 
-                var result = conn.Query<TesBancosCargadoChequeCambiadoDto>(
-                    "dbo.spTesObtenerInformacionCheques",
-                    new { pConsecutivoCarga = idCarga },
-                    transaction,
-                    commandType: CommandType.StoredProcedure)
-                    .ToList();
+                var result = ConsultarInformacionCheques(conn, idCarga, transaction);
 
-                conn.Execute(
-                    "DELETE dbo.TesCargaMovimientosBancariosDetalleTemp WHERE IdCarga = @IdCarga;",
-                    new { IdCarga = idCarga },
-                    transaction);
+
 
                 transaction.Commit();
                 return DbHelper.CreateOkResponse(result);
@@ -72,6 +64,31 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             catch (Exception ex)
             {
                 transaction.Rollback();
+                return DbHelper.CreateErrorResponse<List<TesBancosCargadoChequeCambiadoDto>>(
+                    ex.Message);
+            }
+        }
+
+        public ErrorDto<List<TesBancosCargadoChequeCambiadoDto>>
+            TES_BancosCargado_ChequesCambiados_Refrescar(
+                int CodEmpresa,
+                int idCarga)
+        {
+            if (idCarga <= 0)
+            {
+                return DbHelper.CreateErrorResponse<List<TesBancosCargadoChequeCambiadoDto>>(
+                    "Debe indicar la carga de cheques a consultar.");
+            }
+
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            conn.Open();
+
+            try
+            {
+                return DbHelper.CreateOkResponse(ConsultarInformacionCheques(conn, idCarga));
+            }
+            catch (Exception ex)
+            {
                 return DbHelper.CreateErrorResponse<List<TesBancosCargadoChequeCambiadoDto>>(
                     ex.Message);
             }
@@ -136,6 +153,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     }
                 }
 
+                conn.ExecuteReader("DELETE FROM TesCargaMovimientosBancariosDetalleTemp WHERE IdCarga= @IdCarga",
+                    new { IdCarga = procesables[0].IdCarga });
+
+
                 if (mensajes.Length > 0)
                 {
                     return DbHelper.ErrorResponse(mensajes.ToString());
@@ -146,8 +167,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             }
             catch (Exception ex)
             {
+                conn.ExecuteReader("DELETE FROM TesCargaMovimientosBancariosDetalleTemp WHERE IdCarga= @IdCarga",
+                    new { IdCarga = procesables[0].IdCarga });
                 return DbHelper.ErrorResponse(ex.Message);
             }
+        }
+
+        private static List<TesBancosCargadoChequeCambiadoDto> ConsultarInformacionCheques(
+            IDbConnection conn,
+            int idCarga,
+            IDbTransaction? transaction = null)
+        {
+            return conn.Query<TesBancosCargadoChequeCambiadoDto>(
+                "dbo.spTesObtenerInformacionCheques",
+                new { pConsecutivoCarga = idCarga },
+                transaction,
+                commandType: CommandType.StoredProcedure)
+                .ToList();
         }
 
         private static int CrearCargaMovimientosBancarios(

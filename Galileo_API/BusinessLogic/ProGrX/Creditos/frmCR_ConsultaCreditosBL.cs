@@ -250,6 +250,14 @@ namespace Galileo.BusinessLogic.ProGrX.Credito
 
         #endregion
 
+        #region Tarjeta de Crédito
+        public ErrorDto<List<CrConsultaTarjetaCreditoData>> CR_ConsultaCrd_TarjetaCredito_Obtener(int CodEmpresa, string cedula, string usuario)
+        {
+            return _Db.CR_ConsultaCrd_TarjetaCredito_Obtener(CodEmpresa, cedula, usuario);
+        }
+
+        #endregion
+
         #region Renuncias
 
         public ErrorDto<List<AfiRenunciaTransitoData>> AFI_ConsultaRenunciaTransito(int CodEmpresa, string cedula)

@@ -178,6 +178,13 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
                 request);
         }
 
+        [HttpGet("TES_BancosCargado_ChequesCambiados_Refrescar")]
+        public ErrorDto<List<TesBancosCargadoChequeCambiadoDto>>
+            TES_BancosCargado_ChequesCambiados_Refrescar(int CodEmpresa, int idCarga)
+        {
+            return _bl.TES_BancosCargado_ChequesCambiados_Refrescar(CodEmpresa, idCarga);
+        }
+
         [ValidateAntiForgeryToken]
         [HttpPost("TES_BancosCargado_ChequesCambiados_Procesar")]
         public ErrorDto TES_BancosCargado_ChequesCambiados_Procesar(
