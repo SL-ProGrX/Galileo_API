@@ -41,8 +41,9 @@ namespace Galileo.DataBaseTier
                             UsuarioMovimiento = datos.UsuarioMovimiento
                         };
 
-                        resultado.Code = connection.Execute("spPGX_W_Cuenta_Restablecer", datosCtaReestablecer, commandType: CommandType.StoredProcedure);
-                        resultado.Description = "Ok";
+                        _ = connection.Execute("spPGX_W_Cuenta_Restablecer", datosCtaReestablecer, commandType: CommandType.StoredProcedure);
+                        resultado.Code = 0;
+                        resultado.Description = "OK";
                     }
                 }
                 else
