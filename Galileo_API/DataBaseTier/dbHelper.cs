@@ -124,7 +124,8 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Ejecuta una instrucción sin retorno usando una empresa previamente validada.
         /// </summary>
-        public static ErrorDto ExecuteNonQuery(PortalDB portalDb, int codEmpresa, string sql, object? parameters = null)
+        public static ErrorDto ExecuteNonQuery(PortalDB portalDb, int codEmpresa, string sql, object? parameters = null, 
+            int? commandTimeout = null)
         {
             var result = CreateOkResponse();
 
@@ -133,8 +134,13 @@ namespace Galileo.DataBaseTier
                 var codEmpresaSeguro = NormalizarCodEmpresa(codEmpresa);
                 var sqlSeguro = ValidarSql(sql);
 
-                using var connection = portalDb.CreateConnection(codEmpresaSeguro);
-                connection.Execute(sqlSeguro, parameters);
+                using var connection =
+                    portalDb.CreateConnection(codEmpresaSeguro);
+
+                connection.Execute(
+                    sqlSeguro,
+                    parameters,
+                    commandTimeout: commandTimeout);
             }
             catch (Exception ex)
             {

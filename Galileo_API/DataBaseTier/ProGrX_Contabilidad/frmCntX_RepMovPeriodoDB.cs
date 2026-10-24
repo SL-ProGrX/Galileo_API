@@ -376,131 +376,165 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="mesInicial">Mes inicial del periodo fiscal.</param>
         /// <param name="anioInicial">Año inicial del periodo fiscal.</param>
         private static void ActualizarMovimientosCatalogo(
-            SqlConnection connection,
-            SqlTransaction transaction,
-            int codContabilidad,
-            CntxRepMovPeriodoFiltroDto f,
-            int mesInicial,
-            int anioInicial)
+    SqlConnection connection,
+    SqlTransaction transaction,
+    int codContabilidad,
+    CntxRepMovPeriodoFiltroDto f,
+    int mesInicial,
+    int anioInicial)
         {
+            if (mesInicial is < 1 or > 12
+                || anioInicial is < 1 or > 9999)
+            {
+                throw new ArgumentException(
+                    $"Periodo fiscal inválido: año {anioInicial}, mes {mesInicial}.");
+            }
+
             var unidad = NormalizarOpcion(f.unidad, "C");
             var centroCosto = NormalizarOpcion(f.centroCosto, "T");
 
             const string sql = @"
-                DECLARE @fecha_inicial date = DATEFROMPARTS(@anio_inicial, @mes_inicial, 1);
+        DECLARE @fecha_inicial date =
+            DATEFROMPARTS(@anio_inicial, @mes_inicial, 1);
 
-                ;WITH MovimientosBase AS
-                (
-                    SELECT M.cod_cuenta, M.saldo_inicial, M.total_debitos, M.total_creditos,
-                           DATEFROMPARTS(M.anio, M.mes, 1) AS fecha
-                    FROM vCntX_Mov_Cuentas_General M
-                    WHERE @unidad = ''
-                      AND @centro_costo = ''
-                      AND M.cod_contabilidad = @cod_contabilidad
+        ;WITH Meses AS
+        (
+            SELECT
+                N.numero + 1 AS posicion,
+                YEAR(DATEADD(month, N.numero, @fecha_inicial)) AS anio,
+                MONTH(DATEADD(month, N.numero, @fecha_inicial)) AS mes
+            FROM
+                (VALUES
+                    (0), (1), (2), (3), (4), (5),
+                    (6), (7), (8), (9), (10), (11)
+                ) N(numero)
+        ),
+        MovimientosBase AS
+        (
+            SELECT
+                M.cod_cuenta,
+                M.anio,
+                M.mes,
+                M.saldo_inicial,
+                M.total_debitos,
+                M.total_creditos
+            FROM vCntX_Mov_Cuentas_General M
+            WHERE @unidad = ''
+              AND @centro_costo = ''
+              AND M.cod_contabilidad = @cod_contabilidad
 
-                    UNION ALL
+            UNION ALL
 
-                    SELECT M.cod_cuenta, M.saldo_inicial, M.total_debitos, M.total_creditos,
-                           DATEFROMPARTS(M.anio, M.mes, 1) AS fecha
-                    FROM vCntX_Mov_Cuentas_CentroCosto M
-                    WHERE @unidad = ''
-                      AND @centro_costo <> ''
-                      AND M.cod_contabilidad = @cod_contabilidad
-                      AND M.cod_centro_costo = @centro_costo
+            SELECT
+                M.cod_cuenta,
+                M.anio,
+                M.mes,
+                M.saldo_inicial,
+                M.total_debitos,
+                M.total_creditos
+            FROM vCntX_Mov_Cuentas_CentroCosto M
+            WHERE @unidad = ''
+              AND @centro_costo <> ''
+              AND M.cod_contabilidad = @cod_contabilidad
+              AND M.cod_centro_costo = @centro_costo
 
-                    UNION ALL
+            UNION ALL
 
-                    SELECT M.cod_cuenta, M.saldo_inicial, M.total_debitos, M.total_creditos,
-                           DATEFROMPARTS(M.anio, M.mes, 1) AS fecha
-                    FROM vCntX_Mov_Cuentas_Unidad M
-                    WHERE @unidad <> ''
-                      AND @centro_costo = ''
-                      AND M.cod_contabilidad = @cod_contabilidad
-                      AND M.cod_unidad = @unidad
+            SELECT
+                M.cod_cuenta,
+                M.anio,
+                M.mes,
+                M.saldo_inicial,
+                M.total_debitos,
+                M.total_creditos
+            FROM vCntX_Mov_Cuentas_Unidad M
+            WHERE @unidad <> ''
+              AND @centro_costo = ''
+              AND M.cod_contabilidad = @cod_contabilidad
+              AND M.cod_unidad = @unidad
 
-                    UNION ALL
+            UNION ALL
 
-                    SELECT M.cod_cuenta, M.saldo_inicial, M.total_debitos, M.total_creditos,
-                           DATEFROMPARTS(M.anio, M.mes, 1) AS fecha
-                    FROM CntX_Mov_Cuentas_Detallado M
-                    WHERE @unidad <> ''
-                      AND @centro_costo <> ''
-                      AND M.cod_contabilidad = @cod_contabilidad
-                      AND M.cod_unidad = @unidad
-                      AND M.cod_centro_costo = @centro_costo
-                ),
-                Movimientos AS
-                (
-                    SELECT M.cod_cuenta,
-                           SUM(CASE WHEN M.fecha = DATEADD(month, 0, @fecha_inicial)
-                               THEN CASE WHEN @mostrar = 'A'
-                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
-                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_01,
-                           SUM(CASE WHEN M.fecha = DATEADD(month, 1, @fecha_inicial)
-                               THEN CASE WHEN @mostrar = 'A'
-                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
-                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_02,
-                           SUM(CASE WHEN M.fecha = DATEADD(month, 2, @fecha_inicial)
-                               THEN CASE WHEN @mostrar = 'A'
-                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
-                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_03,
-                           SUM(CASE WHEN M.fecha = DATEADD(month, 3, @fecha_inicial)
-                               THEN CASE WHEN @mostrar = 'A'
-                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
-                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_04,
-                           SUM(CASE WHEN M.fecha = DATEADD(month, 4, @fecha_inicial)
-                               THEN CASE WHEN @mostrar = 'A'
-                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
-                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_05,
-                           SUM(CASE WHEN M.fecha = DATEADD(month, 5, @fecha_inicial)
-                               THEN CASE WHEN @mostrar = 'A'
-                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
-                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_06,
-                           SUM(CASE WHEN M.fecha = DATEADD(month, 6, @fecha_inicial)
-                               THEN CASE WHEN @mostrar = 'A'
-                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
-                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_07,
-                           SUM(CASE WHEN M.fecha = DATEADD(month, 7, @fecha_inicial)
-                               THEN CASE WHEN @mostrar = 'A'
-                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
-                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_08,
-                           SUM(CASE WHEN M.fecha = DATEADD(month, 8, @fecha_inicial)
-                               THEN CASE WHEN @mostrar = 'A'
-                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
-                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_09,
-                           SUM(CASE WHEN M.fecha = DATEADD(month, 9, @fecha_inicial)
-                               THEN CASE WHEN @mostrar = 'A'
-                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
-                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_10,
-                           SUM(CASE WHEN M.fecha = DATEADD(month, 10, @fecha_inicial)
-                               THEN CASE WHEN @mostrar = 'A'
-                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
-                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_11,
-                           SUM(CASE WHEN M.fecha = DATEADD(month, 11, @fecha_inicial)
-                               THEN CASE WHEN @mostrar = 'A'
-                                   THEN M.saldo_inicial + M.total_debitos + M.total_creditos
-                                   ELSE M.total_debitos + M.total_creditos END ELSE 0 END) AS movimiento_12
-                    FROM MovimientosBase M
-                    WHERE M.fecha BETWEEN @fecha_inicial AND DATEADD(month, 11, @fecha_inicial)
-                    GROUP BY M.cod_cuenta
-                )
-                UPDATE R
-                SET R.movimiento_01 = X.movimiento_01,
-                    R.movimiento_02 = X.movimiento_02,
-                    R.movimiento_03 = X.movimiento_03,
-                    R.movimiento_04 = X.movimiento_04,
-                    R.movimiento_05 = X.movimiento_05,
-                    R.movimiento_06 = X.movimiento_06,
-                    R.movimiento_07 = X.movimiento_07,
-                    R.movimiento_08 = X.movimiento_08,
-                    R.movimiento_09 = X.movimiento_09,
-                    R.movimiento_10 = X.movimiento_10,
-                    R.movimiento_11 = X.movimiento_11,
-                    R.movimiento_12 = X.movimiento_12
-                FROM CntX_Rep_Periodos_mov R
-                INNER JOIN Movimientos X ON X.cod_cuenta = R.cod_cuenta
-                WHERE R.usuario = @usuario
-                  AND R.cod_contabilidad = @cod_contabilidad;";
+            SELECT
+                M.cod_cuenta,
+                M.anio,
+                M.mes,
+                M.saldo_inicial,
+                M.total_debitos,
+                M.total_creditos
+            FROM CntX_Mov_Cuentas_Detallado M
+            WHERE @unidad <> ''
+              AND @centro_costo <> ''
+              AND M.cod_contabilidad = @cod_contabilidad
+              AND M.cod_unidad = @unidad
+              AND M.cod_centro_costo = @centro_costo
+        ),
+        MovimientosPorMes AS
+        (
+            SELECT
+                M.cod_cuenta,
+                P.posicion,
+                CASE
+                    WHEN @mostrar = 'A'
+                    THEN M.saldo_inicial
+                         + M.total_debitos
+                         + M.total_creditos
+                    ELSE M.total_debitos + M.total_creditos
+                END AS movimiento
+            FROM MovimientosBase M
+            INNER JOIN Meses P
+                ON M.anio = P.anio
+               AND M.mes = P.mes
+        ),
+        Movimientos AS
+        (
+            SELECT
+                cod_cuenta,
+                SUM(CASE WHEN posicion = 1
+                    THEN movimiento ELSE 0 END) AS movimiento_01,
+                SUM(CASE WHEN posicion = 2
+                    THEN movimiento ELSE 0 END) AS movimiento_02,
+                SUM(CASE WHEN posicion = 3
+                    THEN movimiento ELSE 0 END) AS movimiento_03,
+                SUM(CASE WHEN posicion = 4
+                    THEN movimiento ELSE 0 END) AS movimiento_04,
+                SUM(CASE WHEN posicion = 5
+                    THEN movimiento ELSE 0 END) AS movimiento_05,
+                SUM(CASE WHEN posicion = 6
+                    THEN movimiento ELSE 0 END) AS movimiento_06,
+                SUM(CASE WHEN posicion = 7
+                    THEN movimiento ELSE 0 END) AS movimiento_07,
+                SUM(CASE WHEN posicion = 8
+                    THEN movimiento ELSE 0 END) AS movimiento_08,
+                SUM(CASE WHEN posicion = 9
+                    THEN movimiento ELSE 0 END) AS movimiento_09,
+                SUM(CASE WHEN posicion = 10
+                    THEN movimiento ELSE 0 END) AS movimiento_10,
+                SUM(CASE WHEN posicion = 11
+                    THEN movimiento ELSE 0 END) AS movimiento_11,
+                SUM(CASE WHEN posicion = 12
+                    THEN movimiento ELSE 0 END) AS movimiento_12
+            FROM MovimientosPorMes
+            GROUP BY cod_cuenta
+        )
+        UPDATE R
+        SET R.movimiento_01 = X.movimiento_01,
+            R.movimiento_02 = X.movimiento_02,
+            R.movimiento_03 = X.movimiento_03,
+            R.movimiento_04 = X.movimiento_04,
+            R.movimiento_05 = X.movimiento_05,
+            R.movimiento_06 = X.movimiento_06,
+            R.movimiento_07 = X.movimiento_07,
+            R.movimiento_08 = X.movimiento_08,
+            R.movimiento_09 = X.movimiento_09,
+            R.movimiento_10 = X.movimiento_10,
+            R.movimiento_11 = X.movimiento_11,
+            R.movimiento_12 = X.movimiento_12
+        FROM CntX_Rep_Periodos_mov R
+        INNER JOIN Movimientos X
+            ON X.cod_cuenta = R.cod_cuenta
+        WHERE R.usuario = @usuario
+          AND R.cod_contabilidad = @cod_contabilidad;";
 
             connection.Execute(
                 sql,
