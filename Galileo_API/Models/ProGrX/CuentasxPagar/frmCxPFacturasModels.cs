@@ -33,7 +33,7 @@ namespace Galileo.Models.CxP
         public decimal? Sub_Total { get; set; }
         public decimal? Monto_SubTotal { get; set; }
         public string IVA_Descripcion { get; set; } = string.Empty;
-        public int Apl_Cargo_Flotante { get; set; }
+        public int? Apl_Cargo_Flotante { get; set; }
 
         // Adicionales
         public string Proveedor { get; set; } = string.Empty;  // 'cxp_proveedores' 
