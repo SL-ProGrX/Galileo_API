@@ -24,6 +24,24 @@ namespace Galileo.Controllers
             return _bl.ParamIVA_Obtener(CodEmpresa);
         }
 
+        [HttpGet("TiposIVA_Obtener")]
+        public ErrorDto<List<TipoIvaFactura>> TiposIVA_Obtener(int CodEmpresa)
+        {
+            return _bl.TiposIVA_Obtener(CodEmpresa);
+        }
+
+        [HttpGet("TipoIVA_Consultar")]
+        public ErrorDto<TipoIvaFactura> TipoIVA_Consultar(int CodEmpresa, string Cod_IVA)
+        {
+            return _bl.TipoIVA_Consultar(CodEmpresa, Cod_IVA);
+        }
+
+        [HttpGet("FacturaIVA_Obtener")]
+        public ErrorDto<List<FacturaIvaDetalle>> FacturaIVA_Obtener(int CodEmpresa, int Cod_Proveedor, string Cod_Factura)
+        {
+            return _bl.FacturaIVA_Obtener(CodEmpresa, Cod_Proveedor, Cod_Factura);
+        }
+
         [HttpGet("DivisaLocal_Obtener")]
         public ErrorDto<DivisaLocal> DivisaLocal_Obtener(int CodEmpresa)
         {

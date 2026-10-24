@@ -18,6 +18,21 @@ namespace Galileo.BusinessLogic.ProGrX.CxP
             return _db.ParamIVA_Obtener(CodEmpresa);
         }
 
+        public ErrorDto<List<TipoIvaFactura>> TiposIVA_Obtener(int CodEmpresa)
+        {
+            return _db.TiposIVA_Obtener(CodEmpresa);
+        }
+
+        public ErrorDto<TipoIvaFactura> TipoIVA_Consultar(int CodEmpresa, string Cod_IVA)
+        {
+            return _db.TipoIVA_Consultar(CodEmpresa, Cod_IVA);
+        }
+
+        public ErrorDto<List<FacturaIvaDetalle>> FacturaIVA_Obtener(int CodEmpresa, int Cod_Proveedor, string Cod_Factura)
+        {
+            return _db.FacturaIVA_Obtener(CodEmpresa, Cod_Proveedor, Cod_Factura);
+        }
+
         public ErrorDto<DivisaLocal> DivisaLocal_Obtener(int CodEmpresa)
         {
             return _db.DivisaLocal_Obtener(CodEmpresa);
