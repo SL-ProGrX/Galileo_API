@@ -1027,25 +1027,47 @@ namespace Galileo.DataBaseTier
 
         private static ErrorDto? ValidarFacturaCompleta(FacturaGuardarCompleta data, FacturaDto factura)
         {
+            var error = ValidarDatosBasicosFactura(data, factura);
+            if (error is not null)
+                return error;
+
+            error = ValidarDetalleIvaFactura(data, factura);
+            if (error is not null)
+                return error;
+
+            return ValidarAsientosFactura(data, factura);
+        }
+
+        private static ErrorDto? ValidarDatosBasicosFactura(FacturaGuardarCompleta data, FacturaDto factura)
+        {
             if (factura.Cod_Proveedor <= 0 || string.IsNullOrWhiteSpace(factura.Cod_Factura) || factura.Total <= 0 || factura.Importe_Divisa_Real <= 0)
                 return DbHelper.ErrorResponse("Factura, proveedor y monto son obligatorios.", -1);
 
             if (string.IsNullOrWhiteSpace(factura.Cod_IVA) || factura.Sub_Total is null || factura.Sub_Total < 0)
                 return DbHelper.ErrorResponse("Seleccione un tipo de IVA y especifique el subtotal.", -1);
 
-            if (data.Asientos.Count < 2)
-                return DbHelper.ErrorResponse("La factura debe contener al menos dos líneas de asiento.", -1);
+            return data.Asientos.Count < 2
+                ? DbHelper.ErrorResponse("La factura debe contener al menos dos líneas de asiento.", -1)
+                : null;
+        }
 
-            if (data.IvaDetallado == true)
-            {
-                var detalle = data.IvaDetalle.Where(item => item.Monto_Base > 0).ToList();
-                if (detalle.Count == 0 || detalle.Select(item => item.Cod_IVA).Distinct().Count() != detalle.Count)
-                    return DbHelper.ErrorResponse("El detalle de IVA debe contener tipos distintos con monto base.", -1);
-                if (Math.Abs(detalle.Sum(item => item.Monto_Base) - factura.Sub_Total.Value) >= 0.01m ||
-                    Math.Abs(detalle.Sum(item => item.Monto_IVA) - factura.Impuesto_Ventas.GetValueOrDefault()) >= 0.01m)
-                    return DbHelper.ErrorResponse("El detalle de IVA no coincide con el subtotal y el impuesto.", -1);
-            }
+        private static ErrorDto? ValidarDetalleIvaFactura(FacturaGuardarCompleta data, FacturaDto factura)
+        {
+            if (data.IvaDetallado != true)
+                return null;
 
+            var detalle = data.IvaDetalle.Where(item => item.Monto_Base > 0).ToList();
+            if (detalle.Count == 0 || detalle.Select(item => item.Cod_IVA).Distinct().Count() != detalle.Count)
+                return DbHelper.ErrorResponse("El detalle de IVA debe contener tipos distintos con monto base.", -1);
+
+            return Math.Abs(detalle.Sum(item => item.Monto_Base) - factura.Sub_Total!.Value) >= 0.01m ||
+                   Math.Abs(detalle.Sum(item => item.Monto_IVA) - factura.Impuesto_Ventas.GetValueOrDefault()) >= 0.01m
+                ? DbHelper.ErrorResponse("El detalle de IVA no coincide con el subtotal y el impuesto.", -1)
+                : null;
+        }
+
+        private static ErrorDto? ValidarAsientosFactura(FacturaGuardarCompleta data, FacturaDto factura)
+        {
             if (data.Asientos.Any(asiento =>
                 string.IsNullOrWhiteSpace(asiento.Cod_Cuenta) ||
                 string.IsNullOrWhiteSpace(asiento.Cod_Unidad) ||
@@ -1057,10 +1079,7 @@ namespace Galileo.DataBaseTier
             if (Math.Abs(totalDebito - totalCredito) >= 0.005m)
                 return DbHelper.ErrorResponse("El asiento de la factura no está balanceado.", -1);
 
-            decimal montoPrimeraLinea = data.Asientos.Count > 0
-                ? data.Asientos[0].Debito + data.Asientos[0].Credito
-                : 0;
-
+            decimal montoPrimeraLinea = data.Asientos[0].Debito + data.Asientos[0].Credito;
             return Math.Abs(montoPrimeraLinea - factura.Importe_Divisa_Real.GetValueOrDefault()) >= 0.005m
                 ? DbHelper.ErrorResponse("El monto de la primera línea no corresponde al monto local de la factura.", -1)
                 : null;
