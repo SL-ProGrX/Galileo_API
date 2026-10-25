@@ -66,14 +66,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             string descripcion = request.Descripcion?.Trim() ?? string.Empty;
             string cuenta = request.Cod_Cuenta?.Trim() ?? string.Empty;
 
-            if (string.IsNullOrWhiteSpace(codigo) || codigo.Length > 2)
-                return ErrorTipoIva(2, "El código de IVA debe tener uno o dos caracteres.");
-            if (string.IsNullOrWhiteSpace(descripcion))
-                return ErrorTipoIva(2, "La descripción del tipo de IVA es obligatoria.");
-            if (request.Porcentaje is null || request.Porcentaje < 0 || request.Porcentaje > 100)
-                return ErrorTipoIva(2, "El porcentaje debe estar entre 0 y 100.");
-            if (string.IsNullOrWhiteSpace(cuenta))
-                return ErrorTipoIva(2, "La cuenta contable es obligatoria.");
+            var errorValidacion = ValidarDatosTipoIva(codigo, descripcion, cuenta, request);
+            if (errorValidacion is not null)
+                return errorValidacion;
 
             try
             {
@@ -113,7 +108,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         {
                             Codigo = codigo,
                             Descripcion = descripcion,
-                            Porcentaje = request.Porcentaje.Value,
+                            Porcentaje = request.Porcentaje.GetValueOrDefault(),
                             Cuenta = cuenta
                         },
                         transaction);
@@ -130,7 +125,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         {
                             Codigo = codigo,
                             Descripcion = descripcion,
-                            Porcentaje = request.Porcentaje.Value,
+                            Porcentaje = request.Porcentaje.GetValueOrDefault(),
                             Cuenta = cuenta
                         },
                         transaction);
@@ -142,7 +137,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     Usuario = usuario,
                     Modulo = vModulo,
                     Movimiento = insertar ? "Registra - WEB" : "Modifica - WEB",
-                    DetalleMovimiento = $"Tipo de IVA: {codigo} -> {descripcion}; {request.Porcentaje.Value}%"
+                    DetalleMovimiento = $"Tipo de IVA: {codigo} -> {descripcion}; {request.Porcentaje.GetValueOrDefault()}%"
                 });
 
                 var tipoIva = connection.QueryFirstOrDefault<TipoIvaFactura>(
@@ -167,6 +162,24 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 return ErrorTipoIva(-1, ex.Message);
             }
+        }
+
+        private static ErrorDto<TipoIvaFactura>? ValidarDatosTipoIva(
+            string codigo,
+            string descripcion,
+            string cuenta,
+            SysIvaTipoSaveRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(codigo) || codigo.Length > 2)
+                return ErrorTipoIva(2, "El código de IVA debe tener uno o dos caracteres.");
+            if (string.IsNullOrWhiteSpace(descripcion))
+                return ErrorTipoIva(2, "La descripción del tipo de IVA es obligatoria.");
+            if (request.Porcentaje is null || request.Porcentaje < 0 || request.Porcentaje > 100)
+                return ErrorTipoIva(2, "El porcentaje debe estar entre 0 y 100.");
+            if (string.IsNullOrWhiteSpace(cuenta))
+                return ErrorTipoIva(2, "La cuenta contable es obligatoria.");
+
+            return null;
         }
 
         private static ErrorDto<TipoIvaFactura> ErrorTipoIva(int code, string description)
