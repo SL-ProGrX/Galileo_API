@@ -8,7 +8,7 @@ using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
-    public class FrmSysIvaParametrosDB
+    public partial class FrmSysIvaParametrosDB
     {
         private readonly IConfiguration _config;
         private readonly MSecurityMainDb _security_MainDB;
