@@ -221,10 +221,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     grupo => grupo.First(),
                     StringComparer.OrdinalIgnoreCase);
 
-            foreach (var tipo in tiposConCuenta)
+            foreach (var tipo in tiposConCuenta.Where(tipo => cuentasContables.ContainsKey(tipo.Cod_Cuenta.Trim())))
             {
-                if (!cuentasContables.TryGetValue(tipo.Cod_Cuenta.Trim(), out var cuenta))
-                    continue;
+                var cuenta = cuentasContables[tipo.Cod_Cuenta.Trim()];
 
                 tipo.Cod_Cuenta_Mask = cuenta.Cod_Cuenta_Mask;
                 tipo.CTA_Descripcion = cuenta.CTA_Descripcion;
