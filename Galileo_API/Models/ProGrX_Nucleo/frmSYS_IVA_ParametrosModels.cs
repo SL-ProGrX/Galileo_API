@@ -31,6 +31,15 @@
     {
         public int? resultadoOperacion { get; set; }
     }
+
+    public class SysIvaTipoSaveRequest
+    {
+        public string? Cod_IVA { get; set; }
+        public string? Descripcion { get; set; }
+        public decimal? Porcentaje { get; set; }
+        public string? Cod_Cuenta { get; set; }
+    }
+
     public class SysIvaCuentasResumenData
     {
         public string? codigo { get; set; }

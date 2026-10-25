@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Galileo.DataBaseTier.ProGrX_Nucleo;
+using Galileo.Models.CxP;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
@@ -36,6 +37,29 @@ namespace Galileo.BusinessLogic.ProGrX_Nucleo
                 : JsonConvert.DeserializeObject<SysIvaParametrosUpdateRequest>(jrequest) ?? new SysIvaParametrosUpdateRequest { valor = "" };
 
             return _db.Sys_Iva_Parametro_Actualizar(CodEmpresa, codParametro, dto, usuario);
+        }
+
+        public ErrorDto<List<TipoIvaFactura>> Sys_Iva_Tipos_Obtener(int CodEmpresa)
+        {
+            return _db.Sys_Iva_Tipos_Obtener(CodEmpresa);
+        }
+
+        public ErrorDto<TipoIvaFactura> Sys_Iva_Tipo_Insertar(int CodEmpresa, string usuario, string jrequest)
+        {
+            var dto = string.IsNullOrWhiteSpace(jrequest)
+                ? new SysIvaTipoSaveRequest()
+                : JsonConvert.DeserializeObject<SysIvaTipoSaveRequest>(jrequest) ?? new SysIvaTipoSaveRequest();
+
+            return _db.Sys_Iva_Tipo_Insertar(CodEmpresa, usuario, dto);
+        }
+
+        public ErrorDto<TipoIvaFactura> Sys_Iva_Tipo_Actualizar(int CodEmpresa, string codIVA, string usuario, string jrequest)
+        {
+            var dto = string.IsNullOrWhiteSpace(jrequest)
+                ? new SysIvaTipoSaveRequest()
+                : JsonConvert.DeserializeObject<SysIvaTipoSaveRequest>(jrequest) ?? new SysIvaTipoSaveRequest();
+
+            return _db.Sys_Iva_Tipo_Actualizar(CodEmpresa, codIVA, usuario, dto);
         }
 
         public ErrorDto<SysIvaCuentasResumenLista> Sys_Iva_Cuentas_Buscar(int CodEmpresa, int codContabilidad, string filtros)
