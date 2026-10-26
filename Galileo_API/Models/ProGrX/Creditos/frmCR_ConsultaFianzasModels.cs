@@ -71,6 +71,9 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     public class CrConsultaFianzasMoraDto
     {
+        public int num_cuota { get; set; } = 0;
+        public string proceso { get; set; } = string.Empty;
+        public decimal morosidad { get; set; } = 0;
         public int linea { get; set; } = 0;
         public int n_cuota { get; set; } = 0;
         public DateTime? fecha_pago { get; set; }
