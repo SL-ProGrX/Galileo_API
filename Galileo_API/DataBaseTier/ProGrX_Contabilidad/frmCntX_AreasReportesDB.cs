@@ -12,6 +12,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         private const string FolderReportes =
             "Contabilidad";
 
+        private const string SinParamConta = "No fue posible obtener los parámetros contables.";
+
         private const int LongitudMaximaUsuario = 30;
 
         private readonly PortalDB _portalDb;
@@ -48,7 +50,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             {
                 return DbHelper.CreateErrorResponse(
                     response.Description ??
-                    "No fue posible obtener los parámetros contables.",
+                    SinParamConta,
                     response.Code.GetValueOrDefault(-1),
                     new DefMascarasDto());
             }
@@ -97,7 +99,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             {
                 return DbHelper.CreateErrorResponse(
                     parametros.Description ??
-                    "No fue posible obtener los parámetros contables.",
+                    SinParamConta",
                     parametros.Code.GetValueOrDefault(-1),
                     new List<CntXAreasReportesAreaData>());
             }
@@ -156,7 +158,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 return DbHelper.CreateErrorResponse<
                     CntXAreasReportesAreaData?>(
                     parametros.Description ??
-                    "No fue posible obtener los parámetros contables.",
+                    SinParamConta",
                     parametros.Code.GetValueOrDefault(-1));
             }
 
@@ -207,7 +209,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 return DbHelper.CreateErrorResponse<
                     CntXAreasReportesGenerarData>(
                     parametrosResponse.Description ??
-                    "No fue posible obtener los parámetros contables.",
+                    SinParamConta",
                     parametrosResponse.Code
                         .GetValueOrDefault(-1));
             }
