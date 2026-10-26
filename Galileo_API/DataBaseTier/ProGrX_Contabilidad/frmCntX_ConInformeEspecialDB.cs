@@ -214,24 +214,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             var nombreArchivo = $"ProGrX_Balance_Consolidado_{anio}_{mes}.xlsx";
 
-            var rutaDescargasServidor = Path.Combine(
-         Environment.GetFolderPath(
-             Environment.SpecialFolder.UserProfile),
-         "Downloads");
-
-            Directory.CreateDirectory(rutaDescargasServidor);
-
-            var rutaCompleta = Path.Combine(
-                rutaDescargasServidor,
-                nombreArchivo);
-
-            workbook.SaveAs(rutaCompleta);
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
 
             return new ArchivoGeneradoModel
             {
-                NombreArchivo =
-            rutaCompleta,
-                ContentType = ExcelContentType
+                NombreArchivo = nombreArchivo,
+                ContentType = ExcelContentType,
+                ArchivoBytes = stream.ToArray()
             };
         }
 
