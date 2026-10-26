@@ -91,12 +91,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 };
             }
 
-            if (request.operacion <= 0)
+            if (request.operacion < 0)
             {
                 return new ErrorDto<FrmPreaSubCreditoAplicarResponse>
                 {
                     Code = -1,
-                    Description = "Debe seleccionar la operación.",
+                    Description = "La operación seleccionada no es válida.",
                     Result = new FrmPreaSubCreditoAplicarResponse()
                 };
             }

@@ -11,6 +11,7 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
     public class FrmPreaSubCreditoCargarResponse
     {
         public string cod_preanalisis { get; set; } = string.Empty;
+        public string cedula { get; set; } = string.Empty;
         public int aprobado { get; set; } = 0;
         public int pendiente { get; set; } = 0;
         public int maestro { get; set; } = 0;

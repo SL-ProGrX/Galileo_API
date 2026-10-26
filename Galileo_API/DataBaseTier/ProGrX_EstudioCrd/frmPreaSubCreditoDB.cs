@@ -26,15 +26,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// Carga la información inicial de frmPreaSubCredito: validación del expediente,
         /// bancos, operaciones, tipos de documento y cuentas iniciales del primer banco.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Expediente y usuario requeridos para cargar la solicitud.</param>
+        /// <returns>Contexto inicial de la solicitud de crédito.</returns>
         public ErrorDto<FrmPreaSubCreditoCargarResponse> Prea_frmPreaSubCredito_Cargar(
             int codEmpresa,
             FrmPreaSubCreditoCargarRequest request)
         {
-            try
+            return DbHelper.WithConn(_portalDb, codEmpresa, connection =>
             {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
-                connection.Open();
-
                 var codPreanalisis = request.cod_preanalisis?.Trim() ?? string.Empty;
                 var usuario = request.usuario?.Trim() ?? string.Empty;
 
@@ -55,25 +55,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     commandType: CommandType.Text
                 ) ?? new FrmPreaSubCreditoPersonaData();
 
-                var bancos = connection.Query<dynamic>(
-                    @"EXEC spCrd_SGT_Bancos @Usuario",
+                var bancos = MapearOpcionesNumericas(connection.Query<FrmPreaSubCreditoOpcionRaw>(
+                    "EXEC spCrd_SGT_Bancos @Usuario",
                     new { Usuario = usuario },
                     commandType: CommandType.Text
-                ).Select(x => new DropDownListaGenericaModel
-                {
-                    item = Convert.ToInt32(x.IdX),
-                    descripcion = Convert.ToString(x.ItmX) ?? string.Empty
-                }).ToList();
+                ));
 
-                var operaciones = connection.Query<dynamic>(
-                    @"EXEC spCrdPrea_Operacion_Vincular @Expediente",
+                var operaciones = MapearOpcionesNumericas(connection.Query<FrmPreaSubCreditoOpcionRaw>(
+                    "EXEC spCrdPrea_Operacion_Vincular @Expediente",
                     new { Expediente = codPreanalisis },
                     commandType: CommandType.Text
-                ).Select(x => new DropDownListaGenericaModel
-                {
-                    item = Convert.ToInt32(x.IdX),
-                    descripcion = Convert.ToString(x.ItmX) ?? string.Empty
-                }).ToList();
+                ));
 
                 var tiposDocumento = new List<FrmPreaSubCreditoTipoDocumentoItem>
                 {
@@ -89,8 +81,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 if (primerBanco is not null && Convert.ToInt32(primerBanco.item) > 0)
                 {
-                    cuentas = connection.Query<dynamic>(
-                        @"EXEC spSys_Cuentas_Bancarias @Cedula, @BancoId, @Tipo",
+                    cuentas = MapearCuentas(connection.Query<FrmPreaSubCreditoOpcionRaw>(
+                        "EXEC spSys_Cuentas_Bancarias @Cedula, @BancoId, @Tipo",
                         new
                         {
                             Cedula = persona.cedula,
@@ -98,16 +90,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                             Tipo = 1
                         },
                         commandType: CommandType.Text
-                    ).Select(x => new FrmPreaSubCreditoCuentaItem
-                    {
-                        codigo = Convert.ToString(x.IdX) ?? string.Empty,
-                        descripcion = Convert.ToString(x.ItmX) ?? string.Empty
-                    }).ToList();
+                    ));
                 }
 
                 var result = new FrmPreaSubCreditoCargarResponse
                 {
                     cod_preanalisis = codPreanalisis,
+                    cedula = persona.cedula.Trim(),
                     aprobado = validacion.aprobado,
                     pendiente = validacion.pendiente,
                     maestro = validacion.maestro,
@@ -119,18 +108,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     cuentas = cuentas
                 };
 
-                return DbHelper.CreateOkResponse<FrmPreaSubCreditoCargarResponse>(result);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<FrmPreaSubCreditoCargarResponse>(ex.Message);
-            }
+                return result;
+            });
         }
 
         /// <summary>
         /// Ejecuta la creación de la solicitud de crédito del expediente validando nuevamente
         /// el estado del preanálisis antes de invocar el proceso de registro.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Datos seleccionados para crear la solicitud.</param>
+        /// <returns>Resultado de la formalización y número de solicitud generado.</returns>
         public ErrorDto<FrmPreaSubCreditoAplicarResponse> Prea_frmPreaSubCredito_Aplicar(
             int codEmpresa,
             FrmPreaSubCreditoAplicarRequest request)
@@ -224,15 +212,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// Obtiene las cuentas bancarias disponibles para la cédula y banco seleccionados
         /// en frmPreaSubCredito.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Cédula y banco usados para consultar las cuentas.</param>
+        /// <returns>Cuentas bancarias disponibles para la persona.</returns>
         public ErrorDto<FrmPreaSubCreditoCuentasResponse> Prea_frmPreaSubCredito_Cuentas_Obtener(
             int codEmpresa,
             FrmPreaSubCreditoCuentasRequest request)
         {
-            try
+            return DbHelper.WithConn(_portalDb, codEmpresa, connection =>
             {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
-                connection.Open();
-
                 var cedula = request.cedula?.Trim() ?? string.Empty;
                 var banco = request.banco;
 
@@ -240,8 +228,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 if (!string.IsNullOrWhiteSpace(cedula) && banco > 0)
                 {
-                    cuentas = connection.Query<dynamic>(
-                        @"EXEC spSys_Cuentas_Bancarias @Cedula, @BancoId, @Tipo",
+                    cuentas = MapearCuentas(connection.Query<FrmPreaSubCreditoOpcionRaw>(
+                        "EXEC spSys_Cuentas_Bancarias @Cedula, @BancoId, @Tipo",
                         new
                         {
                             Cedula = cedula,
@@ -249,11 +237,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                             Tipo = 1
                         },
                         commandType: CommandType.Text
-                    ).Select(x => new FrmPreaSubCreditoCuentaItem
-                    {
-                        codigo = Convert.ToString(x.IdX) ?? string.Empty,
-                        descripcion = Convert.ToString(x.ItmX) ?? string.Empty
-                    }).ToList();
+                    ));
                 }
 
                 var result = new FrmPreaSubCreditoCuentasResponse
@@ -262,12 +246,57 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     cuentas = cuentas
                 };
 
-                return DbHelper.CreateOkResponse<FrmPreaSubCreditoCuentasResponse>(result);
-            }
-            catch (Exception ex)
+                return result;
+            });
+        }
+
+        private static List<DropDownListaGenericaModel> MapearOpcionesNumericas(
+            IEnumerable<FrmPreaSubCreditoOpcionRaw> opciones)
+        {
+            return opciones.Select(opcion => new DropDownListaGenericaModel
             {
-                return DbHelper.CreateErrorResponse<FrmPreaSubCreditoCuentasResponse>(ex.Message);
+                item = ObtenerCodigoNumerico(opcion),
+                descripcion = ObtenerDescripcion(opcion)
+            }).ToList();
+        }
+
+        private static List<FrmPreaSubCreditoCuentaItem> MapearCuentas(
+            IEnumerable<FrmPreaSubCreditoOpcionRaw> cuentas)
+        {
+            return cuentas.Select(cuenta => new FrmPreaSubCreditoCuentaItem
+            {
+                codigo = ObtenerCodigo(cuenta),
+                descripcion = ObtenerDescripcion(cuenta)
+            }).ToList();
+        }
+
+        private static int ObtenerCodigoNumerico(FrmPreaSubCreditoOpcionRaw opcion)
+        {
+            var codigo = ObtenerCodigo(opcion);
+            var descripcion = ObtenerDescripcion(opcion);
+
+            if (
+                int.TryParse(codigo, out var valor) &&
+                (valor != 0 || descripcion.StartsWith('<'))
+            )
+            {
+                return valor;
             }
+
+            var primerDato = descripcion.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            return int.TryParse(primerDato, out valor) ? valor : 0;
+        }
+
+        private static string ObtenerCodigo(FrmPreaSubCreditoOpcionRaw opcion)
+        {
+            return Convert.ToString(
+                opcion.IdX ?? opcion.ID_BANCO ?? opcion.CODIGO ?? opcion.OPERACION ?? opcion.CUENTA
+            )?.Trim() ?? string.Empty;
+        }
+
+        private static string ObtenerDescripcion(FrmPreaSubCreditoOpcionRaw opcion)
+        {
+            return (opcion.ItmX ?? opcion.DESCRIPCION ?? opcion.NOMBRE ?? string.Empty).Trim();
         }
 
         private static string ConstruirMensajeValidacion(FrmPreaSubCreditoValidacionData validacion)
@@ -299,6 +328,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 Movimiento = movimiento,
                 Modulo = vModulo
             });
+        }
+
+        private sealed class FrmPreaSubCreditoOpcionRaw
+        {
+            public object? IdX { get; init; }
+            public object? ID_BANCO { get; init; }
+            public object? CODIGO { get; init; }
+            public object? OPERACION { get; init; }
+            public object? CUENTA { get; init; }
+            public string? ItmX { get; init; }
+            public string? DESCRIPCION { get; init; }
+            public string? NOMBRE { get; init; }
         }
     }
 }
