@@ -99,7 +99,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             {
                 return DbHelper.CreateErrorResponse(
                     parametros.Description ??
-                    SinParamConta",
+                    SinParamConta,
                     parametros.Code.GetValueOrDefault(-1),
                     new List<CntXAreasReportesAreaData>());
             }
@@ -158,7 +158,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 return DbHelper.CreateErrorResponse<
                     CntXAreasReportesAreaData?>(
                     parametros.Description ??
-                    SinParamConta",
+                    SinParamConta,
                     parametros.Code.GetValueOrDefault(-1));
             }
 
@@ -209,7 +209,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 return DbHelper.CreateErrorResponse<
                     CntXAreasReportesGenerarData>(
                     parametrosResponse.Description ??
-                    SinParamConta",
+                    SinParamConta,
                     parametrosResponse.Code
                         .GetValueOrDefault(-1));
             }
