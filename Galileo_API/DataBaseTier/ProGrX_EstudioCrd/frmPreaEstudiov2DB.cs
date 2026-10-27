@@ -1655,7 +1655,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 if (string.Equals(estadoActual, "B", StringComparison.OrdinalIgnoreCase))
                 {
                     response.Code = -1;
-                    response.Description = "Ya este estudio ha sido ABANDONADO anteriormente, no se puede realizar la accin nuevamente.";
+                    response.Description = "Ya este estudio ha sido ABANDONADO anteriormente, no se puede realizar la acción nuevamente.";
                     return response;
                 }
 
