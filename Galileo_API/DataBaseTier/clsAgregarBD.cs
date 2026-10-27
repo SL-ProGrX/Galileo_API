@@ -19,6 +19,9 @@ namespace Galileo_API.DataBaseTier
         /// Guarda el registro de avalúo definitivo de una garantía.
         /// Replica ObjAgregar.fxRegistroAvaluo de VB6 usando spCRDVivGarantiaAvaluo_A.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa sobre la que se registra el avalúo.</param>
+        /// <param name="request">Datos definitivos del avalúo y del ingeniero responsable.</param>
+        /// <returns>Resultado de la ejecución del procedimiento de registro.</returns>
         public ErrorDto fxRegistroAvaluo(
             int codEmpresa,
             FrmVivGarantiaAvaluoPosteriorRequest request)
@@ -49,14 +52,22 @@ namespace Galileo_API.DataBaseTier
             );
             parametros.Add("@Viaticos", request.viaticos, DbType.Decimal);
             parametros.Add("@Tipo_Poliza", request.tipo_poliza.Trim(), DbType.String);
-            var connectionString = _portalDB.ObtenerDbConnStringEmpresa(codEmpresa);
-            return DbHelper.ExecuteStoredProcedureSingle<ErrorDto>(
-              connectionString,
-              "dbo.spCRDVivGarantiaAvaluo_A",
-              default,
-              parametros
-          ).Result ?? new ErrorDto { Code = -1, Description = "Error desconocido." };
 
+            const string sql = """
+                EXEC dbo.spCRDVivGarantiaAvaluo_A
+                    @IdGarantia,
+                    @IdContacto,
+                    @FechaInspeccion,
+                    @ValorTerreno,
+                    @ValorConstruccion,
+                    @ObservacionesAvaluo,
+                    @RegistroUsuario,
+                    @RegistroFecha,
+                    @Viaticos,
+                    @Tipo_Poliza;
+                """;
+
+            return DbHelper.ExecuteNonQuery(_portalDB, codEmpresa, sql, parametros);
         }
     }
 }

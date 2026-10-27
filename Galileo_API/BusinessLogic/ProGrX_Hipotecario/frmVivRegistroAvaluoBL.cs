@@ -62,17 +62,6 @@ namespace Galileo_API.BusinessLogic.ProGrX_Hipotecario
                 return DbHelper.ErrorResponse("Debe indicar un tipo de póliza válido.");
             }
 
-            var estadoOperacion = _clsConsultar.fxEstadoOperacion(codEmpresa, request.numero_operacion);
-            if (estadoOperacion.Code < 0)
-            {
-                return DbHelper.ErrorResponse(estadoOperacion.Description ?? string.Empty);
-            }
-
-            if ((estadoOperacion.Result ?? string.Empty).Trim() != "F")
-            {
-                return DbHelper.ErrorResponse("El registro de avalúo solo aplica para operaciones en estado FORMALIZADA.");
-            }
-
             var yaRegistrado = _db.Viv_GarantiaAvaluoRegistrado_Existe(codEmpresa, request.id_garantia);
             if (yaRegistrado.Code < 0)
             {

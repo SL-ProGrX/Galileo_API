@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
-    public class FrmCrPrendasDb
+    public partial class FrmCrPrendasDb
     {
         private const string ColPrendaId = "Prenda_Id";
         private const string ColRegistroFecha = "Registro_fecha";
@@ -103,99 +103,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             const string sql = "exec spCrd_Prendas_Garantia_Load @PrendaId;";
 
             return EjecutarUnicoMapeado(codEmpresa, sql, new { PrendaId = prendaId }, MapearPrendaDetalle);
-        }
-
-        public ErrorDto<List<CrPrendaTipoListaData>> CrPrendas_TiposActivos(int codEmpresa)
-        {
-            const string sql = @"
-                select
-                    rtrim(tipo_prenda) as idx,
-                    rtrim(descripcion) as itmx
-                from crd_prendas_tipos
-                where Activa = 1
-                order by descripcion;";
-
-            return DbHelper.ExecuteListQuery<CrPrendaTipoListaData>(_portalDb, codEmpresa, sql);
-        }
-
-        public ErrorDto<List<CrPrendaTipoListaData>> CrPrendas_CatalogoLista(int codEmpresa, string tipoCatalogo)
-        {
-            const string sql = "exec spCrd_Prendas_Cat_List_Cbo @TipoCatalogo;";
-
-            return DbHelper.ExecuteListQuery<CrPrendaTipoListaData>(
-                _portalDb,
-                codEmpresa,
-                sql,
-                new { TipoCatalogo = (tipoCatalogo ?? string.Empty).Trim().ToUpperInvariant() });
-        }
-
-        public ErrorDto<List<CrPrendaTipoListaData>> CrPrendas_UnidadesLista(int codEmpresa, string aplicacion)
-        {
-            var campo = (aplicacion ?? string.Empty).Trim().ToUpperInvariant() switch
-            {
-                "PESO" => "Peso_Apl",
-                "CAPACIDAD" => "Capacidad_Apl",
-                "CILINDRAJE" => "Cilindraje_Apl",
-                _ => "Peso_Apl"
-            };
-
-            var sql = $@"
-                select rtrim(ID_Unidad) as idx, rtrim(descripcion) as itmx
-                from CRD_PRENDAS_uds
-                where {campo} = 1 and Activa = 1
-                order by Descripcion;";
-
-            return DbHelper.ExecuteListQuery<CrPrendaTipoListaData>(_portalDb, codEmpresa, sql);
-        }
-
-        public ErrorDto<List<CrPrendaTipoListaData>> CrPrendas_ParentescosLista(int codEmpresa)
-        {
-            const string sql = @"
-                select rtrim(cod_Parentesco) as idx, rtrim(Descripcion) as itmx
-                from sys_Parentescos
-                where activo = 1
-                order by Descripcion;";
-
-            return DbHelper.ExecuteListQuery<CrPrendaTipoListaData>(_portalDb, codEmpresa, sql);
-        }
-
-        public ErrorDto<List<CrPrendaTipoListaData>> CrPrendas_TiposIdentificacionLista(int codEmpresa)
-        {
-            const string sql = @"
-                select
-                    convert(varchar(10), TIPO_ID) as idx,
-                    rtrim(Descripcion) as itmx,
-                    isnull(LARGO_MINIMO, 0) as largo_minimo
-                from AFI_TIPOS_IDS
-                where TIPO_PERSONERIA = 'F'
-                order by Tipo_Id;";
-
-            return DbHelper.ExecuteListQuery<CrPrendaTipoListaData>(_portalDb, codEmpresa, sql);
-        }
-
-        public ErrorDto<List<CrPrendaAnotacionData>> CrPrendas_AnotacionesLista(int codEmpresa, long prendaId)
-        {
-            const string sql = "exec spCrd_Prendas_Anotaciones_Lista @PrendaId;";
-
-            return EjecutarListaMapeada(codEmpresa, sql, new { PrendaId = prendaId }, MapearAnotacion);
-        }
-
-        public ErrorDto<List<CrPrendaPolizaCoberturaData>> CrPrendas_PolizasList(int codEmpresa, string tipoPrenda, long prendaId)
-        {
-            const string sql = "exec spCrd_Prendas_Polizas_List @TipoPrenda, @PrendaId;";
-
-            return EjecutarListaMapeada(
-                codEmpresa,
-                sql,
-                new { TipoPrenda = tipoPrenda ?? string.Empty, PrendaId = prendaId },
-                MapearPolizaCobertura);
-        }
-
-        public ErrorDto<List<CrPrendaHistoricoAvaluoData>> CrPrendas_AvaluosLista(int codEmpresa, long prendaId)
-        {
-            const string sql = "exec spCrd_Prendas_Avaluos_Lista @PrendaId;";
-
-            return EjecutarListaMapeada(codEmpresa, sql, new { PrendaId = prendaId }, MapearHistoricoAvaluo);
         }
 
         public ErrorDto<string> CrPrendas_AvaluoGuardar(int codEmpresa, CrPrendaAvaluoGuardarRequest request)

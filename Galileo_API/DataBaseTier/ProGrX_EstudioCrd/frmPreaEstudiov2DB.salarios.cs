@@ -42,44 +42,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             try
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
-                connection.Execute(
-                    "EXEC spCrdPreaEliminarSalarios @Expediente",
-                    new { Expediente = codPreanalisis });
-
-                const string sqlSistema = @"EXEC spCrdPreaGeneraSalariosSistema
-                    @Expediente, @Salario, @Fecha, @Orden, @Ca, @Mes";
-                const string sqlOtros = @"EXEC spCrdPreaGeneraSalariosConsultaLinea
-                    @Expediente, @Salario, @Fecha, @Orden, @Ca, @Mes";
-                var orden = 0;
-
-                foreach (var fila in request.tabla_salarios)
-                {
-                    orden++;
-                    connection.Execute(
-                        sqlSistema,
-                        CrearParametrosTablaSalarios(new TablaSalariosParametros
-                        {
-                            CodPreanalisis = codPreanalisis,
-                            Fila = fila,
-                            Orden = orden,
-                            Salario = fila.salario_s
-                        }));
-                }
-
-                orden = 0;
-                foreach (var fila in request.tabla_salarios)
-                {
-                    orden++;
-                    connection.Execute(
-                        sqlOtros,
-                        CrearParametrosTablaSalarios(new TablaSalariosParametros
-                        {
-                            CodPreanalisis = codPreanalisis,
-                            Fila = fila,
-                            Orden = orden,
-                            Salario = fila.salario_rh
-                        }));
-                }
+                GuardarTablaSalarios(connection, codPreanalisis, request.tabla_salarios);
 
                 result.Result = ObtenerTablaSalarios(connection, codPreanalisis);
             }
@@ -90,6 +53,57 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Reemplaza las filas de la tabla de salarios usando los mismos procedimientos
+        /// de sbSalarios_Guardar de ProGrX.
+        /// </summary>
+        /// <param name="connection">Conexión abierta a la base de datos de la empresa.</param>
+        /// <param name="codPreanalisis">Código del expediente que recibe los salarios.</param>
+        /// <param name="tablaSalarios">Filas salariales que se deben persistir.</param>
+        private static void GuardarTablaSalarios(
+            IDbConnection connection,
+            string codPreanalisis,
+            IEnumerable<FrmPreaEstudiov2SalarioDetalleDto> tablaSalarios)
+        {
+            connection.Execute(
+                "EXEC spCrdPreaEliminarSalarios @Expediente",
+                new { Expediente = codPreanalisis });
+
+            const string sqlSistema = @"EXEC spCrdPreaGeneraSalariosSistema
+                @Expediente, @Salario, @Fecha, @Orden, @Ca, @Mes";
+            const string sqlOtros = @"EXEC spCrdPreaGeneraSalariosConsultaLinea
+                @Expediente, @Salario, @Fecha, @Orden, @Ca, @Mes";
+            var filas = tablaSalarios.ToList();
+
+            for (var indice = 0; indice < filas.Count; indice++)
+            {
+                var fila = filas[indice];
+                connection.Execute(
+                    sqlSistema,
+                    CrearParametrosTablaSalarios(new TablaSalariosParametros
+                    {
+                        CodPreanalisis = codPreanalisis,
+                        Fila = fila,
+                        Orden = indice + 1,
+                        Salario = fila.salario_s
+                    }));
+            }
+
+            for (var indice = 0; indice < filas.Count; indice++)
+            {
+                var fila = filas[indice];
+                connection.Execute(
+                    sqlOtros,
+                    CrearParametrosTablaSalarios(new TablaSalariosParametros
+                    {
+                        CodPreanalisis = codPreanalisis,
+                        Fila = fila,
+                        Orden = indice + 1,
+                        Salario = fila.salario_rh
+                    }));
+            }
         }
 
         /// <summary>
