@@ -47,6 +47,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("TestConnection")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto TestConnection(int CodEmpresa, string connectionName)
         {
@@ -54,6 +55,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("Cliente_Modificar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto Cliente_Modificar(ClienteDto info)
         {
@@ -61,6 +63,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("Cliente_Crear")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto<RespuestaDto> Cliente_Crear(ClienteDto info)
         {
@@ -68,6 +71,7 @@ namespace Galileo.Controllers
         }
 
         [HttpDelete("Cliente_Eliminar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto Cliente_Eliminar(int CodEmpresa, string usuario)
         {
@@ -103,6 +107,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("ContactoCliente_Actualizar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto ContactoCliente_Actualizar(ContactoDto info)
         {
@@ -110,6 +115,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("ContactoCliente_Insertar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto ContactoCliente_Insertar(ContactoDto info)
         {
@@ -117,6 +123,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("ContactoCliente_Eliminar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto ContactoCliente_Eliminar(int cod_contacto, int cod_empresa, string usuario)
         {
@@ -131,6 +138,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("ServicioAsignar_Guardar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto ServicioAsignar_Guardar(ServicioAsignarDto request)
         {
@@ -138,6 +146,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("ServicioAsignar_Eliminar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto ServicioAsignar_Eliminar(ServicioAsignarDto request)
         {
@@ -153,6 +162,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("SMTP_Autorizar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto SMTP_Autorizar(SmtpDto info)
         {
@@ -161,6 +171,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Clientes_Sincronizar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos)
         {

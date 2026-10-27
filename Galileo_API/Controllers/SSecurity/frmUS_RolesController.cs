@@ -31,18 +31,21 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("RolGuardar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto RolGuardar(RolInsertarDto req)
         {
             return RolesBL.RolGuardar(req);
         }
 
         [HttpDelete("RolEliminar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto RolEliminar(string RolId, int codEmpresa = 0, string usuario = "")
         {
             return RolesBL.RolEliminar(RolId, codEmpresa, usuario);
         }
 
         [HttpPost("RolesVincular")]
+        [ValidateAntiForgeryToken]
         public ErrorDto RolesVincular(RolesVincularDto req)
         {
             return RolesBL.RolesVincular(req);

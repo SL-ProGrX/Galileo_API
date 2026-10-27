@@ -27,12 +27,14 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Vendedor_Insertar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Vendedor_Insertar(Vendedor request)
         {
             return new FrmPgxVendedoresBL(_config).Vendedor_Insertar(request);
         }
 
         [HttpPost("Vendedor_Eliminar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Vendedor_Eliminar(Vendedor request)
         {
             return new FrmPgxVendedoresBL(_config).Vendedor_Eliminar(request);
@@ -40,6 +42,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Vendedor_Actualizar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Vendedor_Actualizar(Vendedor request)
         {
             return new FrmPgxVendedoresBL(_config).Vendedor_Actualizar(request);

@@ -27,6 +27,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("fxInvVerificaLineaDetalle")]
+        [ValidateAntiForgeryToken]
         public ErrorDto fxInvVerificaLineaDetalle(int CodEmpresa, int ColCantidad, string vMov, int ColProd, int ColBod1, int ColBod2, List<FacturaDetalleDto> vGrid)
         {
             return new MProGrXAuxiliarBl(_config).fxInvVerificaLineaDetalle(CodEmpresa
@@ -42,6 +43,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("sbInvInventario")]
+        [ValidateAntiForgeryToken]
         public ErrorDto sbInvInventario(int CodEmpresa, CompraInventarioDto inventario)
         {
             return new MProGrXAuxiliarBl(_config).sbInvInventario(CodEmpresa, inventario);
@@ -74,12 +76,14 @@ namespace Galileo.Controllers
         }
 
         [HttpDelete("FndControlAutoriza_Eliminar")]
+        [ValidateAntiForgeryToken]
         public int FndControlAutoriza_Eliminar(FndControlAutorizaData request)
         {
             return new MProGrXAuxiliarDB(_config).FndControlAutoriza_Eliminar(request);
         }
 
         [HttpPost("FndControlAutoriza_Insertar")]
+        [ValidateAntiForgeryToken]
         public int FndControlAutoriza_Insertar(FndControlAutorizaData request)
         {
             return new MProGrXAuxiliarDB(_config).FndControlAutoriza_Insertar(request);

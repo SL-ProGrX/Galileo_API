@@ -17,7 +17,7 @@ public sealed class AuthController : ControllerBase
     private const string GalileoDeviceCookie = "pgx_galileo_device";
     private const string AuthenticationUnavailableStatus = "authenticationUnavailable";
     private const string InvalidApplicationStatus = "invalidApplication";
-    private const string PasswordChangeRequiredStatus = "passwordChangeRequired";
+    private const string EstadoCambioContrasenaRequerido = "passwordChangeRequired";
     private const string AccountBlockedStatus = "accountBlocked";
     private const string SessionsUnavailableStatus = "sessionsUnavailable";
     private readonly AuthBL _auth;
@@ -36,6 +36,7 @@ public sealed class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("Galileo/Login")]
+    [ValidateAntiForgeryToken]
     public async Task<ActionResult<AuthResponseDto>> GalileoLogin(
         [FromBody] AuthLoginRequest request,
         [FromHeader(Name = "User-Agent")] string? userAgent,
@@ -46,6 +47,7 @@ public sealed class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("SSecurity/Login")]
+    [ValidateAntiForgeryToken]
     public async Task<ActionResult<AuthResponseDto>> SSecurityLogin(
         [FromBody] AuthLoginRequest request,
         [FromHeader(Name = "User-Agent")] string? userAgent,
@@ -57,6 +59,7 @@ public sealed class AuthController : ControllerBase
     [AllowAnonymous]
     [HttpPost("Galileo/SwitchPreview")]
     [HttpPost("SSecurity/SwitchPreview")]
+    [ValidateAntiForgeryToken]
     public ActionResult<AuthResponseDto> SwitchPreview([FromBody] AuthLoginRequest request)
     {
         var response = _auth.PreviewAccountSwitch(request);
@@ -70,6 +73,7 @@ public sealed class AuthController : ControllerBase
 
     [Authorize]
     [HttpPost("Galileo/PreInitialize")]
+    [ValidateAntiForgeryToken]
     public ActionResult<AuthResponseDto> PreInitializeGalileo([FromBody] GalileoSecurityPreInitializeRequest request)
     {
         if (!string.Equals(User.FindFirst("app")?.Value, AuthApplications.Galileo, StringComparison.OrdinalIgnoreCase))
@@ -93,7 +97,7 @@ public sealed class AuthController : ControllerBase
         var response = _auth.PreInicializarGalileo(username, request.AppVersion);
         return response.Status switch
         {
-            "ready" or PasswordChangeRequiredStatus or AccountBlockedStatus or "applicationBlocked" => Ok(response),
+            "ready" or EstadoCambioContrasenaRequerido or AccountBlockedStatus or "applicationBlocked" => Ok(response),
             AuthenticationUnavailableStatus => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
             _ => BadRequest(response),
         };
@@ -101,6 +105,7 @@ public sealed class AuthController : ControllerBase
 
     [Authorize]
     [HttpPost("Galileo/Initialize")]
+    [ValidateAntiForgeryToken]
     public ActionResult<AuthResponseDto> InitializeGalileo([FromBody] GalileoSecurityInitializeRequest request)
     {
         if (!string.Equals(User.FindFirst("app")?.Value, AuthApplications.Galileo, StringComparison.OrdinalIgnoreCase))
@@ -142,7 +147,7 @@ public sealed class AuthController : ControllerBase
             deviceId,
             remoteIp.ToString());
 
-        if (response.Status is "ready" or PasswordChangeRequiredStatus)
+        if (response.Status is "ready" or EstadoCambioContrasenaRequerido)
         {
             Response.Cookies.Append(
                 GalileoDeviceCookie,
@@ -152,7 +157,7 @@ public sealed class AuthController : ControllerBase
 
         return response.Status switch
         {
-            "ready" or PasswordChangeRequiredStatus or AccountBlockedStatus or "applicationBlocked" or "accessDenied" => Ok(response),
+            "ready" or EstadoCambioContrasenaRequerido or AccountBlockedStatus or "applicationBlocked" or "accessDenied" => Ok(response),
             AuthenticationUnavailableStatus => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
             _ => BadRequest(response),
         };
@@ -160,6 +165,7 @@ public sealed class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("SSecurity/Mfa/Verify")]
+    [ValidateAntiForgeryToken]
     public ActionResult<AuthResponseDto> VerifyMfa(
         [FromBody] MfaVerifyRequest request,
         [FromHeader(Name = "User-Agent")] string? userAgent,
@@ -175,7 +181,7 @@ public sealed class AuthController : ControllerBase
 
         return response.Status switch
         {
-            "invalidCode" or "invalidChallenge" or AccountBlockedStatus or PasswordChangeRequiredStatus => Ok(response),
+            "invalidCode" or "invalidChallenge" or AccountBlockedStatus or EstadoCambioContrasenaRequerido => Ok(response),
             "accessDenied" => StatusCode(StatusCodes.Status403Forbidden, response),
             AuthenticationUnavailableStatus => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
             _ => Unauthorized(response),
@@ -184,6 +190,7 @@ public sealed class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("SSecurity/Password/Change")]
+    [ValidateAntiForgeryToken]
     public ActionResult<AuthResponseDto> ChangeExpiredPassword([FromBody] PasswordChangeRequest request)
     {
         var response = _auth.CambiarContrasenaVencida(request);
@@ -197,6 +204,7 @@ public sealed class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("Galileo/Password/Recovery/Policy")]
+    [ValidateAntiForgeryToken]
     public ActionResult<AuthResponseDto> GalileoRecoveryPolicy([FromBody] GalileoPasswordRecoveryTokenRequest request)
     {
         var response = _auth.ObtenerPoliticaRecuperacionGalileo(request);
@@ -207,6 +215,7 @@ public sealed class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("Galileo/Password/Recovery/Change")]
+    [ValidateAntiForgeryToken]
     public ActionResult<AuthResponseDto> GalileoRecoveryChange([FromBody] GalileoPasswordRecoveryRequest request)
     {
         var response = _auth.RecuperarContrasenaGalileo(request);
@@ -217,6 +226,7 @@ public sealed class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("SSecurity/Mfa/Resend")]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> ResendMfa([FromBody] MfaResendRequest request)
     {
         var response = await _auth.ResendMfaAsync(request);
@@ -230,6 +240,7 @@ public sealed class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("Refresh")]
+    [ValidateAntiForgeryToken]
     public ActionResult<AuthSessionResponse> Refresh(
         [FromQuery] string application,
         [FromHeader(Name = "X-Auth-Refresh")] string? csrfHeader)
@@ -290,6 +301,7 @@ public sealed class AuthController : ControllerBase
     [Authorize]
     [EnableRateLimiting("auth-activity")]
     [HttpPost("Activity")]
+    [ValidateAntiForgeryToken]
     public IActionResult Activity([FromQuery] string application)
     {
         if (!IsSupportedApplication(application)) return BadRequest(new { status = InvalidApplicationStatus });
@@ -325,6 +337,7 @@ public sealed class AuthController : ControllerBase
 
     [Authorize]
     [HttpDelete("Sessions/{sessionId}")]
+    [ValidateAntiForgeryToken]
     public IActionResult RevokeSession(string sessionId)
     {
         if (!TryGetSessionIdentity(out var userId, out var currentSessionId, out var application)) return Forbid();
@@ -374,6 +387,7 @@ public sealed class AuthController : ControllerBase
 
     [Authorize]
     [HttpDelete("Admin/Sessions/{sessionId}")]
+    [ValidateAntiForgeryToken]
     public IActionResult RevokeAnySession(string sessionId, [FromBody] AdminSessionRevokeRequestDto request)
     {
         try
@@ -493,6 +507,7 @@ public sealed class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("Logout")]
+    [ValidateAntiForgeryToken]
     public IActionResult Logout([FromQuery] string application)
     {
         if (!IsSupportedApplication(application)) return BadRequest(new { status = InvalidApplicationStatus });
@@ -529,7 +544,7 @@ public sealed class AuthController : ControllerBase
 
         return response.Status switch
         {
-            "mfaRequired" or PasswordChangeRequiredStatus or AccountBlockedStatus => Ok(response),
+            "mfaRequired" or EstadoCambioContrasenaRequerido or AccountBlockedStatus => Ok(response),
             "accessDenied" => StatusCode(StatusCodes.Status403Forbidden, response),
             AuthenticationUnavailableStatus => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
             _ => Unauthorized(response),

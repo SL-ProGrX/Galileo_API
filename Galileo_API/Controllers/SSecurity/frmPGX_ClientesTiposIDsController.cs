@@ -25,6 +25,7 @@ namespace Galileo.Controllers
         }
 
         [HttpDelete("TipoId_Eliminar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto TipoId_Eliminar(string tipo_id, int codEmpresa = 0, string usuario = "")
         {
@@ -32,6 +33,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("TipoId_Guardar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto TipoId_Guardar(TipoId request)
         {

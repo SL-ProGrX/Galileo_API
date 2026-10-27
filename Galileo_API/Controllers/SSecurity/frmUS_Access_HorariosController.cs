@@ -25,12 +25,14 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("HorarioRegistrar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto HorarioRegistrar(HorarioDto request)
         {
             return new FrmUsAccessHorariosBl(_config).HorarioRegistrar(request);
         }
 
         [HttpPost("HorarioEliminar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto HorarioEliminar(HorarioDto request)
         {
             return new FrmUsAccessHorariosBl(_config).HorarioEliminar(request);

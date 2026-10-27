@@ -24,14 +24,17 @@ public sealed class FrmUsDepartamentosController(IConfiguration configuration, I
         => Execute(false, _ => _departamentos.Departamento_ObtenerTodos(codigoActual, true), codEmpresa);
 
     [HttpPost("Departamento_Insertar")]
+    [ValidateAntiForgeryToken]
     public ActionResult<ErrorDto> Departamento_Insertar([FromBody] DepartamentoRequest request)
         => Execute(true, actor => _departamentos.Departamento_Guardar(request, actor, true));
 
     [HttpPost("Departamento_Actualizar")]
+    [ValidateAntiForgeryToken]
     public ActionResult<ErrorDto> Departamento_Actualizar([FromBody] DepartamentoRequest request)
         => Execute(true, actor => _departamentos.Departamento_Guardar(request, actor, false));
 
     [HttpDelete("Departamento_Eliminar")]
+    [ValidateAntiForgeryToken]
     public ActionResult<ErrorDto> Departamento_Eliminar([FromQuery] string codigo)
         => Execute(true, _ => _departamentos.Departamento_Eliminar(codigo));
 

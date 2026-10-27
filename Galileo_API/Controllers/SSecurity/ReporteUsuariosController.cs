@@ -20,6 +20,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("ReporteUsuariosListadoObtener")]
+        [ValidateAntiForgeryToken]
         public ErrorDto<List<ReporteUsuariosListaRespuestaDto>> ReporteUsuariosListadoObtener(ReporteUsuariosListaSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosBL(_config).ReporteUsuariosListadoObtener(solicitudDto);
@@ -27,6 +28,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("ReporteUsuariosRolesObtener")]
+        [ValidateAntiForgeryToken]
         public ErrorDto<List<ReporteUsuariosRolesRespuestaDto>> ReporteUsuariosRolesObtener(ReporteUsuariosRolesSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosBL(_config).ReporteUsuariosRolesObtener(solicitudDto);
@@ -34,6 +36,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("ReporteUsuariosPermisosObtener")]
+        [ValidateAntiForgeryToken]
         public ErrorDto<List<ReporteUsuariosPermisosRespuestaDto>> ReporteUsuariosPermisosObtener(ReporteUsuariosPermisosSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosBL(_config).ReporteUsuariosPermisosObtener(solicitudDto);
@@ -41,6 +44,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("ReporteRolesPermisosObtener")]
+        [ValidateAntiForgeryToken]
         public ErrorDto<List<ReporteRolesPermisosRespuestaDto>> ReporteRolesPermisosObtener(ReporteRolesPermisosSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosBL(_config).ReporteRolesPermisosObtener(solicitudDto);

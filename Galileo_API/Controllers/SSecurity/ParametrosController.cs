@@ -26,6 +26,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Parametros_Insertar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Parametros_Insertar(ParametrosDto request)
         {
             return new ParametrosBL(_config).Parametros_Insertar(request);

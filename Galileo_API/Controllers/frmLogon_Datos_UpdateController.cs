@@ -24,6 +24,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("LogonUpdateDatosUsuario")]
+        [ValidateAntiForgeryToken]
         public ErrorDto LogonUpdateDatosUsuario(LogonUpdateData info)
         {
             return Datos_UpdateBL.LogonUpdateDatosUsuario(info);

@@ -26,6 +26,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("EstacionRegistrar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto EstacionRegistrar(EstacionGuardarDto request)
         {
@@ -42,6 +43,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("EstacionVincular")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto EstacionVincular(EstacionVinculaDto estacionDto)
         {
@@ -50,6 +52,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("EstacionEliminar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto EstacionEliminar(EstacionEliminarDto estacionDto)
         {

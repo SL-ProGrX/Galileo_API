@@ -43,30 +43,35 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("EliminarUsDerechosNewDTO")]
+        [ValidateAntiForgeryToken]
         public ErrorDto EliminarUsDerechosNewDTO(int COD_OPCION, string ESTADO, string COD_ROL)
         {
             return DerechosBL.EliminarUsDerechosNewDTO(COD_OPCION, ESTADO, COD_ROL);
         }
 
         [HttpPost("CrearUsDerechosNewDTO")]
+        [ValidateAntiForgeryToken]
         public ErrorDto CrearUsDerechosNewDTO([FromBody] List<CrearUsDerechosNewDto> info)
         {
             return DerechosBL.CrearUsDerechosNewDTO(info);
         }
 
         [HttpPatch("EditarUsDerechosNew")]
+        [ValidateAntiForgeryToken]
         public ErrorDto EditarUsDerechosNew(int COD_OPCION, string ESTADO, string COD_ROL, string NUEVO_ESTADO)
         {
             return DerechosBL.EditarUsDerechosNew(COD_OPCION, ESTADO, COD_ROL, NUEVO_ESTADO);
         }
 
         [HttpPost("GuardarUsDerecho")]
+        [ValidateAntiForgeryToken]
         public ErrorDto GuardarUsDerecho([FromBody] List<CrearUsDerechosNewDto> info)
         {
             return DerechosBL.CrearUsDerechosNewDTO(info);
         }
 
         [HttpPost("RegistrarBitacora")]
+        [ValidateAntiForgeryToken]
         public ErrorDto RegistrarBitacora([FromBody] SegLogInsertarDto request)
         {
             return DerechosBL.RegistrarBitacora(request);
