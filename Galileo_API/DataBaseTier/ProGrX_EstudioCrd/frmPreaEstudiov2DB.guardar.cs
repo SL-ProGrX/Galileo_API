@@ -42,6 +42,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                     if (!string.IsNullOrEmpty(codPreanalisisResultado))
                     {
+                        // spCrdPreaPreanalisisNuevo solo recibe el tipo de salario. En el primer
+                        // guardado también deben persistirse la fecha de colilla, el salario
+                        // devengado y los demás datos que administra spCrdPreaPreanalisisModifica.
+                        GuardarModifica(
+                            connection,
+                            usuario,
+                            request,
+                            notasCumplimiento,
+                            codPreanalisisResultado);
                         InicializarTablasHijasNuevoExpediente(connection, codPreanalisisResultado);
                     }
                 }
@@ -245,14 +254,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// NO existen como tales en el SP real — se omiten aquí en vez de adivinar a qué parámetro
         /// corresponden (candidatos posibles no confirmados: GARANTIA_FND_CONTRATO para contrato).
         /// </summary>
+        /// <param name="connection">Conexión abierta a la base de datos de la empresa.</param>
+        /// <param name="usuario">Usuario que realiza el guardado.</param>
+        /// <param name="request">Datos completos del estudio de crédito.</param>
+        /// <param name="notasCumplimiento">Resultado de la validación de rangos.</param>
+        /// <param name="codPreanalisisOverride">
+        /// Código recién generado que se utiliza al completar el primer guardado.
+        /// </param>
         private static string GuardarModifica(
             IDbConnection connection,
             string usuario,
             FrmPreaEstudiov2GuardarRequest request,
-            string notasCumplimiento)
+            string notasCumplimiento,
+            string? codPreanalisisOverride = null)
         {
+            var codPreanalisis =
+                codPreanalisisOverride?.Trim() ??
+                request.cod_preanalisis?.Trim() ??
+                string.Empty;
             var parameters = new DynamicParameters();
-            parameters.Add("@COD_PREANALISIS", request.cod_preanalisis?.Trim() ?? string.Empty, DbType.String);
+            parameters.Add("@COD_PREANALISIS", codPreanalisis, DbType.String);
             parameters.Add("@TIPO_PREANALISIS", string.IsNullOrEmpty(request.tipo_preanalisis) ? "E" : request.tipo_preanalisis.Trim(), DbType.String);
             parameters.Add("@COD_PREANALISIS_REF", string.IsNullOrWhiteSpace(request.cod_preanalisis_ref) ? null : request.cod_preanalisis_ref.Trim(), DbType.String);
             parameters.Add("@USUARIO", usuario, DbType.String);
@@ -401,7 +422,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             parameters.Add("@SALARIO_USURA", request.salario_minimo_inembargable, DbType.Decimal);
 
             // ---- Fase 6: últimos 5 params, motor de cargas sociales (sbCalcula_Cargas) ----
-            var (aplicaCargaAsociacionActual, aplicaCargaFrapActual) = ObtenerAplicaCargas(connection, request.cod_preanalisis?.Trim() ?? string.Empty);
+            var (aplicaCargaAsociacionActual, aplicaCargaFrapActual) = ObtenerAplicaCargas(connection, codPreanalisis);
             var aplicaCargaAsociacion = request.aplica_carga_asociacion ?? aplicaCargaAsociacionActual;
             var aplicaCargaFrap = request.aplica_carga_frap ?? aplicaCargaFrapActual;
             var cargas = CalcularCargas(connection, request.salario_mensual, aplicaCargaAsociacion, aplicaCargaFrap, ptsExtraFrap);
@@ -419,7 +440,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 commandType: CommandType.StoredProcedure
             );
 
-            return request.cod_preanalisis?.Trim() ?? string.Empty;
+            return codPreanalisis;
         }
 
         /// <summary>
