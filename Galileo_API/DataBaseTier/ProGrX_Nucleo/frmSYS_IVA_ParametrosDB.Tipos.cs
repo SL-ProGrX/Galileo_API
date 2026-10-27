@@ -105,13 +105,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     parametros,
                     transaction,
                     commandType: CommandType.StoredProcedure);
-                if (parametros.Get<int>("@ReturnValue") != 0 || movimiento is null ||
-                    movimiento.Movimiento == "Error")
-                    return ErrorTipoIva(2, movimiento?.Mensaje ?? "No se pudo guardar el tipo de IVA.");
-                if (insertar && movimiento.Movimiento != "Inserta")
-                    return ErrorTipoIva(2, "El tipo de IVA ya existe.");
-                if (!insertar && movimiento.Movimiento != "Modifica")
-                    return ErrorTipoIva(1, "El tipo de IVA dejó de existir; recargue la tabla.");
+                var errorMovimiento = ValidarResultadoMovimiento(
+                    parametros.Get<int>("@ReturnValue"),
+                    movimiento,
+                    insertar);
+                if (errorMovimiento is not null)
+                    return errorMovimiento;
 
                 _security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
@@ -141,16 +140,19 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             }
         }
 
-        private sealed class TipoIvaConsultaRow
+        private static ErrorDto<TipoIvaFactura>? ValidarResultadoMovimiento(
+            int resultado,
+            TipoIvaMovimiento? movimiento,
+            bool insertar)
         {
-            public string COD_IVA { get; set; } = string.Empty;
-            public string DESCRIPCION { get; set; } = string.Empty;
-            public decimal PORCENTAJE { get; set; }
-            public string COD_CUENTA { get; set; } = string.Empty;
-            public string? COD_HACIENDA { get; set; }
-            public int? ACTIVO { get; set; }
-            public string? COD_CUENTA_MASK { get; set; }
-            public string? CTA_DESCRIPCION { get; set; }
+            if (resultado != 0 || movimiento is null || movimiento.Movimiento == "Error")
+                return ErrorTipoIva(2, movimiento?.Mensaje ?? "No se pudo guardar el tipo de IVA.");
+            if (insertar && movimiento.Movimiento != "Inserta")
+                return ErrorTipoIva(2, "El tipo de IVA ya existe.");
+            if (!insertar && movimiento.Movimiento != "Modifica")
+                return ErrorTipoIva(1, "El tipo de IVA dejó de existir; recargue la tabla.");
+
+            return null;
         }
 
         private static List<TipoIvaFactura> ConsultarTiposIva(
@@ -212,56 +214,5 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             };
         }
 
-        private static void CompletarDatosCuentaIva(
-            IDbConnection connection,
-            IEnumerable<TipoIvaFactura> tipos,
-            IDbTransaction? transaction = null)
-        {
-            var tiposConCuenta = tipos
-                .Where(tipo => !string.IsNullOrWhiteSpace(tipo.Cod_Cuenta))
-                .ToList();
-            var cuentas = tiposConCuenta
-                .Select(tipo => tipo.Cod_Cuenta.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-
-            if (cuentas.Length == 0)
-                return;
-
-            var cuentasContables = connection.Query<CuentaTipoIvaData>(
-                @"SELECT COD_CUENTA AS Cod_Cuenta,
-                         COD_CUENTA_MASK AS Cod_Cuenta_Mask,
-                         DESCRIPCION AS CTA_Descripcion
-                  FROM vCNTX_CUENTAS_LOCAL
-                  WHERE COD_CUENTA IN @Cuentas",
-                new { Cuentas = cuentas },
-                transaction)
-                .GroupBy(cuenta => cuenta.Cod_Cuenta, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(
-                    grupo => grupo.Key,
-                    grupo => grupo.First(),
-                    StringComparer.OrdinalIgnoreCase);
-
-            foreach (var tipo in tiposConCuenta.Where(tipo => cuentasContables.ContainsKey(tipo.Cod_Cuenta.Trim())))
-            {
-                var cuenta = cuentasContables[tipo.Cod_Cuenta.Trim()];
-
-                tipo.Cod_Cuenta_Mask = cuenta.Cod_Cuenta_Mask;
-                tipo.CTA_Descripcion = cuenta.CTA_Descripcion;
-            }
-        }
-
-        private sealed class TipoIvaMovimiento
-        {
-            public string Movimiento { get; set; } = string.Empty;
-            public string Mensaje { get; set; } = string.Empty;
-        }
-
-        private sealed class CuentaTipoIvaData
-        {
-            public string Cod_Cuenta { get; set; } = string.Empty;
-            public string Cod_Cuenta_Mask { get; set; } = string.Empty;
-            public string CTA_Descripcion { get; set; } = string.Empty;
-        }
     }
 }

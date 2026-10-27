@@ -20,20 +20,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             _security_MainDB = new MSecurityMainDb(_config);
         }
 
-        private sealed class ParametroIvaConsulta
-        {
-            public string? COD_PARAMETRO { get; set; }
-            public string? DESCRIPCION { get; set; }
-            public string? VALOR { get; set; }
-            public string? TIPO { get; set; }
-            public string? NOTAS { get; set; }
-            public string? REGISTRO_USUARIO { get; set; }
-            public DateTime? REGISTRO_FECHA { get; set; }
-            public string? MODIFICA_USUARIO { get; set; }
-            public DateTime? MODIFICA_FECHA { get; set; }
-            public string? COD_CUENTA_MASK { get; set; }
-            public string? CTA_DESCRIPCION { get; set; }
-        }
+       
 
         private static List<SysIvaParametrosData> ConsultarParametros(SqlConnection connection, string? parametro = null, IDbTransaction? transaction = null)
         {
