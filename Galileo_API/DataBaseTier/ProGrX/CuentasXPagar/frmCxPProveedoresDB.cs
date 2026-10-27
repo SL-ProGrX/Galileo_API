@@ -136,13 +136,15 @@ namespace Galileo.DataBaseTier
                 parameters.Add("@Estado", parametros.estado);
                 parameters.Add("@AutoGestion", parametros.autoGestion);
                 parameters.Add("@Ventas", parametros.ventas);
+                parameters.Add("@ConSaldo", parametros.conSaldo);
 
                 const string defaultSortField = codProveedorField;
 
                 var sortMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
                     [codProveedorField] = codProveedorField,
-                    ["DESCRIPCION"] = "DESCRIPCION"
+                    ["DESCRIPCION"] = "DESCRIPCION",
+                    ["CEDJUR"] = "CEDJUR"
                 };
 
                 if (!sortMap.TryGetValue(sortField, out string? safeSortField))
@@ -158,15 +160,17 @@ namespace Galileo.DataBaseTier
                     SELECT COUNT(*)
                     FROM CXP_PROVEEDORES
                     WHERE (@Estado = 'T' OR ESTADO = @Estado)
-                      AND (
-                            (@AutoGestion = 0 AND @Ventas = 0)
-                            OR (@AutoGestion = 1 AND WEB_AUTO_GESTION = 1)
-                            OR (@Ventas = 1 AND WEB_FERIAS = 1)
-                          )
+                      AND (@AutoGestion = 0 OR WEB_AUTO_GESTION = 1)
+                      AND (@Ventas = 0 OR WEB_FERIAS = 1)
+                      AND (@ConSaldo = 0 OR ISNULL(SALDO, 0) > 0)
                       AND (
                             @Search IS NULL
                             OR CONVERT(VARCHAR(50), COD_PROVEEDOR) LIKE @SearchPattern
                             OR DESCRIPCION LIKE @SearchPattern
+                            OR CEDJUR LIKE @SearchPattern
+                            OR COD_ALTER LIKE @SearchPattern
+                            OR NIT_CODIGO LIKE @SearchPattern
+                            OR NIT_NOMBRE LIKE @SearchPattern
                           );";
 
                 int total = conn.QuerySingle<int>(qTotal, parameters);
@@ -178,21 +182,25 @@ namespace Galileo.DataBaseTier
                         CEDJUR
                     FROM CXP_PROVEEDORES
                     WHERE (@Estado = 'T' OR ESTADO = @Estado)
-                      AND (
-                            (@AutoGestion = 0 AND @Ventas = 0)
-                            OR (@AutoGestion = 1 AND WEB_AUTO_GESTION = 1)
-                            OR (@Ventas = 1 AND WEB_FERIAS = 1)
-                          )
+                      AND (@AutoGestion = 0 OR WEB_AUTO_GESTION = 1)
+                      AND (@Ventas = 0 OR WEB_FERIAS = 1)
+                      AND (@ConSaldo = 0 OR ISNULL(SALDO, 0) > 0)
                       AND (
                             @Search IS NULL
                             OR CONVERT(VARCHAR(50), COD_PROVEEDOR) LIKE @SearchPattern
                             OR DESCRIPCION LIKE @SearchPattern
+                            OR CEDJUR LIKE @SearchPattern
+                            OR COD_ALTER LIKE @SearchPattern
+                            OR NIT_CODIGO LIKE @SearchPattern
+                            OR NIT_NOMBRE LIKE @SearchPattern
                           )
                     ORDER BY
                         CASE WHEN @SortField = 'COD_PROVEEDOR' AND @SortDir = 'ASC' THEN COD_PROVEEDOR END ASC,
                         CASE WHEN @SortField = 'COD_PROVEEDOR' AND @SortDir = 'DESC' THEN COD_PROVEEDOR END DESC,
                         CASE WHEN @SortField = 'DESCRIPCION' AND @SortDir = 'ASC' THEN DESCRIPCION END ASC,
-                        CASE WHEN @SortField = 'DESCRIPCION' AND @SortDir = 'DESC' THEN DESCRIPCION END DESC
+                        CASE WHEN @SortField = 'DESCRIPCION' AND @SortDir = 'DESC' THEN DESCRIPCION END DESC,
+                        CASE WHEN @SortField = 'CEDJUR' AND @SortDir = 'ASC' THEN CEDJUR END ASC,
+                        CASE WHEN @SortField = 'CEDJUR' AND @SortDir = 'DESC' THEN CEDJUR END DESC
                     OFFSET @Offset ROWS
                     FETCH NEXT @PageSize ROWS ONLY;";
 
@@ -214,18 +222,11 @@ namespace Galileo.DataBaseTier
         /// <returns>Detalle del proveedor.</returns>
         public ErrorDto<ProveedorDto> ProveedorDetalle_Obtener(int CodEmpresa, int Cod_Proveedor)
         {
-            var result = DbHelper.ExecuteSingleQuery<ProveedorDto>(
-                CreatePortalDb(),
-                CodEmpresa,
-                @"SELECT P.*, RTRIM(C.descripcion) AS TipoProv,
-                         ISNULL(Cta.Descripcion, '') AS CuentaConta,
-                         dbo.fxSys_Cuenta_Bancos_Desc(P.cod_Banco) AS Banco_Desc
-                  FROM cxp_proveedores P
-                  INNER JOIN cxp_prov_clas C ON P.cod_clasificacion = C.cod_clasificacion
-                  LEFT JOIN CntX_Cuentas Cta ON P.cod_Cuenta = Cta.cod_Cuenta AND Cta.cod_contabilidad = 1
-                  WHERE P.cod_proveedor = @Cod_Proveedor",
-                null,
-                new { Cod_Proveedor });
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+                connection.QueryFirstOrDefault<ProveedorDto>(
+                    "[spCxP_Proveedor_Load]",
+                    new { Proveedor = Cod_Proveedor },
+                    commandType: CommandType.StoredProcedure));
 
             if (result.Code == 0 && result.Result is not null)
             {
@@ -260,6 +261,33 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <returns>Listado de tipos de proveedor.</returns>
+        public ErrorDto<List<TipoIdentificacionProveedor>> TiposIdentificacion_Obtener(int CodEmpresa)
+        {
+            return DbHelper.ExecuteListQuery<TipoIdentificacionProveedor>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"SELECT CONVERT(VARCHAR(20), TIPO_ID) AS Tipo_Id,
+                         RTRIM(Descripcion) AS Descripcion,
+                         ISNULL(LARGO_MINIMO, 0) AS Largo_Minimo
+                  FROM dbo.AFI_TIPOS_IDS
+                  ORDER BY TIPO_ID");
+        }
+
+        public ErrorDto<List<TipoIvaProveedor>> TiposIVA_Obtener(int CodEmpresa)
+        {
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+                connection.Query<TipoIvaProveedor>(
+                    "spSys_IVA_TIPOS_List",
+                    commandType: CommandType.StoredProcedure).ToList());
+
+            return new ErrorDto<List<TipoIvaProveedor>>
+            {
+                Code = result.Code,
+                Description = result.Description,
+                Result = result.Result ?? new List<TipoIvaProveedor>()
+            };
+        }
+
         public ErrorDto<List<TipoProveedor>> TiposProveedor_Obtener(int CodEmpresa)
         {
             return DbHelper.ExecuteListQuery<TipoProveedor>(
@@ -335,48 +363,39 @@ namespace Galileo.DataBaseTier
         /// <returns>Código del proveedor encontrado.</returns>
         public int ConsultaAscDesc(int CodEmpresa, int Cod_Proveedor, string tipo, ProveedorDataFiltros filtro)
         {
+            var estado = string.IsNullOrWhiteSpace(filtro?.estado) ? "T" : filtro.estado;
+            var autoGestion = filtro?.autoGestion == true;
+            var ventas = filtro?.ventas == true;
+            var conSaldo = filtro?.conSaldo == true;
+            var usarDesc = tipo == "desc";
+
+            const string query = @"SELECT TOP 1 cod_proveedor
+                                   FROM cxp_proveedores
+                                   WHERE (@Estado = 'T' OR ESTADO = @Estado)
+                                     AND (@AutoGestion = 0 OR WEB_AUTO_GESTION = 1)
+                                     AND (@Ventas = 0 OR WEB_FERIAS = 1)
+                                     AND (@ConSaldo = 0 OR ISNULL(SALDO, 0) > 0)
+                                     AND (
+                                            (@UsarDesc = 1 AND (@Cod_Proveedor <= 0 OR cod_proveedor < @Cod_Proveedor))
+                                            OR
+                                            (@UsarDesc = 0 AND cod_proveedor > @Cod_Proveedor)
+                                         )
+                                   ORDER BY
+                                     CASE WHEN @UsarDesc = 1 THEN cod_proveedor END DESC,
+                                     CASE WHEN @UsarDesc = 0 THEN cod_proveedor END ASC";
+
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-            {
-                var autoGestion = filtro?.autoGestion == true;
-                var ventas = filtro?.ventas == true;
-                var usarDesc = tipo == "desc";
-
-                const string query = @"SELECT TOP 1 cod_proveedor
-                                       FROM cxp_proveedores
-                                       WHERE (
-                                                (@UsarFiltro = 0 AND ESTADO = 'A')
-                                                OR
-                                                (@UsarFiltro = 1 AND ESTADO IN ('A','T','S','I'))
-                                             )
-                                         AND (
-                                                @UsarFiltro = 0
-                                                OR (@AutoGestion = 0 AND @Ventas = 0)
-                                                OR (@AutoGestion = 1 AND @Ventas = 0 AND WEB_AUTO_GESTION = 1)
-                                                OR (@AutoGestion = 0 AND @Ventas = 1 AND WEB_FERIAS = 1)
-                                                OR (@AutoGestion = 1 AND @Ventas = 1 AND (WEB_AUTO_GESTION = 1 OR WEB_FERIAS = 1))
-                                             )
-                                         AND (
-                                                (@UsarDesc = 1 AND (@Cod_Proveedor <= 0 OR cod_proveedor < @Cod_Proveedor))
-                                                OR
-                                                (@UsarDesc = 0 AND cod_proveedor > @Cod_Proveedor)
-                                             )
-                                       ORDER BY
-                                         CASE WHEN @UsarDesc = 1 THEN cod_proveedor END DESC,
-                                         CASE WHEN @UsarDesc = 0 THEN cod_proveedor END ASC";
-
-                var encontrado = connection.QueryFirstOrDefault<int>(
+                connection.QueryFirstOrDefault<int>(
                     query,
                     new
                     {
-                        UsarFiltro = filtro is not null,
+                        Estado = estado,
                         AutoGestion = autoGestion,
                         Ventas = ventas,
+                        ConSaldo = conSaldo,
                         UsarDesc = usarDesc,
                         Cod_Proveedor
-                    });
-
-                return encontrado == 0 || encontrado == Cod_Proveedor ? Cod_Proveedor : encontrado;
-            });
+                    }));
 
             return result.Code == 0 ? result.Result : Cod_Proveedor;
         }
@@ -393,9 +412,11 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteSingleQuery<int>(
                 CreatePortalDb(),
                 CodEmpresa,
-                "SELECT ISNULL(COUNT(*),0) FROM cxp_proveedores WHERE cod_proveedor <> @Cod_Proveedor AND cedJur = @cedula",
+                "SELECT ISNULL(COUNT(*),0) FROM cxp_proveedores "
+                + "WHERE cod_proveedor <> @Cod_Proveedor "
+                + "AND LTRIM(RTRIM(REPLACE(ISNULL(cedJur, ''), '-', ''))) = @cedula",
                 0,
-                new { Cod_Proveedor, cedula });
+                new { Cod_Proveedor, cedula = (cedula ?? string.Empty).Trim().Replace("-", string.Empty) });
 
             return result.Code == 0 ? result.Result : 0;
         }
@@ -486,6 +507,10 @@ namespace Galileo.DataBaseTier
                             web_auto_gestion = @Gestion,
                             web_ferias = @Ferias,
                             HaciendaTipoRegimen = @HaciendaTipoRegimen,
+                            HaciendaImpuestos = @HaciendaImpuestos,
+                            I_Extranjero = @I_Extranjero,
+                            I_Convenio = @I_Convenio,
+                            COD_IVA = @Cod_IVA,
                             modifica_fecha = GETDATE(),
                             modifica_usuario = @user_modifica
                       WHERE cod_proveedor = @Cod_Proveedor",
@@ -519,6 +544,10 @@ namespace Galileo.DataBaseTier
                         Gestion = gestion,
                         Ferias = ferias,
                         request.HaciendaTipoRegimen,
+                        request.HaciendaImpuestos,
+                        request.I_Extranjero,
+                        request.I_Convenio,
+                        request.Cod_IVA,
                         request.user_modifica,
                         request.Cod_Proveedor
                     });
@@ -526,15 +555,18 @@ namespace Galileo.DataBaseTier
                 return estadoAnterior;
             });
 
-            if (result.Code == 0 && result.Result != request.Estado)
+            if (result.Code == 0)
             {
+                var detalle = result.Result != request.Estado && !string.IsNullOrWhiteSpace(request.justificacion_estado)
+                    ? request.justificacion_estado
+                    : "Proveedor Cod: " + request.Cod_Proveedor;
                 mAuxiliarDB.BitacoraProveedor(new BitacoraProveedorInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     cod_proveedor = request.Cod_Proveedor.ToString(),
                     consec = 0,
                     movimiento = "Modifica",
-                    detalle = request.justificacion_estado ?? string.Empty,
+                    detalle = detalle,
                     registro_usuario = request.user_modifica ?? string.Empty
                 });
             }
@@ -564,14 +596,16 @@ namespace Galileo.DataBaseTier
                             email, email_02, aptopostal, direccion, credito_plazo, credito_monto,
                             descuento_porc, saldo, cod_cuenta, cedJur, Nit_Codigo, Nit_Nombre,
                             cod_divisa, saldo_divisa_real, cod_banco, web_auto_gestion, web_ferias,
-                            HaciendaTipoRegimen, registro_fecha, registro_usuario)
+                            HaciendaTipoRegimen, HaciendaImpuestos, I_Extranjero, I_Convenio, COD_IVA,
+                            registro_fecha, registro_usuario)
                       VALUES(
                             @Cod_Proveedor, @Tipo, @Cod_Clasificacion, @Descripcion, @Cod_Alter, @Observacion,
                             @Estado, @Contacto_Ventas, @Contacto_Compras, @Telefono, @Telefono_Ext, @Fax, @Fax_Ext,
                             @Email, @Email_02, @Aptopostal, @Direccion, @Credito_Plazo, @Credito_Monto,
                             @Descuento_Porc, @Saldo, @Cod_Cuenta, @Cedjur, @Nit_Codigo, @Nit_Nombre,
                             @Cod_Divisa, @Saldo_Divisa_Real, @Cod_Banco, @Web_Auto_Gestion, @Web_Ferias,
-                            @HaciendaTipoRegimen, GETDATE(), @Registro_Usuario)",
+                            @HaciendaTipoRegimen, @HaciendaImpuestos, @I_Extranjero, @I_Convenio, @Cod_IVA,
+                            GETDATE(), @Registro_Usuario)",
                     new
                     {
                         Cod_Proveedor = siguiente,
@@ -605,11 +639,28 @@ namespace Galileo.DataBaseTier
                         request.Web_Auto_Gestion,
                         request.Web_Ferias,
                         request.HaciendaTipoRegimen,
+                        request.HaciendaImpuestos,
+                        request.I_Extranjero,
+                        request.I_Convenio,
+                        request.Cod_IVA,
                         request.registro_Usuario
                     });
 
                 return siguiente;
             });
+
+            if (result.Code == 0)
+            {
+                mAuxiliarDB.BitacoraProveedor(new BitacoraProveedorInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    cod_proveedor = result.Result.ToString(),
+                    consec = 0,
+                    movimiento = "Registra",
+                    detalle = "Proveedor Cod: " + result.Result,
+                    registro_usuario = request.registro_Usuario ?? string.Empty
+                });
+            }
 
             return result.Code == 0
                 ? new ErrorDto { Code = result.Result, Description = "Ok" }

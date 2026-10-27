@@ -1018,6 +1018,21 @@ WHERE REFERENCIA_SINPE = @referencia;";
             }
         }
 
+       public void fxTesActualizaHolderId(int codEmpresa, string solicitud, string holder)
+        {
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
+                const string query = "UPDATE TES_TRANSACCIONES SET BENEFICIARIO = @Holder WHERE NSOLICITUD = @Solicitud";
+                connection.Execute(query, new { Holder = holder, Solicitud = solicitud });
+            }
+            catch (Exception ex)
+            {
+                _ = ex.Message;
+                throw;
+            }
+            
+        }
 
         #endregion
 

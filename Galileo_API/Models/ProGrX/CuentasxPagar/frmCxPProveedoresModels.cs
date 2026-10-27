@@ -5,6 +5,7 @@
         public string estado { get; set; } = "T";
         public bool autoGestion { get; set; }
         public bool ventas { get; set; }
+        public bool conSaldo { get; set; }
     }
 
     public class ProveedorDto
@@ -52,6 +53,12 @@
         public bool Web_Auto_Gestion { get; set; } = false;
         public bool Web_Ferias { get; set; } = false;
         public string HaciendaTipoRegimen { get; set; } = "T";
+        public int HaciendaImpuestos { get; set; } = 1;
+        [System.Text.Json.Serialization.JsonRequired]
+        public int I_Extranjero { get; set; }
+        [System.Text.Json.Serialization.JsonRequired]
+        public int I_Convenio { get; set; }
+        public string Cod_IVA { get; set; } = string.Empty;
         public Nullable<DateTime> registro_fecha { get; set; }
         public string registro_Usuario { get; set; } = string.Empty;
         public Nullable<DateTime> fecha_vencimiento { get; set; }
@@ -80,6 +87,19 @@
     {
         public string Cod_Clasificacion { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
+    }
+
+    public class TipoIdentificacionProveedor
+    {
+        public string Tipo_Id { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public int Largo_Minimo { get; set; }
+    }
+
+    public class TipoIvaProveedor
+    {
+        public object? Idx { get; set; }
+        public string ItmX { get; set; } = string.Empty;
     }
 
     public class CuentaDesembolso

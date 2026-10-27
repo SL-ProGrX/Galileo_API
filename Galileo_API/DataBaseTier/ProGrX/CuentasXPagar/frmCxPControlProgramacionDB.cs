@@ -555,6 +555,31 @@ namespace Galileo.DataBaseTier
                 parametros.Add("Estado", param.Estado);
             }
 
+            if (!string.IsNullOrWhiteSpace(param.Cod_Factura))
+            {
+                parametros.Add("FiltroFactura", $"{param.Cod_Factura.Trim()}%");
+            }
+
+            if (param.Cod_Proveedor.HasValue && param.Cod_Proveedor.Value > 0)
+            {
+                parametros.Add("Cod_Proveedor", param.Cod_Proveedor.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(param.Proveedor))
+            {
+                parametros.Add("FiltroProveedor", $"%{param.Proveedor.Trim()}%");
+            }
+
+            if (param.Monto.HasValue)
+            {
+                parametros.Add("Monto", param.Monto.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(param.Cod_Divisa))
+            {
+                parametros.Add("Cod_Divisa", param.Cod_Divisa.Trim());
+            }
+
             if (!string.IsNullOrWhiteSpace(filtro))
             {
                 parametros.Add("Filtro", $"%{filtro.Trim()}%");
@@ -625,6 +650,42 @@ namespace Galileo.DataBaseTier
             if (!string.IsNullOrWhiteSpace(param.Estado))
             {
                 condiciones.Add("cxp_estado = @Estado");
+            }
+
+            if (param.ConSaldos)
+            {
+                condiciones.Add(@"Total > ISNULL((
+                    SELECT SUM(P.Monto)
+                    FROM CxP_PagoProv P
+                    WHERE P.Cod_Factura = vCxP_ProgramacionPago.Cod_Factura
+                      AND P.Cod_Proveedor = vCxP_ProgramacionPago.Cod_Proveedor
+                      AND P.Tesoreria IS NULL
+                ), 0)");
+            }
+
+            if (!string.IsNullOrWhiteSpace(param.Cod_Factura))
+            {
+                condiciones.Add("cod_factura LIKE @FiltroFactura");
+            }
+
+            if (param.Cod_Proveedor.HasValue && param.Cod_Proveedor.Value > 0)
+            {
+                condiciones.Add("cod_proveedor = @Cod_Proveedor");
+            }
+
+            if (!string.IsNullOrWhiteSpace(param.Proveedor))
+            {
+                condiciones.Add("proveedor LIKE @FiltroProveedor");
+            }
+
+            if (param.Monto.HasValue)
+            {
+                condiciones.Add("total = @Monto");
+            }
+
+            if (!string.IsNullOrWhiteSpace(param.Cod_Divisa))
+            {
+                condiciones.Add("cod_divisa = @Cod_Divisa");
             }
 
             if (!string.IsNullOrWhiteSpace(filtro))

@@ -221,150 +221,273 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             var unidad = NormalizarOpcion(f.unidad, "C");
             var centroCosto = NormalizarOpcion(f.centroCosto, "T");
-            const string sql = @"
-                DELETE CntX_Rep_Periodos_mov
-                WHERE usuario = @usuario;
 
-                DECLARE @cuenta_utilidad varchar(100) = (
-                    SELECT TOP (1) RTRIM(Cuenta_GanPer)
-                    FROM CNTX_CIERRES
-                    WHERE ID_CIERRE = @periodo
-                      AND cod_contabilidad = @cod_contabilidad
+            const string sql = @"
+            DELETE CntX_Rep_Periodos_mov
+            WHERE usuario = @usuario;
+
+            DECLARE @cuenta_utilidad varchar(100) = (
+                SELECT TOP (1) RTRIM(Cuenta_GanPer)
+                FROM CNTX_CIERRES
+                WHERE ID_CIERRE = @periodo
+                  AND cod_contabilidad = @cod_contabilidad
+            );
+
+            IF NULLIF(@cuenta_utilidad, '') IS NULL
+                THROW 50001,
+                    'El cierre seleccionado no tiene cuenta de ganancias y pérdidas.',
+                    1;
+
+            INSERT INTO CntX_Rep_Periodos_mov
+                (
+                    cod_cuenta, usuario, cod_contabilidad,
+                    movimiento_10, movimiento_11, movimiento_12,
+                    movimiento_01, movimiento_02, movimiento_03,
+                    movimiento_04, movimiento_05, movimiento_06,
+                    movimiento_07, movimiento_08, movimiento_09
+                )
+            VALUES
+                (
+                    @cuenta_utilidad, @usuario, @cod_contabilidad,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
                 );
 
-                IF NULLIF(@cuenta_utilidad, '') IS NULL
-                    THROW 50001, 'El cierre seleccionado no tiene cuenta de ganancias y pérdidas.', 1;
-
-                INSERT INTO CntX_Rep_Periodos_mov
-                    (cod_cuenta, usuario, cod_contabilidad,
-                     movimiento_10, movimiento_11, movimiento_12,
-                     movimiento_01, movimiento_02, movimiento_03,
-                     movimiento_04, movimiento_05, movimiento_06,
-                     movimiento_07, movimiento_08, movimiento_09)
-                VALUES
-                    (@cuenta_utilidad, @usuario, @cod_contabilidad,
-                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-
-                INSERT INTO CntX_Rep_Periodos_mov
-                    (cod_cuenta, usuario, cod_contabilidad,
-                     movimiento_10, movimiento_11, movimiento_12,
-                     movimiento_01, movimiento_02, movimiento_03,
-                     movimiento_04, movimiento_05, movimiento_06,
-                     movimiento_07, movimiento_08, movimiento_09)
-                SELECT C.cod_cuenta, @usuario, @cod_contabilidad,
-                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-                FROM CntX_Cuentas C
-                INNER JOIN CntX_Tipos_Cuentas T
-                    ON T.cod_contabilidad = C.cod_contabilidad
-                   AND T.tipo_cuenta = C.tipo_cuenta
-                WHERE C.cod_contabilidad = @cod_contabilidad
-                  AND C.cod_cuenta <> @cuenta_utilidad
-                  AND (
-                        (@reporte = '1' AND T.clasificacion IN ('A', 'P', 'C'))
-                        OR (@reporte = '2' AND T.clasificacion IN ('I', 'V', 'G'))
-                        OR (@reporte = '3' AND T.clasificacion IN ('I', 'V', 'C', 'G', 'P', 'A'))
-                  );
-
-                DECLARE @fecha_inicial date = DATEADD(month, -2, DATEFROMPARTS(@periodo_anio, @periodo_mes, 1));
-
-                ;WITH MovimientosBase AS
+            INSERT INTO CntX_Rep_Periodos_mov
                 (
-                    SELECT M.cod_cuenta, M.Saldo_Inicial, M.Total_Debitos, M.Total_Creditos, M.anio, M.mes
-                    FROM vCntX_Mov_Cuentas_General M
-                    WHERE @unidad = '' AND @centro_costo = ''
-                      AND M.cod_contabilidad = @cod_contabilidad
-                    UNION ALL
-                    SELECT M.cod_cuenta, M.Saldo_Inicial, M.Total_Debitos, M.Total_Creditos, M.anio, M.mes
-                    FROM vCntX_Mov_Cuentas_CentroCosto M
-                    WHERE @unidad = '' AND @centro_costo <> ''
-                      AND M.cod_contabilidad = @cod_contabilidad
-                      AND M.cod_centro_costo = @centro_costo
-                    UNION ALL
-                    SELECT M.cod_cuenta, M.Saldo_Inicial, M.Total_Debitos, M.Total_Creditos, M.anio, M.mes
-                    FROM vCntX_Mov_Cuentas_Unidad M
-                    WHERE @unidad <> '' AND @centro_costo = ''
-                      AND M.cod_contabilidad = @cod_contabilidad
-                      AND M.cod_unidad = @unidad
-                    UNION ALL
-                    SELECT M.cod_cuenta, M.Saldo_Inicial, M.Total_Debitos, M.Total_Creditos, M.anio, M.mes
-                    FROM CntX_Mov_Cuentas_Detallado M
-                    WHERE @unidad <> '' AND @centro_costo <> ''
-                      AND M.cod_contabilidad = @cod_contabilidad
-                      AND M.cod_unidad = @unidad
-                      AND M.cod_centro_costo = @centro_costo
-                ),
-                Movimientos AS
-                (
-                    SELECT M.cod_cuenta,
-                           SUM(CASE WHEN M.anio = YEAR(@fecha_inicial)
-                                         AND M.mes = MONTH(@fecha_inicial)
-                                    THEN M.Total_Debitos + M.Total_Creditos ELSE 0 END) AS movimiento_01,
-                           SUM(CASE WHEN M.anio = YEAR(DATEADD(month, 1, @fecha_inicial))
-                                         AND M.mes = MONTH(DATEADD(month, 1, @fecha_inicial))
-                                    THEN M.Total_Debitos + M.Total_Creditos ELSE 0 END) AS movimiento_02,
-                           SUM(CASE WHEN M.anio = YEAR(DATEADD(month, 2, @fecha_inicial))
-                                         AND M.mes = MONTH(DATEADD(month, 2, @fecha_inicial))
-                                    THEN M.Total_Debitos + M.Total_Creditos ELSE 0 END) AS movimiento_03,
-                           SUM(CASE WHEN M.anio = YEAR(@fecha_inicial)
-                                         AND M.mes = MONTH(@fecha_inicial)
-                                    THEN M.Saldo_Inicial + M.Total_Debitos + M.Total_Creditos ELSE 0 END) AS movimiento_04,
-                           SUM(CASE WHEN M.anio = YEAR(DATEADD(month, 1, @fecha_inicial))
-                                         AND M.mes = MONTH(DATEADD(month, 1, @fecha_inicial))
-                                    THEN M.Saldo_Inicial + M.Total_Debitos + M.Total_Creditos ELSE 0 END) AS movimiento_05,
-                           SUM(CASE WHEN M.anio = YEAR(DATEADD(month, 2, @fecha_inicial))
-                                         AND M.mes = MONTH(DATEADD(month, 2, @fecha_inicial))
-                                    THEN M.Saldo_Inicial + M.Total_Debitos + M.Total_Creditos ELSE 0 END) AS movimiento_06
-                    FROM MovimientosBase M
-                    WHERE DATEFROMPARTS(M.anio, M.mes, 1)
-                          BETWEEN @fecha_inicial AND DATEADD(month, 2, @fecha_inicial)
-                    GROUP BY M.cod_cuenta
+                    cod_cuenta, usuario, cod_contabilidad,
+                    movimiento_10, movimiento_11, movimiento_12,
+                    movimiento_01, movimiento_02, movimiento_03,
+                    movimiento_04, movimiento_05, movimiento_06,
+                    movimiento_07, movimiento_08, movimiento_09
                 )
-                UPDATE R
-                SET movimiento_01 = M.movimiento_01,
-                    movimiento_02 = M.movimiento_02,
-                    movimiento_03 = M.movimiento_03,
-                    movimiento_04 = M.movimiento_04,
-                    movimiento_05 = M.movimiento_05,
-                    movimiento_06 = M.movimiento_06
-                FROM CntX_Rep_Periodos_mov R
-                INNER JOIN Movimientos M ON M.cod_cuenta = R.cod_cuenta
-                WHERE R.usuario = @usuario
-                  AND R.cod_contabilidad = @cod_contabilidad;
+            SELECT
+                C.cod_cuenta, @usuario, @cod_contabilidad,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            FROM CntX_Cuentas C
+            INNER JOIN CntX_Tipos_Cuentas T
+                ON T.cod_contabilidad = C.cod_contabilidad
+               AND T.tipo_cuenta = C.tipo_cuenta
+            WHERE C.cod_contabilidad = @cod_contabilidad
+              AND C.cod_cuenta <> @cuenta_utilidad
+              AND (
+                    (@reporte = '1' AND T.clasificacion IN ('A', 'P', 'C'))
+                    OR (@reporte = '2' AND T.clasificacion IN ('I', 'V', 'G'))
+                    OR (@reporte = '3'
+                        AND T.clasificacion IN ('I', 'V', 'C', 'G', 'P', 'A'))
+              );
 
-                UPDATE CntX_Rep_Periodos_mov
-                SET movimiento_01 = movimiento_01
-                        + dbo.fxCntX_UtilidadMes(YEAR(@fecha_inicial), MONTH(@fecha_inicial),
-                                                @cod_contabilidad, @unidad, @centro_costo),
-                    movimiento_02 = movimiento_02
-                        + dbo.fxCntX_UtilidadMes(YEAR(DATEADD(month, 1, @fecha_inicial)),
-                                                MONTH(DATEADD(month, 1, @fecha_inicial)),
-                                                @cod_contabilidad, @unidad, @centro_costo),
-                    movimiento_03 = movimiento_03
-                        + dbo.fxCntX_UtilidadMes(YEAR(DATEADD(month, 2, @fecha_inicial)),
-                                                MONTH(DATEADD(month, 2, @fecha_inicial)),
-                                                @cod_contabilidad, @unidad, @centro_costo),
-                    movimiento_04 = movimiento_04
-                        + dbo.fxCntX_Utilidad(YEAR(@fecha_inicial), MONTH(@fecha_inicial),
-                                             @cod_contabilidad, @unidad, @centro_costo),
-                    movimiento_05 = movimiento_05
-                        + dbo.fxCntX_Utilidad(YEAR(DATEADD(month, 1, @fecha_inicial)),
-                                             MONTH(DATEADD(month, 1, @fecha_inicial)),
-                                             @cod_contabilidad, @unidad, @centro_costo),
-                    movimiento_06 = movimiento_06
-                        + dbo.fxCntX_Utilidad(YEAR(DATEADD(month, 2, @fecha_inicial)),
-                                             MONTH(DATEADD(month, 2, @fecha_inicial)),
-                                             @cod_contabilidad, @unidad, @centro_costo)
-                WHERE usuario = @usuario
-                  AND cod_contabilidad = @cod_contabilidad
-                  AND cod_cuenta IN (
-                      SELECT cuenta
-                      FROM dbo.fxCntX_CuentasCascada(@cod_contabilidad, @cuenta_utilidad)
-                  );
+            DECLARE @fecha_inicial date =
+                DATEADD(
+                    month,
+                    -2,
+                    DATEFROMPARTS(@periodo_anio, @periodo_mes, 1)
+                );
 
-                DELETE CntX_Rep_Periodos_mov
-                WHERE usuario = @usuario
-                  AND movimiento_01 + movimiento_02 + movimiento_03
-                    + movimiento_04 + movimiento_05 + movimiento_06 = 0;";
+            ;WITH MovimientosBase AS
+            (
+                SELECT
+                    M.cod_cuenta,
+                    M.Saldo_Inicial,
+                    M.Total_Debitos,
+                    M.Total_Creditos,
+                    M.anio,
+                    M.mes
+                FROM vCntX_Mov_Cuentas_General M
+                WHERE @unidad = ''
+                  AND @centro_costo = ''
+                  AND M.cod_contabilidad = @cod_contabilidad
+
+                UNION ALL
+
+                SELECT
+                    M.cod_cuenta,
+                    M.Saldo_Inicial,
+                    M.Total_Debitos,
+                    M.Total_Creditos,
+                    M.anio,
+                    M.mes
+                FROM vCntX_Mov_Cuentas_CentroCosto M
+                WHERE @unidad = ''
+                  AND @centro_costo <> ''
+                  AND M.cod_contabilidad = @cod_contabilidad
+                  AND M.cod_centro_costo = @centro_costo
+
+                UNION ALL
+
+                SELECT
+                    M.cod_cuenta,
+                    M.Saldo_Inicial,
+                    M.Total_Debitos,
+                    M.Total_Creditos,
+                    M.anio,
+                    M.mes
+                FROM vCntX_Mov_Cuentas_Unidad M
+                WHERE @unidad <> ''
+                  AND @centro_costo = ''
+                  AND M.cod_contabilidad = @cod_contabilidad
+                  AND M.cod_unidad = @unidad
+
+                UNION ALL
+
+                SELECT
+                    M.cod_cuenta,
+                    M.Saldo_Inicial,
+                    M.Total_Debitos,
+                    M.Total_Creditos,
+                    M.anio,
+                    M.mes
+                FROM CntX_Mov_Cuentas_Detallado M
+                WHERE @unidad <> ''
+                  AND @centro_costo <> ''
+                  AND M.cod_contabilidad = @cod_contabilidad
+                  AND M.cod_unidad = @unidad
+                  AND M.cod_centro_costo = @centro_costo
+            ),
+            Movimientos AS
+            (
+                SELECT
+                    M.cod_cuenta,
+                    SUM(
+                        CASE
+                            WHEN M.anio = YEAR(@fecha_inicial)
+                             AND M.mes = MONTH(@fecha_inicial)
+                            THEN M.Total_Debitos + M.Total_Creditos
+                            ELSE 0
+                        END
+                    ) AS movimiento_01,
+                    SUM(
+                        CASE
+                            WHEN M.anio = YEAR(DATEADD(month, 1, @fecha_inicial))
+                             AND M.mes = MONTH(DATEADD(month, 1, @fecha_inicial))
+                            THEN M.Total_Debitos + M.Total_Creditos
+                            ELSE 0
+                        END
+                    ) AS movimiento_02,
+                    SUM(
+                        CASE
+                            WHEN M.anio = YEAR(DATEADD(month, 2, @fecha_inicial))
+                             AND M.mes = MONTH(DATEADD(month, 2, @fecha_inicial))
+                            THEN M.Total_Debitos + M.Total_Creditos
+                            ELSE 0
+                        END
+                    ) AS movimiento_03,
+                    SUM(
+                        CASE
+                            WHEN M.anio = YEAR(@fecha_inicial)
+                             AND M.mes = MONTH(@fecha_inicial)
+                            THEN M.Saldo_Inicial
+                                 + M.Total_Debitos
+                                 + M.Total_Creditos
+                            ELSE 0
+                        END
+                    ) AS movimiento_04,
+                    SUM(
+                        CASE
+                            WHEN M.anio = YEAR(DATEADD(month, 1, @fecha_inicial))
+                             AND M.mes = MONTH(DATEADD(month, 1, @fecha_inicial))
+                            THEN M.Saldo_Inicial
+                                 + M.Total_Debitos
+                                 + M.Total_Creditos
+                            ELSE 0
+                        END
+                    ) AS movimiento_05,
+                    SUM(
+                        CASE
+                            WHEN M.anio = YEAR(DATEADD(month, 2, @fecha_inicial))
+                             AND M.mes = MONTH(DATEADD(month, 2, @fecha_inicial))
+                            THEN M.Saldo_Inicial
+                                 + M.Total_Debitos
+                                 + M.Total_Creditos
+                            ELSE 0
+                        END
+                    ) AS movimiento_06
+                FROM MovimientosBase M
+                WHERE
+                    (
+                        M.anio = YEAR(@fecha_inicial)
+                        AND M.mes = MONTH(@fecha_inicial)
+                    )
+                    OR
+                    (
+                        M.anio = YEAR(DATEADD(month, 1, @fecha_inicial))
+                        AND M.mes = MONTH(DATEADD(month, 1, @fecha_inicial))
+                    )
+                    OR
+                    (
+                        M.anio = YEAR(DATEADD(month, 2, @fecha_inicial))
+                        AND M.mes = MONTH(DATEADD(month, 2, @fecha_inicial))
+                    )
+                GROUP BY M.cod_cuenta
+            )
+            UPDATE R
+            SET movimiento_01 = M.movimiento_01,
+                movimiento_02 = M.movimiento_02,
+                movimiento_03 = M.movimiento_03,
+                movimiento_04 = M.movimiento_04,
+                movimiento_05 = M.movimiento_05,
+                movimiento_06 = M.movimiento_06
+            FROM CntX_Rep_Periodos_mov R
+            INNER JOIN Movimientos M
+                ON M.cod_cuenta = R.cod_cuenta
+            WHERE R.usuario = @usuario
+              AND R.cod_contabilidad = @cod_contabilidad;
+
+            UPDATE CntX_Rep_Periodos_mov
+            SET movimiento_01 = movimiento_01
+                    + dbo.fxCntX_UtilidadMes(
+                        YEAR(@fecha_inicial),
+                        MONTH(@fecha_inicial),
+                        @cod_contabilidad,
+                        @unidad,
+                        @centro_costo),
+                movimiento_02 = movimiento_02
+                    + dbo.fxCntX_UtilidadMes(
+                        YEAR(DATEADD(month, 1, @fecha_inicial)),
+                        MONTH(DATEADD(month, 1, @fecha_inicial)),
+                        @cod_contabilidad,
+                        @unidad,
+                        @centro_costo),
+                movimiento_03 = movimiento_03
+                    + dbo.fxCntX_UtilidadMes(
+                        YEAR(DATEADD(month, 2, @fecha_inicial)),
+                        MONTH(DATEADD(month, 2, @fecha_inicial)),
+                        @cod_contabilidad,
+                        @unidad,
+                        @centro_costo),
+                movimiento_04 = movimiento_04
+                    + dbo.fxCntX_Utilidad(
+                        YEAR(@fecha_inicial),
+                        MONTH(@fecha_inicial),
+                        @cod_contabilidad,
+                        @unidad,
+                        @centro_costo),
+                movimiento_05 = movimiento_05
+                    + dbo.fxCntX_Utilidad(
+                        YEAR(DATEADD(month, 1, @fecha_inicial)),
+                        MONTH(DATEADD(month, 1, @fecha_inicial)),
+                        @cod_contabilidad,
+                        @unidad,
+                        @centro_costo),
+                movimiento_06 = movimiento_06
+                    + dbo.fxCntX_Utilidad(
+                        YEAR(DATEADD(month, 2, @fecha_inicial)),
+                        MONTH(DATEADD(month, 2, @fecha_inicial)),
+                        @cod_contabilidad,
+                        @unidad,
+                        @centro_costo)
+            WHERE usuario = @usuario
+              AND cod_contabilidad = @cod_contabilidad
+              AND cod_cuenta IN (
+                  SELECT cuenta
+                  FROM dbo.fxCntX_CuentasCascada(
+                      @cod_contabilidad,
+                      @cuenta_utilidad)
+              );
+
+            DELETE CntX_Rep_Periodos_mov
+            WHERE usuario = @usuario
+              AND movimiento_01 + movimiento_02 + movimiento_03
+                + movimiento_04 + movimiento_05 + movimiento_06 = 0;";
 
             connection.Execute(
                 sql,

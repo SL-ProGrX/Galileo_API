@@ -1,4 +1,5 @@
 using Dapper;
+using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
 using System.Data;
@@ -12,24 +13,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// (frmPreaEstudiov2.frm línea ~17313): exec spCrdPreaConsultaRefundicionesPreanalisis
         /// '&lt;expediente&gt;', '&lt;fechaFormaliza yyyy-mm-dd&gt;', '&lt;codGarantia&gt;'.
         /// Si fechaFormaliza es null, usa GETDATE() del servidor SQL (fxFechaServidor).
-        /// Totales replican sbRefundiciones_Calcula: solo suman filas con Aplica=1.
+        /// Totales replican sbRefundiciones_Calcula: saldo y cuota se suman con
+        /// Aplica=1/Apl_Mora=0; la mora suma cargos, principal e intereses cuando ambos son 1.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa donde se consulta el expediente.</param>
+        /// <param name="cod_preanalisis">Código del expediente de preanálisis.</param>
+        /// <param name="cod_garantia">Código de garantía seleccionado en el crédito.</param>
+        /// <param name="fechaFormaliza">Fecha utilizada para calcular las refundiciones.</param>
+        /// <returns>Operaciones disponibles y totales de refundición.</returns>
         public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_Consultar(
             int codEmpresa,
             string cod_preanalisis,
             string cod_garantia,
             DateTime? fechaFormaliza = null)
         {
-            var result = new ErrorDto<FrmPreaEstudiov2RefundicionesResponse>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new FrmPreaEstudiov2RefundicionesResponse()
-            };
-
             try
             {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 // Fiel a VB6 fxFechaServidor: si el cliente no envía fecha, usa GETDATE() del SQL Server.
                 var fechaBloqueo = fechaFormaliza?.Date
@@ -46,23 +46,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     }
                 ).ToList();
 
-                result.Result = new FrmPreaEstudiov2RefundicionesResponse
+                return DbHelper.CreateOkResponse(new FrmPreaEstudiov2RefundicionesResponse
                 {
                     refundiciones = refundiciones,
-                    total_refunde = refundiciones.Where(r => r.Aplica && !r.Apl_Mora).Sum(r => r.Mora_principal),
+                    total_refunde = refundiciones.Where(r => r.Aplica && !r.Apl_Mora).Sum(r => r.saldo),
                     total_cuotas = refundiciones.Where(r => r.Aplica && !r.Apl_Mora).Sum(r => r.cuota),
-                    total_mora = refundiciones.Where(r => r.Aplica && r.Apl_Mora).Sum(r => r.Mora_intereses),
+                    total_mora = refundiciones
+                        .Where(r => r.Aplica && r.Apl_Mora)
+                        .Sum(r => r.Cargos + r.Mora_principal + r.Mora_intereses),
                     fecha_servidor = fechaBloqueo
-                };
+                });
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = new FrmPreaEstudiov2RefundicionesResponse();
+                return DbHelper.CreateErrorResponse(
+                    ex.Message,
+                    -1,
+                    new FrmPreaEstudiov2RefundicionesResponse());
             }
-
-            return result;
         }
 
         /// <summary>
@@ -102,6 +103,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// update CRD_PREA_REFUNDICIONES set Aplica = &lt;0/1&gt;, Apl_Mora = &lt;0/1&gt;
         /// where cod_PreAnalisis = '&lt;expediente&gt;' and id_solicitud = &lt;id&gt;.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa donde se actualiza el expediente.</param>
+        /// <param name="request">Operación y valores de Aplica/Apl_Mora que se persisten.</param>
+        /// <param name="cod_garantia">Código de garantía utilizado al recargar la lista.</param>
+        /// <returns>Operaciones y totales recalculados después de actualizar la fila.</returns>
         public ErrorDto<FrmPreaEstudiov2RefundicionesResponse> Prea_frmPreaEstudiov2_Refundiciones_ToggleAplica(
             int codEmpresa,
             FrmPreaEstudiov2RefundicionToggleRequest request,
@@ -109,7 +114,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         {
             try
             {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
                 const string sql = @"UPDATE CRD_PREA_REFUNDICIONES
                     SET Aplica = @Aplica, Apl_Mora = @AplMora
@@ -124,12 +129,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             }
             catch (Exception ex)
             {
-                return new ErrorDto<FrmPreaEstudiov2RefundicionesResponse>
-                {
-                    Code = -1,
-                    Description = ex.Message,
-                    Result = new FrmPreaEstudiov2RefundicionesResponse()
-                };
+                return DbHelper.CreateErrorResponse(
+                    ex.Message,
+                    -1,
+                    new FrmPreaEstudiov2RefundicionesResponse());
             }
 
             return Prea_frmPreaEstudiov2_Refundiciones_Consultar(codEmpresa, request.cod_preanalisis, cod_garantia);

@@ -320,6 +320,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         /// <summary>
         /// Guarda el preanálisis (nuevo o modificado).
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="request">Datos del expediente que se guardará.</param>
+        /// <returns>Resultado del guardado del expediente.</returns>
         public ErrorDto<FrmPreaEstudiov2GuardarResponse> Prea_frmPreaEstudiov2_Guardar(
             int codEmpresa,
             FrmPreaEstudiov2GuardarRequest request)
@@ -340,6 +343,16 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 {
                     Code = -1,
                     Description = "Debe indicar la cédula del solicitante.",
+                    Result = new FrmPreaEstudiov2GuardarResponse()
+                };
+            }
+
+            if (string.IsNullOrWhiteSpace(request.tipo_salario))
+            {
+                return new ErrorDto<FrmPreaEstudiov2GuardarResponse>
+                {
+                    Code = -1,
+                    Description = "Debe seleccionar un tipo de salario.",
                     Result = new FrmPreaEstudiov2GuardarResponse()
                 };
             }

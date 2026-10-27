@@ -57,7 +57,7 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
                         WHEN ISNULL(
                             C.CUENTA_INTERBANCA,
                             0) = 1
-                            THEN 'S&iacute;'
+                            THEN 'Si'
                         ELSE 'No'
                     END AS cuenta_interbanca_desc,
                     RTRIM(ISNULL(C.DESTINO, ''))

@@ -1,4 +1,4 @@
-namespace Galileo.Models.CxP
+﻿namespace Galileo.Models.CxP
 {
     public class Divisa
     {
@@ -29,6 +29,11 @@ namespace Galileo.Models.CxP
         public decimal? Tipo_Cambio { get; set; }
         public decimal? Importe_Divisa_Real { get; set; }
         public decimal? Impuesto_Ventas { get; set; }
+        public string Cod_IVA { get; set; } = string.Empty;
+        public decimal? Sub_Total { get; set; }
+        public decimal? Monto_SubTotal { get; set; }
+        public string IVA_Descripcion { get; set; } = string.Empty;
+        public int? Apl_Cargo_Flotante { get; set; }
 
         // Adicionales
         public string Proveedor { get; set; } = string.Empty;  // 'cxp_proveedores' 
@@ -75,6 +80,7 @@ namespace Galileo.Models.CxP
         public string Cod_Factura { get; set; } = string.Empty;
         public required int Cod_Proveedor { get; set; }
         public required decimal Impuesto_Ventas { get; set; }
+        public string Cod_IVA { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
 
     }
@@ -103,6 +109,42 @@ namespace Galileo.Models.CxP
         public string Cod_Cuenta { get; set; } = string.Empty;
         public string Cod_Cuenta_Mask { get; set; } = string.Empty;
         public string Desc_Cuenta { get; set; } = string.Empty;
+        public string Cod_IVA { get; set; } = string.Empty;
+        public string IVA_COD_CUENTA { get; set; } = string.Empty;
+        public string IVA_DESCRIPCION { get; set; } = string.Empty;
+        public decimal IVA_PORCENTAJE { get; set; }
+    }
+
+    public class TipoIvaFactura
+    {
+        public string Cod_IVA { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public decimal Porcentaje { get; set; }
+        public string Cod_Cuenta { get; set; } = string.Empty;
+        public string Cod_Hacienda { get; set; } = string.Empty;
+        public int Activo { get; set; }
+        public string Cod_Cuenta_Mask { get; set; } = string.Empty;
+        public string CTA_Descripcion { get; set; } = string.Empty;
+    }
+
+    public class FacturaIvaDetalle
+    {
+        public string Cod_IVA { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public required decimal Porcentaje { get; set; }
+        public required decimal Monto_Base { get; set; }
+        public required decimal Monto_IVA { get; set; }
+        public string Cod_Cuenta { get; set; } = string.Empty;
+        public string Cod_Cuenta_Mask { get; set; } = string.Empty;
+        public string CTA_Descripcion { get; set; } = string.Empty;
+    }
+
+    public class FacturaProcesoResultado
+    {
+        public string Cod_Factura { get; set; } = string.Empty;
+        public int Cod_Proveedor { get; set; }
+        public string Accion { get; set; } = string.Empty;
+        public string Mensaje { get; set; } = string.Empty;
     }
 
     public class FacturaAntSig
@@ -185,6 +227,8 @@ namespace Galileo.Models.CxP
             Plantilla = 0
         };
         public List<AsientoFactura> Asientos { get; set; } = new();
+        public List<FacturaIvaDetalle> IvaDetalle { get; set; } = new();
+        public bool? IvaDetallado { get; set; }
         public PagoContado? PagoContado { get; set; }
         public required decimal Saldo { get; set; } 
         public required decimal Saldo_Divisa { get; set; }
