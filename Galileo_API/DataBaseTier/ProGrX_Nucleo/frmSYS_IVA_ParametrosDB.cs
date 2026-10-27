@@ -20,15 +20,62 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             _security_MainDB = new MSecurityMainDb(_config);
         }
 
-        /// <summary>
-        /// Obtiene lista paginada (lazy) de parámetros IVA desde SYS_IVA_PARAMETROS; ejecuta spSys_IVA_Parametros antes del SELECT.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
+        private sealed class ParametroIvaConsulta
+        {
+            public string? COD_PARAMETRO { get; set; }
+            public string? DESCRIPCION { get; set; }
+            public string? VALOR { get; set; }
+            public string? TIPO { get; set; }
+            public string? NOTAS { get; set; }
+            public string? REGISTRO_USUARIO { get; set; }
+            public DateTime? REGISTRO_FECHA { get; set; }
+            public string? MODIFICA_USUARIO { get; set; }
+            public DateTime? MODIFICA_FECHA { get; set; }
+            public string? COD_CUENTA_MASK { get; set; }
+            public string? CTA_DESCRIPCION { get; set; }
+        }
+
+        private static List<SysIvaParametrosData> ConsultarParametros(SqlConnection connection, string? parametro = null, IDbTransaction? transaction = null)
+        {
+            var filas = connection.Query<ParametroIvaConsulta>(
+                "dbo.spSys_IVA_Parametros_Consulta",
+                new { Parametro = parametro },
+                transaction,
+                commandType: CommandType.StoredProcedure);
+
+            return filas.GroupBy(fila => fila.COD_PARAMETRO, StringComparer.OrdinalIgnoreCase)
+                .Select(grupo => grupo.First())
+                .Select(fila => new SysIvaParametrosData
+                {
+                    codParametro = fila.COD_PARAMETRO,
+                    descripcion = fila.DESCRIPCION,
+                    valor = fila.VALOR,
+                    tipo = fila.TIPO,
+                    notas = fila.NOTAS,
+                    registroUsuario = fila.REGISTRO_USUARIO,
+                    registroFecha = fila.REGISTRO_FECHA,
+                    modificaUsuario = fila.MODIFICA_USUARIO,
+                    modificaFecha = fila.MODIFICA_FECHA,
+                    valorMask = fila.COD_CUENTA_MASK,
+                    cuentaDescripcion = fila.CTA_DESCRIPCION
+                }).ToList();
+        }
+
+        private static IEnumerable<SysIvaParametrosData> FiltrarParametros(
+            IEnumerable<SysIvaParametrosData> parametros,
+            string? filtro)
+        {
+            var texto = filtro?.Trim();
+            if (string.IsNullOrEmpty(texto)) return parametros;
+            return parametros.Where(p => new[]
+            {
+                p.codParametro, p.descripcion, p.valor, p.tipo,
+                p.valorMask, p.cuentaDescripcion
+            }.Any(valor => valor?.Contains(texto, StringComparison.OrdinalIgnoreCase) == true));
+        }
+
         public ErrorDto<SysIvaParametrosLista> Sys_Iva_Parametros_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto<SysIvaParametrosLista>
             {
                 Code = 0,
@@ -38,158 +85,24 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa));
                 connection.Open();
-
-                // Refresca datos
-                connection.Execute("dbo.spSys_IVA_Parametros", commandType: CommandType.StoredProcedure, commandTimeout: 60);
-
-                var p = new DynamicParameters();
-
-                var raw = (filtros?.filtro ?? string.Empty).Trim();
-                string? query = string.IsNullOrWhiteSpace(raw) ? null : $"%{raw}%";
-
-                string sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                int sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
-
-                int offset = Math.Max(0, filtros?.pagina ?? 0);
-                int fetch = Math.Max(1, filtros?.paginacion ?? 30);
-
-                p.Add("@query", query);
-                p.Add("@sortField", sortField);
-                p.Add("@sortOrder", sortOrder);
-                p.Add("@offset", offset);
-                p.Add("@fetch", fetch);
-
-                // ---------- COUNT ----------
-                var sqlCount = $@"
-                    SELECT COUNT(*)
-                    FROM SYS_IVA_PARAMETROS p
-                    OUTER APPLY (
-                        SELECT valorDigits = REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(p.valor)),'-',''),' ',''),'.','')
-                    ) nd
-                    OUTER APPLY (
-                    SELECT valor10 = CASE
-                               WHEN p.tipo IN ('CTA','cta')
-                                 AND nd.valorDigits IS NOT NULL
-                                 AND nd.valorDigits <> ''
-                                 AND PATINDEX('%[^0-9]%', nd.valorDigits) = 0
-                               THEN
-                                   CASE WHEN LEN(nd.valorDigits) >= 10
-                                        THEN LEFT(nd.valorDigits, 10)
-                                        ELSE nd.valorDigits + REPLICATE('0', 10 - LEN(nd.valorDigits))
-                                   END
-                               ELSE NULL
-                             END
-                    ) v
-                    OUTER APPLY (
-                        SELECT mask10 = CASE WHEN v.valor10 IS NULL THEN NULL ELSE
-                             SUBSTRING(v.valor10,1,1) + '-' +
-                             SUBSTRING(v.valor10,2,1) + '-' +
-                             SUBSTRING(v.valor10,3,1) + '-' +
-                             SUBSTRING(v.valor10,4,2) + '-' +
-                             SUBSTRING(v.valor10,6,1) + '-' +
-                             SUBSTRING(v.valor10,7,2) + '-' +
-                             SUBSTRING(v.valor10,9,2) END
-                    ) m
-                    OUTER APPLY (
-                        SELECT TOP 1
-                               c.Cod_Cuenta_Mask,
-                               COALESCE(NULLIF(c.Descripcion_Alterna,''), c.Descripcion) AS CuentaNombre
-                        FROM vCNTX_CUENTAS_LOCAL c
-                        WHERE m.mask10 IS NOT NULL
-                          AND c.Cod_Cuenta_Mask = m.mask10
-                        ORDER BY c.COD_CONTABILIDAD
-                    ) cta
-                    WHERE (@query IS NULL OR (
-                           p.cod_parametro     LIKE @query
-                        OR p.descripcion       LIKE @query
-                        OR p.valor             LIKE @query
-                        OR p.tipo              LIKE @query
-                        OR cta.Cod_Cuenta_Mask LIKE @query
-                        OR m.mask10            LIKE @query
-                    ))";
-                result.Result.total = connection.Query<int>(sqlCount, p).FirstOrDefault();
-
-                // ---------- LISTA ----------
-                var sql = $@"
-                SELECT
-                    p.cod_parametro    AS codParametro,
-                    p.descripcion      AS descripcion,
-                    p.valor            AS valor,
-                    p.tipo             AS tipo,
-                    p.visible          AS visible,
-                    p.notas            AS notas,
-                    p.registro_usuario AS registroUsuario,
-                    p.registro_fecha   AS registroFecha,
-                    p.modifica_usuario AS modificaUsuario,
-                    p.modifica_fecha   AS modificaFecha,
-                    CASE WHEN UPPER(p.tipo)='CTA' THEN COALESCE(cta.Cod_Cuenta_Mask, m.mask10) ELSE NULL END AS valorMask,
-                    CASE WHEN UPPER(p.tipo)='CTA' THEN cta.CuentaNombre ELSE NULL END AS cuentaDescripcion
-                FROM SYS_IVA_PARAMETROS p
-                OUTER APPLY (
-                    SELECT valorDigits = REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(p.valor)),'-',''),' ',''),'.','')
-                ) nd
-                OUTER APPLY (
-                    SELECT valor10 = CASE
-                               WHEN p.tipo IN ('CTA','cta')
-                                 AND nd.valorDigits IS NOT NULL
-                                 AND nd.valorDigits <> ''
-                                 AND PATINDEX('%[^0-9]%', nd.valorDigits) = 0
-                               THEN
-                                   CASE WHEN LEN(nd.valorDigits) >= 10
-                                        THEN LEFT(nd.valorDigits, 10)
-                                        ELSE nd.valorDigits + REPLICATE('0', 10 - LEN(nd.valorDigits))
-                                   END
-                               ELSE NULL
-                             END
-                ) v
-                OUTER APPLY (
-                    SELECT mask10 = CASE WHEN v.valor10 IS NULL THEN NULL ELSE
-                         SUBSTRING(v.valor10,1,1) + '-' +
-                         SUBSTRING(v.valor10,2,1) + '-' +
-                         SUBSTRING(v.valor10,3,1) + '-' +
-                         SUBSTRING(v.valor10,4,2) + '-' +
-                         SUBSTRING(v.valor10,6,1) + '-' +
-                         SUBSTRING(v.valor10,7,2) + '-' +
-                         SUBSTRING(v.valor10,9,2) END
-                ) m
-                OUTER APPLY (
-                    SELECT TOP 1
-                           c.Cod_Cuenta_Mask,
-                           COALESCE(NULLIF(c.Descripcion_Alterna,''), c.Descripcion) AS CuentaNombre
-                    FROM vCNTX_CUENTAS_LOCAL c
-                    WHERE m.mask10 IS NOT NULL
-                      AND c.Cod_Cuenta_Mask = m.mask10
-                    ORDER BY c.COD_CONTABILIDAD
-                ) cta
-                WHERE (@query IS NULL OR (
-                       p.cod_parametro    LIKE @query
-                    OR p.descripcion      LIKE @query
-                    OR p.valor            LIKE @query
-                    OR p.tipo             LIKE @query
-                    OR cta.Cod_Cuenta_Mask LIKE @query
-                    OR m.mask10           LIKE @query
-                ))
-                ORDER BY
-                    -- ASC
-                    CASE WHEN @sortOrder = 1 AND @sortField = 'cod_parametro' THEN p.cod_parametro END ASC,
-                    CASE WHEN @sortOrder = 1 AND @sortField = 'descripcion' THEN p.descripcion END ASC,
-                    CASE WHEN @sortOrder = 1 AND @sortField = 'valor' THEN p.valor END ASC,
-                    CASE WHEN @sortOrder = 1 AND @sortField = 'tipo' THEN p.tipo END ASC,
-                    CASE WHEN @sortOrder = 1 AND @sortField = 'modifica_fecha' THEN p.modifica_fecha END ASC,
-
-                    -- DESC
-                    CASE WHEN @sortOrder = 0 AND @sortField = 'cod_parametro' THEN p.cod_parametro END DESC,
-                    CASE WHEN @sortOrder = 0 AND @sortField = 'descripcion' THEN p.descripcion END DESC,
-                    CASE WHEN @sortOrder = 0 AND @sortField = 'valor' THEN p.valor END DESC,
-                    CASE WHEN @sortOrder = 0 AND @sortField = 'tipo' THEN p.tipo END DESC,
-                    CASE WHEN @sortOrder = 0 AND @sortField = 'modifica_fecha' THEN p.modifica_fecha END DESC,
-
-                    p.cod_parametro ASC
-                OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
-
-                result.Result.lista = connection.Query<SysIvaParametrosData>(sql, p).ToList();
+                var filas = FiltrarParametros(ConsultarParametros(connection), filtros?.filtro);
+                string campo = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                Func<SysIvaParametrosData, IComparable?> clave = campo switch
+                {
+                    "descripcion" => p => p.descripcion,
+                    "valor" => p => p.valor,
+                    "tipo" => p => p.tipo,
+                    "modifica_fecha" => p => p.modificaFecha,
+                    _ => p => p.codParametro
+                };
+                filas = (filtros?.sortOrder ?? 1) == 0
+                    ? filas.OrderByDescending(clave).ThenBy(p => p.codParametro)
+                    : filas.OrderBy(clave).ThenBy(p => p.codParametro);
+                result.Result.total = filas.Count();
+                result.Result.lista = filas.Skip(Math.Max(0, filtros?.pagina ?? 0))
+                    .Take(Math.Max(1, filtros?.paginacion ?? 30)).ToList();
             }
             catch (Exception ex)
             {
@@ -198,178 +111,30 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 result.Result.total = 0;
                 result.Result.lista = null;
             }
-
             return result;
         }
 
-
-        /// <summary>
-        /// Obtiene lista completa (sin paginar) de parámetros IVA para export; ejecuta spSys_IVA_Parametros antes del SELECT.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
-        public ErrorDto<List<SysIvaParametrosData>> Sys_Iva_Parametros_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros)
+        public ErrorDto<List<SysIvaParametrosData>> Sys_Iva_Parametros_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            string stringConn =
-                new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
             var result = new ErrorDto<List<SysIvaParametrosData>>
             {
                 Code = 0,
                 Description = "Ok",
                 Result = new List<SysIvaParametrosData>()
             };
-
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa));
                 connection.Open();
-
-                connection.Execute(
-                    "dbo.spSys_IVA_Parametros",
-                    commandType: CommandType.StoredProcedure,
-                    commandTimeout: 60);
-
-                var p = new DynamicParameters();
-
-                var raw = (filtros?.filtro ?? string.Empty).Trim();
-                string? queryLike =
-                    string.IsNullOrWhiteSpace(raw)
-                        ? null
-                        : $"%{raw}%";
-
-                p.Add("@query", queryLike);
-
-                const string query = @"
-            SELECT
-                p.cod_parametro    AS codParametro,
-                p.descripcion      AS descripcion,
-                p.valor            AS valor,
-                p.tipo             AS tipo,
-                p.visible          AS visible,
-                p.notas            AS notas,
-                p.registro_usuario AS registroUsuario,
-                p.registro_fecha   AS registroFecha,
-                p.modifica_usuario AS modificaUsuario,
-                p.modifica_fecha   AS modificaFecha,
-
-                CASE
-                    WHEN UPPER(p.tipo) = 'CTA'
-                    THEN COALESCE(
-                        cta.Cod_Cuenta_Mask,
-                        m.mask10
-                    )
-                    ELSE NULL
-                END AS valorMask,
-
-                CASE
-                    WHEN UPPER(p.tipo) = 'CTA'
-                    THEN cta.CuentaNombre
-                    ELSE NULL
-                END AS cuentaDescripcion
-
-            FROM SYS_IVA_PARAMETROS p
-
-            OUTER APPLY (
-                SELECT valorDigits =
-                    REPLACE(
-                        REPLACE(
-                            REPLACE(
-                                LTRIM(RTRIM(p.valor)),
-                                '-',
-                                ''
-                            ),
-                            ' ',
-                            ''
-                        ),
-                        '.',
-                        ''
-                    )
-            ) nd
-
-            OUTER APPLY (
-                SELECT valor10 =
-                    CASE
-                        WHEN UPPER(p.tipo) = 'CTA'
-                             AND nd.valorDigits IS NOT NULL
-                             AND nd.valorDigits <> ''
-                             AND PATINDEX(
-                                 '%[^0-9]%',
-                                 nd.valorDigits
-                             ) = 0
-                        THEN
-                            CASE
-                                WHEN LEN(nd.valorDigits) >= 10
-                                THEN LEFT(nd.valorDigits, 10)
-                                ELSE nd.valorDigits
-                                     + REPLICATE(
-                                         '0',
-                                         10 - LEN(nd.valorDigits)
-                                     )
-                            END
-                        ELSE NULL
-                    END
-            ) v
-
-            OUTER APPLY (
-                SELECT mask10 =
-                    CASE
-                        WHEN v.valor10 IS NULL
-                        THEN NULL
-                        ELSE
-                            SUBSTRING(v.valor10, 1, 1) + '-' +
-                            SUBSTRING(v.valor10, 2, 1) + '-' +
-                            SUBSTRING(v.valor10, 3, 1) + '-' +
-                            SUBSTRING(v.valor10, 4, 2) + '-' +
-                            SUBSTRING(v.valor10, 6, 1) + '-' +
-                            SUBSTRING(v.valor10, 7, 2) + '-' +
-                            SUBSTRING(v.valor10, 9, 2)
-                    END
-            ) m
-
-            OUTER APPLY (
-                SELECT TOP 1
-                    c.Cod_Cuenta_Mask,
-                    COALESCE(
-                        NULLIF(c.Descripcion_Alterna, ''),
-                        c.Descripcion
-                    ) AS CuentaNombre
-                FROM vCNTX_CUENTAS_LOCAL c
-                WHERE m.mask10 IS NOT NULL
-                  AND c.Cod_Cuenta_Mask = m.mask10
-                ORDER BY c.COD_CONTABILIDAD
-            ) cta
-
-            WHERE (
-                @query IS NULL
-                OR p.cod_parametro LIKE @query
-                OR p.descripcion LIKE @query
-                OR p.valor LIKE @query
-                OR p.tipo LIKE @query
-                OR cta.Cod_Cuenta_Mask LIKE @query
-                OR m.mask10 LIKE @query
-            )
-
-            ORDER BY p.cod_parametro;";
-
-                result.Result = connection
-                    .Query<SysIvaParametrosData>(query, p)
-                    .ToList();
+                result.Result = FiltrarParametros(ConsultarParametros(connection), filtros?.filtro)
+                    .OrderBy(p => p.codParametro).ToList();
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
                 result.Code = -1;
                 result.Description = ex.Message;
                 result.Result = null;
             }
-            catch (InvalidOperationException ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
             return result;
         }
 
@@ -433,50 +198,23 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     DetalleMovimiento = $"Parámetro de IVA: {codParametro} -> {valor}"
                 });
 
-                // Fila actualizada
-                var sqlRow = @"
-                SELECT
-                    p.cod_parametro    AS codParametro,
-                    p.descripcion      AS descripcion,
-                    p.valor            AS valor,
-                    p.tipo             AS tipo,
-                    p.visible          AS visible,
-                    p.notas            AS notas,
-                    p.registro_usuario AS registroUsuario,
-                    p.registro_fecha   AS registroFecha,
-                    p.modifica_usuario AS modificaUsuario,
-                    p.modifica_fecha   AS modificaFecha,
-                    CASE WHEN UPPER(p.tipo)='CTA' THEN COALESCE(cta.Cod_Cuenta_Mask, m.mask10) ELSE NULL END AS valorMask,
-                    CASE WHEN UPPER(p.tipo)='CTA' THEN cta.CuentaNombre ELSE NULL END AS cuentaDescripcion
-                FROM SYS_IVA_PARAMETROS p
-                OUTER APPLY ( SELECT valorDigits = REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(p.valor)),'-',''),' ',''),'.','') ) nd
-                OUTER APPLY (
-                    SELECT valor10 = CASE
-                        WHEN p.tipo IN ('CTA','cta') AND nd.valorDigits <> '' AND PATINDEX('%[^0-9]%', nd.valorDigits)=0
-                        THEN CASE WHEN LEN(nd.valorDigits)>=10 THEN LEFT(nd.valorDigits,10)
-                                  ELSE nd.valorDigits + REPLICATE('0', 10-LEN(nd.valorDigits)) END
-                        ELSE NULL END
-                ) v
-                OUTER APPLY (
-                    SELECT mask10 = CASE WHEN v.valor10 IS NULL THEN NULL ELSE
-                         SUBSTRING(v.valor10,1,1) + '-' +
-                         SUBSTRING(v.valor10,2,1) + '-' +
-                         SUBSTRING(v.valor10,3,1) + '-' +
-                         SUBSTRING(v.valor10,4,2) + '-' +
-                         SUBSTRING(v.valor10,6,1) + '-' +
-                         SUBSTRING(v.valor10,7,2) + '-' +
-                         SUBSTRING(v.valor10,9,2) END
-                ) m
-                OUTER APPLY (
-                    SELECT TOP 1 c.Cod_Cuenta_Mask,
-                           COALESCE(NULLIF(c.Descripcion_Alterna,''), c.Descripcion) AS CuentaNombre
-                    FROM vCNTX_CUENTAS_LOCAL c
-                    WHERE m.mask10 IS NOT NULL AND c.Cod_Cuenta_Mask = m.mask10
-                    ORDER BY c.COD_CONTABILIDAD
-                ) cta
-                WHERE p.cod_parametro=@cod;";
-
-                result.Result = connection.QueryFirstOrDefault<SysIvaParametrosUpdateResponse>(sqlRow, new { cod = codParametro }, tx);
+                var filaActualizada = ConsultarParametros(connection, codParametro, tx).FirstOrDefault();
+                if (filaActualizada is null)
+                    throw new InvalidOperationException("No se pudo consultar el parámetro actualizado.");
+                result.Result = new SysIvaParametrosUpdateResponse
+                {
+                    codParametro = filaActualizada.codParametro,
+                    descripcion = filaActualizada.descripcion,
+                    valor = filaActualizada.valor,
+                    tipo = filaActualizada.tipo,
+                    notas = filaActualizada.notas,
+                    registroUsuario = filaActualizada.registroUsuario,
+                    registroFecha = filaActualizada.registroFecha,
+                    modificaUsuario = filaActualizada.modificaUsuario,
+                    modificaFecha = filaActualizada.modificaFecha,
+                    valorMask = filaActualizada.valorMask,
+                    cuentaDescripcion = filaActualizada.cuentaDescripcion
+                };
 
                 tx.Commit();
             }

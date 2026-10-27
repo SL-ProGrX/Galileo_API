@@ -38,6 +38,8 @@
         public string? Descripcion { get; set; }
         public decimal? Porcentaje { get; set; }
         public string? Cod_Cuenta { get; set; }
+        public string? Cod_Hacienda { get; set; }
+        public int? Activo { get; set; }
     }
 
     public class SysIvaCuentasResumenData

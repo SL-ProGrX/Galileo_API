@@ -1,4 +1,4 @@
-namespace Galileo.Models.CxP
+﻿namespace Galileo.Models.CxP
 {
     public class Divisa
     {
@@ -121,6 +121,8 @@ namespace Galileo.Models.CxP
         public string Descripcion { get; set; } = string.Empty;
         public decimal Porcentaje { get; set; }
         public string Cod_Cuenta { get; set; } = string.Empty;
+        public string Cod_Hacienda { get; set; } = string.Empty;
+        public int Activo { get; set; }
         public string Cod_Cuenta_Mask { get; set; } = string.Empty;
         public string CTA_Descripcion { get; set; } = string.Empty;
     }
