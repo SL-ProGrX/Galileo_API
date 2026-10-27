@@ -1,4 +1,4 @@
-using Dapper;
+﻿using Dapper;
 using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using System.Data;
@@ -555,15 +555,26 @@ namespace Galileo.DataBaseTier
 
             query = @"select Top 1 cod_factura, cod_proveedor
                       from cxp_facturas";
-            if (!primeraFactura)
+            if (Cod_Proveedor > 0)
+            {
+                query += " where cod_proveedor = @Cod_Proveedor";
+                if (!primeraFactura)
+                    query += $" and cod_factura {operador} @Cod_Factura";
+                parametros = new { Cod_Factura, Cod_Proveedor };
+            }
+            else if (!primeraFactura)
             {
                 query += $@"
                           where cod_factura {operador} @Cod_Factura
                              or (cod_factura = @Cod_Factura and cod_proveedor {operador} @Cod_Proveedor)";
+                parametros = new { Cod_Factura, Cod_Proveedor };
+            }
+            else
+            {
+                parametros = new { };
             }
             query += $@"
                       order by cod_factura {orden}, cod_proveedor {orden}";
-            parametros = primeraFactura ? new { } : new { Cod_Factura, Cod_Proveedor };
 
             var result = DbHelper.ExecuteSingleQuery<FacturaAntSig>(
                 CreatePortalDb(),

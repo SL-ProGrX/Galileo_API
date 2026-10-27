@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.CxP;
@@ -23,10 +23,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
                 using var connection = new SqlConnection(stringConn);
-                result.Result = connection.Query<TipoIvaFactura>(
-                    "dbo.spSys_IVA_TIPOS_List",
-                    commandType: CommandType.StoredProcedure).ToList();
-                CompletarDatosCuentaIva(connection, result.Result);
+                result.Result = ConsultarTiposIva(connection)
+                    .OrderBy(tipo => tipo.Cod_IVA).ToList();
             }
             catch (Exception ex)
             {
@@ -77,14 +75,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 connection.Open();
                 using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
 
-                int existe = connection.ExecuteScalar<int>(
-                    "SELECT COUNT(1) FROM SYS_IVA_TIPOS WHERE COD_IVA = @Codigo",
-                    new { Codigo = codigo },
-                    transaction);
-
-                if (insertar && existe > 0)
+                var anterior = ConsultarTiposIva(connection, codigo, transaction).FirstOrDefault();
+                if (insertar && anterior is not null)
                     return ErrorTipoIva(2, "Ya existe un tipo de IVA con ese código.");
-                if (!insertar && existe == 0)
+                if (!insertar && anterior is null)
                     return ErrorTipoIva(1, "No se encontró el tipo de IVA.");
 
                 int cuentaValida = connection.ExecuteScalar<int>(
@@ -93,43 +87,30 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                       WHERE COD_CUENTA = @Cuenta AND ACEPTA_MOVIMIENTOS = 1",
                     new { Cuenta = cuenta },
                     transaction);
-
                 if (cuentaValida == 0)
                     return ErrorTipoIva(2, "La cuenta indicada no es válida o no acepta movimientos.");
 
-                if (insertar)
-                {
-                    connection.Execute(
-                        @"INSERT INTO SYS_IVA_TIPOS
-                            (COD_IVA, DESCRIPCION, PORCENTAJE, COD_CUENTA)
-                          VALUES
-                            (@Codigo, @Descripcion, @Porcentaje, @Cuenta)",
-                        new
-                        {
-                            Codigo = codigo,
-                            Descripcion = descripcion,
-                            Porcentaje = request.Porcentaje.GetValueOrDefault(),
-                            Cuenta = cuenta
-                        },
-                        transaction);
-                }
-                else
-                {
-                    connection.Execute(
-                        @"UPDATE SYS_IVA_TIPOS
-                             SET DESCRIPCION = @Descripcion,
-                                 PORCENTAJE = @Porcentaje,
-                                 COD_CUENTA = @Cuenta
-                           WHERE COD_IVA = @Codigo",
-                        new
-                        {
-                            Codigo = codigo,
-                            Descripcion = descripcion,
-                            Porcentaje = request.Porcentaje.GetValueOrDefault(),
-                            Cuenta = cuenta
-                        },
-                        transaction);
-                }
+                var parametros = new DynamicParameters();
+                parametros.Add("@CodIVA", codigo);
+                parametros.Add("@Descripcion", descripcion);
+                parametros.Add("@Activo", request.Activo ?? anterior?.Activo ?? 1);
+                parametros.Add("@CodCuenta", cuenta);
+                parametros.Add("@Porcentaje", request.Porcentaje.GetValueOrDefault());
+                parametros.Add("@CodHacienda", (request.Cod_Hacienda ?? anterior?.Cod_Hacienda ?? codigo).Trim());
+                parametros.Add("@Usuario", usuario);
+                parametros.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+                var movimiento = connection.QueryFirstOrDefault<TipoIvaMovimiento>(
+                    "dbo.spSys_IVA_Tipos_Add",
+                    parametros,
+                    transaction,
+                    commandType: CommandType.StoredProcedure);
+                var errorMovimiento = ValidarResultadoMovimiento(
+                    parametros.Get<int>("@ReturnValue"),
+                    movimiento,
+                    insertar);
+                if (errorMovimiento is not null)
+                    return errorMovimiento;
 
                 _security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
@@ -140,16 +121,11 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     DetalleMovimiento = $"Tipo de IVA: {codigo} -> {descripcion}; {request.Porcentaje.GetValueOrDefault()}%"
                 });
 
-                var tipoIva = connection.QueryFirstOrDefault<TipoIvaFactura>(
-                    "dbo.spSys_IVA_TIPOS_Consulta",
-                    new { TipoIVA = codigo },
-                    transaction,
-                    commandType: CommandType.StoredProcedure);
+                var tipoIva = ConsultarTiposIva(connection, codigo, transaction).FirstOrDefault();
 
                 if (tipoIva is null)
                     throw new InvalidOperationException("No se pudo consultar el tipo de IVA guardado.");
 
-                CompletarDatosCuentaIva(connection, new[] { tipoIva }, transaction);
                 transaction.Commit();
                 return new ErrorDto<TipoIvaFactura>
                 {
@@ -162,6 +138,53 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 return ErrorTipoIva(-1, ex.Message);
             }
+        }
+
+        private static ErrorDto<TipoIvaFactura>? ValidarResultadoMovimiento(
+            int resultado,
+            TipoIvaMovimiento? movimiento,
+            bool insertar)
+        {
+            if (resultado != 0 || movimiento is null || movimiento.Movimiento == "Error")
+                return ErrorTipoIva(2, movimiento?.Mensaje ?? "No se pudo guardar el tipo de IVA.");
+            if (insertar && movimiento.Movimiento != "Inserta")
+                return ErrorTipoIva(2, "El tipo de IVA ya existe.");
+            if (!insertar && movimiento.Movimiento != "Modifica")
+                return ErrorTipoIva(1, "El tipo de IVA dejó de existir; recargue la tabla.");
+
+            return null;
+        }
+
+        private static List<TipoIvaFactura> ConsultarTiposIva(
+            SqlConnection connection,
+            string? codigo = null,
+            IDbTransaction? transaction = null)
+        {
+            var filas = connection.Query<TipoIvaConsultaRow>(
+                "dbo.spSys_IVA_TIPOS_Consulta",
+                new { TipoIVA = codigo },
+                transaction,
+                commandType: CommandType.StoredProcedure);
+
+            return filas.GroupBy(fila => fila.COD_IVA, StringComparer.OrdinalIgnoreCase)
+                .Select(grupo => grupo.First())
+                .Select(fila =>
+                {
+                    if (string.IsNullOrWhiteSpace(fila.COD_HACIENDA) || fila.ACTIVO is not (0 or 1))
+                        throw new InvalidOperationException(
+                            $"El procedimiento no devolvió Código Hacienda o Activo válido para el tipo de IVA {fila.COD_IVA}.");
+                    return new TipoIvaFactura
+                    {
+                        Cod_IVA = fila.COD_IVA,
+                        Descripcion = fila.DESCRIPCION,
+                        Porcentaje = fila.PORCENTAJE,
+                        Cod_Cuenta = fila.COD_CUENTA,
+                        Cod_Hacienda = fila.COD_HACIENDA,
+                        Activo = fila.ACTIVO.Value,
+                        Cod_Cuenta_Mask = fila.COD_CUENTA_MASK ?? string.Empty,
+                        CTA_Descripcion = fila.CTA_DESCRIPCION ?? string.Empty
+                    };
+                }).ToList();
         }
 
         private static ErrorDto<TipoIvaFactura>? ValidarDatosTipoIva(
@@ -191,50 +214,5 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             };
         }
 
-        private static void CompletarDatosCuentaIva(
-            IDbConnection connection,
-            IEnumerable<TipoIvaFactura> tipos,
-            IDbTransaction? transaction = null)
-        {
-            var tiposConCuenta = tipos
-                .Where(tipo => !string.IsNullOrWhiteSpace(tipo.Cod_Cuenta))
-                .ToList();
-            var cuentas = tiposConCuenta
-                .Select(tipo => tipo.Cod_Cuenta.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-
-            if (cuentas.Length == 0)
-                return;
-
-            var cuentasContables = connection.Query<CuentaTipoIvaData>(
-                @"SELECT COD_CUENTA AS Cod_Cuenta,
-                         COD_CUENTA_MASK AS Cod_Cuenta_Mask,
-                         DESCRIPCION AS CTA_Descripcion
-                  FROM vCNTX_CUENTAS_LOCAL
-                  WHERE COD_CUENTA IN @Cuentas",
-                new { Cuentas = cuentas },
-                transaction)
-                .GroupBy(cuenta => cuenta.Cod_Cuenta, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(
-                    grupo => grupo.Key,
-                    grupo => grupo.First(),
-                    StringComparer.OrdinalIgnoreCase);
-
-            foreach (var tipo in tiposConCuenta.Where(tipo => cuentasContables.ContainsKey(tipo.Cod_Cuenta.Trim())))
-            {
-                var cuenta = cuentasContables[tipo.Cod_Cuenta.Trim()];
-
-                tipo.Cod_Cuenta_Mask = cuenta.Cod_Cuenta_Mask;
-                tipo.CTA_Descripcion = cuenta.CTA_Descripcion;
-            }
-        }
-
-        private sealed class CuentaTipoIvaData
-        {
-            public string Cod_Cuenta { get; set; } = string.Empty;
-            public string Cod_Cuenta_Mask { get; set; } = string.Empty;
-            public string CTA_Descripcion { get; set; } = string.Empty;
-        }
     }
 }
