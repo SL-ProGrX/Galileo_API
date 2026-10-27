@@ -66,7 +66,7 @@ namespace Galileo_API.DataBaseTier
             int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador)
         {
             return EjecutarOperacion(
-                () => _cliente.fxTesEmisionSinpeCreditoDirecto(CodEmpresa, Nsolicitud, vfecha, vUsuario, doc_base, contador),
+            () => _cliente.fxTesEmisionSinpeCreditoDirecto(CodEmpresa, Nsolicitud, vfecha, vUsuario, doc_base, contador),
                 "Error al TesEmisionSinpeCreditoDirecto"
             );
         }
@@ -82,10 +82,11 @@ namespace Galileo_API.DataBaseTier
 
         public ErrorDto ConsultaCuentaSinpe(int CodEmpresa, TesConsultaCuentaSinpeModels cuenta)
         {
-           return EjecutarOperacion(
-                () => _cliente.ConsultaCuentaSinpe(CodEmpresa, cuenta),
-                "Error al consultar cuenta Sinpe"
-            );
+  
+            return EjecutarOperacion(
+                 () => _cliente.ConsultaCuentaSinpe(CodEmpresa, cuenta),
+                 "Error al consultar cuenta Sinpe"
+             );
         }
 
         #endregion

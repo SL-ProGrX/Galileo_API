@@ -575,7 +575,7 @@ INSERT cxp_pagoProv
 VALUES
 (
     1, @CodProveedor, @CodFactura, GETDATE(), @Monto, 0,
-    0, @Usuario, GETDATE(), 0, '', 0, 0, 'CO', @Monto
+    0, @Usuario, NULL, NULL, '', 0, 0, 'CO', @Monto
 );";
 
             conn.Execute(sql, new
