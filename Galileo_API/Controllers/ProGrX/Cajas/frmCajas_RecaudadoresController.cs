@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Galileo_API.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic.ProGrX.Cajas;
 using Galileo.Models.ERROR;
@@ -50,7 +51,7 @@ namespace Galileo.Controllers.ProGrX.Cajas
         [Authorize]
         public ErrorDto Cajas_Recaudadores_Guardar(int CodEmpresa, string usuario,CajasRecaudadorData recaudador)
         {
-            return _bl.Cajas_Recaudadores_Guardar(CodEmpresa, usuario, recaudador);
+            return _bl.Cajas_Recaudadores_Guardar(CodEmpresa, User.ObtenerUsuario(), recaudador);
         }
 
         [ValidateAntiForgeryToken]

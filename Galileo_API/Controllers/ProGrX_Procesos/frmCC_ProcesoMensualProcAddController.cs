@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Galileo_API.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic.ProGrX_Procesos;
 using Galileo.Models;
@@ -37,7 +38,7 @@ namespace Galileo.Controllers.ProGrX_Procesos
         [HttpPost("CC_PlanillaProcesosComplementarios_Guardar")]
         public ErrorDto CC_PlanillaProcesosComplementarios_Guardar(int CodEmpresa, string usuario, CcPlanillaProcesosComplementariosData data)
         {
-            return _bl.CC_PlanillaProcesosComplementarios_Guardar(CodEmpresa, usuario, data);
+            return _bl.CC_PlanillaProcesosComplementarios_Guardar(CodEmpresa, User.ObtenerUsuario(), data);
         }
 
         [Authorize]

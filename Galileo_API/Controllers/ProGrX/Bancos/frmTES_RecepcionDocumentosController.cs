@@ -1,4 +1,5 @@
 using Galileo.Models;
+using Galileo_API.Extensions;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo_API.BusinessLogic.ProGrX.Bancos;
@@ -22,7 +23,7 @@ namespace Galileo_API.Controllers
         [HttpGet("TES_RecepcionDoc_Ubicaciones_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> TES_RecepcionDoc_Ubicaciones_Obtener(int CodEmpresa, string Usuario)
         {
-            return RecepcionDocumentosBL.TES_RecepcionDoc_Ubicaciones_Obtener(CodEmpresa, Usuario);
+            return RecepcionDocumentosBL.TES_RecepcionDoc_Ubicaciones_Obtener(CodEmpresa, User.ObtenerUsuario());
         }
 
         [HttpGet("TES_RecepcionDoc_Remesa_Scroll_Obtener")]

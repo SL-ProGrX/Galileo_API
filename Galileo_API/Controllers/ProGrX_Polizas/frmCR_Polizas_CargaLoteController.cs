@@ -1,4 +1,5 @@
 ﻿using Galileo.Models;
+using Galileo_API.Extensions;
 using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX_Polizas;
 using Galileo_API.Models.ProGrX_Polizas;
@@ -75,7 +76,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
              string usuario,
              CrdPolizasCargaLoteProcesarRequest request)
         {
-            return _BL.CrdPolizasCargaLote_Procesar(codEmpresa, usuario, request);
+            return _BL.CrdPolizasCargaLote_Procesar(codEmpresa, User.ObtenerUsuario(), request);
         }
     }
 }

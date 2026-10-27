@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Galileo_API.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic.ProGrX.Credito;
 using Galileo.Models;
@@ -61,7 +62,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         [HttpPost("CR_Socios_RegistrarNota")]
         public ErrorDto CR_Socios_RegistrarNota(int CodEmpresa, string cedula, string nota, string usuario)
         {
-            return _BL.CR_Socios_RegistrarNota(CodEmpresa, cedula, nota, usuario);
+            return _BL.CR_Socios_RegistrarNota(CodEmpresa, cedula, nota, User.ObtenerUsuario());
         }
 
         [Authorize]
@@ -413,7 +414,7 @@ namespace Galileo.Controllers.ProGrX.Credito
         [HttpGet("AF_Persona_Consulta_Obtener")]
         public ErrorDto<CRConsultaInfoDto> AF_Persona_Consulta_Obtener(int CodEmpresa, string cedula, string usuario)
         {
-            return _BL.AF_Persona_Consulta_Obtener(CodEmpresa, cedula, usuario);
+            return _BL.AF_Persona_Consulta_Obtener(CodEmpresa, cedula, User.ObtenerUsuario());
         }
 
         [Authorize]
