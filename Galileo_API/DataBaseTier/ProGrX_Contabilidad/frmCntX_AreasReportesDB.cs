@@ -814,9 +814,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             var filtro = string.Format(
                 CultureInfo.InvariantCulture,
-                " WHERE CntX_Acceso_Historico.USUARIO = '{0}'" +
-                " AND CntX_Acceso_Historico.cod_contabilidad = {1}" +
-                " AND CntX_Acceso_Historico.COD_AREA = {2}",
+                " WHERE CntX_Area_Reportes.USUARIO = '{0}'" +
+                " AND CntX_Area_Reportes.COD_CONTABILIDAD = {1}" +
+                " AND CntX_Area_Reportes.COD_AREA = {2}",
                 usuarioSeguro,
                 contexto.ParametrosContables.gEnlace,
                 request.cod_area);
