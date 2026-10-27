@@ -38,6 +38,8 @@
         public string? Descripcion { get; set; }
         public decimal? Porcentaje { get; set; }
         public string? Cod_Cuenta { get; set; }
+        public string? Cod_Hacienda { get; set; }
+        public int? Activo { get; set; }
     }
 
     public class SysIvaCuentasResumenData
@@ -55,5 +57,38 @@
     {
         public int total { get; set; }
         public List<SysIvaCuentasResumenData>? lista { get; set; }
+    }
+
+    public sealed class ParametroIvaConsulta
+    {
+        public string? COD_PARAMETRO { get; set; }
+        public string? DESCRIPCION { get; set; }
+        public string? VALOR { get; set; }
+        public string? TIPO { get; set; }
+        public string? NOTAS { get; set; }
+        public string? REGISTRO_USUARIO { get; set; }
+        public DateTime? REGISTRO_FECHA { get; set; }
+        public string? MODIFICA_USUARIO { get; set; }
+        public DateTime? MODIFICA_FECHA { get; set; }
+        public string? COD_CUENTA_MASK { get; set; }
+        public string? CTA_DESCRIPCION { get; set; }
+    }
+
+    public sealed class TipoIvaConsultaRow
+    {
+        public string COD_IVA { get; set; } = string.Empty;
+        public string DESCRIPCION { get; set; } = string.Empty;
+        public decimal PORCENTAJE { get; set; }
+        public string COD_CUENTA { get; set; } = string.Empty;
+        public string? COD_HACIENDA { get; set; }
+        public int? ACTIVO { get; set; }
+        public string? COD_CUENTA_MASK { get; set; }
+        public string? CTA_DESCRIPCION { get; set; }
+    }
+
+    public sealed class TipoIvaMovimiento
+    {
+        public string Movimiento { get; set; } = string.Empty;
+        public string Mensaje { get; set; } = string.Empty;
     }
 }
