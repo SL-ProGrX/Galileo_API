@@ -13,46 +13,14 @@ namespace Galileo_API.DataBaseTier
         // Resumen del servicio a cobrar que exige el DTR (1 a 20 caracteres).
         private const string ServicioCobroDtr = "Cobro SINPE";
 
-        public ErrorDto EmitirDebitoDtr(int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador)
-        {
-            var parametrosSinpeResponse = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario);
-            if (parametrosSinpeResponse.Code != 0 || parametrosSinpeResponse.Result is null)
-                return DbHelper.ErrorResponse(parametrosSinpeResponse.Description ?? MensajeConfiguracionSinpe);
-
-            _parametrosSinpe = parametrosSinpeResponse.Result;
-
-            if (Nsolicitud <= 0)
-                return DbHelper.ErrorResponse("No se ha indicado una solicitud válida.");
-
-            EnvioPin? envio = null;
-            try
-            {
-                var solicitud = _mKindo.fxTesConsultaSolicitud(CodEmpresa, Nsolicitud);
-                if (solicitud.Code != 0 || solicitud.Result is null)
-                    return DbHelper.ErrorResponse(solicitud.Description ?? "No fue posible consultar la solicitud.");
-
-                var channelRef = _mKindo.GenerarChannelRef(CodEmpresa, _parametrosSinpe.vCanalCGP);
-                envio = new EnvioPin(CodEmpresa, Nsolicitud, vfecha, vUsuario, contador, null, channelRef);
-                _mKindo.RegistrarTransitoPendiente(CodEmpresa, envio.ChannelRef, vUsuario, _parametrosSinpe.vCanalCGP, solicitud.Result);
-
-                if (!_sinpeDTR.IsServiceAvailable(_parametrosSinpe.UrlCGP_DTR ?? string.Empty, ContextoPIN(new ReqBase())).ServiceAvailable)
-                {
-                    var motivo = _mKindo.fxTesConsultaMotivo(CodEmpresa, IdRechazoServicioNoDisponible).Result ?? SinpeRejectionMessage;
-                    return RechazarTransferencia(envio, IdRechazoServicioNoDisponible, motivo);
-                }
-
-                return EnviarDebitoDtr(envio, solicitud.Result);
-            }
-            catch (Exception ex)
-            {
-                return envio is null
-                    ? DbHelper.ErrorResponse(ex.Message)
-                    : RegistrarErrorEnvio(envio, ex.Message);
-            }
-        }
+        public ErrorDto EmitirDebitoDtr(int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador) =>
+            EjecutarEmisionPIN(CodEmpresa, Nsolicitud, vfecha, vUsuario, contador, null, EnviarDebitoDtr);
 
         private ErrorDto EnviarDebitoDtr(EnvioPin envio, TesTransaccion solicitud)
         {
+            if (!_sinpeDTR.IsServiceAvailable(_parametrosSinpe.UrlCGP_DTR ?? string.Empty, ContextoPIN(new ReqBase())).ServiceAvailable)
+                return RechazarServicioNoDisponible(envio);
+
             var respuesta = _sinpeDTR.SendDebit(_parametrosSinpe.UrlCGP_DTR ?? string.Empty, ConstruirSolicitudDtr(solicitud, envio.ChannelRef));
             var resultadoEnvio = ConvertirResultadoDtr(respuesta.DTRSendingResult);
             if (!respuesta.IsSuccessful || resultadoEnvio is null)

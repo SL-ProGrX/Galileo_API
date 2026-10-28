@@ -15,6 +15,6 @@ namespace Galileo_API.DataBaseTier
             string vUsuario,
             int doc_base,
             int contador) =>
-            EjecutarEmisionPIN(CodEmpresa, Nsolicitud, vfecha, vUsuario, contador, doc_base.ToString());
+            EjecutarEmisionPIN(CodEmpresa, Nsolicitud, vfecha, vUsuario, contador, doc_base.ToString(), EmitirTransferenciaPIN);
     }
 }

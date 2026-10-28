@@ -34,14 +34,16 @@ namespace Galileo_API.DataBaseTier
         public ErrorDto fxTesEmisionSinpeCreditoDirecto(int CodEmpresa,
             int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador)
         {
-            return EjecutarEmisionPIN(CodEmpresa, Nsolicitud, vfecha, vUsuario, contador, null);
+            return EjecutarEmisionPIN(CodEmpresa, Nsolicitud, vfecha, vUsuario, contador, null, EmitirTransferenciaPIN);
         }
 
         /// <summary>
-        /// Flujo compartido de emisión por PIN (Crédito Directo y Tiempo Real).
+        /// Flujo compartido de emisión (Crédito Directo, Tiempo Real y Débito DTR): valida la solicitud, registra el tránsito
+        /// pendiente y delega el envío a <paramref name="emitir"/>.
         /// </summary>
         /// <param name="documentoBase">Documento base a guardar; si es null se usa el CBTrxNumber de KINDO.</param>
-        private ErrorDto EjecutarEmisionPIN(int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int contador, string? documentoBase)
+        /// <param name="emitir">Envío concreto del medio de pago (PIN o DTR).</param>
+        private ErrorDto EjecutarEmisionPIN(int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int contador, string? documentoBase, Func<EnvioPin, TesTransaccion, ErrorDto> emitir)
         {
             var parametrosSinpeResponse = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario);
             if (parametrosSinpeResponse.Code != 0 || parametrosSinpeResponse.Result is null)
@@ -63,13 +65,7 @@ namespace Galileo_API.DataBaseTier
                 envio = new EnvioPin(CodEmpresa, Nsolicitud, vfecha, vUsuario, contador, documentoBase, channelRef);
                 _mKindo.RegistrarTransitoPendiente(CodEmpresa, envio.ChannelRef, vUsuario, _parametrosSinpe.vCanalCGP, solicitud.Result);
 
-                if (!ServicioDisponibleLote(CodEmpresa, vUsuario))
-                {
-                    var motivo = _mKindo.fxTesConsultaMotivo(CodEmpresa, IdRechazoServicioNoDisponible).Result ?? SinpeRejectionMessage;
-                    return RechazarTransferencia(envio, IdRechazoServicioNoDisponible, motivo);
-                }
-
-                return EmitirTransferenciaPIN(envio, solicitud.Result);
+                return emitir(envio, solicitud.Result);
             }
             catch (Exception ex)
             {
@@ -81,6 +77,9 @@ namespace Galileo_API.DataBaseTier
 
         private ErrorDto EmitirTransferenciaPIN(EnvioPin envio, TesTransaccion solicitud)
         {
+            if (!ServicioDisponibleLote(envio.CodEmpresa, envio.Usuario))
+                return RechazarServicioNoDisponible(envio);
+
             var respuesta = _sinpePIN.SendPIN(_parametrosSinpe.UrlCGP_PIN ?? string.Empty, ConstruirSolicitudPIN(solicitud, envio.ChannelRef));
             var resultadoEnvio = respuesta.PINSendingResult;
             if (!respuesta.IsSuccessful || resultadoEnvio is null)
@@ -159,6 +158,12 @@ namespace Galileo_API.DataBaseTier
         {
             _mKindo.ActualizarEstadoMovTransito(envio.CodEmpresa, envio.ChannelRef, string.Empty, EstadoTransitoError, idRechazo, motivo);
             return RegistrarRechazo(envio.CodEmpresa, envio.Nsolicitud, envio.Usuario, idRechazo, motivo, envio.ChannelRef);
+        }
+
+        private ErrorDto RechazarServicioNoDisponible(EnvioPin envio)
+        {
+            var motivo = _mKindo.fxTesConsultaMotivo(envio.CodEmpresa, IdRechazoServicioNoDisponible).Result ?? SinpeRejectionMessage;
+            return RechazarTransferencia(envio, IdRechazoServicioNoDisponible, motivo);
         }
 
         /// <summary>
