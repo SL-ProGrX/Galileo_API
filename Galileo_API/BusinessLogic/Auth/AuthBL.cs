@@ -315,7 +315,10 @@ public sealed class AuthBL
                 return accesoEmpresas;
             }
 
-            return CreateAuthenticatedResponse(user, application, clientInfo: clientInfo);
+            var galileoTfa = _logonDb.TFA_Data_Load(user.Usuario);
+            return galileoTfa.tfa_ind
+                ? await CreateMfaChallengeAsync(user, application, galileoTfa)
+                : CreateAuthenticatedResponse(user, application, clientInfo: clientInfo);
         }
 
         var accessDenied = ValidarAccesoSSecurity(user);
@@ -396,17 +399,27 @@ public sealed class AuthBL
         return string.Equals(application, AuthApplications.SSecurity, StringComparison.OrdinalIgnoreCase);
     }
 
-    public AuthResponseDto VerifyMfa(MfaVerifyRequest request, AuthSessionClientInfo? clientInfo = null)
+    private static bool IsSupportedApplication(string application)
+    {
+        return IsSSecurity(application) ||
+            string.Equals(application, AuthApplications.Galileo, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public AuthResponseDto VerifyMfa(
+        MfaVerifyRequest request,
+        string application,
+        AuthSessionClientInfo? clientInfo = null)
     {
         if (request is null || string.IsNullOrWhiteSpace(request.ChallengeToken) || string.IsNullOrWhiteSpace(request.Codigo) ||
-            !_sessionStore.TryGetChallenge(request.ChallengeToken, AuthApplications.SSecurity, out var challenge) ||
+            !IsSupportedApplication(application) ||
+            !_sessionStore.TryGetChallenge(request.ChallengeToken, application, out var challenge) ||
             !string.Equals(challenge.Purpose, "mfa", StringComparison.Ordinal))
         {
             return new AuthResponseDto { Status = InvalidChallengeStatus };
         }
 
         var validation = _logonDb.TFA_Codigo_Validar(challenge.User.Usuario, request.Codigo.Trim());
-        if (validation.Code is null or -1)
+        if (validation.Code is null or < 0)
         {
             return AuthenticationUnavailable(validation.Description);
         }
@@ -418,18 +431,20 @@ public sealed class AuthBL
 
         if (validation.Code != 1)
         {
-            _sessionStore.RegisterChallengeFailure(request.ChallengeToken, AuthApplications.SSecurity);
+            _sessionStore.RegisterChallengeFailure(request.ChallengeToken, application);
             return new AuthResponseDto { Status = InvalidCodeStatus };
         }
 
-        if (!_sessionStore.TryConsumeChallenge(request.ChallengeToken, AuthApplications.SSecurity, out _))
+        if (!_sessionStore.TryConsumeChallenge(request.ChallengeToken, application, out _))
         {
             return new AuthResponseDto { Status = InvalidChallengeStatus };
         }
 
         try
         {
-            return CompleteSSecurityAuthentication(challenge.User, "pwd,mfa", clientInfo);
+            return IsSSecurity(application)
+                ? CompleteSSecurityAuthentication(challenge.User, "pwd,mfa", clientInfo)
+                : CreateAuthenticatedResponse(challenge.User, application, "pwd,mfa", clientInfo);
         }
         catch (Exception ex) when (ex is SqlException or InvalidOperationException)
         {
@@ -437,9 +452,10 @@ public sealed class AuthBL
         }
     }
 
-    public async Task<AuthResponseDto> ResendMfaAsync(MfaResendRequest request)
+    public async Task<AuthResponseDto> ResendMfaAsync(MfaResendRequest request, string application)
     {
-        if (request is null || !_sessionStore.TryGetChallenge(request.ChallengeToken, AuthApplications.SSecurity, out var challenge) ||
+        if (request is null || !IsSupportedApplication(application) ||
+            !_sessionStore.TryGetChallenge(request.ChallengeToken, application, out var challenge) ||
             !string.Equals(challenge.Purpose, "mfa", StringComparison.Ordinal) ||
             !challenge.Methods.Contains("MAIL", StringComparer.OrdinalIgnoreCase))
         {

@@ -112,10 +112,22 @@ namespace Galileo.DataBaseTier
                     // Execute the stored procedure
                     connection.Execute(procedure, parameters, transaction, commandType: CommandType.StoredProcedure);
 
-                    const string departmentSql = "UPDATE dbo.US_USUARIOS SET COD_DEPARTAMENTO = @Departamento WHERE UserID = @UserId;";
                     var userId = parameters.Get<int>("@UserId");
-                    if (userId <= 0 || connection.Execute(departmentSql,
-                        new { Departamento = departamento, UserId = userId }, transaction) != 1)
+                    if (userId <= 0)
+                        throw new InvalidOperationException("El procedimiento no devolvió un UserId válido para guardar el departamento.");
+
+                    const string departmentSql = """
+                        UPDATE dbo.US_USUARIOS
+                        SET COD_DEPARTAMENTO = @Departamento
+                        WHERE UserID = @UserId;
+                        SELECT CASE WHEN EXISTS (
+                            SELECT 1 FROM dbo.US_USUARIOS
+                            WHERE UserID = @UserId AND COD_DEPARTAMENTO = @Departamento
+                        ) THEN 1 ELSE 0 END;
+                        """;
+                    var departamentoGuardado = connection.QuerySingle<int>(departmentSql,
+                        new { Departamento = departamento, UserId = userId }, transaction);
+                    if (departamentoGuardado != 1)
                         throw new InvalidOperationException("No fue posible guardar el departamento del usuario.");
 
                     transaction.Commit();
