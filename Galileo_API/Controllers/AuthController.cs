@@ -159,17 +159,20 @@ public sealed class AuthController : ControllerBase
     }
 
     [AllowAnonymous]
-    [HttpPost("SSecurity/Mfa/Verify")]
+    [HttpPost("{application}/Mfa/Verify")]
     public ActionResult<AuthResponseDto> VerifyMfa(
+        [FromRoute] string application,
         [FromBody] MfaVerifyRequest request,
         [FromHeader(Name = "User-Agent")] string? userAgent,
         [FromHeader(Name = "X-Client-Platform")] string? clientPlatform)
     {
-        var response = _auth.VerifyMfa(request, GetSessionClientInfo(userAgent, clientPlatform));
+        if (!IsSupportedApplication(application)) return BadRequest(new { status = InvalidApplicationStatus });
+
+        var response = _auth.VerifyMfa(request, application, GetSessionClientInfo(userAgent, clientPlatform));
         if (response.Status == "authenticated")
         {
-            RevokePreviousBrowserSession(AuthApplications.SSecurity);
-            SetRefreshCookie(AuthApplications.SSecurity, response.RefreshToken);
+            RevokePreviousBrowserSession(application);
+            SetRefreshCookie(application, response.RefreshToken);
             return Ok(response);
         }
 
@@ -216,10 +219,12 @@ public sealed class AuthController : ControllerBase
     }
 
     [AllowAnonymous]
-    [HttpPost("SSecurity/Mfa/Resend")]
-    public async Task<IActionResult> ResendMfa([FromBody] MfaResendRequest request)
+    [HttpPost("{application}/Mfa/Resend")]
+    public async Task<IActionResult> ResendMfa([FromRoute] string application, [FromBody] MfaResendRequest request)
     {
-        var response = await _auth.ResendMfaAsync(request);
+        if (!IsSupportedApplication(application)) return BadRequest(new { status = InvalidApplicationStatus });
+
+        var response = await _auth.ResendMfaAsync(request, application);
         return response.Status switch
         {
             "mfaResent" => NoContent(),
