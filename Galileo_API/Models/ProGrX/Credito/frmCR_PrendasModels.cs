@@ -96,6 +96,8 @@ namespace Galileo_API.Models.ProGrX.Credito
         public string idx { get; set; } = string.Empty;
         public string itmx { get; set; } = string.Empty;
         public int largo_minimo { get; set; } = 0;
+        public string formulario { get; set; } = string.Empty;
+        public decimal porc_cobertura { get; set; } = 0;
     }
 
     public class CrPrendaAnotacionData

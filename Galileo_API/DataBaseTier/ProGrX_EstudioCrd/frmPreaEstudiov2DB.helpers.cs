@@ -224,6 +224,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// → PRCO), ejecuta spCrdPreaGestionaComiteResolutivo y, solo si es Mancomunado,
         /// registra la bitácora vía spCrdPreaGuardaBitacoraElevacionComite.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Expediente, comité y usuario que realizan la asignación.</param>
+        /// <returns>Resultado de la asignación y tipo de aprobación del comité.</returns>
         public ErrorDto<FrmPreaEstudiov2ComiteAsignarResponse> Prea_frmPreaEstudiov2_Comite_Asignar(
             int codEmpresa,
             FrmPreaEstudiov2ComiteAsignarRequest request)
@@ -257,6 +260,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 var dict = new Dictionary<string, object>(validacionRow, StringComparer.OrdinalIgnoreCase);
                 var mensajeValidacion = GetString(dict, "Mensaje");
+
+                // El historial visible de Galileo y ProGrX se obtiene con
+                // spCrdPreaGetHistorial. En algunos datos migrados el procedimiento de
+                // comité no reconoce la etiqueta aunque esta ya exista en ese historial.
+                // Solo se omite ese mensaje puntual cuando se confirma un código de
+                // etiqueta real; cualquier otra validación conserva su bloqueo.
+                if (EsValidacionEtiquetaFaltante(mensajeValidacion) && TieneEtiquetaHistorial(connection, exp))
+                {
+                    mensajeValidacion = string.Empty;
+                }
 
                 if (!string.IsNullOrEmpty(mensajeValidacion))
                 {
@@ -329,6 +342,37 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 response.Result = new FrmPreaEstudiov2ComiteAsignarResponse();
                 return response;
             }
+        }
+
+        /// <summary>
+        /// Determina si el mensaje corresponde exclusivamente a la validación de etiqueta mínima.
+        /// </summary>
+        /// <param name="mensaje">Mensaje devuelto por spCrdPrea_Comite_Asigna_Valida.</param>
+        /// <returns>Verdadero cuando el mensaje solicita al menos una etiqueta en el historial.</returns>
+        private static bool EsValidacionEtiquetaFaltante(string mensaje)
+        {
+            return mensaje.Contains("etiqueta", StringComparison.OrdinalIgnoreCase) &&
+                   (mensaje.Contains("al menos", StringComparison.OrdinalIgnoreCase) ||
+                    mensaje.Contains("historial", StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Confirma que el historial ejecutivo contenga una etiqueta con código válido.
+        /// </summary>
+        /// <param name="connection">Conexión activa de la empresa.</param>
+        /// <param name="expediente">Código del estudio de crédito.</param>
+        /// <returns>Verdadero cuando spCrdPreaGetHistorial devuelve al menos una etiqueta.</returns>
+        private static bool TieneEtiquetaHistorial(IDbConnection connection, string expediente)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@COD_PREANANLISIS", expediente, DbType.String);
+
+            return connection.Query(
+                    "spCrdPreaGetHistorial",
+                    parameters,
+                    commandType: CommandType.StoredProcedure)
+                .Select(MapHistorialEtiqueta)
+                .Any(item => !string.IsNullOrWhiteSpace(item.cod_etiqueta));
         }
 
         /// <summary>
