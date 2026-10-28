@@ -66,18 +66,18 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     SpTpSolicitud,
                     new
                     {
-                        operadora = solicitud.operadora,
-                        cod_plan = NormalizarTexto(solicitud.cod_plan),
-                        contrato = solicitud.contrato,
-                        cedula = NormalizarTexto(solicitud.cedula),
-                        tasa_calculada = solicitud.tasa_calculada,
-                        margen_maximo = solicitud.margen_maximo,
-                        tasa_solicitada = solicitud.tasa_solicitada,
-                        plazo = solicitud.plazo,
-                        frecuencia = solicitud.frecuencia,
-                        inversion = solicitud.inversion,
-                        usuario = NormalizarTexto(solicitud.usuario),
-                        notas = NormalizarTexto(solicitud.notas)
+                        Operadora = solicitud.operadora,
+                        Plan = NormalizarTexto(solicitud.cod_plan),
+                        Contrato = solicitud.contrato,
+                        Cedula = NormalizarTexto(solicitud.cedula),
+                        TasaCalulada = solicitud.tasa_calculada,
+                        MargenMax = solicitud.margen_maximo,
+                        TasaSolicitada = solicitud.tasa_solicitada,
+                        Plazo = solicitud.plazo,
+                        fCuponId = solicitud.frecuencia,
+                        Inversion = solicitud.inversion,
+                        Usuario = NormalizarTexto(solicitud.usuario),
+                        Observacion = NormalizarTexto(solicitud.notas)
                     },
                     commandType: System.Data.CommandType.StoredProcedure)
                 ?? new FndSolicitudTpData());
