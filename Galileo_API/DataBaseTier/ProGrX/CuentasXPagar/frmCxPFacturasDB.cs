@@ -378,8 +378,8 @@ namespace Galileo.DataBaseTier
                 CreatePortalDb(),
                 CodEmpresa,
                 @"SELECT D.linea,
-                         C.cod_Cuenta_Mask,
-                         C.cod_cuenta,
+                         COALESCE(C.cod_Cuenta_Mask, D.cod_Cuenta) AS Cod_Cuenta_Mask,
+                         D.cod_cuenta,
                          C.descripcion as Cuenta,
                          D.debehaber,
                          D.monto,
@@ -389,15 +389,15 @@ namespace Galileo.DataBaseTier
                          X.descripcion as CentroCosto,
                          D.cod_proveedor,
                          D.cod_factura,
-                         Div.Cod_Divisa,
+                         D.cod_Divisa,
                          Div.Descripcion as Divisa,
                          D.Tipo_Cambio,
                          CASE WHEN D.debehaber = 'D' THEN D.monto ELSE 0 END AS Debito,
                          CASE WHEN D.debehaber = 'H' THEN D.monto ELSE 0 END AS Credito
                   FROM CXP_FACTURAS_DETALLE D
                   INNER JOIN CXP_FACTURAS Ch ON D.cod_factura = Ch.cod_factura AND D.cod_proveedor = Ch.Cod_Proveedor
-                  INNER JOIN CntX_Cuentas C ON D.cod_cuenta = C.cod_cuenta AND D.cod_contabilidad = C.cod_Contabilidad
-                  INNER JOIN CntX_Divisas Div ON D.cod_divisa = Div.cod_Divisa AND D.cod_contabilidad = Div.cod_Contabilidad
+                  LEFT JOIN CntX_Cuentas C ON D.cod_cuenta = C.cod_cuenta AND D.cod_contabilidad = C.cod_Contabilidad
+                  LEFT JOIN CntX_Divisas Div ON D.cod_divisa = Div.cod_Divisa AND D.cod_contabilidad = Div.cod_Contabilidad
                   LEFT JOIN CntX_unidades U ON D.cod_unidad = U.cod_unidad AND U.cod_contabilidad = D.cod_Contabilidad
                   LEFT JOIN CNTX_CENTRO_COSTOS X ON D.cod_centro_costo = X.COD_CENTRO_COSTO AND X.cod_contabilidad = 1
                   WHERE D.cod_factura = @Cod_Factura
@@ -1150,6 +1150,18 @@ namespace Galileo.DataBaseTier
             for (int index = 0; index < asientos.Count; index++)
             {
                 AsientoFactura asiento = asientos[index];
+                int contabilidad = asiento.Cod_Contabilidad <= 0 ? 1 : asiento.Cod_Contabilidad;
+                string? divisaCuenta = connection.QueryFirstOrDefault<string>(
+                    @"SELECT RTRIM(cod_divisa)
+                      FROM CntX_Cuentas
+                      WHERE cod_cuenta = @Cod_Cuenta
+                        AND cod_contabilidad = @Cod_Contabilidad",
+                    new { asiento.Cod_Cuenta, Cod_Contabilidad = contabilidad },
+                    transaction);
+                if (string.IsNullOrWhiteSpace(divisaCuenta))
+                    throw new InvalidOperationException(
+                        $"No se encontró la divisa de la cuenta {asiento.Cod_Cuenta} en el catálogo contable.");
+
                 decimal monto = asiento.Debehaber == "H" ? asiento.Credito : asiento.Debito;
                 connection.Execute(
                     @"INSERT INTO cxp_facturas_detalle(linea, cod_factura, cod_proveedor, cod_contabilidad,
@@ -1162,11 +1174,11 @@ namespace Galileo.DataBaseTier
                         Linea = index + 1,
                         factura.Cod_Factura,
                         factura.Cod_Proveedor,
-                        Cod_Contabilidad = asiento.Cod_Contabilidad <= 0 ? 1 : asiento.Cod_Contabilidad,
+                        Cod_Contabilidad = contabilidad,
                         asiento.Cod_Cuenta,
                         asiento.Cod_Unidad,
                         asiento.Cod_Centro_Costo,
-                        asiento.Cod_Divisa,
+                        Cod_Divisa = divisaCuenta,
                         DebeHaber = asiento.Debehaber,
                         asiento.Tipo_Cambio,
                         Monto = monto
