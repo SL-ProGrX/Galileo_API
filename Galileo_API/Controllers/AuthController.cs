@@ -1,3 +1,5 @@
+using Galileo.BusinessLogic.Auth;
+using Galileo.Models.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
