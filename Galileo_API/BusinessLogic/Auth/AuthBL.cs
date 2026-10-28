@@ -462,6 +462,17 @@ public sealed class AuthBL
             return new AuthResponseDto { Status = InvalidChallengeStatus };
         }
 
+        if (!_sessionStore.TryStartMfaResend(request.ChallengeToken, application, out var retryAfterSeconds))
+        {
+            return new AuthResponseDto
+            {
+                Status = retryAfterSeconds > 0 ? "mfaResendCooldown" : InvalidChallengeStatus,
+                Detail = retryAfterSeconds > 0 ? $"Puede solicitar otro código en {retryAfterSeconds} segundos." : null,
+                RetryAfterSeconds = retryAfterSeconds > 0 ? retryAfterSeconds : null,
+            };
+        }
+
+        var resendSucceeded = false;
         try
         {
             var tfa = _logonDb.TFA_Data_Load(challenge.User.Usuario);
@@ -471,6 +482,7 @@ public sealed class AuthBL
             }
 
             var response = await _logonDb.TFA_Codigo_EnviarMAIL(challenge.User.Usuario, tfa.email);
+            resendSucceeded = response.Code == 0;
             return response.Code == 0
                 ? new AuthResponseDto { Status = "mfaResent" }
                 : AuthenticationUnavailable(response.Description);
@@ -478,6 +490,10 @@ public sealed class AuthBL
         catch (Exception ex) when (ex is SqlException or InvalidOperationException)
         {
             return AuthenticationUnavailable(ex.Message);
+        }
+        finally
+        {
+            _sessionStore.CompleteMfaResend(request.ChallengeToken, application, resendSucceeded);
         }
     }
 
