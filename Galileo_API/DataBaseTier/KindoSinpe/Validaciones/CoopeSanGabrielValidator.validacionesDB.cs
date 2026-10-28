@@ -11,19 +11,19 @@ namespace Galileo_API.DataBaseTier
     /// </summary>
     public partial class CoopeSanGabrielValidator
     {
-        public ErrorDto fxValidacionSinpe(int codEmpresa, string solicitud, string usuario, string? tipo = "PIN")
+        public ErrorDto fxValidacionSinpe(int CodEmpresa, string solicitud, string usuario, string? tipo = "PIN")
         {
             var ok = DbHelper.CreateOkResponse();
             try
             {
-                ErrorDto<ParametrosSinpe> parametrosSinpe = _mKindo.GetUriEmpresa(codEmpresa, usuario);
+                ErrorDto<ParametrosSinpe> parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, usuario);
 
-                _mKindo.UpdateOkTransaccionSinpe(codEmpresa, string.Empty, 0, Convert.ToInt64(solicitud));
+                _mKindo.UpdateOkTransaccionSinpe(CodEmpresa, string.Empty, 0, Convert.ToInt64(solicitud));
 
                 if (parametrosSinpe?.Result == null)
                     return DbHelper.ErrorResponse("No se pudieron obtener parámetros SINPE para la empresa.");
 
-                var infoSinpeResult = _mKindo.fxTesConsultaInfoSinpe(codEmpresa, solicitud);
+                var infoSinpeResult = _mKindo.fxTesConsultaInfoSinpe(CodEmpresa, solicitud);
                 if (infoSinpeResult.Code == -1)
                     return DbHelper.ErrorResponse(infoSinpeResult.Description ?? "Error al consultar info SINPE.");
 
@@ -55,7 +55,7 @@ namespace Galileo_API.DataBaseTier
                 if (cuenta.Errors is { Length: > 0 })
                 {
                     _mKindo.UpdateErrorTransaccionSinpe(
-                                                codEmpresa,
+                                                CodEmpresa,
                                                 string.Empty,
                                                 cuenta.Errors[0].Code,
                                                 Convert.ToInt64(solicitud)
@@ -63,9 +63,9 @@ namespace Galileo_API.DataBaseTier
                 }
 
                 if (cuenta.Account != null)
-                    ActualizaHolderIdEnCuenta(codEmpresa, solicitud, cuenta.Account.Holder);
+                    ActualizaHolderIdEnCuenta(CodEmpresa, solicitud, cuenta.Account.Holder);
 
-                return ValidarCuenta(codEmpresa, solicitud, cedula, info, cuenta, ok);
+                return ValidarCuenta(CodEmpresa, solicitud, cedula, info, cuenta, ok);
 
             }
             catch (Exception ex)

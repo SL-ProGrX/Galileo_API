@@ -50,16 +50,17 @@ namespace Galileo_API.DataBaseTier
         public ErrorDto fxValidacionSinpeTransaccion(int CodEmpresa, string cedula, string cuenta, string usuario)
         {
             ErrorDto response = new();
-            _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, usuario).Result ?? new Galileo.Models.KindoSinpe.ParametrosSinpe();
+            var parametros = _mKindo.GetUriEmpresa(CodEmpresa, usuario).Result;
+            if (parametros == null)
+                return DbHelper.ErrorResponse("No se pudieron obtener parámetros SINPE para la empresa.");
+
+            _parametrosSinpe = parametros;
             var resp  = new ErrorDto<ParametrosSinpe>
             {
                 Code = 0,
                 Description = "OK",
                 Result = _parametrosSinpe
             };
-
-            if (_parametrosSinpe == null)
-                return DbHelper.ErrorResponse("No se pudieron obtener parámetros SINPE para la empresa.");
 
             try
             {

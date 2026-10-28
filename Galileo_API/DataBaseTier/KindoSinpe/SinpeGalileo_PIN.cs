@@ -93,7 +93,6 @@ namespace Galileo_API.DataBaseTier
         public ResSendingDynamic SendPIN(string UrlCGP_PIN, ReqSendingDynamic pinData)
         {
 
-            var json = JsonConvert.SerializeObject(pinData, SinNulos);
             var resp =  mClient.PostJsonAsync<ReqSendingDynamic, ResSendingDynamic, ResSendingDynamic>(
                    baseUrl: UrlCGP_PIN,
                    endpoint: "/SendTransfer",
