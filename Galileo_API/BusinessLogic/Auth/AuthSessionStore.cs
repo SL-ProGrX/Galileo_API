@@ -320,6 +320,51 @@ public sealed class AuthSessionStore
         }
     }
 
+    public bool TryStartMfaResend(string token, string application, out int retryAfterSeconds)
+    {
+        lock (_sync)
+        {
+            retryAfterSeconds = 0;
+            if (!TryGetChallenge(token, application, out var challenge))
+            {
+                return false;
+            }
+
+            if (challenge.MfaResendInProgress)
+            {
+                retryAfterSeconds = 120;
+                return false;
+            }
+
+            var remaining = challenge.NextMfaResendAtUtc - DateTime.UtcNow;
+            if (remaining > TimeSpan.Zero)
+            {
+                retryAfterSeconds = (int)Math.Ceiling(remaining.TotalSeconds);
+                return false;
+            }
+
+            challenge.MfaResendInProgress = true;
+            return true;
+        }
+    }
+
+    public void CompleteMfaResend(string token, string application, bool succeeded)
+    {
+        lock (_sync)
+        {
+            if (!TryGetChallenge(token, application, out var challenge))
+            {
+                return;
+            }
+
+            challenge.MfaResendInProgress = false;
+            if (succeeded)
+            {
+                challenge.NextMfaResendAtUtc = DateTime.UtcNow.AddMinutes(2);
+            }
+        }
+    }
+
     private static string CreateOpaqueToken()
     {
         return Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
@@ -362,5 +407,7 @@ public sealed class AuthSessionStore
     {
         public bool Consumed { get; set; }
         public int Attempts { get; set; }
+        public DateTime NextMfaResendAtUtc { get; set; } = DateTime.UtcNow.AddMinutes(2);
+        public bool MfaResendInProgress { get; set; }
     }
 }
