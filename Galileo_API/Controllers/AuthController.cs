@@ -228,6 +228,7 @@ public sealed class AuthController : ControllerBase
         return response.Status switch
         {
             "mfaResent" => NoContent(),
+            "mfaResendCooldown" => StatusCode(StatusCodes.Status429TooManyRequests, response),
             "invalidChallenge" => BadRequest(response),
             _ => StatusCode(StatusCodes.Status503ServiceUnavailable, response),
         };

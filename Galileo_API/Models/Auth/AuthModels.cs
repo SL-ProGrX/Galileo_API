@@ -40,6 +40,7 @@ public sealed class AuthResponseDto
     public AuthUserDto? User { get; init; }
     public string? ChallengeToken { get; init; }
     public DateTime? ChallengeExpiresAtUtc { get; init; }
+    public int? RetryAfterSeconds { get; init; }
     public IReadOnlyCollection<string> Methods { get; init; } = Array.Empty<string>();
     public string? PasswordExpiryNotice { get; init; }
     public ParametrosObtenerDto? PasswordPolicy { get; init; }

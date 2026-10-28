@@ -41,21 +41,36 @@ namespace Galileo.Controllers
         [Authorize]
         [ValidateAntiForgeryToken]
         [HttpPost("SUGEFInformesArchivos_Archivo")]
-        public IActionResult SUGEFInformesArchivos_Archivo(int CodEmpresa, string Usuario, DateTime Corte)
+        public async Task<IActionResult> SUGEFInformesArchivos_Archivo(
+            int CodEmpresa,
+            string Usuario,
+            DateTime Corte,
+            CancellationToken cancellationToken)
         {
-            var resultado = _bl.SUGEFInformesArchivos_Archivo(CodEmpresa, Usuario, Corte);
+            var nombreArchivo = $"Facilidades_Crediticia_{Corte:yyyyMMdd}.xml";
+            Response.ContentType = "application/xml; charset=utf-8";
+            Response.Headers["Content-Disposition"] = $"attachment; filename=\"{nombreArchivo}\"";
 
-            if (resultado.Code != 0 || resultado.Result == null)
+            var resultado = await _bl.SUGEFInformesArchivos_Archivo(
+                CodEmpresa,
+                Usuario,
+                Corte,
+                Response.Body,
+                cancellationToken);
+
+            if (resultado.Code != 0)
             {
+                if (Response.HasStarted)
+                {
+                    HttpContext.Abort();
+                    return new EmptyResult();
+                }
+
+                Response.Clear();
                 return NotFound(new { resultado.Code, resultado.Description });
             }
 
-            ArchivoDescargaDto archivo = resultado.Result;
-
-            return File(
-                archivo.Contenido,
-                archivo.ContentType,
-                archivo.NombreArchivo);
+            return new EmptyResult();
         }
     }
 }
