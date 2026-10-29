@@ -11,7 +11,7 @@ namespace Galileo.DataBaseTier
     public class CambiarContrasenaDB
     {
         private const string connectionStringName = "DefaultConnString";
-        private const string changePasswordProcedureName = "spSEG_Password";
+        private const string procedimientoCambiarContrasena = "spSEG_Password";
 
         private readonly IConfiguration _config;
 
@@ -103,7 +103,7 @@ namespace Galileo.DataBaseTier
 
                     // Execute the stored procedure to change the password
                     connection.Execute(
-                        changePasswordProcedureName, cambioClave, commandType: CommandType.StoredProcedure);
+                        procedimientoCambiarContrasena, cambioClave, commandType: CommandType.StoredProcedure);
                     var latestPassword = connection.QueryFirstOrDefault<string>(
                         "SELECT TOP (1) KH.KEYSEC FROM US_KEYHISTORY KH INNER JOIN US_usuarios U ON KH.IDKEYSEC = U.USERID WHERE U.USUARIO = @Usuario ORDER BY KH.ID DESC",
                         new { cambioClave.Usuario });
@@ -141,7 +141,7 @@ namespace Galileo.DataBaseTier
             }
 
             connection.Execute(
-                changePasswordProcedureName,
+                procedimientoCambiarContrasena,
                 cambioClave,
                 commandType: CommandType.StoredProcedure);
             var latestPassword = connection.QueryFirstOrDefault<string>(
@@ -185,7 +185,7 @@ namespace Galileo.DataBaseTier
             }
 
             connection.Execute(
-                changePasswordProcedureName,
+                procedimientoCambiarContrasena,
                 cambioClave,
                 transaction,
                 commandType: CommandType.StoredProcedure);
@@ -215,7 +215,7 @@ namespace Galileo.DataBaseTier
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
-                    resp.Code = connection.QueryFirst<int>(changePasswordProcedureName, cambioClave, commandType: CommandType.StoredProcedure);
+                    resp.Code = connection.QueryFirst<int>(procedimientoCambiarContrasena, cambioClave, commandType: CommandType.StoredProcedure);
                     resp.Description = "La clave de acceso ha sido cambiada.";
                 }
             }

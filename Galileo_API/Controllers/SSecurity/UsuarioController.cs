@@ -19,6 +19,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("UsuarioCuentaRevisar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto UsuarioCuentaRevisar(UsuarioCuentaRevisarDto usuarioCuentaRevisarDto)
         {
             return new UsuarioBL(_config).UsuarioCuentaRevisar(usuarioCuentaRevisarDto);
@@ -31,12 +32,14 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("UsuarioCuentaMovimientosObtener")]
+        [ValidateAntiForgeryToken]
         public List<UsuarioCuentaMovimientoResultDto> UsuarioCuentaMovimientosObtener([FromBody] UsuarioCuentaMovimientoRequestDto usuarioCuentaMovimientoRequestDto)
         {
             return new UsuarioBL(_config).UsuarioCuentaMovimientosObtener(usuarioCuentaMovimientoRequestDto);
         }
 
         [HttpPost("UsuarioCuentaMovimientoRevisar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto UsuarioCuentaMovimientoRevisar([FromBody] UsuarioCuentaMovimientoRevisarDto movimiento)
         {
             return new UsuarioBL(_config).UsuarioCuentaMovimientoRevisar(movimiento);

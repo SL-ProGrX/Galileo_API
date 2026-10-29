@@ -193,7 +193,7 @@ namespace Galileo.DataBaseTier
                     registro_usuario = @Registro_Usuario,
                     registro_fecha   = @Registro_Fecha
                 WHERE CUENTA_INTERNA = @Cuenta_Interna_Old
-                  AND TRIM(Identificacion) = TRIM(@Identificacion);";
+                  AND LTRIM(RTRIM(Identificacion)) = LTRIM(RTRIM(@Identificacion));";
 
             // Normalizo flags numéricos igual que antes (Convert.ToInt32)
             var parameters = new
@@ -219,7 +219,7 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
                 var rows = connection.Execute(sql, parameters, commandTimeout: 0);
-                resp.Code = rows;
+                resp.Code = Math.Max(rows, 0); // Execute devuelve -1 con SET NOCOUNT ON; -1 es el código de error del front
                 resp.Description = "Ok";
             }
             catch (Exception ex)
@@ -293,7 +293,7 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
                 var rows = connection.Execute(sql, parameters, commandTimeout: 0);
-                resp.Code = rows;
+                resp.Code = Math.Max(rows, 0); // Execute devuelve -1 con SET NOCOUNT ON; -1 es el código de error del front
                 resp.Description = "Ok";
             }
             catch (Exception ex)
@@ -385,7 +385,7 @@ namespace Galileo.DataBaseTier
                     Cuenta_Interna = data.Cuenta_Interna.Trim()
                 }, commandTimeout: 0);
 
-                resp.Code = rows;
+                resp.Code = Math.Max(rows, 0); // Execute devuelve -1 con SET NOCOUNT ON; -1 es el código de error del front
                 resp.Description = "Ok";
             }
             catch (Exception ex)

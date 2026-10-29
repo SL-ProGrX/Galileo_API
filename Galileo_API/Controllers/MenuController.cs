@@ -25,6 +25,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("Agregar_MenuFavoritos")]
+        [ValidateAntiForgeryToken]
         //[Authorize]
         public int Agregar_MenuFavoritos(string nombreUsuario, int codEmpresa, int nodo, string opcion)
         {

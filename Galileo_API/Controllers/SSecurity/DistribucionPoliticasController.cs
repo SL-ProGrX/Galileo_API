@@ -46,6 +46,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("FxGuardar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto FxGuardar(GuardarDto dto)
         {

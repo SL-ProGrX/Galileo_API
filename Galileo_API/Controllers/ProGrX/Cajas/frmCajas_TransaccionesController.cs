@@ -56,6 +56,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
 
         [Authorize]
         [HttpPost("CajasTransacciones_ConsultaIntegrada_Ejecutar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto CajasTransacciones_ConsultaIntegrada_Ejecutar(int codEmpresa, string cedula, string usuario)
         {
             return _bl.CajasTransacciones_ConsultaIntegrada_Ejecutar(codEmpresa, cedula, usuario);

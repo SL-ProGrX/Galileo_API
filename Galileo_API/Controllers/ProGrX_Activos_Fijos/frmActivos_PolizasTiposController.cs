@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Galileo_API.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
@@ -37,7 +38,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         [HttpPost("Activos_PolizasTipos_Guardar")]
         public ErrorDto Activos_PolizasTipos_Guardar(int CodEmpresa, string usuario, ActivosPolizasTiposData tipoPoliza)
         {
-            return _bl.Activos_PolizasTipos_Guardar(CodEmpresa, usuario, tipoPoliza);
+            return _bl.Activos_PolizasTipos_Guardar(CodEmpresa, User.ObtenerUsuario(), tipoPoliza);
         }
 
         [Authorize]

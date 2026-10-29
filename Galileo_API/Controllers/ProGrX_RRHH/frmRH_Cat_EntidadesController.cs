@@ -89,6 +89,7 @@ namespace Galileo_API.Controllers.ProGrX_RRHH
         /// <returns></returns>
         [Authorize]
         [HttpPost("RH_CatEntidades_Guardar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto RH_CatEntidades_Guardar(
             int CodEmpresa,
             string? usuario,
@@ -175,6 +176,7 @@ namespace Galileo_API.Controllers.ProGrX_RRHH
         /// <returns></returns>
         [Authorize]
         [HttpPost("RH_CatEntidades_Concepto_Actualizar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto RH_CatEntidades_Concepto_Actualizar(
             int CodEmpresa,
             string? usuario,

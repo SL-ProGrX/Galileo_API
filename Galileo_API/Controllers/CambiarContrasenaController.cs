@@ -31,6 +31,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPatch("CambiarClave")]
+        [ValidateAntiForgeryToken]
         public ErrorDto CambiarClave(ClaveCambiarDto cambioClave)
         {
             return new CambiarContrasenaBL(_config).CambiarClave(cambioClave);

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Galileo_API.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic.ProGrX_Nucleo;
 using Galileo.Models.CxP;
@@ -37,7 +38,7 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         [HttpPut("Sys_Iva_Parametro_Actualizar")]
         public ErrorDto<SysIvaParametrosUpdateResponse> Sys_Iva_Parametro_Actualizar(int CodEmpresa, string codParametro, string usuario, string jrequest)
         {
-            return _bl.Sys_Iva_Parametro_Actualizar(CodEmpresa, codParametro, usuario, jrequest);
+            return _bl.Sys_Iva_Parametro_Actualizar(CodEmpresa, codParametro, User.ObtenerUsuario(), jrequest);
         }
 
         [Authorize]

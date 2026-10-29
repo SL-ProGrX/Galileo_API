@@ -26,6 +26,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Servicio_Insertar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Servicio_Insertar(ServicioSuscripcion request)
         {
             return new FrmPgxServiciosBL(_config).Servicio_Insertar(request);
@@ -33,6 +34,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Servicio_Eliminar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Servicio_Eliminar(ServicioSuscripcion request)
         {
             return new FrmPgxServiciosBL(_config).Servicio_Eliminar(request);
@@ -40,6 +42,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Servicio_Actualizar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Servicio_Actualizar(ServicioSuscripcion request)
         {
             return new FrmPgxServiciosBL(_config).Servicio_Actualizar(request);

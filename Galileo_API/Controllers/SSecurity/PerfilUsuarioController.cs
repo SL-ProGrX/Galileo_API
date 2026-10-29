@@ -57,6 +57,7 @@ namespace Galileo.Controllers
         /// <param name="request"></param>
         /// <returns></returns>
         [HttpPost("PerfilUsuario_Actualizar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ActionResult<ErrorDto> PerfilUsuario_Actualizar(PerfilUsuarioDto request)
         {

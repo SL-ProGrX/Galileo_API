@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Galileo_API.Extensions;
 using Galileo.BusinessLogic;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
@@ -41,13 +42,13 @@ namespace Galileo.Controllers
         [HttpGet("Orden_Autoriza")]
         public ErrorDto Orden_Autoriza(int CodEmpresa, string CodOrden, string usuario, int index)
         {
-            return _bl.Orden_Autoriza(CodEmpresa, CodOrden, usuario, index);
+            return _bl.Orden_Autoriza(CodEmpresa, CodOrden, User.ObtenerUsuario(), index);
         }
 
         [HttpGet("Orden_Rechaza")]
         public ErrorDto Orden_Rechaza(int CodEmpresa, string CodOrden, string usuario, int index)
         {
-            return _bl.Orden_Rechaza(CodEmpresa, CodOrden, usuario, index);
+            return _bl.Orden_Rechaza(CodEmpresa, CodOrden, User.ObtenerUsuario(), index);
         }
         [HttpGet("Orden_Cerrar")]
         public ErrorDto Orden_Cerrar(int CodEmpresa, string CodOrden)

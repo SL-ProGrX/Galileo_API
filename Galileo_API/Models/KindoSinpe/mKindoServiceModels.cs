@@ -265,7 +265,8 @@
             public int? IdType { get; set; }
             public string? Name { get; set; }               // 8–150 caracteres
             public string? IBAN { get; set; }              // Opcional, 22 caracteres
-            public bool DebitIBAN { get; set; }           // True = acredita cuenta
+            public bool? DebitIBAN { get; set; }          // PIN: true = debita la cuenta del cliente origen; omitir en DTR
+            public bool? CreditIBAN { get; set; }         // DTR: true = acredita la cuenta del cliente de la Entidad; omitir en PIN
             public string? Email { get; set; }              // Opcional, 320 caracteres
         }
         #endregion
@@ -621,12 +622,15 @@
 
             public string? Description { get; set; }
 
-            public string OriginEntityIBAN { get; set; } = String.Empty;
+            /// <summary>
+            /// Cuenta IBAN de reserva de la Entidad en el BCCR (opcional, 1 a 22 dígitos). Se omite si es null.
+            /// </summary>
+            public string? OriginEntityIBAN { get; set; }
 
             /// <summary>
-            /// Fecha y hora en que se generó la transacción.
+            /// Fecha y hora en que se generó la transacción. No está en el contrato de KINDO; se omite si es null.
             /// </summary>
-            public DateTime TransactionDate { get; set; }
+            public DateTime? TransactionDate { get; set; }
 
             /// <summary>
             /// Información del cliente que origina la transacción.

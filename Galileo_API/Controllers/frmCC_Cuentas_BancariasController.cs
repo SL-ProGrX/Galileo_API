@@ -41,12 +41,14 @@ namespace Galileo.Controllers
 
 
         [HttpPatch("CuentaBancaria_Actualizar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto CuentaBancaria_Actualizar(int CodEmpresa, SysCuentasBancariasDto data)
         {
             return new FrmCcCuentasBancariasBl(_config).CuentaBancaria_Actualizar(CodEmpresa, data);
         }
 
         [HttpPost("CuentaBancaria_Insertar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto CuentaBancaria_Insertar(int CodEmpresa, SysCuentasBancariasDto data)
         {
             return new FrmCcCuentasBancariasBl(_config).CuentaBancaria_Insertar(CodEmpresa, data);
@@ -54,6 +56,7 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("CuentaBancaria_Borrar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto CuentaBancaria_Borrar(int CodEmpresa, string data)
         {
             return new FrmCcCuentasBancariasBl(_config).CuentaBancaria_Borrar(CodEmpresa, data);

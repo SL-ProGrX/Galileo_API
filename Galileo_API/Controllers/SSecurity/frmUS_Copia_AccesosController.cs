@@ -25,6 +25,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("UsuarioAccesos_Copiar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto UsuarioAccesos_Copiar(UsuarioPermisosCopiar info)
         {
             return CopiaAccesosBL.UsuarioAccesos_Copiar(info);

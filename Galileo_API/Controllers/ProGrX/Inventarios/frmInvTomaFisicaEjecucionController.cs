@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Galileo_API.Extensions;
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
@@ -33,7 +34,7 @@ namespace Galileo.Controllers
         [HttpPost("ProcesarTomaFisica")]
         public ErrorDto ProcesarTomaFisica(int CodEmpresa, int consecutivo, string usuario, string cod_entrada, string cod_salida)
         {
-            return _bl.ProcesarTomaFisica(CodEmpresa, consecutivo, usuario, cod_entrada, cod_salida);
+            return _bl.ProcesarTomaFisica(CodEmpresa, consecutivo, User.ObtenerUsuario(), cod_entrada, cod_salida);
         }
     }
 }

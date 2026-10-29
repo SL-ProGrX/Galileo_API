@@ -28,6 +28,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("Aplicacion_Insertar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto Aplicacion_Insertar(Aplicacion request)
         {
@@ -35,6 +36,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("Aplicacion_Actualizar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto Aplicacion_Actualizar(Aplicacion request)
         {
@@ -42,6 +44,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("Aplicacion_Eliminar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto Aplicacion_Eliminar(Aplicacion request)
         {
@@ -61,6 +64,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("Bloqueo_Insertar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto Bloqueo_Insertar(Bloqueo request)
         {
@@ -68,6 +72,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("Bloqueo_Eliminar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto Bloqueo_Eliminar(Bloqueo request)
         {
@@ -88,6 +93,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Actualizacion_Insertar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto Actualizacion_Insertar(Actualizacion request)
         {
@@ -95,6 +101,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("Actualizacion_Eliminar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto Actualizacion_Eliminar(Actualizacion request)
         {

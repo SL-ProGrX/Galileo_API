@@ -25,6 +25,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("UsuarioExiste")]
+        [ValidateAntiForgeryToken]
         public ErrorDto<int> UsuarioExiste(string usuario)
         {
             return UsuariosBL.UsuarioExiste(usuario);
@@ -59,6 +60,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("UsuarioGuardarActualizar")]
+        [ValidateAntiForgeryToken]
         public ActionResult<ErrorDto> UsuarioGuardarActualizar(UsuarioModel usuarioModel)
         {
             var actor = User.FindFirst("UserName")?.Value ?? User.FindFirst(ClaimTypes.Name)?.Value;
@@ -95,6 +97,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("UsuarioClienteAsignar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto UsuarioClienteAsignar(UsuarioClienteAsignaDto usuarioClienteAsignaDto)
         {
             return UsuariosBL.UsuarioClienteAsignar(usuarioClienteAsignaDto);
@@ -109,6 +112,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("UsuarioBitacoraConsultar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto<List<UsuarioCuentaBitacora>> UsuarioBitacoraConsultar(UsuarioBitacoraRequest usuarioCuentaBitacoraRequestDto)
         {
             return UsuariosBL.UsuarioBitacoraConsultar(usuarioCuentaBitacoraRequestDto);
@@ -135,6 +139,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("UsuarioClienteRolAsignar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto UsuarioClienteRolAsignar(UsuarioClienteRolAsignaDto usuarioClienteRolAsignaDto)
         {
             return UsuariosBL.UsuarioClienteRolAsignar(usuarioClienteRolAsignaDto);

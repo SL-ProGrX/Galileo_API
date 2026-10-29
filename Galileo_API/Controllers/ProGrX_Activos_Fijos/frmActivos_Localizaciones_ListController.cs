@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Galileo_API.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
@@ -37,7 +38,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         [HttpPost("Activos_Localizaciones_Guardar")]
         public ErrorDto Activos_Localizaciones_Guardar(int CodEmpresa, string usuario, ActivosLocalizacionesData localizacion)
         {
-            return _bl.Activos_Localizaciones_Guardar(CodEmpresa, usuario, localizacion);
+            return _bl.Activos_Localizaciones_Guardar(CodEmpresa, User.ObtenerUsuario(), localizacion);
         }
 
         [Authorize]

@@ -18,6 +18,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("ReporteRDLC_v2")]
+        [ValidateAntiForgeryToken]
         [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorDto<IActionResult>), StatusCodes.Status200OK)]
         public IActionResult ReporteRDLC_v2(FrmReporteGlobal data)
@@ -52,6 +53,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("ReporteRDLC")]
+        [ValidateAntiForgeryToken]
         public ErrorDto<object> ReporteRDLC(FrmReporteGlobal data)
         {
             return _reportingServicesBL.ReporteRDLC(data);

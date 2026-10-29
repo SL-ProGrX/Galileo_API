@@ -32,6 +32,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Documentos_Insertar")]
+        [ValidateAntiForgeryToken]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Documentos_Insertar(
            [FromQuery] int CodEmpresa,
@@ -68,6 +69,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Documentos_Obtener")]
+        [ValidateAntiForgeryToken]
         public List<DocumentosArchivoDto> Documentos_Obtener(GaDocumento filtros)
         {
             return new FrmGaDocumentosBl(_config).Documentos_Obtener(filtros);
@@ -75,6 +77,7 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("Documentos_Eliminar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Documentos_Eliminar(
             [FromQuery] int? CodEmpresa,
             [FromQuery] int? CodCliente,

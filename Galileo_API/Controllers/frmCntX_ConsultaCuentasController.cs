@@ -17,11 +17,13 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("ObtenerCuentas")]
+        [ValidateAntiForgeryToken]
         public List<CtnxCuentasDto> ObtenerCuentas(int CodEmpresa, CuentaVarModel cuenta)
         {
             return new FrmCntXConsultaCuentasBl(_config).ObtenerCuentas(CodEmpresa, cuenta);
         }
         [HttpPost("ObtenerCuentasArbol")]
+        [ValidateAntiForgeryToken]
         public List<CtnxCuentasArbolModel> ObtenerCuentasArbol(int CodEmpresa, CuentaVarModel cuenta)
         {
             return new FrmCntXConsultaCuentasBl(_config).ObtenerCuentasArbol(CodEmpresa, cuenta);

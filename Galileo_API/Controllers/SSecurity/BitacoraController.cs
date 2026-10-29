@@ -17,6 +17,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("BitacoraObtener")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public List<BitacoraResultDto> BitacoraObtener(BitacoraRequestDto bitacoraRequestDto)
         {

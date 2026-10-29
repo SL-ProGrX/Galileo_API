@@ -41,6 +41,7 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("Opcion_Eliminar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Opcion_Eliminar(string codigo, string formulario, int modulo, string usuario = "", int codEmpresa = 0)
         {
             return OpcionesBL.Opcion_Eliminar(codigo, formulario, modulo, usuario, codEmpresa);
@@ -48,6 +49,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Opcion_Guardar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Opcion_Guardar(OpcionDto request)
         {
             return OpcionesBL.Opcion_Guardar(request);
