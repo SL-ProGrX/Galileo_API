@@ -89,6 +89,11 @@ namespace Galileo.BusinessLogic.ProGrX_Nucleo
             return _db.SifConsultaDocumentos_Fondos_Obtener(CodEmpresa, documento, codigo);
         }
 
+        public ErrorDto<List<SifConsultaDocCashBackData>> SifConsultaDocumentos_CashBack_Obtener(int CodEmpresa, string codigo)
+        {
+            return _db.SifConsultaDocumentos_CashBack_Obtener(CodEmpresa, codigo);
+        }
+
         public ErrorDto<List<SifConsultaDocCreditosData>> SifConsultaDocumentos_Creditos_Obtener(int CodEmpresa, string documento, string codigo)
         {
             return _db.SifConsultaDocumentos_Creditos_Obtener(CodEmpresa, documento, codigo);
