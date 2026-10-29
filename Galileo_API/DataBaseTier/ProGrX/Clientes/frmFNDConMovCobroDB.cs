@@ -136,12 +136,14 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         }
 
         /// <summary>
-        /// Obtiene los movimientos de cobro según filtros de fechas y plan.
+        /// Obtiene los movimientos de cobro según fechas y plan,
+        /// con un tiempo de ejecución específico para esta consulta.
         /// </summary>
-        /// <param name="CodEmpresa">Código de la empresa.</param>
+        /// <param name="CodEmpresa">Código de empresa.</param>
         /// <param name="request">Parámetros de filtro.</param>
         /// <returns>Listado de movimientos de cobro.</returns>
-        public ErrorDto<List<FndConMovCobroResult>> Fnd_ConMovCobro_Obtener(int CodEmpresa, FndConMovCobroRequest request)
+        public ErrorDto<List<FndConMovCobroResult>> Fnd_ConMovCobro_Obtener(
+            int CodEmpresa, FndConMovCobroRequest request)
         {
             if (request is null)
             {
@@ -151,11 +153,16 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     new List<FndConMovCobroResult>());
             }
 
-            return DbHelper.ExecuteListQuery<FndConMovCobroResult>(
+            const int tiempoEsperaSegundos = 300;
+
+            return DbHelper.WithConn(
                 CreatePortalDb(),
                 CodEmpresa,
-                SqlMovimientosCobro,
-                CrearParametrosMovimientos(request));
+                connection => connection.Query<FndConMovCobroResult>(
+                    SqlMovimientosCobro,
+                    CrearParametrosMovimientos(request),
+                    commandTimeout: tiempoEsperaSegundos)
+                    .ToList());
         }
 
         /// <summary>
