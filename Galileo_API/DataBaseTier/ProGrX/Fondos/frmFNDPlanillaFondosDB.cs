@@ -323,7 +323,22 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             var vNumDoc = NormalizarTexto(request.comprobante);
             const string vTipoDoc = "PLA";
 
-            var cuenta = new MCntLinkDB(_config).fxgCntCuentaFormato(CodEmpresa, true, request.cuenta, 0);
+
+            var cuenta = new MCntLinkDB(_config)
+                .fxgCntCuentaFormato(
+                    CodEmpresa,
+                    false,
+                    NormalizarTexto(request.cuenta),
+                    0);
+
+            if (string.IsNullOrWhiteSpace(cuenta))
+            {
+                return DbHelper.CreateErrorResponse<object>(
+                    "Debe seleccionar una cuenta contable válida para procesar la planilla.",
+                    -2,
+                    null);
+            }
+
             var result = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
                 connection.Execute(
                     SpPlanillaDirectaProcesa,
