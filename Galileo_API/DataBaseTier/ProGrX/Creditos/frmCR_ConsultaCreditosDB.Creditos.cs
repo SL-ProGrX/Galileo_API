@@ -1,4 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
@@ -15,6 +15,12 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
 {
     public partial class FrmCRConsultaCreditosDB
     {
+        public ErrorDto<List<CrConsultaCashBackData>> CR_ConsultaCrd_CashBack_Obtener(int codEmpresa, string cedula)
+        {
+            return EjecutarStoredProcedureList<CrConsultaCashBackData>(
+                codEmpresa, "dbo.spCashBackObtieneDatos", new { Cedula = cedula.Trim() });
+        }
+
         #region Créditos
 
         /// <summary>

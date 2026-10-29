@@ -77,6 +77,21 @@
 
     }
 
+    public class SifConsultaDocCashBackData
+    {
+        public DateTime? fecha { get; set; }
+        public string cod_contrato { get; set; } = string.Empty;
+        public decimal monto_compras { get; set; }
+        public decimal pts_ganados { get; set; }
+        public decimal pts_equivalencia { get; set; }
+        public decimal tipo_cambio { get; set; }
+        public string referencia { get; set; } = string.Empty;
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string cod_operadora { get; set; } = string.Empty;
+        public string cod_plan { get; set; } = string.Empty;
+    }
+
     public class SifConsultaDocCuentasPorCobrarData
     {
 
