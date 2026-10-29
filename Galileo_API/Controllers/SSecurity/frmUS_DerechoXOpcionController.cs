@@ -49,6 +49,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("RolPermisosActualizar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto RolPermisosActualizar(OpcionRolRequestDto req)
         {
             return DerechoXOpcionBL.RolPermisosActualizar(req);

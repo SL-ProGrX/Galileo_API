@@ -54,6 +54,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("AdminLocal_Insertar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto AdminLocal_Insertar(AdminLocalInsert request)
         {
@@ -61,6 +62,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("AdminClienteRoles_Insertar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto AdminClienteRoles_Insertar(AdminLocalRolesInsert request)
         {

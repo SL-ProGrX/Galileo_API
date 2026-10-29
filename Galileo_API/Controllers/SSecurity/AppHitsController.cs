@@ -26,6 +26,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("AppHits_Insertar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto AppHits_Insertar(AppHits request)
         {
@@ -33,6 +34,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("AppHits_Eliminar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto AppHits_Eliminar(AppHits request)
         {
@@ -41,6 +43,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("AppHits_Actualizar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto AppHits_Actualizar(AppHits request)
         {

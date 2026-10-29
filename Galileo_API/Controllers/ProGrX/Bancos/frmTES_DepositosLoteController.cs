@@ -1,4 +1,5 @@
 using Galileo.Models;
+using Galileo_API.Extensions;
 using Galileo.Models.ERROR;
 using Galileo.Models.TES;
 using Galileo_API.BusinessLogic.ProGrX.Bancos;
@@ -36,7 +37,7 @@ namespace Galileo_API.Controllers
         [HttpPost("TES_DepositosLote_Procesar")]
         public ErrorDto TES_DepositosLote_Procesar(int CodEmpresa, string cuenta, string usuario, string archivoData)
         {
-            return depositosLoteBL.TES_DepositosLote_Procesar(CodEmpresa, cuenta, usuario, archivoData);
+            return depositosLoteBL.TES_DepositosLote_Procesar(CodEmpresa, cuenta, User.ObtenerUsuario(), archivoData);
         }
 
         [HttpGet("TES_DepositosLote_Inconsistencias_Obtener")]
@@ -61,7 +62,7 @@ namespace Galileo_API.Controllers
         [HttpPost("TES_DepositosLote_Registro_Aplicar")]
         public ErrorDto TES_DepositosLote_Registro_Aplicar(int CodEmpresa, string Usuario, string Datos)
         {
-            return depositosLoteBL.TES_DepositosLote_Registro_Aplicar(CodEmpresa, Usuario, Datos);
+            return depositosLoteBL.TES_DepositosLote_Registro_Aplicar(CodEmpresa, User.ObtenerUsuario(), Datos);
         }
 
         [ValidateAntiForgeryToken]

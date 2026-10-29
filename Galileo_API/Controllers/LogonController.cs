@@ -55,6 +55,7 @@ namespace Galileo.Controllers
         /// La emisión de JWT se realiza únicamente mediante AuthController.
         /// </summary>
         [HttpPost("LoginObtener")]
+        [ValidateAntiForgeryToken]
         public ErrorDto LoginObtener(LoginObtenerDto req)
         {
             return logonBL.LoginObtener(req);
@@ -87,6 +88,7 @@ namespace Galileo.Controllers
         /// <param name="Email">Correo electrónico asociado al usuario.</param>
         /// <returns>Código de resultado de la validación.</returns>
         [HttpPost("ValidarDatosParaRenovarContra")]
+        [ValidateAntiForgeryToken]
         //[Authorize]
         public int ValidarDatos(string Usuario, string Email)
         {
@@ -101,6 +103,7 @@ namespace Galileo.Controllers
         /// <param name="Token">Token de validación recibido por el usuario.</param>
         /// <returns>Código de resultado de la validación del token.</returns>
         [HttpPost("ValidarTokenParaRenovarContra")]
+        [ValidateAntiForgeryToken]
         public int ValidarToken(string Usuario, string Token)
         {
             return logonBL.ValidarToken(Usuario, Token);
@@ -113,6 +116,7 @@ namespace Galileo.Controllers
         /// <param name="Usuario">Nombre de usuario al que se enviará el token.</param>
         /// <returns>Código de resultado del envío del token.</returns>
         [HttpPost("EnviarTokenParaRenovarContra")]
+        [ValidateAntiForgeryToken]
         public int EnviarToken(string Usuario)
         {
             return logonBL.EnviarToken(Usuario);
@@ -139,6 +143,7 @@ namespace Galileo.Controllers
         /// <param name="email">Correo electrónico del usuario al que se enviará el código TFA.</param>
         /// <returns>Código de resultado del envío del código TFA.</returns>
         [HttpPost("TFA_Codigo_EnviarMAIL")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public Task<ActionResult<ErrorDto>> TFA_Codigo_EnviarMAIL(string Usuario, string email)
         {
@@ -153,6 +158,7 @@ namespace Galileo.Controllers
         /// <param name="codigo">Código de autenticación de dos factores (TFA) proporcionado por el usuario.</param>
         /// <returns>Código de resultado de la validación del código TFA.</returns>
         [HttpPost("TFA_Codigo_Validar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ActionResult<ErrorDto> TFA_Codigo_Validar(string Usuario, string codigo)
         {

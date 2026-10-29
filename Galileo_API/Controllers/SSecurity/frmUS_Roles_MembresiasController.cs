@@ -20,6 +20,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Acceso_Equipo")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Acceso_Equipo(EstacionAsignaDto req)
         {
             return new FrmUsRolesMembresiasBl(_config).Acceso_Equipo(req);
@@ -27,6 +28,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Acceso_Horario")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Acceso_Horario(HorarioAsignaDto req)
         {
             return new FrmUsRolesMembresiasBl(_config).Acceso_Horario(req);
@@ -76,6 +78,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("UsuarioRolAsigna")]
+        [ValidateAntiForgeryToken]
         //[Authorize]
         public ErrorDto UsuarioRolAsigna(UsuarioRolAsignaDto req)
         {
@@ -84,6 +87,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("UsuarioClienteAsigna")]
+        [ValidateAntiForgeryToken]
         public ErrorDto UsuarioClienteAsigna(UsuarioClienteAsigna req)
         {
             return new FrmUsRolesMembresiasBl(_config).UsuarioClienteAsigna(req);
@@ -91,6 +95,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Limita_Equipo")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Limita_Equipo(LimitaAcceso req)
         {
             return new FrmUsRolesMembresiasBl(_config).Limita_Equipo(req);
@@ -98,6 +103,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Limita_Horario")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Limita_Horario(LimitaAcceso req)
         {
             return new FrmUsRolesMembresiasBl(_config).Limita_Horario(req);

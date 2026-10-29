@@ -19,6 +19,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("UsuarioCuentaReestablecer")]
+        [ValidateAntiForgeryToken]
         public ErrorDto UsuarioCuentaReestablecer(CuentaReestablecer usuarioCuentaReestablecerDto)
         {
             return CuentaReestableceBL.UsuarioCuentaReestablecer(usuarioCuentaReestablecerDto);

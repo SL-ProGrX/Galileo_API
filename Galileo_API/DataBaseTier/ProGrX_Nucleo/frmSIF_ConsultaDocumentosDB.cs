@@ -444,6 +444,15 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             return DbHelper.ExecuteListQuery<SifConsultaDocFondosData>(_portalDb, CodEmpresa, query, new { documento, codigo });
         }
 
+        /// <summary>
+        /// Consulta los movimientos de CashBack asociados a la transacción.
+        /// </summary>
+        public ErrorDto<List<SifConsultaDocCashBackData>> SifConsultaDocumentos_CashBack_Obtener(int CodEmpresa, string codigo)
+        {
+            const string query = @"select * from dbo.vSIF_CtrlDoc_Cashback_Detalle where Referencia = @codigo";
+            return DbHelper.ExecuteListQuery<SifConsultaDocCashBackData>(_portalDb, CodEmpresa, query, new { codigo });
+        }
+
 
         /// <summary>
         /// Consulta los créditos de un documento

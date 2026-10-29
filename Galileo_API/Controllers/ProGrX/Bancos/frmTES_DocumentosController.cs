@@ -1,4 +1,5 @@
 ﻿using Galileo.Models;
+using Galileo_API.Extensions;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Microsoft.AspNetCore.Authorization;
@@ -59,7 +60,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         [HttpPost("Tes_Documentos_Guardar")]
         public ErrorDto Tes_Documentos_Guardar(int CodEmpresa, string usuario, TesTiposDocDto documento)
         {
-            return _Bl.TES_Documentos_Guardar(CodEmpresa, usuario, documento);
+            return _Bl.TES_Documentos_Guardar(CodEmpresa, User.ObtenerUsuario(), documento);
         }
 
         [ValidateAntiForgeryToken]

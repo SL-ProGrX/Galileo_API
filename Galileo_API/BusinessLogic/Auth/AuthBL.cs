@@ -13,7 +13,7 @@ public sealed class AuthBL
     private const string InvalidCodeStatus = "invalidCode";
     private const string AccessDeniedStatus = "accessDenied";
     private const string AuthenticationUnavailableStatus = "authenticationUnavailable";
-    private const string PasswordChangeFailedStatus = "passwordChangeFailed";
+    private const string EstadoCambioContrasenaFallido = "passwordChangeFailed";
     private const string PolicyLookupFailureMessage = "No fue posible consultar las políticas de contraseña.";
 
     private readonly LogonDB _logonDb;
@@ -462,6 +462,17 @@ public sealed class AuthBL
             return new AuthResponseDto { Status = InvalidChallengeStatus };
         }
 
+        if (!_sessionStore.TryStartMfaResend(request.ChallengeToken, application, out var retryAfterSeconds))
+        {
+            return new AuthResponseDto
+            {
+                Status = retryAfterSeconds > 0 ? "mfaResendCooldown" : InvalidChallengeStatus,
+                Detail = retryAfterSeconds > 0 ? $"Puede solicitar otro código en {retryAfterSeconds} segundos." : null,
+                RetryAfterSeconds = retryAfterSeconds > 0 ? retryAfterSeconds : null,
+            };
+        }
+
+        var resendSucceeded = false;
         try
         {
             var tfa = _logonDb.TFA_Data_Load(challenge.User.Usuario);
@@ -471,6 +482,7 @@ public sealed class AuthBL
             }
 
             var response = await _logonDb.TFA_Codigo_EnviarMAIL(challenge.User.Usuario, tfa.email);
+            resendSucceeded = response.Code == 0;
             return response.Code == 0
                 ? new AuthResponseDto { Status = "mfaResent" }
                 : AuthenticationUnavailable(response.Description);
@@ -478,6 +490,10 @@ public sealed class AuthBL
         catch (Exception ex) when (ex is SqlException or InvalidOperationException)
         {
             return AuthenticationUnavailable(ex.Message);
+        }
+        finally
+        {
+            _sessionStore.CompleteMfaResend(request.ChallengeToken, application, resendSucceeded);
         }
     }
 
@@ -506,7 +522,7 @@ public sealed class AuthBL
             {
                 return new AuthResponseDto
                 {
-                    Status = PasswordChangeFailedStatus,
+                    Status = EstadoCambioContrasenaFallido,
                     Detail = $"La nueva contraseña debe tener entre {policy.key_lenmin} y {policy.key_lenmax} caracteres y cumplir los requisitos de complejidad configurados.",
                 };
             }
@@ -524,7 +540,7 @@ public sealed class AuthBL
                 _sessionStore.RegisterChallengeFailure(request.ChallengeToken, AuthApplications.SSecurity);
                 return new AuthResponseDto
                 {
-                    Status = PasswordChangeFailedStatus,
+                    Status = EstadoCambioContrasenaFallido,
                     Detail = "La contraseña actual no corresponde a la cuenta.",
                 };
             }
@@ -542,7 +558,7 @@ public sealed class AuthBL
                 _sessionStore.RegisterChallengeFailure(request.ChallengeToken, AuthApplications.SSecurity);
                 return new AuthResponseDto
                 {
-                    Status = PasswordChangeFailedStatus,
+                    Status = EstadoCambioContrasenaFallido,
                     Detail = "No puede reutilizar una de sus contraseñas recientes.",
                 };
             }
@@ -561,7 +577,7 @@ public sealed class AuthBL
                 _sessionStore.RegisterChallengeFailure(request.ChallengeToken, AuthApplications.SSecurity);
                 return new AuthResponseDto
                 {
-                    Status = PasswordChangeFailedStatus,
+                    Status = EstadoCambioContrasenaFallido,
                     Detail = "No fue posible cambiar la contraseña. Verifique la contraseña actual y las políticas de seguridad.",
                 };
             }
@@ -610,7 +626,7 @@ public sealed class AuthBL
     {
         if (request is null || TieneDatosRecuperacionInvalidos(request))
         {
-            return new AuthResponseDto { Status = PasswordChangeFailedStatus, Detail = "Verifique el usuario, el token y la nueva contraseña." };
+            return new AuthResponseDto { Status = EstadoCambioContrasenaFallido, Detail = "Verifique el usuario, el token y la nueva contraseña." };
         }
 
         var usuario = request.Usuario.Trim();
@@ -634,7 +650,7 @@ public sealed class AuthBL
             {
                 return new AuthResponseDto
                 {
-                    Status = PasswordChangeFailedStatus,
+                    Status = EstadoCambioContrasenaFallido,
                     Detail = $"La nueva contraseña debe tener entre {policy.key_lenmin} y {policy.key_lenmax} caracteres y cumplir los requisitos de complejidad configurados.",
                 };
             }
@@ -650,7 +666,7 @@ public sealed class AuthBL
             {
                 return new AuthResponseDto
                 {
-                    Status = PasswordChangeFailedStatus,
+                    Status = EstadoCambioContrasenaFallido,
                     Detail = "No puede reutilizar una de sus contraseñas recientes.",
                 };
             }

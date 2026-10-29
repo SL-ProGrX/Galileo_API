@@ -849,7 +849,7 @@ namespace Galileo_API.DataBaseTier
                     {
                         estadoSinpe = false;
                         idRechazo = 83;
-                        rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
+                        rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
                         response = TesEmisionDocumentosSinpeResultado
                             .TES_EmisionDocumentos_Sinpe_CrearRechazo(
                                 idRechazo,
@@ -864,7 +864,7 @@ namespace Galileo_API.DataBaseTier
                         {
                             estadoSinpe = false;
                             idRechazo = respuesta.MotivoError;
-                            rechazo = fxTesConsultaMotivo(CodEmpresa, respuesta.MotivoError).Result ?? "Motivo desconocido.";
+                            rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, respuesta.MotivoError).Result ?? "Motivo desconocido.";
                             response = TesEmisionDocumentosSinpeResultado
                                 .TES_EmisionDocumentos_Sinpe_CrearRechazo(
                                     idRechazo,
@@ -1159,7 +1159,7 @@ namespace Galileo_API.DataBaseTier
                         {
                             estadoSinpe = false;
                             idRechazo = 83;
-                            rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
+                            rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
                         }
                         else
                         {
@@ -1178,7 +1178,7 @@ namespace Galileo_API.DataBaseTier
                                 else
                                 {
                                     idRechazo = -1;
-                                    rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
+                                    rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
                                 }
                             }
                             else
@@ -1266,7 +1266,7 @@ namespace Galileo_API.DataBaseTier
                             //'Se registra el error por servicio no disponible
                             estadoSinpe = false;
                             idRechazo = 83;
-                            rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
+                            rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
                             _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Emisión Transferencia Sinpe: {rechazo}", vUsuario);
                         }
                         else
@@ -1277,7 +1277,7 @@ namespace Galileo_API.DataBaseTier
                             {
                                 estadoSinpe = false;
                                 idRechazo = 83;
-                                rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
+                                rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
                                 _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Transferencia Sinpe rechazada: {rechazo}", vUsuario);
                             }
                             else
@@ -1914,36 +1914,7 @@ namespace Galileo_API.DataBaseTier
         #region General/Compartido
 
 
-        /// <summary>
-        /// Consulta el motivo de rechazo de una transacción SINPE.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="idRechazo"></param>
-        /// <returns></returns>
-        private ErrorDto<string> fxTesConsultaMotivo(int CodEmpresa, int idRechazo)
-        {
-            
-            var response = new ErrorDto<string>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = ""
-            };
-
-            try
-            {
-                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-                var query = $@"SELECT DESCRIPCION FROM SINPE_MOTIVOS where COD_MOTIVO = @rechazo ";
-                response.Result = connection.Query<string>(query, new { rechazo = idRechazo }).FirstOrDefault();
-            }
-            catch (Exception)
-            {
-                response.Code = -1;
-                response.Description = "Error al consultar el motivo de rechazo.";
-                response.Result = "Motivo desconocido.";
-            }
-            return response;
-        }
+       
 
         /// <summary>
         /// Actualiza el estado de una transacción SINPE a "Sinpe" o "Rechazada".

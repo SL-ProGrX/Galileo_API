@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Galileo_API.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
 using Galileo.Models;
@@ -105,7 +106,7 @@ namespace Galileo.Controllers
         [HttpPost("AF_ComisionesPago_Generar")]
         public ErrorDto AF_ComisionesPago_Generar(int CodEmpresa, string usuario, int comision, List<AfComisionPagoData> pagos)
         {
-            return _bl.AF_ComisionesPago_Generar(CodEmpresa, usuario, comision, pagos);
+            return _bl.AF_ComisionesPago_Generar(CodEmpresa, User.ObtenerUsuario(), comision, pagos);
         }
 
         #endregion

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Galileo_API.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic.ProGrX_Activos_Fijos;
 using Galileo.Models.ERROR;
@@ -37,7 +38,7 @@ namespace Galileo.Controllers.ProGrX_Activos_Fijos
         [HttpPost("Activos_Proveedores_Guardar")]
         public ErrorDto Activos_Proveedores_Guardar(int CodEmpresa, string usuario, [FromBody] ActivosProveedoresData proveedor)
         {
-            return _bl.Activos_Proveedores_Guardar(CodEmpresa, usuario, proveedor);
+            return _bl.Activos_Proveedores_Guardar(CodEmpresa, User.ObtenerUsuario(), proveedor);
         }
 
         [Authorize]

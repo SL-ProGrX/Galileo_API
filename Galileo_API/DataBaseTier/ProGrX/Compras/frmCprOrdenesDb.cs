@@ -221,7 +221,7 @@ namespace Galileo.DataBaseTier
                 FROM cpr_ordenes_detalle D
                 INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
                 WHERE D.cod_orden = @CodOrden
-                ORDER BY D.cod_producto;";
+                ORDER BY D.linea;";
 
             var lineasR = DbHelper.ExecuteListQuery<OrdenLineas>(_portalDb, CodEmpresa, qLineas, new { CodOrden = filtros.CodOrden });
             if (lineasR.Code != 0)

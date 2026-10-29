@@ -165,7 +165,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             var sb = new StringBuilder();
             var p = new DynamicParameters();
 
-            sb.AppendLine(" WHERE PE_ACTIVA = 0");
+            sb.AppendLine(" WHERE PE_ACTIVA = 1");
 
             AppendIf(sb, request.SoloVencida, " AND PE_VENCIDA = 1 ");
 

@@ -1,4 +1,5 @@
 using Galileo.Models;
+using Galileo_API.Extensions;
 using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX_Contabilidad;
 using Galileo_API.Models.ProGrX_Contabilidad;
@@ -65,7 +66,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             string usuario,
             CntXConPortalesGuardarRequest request)
         {
-            return _bl.CntXConPortales_Guardar(codEmpresa, usuario, request);
+            return _bl.CntXConPortales_Guardar(codEmpresa, User.ObtenerUsuario(), request);
         }
 
         [ValidateAntiForgeryToken]

@@ -18,12 +18,13 @@ namespace Galileo_API.DataBaseTier.KindoSinpe
           TReq request,
           Func<TServiceRes, TOut> mapOk,
           Func<int, string, TOut> errorFactory,
-          string operationName)
+          string operationName,
+          JsonSerializerSettings? settings = null)
         {
             try
             {
                 var url = $"{baseUrl.TrimEnd('/')}/{endpoint.TrimStart('/')}";
-                var json = JsonConvert.SerializeObject(request);
+                var json = JsonConvert.SerializeObject(request, settings);
                 using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 using var response = await _client.PostAsync(url, content).ConfigureAwait(false);

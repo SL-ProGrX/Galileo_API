@@ -133,6 +133,13 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [HttpGet("SifConsultaDocumentos_CashBack_Obtener")]
+        public ErrorDto<List<SifConsultaDocCashBackData>> SifConsultaDocumentos_CashBack_Obtener(int CodEmpresa, string codigo)
+        {
+            return _bl.SifConsultaDocumentos_CashBack_Obtener(CodEmpresa, codigo);
+        }
+
+        [Authorize]
         [HttpGet("SifConsultaDocumentos_Creditos_Obtener")]
         public ErrorDto<List<SifConsultaDocCreditosData>> SifConsultaDocumentos_Creditos_Obtener(int CodEmpresa, string documento, string codigo)
         {

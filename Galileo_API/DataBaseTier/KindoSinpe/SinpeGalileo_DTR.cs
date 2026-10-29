@@ -9,6 +9,9 @@ namespace Galileo_API.DataBaseTier
     {
         private readonly MClientHpptCall mClient;
 
+        // KINDO indica que los campos opcionales no se envían; sin esto se serializan como null.
+        private static readonly JsonSerializerSettings SinNulos = new() { NullValueHandling = NullValueHandling.Ignore };
+
         public SinpeGalileoDtr(IConfiguration config, HttpClient? client = null)
         {
             mClient = new MClientHpptCall();
@@ -78,7 +81,8 @@ namespace Galileo_API.DataBaseTier
                      IsSuccessful = false,
                      Errors = new[] { new Error { Code = code, Message = msg } }
                  },
-                 operationName: nameof(SendDebit)
+                 operationName: nameof(SendDebit),
+                 settings: SinNulos
              ).Result;
         }
 

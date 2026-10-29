@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Galileo_API.Extensions;
 using Galileo.BusinessLogic;
 using Galileo.Models;
 using Galileo.Models.CPR;
@@ -79,7 +80,7 @@ namespace Galileo.Controllers
         [HttpGet("CprUens_Obtener")]
         public ErrorDto<List<CprUensLista>> CprUens_Obtener(int CodEmpresa, string usuario)
         {
-            return _bl.CprUens_Obtener(CodEmpresa, usuario);
+            return _bl.CprUens_Obtener(CodEmpresa, User.ObtenerUsuario());
         }
 
         [HttpGet("CprSolicitudUens_Obtener")]
@@ -117,7 +118,7 @@ namespace Galileo.Controllers
         [HttpPost("AutorizaSolicitud")]
         public ErrorDto AutorizaSolicitud(int CodEmpresa, int CPR_ID, string usuario)
         {
-            return _bl.AutorizaSolicitud(CodEmpresa, CPR_ID, usuario);
+            return _bl.AutorizaSolicitud(CodEmpresa, CPR_ID, User.ObtenerUsuario());
         }
 
 
@@ -125,7 +126,7 @@ namespace Galileo.Controllers
         [HttpPost("DeniegaSolicitud")]
         public ErrorDto DeniegaSolicitud(int CodEmpresa, int CPR_ID, string usuario, string detalle_seguimiento)
         {
-            return _bl.DeniegaSolicitud(CodEmpresa, CPR_ID, usuario, detalle_seguimiento);
+            return _bl.DeniegaSolicitud(CodEmpresa, CPR_ID, User.ObtenerUsuario(), detalle_seguimiento);
         }
 
         [HttpGet("ValidaUsuarioSolicitud")]

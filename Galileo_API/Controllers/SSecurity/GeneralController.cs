@@ -18,12 +18,14 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("PadronConsultar")]
+        [ValidateAntiForgeryToken]
         public List<PadronConsultarResponseDto> PadronConsultar(PadronConsultarRequestDto padronConsultarRequestDto)
         {
             return new GeneralBL(_config).PadronConsultar(padronConsultarRequestDto);
         }
 
         [HttpPost("ValidaCuenta")]
+        [ValidateAntiForgeryToken]
         public ErrorGeneralDto ValidaCuenta(ValidaCuentaRequestDto validaCuentaRequestDto)
         {
             return new GeneralBL(_config).ValidaCuenta(validaCuentaRequestDto);

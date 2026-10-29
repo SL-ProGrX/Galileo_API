@@ -28,6 +28,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("ClienteClasifica_Guardar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto Cliente_Clasifica_Guardar(ClienteClasifica request)
         {
@@ -36,6 +37,7 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("ClienteClasifica_Eliminar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto Cliente_Clasifica_Eliminar(string request, int codEmpresa = 0, string usuario = "")
         {

@@ -16,6 +16,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("UsuarioLogin")]
+        [ValidateAntiForgeryToken]
         public LoginResult UsuarioLogin(LoginRequest info)
         {
             return new AdminBL(_config).Login(info.UserName, info.Password);

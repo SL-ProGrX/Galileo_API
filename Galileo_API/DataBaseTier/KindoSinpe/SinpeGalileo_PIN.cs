@@ -12,6 +12,10 @@ namespace Galileo_API.DataBaseTier
     public class SinpeGalileoPin
     {
         private readonly MClientHpptCall mClient;
+
+        // KINDO indica que los campos opcionales no se envían; sin esto se serializan como null.
+        private static readonly JsonSerializerSettings SinNulos = new() { NullValueHandling = NullValueHandling.Ignore };
+
         public SinpeGalileoPin(IConfiguration config)
         {
             mClient = new MClientHpptCall();
@@ -44,6 +48,7 @@ namespace Galileo_API.DataBaseTier
                    operationName: nameof(IsServiceAvailable)
                ).Result;
         }
+
         #endregion
 
         #region 6.x GetAccountInfo
@@ -83,15 +88,10 @@ namespace Galileo_API.DataBaseTier
         /// <summary>
         /// ResPINSending SendPIN (ReqPINSending PINData)
         /// Envía una transacción PIN a una Entidad Financiera participante.
-        /// Endpoint: /SendPIN
+        /// Endpoint: /SendTransfer
         /// </summary>
         public ResSendingDynamic SendPIN(string UrlCGP_PIN, ReqSendingDynamic pinData)
         {
-            /*
-                    Para pruebas de SINPE
-            string json = JsonConvert.SerializeObject(pinData);
-                    **/
-
 
             var resp =  mClient.PostJsonAsync<ReqSendingDynamic, ResSendingDynamic, ResSendingDynamic>(
                    baseUrl: UrlCGP_PIN,
@@ -112,14 +112,9 @@ namespace Galileo_API.DataBaseTier
                             new Galileo.Models.KindoSinpe.Error { Code = code, Message = msg}
                         }
                    },
-                   operationName: nameof(SendPIN)
+                   operationName: nameof(SendPIN),
+                   settings: SinNulos
                ).Result;
-
-            /*
-                  Para pruebas de SINPE
-          json = JsonConvert.SerializeObject(resp);
-                  **/
-
 
             return resp;
         }
@@ -129,7 +124,7 @@ namespace Galileo_API.DataBaseTier
         /// <summary>
         /// ResPINSending GetPINResult (ReqTransferInfoChannelRef PINData)
         /// Consulta el resultado de envío de una transacción PIN usando la referencia del canal.
-        /// Endpoint: /GetPINResult
+        /// Endpoint: /GetTransferResult
         /// </summary>
         public ResSendingDynamic GetPINResult(string UrlCGP_PIN, ReqTransferInfoChannelRef pinData)
         {

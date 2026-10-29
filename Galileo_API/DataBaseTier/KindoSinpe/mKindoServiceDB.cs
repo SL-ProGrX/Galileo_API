@@ -1748,6 +1748,13 @@ WHERE COD_EMPRESA = @codEmpresa;";
             return result;
         }
 
+        /// <summary>
+        /// Genera el ChannelRefNumber de 25 dígitos (AAAAMMDD + canal de 5 + consecutivo de 12), sección 5.1 del doc.
+        /// Se toma del consecutivo continuo de SINPE_MOV_TRANSITO, que no se repite.
+        /// </summary>
+        public string GenerarChannelRef(int CodEmpresa, int canal) =>
+            DateTime.Now.ToString("yyyyMMdd") + canal.ToString("D5") + ConsecutivoMovTransito(CodEmpresa).ToString("D12");
+
         public ErrorDto<TesTransaccion> fxTesConsultaSolicitud(int CodEmpresa, int Nsolicitud)
         {
             var response = new ErrorDto<TesTransaccion>
@@ -2191,6 +2198,41 @@ WHERE COD_EMPRESA = @codEmpresa;";
             {
                 IngresaMovTransito(CodEmpresa, cod_referencia, usuario, canal, resPIN, solicitud);
             }
+        }
+
+        /// <summary>
+        /// Registra la transferencia en SINPE_MOV_TRANSITO con ESTADO 4 (pendiente) antes de enviarla a KINDO.
+        /// COD_REFERENCIA y COMPROBANTE_INTERNO quedan con el ChannelRefNumber; al responder KINDO se actualiza COD_REFERENCIA.
+        /// </summary>
+        public void RegistrarTransitoPendiente(int CodEmpresa, string codReferencia, string usuario, int canal, TesTransaccion solicitud) =>
+            IngresaMovTransito(CodEmpresa, codReferencia, usuario, canal,
+                new ResSendingDynamic { PINSendingResult = new PINSendingResult { SINPERefNumber = codReferencia } },
+                solicitud);
+
+        /// <summary>
+        /// Actualiza ESTADO (2 = procesado, 3 = error) de SINPE_MOV_TRANSITO, ubicando la fila por COMPROBANTE_INTERNO (ChannelRefNumber).
+        /// Si referenciaKindo llega vacía se conserva el COD_REFERENCIA que ya tenga la fila.
+        /// </summary>
+        public void ActualizarEstadoMovTransito(int CodEmpresa, string channelRef, string referenciaKindo, int estado, int rechazoCodigo, string rechazoDesc)
+        {
+            const string Query = @"UPDATE SINPE_MOV_TRANSITO
+                                    SET
+                                        COD_REFERENCIA = CASE WHEN @ReferenciaKindo = '' THEN COD_REFERENCIA ELSE @ReferenciaKindo END,
+                                        ESTADO = @Estado,
+                                        RECHAZO_CODIGO = @RechazoCodigo,
+                                        RECHAZO_DESC = @RechazoDesc,
+                                        FECHA_ACTUALIZA = @FechaActualiza
+                                    WHERE COMPROBANTE_INTERNO = @ChannelRef;";
+
+            DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, Query, new
+            {
+                ReferenciaKindo = referenciaKindo,
+                Estado = estado,
+                RechazoCodigo = rechazoCodigo,
+                RechazoDesc = rechazoDesc,
+                FechaActualiza = DateTime.Now,
+                ChannelRef = channelRef
+            });
         }
 
         private void IngresaMovTransito(int CodEmpresa, string cod_referencia, string usuario,int canal, ResSendingDynamic resPIN, TesTransaccion solicitud)

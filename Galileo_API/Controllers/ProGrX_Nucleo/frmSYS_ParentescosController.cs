@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Galileo_API.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic.ProGrX_Nucleo;
 using Galileo.Models.ERROR;
@@ -35,7 +36,7 @@ namespace Galileo.Controllers
         [HttpPost("Sys_Parentescos_Guardar")]
         public ErrorDto Sys_Parentescos_Guardar(int CodEmpresa, string usuario, SysParentescosData parentesco)
         {
-            return _bl.SYS_Parentescos_Guardar(CodEmpresa, usuario, parentesco);
+            return _bl.SYS_Parentescos_Guardar(CodEmpresa, User.ObtenerUsuario(), parentesco);
         }
 
         [Authorize]

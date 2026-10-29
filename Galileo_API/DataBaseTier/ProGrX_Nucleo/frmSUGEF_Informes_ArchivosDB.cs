@@ -134,92 +134,88 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="Usuario"></param>
         /// <param name="Corte"></param>
+        /// <param name="destino">Flujo de respuesta donde se escribe el XML.</param>
+        /// <param name="cancellationToken">Token para cancelar la consulta si se interrumpe la descarga.</param>
         /// <returns></returns>
-        public ErrorDto<ArchivoDescargaDto> SUGEFInformesArchivos_Archivo(int CodEmpresa, string Usuario, DateTime Corte)
+        public async Task<ErrorDto> SUGEFInformesArchivos_Archivo(
+            int CodEmpresa,
+            string Usuario,
+            DateTime Corte,
+            Stream destino,
+            CancellationToken cancellationToken)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"exec spSUGEF_Facilidades_Crediticias_Archivo @Corte,@Usuario";
-               var registros = connection.Query<SugefFacilidadesXmlRegistro>(
-                query,
-                new
+                await using var connection = new SqlConnection(stringConn);
+                await connection.OpenAsync(cancellationToken);
+
+                await using var command = new SqlCommand(
+                    "dbo.spSUGEF_Facilidades_Crediticias_Archivo",
+                    connection)
                 {
-                      Corte,
-                    Usuario = Usuario.Trim()
-                },
-                commandType: CommandType.Text,
-                commandTimeout: 0)
-            .Where(xml => !string.IsNullOrWhiteSpace(xml.XML_TEXT))
-            .OrderBy(x => x.IdLinea)
-            .ToList();
-
-
-                if (registros.Count == 0)
-                {
-                    return DbHelper.CreateErrorResponse<ArchivoDescargaDto>(
-                        "No se encontraron datos para generar el archivo.",
-                        -1 );
-                }
-
-                var contenidoXml = CrearContenidoXml(registros);
-                var nombreCorte = LimpiarNombreArchivo(Corte.ToString("yyyyMMdd"));
-
-                var archivo = new ArchivoDescargaDto
-                {
-                    Contenido = Encoding.UTF8.GetBytes(contenidoXml),
-                    NombreArchivo = $"Facilidades_Crediticia_{nombreCorte}.xml",
-                    ContentType = "application/xml"
+                    CommandType = CommandType.StoredProcedure,
+                    CommandTimeout = 0
                 };
 
-                return DbHelper.CreateOkResponse(archivo);
+                command.Parameters.Add("@Corte", SqlDbType.DateTime).Value = Corte;
+                command.Parameters.Add("@Usuario", SqlDbType.VarChar, 30).Value = Usuario.Trim();
+                command.Parameters.Add("@PorLineas", SqlDbType.Bit).Value = true;
+
+                await using var reader = await command.ExecuteReaderAsync(
+                    CommandBehavior.SequentialAccess,
+                    cancellationToken);
+
+                if (!reader.HasRows)
+                {
+                    return DbHelper.ErrorResponse(
+                        "No se encontraron datos para generar el archivo.");
+                }
+
+                var xmlTextOrdinal = reader.GetOrdinal("XML_TEXT");
+
+                await using var writer = new StreamWriter(
+                    destino,
+                    new UTF8Encoding(false),
+                    64 * 1024,
+                    leaveOpen: true);
+                var buffer = new char[64 * 1024];
+
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    if (reader.IsDBNull(xmlTextOrdinal))
+                    {
+                        continue;
+                    }
+
+                    using var xmlTextReader = reader.GetTextReader(xmlTextOrdinal);
+                    int charsRead;
+
+                    while ((charsRead = await xmlTextReader.ReadAsync(
+                        buffer.AsMemory(),
+                        cancellationToken)) > 0)
+                    {
+                        await writer.WriteAsync(
+                            buffer.AsMemory(0, charsRead),
+                            cancellationToken);
+                    }
+
+                    await writer.WriteAsync("\r\n".AsMemory(), cancellationToken);
+                }
+
+                await writer.FlushAsync(cancellationToken);
+                return DbHelper.CreateOkResponse();
             }
-            catch (Exception )
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                return DbHelper.CreateErrorResponse<ArchivoDescargaDto>(
-                 "Ocurrió un error al generar el archivo de facilidades crediticias.",
-                 -1 );
+                throw;
             }
-        
-
-        }
-        /// <summary>
-        ///  Crea el contenido del archivo XML a partir de los registros obtenidos de la base de datos.
-        /// </summary>
-        /// <param name="lineas"></param>
-        /// <returns></returns>
-        private static string CrearContenidoXml( IEnumerable<SugefFacilidadesXmlRegistro> lineas)
-        {
-            var contenido = new StringBuilder();
-
-            foreach (var linea in lineas)
+            catch (Exception)
             {
-                contenido.AppendLine(linea.XML_TEXT);
+                return DbHelper.ErrorResponse(
+                    "Ocurrió un error al generar el archivo de facilidades crediticias.");
             }
-
-            return contenido.ToString();
-        }
-
-        /// <summary>
-        /// Limpia el nombre del archivo eliminando caracteres inválidos para nombres de archivo.
-        /// </summary>
-        /// <param name="valor"></param>
-        /// <returns></returns>
-        private static string LimpiarNombreArchivo(string valor)
-        {
-            var caracteresInvalidos = Path.GetInvalidFileNameChars();
-
-            return new string(
-                valor.Where(caracter => !caracteresInvalidos.Contains(caracter))
-                     .ToArray());
-        }
-        public sealed class SugefFacilidadesXmlRegistro
-        {
-            public int IdLinea { get; set; }
-
-            public string XML_TEXT { get; set; } = string.Empty;
         }
 
     }

@@ -25,6 +25,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("sbAdmin_Rols_Load")]
+        [ValidateAntiForgeryToken]
         [ProducesResponseType(typeof(Galileo.Models.AdminAccessDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -88,6 +89,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("sbSIFMenuOptionClick")]
+        [ValidateAntiForgeryToken]
         public string sbSIFMenuOptionClick(int pNodo, int Cliente, string Usuario)
         {
             return new SeguridadPortalBl(_config).sbSIFMenuOptionClick(pNodo, Cliente, Usuario);
