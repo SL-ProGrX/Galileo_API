@@ -206,6 +206,16 @@ namespace Galileo_API.BusinessLogic
                 request);
         }
 
+        /// <summary>
+        /// Limpia los cheques temporales del usuario y los de más de 2 horas.
+        /// </summary>
+        public ErrorDto TES_BancosCargado_ChequesCambiados_Limpiar(
+            int CodEmpresa,
+            string usuario)
+        {
+            return _Db.TES_BancosCargado_ChequesCambiados_Limpiar(CodEmpresa, usuario);
+        }
+
     }
 }
 

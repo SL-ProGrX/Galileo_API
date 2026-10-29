@@ -197,6 +197,15 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
                 usuario,
                 request);
         }
+
+        [ValidateAntiForgeryToken]
+        [HttpPost("TES_BancosCargado_ChequesCambiados_Limpiar")]
+        public ErrorDto TES_BancosCargado_ChequesCambiados_Limpiar(
+            int CodEmpresa,
+            string usuario)
+        {
+            return _bl.TES_BancosCargado_ChequesCambiados_Limpiar(CodEmpresa, usuario);
+        }
     }
 }
 

@@ -1,3 +1,5 @@
+// Endpoints KindoSinpe comentados: las consultas ahora las ejecuta directamente el WCF CoreInterno.
+/*
 using Galileo.Models.KindoSinpe;
 using Galileo_API.BusinessLogic.KindoSinpe;
 using Microsoft.AspNetCore.Authorization;
@@ -208,3 +210,4 @@ namespace Galileo_API.Controllers.KindoSinpe
         #endregion
     }
 }
+*/

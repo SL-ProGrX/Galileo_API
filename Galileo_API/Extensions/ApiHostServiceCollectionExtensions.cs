@@ -248,6 +248,8 @@ public static class ApiHostServiceCollectionExtensions
                         context.HandleResponse();
                         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                         context.Response.ContentType = "application/json";
+                        context.Response.Headers["Strict-Transport-Security"] =
+                            $"max-age={HstsMaxAgeSeconds}; includeSubDomains; preload";
 
                         var result = JsonSerializer.Serialize(new
                         {
