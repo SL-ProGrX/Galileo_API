@@ -69,6 +69,11 @@ namespace Galileo.BusinessLogic.ProGrX.Credito
             return _Db.fxCajas_SaldoaFavor(CodEmpresa, cedula);
         }
 
+        public ErrorDto<List<CrConsultaCashBackData>> CR_ConsultaCrd_CashBack_Obtener(int codEmpresa, string cedula)
+        {
+            return _Db.CR_ConsultaCrd_CashBack_Obtener(codEmpresa, cedula);
+        }
+
         #region Créditos
 
         public ErrorDto<CrConsultaCreditoContextoData> CR_ConsultaCrd_CreditoContexto_Obtener(int codEmpresa)
