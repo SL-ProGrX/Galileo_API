@@ -227,22 +227,27 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
         /// <summary>
         /// Aplicar la resolución de un traslado de efectivo
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
+        /// <param name="CodEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Resolución y traslados seleccionados.</param>
+        /// <returns>Resultado de la aplicación de la resolución.</returns>
         public ErrorDto Cajas_TrasladosEfectivo_Resolucion_Aplicar(int CodEmpresa, CajasTeResolucionRequest request)
         {
-            var response = new ErrorDto
+            var tramiteIds = request.lista
+                .Select(item => item.traslado_id)
+                .Where(tramiteId => tramiteId > 0)
+                .Distinct()
+                .ToList();
+
+            if (tramiteIds.Count == 0)
             {
-                Code = 0,
-                Description = "Ok"
-            };
+                return DbHelper.ErrorResponse("No se indicaron trámites válidos para aplicar la resolución.", -2);
+            }
 
             try
             {
                 using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
-                foreach (var tramiteId in request.lista.Distinct())
+                foreach (var tramiteId in tramiteIds)
                 {
                     connection.Execute(
                         "spCajas_TE_Resolucion",
@@ -258,31 +263,24 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                         commandType: System.Data.CommandType.StoredProcedure
                     );
                 }
+
+                return DbHelper.OkResponse("Resoluciones aplicadas satisfactoriamente.");
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message);
             }
-
-            return response;
         }
 
         /// <summary>
         /// Registrar un traslado de efectivo entre cajas
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="Movimiento"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
+        /// <param name="CodEmpresa">Código de la empresa activa.</param>
+        /// <param name="Movimiento">Código del movimiento de traslado.</param>
+        /// <param name="request">Información del traslado por registrar.</param>
+        /// <returns>Resultado del registro del traslado.</returns>
         public ErrorDto Cajas_TrasladosEfectivo_Registrar(int CodEmpresa, string Movimiento, CajasTrasladosEfectivoDto request)
         {
-            var response = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-
             try
             {
                 using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
@@ -305,14 +303,13 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     },
                     commandType: System.Data.CommandType.StoredProcedure
                 );
+
+                return DbHelper.OkResponse("Traslado registrado satisfactoriamente.");
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message);
             }
-
-            return response;
         }
     }
 }
