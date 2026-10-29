@@ -153,7 +153,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     new List<FndConMovCobroResult>());
             }
 
-            const int tiempoEsperaSegundos = 180;
+            const int tiempoEsperaSegundos = 300;
 
             return DbHelper.WithConn(
                 CreatePortalDb(),
