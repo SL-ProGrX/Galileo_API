@@ -3,6 +3,13 @@ using System.Text.Json.Serialization;
 
 namespace Galileo.Models.ProGrX.Credito
 {
+    public sealed class CrConsultaCashBackData
+    {
+        public decimal puntosDisponibles { get; set; }
+        public string? fechaCorte { get; set; }
+        public decimal? montoEquivalente { get; set; }
+    }
+
     public class CrConsultaPlanillaAbonoDistInicialData
     {
         public string cedula { get; set; } = string.Empty;

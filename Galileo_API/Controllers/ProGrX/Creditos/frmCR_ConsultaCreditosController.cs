@@ -91,6 +91,13 @@ namespace Galileo.Controllers.ProGrX.Credito
 
 
 
+        [Authorize]
+        [HttpGet("CR_ConsultaCrd_CashBack_Obtener")]
+        public ErrorDto<List<CrConsultaCashBackData>> CR_ConsultaCrd_CashBack_Obtener(int CodEmpresa, string cedula)
+        {
+            return _BL.CR_ConsultaCrd_CashBack_Obtener(CodEmpresa, cedula);
+        }
+
         #region Créditos
 
         [Authorize]
