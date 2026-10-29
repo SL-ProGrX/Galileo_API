@@ -311,10 +311,8 @@ namespace Galileo.DataBaseTier
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(_connStrg)))
                 {
-                    var query = $@"select um.FRAME_WEB   from US_MENUS m left join US_MANUALES um 
-                                        ON m.MENU_NODO = um.MENU_NODO 
-                                        where 
-                                        m.FORMULARIO = @formulario";
+                    var query = $@"select FRAME_WEB from  US_MANUALES 
+                        where FORMULARIO = @formulario";
                     response.Result = connection.QueryFirstOrDefault<string>(query,
                         new { formulario = formulario }
                         );
