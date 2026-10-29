@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Galileo_API.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -37,7 +38,7 @@ namespace Galileo.Controllers.ProGrX_Personas
         [HttpPost("AF_Catalogos_Guardar")]
         public ErrorDto AF_Catalogos_Guardar(int CodEmpresa, string usuario, CatalogoData catalogo)
         {
-            return _bl.AF_Catalogos_Guardar(CodEmpresa, usuario, catalogo);
+            return _bl.AF_Catalogos_Guardar(CodEmpresa, User.ObtenerUsuario(), catalogo);
         }
 
         [Authorize]

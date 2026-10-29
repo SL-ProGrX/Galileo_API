@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Galileo_API.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Galileo_API.BusinessLogic.ProGrX.Bancos;
 using Galileo.Models.ERROR;
@@ -27,7 +28,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         [HttpPost("Tes_Conceptos_Guardar")]
         public ErrorDto Tes_Conceptos_Guardar(int CodEmpresa, string usuario, TesConceptosData concepto)
         {
-            return _conceptosBL.Tes_Conceptos_Guardar(CodEmpresa, usuario, concepto);
+            return _conceptosBL.Tes_Conceptos_Guardar(CodEmpresa, User.ObtenerUsuario(), concepto);
         }
 
         [ValidateAntiForgeryToken]

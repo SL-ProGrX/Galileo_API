@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Galileo_API.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic.ProGrX_Nucleo;
+using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 
@@ -36,7 +38,30 @@ namespace Galileo.Controllers.ProGrX_Nucleo
         [HttpPut("Sys_Iva_Parametro_Actualizar")]
         public ErrorDto<SysIvaParametrosUpdateResponse> Sys_Iva_Parametro_Actualizar(int CodEmpresa, string codParametro, string usuario, string jrequest)
         {
-            return _bl.Sys_Iva_Parametro_Actualizar(CodEmpresa, codParametro, usuario, jrequest);
+            return _bl.Sys_Iva_Parametro_Actualizar(CodEmpresa, codParametro, User.ObtenerUsuario(), jrequest);
+        }
+
+        [Authorize]
+        [HttpGet("Sys_Iva_Tipos_Obtener")]
+        public ErrorDto<List<TipoIvaFactura>> Sys_Iva_Tipos_Obtener(int CodEmpresa)
+        {
+            return _bl.Sys_Iva_Tipos_Obtener(CodEmpresa);
+        }
+
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        [HttpPost("Sys_Iva_Tipo_Insertar")]
+        public ErrorDto<TipoIvaFactura> Sys_Iva_Tipo_Insertar(int CodEmpresa, string usuario, string jrequest)
+        {
+            return _bl.Sys_Iva_Tipo_Insertar(CodEmpresa, usuario, jrequest);
+        }
+
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        [HttpPut("Sys_Iva_Tipo_Actualizar")]
+        public ErrorDto<TipoIvaFactura> Sys_Iva_Tipo_Actualizar(int CodEmpresa, string codIVA, string usuario, string jrequest)
+        {
+            return _bl.Sys_Iva_Tipo_Actualizar(CodEmpresa, codIVA, usuario, jrequest);
         }
 
         [Authorize]

@@ -1,12 +1,15 @@
+using DocumentFormat.OpenXml.EMMA;
 using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
+using Galileo_API.Controllers.WFCSinpe;
 using Galileo_API.Models.ProGrX.Bancos;
 using Microsoft.ReportingServices.ReportProcessing.ReportObjectModel;
 using Sinpe_PIN;
+using static Galileo_API.DataBaseTier.CoopeSanGabrielValidator;
 
 namespace Galileo_API.DataBaseTier
 {
@@ -15,15 +18,21 @@ namespace Galileo_API.DataBaseTier
     /// - Elimina duplicidad entre Crédito Directo (PIN) y Tiempo Real (DTR)
     /// - Centraliza pipeline: validar -> enviar -> persistir respuesta -> bitácora
     /// </summary>
-    public sealed class CoopeSanGabrielValidator
+    public partial class CoopeSanGabrielValidator : IWfcSinpe
     {
-        private readonly PortalDB _portalDB;
         private readonly SinpeGalileoPin _sinpePIN;
         private readonly SinpeGalileoDtr _sinpeDTR;
         private readonly MKindoServiceDb _mKindo;
         private readonly MTesoreria _mTesoreria;
+        private readonly bool _usaSimuladorKindo;
+        private Galileo.Models.KindoSinpe.ParametrosSinpe _parametrosSinpe;
+
+        public enum SinpeTipo { PIN, TR }
 
         private const string SinpeRejectionMessage = "Rechazo SINPE";
+
+        // Cédula que devuelve el simulador de KINDO para cualquier cuenta (escenarios de pruebas, sección 1.2).
+        private const string CedulaSimuladorKindo = "06-0378-0859";
 
         // Cache del "servicio disponible" durante la vida de la instancia (= un lote).
         // Evita repetir el round-trip remoto de disponibilidad por cada solicitud.
@@ -35,169 +44,119 @@ namespace Galileo_API.DataBaseTier
             _sinpePIN = new SinpeGalileoPin(config);
             _sinpeDTR = new SinpeGalileoDtr(config);
             _mTesoreria = new MTesoreria(config);
-            _portalDB = new PortalDB(config);
-        }
-
-        private enum SinpeTipo { PIN, TR }
-
-        #region Validación de Solicitud SINPE
-
-        public ErrorDto fxValidacionSinpe(int codEmpresa, string solicitud, string usuario, string? tipo = "PIN")
-        {
-            var ok = DbHelper.CreateOkResponse();
-
-            try
-            {
-                var parametrosSinpe = _mKindo.GetUriEmpresa(codEmpresa, usuario);
-                if (parametrosSinpe?.Result == null)
-                    return DbHelper.ErrorResponse("No se pudieron obtener parámetros SINPE para la empresa.");
-
-                var infoSinpeResult = CargarInfoSinpe(codEmpresa, solicitud);
-                if (infoSinpeResult.Code == -1)
-                    return DbHelper.ErrorResponse(infoSinpeResult.Description ?? "Error al consultar info SINPE.");
-
-                var info = infoSinpeResult.Result;
-                if(info == null)
-                    return DbHelper.ErrorResponse("No se pudo obtener información SINPE.");
-
-                if (!TieneDatosMinimos(info))
-                    return ok; // mismo comportamiento actual: si no hay datos, regresa Ok
-
-                if (!MKindoServiceDb.IsValidCostaRicaIBAN(info.CuentaIBAN!))
-                    return DbHelper.ErrorResponse("Cuenta IBAN no válida");
-
-                var sinpeTipo = ParseTipo(tipo);
-                var context = CrearContexto(parametrosSinpe);
-
-                var uriConn = GetServiceUri(parametrosSinpe, sinpeTipo);
-
-                var errorDisponible = VerificarServicioDisponible(uriConn, context);
-                if (errorDisponible != null)
-                    return errorDisponible;
-
-                string cedula = MKindoServiceDb.MaskSinpeId(info.tipoID, info.Cedula!);
-
-                var cuenta = ConsultarCuenta(parametrosSinpe, context, info.CuentaIBAN!, sinpeTipo, cedula);
-
-                return ValidarCuenta(codEmpresa, solicitud, cedula, info, cuenta, ok);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse("Ocurrió un problema con la validación. - " + ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Verifica la disponibilidad del servicio SINPE una sola vez por lote (cachea el positivo).
-        /// Devuelve un error si no está disponible, o null si está OK.
-        /// </summary>
-        private ErrorDto ValidarCuenta(int codEmpresa, string solicitud, string cedula, vInfoSinpe info, Galileo.Models.KindoSinpe.ResAccountInfo cuenta, ErrorDto ok)
-        {
-            if (cuenta.Account?.State is not (0 or 1))
-            {
-                var motivo = _mKindo.fxTesConsultaMotivo(codEmpresa, cuenta.Account?.State ?? 0).Result;
-                return DbHelper.ErrorResponse(motivo ?? SinpeRejectionMessage);
-            }
-
-            var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(codEmpresa, solicitud, cuenta.Account.CurrencyCode ?? "X");
-            if (valOrigen.Code == -1)
-                return DbHelper.ErrorResponse(valOrigen.Description ?? string.Empty);
-
-            if (!cuenta.IsSuccessful)
-            {
-                var err = cuenta.Errors;
-                if (err != null && err.Length > 0)
-                {
-                    ok.Code = err[0].Code;
-                    ok.Description = err[0].Message;
-                }
-                return ok;
-            }
-
-            if (cuenta.Account == null || string.IsNullOrWhiteSpace(cuenta.Account.HolderId))
-                return DbHelper.ErrorResponse("No se pudo validar el titular de la cuenta IBAN.");
-
-            if (cuenta.Account.HolderId == "06-0378-0859")
-                cuenta.Account.HolderId = cedula;
-
-            if (cedula.Replace("-", "") != cuenta.Account.HolderId.Replace("-", ""))
-                return DbHelper.ErrorResponse("La cuenta IBAN no pertenece a la Cedula");
-
-            return ConstruirRespuestaEstado(codEmpresa, cuenta.Account.State.Value, info, cuenta);
-        }
-        private ErrorDto? VerificarServicioDisponible(string uriConn, ReqBase context)
-        {
-            if (_servicioDisponibleLote == true)
-                return null;
-
-            var servicio = _sinpePIN.IsServiceAvailable(uriConn, context);
-            if (!servicio.ServiceAvailable)
-                return DbHelper.ErrorResponse("Servicio no disponible: " + servicio.Errors?[0].Message);
-
-            _servicioDisponibleLote = true;
-            return null;
-        }
-
-        /// <summary>
-        /// Construye la respuesta según el estado de la cuenta: 0/1 = OK con descripción; otros = rechazo con motivo.
-        /// </summary>
-        private ErrorDto ConstruirRespuestaEstado(
-            int codEmpresa,
-            int estado,
-            vInfoSinpe info,
-            Galileo.Models.KindoSinpe.ResAccountInfo cuenta)
-        {
-            if (estado == 0 || estado == 1)
-            {
-                var account = cuenta.Account!;
-                var desc = $@"La cuenta IBAN {info.CuentaIBAN} registrada a
-nombre de {account.Holder} cédula: {account.HolderId} Tipo Id: {info.tipoID}
-Tipo de Moneda: {account.CurrencyCode} Entidad: {account.EntityCode}-{account.EntityName}";
-
-                return DbHelper.OkResponse(desc);
-            }
-
-            var rechazo = _mKindo.fxTesConsultaMotivo(codEmpresa, estado).Result ?? SinpeRejectionMessage;
-            return DbHelper.ErrorResponse(rechazo, estado);
+            _usaSimuladorKindo = config["Sinpe:UsaSimuladorKindo"] == "true";
         }
 
         public ErrorDto fxValidacionSinpeTransaccion(int CodEmpresa, string cedula, string cuenta, string usuario)
         {
+            ErrorDto response = new();
+            var parametros = _mKindo.GetUriEmpresa(CodEmpresa, usuario).Result;
+            if (parametros == null)
+                return DbHelper.ErrorResponse("No se pudieron obtener parámetros SINPE para la empresa.");
+
+            _parametrosSinpe = parametros;
+            var resp  = new ErrorDto<ParametrosSinpe>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = _parametrosSinpe
+            };
+
             try
             {
-                var parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, usuario);
-                if (parametrosSinpe?.Result == null)
-                    return DbHelper.ErrorResponse("No se pudieron obtener parámetros SINPE para la empresa.");
 
-               
-                return DbHelper.OkResponse("Validación de transacción no implementada para Coope San Gabriel.");
+                if (!string.IsNullOrEmpty(cedula) && !string.IsNullOrEmpty(cuenta))
+                {
+                    var context = CrearContexto(resp);
 
+                    var uriConn = GetServiceUri(resp, SinpeTipo.PIN);
+
+                    ErrorDto? errorDisponible = VerificarServicioDisponiblePIN(uriConn, context);
+
+                    if (errorDisponible != null)
+                        return errorDisponible;
+
+                    var cuentaInfo = ConsultarCuenta(resp, context, cuenta, SinpeTipo.PIN, cedula);
+                    response = ValidarRespuestaCuenta(CodEmpresa, cedula, cuentaInfo);
+                }
+                else
+                {
+                    response.Code = -1;
+                    response.Description = " - Solicitud SINPE incompleta.";
+                }
             }
             catch (Exception ex)
             {
-                return DbHelper.ErrorResponse("Ocurrió un problema con la validación. - " + ex.Message);
+                response.Code = -1;
+                _ = ex.Message; //bandera para visualizar error técnico.
+                response.Description = "Ocurrió un problema con la validación.";
             }
+            return response;
         }
 
-        private ErrorDto<vInfoSinpe> CargarInfoSinpe(int codEmpresa, string solicitud)
+        private ErrorDto ValidarRespuestaCuenta(int CodEmpresa, string cedula, Galileo.Models.KindoSinpe.ResAccountInfo cuentaInfo)
         {
-            return _mKindo.fxTesConsultaInfoSinpe(codEmpresa, solicitud);
+            if (cuentaInfo.Account == null)
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = cuentaInfo.Errors[0].Message
+                };
+
+            if (cuentaInfo.Account.AccountNumber == null)
+            {
+                var respustaError = _mKindo.fxTesConsultaMotivo(CodEmpresa, Convert.ToInt32(cuentaInfo.Account.State.ToString())).Result;
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = respustaError
+                };
+            }
+
+            if (NormalizarIdentificacion(cedula) != NormalizarIdentificacion(cuentaInfo.Account.HolderId!))
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "La cédula obtenida no corresponde con la cédula de la cuenta."
+                };
+
+            return new ErrorDto
+            {
+                Code = 0,
+                Description = $@"La cuenta {cuentaInfo.Account.AccountNumber} registrada a
+                                        nombre de {cuentaInfo.Account.Holder} cédula: {cuentaInfo.Account.HolderId} Tipo Id: 1 Tipo de Moneda: @moneda"
+            };
         }
 
-        private static bool TieneDatosMinimos(vInfoSinpe info) =>
-            !string.IsNullOrWhiteSpace(info?.Cedula) &&
-            !string.IsNullOrWhiteSpace(info.CuentaIBAN);
+        private static string NormalizarIdentificacion(string valor) =>
+            valor.Trim().Replace("-", "").Replace(" ", "").TrimStart('0');
 
+
+        /// <summary>
+        /// Creates a request context from SINPE parameters with host, user, channel, client IP, culture, and a new
+        /// operation identifier.
+        /// </summary>
+        /// <param name="parametrosSinpe">Error wrapper containing the SINPE parameters used to populate the request context.</param>
+        /// <returns>A <c>ReqBase</c> instance initialized with values from <c>parametrosSinpe.Result</c> and a newly generated
+        /// operation identifier.</returns>
         private static ReqBase CrearContexto(ErrorDto<ParametrosSinpe> parametrosSinpe) =>
-            new ReqBase
-            {
-                HostId = parametrosSinpe.Result!.vHostPin,
-                OperationId = Guid.NewGuid().ToString(),
-                ClientIPAddress = parametrosSinpe.Result.vIpHost,
-                CultureCode = "ES-CR",
-                UserCode = parametrosSinpe.Result.vUsuarioLog,
-                vCanalCGP = parametrosSinpe.Result.vCanalCGP
-            };
+          new ReqBase
+          {
+              HostId = parametrosSinpe.Result!.vHostPin,
+              OperationId = Guid.NewGuid().ToString(),
+              ClientIPAddress = parametrosSinpe.Result.vIpHost,
+              CultureCode = "ES-CR",
+              UserCode = parametrosSinpe.Result.vUsuarioLog,
+              vCanalCGP = parametrosSinpe.Result.vCanalCGP
+          };
+
+        private static string GetServiceUri(ErrorDto<ParametrosSinpe> parametros, SinpeTipo tipo)
+        {
+            var r = parametros.Result!;
+            return tipo == SinpeTipo.PIN
+                ? (r.UrlCGP_PIN ?? string.Empty)
+                : (r.UrlCGP_DTR ?? string.Empty);
+        }
 
         private Galileo.Models.KindoSinpe.ResAccountInfo ConsultarCuenta(
             ErrorDto<ParametrosSinpe> parametrosSinpe,
@@ -225,457 +184,151 @@ Tipo de Moneda: {account.CurrencyCode} Entidad: {account.EntityCode}-{account.En
             return _sinpeDTR.GetAccountInfo(uri, accountData);
         }
 
+        /// <summary>
+        /// Verifica la disponibilidad del servicio SINPE una sola vez por lote (cachea el positivo).
+        /// Devuelve un error si no está disponible, o null si está OK.
+        /// </summary>
+        private ErrorDto ValidarCuenta(int codEmpresa, string solicitud, string cedula, vInfoSinpe info, Galileo.Models.KindoSinpe.ResAccountInfo cuenta, ErrorDto ok)
+        {
+            if (cuenta.Account is null)
+            {
+                var mensaje = cuenta.Errors is { Length: > 0 } ? cuenta.Errors[0].Message : null;
+                return DbHelper.ErrorResponse(mensaje ?? SinpeRejectionMessage);
+            }
+
+            // Igual que ASECCSS: solo la cuenta activa (estado 1 del servicio PIN, sección 10.8) puede recibir.
+            if (cuenta.Account.State is not 1)
+            {
+                var motivo = _mKindo.fxTesConsultaMotivo(codEmpresa, cuenta.Account.State ?? 0).Result;
+                return DbHelper.ErrorResponse(motivo ?? SinpeRejectionMessage);
+            }
+
+            var valOrigen = _mKindo.ValidaOrigenDestinoIBAN(codEmpresa, solicitud, cuenta.Account.CurrencyCode ?? "X");
+            if (valOrigen.Code == -1)
+                return DbHelper.ErrorResponse(valOrigen.Description ?? string.Empty);
+
+            if (!cuenta.IsSuccessful)
+            {
+                var err = cuenta.Errors;
+                if (err != null && err.Length > 0)
+                {
+                    ok.Code = err[0].Code;
+                    ok.Description = err[0].Message;
+                }
+                return ok;
+            }
+
+            if (cuenta.Account == null || string.IsNullOrWhiteSpace(cuenta.Account.HolderId))
+                return DbHelper.ErrorResponse("No se pudo validar el titular de la cuenta IBAN.");
+
+            // Solo en ambiente de pruebas: el simulador devuelve una cédula fija para cualquier cuenta.
+            if (_usaSimuladorKindo && cuenta.Account.HolderId == CedulaSimuladorKindo)
+                cuenta.Account.HolderId = cedula;
+
+            if (cedula.Replace("-", "") != cuenta.Account.HolderId.Replace("-", ""))
+                return DbHelper.ErrorResponse("La cuenta IBAN no pertenece a la Cedula");
+
+            ActualizaHolderIdEnCuenta(codEmpresa, solicitud, cuenta.Account.Holder);
+
+            return ConstruirRespuestaEstado(codEmpresa, cuenta.Account.State.Value, info, cuenta);
+        }
+
+        private void ActualizaHolderIdEnCuenta(int codEmpresa, string solicitud, string holder)
+        {
+            _mKindo.fxTesActualizaHolderId(codEmpresa, solicitud, holder);
+        }
+
+        /// <summary>
+        /// Construye la respuesta según el estado de la cuenta: 0/1 = OK con descripción; otros = rechazo con motivo.
+        /// </summary>
+        private ErrorDto ConstruirRespuestaEstado(
+            int codEmpresa,
+            int estado,
+            vInfoSinpe info,
+            Galileo.Models.KindoSinpe.ResAccountInfo cuenta)
+        {
+            if (estado == 1)
+            {
+                var account = cuenta.Account!;
+                var desc = $@"La cuenta IBAN {info.CuentaIBAN} registrada a
+nombre de {account.Holder} cédula: {account.HolderId} Tipo Id: {info.tipoID}
+Tipo de Moneda: {account.CurrencyCode} Entidad: {account.EntityCode}-{account.EntityName}";
+
+                return DbHelper.OkResponse(desc);
+            }
+
+            var rechazo = _mKindo.fxTesConsultaMotivo(codEmpresa, estado).Result ?? SinpeRejectionMessage;
+            return DbHelper.ErrorResponse(rechazo, estado);
+        }
+
+        #region Operaciones de IWfcSinpe no implementadas para CSG (devuelven error explícito, nunca éxito)
+
+        private static string MensajeNoImplementado(string operacion) =>
+            $"{operacion} no está implementado para Coope San Gabriel.";
+
+        public ErrorDto<bool> ServicioDisponible(string vUsuario) =>
+            new ErrorDto<bool>
+            {
+                Code = -1,
+                Description = MensajeNoImplementado("Consulta de disponibilidad por usuario"),
+                Result = false
+            };
+
+        public ErrorDto<bool> GenerarFacturacionElectronica(int CodEmpresa,
+            string pCedula,
+            string pNumeroDocumento, string pTipoDoc,
+            byte pTipoDocEletronico, string pNotas, string pTipoTramite) =>
+            new ErrorDto<bool>
+            {
+                Code = -1,
+                Description = MensajeNoImplementado("Facturación electrónica"),
+                Result = false
+            };
+
+        public ErrorDto ConsultaCuentaSinpe(int CodEmpresa, TesConsultaCuentaSinpeModels cuenta) =>
+            DbHelper.ErrorResponse(MensajeNoImplementado("Consulta de cuenta SINPE"));
+
+        #endregion
+
         private static SinpeTipo ParseTipo(string? tipo) =>
             string.Equals(tipo, "TR", StringComparison.OrdinalIgnoreCase)
                 ? SinpeTipo.TR
                 : SinpeTipo.PIN;
 
-        private static string GetServiceUri(ErrorDto<ParametrosSinpe> parametros, SinpeTipo tipo)
+
+        /// <summary>
+        /// Verifica la disponibilidad del servicio SINPE una sola vez por lote (cachea el resultado),
+        /// evitando repetir el round-trip remoto por cada solicitud.
+        /// </summary>
+        private bool ServicioDisponibleLote(int CodEmpresa, string vUsuario)
         {
-            var r = parametros.Result!;
-            return tipo == SinpeTipo.PIN
-                ? (r.UrlCGP_PIN ?? string.Empty)
-                : (r.UrlCGP_DTR ?? string.Empty);
+            _servicioDisponibleLote ??= fxTesConsultarServicioDisponible(CodEmpresa, vUsuario).Result;
+            return _servicioDisponibleLote.Value;
         }
 
-        #endregion
-
-        #region Emisión SINPE (PIN / TR) - pipeline unificado
-
-        public ErrorDto fxTesEmisionSinpeCreditoDirecto(
-            int codEmpresa,
-            int nSolicitud,
-            DateTime fecha,
-            string usuario,
-            int docBase,
-            int contador)
+        private ErrorDto<bool> fxTesConsultarServicioDisponible(int CodEmpresa, string vUsuario)
         {
-            Parametros parametros = new()
+            _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario).Result ?? new Galileo.Models.KindoSinpe.ParametrosSinpe();
+            var resp = new ErrorDto<ParametrosSinpe>
             {
-                codEmpresa = codEmpresa,
-                nSolicitud = nSolicitud,
-                usuario = usuario,
-                fecha = fecha
+                Code = 0,
+                Description = "OK",
+                Result = _parametrosSinpe
             };
 
-            return ProcesarEmision(parametros,
-                docBase, contador,
-                enviar: (ce, ns, u) => EnviarPinCreditoDirecto(ce, ns, u),
-                bitacoraExito: "Emisión Transferencia Sinpe: Exitosa",
-                bitacoraRechazo: "Transferencia Sinpe rechazada");
+            var context = CrearContexto(resp);
+
+            var uriConn = GetServiceUri(resp, SinpeTipo.PIN);
+
+            ErrorDto? errorDisponible = VerificarServicioDisponiblePIN(uriConn, context);
+
+            if (errorDisponible != null)
+                return DbHelper.CreateErrorResponse<bool>(errorDisponible.Description ?? "Servicio SINPE no disponible.");
+
+            return DbHelper.CreateOkResponse<bool>(true);
+
         }
 
-        public ErrorDto fxTesEmisionSinpeTiempoReal(
-            int codEmpresa,
-            int nSolicitud,
-            DateTime fecha,
-            string usuario,
-            int docBase,
-            int contador)
-        {
-            Parametros parametros = new()
-            {
-                codEmpresa = codEmpresa,
-                nSolicitud = nSolicitud,
-                usuario = usuario,
-                fecha = fecha
-            };
-            return ProcesarEmision(
-                parametros,
-                docBase, contador,
-                enviar: (ce, ns, u) => EnviarTiempoRealDtr(ce, ns, u),
-                bitacoraExito: "Emisión Transferencia Sinpe: Exitosa",
-                bitacoraRechazo: "Transferencia Sinpe rechazada");
-        }
-
-        private ErrorDto ProcesarEmision(
-            Parametros parametros,
-            int docBase,
-            int contador,
-            Func<int, int, string, ErrorDto<RespuestaRegistro>> enviar,
-            string bitacoraExito,
-            string bitacoraRechazo)
-        {
-            var response = new ErrorDto { Code = 0, Description = "Ok" };
-
-            var datos = new TesTransaccion();
-            bool estadoSinpe = true;
-            int idRechazo = 0;
-            string rechazoTexto = "";
-            RespuestaRegistro? respuesta = null;
-
-            try
-            {
-                if (parametros.nSolicitud <= 0)
-                    return DbHelper.ErrorResponse("No se ha indicado una solicitud válida.");
-
-                // 1) Validación disponibilidad / cuenta
-                var servicioDisponible = fxValidacionSinpe(
-                    parametros.codEmpresa,
-                    parametros.nSolicitud.ToString(),
-                    parametros.usuario!,
-                    "PIN");
-
-                if (servicioDisponible.Code != 0 && servicioDisponible.Code != 1)
-                {
-                    estadoSinpe = false;
-                    idRechazo = servicioDisponible.Code ?? -1;
-
-                    rechazoTexto = _mKindo.fxTesConsultaMotivo(parametros.codEmpresa, idRechazo).Result ?? SinpeRejectionMessage;
-                    response = DbHelper.ErrorResponse($"N°: {parametros.nSolicitud} - {rechazoTexto}");
-
-                    fxGuardaID_RespuestaSinpe(parametros.codEmpresa, idRechazo, parametros.nSolicitud.ToString());
-                }
-                // 2) Envío
-                var envio = enviar(parametros.codEmpresa, parametros.nSolicitud, parametros.usuario!);
-                respuesta = envio.Result;
-
-                if(envio.Result!.MotivoError == 32)
-                {
-                    // 3) Persistir respuesta
-                    datos.NumeroSolicitud = parametros.nSolicitud;
-                    datos.FechaEmision = parametros.fecha;
-                    datos.FechaTraslado = parametros.fecha;
-                    datos.UsuarioGenera = parametros.usuario;
-                    datos.estadoSinpe = estadoSinpe;
-                    datos.IdMotivoRechazo = envio.Result.MotivoError;
-                    datos.CodigoReferencia = respuesta?.CodigoReferencia;
-                    datos.DocumentoBase = docBase.ToString();
-                    datos.contador = contador.ToString();
-
-                    if (!_mKindo.fxTesRespuestaSinpe(parametros.codEmpresa, datos).Result)
-                    {
-                        _mTesoreria.sbTesBitacoraEspecial(
-                            parametros.codEmpresa, parametros.nSolicitud, "10",
-                            "Se produjo un error al actualizar la transacción",
-                            parametros.usuario!);
-                    }
-
-                    // 4) Bitácora final
-                    _mTesoreria.sbTesBitacoraEspecial(
-                        parametros.codEmpresa, parametros.nSolicitud, "10",
-                        estadoSinpe ? bitacoraExito : $"{bitacoraRechazo}: {rechazoTexto}",
-                        parametros.usuario!);
-                }
-
-                if (envio.Code != 0 || (respuesta != null && respuesta.MotivoError != 32))
-                {
-                    idRechazo = respuesta?.MotivoError ?? envio.Code ?? -1;
-                    rechazoTexto = _mKindo.fxTesConsultaMotivo(parametros.codEmpresa, idRechazo).Result ?? SinpeRejectionMessage;
-
-                    response = DbHelper.ErrorResponse(rechazoTexto, idRechazo);
-                }
-
-
-                return response;
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-        }
-
-        #endregion
-
-        #region Envío PIN / DTR (sin duplicidad de plantilla)
-
-        private ErrorDto<RespuestaRegistro> EnviarPinCreditoDirecto(int codEmpresa, int nSolicitud, string usuario)
-        {
-            Parametros parametros = new()
-            {
-                codEmpresa = codEmpresa,
-                nSolicitud = nSolicitud,
-                usuario = usuario
-            };
-            return EnviarGenerico(
-                parametros,
-                tipo: SinpeTipo.PIN,
-                buildRequest: (ctx, ce, sol, codRef) => BuildPinRequest(ctx, ce, sol, codRef),
-                send: (uri, req) => _sinpePIN.SendPIN(uri, req),
-                registrarCuenta: (ce, ns, resp) => _mKindo.RegistraCreditoCuenta(ce, ns, resp).Result);
-        }
-
-        private ErrorDto<RespuestaRegistro> EnviarTiempoRealDtr(int codEmpresa, int nSolicitud, string usuario)
-        {
-            Parametros parametros = new()
-            {
-                codEmpresa = codEmpresa,
-                nSolicitud = nSolicitud,
-                usuario = usuario
-            };
-            return EnviarGenerico(
-                parametros,
-                tipo: SinpeTipo.TR,
-                buildRequest: (ctx, ce, sol, codRef) => BuildDtrRequest(ctx, ce, sol, codRef),
-                send: (uri, req) => _sinpePIN.SendPIN(uri, req),
-                registrarCuenta: (ce, ns, resp) => _mKindo.RegistraDibitoCuenta(ce, ns, resp).Result);
-        }
-
-        private ErrorDto<RespuestaRegistro> EnviarGenerico(
-            Parametros parametros,
-            SinpeTipo tipo,
-            Func<ReqBase, int, dynamic, string, ReqSendingDynamic> buildRequest,
-            Func<string, ReqSendingDynamic, dynamic> send,
-            Func<int, int, dynamic, bool> registrarCuenta)
-        {
-            try
-            {
-                var parametrosSinpe = _mKindo.GetUriEmpresa(parametros.codEmpresa, parametros.usuario!);
-                if (parametrosSinpe?.Result == null)
-                    return new ErrorDto<RespuestaRegistro> { Code = -1, Description = "No se pudieron obtener parámetros SINPE." };
-
-                var solicitud = _mKindo.fxTesConsultaSolicitud(parametros.codEmpresa, parametros.nSolicitud).Result;
-                if (solicitud == null)
-                    return new ErrorDto<RespuestaRegistro> { Code = -1, Description = "No se pudo consultar la solicitud." };
-
-                var context = CrearContexto(parametrosSinpe);
-                int canal = tipo switch
-                {
-                    SinpeTipo.PIN => parametrosSinpe.Result.vCanalCGP,
-                    SinpeTipo.TR => 24,
-                    _ => 1
-                };
-                var codReferencia = string.IsNullOrWhiteSpace(solicitud.referencia_sinpe)
-                    ? _mKindo.IsValidTransactionNumber(parametros.codEmpresa, canal)
-                    : solicitud.referencia_sinpe;
-
-                var req = buildRequest(context, parametros.codEmpresa, solicitud, codReferencia);
-
-                var uri = GetServiceUri(parametrosSinpe, tipo);
-
-                var resp = send(uri, req);
-
-                var errorRespuesta = ProcesarRespuestaProveedor(parametros, context, solicitud, resp, canal, codReferencia);
-                if (errorRespuesta != null)
-                {
-                    return new ErrorDto<RespuestaRegistro>
-                    {
-                        Code = -1,
-                        Description = errorRespuesta.Result.MotivoErrorInterno,
-                        Result = new RespuestaRegistro { MotivoError = -1, CodigoReferencia = resp }
-                    };
-                }
-
-                // Registrar respuesta en BD
-                var actualizado = registrarCuenta(parametros.codEmpresa, parametros.nSolicitud, resp);
-                if (!actualizado)
-                {
-                    return new ErrorDto<RespuestaRegistro>
-                    {
-                        Code = -1,
-                        Description = "Error al actualizar el número de solicitud con la respuesta de SINPE.",
-                        Result = new RespuestaRegistro { MotivoError = -1, CodigoReferencia = resp }
-                    };
-                }
-
-                // Movimientos en tránsito
-                _mKindo.RegistraMovTransito(parametros.codEmpresa, codReferencia, context.UserCode, canal, resp, solicitud);
-
-                return new ErrorDto<RespuestaRegistro>
-                {
-                    Code = 0,
-                    Description = "Ok",
-                    Result = new RespuestaRegistro
-                    {
-                        MotivoError = resp.PINSendingResult.State,
-                        CodigoReferencia = resp.PINSendingResult.SINPERefNumber
-                    }
-                };
-            }
-            catch
-            {
-                return new ErrorDto<RespuestaRegistro>
-                {
-                    Code = -1,
-                    Description = "Error al enviar la solicitud a SINPE.",
-                    Result = null
-                };
-            }
-        }
-
-        #endregion
-
-        private ErrorDto<RespuestaRegistro>? ProcesarRespuestaProveedor(Parametros parametros, ReqBase context, dynamic solicitud, dynamic resp, int canal, string codReferencia)
-        {
-            if (resp?.Errors?.Length > 0)
-                fxGuardaID_RespuestaSinpe(parametros.codEmpresa, resp.Errors[0].Code, parametros.nSolicitud.ToString(), codReferencia);
-
-            if (resp is not null && resp.IsSuccessful)
-            {
-                _mKindo.RegistraMovTransito(parametros.codEmpresa, codReferencia, context.UserCode, canal, resp, solicitud);
-                return null;
-            }
-
-            var errores = resp?.Errors;
-            var tieneErrores = errores is not null && errores.Length > 0;
-            var code = tieneErrores ? errores![0].Code : -1;
-            var msg = tieneErrores ? errores![0].Message : "Error al enviar solicitud a SINPE.";
-            _mKindo.RegistraMovTransito(parametros.codEmpresa, codReferencia, context.UserCode, canal, resp, solicitud);
-
-            return new ErrorDto<RespuestaRegistro>
-            {
-                Code = -1,
-                Description = "Error al enviar solicitud",
-                Result = new RespuestaRegistro
-                {
-                    MotivoError = code,
-                    CodigoReferencia = "",
-                    MotivoErrorInterno = msg
-                }
-            };
-        }
-        #region Utilidades / Persistencia
-
-        private void fxGuardaID_RespuestaSinpe(int codEmpresa, int codigo, string nSolicitud, string? referenciaSinpe = null)
-        {
-            const string qryExistSinpe = "SELECT COUNT(*) FROM SINPE_MOTIVOS WHERE cod_motivo = @codigo";
-            var existe = DbHelper.ExecuteSingleQuery<int>(_portalDB, codEmpresa, qryExistSinpe, 0,new { codigo });
-            if (existe.Result == 0) {
-                //Agredo codigo de rechazo no existente en tabla de motivos SINPE para referencia
-                const string insertMotivo = @"INSERT INTO SINPE_MOTIVOS (cod_motivo, descripcion, activo) VALUES (@codigo, @descripcion, 1)";
-                DbHelper.ExecuteNonQuery(_portalDB, codEmpresa, insertMotivo, new { codigo, descripcion = $"Rechazo SINPE código {codigo}" });
-            }
-
-
-            const string query = @"UPDATE TES_TRANSACCIONES SET
-                    ID_RECHAZO = @codigo, REFERENCIA_SINPE = COALESCE(@referenciaSinpe, REFERENCIA_SINPE)
-                    WHERE NSOLICITUD = @nsolicitud";
-
-            var parametros = new
-            {
-                codigo,
-                referenciaSinpe,
-                nsolicitud = nSolicitud
-            };
-
-            DbHelper.ExecuteNonQuery(_portalDB, codEmpresa, query, parametros);
-        }
-
-        public ErrorDto ConsultaCuentaSinpe(int codEmpresa, TesConsultaCuentaSinpeModels cuenta)
-        {
-            var parametrosSinpe = _mKindo.GetUriEmpresa(codEmpresa, cuenta.usuario);
-            if (parametrosSinpe?.Result == null)
-                return DbHelper.ErrorResponse("No se pudieron obtener parámetros SINPE.");
-
-            var context = CrearContexto(parametrosSinpe);
-
-            var servicio = _sinpePIN.IsServiceAvailable(parametrosSinpe.Result.UrlCGP_PIN ?? string.Empty, context);
-            if (!servicio.ServiceAvailable)
-                return DbHelper.ErrorResponse(servicio.Errors?[0]?.Message ?? "Servicio no disponible");
-
-            string cedula = MKindoServiceDb.MaskSinpeId(cuenta.tipoId, cuenta.cedula);
-
-            var cuentaSinpe = ConsultarCuenta(parametrosSinpe, context, cuenta.cuentaIban, SinpeTipo.PIN, cedula);
-
-            if (cuentaSinpe.Errors != null && cuentaSinpe.Errors.Length > 0)
-            {
-                var code = cuentaSinpe.Errors[0].Code;
-                var rechazo = _mKindo.fxTesConsultaMotivo(codEmpresa, code).Result ?? SinpeRejectionMessage;
-                return DbHelper.ErrorResponse(rechazo, code);
-            }
-
-            if (cuentaSinpe.Account?.State != null)
-            {
-                var estado = cuentaSinpe.Account.State;
-                var rechazo = _mKindo.fxTesConsultaMotivo(codEmpresa, estado ?? 0).Result ?? SinpeRejectionMessage;
-                return DbHelper.ErrorResponse(rechazo, estado ?? 0);
-            }
-
-            return DbHelper.CreateOkResponse();
-        }
-
-        #endregion
-
-        #region Construcción requests (PIN / DTR)
-
-        private ReqSendingDynamic BuildPinRequest(ReqBase context, int codEmpresa, dynamic solicitud, string codReferencia)
-        {
-            var req = BuildBaseRequest(context);
-
-            req.Transfer = new Galileo.Models.KindoSinpe.PINTransfer
-            {
-                ChannelRefNumber = codReferencia,
-                Amount = solicitud.Monto,
-                CurrencyCode = MKindoServiceDb.GetCurrencyCodeDes(solicitud.Divisa),
-                Description = BuildDescription(solicitud),
-                OriginEntityIBAN = solicitud.CuentaOrigen,
-                OriginCustomer = BuildOriginCustomer(codEmpresa, solicitud),
-                DestinationCustomer = BuildDestinationCustomer(solicitud),
-                CustomData = BuildCustomData(),
-                
-            };
-
-            return req;
-        }
-
-        private ReqSendingDynamic BuildDtrRequest(ReqBase context, int codEmpresa, dynamic solicitud, string codReferencia)
-        {
-            var req = BuildBaseRequest(context);
-
-            req.Debit = new DTR
-            {
-                ChannelRefNumber = codReferencia,
-                Amount = solicitud.Monto,
-                CurrencyCode = MKindoServiceDb.GetCurrencyCodeDes(solicitud.Divisa),
-                Description = BuildDescription(solicitud),
-                OriginCustomer = BuildOriginCustomer(codEmpresa, solicitud),
-                DestinationCustomer = BuildDestinationCustomer(solicitud),
-            };
-
-            return req;
-        }
-
-        private static ReqSendingDynamic BuildBaseRequest(ReqBase context)
-        {
-            return new ReqSendingDynamic
-            {
-                HostId = context.HostId,
-                OperationId = context.OperationId,
-                ClientIPAddress = context.ClientIPAddress,
-                CultureCode = context.CultureCode,
-                UserCode = context.UserCode,
-                CoreIntegrationPoint = 1,
-                CostCenter = 1,
-            };
-        }
-
-        private static string BuildDescription(dynamic s) =>
-            $"{s.Detalle1}{s.Detalle2}{s.Detalle3}{s.Detalle4}";
-
-        private Galileo.Models.KindoSinpe.OriginCustomer BuildOriginCustomer(int codEmpresa, dynamic s)
-        {
-            var ced = (s.CedulaOrigen as string ?? "").Replace("-", "");
-            var info = MKindoServiceDb.Inferir(ced);
-
-            return new Galileo.Models.KindoSinpe.OriginCustomer
-            {
-                Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(info.Codigo), ced),
-                IdType = Convert.ToInt32(info.Codigo),
-                Name = s.NombreOrigen,
-                IBAN = s.CuentaOrigen,
-                DebitIBAN = _mKindo.fxSinpe_Valida_MovimientosPermitidos(codEmpresa, s.CuentaOrigen),
-                Email = (s.CorreoNotifica as string ?? "").Trim()
-            };
-        }
-
-        private static Galileo.Models.KindoSinpe.DestinationCustomer BuildDestinationCustomer(dynamic s)
-        {
-            var ced = (s.Codigo as string ?? "").Replace("-", "");
-            var info = MKindoServiceDb.Inferir(ced);
-
-            return new Galileo.Models.KindoSinpe.DestinationCustomer
-            {
-                Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(info.Codigo), ced),
-                IdType = Convert.ToInt32(info.Codigo),
-                Name = s.Beneficiario,
-                IBAN = s.Cuenta,
-                Email = s.CorreoNotifica
-            };
-        }
-
-        private static List<Galileo.Models.KindoSinpe.CustomField> BuildCustomData() =>
-            new() { new Galileo.Models.KindoSinpe.CustomField { Name = "Galileo", Value = "CSG" } };
-
-        #endregion
     }
+
 }

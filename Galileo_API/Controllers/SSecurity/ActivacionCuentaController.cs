@@ -49,6 +49,7 @@ namespace Galileo.Controllers
         /// </remarks>
         /// <returns></returns>
         [HttpPost("UsuarioEstado_Actualizar")]
+        [ValidateAntiForgeryToken]
         [Authorize]
         public ErrorDto UsuarioEstado_Actualizar(ActivacionCuentaDto request)
         {

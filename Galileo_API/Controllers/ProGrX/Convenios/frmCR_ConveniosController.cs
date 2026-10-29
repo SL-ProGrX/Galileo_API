@@ -101,6 +101,7 @@ namespace Galileo_API.Controllers.ProGrX.Convenios
         /// </summary>
         [Authorize]
         [HttpPost("CR_Convenios_Guardar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto<CrConvenioDto> CR_Convenios_Guardar(int CodEmpresa, string? usuario, [FromBody] CrConveniosGuardarRequest? request)
         {
             return _bl.CR_Convenios_Guardar(CodEmpresa, usuario, request);
@@ -111,6 +112,7 @@ namespace Galileo_API.Controllers.ProGrX.Convenios
         /// </summary>
         [Authorize]
         [HttpDelete("CR_Convenios_Borrar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto CR_Convenios_Borrar(int CodEmpresa, string? usuario, [FromQuery] CrConveniosConvenioRequest? request)
         {
             return _bl.CR_Convenios_Borrar(CodEmpresa, usuario, request);
@@ -155,6 +157,7 @@ namespace Galileo_API.Controllers.ProGrX.Convenios
         /// </summary>
         [Authorize]
         [HttpPost("CR_Convenios_Recaudacion_Actualizar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto CR_Convenios_Recaudacion_Actualizar(int CodEmpresa, string? usuario, [FromBody] CrConveniosRecaudacionActualizarRequest? request)
         {
             return _bl.CR_Convenios_Recaudacion_Actualizar(CodEmpresa, usuario, request);
@@ -195,6 +198,7 @@ namespace Galileo_API.Controllers.ProGrX.Convenios
         /// </summary>
         [Authorize]
         [HttpPost("CR_Convenios_Devoluciones_Actualizar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto CR_Convenios_Devoluciones_Actualizar(int CodEmpresa, string? usuario, [FromBody] CrConveniosDevolucionesActualizarRequest? request)
         {
             return _bl.CR_Convenios_Devoluciones_Actualizar(CodEmpresa, usuario, request);
@@ -239,6 +243,7 @@ namespace Galileo_API.Controllers.ProGrX.Convenios
         /// </summary>
         [Authorize]
         [HttpPost("CR_Convenios_Creditos_Actualizar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto CR_Convenios_Creditos_Actualizar(int CodEmpresa, string? usuario, [FromBody] CrConveniosCreditosActualizarRequest? request)
         {
             return _bl.CR_Convenios_Creditos_Actualizar(CodEmpresa, usuario, request);
@@ -279,6 +284,7 @@ namespace Galileo_API.Controllers.ProGrX.Convenios
         /// </summary>
         [Authorize]
         [HttpPost("CR_Convenios_Cargos_Actualizar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto CR_Convenios_Cargos_Actualizar(int CodEmpresa, string? usuario, [FromBody] CrConveniosCargosActualizarRequest? request)
         {
             return _bl.CR_Convenios_Cargos_Actualizar(CodEmpresa, usuario, request);
@@ -303,6 +309,7 @@ namespace Galileo_API.Controllers.ProGrX.Convenios
         /// </summary>
         [Authorize]
         [HttpPost("CR_Convenios_RebajasCxP_Actualizar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto CR_Convenios_RebajasCxP_Actualizar(int CodEmpresa, string? usuario, [FromBody] CrConveniosRebajasCxpActualizarRequest? request)
         {
             return _bl.CR_Convenios_RebajasCxP_Actualizar(CodEmpresa, usuario, request);
@@ -353,6 +360,7 @@ namespace Galileo_API.Controllers.ProGrX.Convenios
         /// </summary>
         [Authorize]
         [HttpPost("CR_Convenios_Ahorros_Actualizar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto CR_Convenios_Ahorros_Actualizar(int CodEmpresa, string? usuario, [FromBody] CrConveniosAhorrosActualizarRequest? request)
         {
             return _bl.CR_Convenios_Ahorros_Actualizar(CodEmpresa, usuario, request);

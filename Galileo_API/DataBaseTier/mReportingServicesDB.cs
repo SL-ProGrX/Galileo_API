@@ -118,7 +118,10 @@ namespace Galileo.DataBaseTier
 
                 // CxSuppress: PathTraversal
                 if (!System.IO.File.Exists(finalPath))
-                    return ReportRenderer.Error($"No se encontró el reporte principal. Ruta resuelta: [{finalPath}] | Base: [{basePath}]", 404);
+                {
+                    _logger?.LogWarning("Reporte principal no encontrado. Ruta resuelta: {FinalPath}. Base: {BasePath}", finalPath, basePath);
+                    return ReportRenderer.Error("No se encontró el reporte solicitado.", 404);
+                }
 
                 using var patched = _patcher.PatchReportCode(finalPath, data.codeSection);
                 report.LoadReportDefinition(patched);
@@ -184,10 +187,9 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error generando reporte RDLC. Ruta resuelta: {FinalPath}", finalPath);
-                var detalle = ex.InnerException?.Message ?? "(sin InnerException)";
-                var stack = ex.InnerException?.StackTrace ?? ex.StackTrace ?? "";
-                return ReportRenderer.Error($"{ex.Message} || INNER: {detalle} || RUTA: [{finalPath}] || STACK: {stack}");
+                var referencia = ReportRenderer.NuevaReferencia();
+                _logger?.LogError(ex, "Error generando reporte RDLC. Referencia: {Referencia}. Ruta resuelta: {FinalPath}", referencia, finalPath);
+                return ReportRenderer.Error($"No fue posible generar el reporte. Referencia: {referencia}");
             }
         }
 

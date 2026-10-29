@@ -1,4 +1,6 @@
-﻿namespace Galileo_API.Models.ProGrX.Cajas
+﻿using System.Text.Json.Serialization;
+
+namespace Galileo_API.Models.ProGrX.Cajas
 {
     public class CajasSocioResult
     {
@@ -46,30 +48,58 @@
         public string? Cod_Caja { get; set; }
     }
 
+    /// <summary>
+    /// Respuesta de spCajas_ServiciosDatos. Los nombres JSON van en PascalCase
+    /// para coincidir con CajasServiciosDatosResult del frontend (la serialización
+    /// por defecto del API es camelCase y dejaba los campos en undefined).
+    /// </summary>
     public class CajasServiciosDatosResult
     {
+        [JsonPropertyName("Cod_Servicio")]
         public string? Cod_Servicio { get; set; }
+        [JsonPropertyName("Cod_Recaudador")]
         public string? Cod_Recaudador { get; set; }
+        [JsonPropertyName("Cod_Concepto")]
         public string? Cod_Concepto { get; set; }
+        [JsonPropertyName("ServicioDesc")]
         public string? ServicioDesc { get; set; }
+        [JsonPropertyName("RecaudadorDesc")]
         public string? RecaudadorDesc { get; set; }
+        [JsonPropertyName("Cod_Cuenta")]
         public string? Cod_Cuenta { get; set; }
+        [JsonPropertyName("Cod_Cuenta_Comision")]
         public string? Cod_Cuenta_Comision { get; set; }
+        [JsonPropertyName("Cod_Cuenta_IV")]
         public string? Cod_Cuenta_IV { get; set; }
+        [JsonPropertyName("Mnt_Bruto")]
         public decimal? Mnt_Bruto { get; set; }
+        [JsonPropertyName("Comision")]
         public decimal? Comision { get; set; }
+        [JsonPropertyName("Impuesto")]
         public decimal? Impuesto { get; set; }
+        [JsonPropertyName("Mnt_Neto")]
         public decimal? Mnt_Neto { get; set; }
+        [JsonPropertyName("Porc_Comision")]
         public decimal? Porc_Comision { get; set; }
+        [JsonPropertyName("Porc_Impuesto")]
         public decimal? Porc_Impuesto { get; set; }
+        [JsonPropertyName("Comision_Minima")]
         public decimal? Comision_Minima { get; set; }
+        [JsonPropertyName("Intercambio")]
         public int? Intercambio { get; set; }
+        [JsonPropertyName("Ef_Cta")]
         public string? Ef_Cta { get; set; }
+        [JsonPropertyName("Ef_Codigo")]
         public string? Ef_Codigo { get; set; }
+        [JsonPropertyName("Cod_Unidad")]
         public string? Cod_Unidad { get; set; }
+        [JsonPropertyName("Cod_Centro_Costo")]
         public string? Cod_Centro_Costo { get; set; }
+        [JsonPropertyName("Cabys")]
         public string? Cabys { get; set; }
+        [JsonPropertyName("Genera_Factura")]
         public int? Genera_Factura { get; set; }
+        [JsonPropertyName("Valor_Transito_Valida")]
         public decimal? Valor_Transito_Valida { get; set; }
     }
 

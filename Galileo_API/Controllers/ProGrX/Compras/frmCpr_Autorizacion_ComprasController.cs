@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Galileo_API.Extensions;
 using Galileo.BusinessLogic;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
@@ -27,14 +28,14 @@ namespace Galileo.Controllers
         [HttpPost("AutorizaSolicitudes")]
         public ErrorDto AutorizaSolicitudes(int CodCliente, string solicitudes, string usuario)
         {
-            return _bl.AutorizaSolicitudes(CodCliente, solicitudes, usuario);
+            return _bl.AutorizaSolicitudes(CodCliente, solicitudes, User.ObtenerUsuario());
         }
 
         [ValidateAntiForgeryToken]
         [HttpPost("RechazaSolicitudes")]
         public ErrorDto RechazaSolicitudes(int CodCliente, string solicitudes, string justificacion, string usuario)
         {
-            return _bl.RechazaSolicitudes(CodCliente, solicitudes, justificacion, usuario);
+            return _bl.RechazaSolicitudes(CodCliente, solicitudes, justificacion, User.ObtenerUsuario());
         }
     }
 }

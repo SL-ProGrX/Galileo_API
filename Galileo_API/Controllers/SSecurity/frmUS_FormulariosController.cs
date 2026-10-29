@@ -26,6 +26,7 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("Formulario_Eliminar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Formulario_Eliminar(int modulo, string formulario, int codEmpresa = 0, string usuario = "")
         {
             return FormulariosBL.Formulario_Eliminar(modulo, formulario, codEmpresa, usuario);
@@ -33,6 +34,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Formulario_Guardar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto Formulario_Guardar(FormularioDto request)
         {
             return FormulariosBL.Formulario_Guardar(request);

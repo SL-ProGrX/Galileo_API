@@ -13,7 +13,7 @@ public sealed class AuthBL
     private const string InvalidCodeStatus = "invalidCode";
     private const string AccessDeniedStatus = "accessDenied";
     private const string AuthenticationUnavailableStatus = "authenticationUnavailable";
-    private const string PasswordChangeFailedStatus = "passwordChangeFailed";
+    private const string EstadoCambioContrasenaFallido = "passwordChangeFailed";
     private const string PolicyLookupFailureMessage = "No fue posible consultar las políticas de contraseña.";
 
     private readonly LogonDB _logonDb;
@@ -315,7 +315,10 @@ public sealed class AuthBL
                 return accesoEmpresas;
             }
 
-            return CreateAuthenticatedResponse(user, application, clientInfo: clientInfo);
+            var galileoTfa = _logonDb.TFA_Data_Load(user.Usuario);
+            return galileoTfa.tfa_ind
+                ? await CreateMfaChallengeAsync(user, application, galileoTfa)
+                : CreateAuthenticatedResponse(user, application, clientInfo: clientInfo);
         }
 
         var accessDenied = ValidarAccesoSSecurity(user);
@@ -396,17 +399,27 @@ public sealed class AuthBL
         return string.Equals(application, AuthApplications.SSecurity, StringComparison.OrdinalIgnoreCase);
     }
 
-    public AuthResponseDto VerifyMfa(MfaVerifyRequest request, AuthSessionClientInfo? clientInfo = null)
+    private static bool IsSupportedApplication(string application)
+    {
+        return IsSSecurity(application) ||
+            string.Equals(application, AuthApplications.Galileo, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public AuthResponseDto VerifyMfa(
+        MfaVerifyRequest request,
+        string application,
+        AuthSessionClientInfo? clientInfo = null)
     {
         if (request is null || string.IsNullOrWhiteSpace(request.ChallengeToken) || string.IsNullOrWhiteSpace(request.Codigo) ||
-            !_sessionStore.TryGetChallenge(request.ChallengeToken, AuthApplications.SSecurity, out var challenge) ||
+            !IsSupportedApplication(application) ||
+            !_sessionStore.TryGetChallenge(request.ChallengeToken, application, out var challenge) ||
             !string.Equals(challenge.Purpose, "mfa", StringComparison.Ordinal))
         {
             return new AuthResponseDto { Status = InvalidChallengeStatus };
         }
 
         var validation = _logonDb.TFA_Codigo_Validar(challenge.User.Usuario, request.Codigo.Trim());
-        if (validation.Code is null or -1)
+        if (validation.Code is null or < 0)
         {
             return AuthenticationUnavailable(validation.Description);
         }
@@ -418,18 +431,20 @@ public sealed class AuthBL
 
         if (validation.Code != 1)
         {
-            _sessionStore.RegisterChallengeFailure(request.ChallengeToken, AuthApplications.SSecurity);
+            _sessionStore.RegisterChallengeFailure(request.ChallengeToken, application);
             return new AuthResponseDto { Status = InvalidCodeStatus };
         }
 
-        if (!_sessionStore.TryConsumeChallenge(request.ChallengeToken, AuthApplications.SSecurity, out _))
+        if (!_sessionStore.TryConsumeChallenge(request.ChallengeToken, application, out _))
         {
             return new AuthResponseDto { Status = InvalidChallengeStatus };
         }
 
         try
         {
-            return CompleteSSecurityAuthentication(challenge.User, "pwd,mfa", clientInfo);
+            return IsSSecurity(application)
+                ? CompleteSSecurityAuthentication(challenge.User, "pwd,mfa", clientInfo)
+                : CreateAuthenticatedResponse(challenge.User, application, "pwd,mfa", clientInfo);
         }
         catch (Exception ex) when (ex is SqlException or InvalidOperationException)
         {
@@ -437,15 +452,27 @@ public sealed class AuthBL
         }
     }
 
-    public async Task<AuthResponseDto> ResendMfaAsync(MfaResendRequest request)
+    public async Task<AuthResponseDto> ResendMfaAsync(MfaResendRequest request, string application)
     {
-        if (request is null || !_sessionStore.TryGetChallenge(request.ChallengeToken, AuthApplications.SSecurity, out var challenge) ||
+        if (request is null || !IsSupportedApplication(application) ||
+            !_sessionStore.TryGetChallenge(request.ChallengeToken, application, out var challenge) ||
             !string.Equals(challenge.Purpose, "mfa", StringComparison.Ordinal) ||
             !challenge.Methods.Contains("MAIL", StringComparer.OrdinalIgnoreCase))
         {
             return new AuthResponseDto { Status = InvalidChallengeStatus };
         }
 
+        if (!_sessionStore.TryStartMfaResend(request.ChallengeToken, application, out var retryAfterSeconds))
+        {
+            return new AuthResponseDto
+            {
+                Status = retryAfterSeconds > 0 ? "mfaResendCooldown" : InvalidChallengeStatus,
+                Detail = retryAfterSeconds > 0 ? $"Puede solicitar otro código en {retryAfterSeconds} segundos." : null,
+                RetryAfterSeconds = retryAfterSeconds > 0 ? retryAfterSeconds : null,
+            };
+        }
+
+        var resendSucceeded = false;
         try
         {
             var tfa = _logonDb.TFA_Data_Load(challenge.User.Usuario);
@@ -455,6 +482,7 @@ public sealed class AuthBL
             }
 
             var response = await _logonDb.TFA_Codigo_EnviarMAIL(challenge.User.Usuario, tfa.email);
+            resendSucceeded = response.Code == 0;
             return response.Code == 0
                 ? new AuthResponseDto { Status = "mfaResent" }
                 : AuthenticationUnavailable(response.Description);
@@ -462,6 +490,10 @@ public sealed class AuthBL
         catch (Exception ex) when (ex is SqlException or InvalidOperationException)
         {
             return AuthenticationUnavailable(ex.Message);
+        }
+        finally
+        {
+            _sessionStore.CompleteMfaResend(request.ChallengeToken, application, resendSucceeded);
         }
     }
 
@@ -490,7 +522,7 @@ public sealed class AuthBL
             {
                 return new AuthResponseDto
                 {
-                    Status = PasswordChangeFailedStatus,
+                    Status = EstadoCambioContrasenaFallido,
                     Detail = $"La nueva contraseña debe tener entre {policy.key_lenmin} y {policy.key_lenmax} caracteres y cumplir los requisitos de complejidad configurados.",
                 };
             }
@@ -508,7 +540,7 @@ public sealed class AuthBL
                 _sessionStore.RegisterChallengeFailure(request.ChallengeToken, AuthApplications.SSecurity);
                 return new AuthResponseDto
                 {
-                    Status = PasswordChangeFailedStatus,
+                    Status = EstadoCambioContrasenaFallido,
                     Detail = "La contraseña actual no corresponde a la cuenta.",
                 };
             }
@@ -526,7 +558,7 @@ public sealed class AuthBL
                 _sessionStore.RegisterChallengeFailure(request.ChallengeToken, AuthApplications.SSecurity);
                 return new AuthResponseDto
                 {
-                    Status = PasswordChangeFailedStatus,
+                    Status = EstadoCambioContrasenaFallido,
                     Detail = "No puede reutilizar una de sus contraseñas recientes.",
                 };
             }
@@ -545,7 +577,7 @@ public sealed class AuthBL
                 _sessionStore.RegisterChallengeFailure(request.ChallengeToken, AuthApplications.SSecurity);
                 return new AuthResponseDto
                 {
-                    Status = PasswordChangeFailedStatus,
+                    Status = EstadoCambioContrasenaFallido,
                     Detail = "No fue posible cambiar la contraseña. Verifique la contraseña actual y las políticas de seguridad.",
                 };
             }
@@ -594,7 +626,7 @@ public sealed class AuthBL
     {
         if (request is null || TieneDatosRecuperacionInvalidos(request))
         {
-            return new AuthResponseDto { Status = PasswordChangeFailedStatus, Detail = "Verifique el usuario, el token y la nueva contraseña." };
+            return new AuthResponseDto { Status = EstadoCambioContrasenaFallido, Detail = "Verifique el usuario, el token y la nueva contraseña." };
         }
 
         var usuario = request.Usuario.Trim();
@@ -618,7 +650,7 @@ public sealed class AuthBL
             {
                 return new AuthResponseDto
                 {
-                    Status = PasswordChangeFailedStatus,
+                    Status = EstadoCambioContrasenaFallido,
                     Detail = $"La nueva contraseña debe tener entre {policy.key_lenmin} y {policy.key_lenmax} caracteres y cumplir los requisitos de complejidad configurados.",
                 };
             }
@@ -634,7 +666,7 @@ public sealed class AuthBL
             {
                 return new AuthResponseDto
                 {
-                    Status = PasswordChangeFailedStatus,
+                    Status = EstadoCambioContrasenaFallido,
                     Detail = "No puede reutilizar una de sus contraseñas recientes.",
                 };
             }

@@ -25,6 +25,7 @@ namespace Galileo_API.Controllers.KindoSinpe
         }
 
         [HttpPost("ObtenerCuentaIBAN/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public CoreInterno.CuentaIBAN_Response ObtenerCuentaIBAN(int CodEmpresa, CoreInterno.CuentaIBAN_Request DatosCuenta)
         {
            return _BL.ObtenerCuentaIBAN(CodEmpresa, DatosCuenta);
@@ -43,30 +44,35 @@ namespace Galileo_API.Controllers.KindoSinpe
         }
 
         [HttpPost("ObtenerTipoCambio/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public CoreInterno.CL_ResultadoTipoCambio ObtenerTipoCambio(int CodEmpresa, CoreInterno.SI_Rastro? Rastro, int? CodigoServicio, string? Cuentaorigen, string? CuentaDestino, decimal? Monto, int? Moneda)
         {
             return _BL.ObtenerTipoCambio(CodEmpresa, Rastro, CodigoServicio, Cuentaorigen, CuentaDestino, Monto, Moneda);
         }
 
         [HttpPost("ComisionRespectiva/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public CoreInterno.ComisionRespectivaResponse ComisionRespectiva(int CodEmpresa, CoreInterno.ComisionRespectivaRequest request)
         {
             return _BL.ComisionRespectiva(CodEmpresa, request);
         }
 
         [HttpPost("ValidaDebitos/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public CoreInterno.CL_ResultadoValidacion[] ValidaDebitos(int CodEmpresa, [FromBody] ValidaTransRequest request)
         {
             return _BL.ValidaDebitos(CodEmpresa, request);
         }
 
         [HttpPost("ValidaCreditos/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public CoreInterno.CL_ResultadoValidacion[] ValidaCreditos(int CodEmpresa, [FromBody] ValidaTransRequest request)
         {
             return _BL.ValidaCreditos(CodEmpresa, request);
         }
 
         [HttpPost("ValidarPerfilTransaccional/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public CoreInterno.ValidacionPerfilTrx_Response ValidarPerfilTransaccional(int CodEmpresa, CoreInterno.ValidacionPerfilTrx_Request transaccion)
         {
             return _BL.ValidarPerfilTransaccional(CodEmpresa, transaccion);
@@ -77,12 +83,14 @@ namespace Galileo_API.Controllers.KindoSinpe
         #region Métodos para la integración transaccional
 
         [HttpPost("AplicaDebitosCongelados/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public CoreInterno.CL_RespuestaTransaccion[] AplicaDebitosCongelados(int CodEmpresa, [FromBody] ValidaTransaccionRequest request)
         {
             return _BL.AplicaDebitosCongelados(CodEmpresa, ObtieneRastro(request.Rastro), ObtieneTransacciones(request.Transacciones));
         }
 
         [HttpPost("AplicaCreditosCongelados/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public CoreInterno.CL_RespuestaTransaccion[] AplicaCreditosCongelados(int CodEmpresa, [FromBody] ValidaTransaccionRequest request)
         {
             return _BL.AplicaCreditosCongelados(CodEmpresa, ObtieneRastro(request.Rastro), ObtieneTransacciones(request.Transacciones));
@@ -90,30 +98,35 @@ namespace Galileo_API.Controllers.KindoSinpe
 
 
         [HttpPost("ConfirmaDebitosCongelados/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public CoreInterno.CL_ResultadoActualizacion[] ConfirmaDebitosCongelados(int CodEmpresa, [FromBody] ValidaActualizaTransaccionRequest request)
         {
             return _BL.ConfirmaDebitosCongelados(CodEmpresa, ObtieneRastro(request.Rastro), ObtieneTransacciones(request.Transacciones));
         }
 
         [HttpPost("ConfirmaCreditosCongelados/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public CoreInterno.CL_ResultadoActualizacion[] ConfirmaCreditosCongelados(int CodEmpresa, [FromBody] ValidaActualizaTransaccionRequest request)
         {
             return _BL.ConfirmaCreditosCongelados(CodEmpresa, ObtieneRastro(request.Rastro), ObtieneTransacciones(request.Transacciones));
         }
 
         [HttpPost("ReversaCreditos/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public CoreInterno.CL_ResultadoActualizacion[] ReversaCreditos(int CodEmpresa, ValidaTransaccionRechazoRequest request)
         {
             return _BL.ReversaCreditos(CodEmpresa, ObtieneRastro(request.Rastro), ObtieneTransacciones(request.Transacciones));
         }
 
         [HttpPost("ReversaDebitos/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public CoreInterno.CL_ResultadoActualizacion[] ReversaDebitos(int CodEmpresa, ValidaTransaccionRechazoRequest request)
         {
             return _BL.ReversaDebitos(CodEmpresa, ObtieneRastro(request.Rastro), ObtieneTransacciones(request.Transacciones));
         }
 
         [HttpPost("ObtieneEstadoTransaccion/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public CoreInterno.ObtieneEstadoTransaccionResponse ObtieneEstadoTransaccion(int CodEmpresa, CoreInterno.ObtieneEstadoTransaccionRequest Request)
         {
             return _BL.ObtieneEstadoTransaccion(CodEmpresa, Request);
@@ -141,12 +154,14 @@ namespace Galileo_API.Controllers.KindoSinpe
         #region Métodos para la integración de la liquidación de la cámara
 
         [HttpPost("ActualizarFechaCiclo/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public bool ActualizarFechaCiclo(int CodEmpresa, CL_ActualizaFechaRequest request)
         {
             return MKindoServiceBL.ActualizarFechaCiclo(CodEmpresa,request);
         }
 
         [HttpPost("LiquidarCiclo/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public bool LiquidarCiclo(int CodEmpresa, CLCierraCiclo request)
         {
             return MKindoServiceBL.LiquidarCiclo(CodEmpresa, request);
@@ -157,12 +172,14 @@ namespace Galileo_API.Controllers.KindoSinpe
         #region Métodos para la integración del PortalCGP
 
         [HttpPost("SaldoDisponible/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public CoreInterno.SaldoDisponibleResponse SaldoDisponible(int CodEmpresa, CoreInterno.SaldoDisponibleRequest request)
         {
             return _BL.SaldoDisponible(CodEmpresa, request);
         }
 
         [HttpPost("ObtenerInformacionCliente/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         [ProducesResponseType(typeof(CoreInterno.ObtenerInformacionClienteResponse), StatusCodes.Status200OK)]
         public IActionResult ObtenerInformacionCliente(int CodEmpresa, CoreInterno.ObtenerInformacionClienteRequest request)
         {
@@ -182,6 +199,7 @@ namespace Galileo_API.Controllers.KindoSinpe
         }
 
         [HttpPost("ObtenerProductosPorCliente/{CodEmpresa}")]
+        [ValidateAntiForgeryToken]
         public CoreInterno.ObtenerProductosPorClienteResponse ObtenerProductosPorCliente(int CodEmpresa, CoreInterno.ObtenerProductosPorClienteRequest request)
         {
             return _BL.ObtenerProductosPorCliente(CodEmpresa, request);

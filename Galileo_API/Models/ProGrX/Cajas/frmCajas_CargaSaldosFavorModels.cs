@@ -235,6 +235,7 @@
         public List<long> DepositoIds { get; set; } = [];
         public string RetencionCodigo { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
+        public int codContabilidad { get; set; } = 0;
     }
 
     public class CajasTransacSFLiqTipoSaldoResult

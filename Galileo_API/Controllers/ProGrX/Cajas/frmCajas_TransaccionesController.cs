@@ -48,6 +48,21 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [HttpGet("CajasTransacciones_TiposPagoTarjeta_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CajasTransacciones_TiposPagoTarjeta_Obtener(int codEmpresa)
+        {
+            return _bl.CajasTransacciones_TiposPagoTarjeta_Obtener(codEmpresa);
+        }
+
+        [Authorize]
+        [HttpPost("CajasTransacciones_ConsultaIntegrada_Ejecutar")]
+        [ValidateAntiForgeryToken]
+        public ErrorDto CajasTransacciones_ConsultaIntegrada_Ejecutar(int codEmpresa, string cedula, string usuario)
+        {
+            return _bl.CajasTransacciones_ConsultaIntegrada_Ejecutar(codEmpresa, cedula, usuario);
+        }
+
+        [Authorize]
         [ValidateAntiForgeryToken]
         [HttpPost("CajasTransacciones_Validacion")]
         public ErrorDto<CajasTransacValidacionResult?> CajasTransacciones_Validacion(int codEmpresa, [FromBody] CajasTransacValidacionParams param)

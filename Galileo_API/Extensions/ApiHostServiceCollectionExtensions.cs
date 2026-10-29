@@ -22,8 +22,6 @@ public static class ApiHostServiceCollectionExtensions
 {
     public const string CorsPolicyName = "_myAllowSpecificOrigins";
     private const int HstsMaxAgeSeconds = 31_536_000;
-    private const string StrictTransportSecurityHeaderValue =
-        "max-age=31536000; includeSubDomains; preload";
 
     public static IConfigurationManager AddExternalSettings(
         this IConfigurationManager configuration,
@@ -250,11 +248,6 @@ public static class ApiHostServiceCollectionExtensions
                         context.HandleResponse();
                         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                         context.Response.ContentType = "application/json";
-                        if (context.Request.IsHttps)
-                        {
-                            context.Response.Headers["Strict-Transport-Security"] =
-                                StrictTransportSecurityHeaderValue;
-                        }
 
                         var result = JsonSerializer.Serialize(new
                         {

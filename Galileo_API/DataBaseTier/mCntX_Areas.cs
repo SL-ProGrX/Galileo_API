@@ -33,7 +33,7 @@ namespace Galileo_API.DataBaseTier
                        R.ctotal_debitos as CTotalDebitos,
                        R.ctotal_creditos as CTotalCreditos,
                        rtrim(isnull(C.cuenta_madre, '')) as CuentaMadre
-                from CntX_Acceso_Historico R
+                from CntX_Area_Reportes R
                 inner join CntX_Cuentas C
                   on R.cod_contabilidad = C.cod_contabilidad
                  and R.cod_cuenta = C.cod_cuenta
@@ -43,7 +43,7 @@ namespace Galileo_API.DataBaseTier
                 order by R.cod_cuenta desc";
 
             const string sqlActualiza = @"
-                update CntX_Acceso_Historico
+                update CntX_Area_Reportes
                 set saldo_inicial = saldo_inicial + @SaldoInicial,
                     total_debitos = total_debitos + @TotalDebitos,
                     total_creditos = total_creditos + @TotalCreditos,
@@ -98,13 +98,13 @@ namespace Galileo_API.DataBaseTier
         public ErrorDto<bool> sbCntX_Areas_Balance_Comprobacion(int codEmpresa, int codContabilidad, int anio, int mes, int codArea, string usuario)
         {
             const string sqlBorra = @"
-                delete CntX_Acceso_Historico
+                delete CntX_Area_Reportes
                 where cod_contabilidad = @CodContabilidad
                   and cod_area = @CodArea
                   and usuario = @Usuario";
 
             const string sqlInsertaMovimientos = @"
-                insert into CntX_Acceso_Historico
+                insert into CntX_Area_Reportes
                     (usuario, cod_contabilidad, cod_area, cod_cuenta, saldo_inicial, total_debitos,
                      total_creditos, csaldo_inicial, ctotal_debitos, ctotal_creditos)
                 select @Usuario,
@@ -131,7 +131,7 @@ namespace Galileo_API.DataBaseTier
                   and C.acepta_movimientos = 1";
 
             const string sqlInsertaCuentasMadre = @"
-                insert into CntX_Acceso_Historico
+                insert into CntX_Area_Reportes
                     (usuario, cod_contabilidad, cod_area, cod_cuenta, saldo_inicial, total_debitos,
                      total_creditos, csaldo_inicial, ctotal_debitos, ctotal_creditos)
                 select @Usuario,
@@ -198,7 +198,7 @@ namespace Galileo_API.DataBaseTier
                 set csaldo_inicial = M.saldo_inicial,
                     ctotal_debitos = M.total_debitos,
                     ctotal_creditos = M.total_creditos
-                from CntX_Acceso_Historico H
+                from CntX_Area_Reportes H
                 inner join (
                     select C.cod_cuenta,
                            isnull(M.saldo_inicial, 0) as saldo_inicial,
@@ -255,7 +255,7 @@ namespace Galileo_API.DataBaseTier
                     - isnull(sum(case when T.clasificacion = 'G' then A.ctotal_debitos + A.ctotal_creditos else 0 end), 0) as AreaUTCMes,
                     isnull(sum(case when T.clasificacion in ('I', 'V') then A.csaldo_inicial + A.ctotal_debitos + A.ctotal_creditos else 0 end), 0)
                     - isnull(sum(case when T.clasificacion = 'G' then A.csaldo_inicial + A.ctotal_debitos + A.ctotal_creditos else 0 end), 0) as AreaUTCAcumulada
-                from CntX_Acceso_Historico A
+                from CntX_Area_Reportes A
                 inner join CntX_Cuentas C
                   on A.cod_contabilidad = C.cod_contabilidad
                  and A.cod_cuenta = C.cod_cuenta

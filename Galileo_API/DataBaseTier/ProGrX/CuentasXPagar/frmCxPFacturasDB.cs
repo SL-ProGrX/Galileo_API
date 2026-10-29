@@ -1,4 +1,4 @@
-using Dapper;
+﻿using Dapper;
 using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using System.Data;
@@ -146,6 +146,42 @@ namespace Galileo.DataBaseTier
                   FROM SYS_IVA_PARAMETROS P
                   LEFT JOIN CntX_Cuentas C ON C.cod_cuenta = P.VALOR AND C.cod_contabilidad = 1
                   WHERE COD_PARAMETRO in('02','03','08')");
+        }
+
+        public ErrorDto<List<TipoIvaFactura>> TiposIVA_Obtener(int CodEmpresa)
+        {
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+                connection.Query<TipoIvaFactura>(
+                    "[spSys_IVA_TIPOS_List]",
+                    commandType: CommandType.StoredProcedure).ToList());
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new List<TipoIvaFactura>())
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener tipos de IVA.", result.Code.GetValueOrDefault(-1), new List<TipoIvaFactura>());
+        }
+
+        public ErrorDto<TipoIvaFactura> TipoIVA_Consultar(int CodEmpresa, string Cod_IVA)
+        {
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+                connection.QueryFirstOrDefault<TipoIvaFactura>(
+                    "[spSys_IVA_TIPOS_Consulta]",
+                    new { TipoIVA = Cod_IVA },
+                    commandType: CommandType.StoredProcedure));
+
+            return CrearRespuestaSingle(result, "Error al consultar el tipo de IVA.", "No se encontró el tipo de IVA.");
+        }
+
+        public ErrorDto<List<FacturaIvaDetalle>> FacturaIVA_Obtener(int CodEmpresa, int Cod_Proveedor, string Cod_Factura)
+        {
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+                connection.Query<FacturaIvaDetalle>(
+                    "[spCXP_Factura_IVA_List]",
+                    new { Proveedor = Cod_Proveedor, Factura = Cod_Factura },
+                    commandType: CommandType.StoredProcedure).ToList());
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new List<FacturaIvaDetalle>())
+                : DbHelper.CreateErrorResponse(result.Description ?? "Error al obtener el detalle de IVA.", result.Code.GetValueOrDefault(-1), new List<FacturaIvaDetalle>());
         }
 
         /// <summary>
@@ -302,31 +338,26 @@ namespace Galileo.DataBaseTier
         /// <returns>Detalle de la factura.</returns>
         public ErrorDto<FacturaDto> FacturaDetalle_Obtener(int CodEmpresa, string Cod_Factura, int Cod_Proveedor)
         {
-            var query = @"SELECT F.*, P.descripcion AS Proveedor, P.cod_Divisa AS DivisaProv,
-                                  dbo.fxCxPSaldoFacturaCorte(F.cod_Proveedor, F.cod_Factura, Getdate()) AS Saldo,
-                                  RTRIM(D.descripcion) AS DivisaFactura
-                           FROM cxp_facturas F
-                           INNER JOIN cxp_proveedores P ON F.cod_proveedor = P.cod_proveedor
-                           INNER JOIN CntX_Divisas D ON D.cod_contabilidad = 1 AND D.cod_divisa = F.cod_divisa
-                           WHERE F.cod_factura = @Cod_Factura";
-
-            object parametros;
-            if (Cod_Proveedor > 0)
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                query += " AND F.cod_proveedor = @Cod_Proveedor";
-                parametros = new { Cod_Factura, Cod_Proveedor };
-            }
-            else
-            {
-                parametros = new { Cod_Factura };
-            }
+                var factura = connection.Query<FacturaDto>(
+                    "[spCXP_Factura_Load]",
+                    new { Proveedor = Cod_Proveedor, Factura = Cod_Factura },
+                    commandType: CommandType.StoredProcedure)
+                    .FirstOrDefault(item => Cod_Proveedor <= 0 || item.Cod_Proveedor == Cod_Proveedor);
 
-            var result = DbHelper.ExecuteSingleQuery<FacturaDto>(
-                CreatePortalDb(),
-                CodEmpresa,
-                query,
-                null,
-                parametros);
+                if (factura is not null && factura.Cod_Forma_Pago == "CO")
+                {
+                    factura.Apl_Cargo_Flotante = connection.QueryFirstOrDefault<int?>(
+                        @"SELECT TOP 1 APL_CARGO_FLOTANTE
+                          FROM CXP_PAGOPROV
+                          WHERE COD_PROVEEDOR = @Cod_Proveedor AND COD_FACTURA = @Cod_Factura
+                          ORDER BY NPAGO",
+                        new { factura.Cod_Proveedor, factura.Cod_Factura }) ?? 0;
+                }
+
+                return factura;
+            });
 
             return CrearRespuestaSingle(
                 result,
@@ -347,8 +378,8 @@ namespace Galileo.DataBaseTier
                 CreatePortalDb(),
                 CodEmpresa,
                 @"SELECT D.linea,
-                         C.cod_Cuenta_Mask,
-                         C.cod_cuenta,
+                         COALESCE(C.cod_Cuenta_Mask, D.cod_Cuenta) AS Cod_Cuenta_Mask,
+                         D.cod_cuenta,
                          C.descripcion as Cuenta,
                          D.debehaber,
                          D.monto,
@@ -358,15 +389,15 @@ namespace Galileo.DataBaseTier
                          X.descripcion as CentroCosto,
                          D.cod_proveedor,
                          D.cod_factura,
-                         Div.Cod_Divisa,
+                         D.cod_Divisa,
                          Div.Descripcion as Divisa,
                          D.Tipo_Cambio,
                          CASE WHEN D.debehaber = 'D' THEN D.monto ELSE 0 END AS Debito,
                          CASE WHEN D.debehaber = 'H' THEN D.monto ELSE 0 END AS Credito
                   FROM CXP_FACTURAS_DETALLE D
                   INNER JOIN CXP_FACTURAS Ch ON D.cod_factura = Ch.cod_factura AND D.cod_proveedor = Ch.Cod_Proveedor
-                  INNER JOIN CntX_Cuentas C ON D.cod_cuenta = C.cod_cuenta AND D.cod_contabilidad = C.cod_Contabilidad
-                  INNER JOIN CntX_Divisas Div ON D.cod_divisa = Div.cod_Divisa AND D.cod_contabilidad = Div.cod_Contabilidad
+                  LEFT JOIN CntX_Cuentas C ON D.cod_cuenta = C.cod_cuenta AND D.cod_contabilidad = C.cod_Contabilidad
+                  LEFT JOIN CntX_Divisas Div ON D.cod_divisa = Div.cod_Divisa AND D.cod_contabilidad = Div.cod_Contabilidad
                   LEFT JOIN CntX_unidades U ON D.cod_unidad = U.cod_unidad AND U.cod_contabilidad = D.cod_Contabilidad
                   LEFT JOIN CNTX_CENTRO_COSTOS X ON D.cod_centro_costo = X.COD_CENTRO_COSTO AND X.cod_contabilidad = 1
                   WHERE D.cod_factura = @Cod_Factura
@@ -438,16 +469,21 @@ namespace Galileo.DataBaseTier
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto FacturaImpuesto_Actualizar(int CodEmpresa, FacturaImpuesto data)
         {
+            if (string.IsNullOrWhiteSpace(data.Cod_IVA))
+                return DbHelper.ErrorResponse("Seleccione un tipo de IVA.");
+
             var result = DbHelper.ExecuteNonQuery(
                 CreatePortalDb(),
                 CodEmpresa,
                 @"UPDATE cxp_facturas
-                  SET IMPUESTO_VENTAS = @Impuesto_Ventas
+                  SET IMPUESTO_VENTAS = @Impuesto_Ventas,
+                      COD_IVA = @Cod_IVA
                   WHERE cod_proveedor = @Cod_Proveedor
                     AND cod_factura = @Cod_Factura",
                 new
                 {
                     data.Impuesto_Ventas,
+                    data.Cod_IVA,
                     data.Cod_Proveedor,
                     data.Cod_Factura
                 });
@@ -457,7 +493,7 @@ namespace Galileo.DataBaseTier
                 RegistrarBitacoraFactura(
                     CodEmpresa,
                     data.Usuario,
-                    "CxP-Factura: " + data.Cod_Factura + " ...Prov: " + data.Cod_Proveedor + " IV: " + data.Impuesto_Ventas,
+                    "CxP-Factura: " + data.Cod_Factura + " ...Prov: " + data.Cod_Proveedor + " IV: " + data.Impuesto_Ventas + " IVA Id: " + data.Cod_IVA,
                     "MODIFICA - WEB");
             }
 
@@ -474,23 +510,24 @@ namespace Galileo.DataBaseTier
         /// <returns>Información del proveedor para factura.</returns>
         public ErrorDto<ProveedorFactura> ProveedorFactura_Obtener(int CodEmpresa, int Cod_Proveedor)
         {
-            var result = DbHelper.ExecuteSingleQuery<ProveedorFactura>(
-                CreatePortalDb(),
-                CodEmpresa,
-                @"select distinct P.cod_proveedor,
-                                        P.descripcion,
-                                        P.cod_divisa,
-                                        c.cod_cuenta,
-                                        C.COD_CUENTA_MASK,
-                                        c.DESCRIPCION as Desc_Cuenta,
-                                        rtrim(D.descripcion) as Divisa_Local
-                  from Cxp_Proveedores P
-                  inner join CntX_Divisas D on P.cod_divisa = D.cod_divisa
-                  inner join CNTX_CUENTAS C on p.COD_CUENTA = c.COD_CUENTA
-                  where D.cod_contabilidad = 1
-                    and P.cod_proveedor = @Cod_Proveedor",
-                null,
-                new { Cod_Proveedor });
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            {
+                var proveedor = connection.QueryFirstOrDefault<ProveedorFactura>(
+                    "[spCxP_Proveedor_Load_Factura_Lite]",
+                    new { Proveedor = Cod_Proveedor },
+                    commandType: CommandType.StoredProcedure);
+
+                if (proveedor is null) return null;
+
+                var cuenta = connection.QueryFirstOrDefault<CuentaProveedor>(
+                    @"SELECT COD_CUENTA_MASK, DESCRIPCION
+                      FROM vCNTX_CUENTAS_LOCAL
+                      WHERE COD_CUENTA = @Cod_Cuenta",
+                    new { proveedor.Cod_Cuenta });
+                proveedor.Cod_Cuenta_Mask = cuenta?.Cod_Cuenta_Mask ?? proveedor.Cod_Cuenta;
+                proveedor.Desc_Cuenta = cuenta?.Descripcion ?? string.Empty;
+                return proveedor;
+            });
 
             return CrearRespuestaSingle(
                 result,
@@ -518,15 +555,26 @@ namespace Galileo.DataBaseTier
 
             query = @"select Top 1 cod_factura, cod_proveedor
                       from cxp_facturas";
-            if (!primeraFactura)
+            if (Cod_Proveedor > 0)
+            {
+                query += " where cod_proveedor = @Cod_Proveedor";
+                if (!primeraFactura)
+                    query += $" and cod_factura {operador} @Cod_Factura";
+                parametros = new { Cod_Factura, Cod_Proveedor };
+            }
+            else if (!primeraFactura)
             {
                 query += $@"
                           where cod_factura {operador} @Cod_Factura
                              or (cod_factura = @Cod_Factura and cod_proveedor {operador} @Cod_Proveedor)";
+                parametros = new { Cod_Factura, Cod_Proveedor };
+            }
+            else
+            {
+                parametros = new { };
             }
             query += $@"
                       order by cod_factura {orden}, cod_proveedor {orden}";
-            parametros = primeraFactura ? new { } : new { Cod_Factura, Cod_Proveedor };
 
             var result = DbHelper.ExecuteSingleQuery<FacturaAntSig>(
                 CreatePortalDb(),
@@ -926,8 +974,7 @@ namespace Galileo.DataBaseTier
             FacturaDto factura = data.Factura;
             factura.Cod_Factura = factura.Cod_Factura.Trim();
 
-            bool esContado = string.Equals(factura.Cod_Forma_Pago, "CO", StringComparison.OrdinalIgnoreCase);
-            ErrorDto? validacion = ValidarFacturaCompleta(data, factura, esContado);
+            ErrorDto? validacion = ValidarFacturaCompleta(data, factura);
             if (validacion is not null)
                 return validacion;
 
@@ -937,39 +984,46 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                if (FacturaExiste(connection, transaction, factura.Cod_Factura, factura.Cod_Proveedor))
-                {
-                    transaction.Rollback();
-                    return DbHelper.ErrorResponse("La factura ya existe para el proveedor seleccionado.", -1);
-                }
-
-                InsertarFactura(connection, transaction, factura);
-                ActualizarSaldoProveedor(connection, transaction, data.Saldo, data.Saldo_Divisa, factura.Cod_Proveedor);
-
-                if (esContado)
-                {
-                    PagoContado? pago = data.PagoContado;
-                    if (pago is null)
+                var proceso = connection.QuerySingle<FacturaProcesoResultado>(
+                    "[spCxP_Factura_Add]",
+                    new
                     {
-                        transaction.Rollback();
-                        return DbHelper.ErrorResponse("Debe proporcionar los datos de pago contado.", -1);
-                    }
-                    pago.Cod_Factura = factura.Cod_Factura;
-                    pago.Cod_Proveedor = factura.Cod_Proveedor;
-                    InsertarPagoContado(connection, transaction, pago);
-                }
-                else
-                {
-                    InsertarAsientosFactura(connection, transaction, factura, data.Asientos);
-                }
+                        CodFactura = factura.Cod_Factura,
+                        CodProveedor = factura.Cod_Proveedor,
+                        factura.Fecha,
+                        Total = factura.Importe_Divisa_Real,
+                        Tipo = factura.Cod_Forma_Pago,
+                        factura.Plantilla,
+                        factura.Vence,
+                        Usuario = factura.Creacion_User,
+                        factura.Notas,
+                        CodDivisa = factura.Cod_Divisa,
+                        TipoCambio = factura.Tipo_Cambio,
+                        ImporteDivisaReal = factura.Total,
+                        ImpuestoVentas = factura.Impuesto_Ventas,
+                        CodIVA = factura.Cod_IVA,
+                        SubTotal = factura.Sub_Total,
+                        AplicaCargoFlotante = data.PagoContado?.Apl_Cargo_Flotante ?? 0
+                    },
+                    transaction,
+                    commandType: CommandType.StoredProcedure);
+
+                connection.Execute(
+                    @"DELETE FROM cxp_facturas_detalle
+                      WHERE cod_factura = @Cod_Factura AND cod_proveedor = @Cod_Proveedor",
+                    new { factura.Cod_Factura, factura.Cod_Proveedor },
+                    transaction);
+                InsertarAsientosFactura(connection, transaction, factura, data.Asientos);
+                GuardarDetalleIva(connection, transaction, factura, data);
 
                 transaction.Commit();
+                var actualizado = string.Equals(proceso.Accion, "UPDATE", StringComparison.OrdinalIgnoreCase);
                 RegistrarBitacoraFactura(
                     CodEmpresa,
                     factura.Creacion_User,
                     "CxP Factura: " + factura.Cod_Factura + " Prov: " + factura.Cod_Proveedor,
-                    "REGISTRA - WEB");
-                return DbHelper.OkResponse("Factura creada correctamente.");
+                    actualizado ? "MODIFICA - WEB" : "REGISTRA - WEB");
+                return DbHelper.OkResponse(actualizado ? "Factura actualizada correctamente." : "Factura creada correctamente.");
             }
             catch (Exception ex)
             {
@@ -982,17 +1036,49 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        private static ErrorDto? ValidarFacturaCompleta(FacturaGuardarCompleta data, FacturaDto factura, bool esContado)
+        private static ErrorDto? ValidarFacturaCompleta(FacturaGuardarCompleta data, FacturaDto factura)
         {
-            if (factura.Cod_Proveedor <= 0 || string.IsNullOrWhiteSpace(factura.Cod_Factura) || factura.Total <= 0)
+            var error = ValidarDatosBasicosFactura(data, factura);
+            if (error is not null)
+                return error;
+
+            error = ValidarDetalleIvaFactura(data, factura);
+            if (error is not null)
+                return error;
+
+            return ValidarAsientosFactura(data, factura);
+        }
+
+        private static ErrorDto? ValidarDatosBasicosFactura(FacturaGuardarCompleta data, FacturaDto factura)
+        {
+            if (factura.Cod_Proveedor <= 0 || string.IsNullOrWhiteSpace(factura.Cod_Factura) || factura.Total <= 0 || factura.Importe_Divisa_Real <= 0)
                 return DbHelper.ErrorResponse("Factura, proveedor y monto son obligatorios.", -1);
 
-            if (esContado && data.PagoContado is null)
-                return DbHelper.ErrorResponse("Los datos del pago de contado son obligatorios.", -1);
+            if (string.IsNullOrWhiteSpace(factura.Cod_IVA) || factura.Sub_Total is null || factura.Sub_Total < 0)
+                return DbHelper.ErrorResponse("Seleccione un tipo de IVA y especifique el subtotal.", -1);
 
-            if (!esContado && data.Asientos.Count < 2)
-                return DbHelper.ErrorResponse("La factura debe contener al menos dos líneas de asiento.", -1);
+            return data.Asientos.Count < 2
+                ? DbHelper.ErrorResponse("La factura debe contener al menos dos líneas de asiento.", -1)
+                : null;
+        }
 
+        private static ErrorDto? ValidarDetalleIvaFactura(FacturaGuardarCompleta data, FacturaDto factura)
+        {
+            if (data.IvaDetallado != true)
+                return null;
+
+            var detalle = data.IvaDetalle.Where(item => item.Monto_Base > 0).ToList();
+            if (detalle.Count == 0 || detalle.Select(item => item.Cod_IVA).Distinct().Count() != detalle.Count)
+                return DbHelper.ErrorResponse("El detalle de IVA debe contener tipos distintos con monto base.", -1);
+
+            return Math.Abs(detalle.Sum(item => item.Monto_Base) - factura.Sub_Total!.Value) >= 0.01m ||
+                   Math.Abs(detalle.Sum(item => item.Monto_IVA) - factura.Impuesto_Ventas.GetValueOrDefault()) >= 0.01m
+                ? DbHelper.ErrorResponse("El detalle de IVA no coincide con el subtotal y el impuesto.", -1)
+                : null;
+        }
+
+        private static ErrorDto? ValidarAsientosFactura(FacturaGuardarCompleta data, FacturaDto factura)
+        {
             if (data.Asientos.Any(asiento =>
                 string.IsNullOrWhiteSpace(asiento.Cod_Cuenta) ||
                 string.IsNullOrWhiteSpace(asiento.Cod_Unidad) ||
@@ -1004,67 +1090,55 @@ namespace Galileo.DataBaseTier
             if (Math.Abs(totalDebito - totalCredito) >= 0.005m)
                 return DbHelper.ErrorResponse("El asiento de la factura no está balanceado.", -1);
 
-            decimal montoPrimeraLinea = data.Asientos.Count > 0
-                ? data.Asientos[0].Debito + data.Asientos[0].Credito
-                : 0;
-
+            decimal montoPrimeraLinea = data.Asientos[0].Debito + data.Asientos[0].Credito;
             return Math.Abs(montoPrimeraLinea - factura.Importe_Divisa_Real.GetValueOrDefault()) >= 0.005m
                 ? DbHelper.ErrorResponse("El monto de la primera línea no corresponde al monto local de la factura.", -1)
                 : null;
         }
 
-        private static bool FacturaExiste(IDbConnection connection, IDbTransaction transaction, string codFactura, int codProveedor)
+        private static void GuardarDetalleIva(IDbConnection connection, IDbTransaction transaction, FacturaDto factura, FacturaGuardarCompleta data)
         {
-            int existe = connection.ExecuteScalar<int>(
-                @"select count(1)
-                  from cxp_facturas with (updlock, holdlock)
-                  where cod_factura = @Cod_Factura and cod_proveedor = @Cod_Proveedor",
-                new { Cod_Factura = codFactura, Cod_Proveedor = codProveedor },
-                transaction);
+            var lineas = data.IvaDetallado == true
+                ? data.IvaDetalle.Where(item => item.Monto_Base > 0).ToList()
+                : new List<FacturaIvaDetalle>
+                {
+                    new()
+                    {
+                        Cod_IVA = factura.Cod_IVA,
+                        Monto_Base = factura.Sub_Total.GetValueOrDefault(),
+                        Monto_IVA = factura.Impuesto_Ventas.GetValueOrDefault(),
+                        Porcentaje = 0
+                    }
+                };
 
-            return existe > 0;
-        }
+            for (var index = 0; index < lineas.Count; index++)
+            {
+                var linea = lineas[index];
+                var tipo = connection.QueryFirstOrDefault<TipoIvaFactura>(
+                    "[spSys_IVA_TIPOS_Consulta]",
+                    new { TipoIVA = linea.Cod_IVA },
+                    transaction,
+                    commandType: CommandType.StoredProcedure);
+                if (tipo is null)
+                    throw new InvalidOperationException("No se encontró el tipo de IVA " + linea.Cod_IVA + ".");
 
-        private static void InsertarFactura(IDbConnection connection, IDbTransaction transaction, FacturaDto factura)
-        {
-            connection.Execute(
-                @"INSERT cxp_facturas(estado, cod_factura, cod_proveedor, fecha, total, cxp_estado,
-                                     asiento_generado, plantilla, vence, creacion_fecha, creacion_user, notas,
-                                     cod_forma_pago, cod_divisa, tipo_cambio, importe_divisa_real, impuesto_ventas)
-                  values(@Estado, @Cod_Factura, @Cod_Proveedor, @Fecha, @Total, @Cxp_Estado,
-                         @Asiento_Generado, @Plantilla, @Vence, dbo.MyGetdate(), @Creacion_User, @Notas,
-                         @Cod_Forma_Pago, @Cod_Divisa, @Tipo_Cambio, @Importe_Divisa_Real, @Impuesto_Ventas)",
-                factura,
-                transaction);
-        }
-
-        private static void ActualizarSaldoProveedor(IDbConnection connection, IDbTransaction transaction, decimal saldo, decimal saldoDivisa, int codProveedor)
-        {
-            int actualizados = connection.Execute(
-                @"UPDATE cxp_proveedores
-                  SET saldo = ISNULL(saldo, 0) + @Saldo,
-                      saldo_divisa_real = ISNULL(saldo_divisa_real, 0) + @Saldo_Divisa
-                  WHERE cod_proveedor = @Cod_Proveedor",
-                new { Saldo = saldo, Saldo_Divisa = saldoDivisa, Cod_Proveedor = codProveedor },
-                transaction);
-
-            if (actualizados != 1)
-                throw new InvalidOperationException("No se pudo actualizar el saldo del proveedor.");
-        }
-
-        private static void InsertarPagoContado(IDbConnection connection, IDbTransaction transaction, PagoContado pago)
-        {
-            connection.Execute(
-                @"INSERT cxp_pagoprov(npago, cod_proveedor, cod_factura, fecha_vencimiento, monto, frecuencia,
-                                     tipo_transac, user_traslada, fecha_traslada, tesoreria, pago_tercero,
-                                     apl_cargo_flotante, pago_anticipado, forma_pago, importe_divisa_real,
-                                     tipo_cambio, cod_divisa)
-                  values(@NPago, @Cod_Proveedor, @Cod_Factura, @Fecha_Vencimiento, @Monto, @Frecuencia,
-                         @Tipo_Transac, @User_Traslada, @Fecha_Traslada, @Tesoreria, @Pago_Tercero,
-                         @Apl_Cargo_Flotante, @Pago_Anticipado, @Forma_Pago, @Importe_Divisa_Real,
-                         @Tipo_Cambio, @Cod_Divisa)",
-                pago,
-                transaction);
+                connection.Execute(
+                    "[spCXP_Factura_IVA_Add]",
+                    new
+                    {
+                        Proveedor = factura.Cod_Proveedor,
+                        Factura = factura.Cod_Factura,
+                        CodigoIVA = linea.Cod_IVA,
+                        MontoBase = linea.Monto_Base,
+                        Porcentaje = tipo.Porcentaje,
+                        Impuesto = linea.Monto_IVA,
+                        Cuenta = tipo.Cod_Cuenta,
+                        Usuario = factura.Creacion_User,
+                        Inicializa = index == 0 ? 1 : 0
+                    },
+                    transaction,
+                    commandType: CommandType.StoredProcedure);
+            }
         }
 
         private static void InsertarAsientosFactura(
@@ -1076,6 +1150,18 @@ namespace Galileo.DataBaseTier
             for (int index = 0; index < asientos.Count; index++)
             {
                 AsientoFactura asiento = asientos[index];
+                int contabilidad = asiento.Cod_Contabilidad <= 0 ? 1 : asiento.Cod_Contabilidad;
+                string? divisaCuenta = connection.QueryFirstOrDefault<string>(
+                    @"SELECT RTRIM(cod_divisa)
+                      FROM CntX_Cuentas
+                      WHERE cod_cuenta = @Cod_Cuenta
+                        AND cod_contabilidad = @Cod_Contabilidad",
+                    new { asiento.Cod_Cuenta, Cod_Contabilidad = contabilidad },
+                    transaction);
+                if (string.IsNullOrWhiteSpace(divisaCuenta))
+                    throw new InvalidOperationException(
+                        $"No se encontró la divisa de la cuenta {asiento.Cod_Cuenta} en el catálogo contable.");
+
                 decimal monto = asiento.Debehaber == "H" ? asiento.Credito : asiento.Debito;
                 connection.Execute(
                     @"INSERT INTO cxp_facturas_detalle(linea, cod_factura, cod_proveedor, cod_contabilidad,
@@ -1088,11 +1174,11 @@ namespace Galileo.DataBaseTier
                         Linea = index + 1,
                         factura.Cod_Factura,
                         factura.Cod_Proveedor,
-                        Cod_Contabilidad = asiento.Cod_Contabilidad <= 0 ? 1 : asiento.Cod_Contabilidad,
+                        Cod_Contabilidad = contabilidad,
                         asiento.Cod_Cuenta,
                         asiento.Cod_Unidad,
                         asiento.Cod_Centro_Costo,
-                        asiento.Cod_Divisa,
+                        Cod_Divisa = divisaCuenta,
                         DebeHaber = asiento.Debehaber,
                         asiento.Tipo_Cambio,
                         Monto = monto

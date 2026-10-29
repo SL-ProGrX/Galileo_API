@@ -69,6 +69,11 @@ namespace Galileo.BusinessLogic.ProGrX.Credito
             return _Db.fxCajas_SaldoaFavor(CodEmpresa, cedula);
         }
 
+        public ErrorDto<List<CrConsultaCashBackData>> CR_ConsultaCrd_CashBack_Obtener(int codEmpresa, string cedula)
+        {
+            return _Db.CR_ConsultaCrd_CashBack_Obtener(codEmpresa, cedula);
+        }
+
         #region Créditos
 
         public ErrorDto<CrConsultaCreditoContextoData> CR_ConsultaCrd_CreditoContexto_Obtener(int codEmpresa)
@@ -246,6 +251,14 @@ namespace Galileo.BusinessLogic.ProGrX.Credito
         public ErrorDto<List<AfiBeneficiosConsultaData>> AFI_Beneficios_Consulta(int CodEmpresa, string cedula)
         {
             return _Db.AFI_Beneficios_Consulta(CodEmpresa, cedula);
+        }
+
+        #endregion
+
+        #region Tarjeta de Crédito
+        public ErrorDto<List<CrConsultaTarjetaCreditoData>> CR_ConsultaCrd_TarjetaCredito_Obtener(int CodEmpresa, string cedula, string usuario)
+        {
+            return _Db.CR_ConsultaCrd_TarjetaCredito_Obtener(CodEmpresa, cedula, usuario);
         }
 
         #endregion

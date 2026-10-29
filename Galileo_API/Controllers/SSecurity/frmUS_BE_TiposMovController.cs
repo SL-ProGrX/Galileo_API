@@ -26,6 +26,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("MovimientoBE_Guardar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto MovimientoBE_Guardar(MovimientoBE request)
         {
             return MovimientoBEBL.MovimientoBE_Guardar(request);
@@ -33,6 +34,7 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("MovimientoBE_Eliminar")]
+        [ValidateAntiForgeryToken]
         public ErrorDto MovimientoBE_Eliminar(string movimiento, int modulo, int codEmpresa = 0, string usuario = "")
         {
             return MovimientoBEBL.MovimientoBE_Eliminar(movimiento, modulo, codEmpresa, usuario);

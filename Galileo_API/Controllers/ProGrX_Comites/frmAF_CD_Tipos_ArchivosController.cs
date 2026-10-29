@@ -1,4 +1,5 @@
 ﻿using Galileo.Models;
+using Galileo_API.Extensions;
 using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX_Comites;
 using Galileo_API.Models.ProGrX_Comites;
@@ -29,7 +30,7 @@ using Microsoft.AspNetCore.Mvc;
             [HttpPost("TipoArchivo_Guardar")]
             public ErrorDto TipoArchivo_Guardar(int CodEmpresa, string usuario, TipoArchivoData data)
             {
-                return _bl.TipoArchivo_Guardar(CodEmpresa, usuario, data);
+                return _bl.TipoArchivo_Guardar(CodEmpresa, User.ObtenerUsuario(), data);
             }
 
             [ValidateAntiForgeryToken]

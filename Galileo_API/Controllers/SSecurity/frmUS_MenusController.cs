@@ -75,14 +75,17 @@ namespace Galileo.Controllers
             => SecurityUsBL.ObtenerUsMenuPorMenuNodo(MenuNodo);
 
         [HttpPost("ActualizarUsMenu")]
+        [ValidateAntiForgeryToken]
         public ErrorDto<ResultadoCrearYEditarUsMenuDto?> ActualizarUsMenu(UsMenuDto Info)
             => SecurityUsBL.ActualizarUsMenu(Info);
 
         [HttpPost("CrearUsMenu")]
+        [ValidateAntiForgeryToken]
         public ErrorDto<ResultadoCrearYEditarUsMenuDto?> CrearUsMenu(UsMenuDto Info)
             => SecurityUsBL.CrearUsMenu(Info);
 
         [HttpPost("ObtenerUsMenu_IconosWeb")]
+        [ValidateAntiForgeryToken]
         public ErrorDto<List<UsIconWeb>> ObtenerUsMenu_IconosWeb()
             => SecurityUsBL.ObtenerUsMenu_IconosWeb();
 

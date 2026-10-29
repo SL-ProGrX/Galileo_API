@@ -3,6 +3,13 @@ using System.Text.Json.Serialization;
 
 namespace Galileo.Models.ProGrX.Credito
 {
+    public sealed class CrConsultaCashBackData
+    {
+        public decimal puntosDisponibles { get; set; }
+        public string? fechaCorte { get; set; }
+        public decimal? montoEquivalente { get; set; }
+    }
+
     public class CrConsultaPlanillaAbonoDistInicialData
     {
         public string cedula { get; set; } = string.Empty;
@@ -894,5 +901,17 @@ namespace Galileo.Models.ProGrX.Credito
         public string? relacion_Desc { get; set; }
         public int? tipo_Id_R { get; set; }
         public string? tipo_Id_Desc { get; set; }
+    }
+
+    public sealed class CrConsultaTarjetaCreditoData
+    {
+        public string operacion { get; set; } = string.Empty;
+        public string num_Documento { get; set; } = string.Empty;
+        public string fecha_Pago { get; set; } = string.Empty;
+        public decimal monto { get; set; }
+        public decimal saldo { get; set; }
+        public decimal cuota { get; set; }
+        public int moraDias { get; set; }
+        public string estado { get; set; } = string.Empty;
     }
 }

@@ -3,6 +3,7 @@ using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 
 namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 {
@@ -41,6 +42,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 ? Convert.ToDecimal(porcentajeRaw)
                 : 100m;
             var detalle = ObtenerDetalleSalarios(connection, codPreanalisis);
+            var tablaSalarios = InicializarTablaSalariosDesdePersona(
+                connection,
+                codPreanalisis,
+                GetString(row, "CEDULA"),
+                detalle.TablaSalarios);
 
             return new FrmPreaEstudiov2SalariosDto
             {
@@ -57,11 +63,66 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 componente_adicional_base = extrasFijas,
                 // Replica el calculo cliente de VB6: txtCompAdicional = base * porc / 100
                 componentes_adicionales = Math.Round(extrasFijas * porcComponenteAdicional / 100m, 2),
-                total_extras = GetDecimal(row, "REBAJO_EXTRAS"),
-                tabla_salarios = detalle.TablaSalarios,
+                // VB6: sbExtras_Calcula totaliza la columna Monto de la grilla.
+                total_extras = detalle.Extras.Sum(extra => extra.monto),
+                tabla_salarios = tablaSalarios,
                 extras = detalle.Extras,
                 incapacidades = detalle.Incapacidades,
             };
+        }
+
+        /// <summary>
+        /// Replica sbSalarios_Registro_Inicial de ProGrX: si el expediente todavía no
+        /// posee una tabla salarial completa, consulta el historial de la persona por
+        /// cédula, arma la secuencia mensual y la registra en el expediente.
+        /// </summary>
+        /// <param name="connection">Conexión abierta a la base de datos de la empresa.</param>
+        /// <param name="codPreanalisis">Código del expediente que se está cargando.</param>
+        /// <param name="cedula">Identificación usada para consultar el historial salarial.</param>
+        /// <param name="tablaActual">Filas que ya están asociadas al expediente.</param>
+        /// <returns>Tabla existente o la tabla inicializada desde el historial personal.</returns>
+        private static List<FrmPreaEstudiov2SalarioDetalleDto> InicializarTablaSalariosDesdePersona(
+            IDbConnection connection,
+            string codPreanalisis,
+            string cedula,
+            List<FrmPreaEstudiov2SalarioDetalleDto> tablaActual)
+        {
+            // VB6: If gSalarios.MaxRows > 1 Then Exit Sub.
+            if (tablaActual.Count > 1 || string.IsNullOrWhiteSpace(cedula))
+            {
+                return tablaActual;
+            }
+
+            var filasPersona = connection.Query(
+                "EXEC spCrdPreaSalariosListaPorCedula @Cedula",
+                new { Cedula = cedula.Trim() });
+            var tablaInicial = new List<FrmPreaEstudiov2SalarioDetalleDto>();
+
+            foreach (var rawRow in filasPersona)
+            {
+                var row = new Dictionary<string, object>(
+                    (IDictionary<string, object>)rawRow,
+                    StringComparer.OrdinalIgnoreCase);
+                var orden = tablaInicial.Count + 1;
+
+                tablaInicial.Add(new FrmPreaEstudiov2SalarioDetalleDto
+                {
+                    orden = orden,
+                    fecha = GetDateTime(row, "Fecha"),
+                    salario_s = GetDecimal(row, "Salario"),
+                    mes = orden,
+                    salario_rh = 0,
+                    ca = 0
+                });
+            }
+
+            if (tablaInicial.Count == 0)
+            {
+                return tablaActual;
+            }
+
+            GuardarTablaSalarios(connection, codPreanalisis, tablaInicial);
+            return ObtenerTablaSalarios(connection, codPreanalisis);
         }
 
         private sealed record DetalleSalarios(

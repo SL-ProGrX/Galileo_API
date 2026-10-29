@@ -1,4 +1,5 @@
 ﻿using Galileo.Models;
+using Galileo_API.Extensions;
 using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX_Polizas;
 using Galileo_API.Models.ProGrX_Polizas;
@@ -135,7 +136,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         [HttpPost("Crd_CatalogoPolizas_Guardar")]
         public ErrorDto Crd_CatalogoPolizas_Guardar(int CodEmpresa, string usuario, CrdCatalogoPolizasGuardarDto dto)
         {
-            return _BL.Crd_CatalogoPolizas_Guardar(CodEmpresa, usuario, dto);
+            return _BL.Crd_CatalogoPolizas_Guardar(CodEmpresa, User.ObtenerUsuario(), dto);
         }
 
         #endregion

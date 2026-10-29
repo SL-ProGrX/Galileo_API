@@ -1,4 +1,5 @@
 ﻿using Galileo.Models;
+using Galileo_API.Extensions;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo_API.BusinessLogic.ProGrX.Bancos;
@@ -37,7 +38,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
         [HttpDelete("Tes_Ubicaciones_Eliminar")]
         public ErrorDto Tes_Ubicaciones_Eliminar(int CodEmpresa, string ubicacion, string usuario)
         {
-            return _bl.Tes_Ubicaciones_Eliminar(CodEmpresa, ubicacion, usuario);
+            return _bl.Tes_Ubicaciones_Eliminar(CodEmpresa, ubicacion, User.ObtenerUsuario());
         }
 
         [HttpGet("Tes_Ubicaciones_Obtener")]

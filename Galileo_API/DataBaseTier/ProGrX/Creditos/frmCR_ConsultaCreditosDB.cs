@@ -139,7 +139,7 @@ namespace Galileo.DataBaseTier.ProGrX.Credito
             {
                 var persona = connection.QueryFirstOrDefault<CrConsultaCrdData>(
                     "spSys_Consulta_Integrada",
-                    new { cedula = cedulaNormalizada },
+                    new { cedula = cedulaNormalizada, Usuario = usuario },
                     commandType: CommandType.StoredProcedure);
 
                 if (persona is null)

@@ -29,6 +29,11 @@ namespace Galileo.Models.CxP
         public required bool ConSaldos { get; set; }
         public string Estado { get; set; } = string.Empty;
         public string Forma_Pago { get; set; } = string.Empty;
+        public string Cod_Factura { get; set; } = string.Empty;
+        public int? Cod_Proveedor { get; set; }
+        public string Proveedor { get; set; } = string.Empty;
+        public decimal? Monto { get; set; }
+        public string Cod_Divisa { get; set; } = string.Empty;
     }
 
     public class CargoAdicional

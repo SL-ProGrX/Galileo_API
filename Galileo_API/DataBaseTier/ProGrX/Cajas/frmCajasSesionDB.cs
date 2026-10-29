@@ -18,6 +18,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             _AuxiliarDB = new MProGrXAuxiliarDB(config);
         }
 
+        /// <summary>
+        /// Consulta la sesión indicada o recupera la sesión activa del contexto de caja.
+        /// </summary>
+        /// <param name="connection">Conexión activa a la empresa.</param>
+        /// <param name="sesionId">Identificador de la sesión almacenada en el cliente.</param>
+        /// <param name="caja">Código de la caja abierta.</param>
+        /// <param name="usuario">Usuario que opera la caja.</param>
+        /// <param name="apertura">Número de apertura vigente.</param>
+        /// <param name="identificacion">Identificación de respaldo para localizar la sesión.</param>
+        /// <returns>Datos de la sesión encontrada; de lo contrario, null.</returns>
         private static CajasSesionDto? ConsultarSesion(
             SqlConnection connection,
             int sesionId,
@@ -26,6 +36,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             int apertura,
             string identificacion)
         {
+            if (sesionId <= 0)
+            {
+                const string sqlSesionActiva = @"
+                    SELECT TOP 1 *
+                    FROM CAJAS_SESION
+                    WHERE cod_usuario = @Usuario
+                      AND estado = 1
+                      AND (@Caja = '' OR cod_caja = @Caja)
+                      AND (@Apertura <= 0 OR cod_apertura = @Apertura)
+                    ORDER BY id_sesion DESC";
+
+                var sesionActiva = connection.QueryFirstOrDefault<CajasSesionDto>(
+                    sqlSesionActiva,
+                    new { Usuario = usuario, Caja = caja, Apertura = apertura });
+
+                if (sesionActiva != null)
+                {
+                    return sesionActiva;
+                }
+            }
+
             var parameters = new DynamicParameters();
             parameters.Add("@SesionId", sesionId, DbType.Int32);
             parameters.Add("@Caja", caja, DbType.String);

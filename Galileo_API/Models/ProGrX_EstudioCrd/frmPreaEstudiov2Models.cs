@@ -1002,6 +1002,7 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         /// <summary>Columna real CRD_PREA_REFUNDICIONES.Aplica.</summary>
         public bool Aplica { get; set; }
         /// <summary>Columna real CRD_PREA_REFUNDICIONES.Apl_Mora.</summary>
+        [System.Text.Json.Serialization.JsonPropertyName("apl_mora")]
         public bool Apl_Mora { get; set; }
         /// <summary>Código de garantía (F, H, etc).</summary>
         public string garantia { get; set; } = string.Empty;

@@ -74,6 +74,8 @@ namespace Galileo_API.Models.ProGrX_Contabilidad
             public string NombreArchivo { get; set; } = string.Empty;
 
             public string ContentType { get; set; } = string.Empty;
+
+            public byte[] ArchivoBytes { get; set; } = [];
         }
     }
     public sealed class CntConsolidadoEspecialContext
