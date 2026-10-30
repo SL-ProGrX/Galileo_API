@@ -18,6 +18,9 @@ namespace Galileo.DataBaseTier
         // Timeout común para todas las expresiones regulares de esta clase
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
 
+        // Timeout de comandos SQL para los datasets de reportes (los default de 30 s son insuficientes)
+        private const int CommandTimeoutSeconds = 300;
+
         public bool TryExecDataSet(
             SqlConnection connection,
             RdlcDataSetMeta ds,
@@ -134,7 +137,7 @@ namespace Galileo.DataBaseTier
             if (isStoredProc && !isExecBatch)
                 return ExecuteStoredProcedure(connection, sqlText, dp, out rows, out error);
 
-            rows = connection.Query(sqlText, dp, commandType: CommandType.Text).ToList();
+            rows = connection.Query(sqlText, dp, commandType: CommandType.Text, commandTimeout: CommandTimeoutSeconds).ToList();
             return true;
         }
 
@@ -148,14 +151,14 @@ namespace Galileo.DataBaseTier
             error = null;
             rows  = Enumerable.Empty<object>();
 
-            var result = connection.Query(sqlText, dp, commandType: CommandType.StoredProcedure).ToList();
+            var result = connection.Query(sqlText, dp, commandType: CommandType.StoredProcedure, commandTimeout: CommandTimeoutSeconds).ToList();
             if (result.Count > 0)
             {
                 rows = result;
                 return true;
             }
 
-            using var reader = connection.ExecuteReader(sqlText, dp, commandType: CommandType.StoredProcedure);
+            using var reader = connection.ExecuteReader(sqlText, dp, commandType: CommandType.StoredProcedure, commandTimeout: CommandTimeoutSeconds);
             var schema = reader.GetSchemaTable();
             if (schema == null || schema.Rows.Count == 0)
                 return true;
