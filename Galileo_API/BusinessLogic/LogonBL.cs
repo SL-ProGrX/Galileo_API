@@ -86,7 +86,7 @@ namespace Galileo.BusinessLogic
         /// <returns></returns>
         public Task<ErrorDto> TFA_Codigo_EnviarMAIL(string Usuario, string email)
         {
-            return logonDB.TFA_Codigo_EnviarMAIL(Usuario, email);
+            return logonDB.TFA_Codigo_EnviarMAIL(Usuario, email, "Galileo");
         }
 
 

@@ -575,12 +575,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         }
 
         /// <summary>
-        /// Agrega filtro de rango de fechas a la fórmula de selección, si el usuario seleccionó filtrar por un rango de fechas específico y proporcionó fechas de inicio y fin válidas. Este filtro se construye utilizando la función CrdPolizasReportesHelper.ConstruirRangoFechaCrystal, que genera una fórmula de selección compatible con Crystal Reports para filtrar registros dentro del rango de fechas especificado. Al agregar este filtro, el reporte se limitará a mostrar únicamente los movimientos que ocurrieron dentro del rango de fechas seleccionado por el usuario, lo que puede ser útil para analizar el comportamiento de pólizas durante períodos específicos o para realizar auditorías detalladas sobre transacciones ocurridas en ciertos intervalos de tiempo.
+        /// Agrega filtro de rango de fechas a la fórmula de selección, si el usuario seleccionó filtrar por un rango de fechas específico y proporcionó fechas de inicio y fin válidas. Este filtro se construye utilizando la función CrdPolizasReportesHelper.ConstruirRangoFechaSql, que genera una condición SQL (BETWEEN sobre la fecha) para filtrar registros dentro del rango de fechas especificado. Al agregar este filtro, el reporte se limitará a mostrar únicamente los movimientos que ocurrieron dentro del rango de fechas seleccionado por el usuario, lo que puede ser útil para analizar el comportamiento de pólizas durante períodos específicos o para realizar auditorías detalladas sobre transacciones ocurridas en ciertos intervalos de tiempo.
         /// </summary>
         /// <param name="aplicarFiltro"></param>
         /// <param name="fechaInicio"></param>
         /// <param name="fechaFin"></param>
-        /// <param name="campoCrystal"></param>
+        /// <param name="campo"></param>
         /// <param name="etiqueta"></param>
         /// <param name="filtros"></param>
         /// <param name="subTitulo"></param>
@@ -588,7 +588,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             bool aplicarFiltro,
             DateTime? fechaInicio,
             DateTime? fechaFin,
-            string campoCrystal,
+            string campo,
             string etiqueta,
             List<string> filtros,
             StringBuilder subTitulo)
@@ -598,9 +598,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 return;
             }
 
-            filtros.Add(
-                "{" + campoCrystal + "}" +
-                CrdPolizasReportesHelper.ConstruirRangoFechaCrystal(fechaInicio.Value, fechaFin.Value));
+            filtros.Add(CrdPolizasReportesHelper.ConstruirRangoFechaSql(campo, fechaInicio.Value, fechaFin.Value));
 
             subTitulo.Append($"¦ {etiqueta}: {fechaInicio:dd-MM-yyyy} a {fechaFin:dd-MM-yyyy}");
         }
@@ -697,8 +695,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             }
 
             var campo = request.EsAseVersion
-                ? "{vPoliza_Informe_Main.UP}"
-                : "{vPoliza_Informe_Main.COD_DEPARTAMENTO}";
+                ? "vPoliza_Informe_Main.UP"
+                : "vPoliza_Informe_Main.COD_DEPARTAMENTO";
 
             filtros.Add($"{campo} = '{CrdPolizasReportesHelper.EscaparCrystal(request.DepartamentoCodigo)}'");
             subTitulo.Append(request.EsAseVersion
@@ -723,8 +721,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             }
 
             var campo = request.EsAseVersion
-                ? "{vPoliza_Informe_Main.UT}"
-                : "{vPoliza_Informe_Main.COD_SECCION}";
+                ? "vPoliza_Informe_Main.UT"
+                : "vPoliza_Informe_Main.COD_SECCION";
 
             filtros.Add($"{campo} = '{CrdPolizasReportesHelper.EscaparCrystal(request.SeccionCodigo)}'");
             subTitulo.Append(request.EsAseVersion
@@ -848,9 +846,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
     }
     public static class CrdPolizasReportesHelper
     {
-        public static string ConstruirRangoFechaCrystal(DateTime inicio, DateTime fin)
+        public static string ConstruirRangoFechaSql(string campo, DateTime inicio, DateTime fin)
         {
-            return $" in Date({inicio:yyyy,MM,dd}) to Date({fin:yyyy,MM,dd})";
+            return $"CAST({campo} AS DATE) BETWEEN '{inicio:yyyy-MM-dd}' AND '{fin:yyyy-MM-dd}'";
         }
 
         public static string EscaparCrystal(string? valor)
