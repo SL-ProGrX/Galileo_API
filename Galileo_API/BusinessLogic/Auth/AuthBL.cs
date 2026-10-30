@@ -366,7 +366,10 @@ public sealed class AuthBL
             return AuthenticationUnavailable($"El método de verificación {method} no está disponible.");
         }
 
-        var sent = await _logonDb.TFA_Codigo_EnviarMAIL(user.Usuario, tfa.email);
+        var sent = await _logonDb.TFA_Codigo_EnviarMAIL(
+            user.Usuario,
+            tfa.email,
+            IsSSecurity(application) ? "SSecurity" : "Galileo");
         if (sent.Code != 0)
         {
             return AuthenticationUnavailable(sent.Description);
@@ -481,7 +484,10 @@ public sealed class AuthBL
                 return AuthenticationUnavailable("La configuración de correo para 2FA ya no está disponible.");
             }
 
-            var response = await _logonDb.TFA_Codigo_EnviarMAIL(challenge.User.Usuario, tfa.email);
+            var response = await _logonDb.TFA_Codigo_EnviarMAIL(
+                challenge.User.Usuario,
+                tfa.email,
+                IsSSecurity(application) ? "SSecurity" : "Galileo");
             resendSucceeded = response.Code == 0;
             return response.Code == 0
                 ? new AuthResponseDto { Status = "mfaResent" }
