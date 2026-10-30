@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Newtonsoft.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic.ProGrX.Fondos;
 using Galileo.Models.ERROR;
@@ -39,10 +40,10 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
-        [HttpGet("FND_Anulaciones_SolicitaAutorizacion_Obtener")]
-        public ErrorDto<FndAnulacionesEstadoGestionDto> FND_Anulaciones_SolicitaAutorizacion_Obtener(int CodEmpresa, string Params)
+        [HttpPost("FND_Anulaciones_SolicitaAutorizacion_Obtener")]
+        public ErrorDto<FndAnulacionesEstadoGestionDto> FND_Anulaciones_SolicitaAutorizacion_Obtener([FromQuery] int CodEmpresa, [FromBody] FndAnulacionesParams Params)
         {
-            return BlFndAnulaciones.FND_Anulaciones_SolicitaAutorizacion_Obtener(CodEmpresa, Params);
+            return BlFndAnulaciones.FND_Anulaciones_SolicitaAutorizacion_Obtener(CodEmpresa, JsonConvert.SerializeObject(Params));
         }
 
         [Authorize]
@@ -55,9 +56,9 @@ namespace Galileo.Controllers.ProGrX.Fondos
         [Authorize]
         [ValidateAntiForgeryToken]
         [HttpPost("FND_Anulaciones_Anular")]
-        public ErrorDto<object> FND_Anulaciones_Anular(int CodEmpresa, string Params, string Accion, string Notas)
+        public ErrorDto<object> FND_Anulaciones_Anular([FromQuery] int CodEmpresa, [FromBody] FndAnulacionesParams Params, [FromQuery] string Accion, [FromQuery] string Notas)
         {
-            return BlFndAnulaciones.FND_Anulaciones_Anular(CodEmpresa, Params, Accion, Notas);
+            return BlFndAnulaciones.FND_Anulaciones_Anular(CodEmpresa, JsonConvert.SerializeObject(Params), Accion, Notas);
         }
     }
 }
