@@ -173,6 +173,38 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             }
         }
 
+        /// <summary>
+        /// Elimina del temporal todos los cheques del usuario y los de cualquier usuario con más de 2 horas.
+        /// </summary>
+        public ErrorDto TES_BancosCargado_ChequesCambiados_Limpiar(
+            int CodEmpresa,
+            string usuario)
+        {
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                return DbHelper.ErrorResponse("El usuario de sesión es requerido.");
+            }
+
+            try
+            {
+                using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+                conn.Open();
+
+                conn.Execute(
+                    @"
+                    DELETE FROM dbo.TesCargaMovimientosBancariosDetalleTemp
+                    WHERE RegistroUsuario = @RegistroUsuario
+                       OR RegistroFecha < DATEADD(HOUR, -2, GETDATE());",
+                    new { RegistroUsuario = usuario.Trim() });
+
+                return DbHelper.OkResponse("Registros temporales eliminados.");
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+        }
+
         private static List<TesBancosCargadoChequeCambiadoDto> ConsultarInformacionCheques(
             IDbConnection conn,
             int idCarga,
