@@ -21,5 +21,11 @@ namespace Galileo.BusinessLogic
         {
             return _db.Cajas_TransacTipoCambio_Divisas_Obtener(CodEmpresa);
         }
+
+        public ErrorDto<decimal> Cajas_TransacTipoCambio_TipoCambio_Obtener(
+            int CodEmpresa, string? Divisa, string? Tipo)
+        {
+            return _db.Cajas_TransacTipoCambio_TipoCambio_Obtener(CodEmpresa, Divisa, Tipo);
+        }
     }
 }
