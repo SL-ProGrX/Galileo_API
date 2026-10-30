@@ -13,7 +13,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
     public class FrmRHCatConceptosDB
     {
         private const int ModuloRRHH = 23;
-
+        private const string DEBEDEFINIR = "Debe indicar el código del concepto.";
+        private const string REGISTRARBITACORA = "registrar la bitácora: ";
+        private const string DEBEDEFINIRUSUARIO = "Debe indicar el usuario de sesión.";
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _securityMainDb;
         private readonly MCntLinkDB _cntLinkDB;
@@ -115,7 +117,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             if (string.IsNullOrWhiteSpace(codigo))
             {
                 return ErrorConcepto(
-                    "Debe indicar el código del concepto.");
+                    DEBEDEFINIR);
             }
 
             try
@@ -125,8 +127,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
 
                 return ObtenerConceptoDesdeConexion(
                     connection,
-                    CodEmpresa,
-                    CodContabilidad,
                     codigo);
             }
             catch (SqlException ex)
@@ -216,8 +216,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
 
                 return ObtenerConceptoDesdeConexion(
                     connection,
-                    CodEmpresa,
-                    CodContabilidad,
                     codigo);
             }
             catch (SqlException ex)
@@ -374,7 +372,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             {
                 var errorCuentas = PrepararCuentas(
                     CodEmpresa,
-                    CodContabilidad,
                     concepto);
 
                 if (errorCuentas != null)
@@ -429,7 +426,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                 {
                     return DbHelper.ErrorResponse(
                         "El concepto se guardó, pero no fue posible "
-                        + "registrar la bitácora: "
+                        + REGISTRARBITACORA
                         + bitacora.Description);
                 }
 
@@ -457,7 +454,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             if (string.IsNullOrWhiteSpace(codigo))
             {
                 return DbHelper.CreateErrorResponse(
-                    "Debe indicar el código del concepto.",
+                    DEBEDEFINIR,
                     -2,
                     resultado);
             }
@@ -507,6 +504,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             var usuarioNormalizado = NormalizarUsuario(usuario);
             var tabla = request?.tabla;
 
+            if (tabla == null)
+            {
+                return DbHelper.ErrorResponse(
+                    "No se recibió la información de la tabla.", -2);
+            }
+
             var validacion = ValidarTablaGuardar(
                 usuarioNormalizado,
                 tabla);
@@ -516,7 +519,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                 return validacion;
             }
 
-            var codigo = NormalizarTexto(tabla!.cod_concepto);
+            var codigo = NormalizarTexto(tabla.cod_concepto);
 
             try
             {
@@ -545,7 +548,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
 
                     if (modifica)
                     {
-                        tablaId = tabla.tabla_id!.Value;
+                        tablaId = tabla.tabla_id.GetValueOrDefault();
 
                         var filas = ActualizarTablaConcepto(
                             connection,
@@ -588,7 +591,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                 {
                     return DbHelper.ErrorResponse(
                         "La tabla se guardó, pero no fue posible "
-                        + "registrar la bitácora: "
+                        + REGISTRARBITACORA
                         + bitacora.Description);
                 }
 
@@ -602,6 +605,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             }
         }
 
+
         public ErrorDto RH_Cat_Conceptos_Tabla_Eliminar(
             int CodEmpresa,
             string? usuario,
@@ -614,13 +618,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             if (string.IsNullOrWhiteSpace(usuarioNormalizado))
             {
                 return DbHelper.ErrorResponse(
-                    "Debe indicar el usuario de sesión.", -2);
+                    DEBEDEFINIRUSUARIO, -2);
             }
 
             if (string.IsNullOrWhiteSpace(codigo))
             {
                 return DbHelper.ErrorResponse(
-                    "Debe indicar el código del concepto.", -2);
+                    DEBEDEFINIR, -2);
             }
 
             if (tablaId is null or <= 0)
@@ -663,7 +667,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                 {
                     return DbHelper.ErrorResponse(
                         "El registro se eliminó, pero no fue posible "
-                        + "registrar la bitácora: "
+                        + REGISTRARBITACORA
                         + bitacora.Description);
                 }
 
@@ -691,7 +695,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             if (string.IsNullOrWhiteSpace(codigo))
             {
                 return DbHelper.CreateErrorResponse(
-                    "Debe indicar el código del concepto.",
+                    DEBEDEFINIR,
                     -2,
                     resultado);
             }
@@ -732,6 +736,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             }
         }
 
+
         public ErrorDto RH_Cat_Conceptos_Detalle_Guardar(
             int CodEmpresa,
             string? usuario,
@@ -739,6 +744,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
         {
             var usuarioNormalizado = NormalizarUsuario(usuario);
             var detalle = request?.detalle;
+
+            if (detalle == null)
+            {
+                return DbHelper.ErrorResponse(
+                    "No se recibió la información del detalle.", -2);
+            }
 
             var validacion = ValidarDetalleGuardar(
                 usuarioNormalizado,
@@ -749,7 +760,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                 return validacion;
             }
 
-            NormalizarDetalle(detalle!);
+            NormalizarDetalle(detalle);
 
             try
             {
@@ -765,7 +776,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
 
                     if (!ExisteConcepto(
                         connection,
-                        detalle!.cod_concepto,
+                        detalle.cod_concepto,
                         transaction))
                     {
                         return DbHelper.ErrorResponse(
@@ -801,7 +812,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                 var bitacora = RegistrarBitacoraDetalle(
                     CodEmpresa,
                     usuarioNormalizado,
-                    detalle!.cod_concepto,
+                    detalle.cod_concepto,
                     detalle.cod_detalle,
                     modifica ? "Modifica" : "Registra");
 
@@ -809,7 +820,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                 {
                     return DbHelper.ErrorResponse(
                         "El detalle se guardó, pero no fue posible "
-                        + "registrar la bitácora: "
+                        + REGISTRARBITACORA
                         + bitacora.Description);
                 }
 
@@ -821,6 +832,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
+
 
         public ErrorDto RH_Cat_Conceptos_Detalle_Eliminar(
             int CodEmpresa,
@@ -834,7 +846,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             if (string.IsNullOrWhiteSpace(usuarioNormalizado))
             {
                 return DbHelper.ErrorResponse(
-                    "Debe indicar el usuario de sesión.", -2);
+                    DEBEDEFINIRUSUARIO, -2);
             }
 
             if (string.IsNullOrWhiteSpace(codigo) ||
@@ -879,7 +891,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                 {
                     return DbHelper.ErrorResponse(
                         "El detalle se eliminó, pero no fue posible "
-                        + "registrar la bitácora: "
+                        + REGISTRARBITACORA
                         + bitacora.Description);
                 }
 
@@ -907,7 +919,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             if (string.IsNullOrWhiteSpace(codigo))
             {
                 return DbHelper.CreateErrorResponse(
-                    "Debe indicar el código del concepto.",
+                    DEBEDEFINIR,
                     -2,
                     resultado);
             }
@@ -977,7 +989,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             if (string.IsNullOrWhiteSpace(codigo))
             {
                 return DbHelper.ErrorResponse(
-                    "Debe indicar el código del concepto.", -2);
+                    DEBEDEFINIR, -2);
             }
 
             try
@@ -1022,13 +1034,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             if (string.IsNullOrWhiteSpace(usuarioNormalizado))
             {
                 return DbHelper.ErrorResponse(
-                    "Debe indicar el usuario de sesión.", -2);
+                    DEBEDEFINIRUSUARIO, -2);
             }
 
             if (string.IsNullOrWhiteSpace(codigo))
             {
                 return DbHelper.ErrorResponse(
-                    "Debe indicar el código del concepto.", -2);
+                    DEBEDEFINIR, -2);
             }
 
             try
@@ -1129,8 +1141,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
         private static ErrorDto<RhCatConceptoData>
             ObtenerConceptoDesdeConexion(
                 SqlConnection connection,
-                int codEmpresa,
-                int codContabilidad,
                 string codigo)
         {
             const string sql = """
@@ -1197,20 +1207,35 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
         }
 
         private static bool ExisteConcepto(
-            SqlConnection connection,
-            string codigo,
-            SqlTransaction transaction)
+    SqlConnection connection,
+    string codigo,
+    SqlTransaction transaction)
         {
             const string sql = """
-                select count(1)
-                from RH_CONCEPTOS with (UPDLOCK, HOLDLOCK)
-                where COD_CONCEPTO = @codigo;
-                """;
+        select count(1)
+        from RH_CONCEPTOS with (UPDLOCK, HOLDLOCK)
+        where COD_CONCEPTO = @codigo;
+        """;
 
             return connection.QuerySingle<int>(
                 sql,
                 new { codigo },
                 transaction) > 0;
+        }
+
+        private static bool ExisteConcepto(
+            SqlConnection connection,
+            string codigo)
+        {
+            const string sql = """
+        SELECT COUNT(1)
+        FROM RH_CONCEPTOS
+        WHERE COD_CONCEPTO = @codigo;
+        """;
+
+            return connection.QuerySingle<int>(
+                sql,
+                new { codigo }) > 0;
         }
 
         private static ErrorDto? ValidarGuardar(
@@ -1220,7 +1245,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             if (string.IsNullOrWhiteSpace(usuario))
             {
                 return DbHelper.ErrorResponse(
-                    "Debe indicar el usuario de sesión.", -2);
+                    DEBEDEFINIRUSUARIO, -2);
             }
 
             if (concepto == null)
@@ -1232,7 +1257,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             if (string.IsNullOrWhiteSpace(concepto.cod_concepto))
             {
                 return DbHelper.ErrorResponse(
-                    "Debe indicar el código del concepto.", -2);
+                    DEBEDEFINIR, -2);
             }
 
             if (string.IsNullOrWhiteSpace(concepto.descripcion))
@@ -1291,7 +1316,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
 
         private ErrorDto? PrepararCuentas(
             int codEmpresa,
-            int codContabilidad,
             RhCatConceptoData concepto)
         {
             var cuenta = NormalizarCuenta(
@@ -1479,7 +1503,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             if (string.IsNullOrWhiteSpace(usuario))
             {
                 return DbHelper.ErrorResponse(
-                    "Debe indicar el usuario de sesión.", -2);
+                    DEBEDEFINIRUSUARIO, -2);
             }
 
             if (tabla == null)
@@ -1491,7 +1515,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             if (string.IsNullOrWhiteSpace(tabla.cod_concepto))
             {
                 return DbHelper.ErrorResponse(
-                    "Debe indicar el código del concepto.", -2);
+                    DEBEDEFINIR, -2);
             }
 
             if (tabla.tabla_id < 0)
@@ -1534,7 +1558,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
                 transaction: transaction);
         }
 
-        private static int InsertarTablaConcepto(
+        private static void InsertarTablaConcepto(
             SqlConnection connection,
             SqlTransaction transaction,
             RhCatConceptoTablaData tabla,
@@ -1567,7 +1591,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
         );
         """;
 
-            return connection.Execute(
+             connection.Execute(
                 sql,
                 new
                 {
@@ -1638,7 +1662,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             if (string.IsNullOrWhiteSpace(usuario))
             {
                 return DbHelper.ErrorResponse(
-                    "Debe indicar el usuario de sesión.", -2);
+                    DEBEDEFINIRUSUARIO, -2);
             }
 
             if (detalle == null)
@@ -1650,7 +1674,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             if (string.IsNullOrWhiteSpace(detalle.cod_concepto))
             {
                 return DbHelper.ErrorResponse(
-                    "Debe indicar el código del concepto.", -2);
+                    DEBEDEFINIR, -2);
             }
 
             if (string.IsNullOrWhiteSpace(detalle.cod_detalle))
@@ -1858,13 +1882,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
             if (string.IsNullOrWhiteSpace(usuario))
             {
                 return DbHelper.ErrorResponse(
-                    "Debe indicar el usuario de sesión.", -2);
+                    DEBEDEFINIRUSUARIO, -2);
             }
 
             if (string.IsNullOrWhiteSpace(codigo))
             {
                 return DbHelper.ErrorResponse(
-                    "Debe indicar el código del concepto.", -2);
+                    DEBEDEFINIR, -2);
             }
 
             if (string.IsNullOrWhiteSpace(codigoExcluido))
@@ -1889,22 +1913,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_RRHH
 
             return null;
         }
-
-        private static bool ExisteConcepto(
-            SqlConnection connection,
-            string codigo)
-        {
-            const string sql = """
-        SELECT COUNT(1)
-        FROM RH_CONCEPTOS
-        WHERE COD_CONCEPTO = @codigo;
-        """;
-
-            return connection.QuerySingle<int>(
-                sql,
-                new { codigo }) > 0;
-        }
-
         #endregion
     }
 }

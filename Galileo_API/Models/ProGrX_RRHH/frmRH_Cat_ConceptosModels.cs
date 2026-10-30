@@ -127,9 +127,6 @@ namespace Galileo_API.Models.ProGrX_RRHH
 
         public int? direccion { get; set; }
     }
-    public class RhCatConceptoCodigoNuevoRequest
-    {
-    }
     public class RhCatConceptoCodigoNuevoData
     {
         public string cod_concepto { get; set; } = string.Empty;
