@@ -31,5 +31,13 @@ namespace Galileo.Controllers.ProGrX.Cajas
             return _bl.Cajas_TransacTipoCambio_Divisas_Obtener(CodEmpresa);
 
         }
+
+        [Authorize]
+        [HttpGet("Cajas_TransacTipoCambio_TipoCambio_Obtener")]
+        public ErrorDto<decimal> Cajas_TransacTipoCambio_TipoCambio_Obtener(
+            [FromQuery] int CodEmpresa, [FromQuery] string? Divisa, [FromQuery] string? Tipo)
+        {
+            return _bl.Cajas_TransacTipoCambio_TipoCambio_Obtener(CodEmpresa, Divisa, Tipo);
+        }
     }
 }
