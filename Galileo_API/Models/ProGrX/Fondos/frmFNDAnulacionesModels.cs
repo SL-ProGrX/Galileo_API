@@ -1,4 +1,6 @@
-﻿namespace Galileo.Models.ProGrX.Fondos
+﻿using Galileo.Models.GEN;
+
+namespace Galileo.Models.ProGrX.Fondos
 {
     public class FndAnulacionesDto
     {
@@ -32,6 +34,7 @@
         public int? gestion_id { get; set; }
         /// <summary>Monto a anular por subcuenta (VB6 vGrid col. 4) cuando el contrato es cuenta maestra.</summary>
         public List<FndAnulacionesSubCuentaMontoDto>? subcuentas { get; set; }
+        public CcDocCuentasResultadoData? documento { get; set; }
     }
 
     public class FndAnulacionesSubCuentaMontoDto
