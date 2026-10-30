@@ -177,43 +177,49 @@ namespace Galileo.DataBaseTier
                 commandType: CommandType.StoredProcedure) ?? new TfaData();
         }
 
-        public async Task<ErrorDto> TFA_Codigo_EnviarMAIL(string usuario, string email)
+        public async Task<ErrorDto> TFA_Codigo_EnviarMAIL(
+            string usuario,
+            string email,
+            string nombreAplicacion)
         {
-            ErrorDto resp = new ErrorDto();
+            var resp = new ErrorDto();
+
+            if (sendEmail != "Y")
+            {
+                resp.Code = -1;
+                resp.Description = "El envío de correo para 2FA no está habilitado.";
+                return resp;
+            }
 
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
+                var codigo2FA = Generate2FACode();
+                await using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-
-                    var codigo2FA = Generate2FACode();
-                    var procedure = "[sp2FA_Usuario_Codigo]";
-                    var values = new
-                    {
-                        Usuario = usuario,
-                        Codigo = codigo2FA
-                    };
-
-                    resp.Code = (await connection.QueryAsync<int>(procedure, values, commandType: CommandType.StoredProcedure)).FirstOrDefault();
+                    resp.Code = (await connection.QueryAsync<int>(
+                        "[sp2FA_Usuario_Codigo]",
+                        new
+                        {
+                            Usuario = usuario,
+                            Codigo = codigo2FA
+                        },
+                        commandType: CommandType.StoredProcedure)).FirstOrDefault();
                     resp.Description = "Ok";
-
-                    TfaDatosCorreo datos = new TfaDatosCorreo();
-                    datos.codigo = codigo2FA;
-                    datos.email = email;
-                    var envio = await TfaCodigoEmail_Enviar(datos);
-                    if (envio.Code != 0)
-                    {
-                        return envio;
-                    }
-
                 }
+
+                var datos = new TfaDatosCorreo
+                {
+                    codigo = codigo2FA,
+                    email = email
+                };
+                return await TfaCodigoEmail_Enviar(datos, nombreAplicacion);
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
+                return resp;
             }
-            return resp;
         }
 
         public ErrorDto TFA_Codigo_Validar(string usuario, string codigo)
@@ -234,7 +240,6 @@ namespace Galileo.DataBaseTier
 
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
-
                 }
             }
             catch (Exception ex)
@@ -251,94 +256,100 @@ namespace Galileo.DataBaseTier
             return code.ToString("D6");
         }
 
-        private async Task<ErrorDto> TfaCodigoEmail_Enviar(TfaDatosCorreo datos)
+        private async Task<ErrorDto> TfaCodigoEmail_Enviar(
+            TfaDatosCorreo datos,
+            string nombreAplicacion)
         {
-            ErrorDto response = new ErrorDto();
-            var eConfigResult = _envioCorreoDB.CorreoConfigCuenta(Notificaciones);
-            EnvioCorreoModels? eConfig = null;
-            if (eConfigResult?.Code == 0 && eConfigResult.Result is not null)
+            string body = $$$"""
+                <!doctype html>
+                <html lang="es">
+                <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+                    <meta name="color-scheme" content="light dark">
+                    <meta name="supported-color-schemes" content="light dark">
+                    <title>Código de verificación {{{nombreAplicacion}}}</title>
+                    <style>
+                        .logo-dark, .system-logo-dark { display:none !important; max-height:0; overflow:hidden; }
+                        @media (prefers-color-scheme: dark) {
+                            .email-body { background-color:#111827 !important; color:#e5e7eb !important; }
+                            .email-card, .email-header { background-color:#1f2937 !important; border-color:#374151 !important; }
+                            .email-copy, .email-code-label { color:#cbd5e1 !important; }
+                            .email-code-surface { background-color:#26364a !important; border-color:#40546d !important; }
+                            .email-code { color:#ffffff !important; }
+                            .email-footer { background-color:#17212f !important; border-color:#374151 !important; }
+                            .system-logo-light { display:none !important; max-height:0 !important; }
+                            .system-logo-dark { display:block !important; max-height:none !important; }
+                            .logo-light { display:none !important; max-height:0 !important; }
+                            .logo-dark { display:block !important; max-height:none !important; }
+                        }
+                    </style>
+                </head>
+                <body class="email-body" style="margin:0; padding:0; background-color:#f3f5f8; font-family:Arial, Helvetica, sans-serif; color:#243247;">
+                    <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
+                        Tu código para completar el inicio de sesión en {{{nombreAplicacion}}}.
+                    </div>
+                    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="width:100%; background-color:#f3f5f8;">
+                        <tr>
+                            <td align="center" style="padding:32px 12px;">
+                                <table class="email-card" role="presentation" width="600" border="0" cellspacing="0" cellpadding="0" style="width:100%; max-width:600px; background-color:#ffffff; border:1px solid #dce3ec; border-radius:12px; overflow:hidden;">
+                                    <tr>
+                                        <td class="email-header" align="center" style="padding:28px 24px 22px; background-color:#ffffff;">
+                                            <img class="logo-light" src="https://www.progrxweb.com/images/progrx-logo.png" width="210" alt="ProGrX" style="display:block; width:210px; max-width:100%; height:auto; border:0;">
+                                            <img class="logo-dark" src="https://www.progrxweb.com/images/progrx-small.png" width="150" alt="ProGrX" style="display:none; width:150px; max-width:100%; height:auto; border:0;">
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="center" style="padding:17px 24px; background-color:#244d78;">
+                                            <p style="margin:0; color:#ffffff; font-size:12px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase;">{{{nombreAplicacion}}} · Verificación de acceso</p>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:32px 36px 12px;">
+                                            <h1 style="margin:0 0 14px; color:#1f2937; font-size:23px; line-height:1.3; font-weight:700;">Verificación en dos pasos</h1>
+                                            <p class="email-copy" style="margin:0; color:#526174; font-size:15px; line-height:1.6;">Se solicitó un código para completar el inicio de sesión en {{{nombreAplicacion}}}. Ingresa este código en la pantalla de verificación:</p>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="center" style="padding:20px 36px 22px;">
+                                            <table class="email-code-surface" role="presentation" border="0" cellspacing="0" cellpadding="0" style="width:100%; background-color:#f1f6fc; border:1px solid #d7e4f2; border-radius:8px;">
+                                                <tr>
+                                                    <td align="center" style="padding:18px 12px;">
+                                                        <p class="email-code-label" style="margin:0 0 8px; color:#526174; font-size:12px; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">Código de verificación</p>
+                                                        <p class="email-code" style="margin:0; color:#173f6b; font-size:34px; line-height:1.2; font-weight:bold; letter-spacing:8px;">{{{datos.codigo}}}</p>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0 36px 30px;">
+                                            <p class="email-copy" style="margin:0 0 10px; color:#526174; font-size:13px; line-height:1.6;">Selecciona y copia el código. Al pegarlo en la aplicación, la verificación comienza automáticamente.</p>
+                                            <p class="email-copy" style="margin:0; color:#526174; font-size:13px; line-height:1.6;">Por seguridad, no compartas este código con nadie. Si no solicitaste iniciar sesión, puedes ignorar este correo.</p>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="email-footer" align="center" style="padding:18px 24px; background-color:#f7f8fa; border-top:1px solid #e5e9ef;">
+                                            <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin:0 auto;"><tr><td align="right" valign="middle" style="padding:0 4px 0 0;"><img class="system-logo-light" src="https://www.progrxweb.com/images/system-logic.png" width="78" alt="System Logic" style="display:block; width:78px; max-width:100%; height:auto; border:0;"><img class="system-logo-dark" src="https://www.progrxweb.com/images/system-logic-white.png" width="78" alt="System Logic" style="display:none; width:78px; max-width:100%; height:auto; border:0;"></td><td valign="middle" style="padding:0 0 0 4px; color:#738096; font-size:12px; line-height:1.5;">ProGrX &copy; {{{DateTime.Now.Year}}}</td></tr></table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </body>
+                </html>
+                """;
+
+            var emailRequest = new EmailRequest
             {
-                eConfig = eConfigResult.Result;
-            }
-            else
-            {
-                response.Code = -1;
-                response.Description = eConfigResult?.Description ?? "No fue posible consultar la configuración de correo para 2FA.";
-                return response;
-            }
+                To = datos.email,
+                Subject = $"Código de verificación para {nombreAplicacion}",
+                Body = body
+            };
 
-            string body = @$"<!DOCTYPE html>
-                            <html>
-                            <head>
-                                <link rel=""preconnect"" href=""https://fonts.gstatic.com"">
-                                <link href=""https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap"" rel=""stylesheet"">
-                                <style>
-                                    .b-b{{border-bottom:solid 20px #b00}}.p-20{{padding:20px 20px 20px 20px}}.p-5{{padding:5px}}.p-20-0{{padding:0 20px 20px 20px}}.w-50{{width:50%}}.w-100{{width:100}}
-                                </style>
-                            </head>
-                            <body style=""background-color:#E7E7E7; font-family: 'Roboto', sans-serif;"">
-    
-                                <table style=""width: 600px; background-color: white;"">
-                                    <tbody>
-                                        <tr align=""center"" class=""p-20"">
-                                            <td>
-                                                <img src=""https://cdn.prod.website-files.com/6556c20a6abfe6cb4b3b0f09/656e6869ae3ee6a4e179f28b_SystemLogic_LOGO-04.png"" style=""padding-top: 10px; padding-bottom: 10px;width: 50%; height: auto;"">
-                                            </td>
-                                        </tr>
-            
-                                        <tr align=""center"" style=""background-color: #3c3c3c;"" class=""p-20""> 
-                                            <td><h3 style=""color: white;"">PGX-SSecurity - 2FA</h3></td>
-                                        </tr>
-            
-                                        <tr style=""background-color: white;""> 
-                                            <td class=""p-20"">
-                                                <p>Por favor regresa a la aplicación e ingresa el siguiente código para validar el ingreso:</p>
-                                            </td>
-                                        </tr>
-            
-                                            <tr align=""center"" class=""p-20""> 
-                                                <td>
-                                                <strong>
-                                                    <span style=""background-color:#f80808; color:white; font-size:24px;"">&nbsp;{datos.codigo}&nbsp;</span>
-                                                </strong>
-                                                </td>
-                                            </tr>
-             
-                                            <tr align=""center"" class=""p-20""> 
-                                            <td class=""p-20"">
-                                                <p></p>
-                                            </td>
-                                            </tr>
-            
-                                            <tr align=""center"" style=""background-color:#676767;""> 
-                                            <td class=""p-20"">
-                                                <p style=""color: white;"">MPB System Logic  © {DateTime.Now.Year}</span></p>
-                                            </td>
-                                        </tr> 
-                                    </tbody>
-                                </table> 
-                            </body>
-                            </html>";
-
-            List<IFormFile> Attachments = new List<IFormFile>();
-
-            if (sendEmail != "Y")
-            {
-                response.Code = -1;
-                response.Description = "El envío de correo para 2FA no está habilitado.";
-                return response;
-            }
-
-            EmailRequest emailRequest = new EmailRequest();
-
-            emailRequest.To = datos.email;
-            emailRequest.From = eConfig.User;
-            emailRequest.Subject = "System Logic Código de Verificación";
-            emailRequest.Body = body;
-            emailRequest.Attachments = Attachments;
-
-            await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, response);
-            return response;
+            return await _envioCorreoDB.QueueEmailAsync(Notificaciones, emailRequest);
         }
     }
 }

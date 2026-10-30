@@ -4,6 +4,8 @@ using MimeKit;
 using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
+using Dapper;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier
 {
@@ -44,6 +46,73 @@ namespace Galileo.DataBaseTier
                 response.Code = -1;
                 response.Description = ex.Message;
             }
+        }
+
+        public async Task<ErrorDto> QueueEmailAsync(
+            string codSmtp,
+            EmailRequest emailRequest,
+            CancellationToken ct = default)
+        {
+            var response = new ErrorDto();
+            var normalizedSmtp = (codSmtp ?? string.Empty).Trim();
+            var recipient = emailRequest.To?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(normalizedSmtp) || string.IsNullOrWhiteSpace(recipient))
+            {
+                response.Code = -1;
+                response.Description = "El código SMTP y el destinatario son requeridos para encolar el correo.";
+                return response;
+            }
+
+            var connectionString = _config.GetConnectionString("BaseConnString");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                response.Code = -1;
+                response.Description = "BaseConnString no está configurada para encolar el correo.";
+                return response;
+            }
+
+            const string sql = @"
+INSERT INTO [dbo].[SYS_MAIL_SERVICE]
+(
+    [COD_SMTP], [PARA], [CC], [CUERPO], [ASUNTO], [PRIORIDAD], [ESTADO], [FECHA], [FECHA_ENVIO]
+)
+VALUES
+(
+    @CodSmtp, @Para, @Cc, @Cuerpo, @Asunto, 0, 'P', GETDATE(), NULL
+);
+SELECT CONVERT(int, @@ROWCOUNT);";
+
+            try
+            {
+                if (_produccion == "N" && !string.IsNullOrWhiteSpace(_testEmail))
+                    recipient = _testEmail;
+
+                await using var connection = new SqlConnection(connectionString);
+                var inserted = await connection.QuerySingleAsync<int>(new CommandDefinition(
+                    sql,
+                    new
+                    {
+                        CodSmtp = normalizedSmtp,
+                        Para = recipient,
+                        Cc = emailRequest.CopyHide ?? string.Empty,
+                        Cuerpo = emailRequest.Body ?? string.Empty,
+                        Asunto = emailRequest.Subject ?? string.Empty
+                    },
+                    cancellationToken: ct)).ConfigureAwait(false);
+
+                response.Code = inserted == 1 ? 0 : -1;
+                response.Description = inserted == 1
+                    ? "Correo agregado a la cola de envío."
+                    : $"No fue posible agregar el correo a SYS_MAIL_SERVICE. Filas insertadas: {inserted}.";
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
         }
 
         private static async Task<MimeMessage> BuildMessageAsync(EmailRequest req, CancellationToken ct)
