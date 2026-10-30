@@ -9,20 +9,20 @@ namespace Galileo.Models.ProGrX.Fondos
         public string planx { get; set; } = string.Empty;
         public string operadorax { get; set; } = string.Empty;
         public string cod_plan { get; set; } = string.Empty;
-        public int cod_contrato { get; set; }
-        public int cod_operadora { get; set; }
+        public int cod_contrato { get; set; } = 0;
+        public int cod_operadora { get; set; } = 0;
         public string estado { get; set; } = string.Empty;
-        public DateTime fecha_inicio { get; set; }
-        public int cuentamaestra { get; set; }
-        public int tipo_CDP { get; set; }
-        public bool permite_mov_cajas { get; set; }
+        public DateTime fecha_inicio { get; set; } = DateTime.MinValue;
+        public int cuentamaestra { get; set; } = 0;
+        public int tipo_CDP { get; set; } = 0;
+        public bool permite_mov_cajas { get; set; } = false;
     }
 
     public class FndAnulacionesParams
     {
-        public int operadora { get; set; }
+        public int operadora { get; set; } = 0;
         public string plan { get; set; } = string.Empty;
-        public int contrato { get; set; }
+        public int contrato { get; set; } = 0;
         public string? cedula { get; set; }
         public decimal? autoriza_monto { get; set; }
         public decimal? aporte { get; set; }
@@ -39,14 +39,14 @@ namespace Galileo.Models.ProGrX.Fondos
 
     public class FndAnulacionesSubCuentaMontoDto
     {
-        public int idx { get; set; }
-        public decimal anulacion { get; set; }
+        public int idx { get; set; } = 0;
+        public decimal anulacion { get; set; } = 0;
     }
 
     /// <summary>Resultado de spFondos_Anula_Aporte.</summary>
     public class FndAnulacionesAplicaResultDto
     {
-        public int Pass { get; set; }
+        public int Pass { get; set; } = 0;
         public string? NumDoc { get; set; }
         public string? Mensaje { get; set; }
         public string? Movimiento { get; set; }
@@ -56,22 +56,22 @@ namespace Galileo.Models.ProGrX.Fondos
 
     public class FndAnulacionesSubCuentasDto
     {
-        public int idx { get; set; } 
+        public int idx { get; set; } = 0;
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
-        public decimal aportes { get; set; }
-        public decimal rendimiento { get; set; } 
+        public decimal aportes { get; set; } = 0;
+        public decimal rendimiento { get; set; } = 0;
     }
 
     public class FndAutorizaDto
     {
-        public int autorizado { get; set; }
-        public decimal monto { get; set; }
+        public int autorizado { get; set; } = 0;
+        public decimal monto { get; set; } = 0;
     }
 
     public class FndAnulacionesEstadoGestionDto
     {
-        public int gestion_id { get; set; }
+        public int gestion_id { get; set; } = 0;
         public string gestion_estado { get; set; } = string.Empty;
     }
 }
