@@ -277,7 +277,7 @@ namespace Galileo.DataBaseTier
                 {
                     Proveedor = request.Proveedor,
                     Divisa = request.Divisa,
-                    Corte = request.Corte,
+                    Corte = $"{request.Corte} 23:59:59",
                     Usuario = request.Usuario == "" ? null : request.Usuario,
                 });
 
