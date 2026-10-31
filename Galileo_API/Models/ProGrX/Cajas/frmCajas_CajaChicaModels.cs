@@ -2,7 +2,7 @@ namespace Galileo_API.Models.ProGrX.Cajas
 {
     public class CajasCajaChicaServiciosDto
     {
-        public int cod_servicio { get; set; } = 0;
+        public string cod_servicio { get; set; } = string.Empty;
         public string serviciodesc { get; set; } = string.Empty;
         public string cod_recaudador { get; set; } = string.Empty;
         public string recaudadordesc { get; set; } = string.Empty;
