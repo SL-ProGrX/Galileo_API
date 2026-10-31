@@ -153,7 +153,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 SpInstitucionProcesoInicial,
                 new
                 {
-                    CodInstitucion,
+                    Institucion = CodInstitucion,
                     Proceso = NormalizarTexto(Proceso),
                     Usuario = NormalizarTexto(Usuario)
                 },
