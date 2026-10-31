@@ -992,9 +992,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             string concepto,
             CajasCrdAbonosCtPRegistrarAbonoRequest req,
             DocumentoLineasDto lineas,
-            decimal monto_total, 
+            decimal monto_total,
             string vNumDoc)
         {
+            var oficinaTitular = _mProGrxMain.sbSifParametrosInicializa(codempresa, req.usuario ?? "").Result?.GOficinaTitular ?? "";
+
             const string sql = @"
             insert SIF_TRANSACCIONES
             (
@@ -1025,7 +1027,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 operacionid = req.operacionid.ToString(),
                 Codigo = req.codigo,
                 ase_doc_deposito = "",
-                oficina_titular = "", // GLOBALES.gOficinaTitular
+                oficina_titular = oficinaTitular, // GLOBALES.gOficinaTitular
                 lineas.linea1,
                 lineas.linea2,
                 lineas.linea3,
