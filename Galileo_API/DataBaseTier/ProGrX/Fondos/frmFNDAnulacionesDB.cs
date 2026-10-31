@@ -4,6 +4,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Fondos;
 using Galileo.Models.Security;
 using Galileo_API.DataBaseTier;
+using Galileo.Models.GEN;
 
 namespace Galileo.DataBaseTier.ProGrX.Fondos
 {
@@ -33,9 +34,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <summary>
         /// Obtener información de anulaciones
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="Params"></param>
-        /// <returns></returns>
         public ErrorDto<FndAnulacionesDto> FND_Anulaciones_Obtener(int CodEmpresa, FndAnulacionesParams Params)
         {
             if (Params is null)
@@ -85,9 +83,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <summary>
         /// Obtener subcuentas asociadas 
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="Params"></param>
-        /// <returns></returns>
         public ErrorDto<List<FndAnulacionesSubCuentasDto>> FND_Anulaciones_SubCuentas_Obtener(int CodEmpresa, FndAnulacionesParams Params)
         {
             if (Params is null)
@@ -120,10 +115,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <summary>
         /// Obtener autorizadores
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="Plan"></param>
-        /// <param name="Usuario"></param>
-        /// <returns></returns>
         public ErrorDto<FndAutorizaDto> FND_Anulaciones_Autoriza_Obtener(int CodEmpresa, string Plan, string Usuario)
         {
             if (_mFNDFunciones.fxFndParametro(CodEmpresa, "01.2") != "S")
@@ -153,9 +144,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <summary>
         /// Solicitar autorización de anulaciones
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="Params"></param>
-        /// <returns></returns>
         public ErrorDto<FndAnulacionesEstadoGestionDto> FND_Anulaciones_SolicitaAutorizacion_Obtener(int CodEmpresa, FndAnulacionesParams Params)
         {
             if (Params is null)
@@ -167,10 +155,16 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             }
 
             var result = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
-                connection.QueryFirstOrDefault<FndAnulacionesEstadoGestionDto>(
+            {
+                var limite = FND_Anulaciones_Limite_Consultar(connection, Params)
+                    ?? throw new InvalidOperationException(
+                        "No se encontró el límite de autorización del usuario y plan.");
+                Params.autoriza_monto = limite.monto;
+                return connection.QueryFirstOrDefault<FndAnulacionesEstadoGestionDto>(
                     SpGestionRegistro,
                     CrearParametrosSolicitudAutorizacion(Params),
-                    commandType: System.Data.CommandType.StoredProcedure));
+                    commandType: System.Data.CommandType.StoredProcedure);
+            });
 
             return new ErrorDto<FndAnulacionesEstadoGestionDto>
             {
@@ -183,9 +177,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <summary>
         /// Refrescar estado de autorización
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="GestionId"></param>
-        /// <returns></returns>
         public ErrorDto<FndAnulacionesEstadoGestionDto> FND_Anulaciones_AutorizacionRefresh_Obtener(int CodEmpresa, int GestionId)
         {
             var result = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, connection =>
@@ -205,11 +196,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <summary>
         /// Procesar anulacion
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="Params"></param>
-        /// <param name="Accion"></param>
-        /// <param name="Notas"></param>
-        /// <returns></returns>
         public ErrorDto<object> FND_Anulaciones_Anular(int CodEmpresa, FndAnulacionesParams Params, string Accion, string Notas)
         {
             if (Params is null)
@@ -247,6 +233,15 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 return DbHelper.CreateErrorResponse<object>("No se encontr&oacute; el contrato...", -2, null);
             }
 
+            if (contrato.tipo_cdp == 1 || !contrato.permite_mov_cajas)
+            {
+                return DbHelper.CreateErrorResponse<object>(
+                    "Este plan no permite movimientos en cajas o corresponde a un CDP.",
+                    -2, null);
+            }
+
+            // La configuración persistida decide si corresponde aplicar subcuentas.
+            parametros.aporteLocked = contrato.cuentamaestra == 1;
             var validacion = ValidarAnulacion(codEmpresa, parametros, contrato, connection);
             if (validacion.Code != 0)
             {
@@ -259,16 +254,18 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 return DbHelper.CreateErrorResponse<object>(validacionSubCuentas.Description ?? "Error al validar subcuentas.", validacionSubCuentas.Code ?? -1, null);
             }
 
-            var salida = ObtenerSalidaAnulacion(connection, accion);
-            if (salida is null)
+            var salidaResultado = FND_Anulaciones_Salida_Obtener(
+                codEmpresa, parametros, accion);
+
+            if (salidaResultado.Code != 0 || salidaResultado.Result is null)
             {
                 return DbHelper.CreateErrorResponse<object>(
-                    accion == AccionSaldoFavor
-                        ? "No existe una forma de pago de Saldo a Favor activa (SIF_FORMAS_PAGO tipo 'S')."
-                        : "No se especific&oacute; una cuenta v&aacute;lida...",
-                    -2,
+                    salidaResultado.Description ?? "No fue posible resolver la salida de la anulación.",
+                    salidaResultado.Code == -2 ? -2 : -1,
                     null);
             }
+
+            var salida = salidaResultado.Result;
 
             var distribucion = CalcularDistribucion(parametros.aporte ?? 0m, contrato.aportes, contrato.rendimiento);
             var aplica = connection.QueryFirstOrDefault<FndAnulacionesAplicaResultDto>(
@@ -286,8 +283,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     AccionTipo = accion,
                     Cuenta = salida.Cuenta,
                     SF_Codigo = salida.FormaPago,
-                    Documento = string.Empty,
-                    Deposito = string.Empty,
+                    Documento = salida.Documento,
+                    Deposito = salida.Deposito,
                     GestionId = parametros.gestion_id ?? 0
                 },
                 commandType: System.Data.CommandType.StoredProcedure);
@@ -304,16 +301,22 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             return ImprimirResultadoAnulacion(codEmpresa, parametros, numDoc);
         }
 
-        private static FndAnulacionesSubCuentasDto? ObtenerContratoAnulacion(SqlConnection connection, FndAnulacionesParams parametros)
+        private static ContratoAnulacion? ObtenerContratoAnulacion(SqlConnection connection, FndAnulacionesParams parametros)
         {
             const string query = @"
-                    SELECT aportes, rendimiento
-                    FROM dbo.fnd_contratos
-                    WHERE cod_operadora = @Operadora
-                      AND cod_plan = @Plan
-                      AND cod_contrato = @Contrato;";
+                    SELECT C.aportes, C.rendimiento,
+                           ISNULL(P.cuenta_Maestra, 0) AS cuentamaestra,
+                           P.Tipo_CDP AS tipo_cdp,
+                           P.permite_mov_cajas
+                    FROM dbo.fnd_contratos C
+                    INNER JOIN dbo.fnd_planes P
+                      ON P.cod_operadora = C.cod_operadora
+                     AND P.cod_plan = C.cod_plan
+                    WHERE C.cod_operadora = @Operadora
+                      AND C.cod_plan = @Plan
+                      AND C.cod_contrato = @Contrato;";
 
-            return connection.QueryFirstOrDefault<FndAnulacionesSubCuentasDto>(query, CrearParametrosContrato(parametros));
+            return connection.QueryFirstOrDefault<ContratoAnulacion>(query, CrearParametrosContrato(parametros));
         }
 
         private ErrorDto<bool> ValidarAnulacion(int codEmpresa, FndAnulacionesParams parametros, FndAnulacionesSubCuentasDto contrato, SqlConnection connection)
@@ -353,8 +356,16 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 return DbHelper.CreateErrorResponse("El Usuario no tiene nivel de Autorizaci&oacute;n para realizar este movimiento!", -2, true);
             }
 
-            // VB6: si excede el monto autorizado exige una gestion con estado Autorizado (verificado en BD, no en el cliente).
-            if (parametros.aporte > parametros.autoriza_monto && !GestionAutorizada(connection, parametros.gestion_id))
+            var limite = FND_Anulaciones_Limite_Consultar(connection, parametros);
+            if (limite is null || limite.autorizado != 1)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "No se encontró un límite de autorización válido para este usuario y plan.",
+                    -2, false);
+            }
+
+            // El límite se obtiene del servidor, nunca del request.
+            if (parametros.aporte > limite.monto && !GestionAutorizada(connection, parametros.gestion_id))
             {
                 return DbHelper.CreateErrorResponse("- Este movimiento requiere AUTORIZACI&Oacute;N, verifique el estado de la misma y/o solicite una!", -2, true);
             }
@@ -377,53 +388,238 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             return NormalizarTexto(estado?.gestion_estado).StartsWith('A');
         }
 
-        /// <summary>VB6: el monto por subcuenta no puede exceder aportes + rendimiento y el total debe cuadrar con la anulacion.</summary>
-        private ErrorDto<bool> ValidarSubCuentas(int codEmpresa, FndAnulacionesParams parametros)
+        /// <summary>Consulta el límite de autorización vigente en el servidor.</summary>
+        private static FndAutorizaDto? FND_Anulaciones_Limite_Consultar(
+            SqlConnection connection, FndAnulacionesParams parametros)
         {
+            return connection.QueryFirstOrDefault<FndAutorizaDto>(
+                SpAutorizaDatos,
+                new
+                {
+                    Plan = NormalizarTexto(parametros.plan),
+                    TipoMov = TipoGestionAnulacion,
+                    Usuario = NormalizarTexto(parametros.usuario)
+                },
+                commandType: System.Data.CommandType.StoredProcedure);
+        }
+
+        /// <summary>Valida el desglose con la configuración y los saldos persistidos.</summary>
+        private ErrorDto<bool> ValidarSubCuentas(
+            int codEmpresa, FndAnulacionesParams parametros)
+        {
+            var montos = parametros.subcuentas ?? new List<FndAnulacionesSubCuentaMontoDto>();
             if (parametros.aporteLocked != true)
             {
-                return DbHelper.CreateOkResponse(true);
+                return montos.Count == 0
+                    ? DbHelper.CreateOkResponse(true)
+                    : DbHelper.CreateErrorResponse(
+                        "El contrato no admite un desglose por subcuentas.", -2, false);
             }
 
-            var montos = (parametros.subcuentas ?? new List<FndAnulacionesSubCuentaMontoDto>())
-                .Where(x => x.anulacion > 0m)
-                .ToList();
+            if (montos.Any(x => x.anulacion < 0m) ||
+                montos.Select(x => x.idx).Distinct().Count() != montos.Count)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "El desglose contiene montos negativos o subcuentas repetidas.", -2, false);
+            }
+
             if (montos.Count == 0 || montos.Sum(x => x.anulacion) != parametros.aporte)
             {
-                return DbHelper.CreateErrorResponse("El desglose de subcuentas debe coincidir con el monto a anular.", -2, false);
+                return DbHelper.CreateErrorResponse(
+                    "El desglose de subcuentas debe coincidir con el monto a anular.", -2, false);
             }
 
-            var actuales = (FND_Anulaciones_SubCuentas_Obtener(codEmpresa, parametros).Result ?? new List<FndAnulacionesSubCuentasDto>())
-                .ToDictionary(x => x.idx);
+            var consulta = FND_Anulaciones_SubCuentas_Obtener(codEmpresa, parametros);
+            if (consulta.Code != 0 || consulta.Result is null)
+            {
+                return DbHelper.CreateErrorResponse(
+                    consulta.Description ?? "No se pudieron consultar las subcuentas.", -1, false);
+            }
+
+            var actuales = consulta.Result.ToDictionary(x => x.idx);
             foreach (var monto in montos)
             {
-                if (!actuales.TryGetValue(monto.idx, out var actual) || monto.anulacion > actual.aportes + actual.rendimiento)
+                if (!actuales.TryGetValue(monto.idx, out var actual) ||
+                    monto.anulacion > actual.aportes + actual.rendimiento)
                 {
-                    return DbHelper.CreateErrorResponse($"La Anulaci&oacute;n es mayor al total de los aportes y rendimientos de las subCuentas ({monto.idx})...", -2, false);
+                    return DbHelper.CreateErrorResponse(
+                        $"La subcuenta {monto.idx} no está disponible o no tiene saldo suficiente.",
+                        -2, false);
                 }
             }
 
             return DbHelper.CreateOkResponse(true);
         }
 
-        /// <summary>VB6 "Valida Salida": C = cuenta del documento FNC, S = forma de pago de saldo a favor.</summary>
-        private static SalidaAnulacion? ObtenerSalidaAnulacion(SqlConnection connection, string accion)
+        /// <summary>
+        /// Resuelve la cuenta de salida y los datos del documento.
+        /// Saldo a favor conserva su forma de pago configurada.
+        /// </summary>
+        private ErrorDto<SalidaAnulacion> FND_Anulaciones_Salida_Obtener(
+            int codEmpresa,
+            FndAnulacionesParams parametros,
+            string accion)
         {
-            if (accion == AccionSaldoFavor)
+            if (accion != AccionSaldoFavor)
             {
-                return connection.QueryFirstOrDefault<SalidaAnulacion>(@"
-                    SELECT RTRIM(COD_CUENTA) AS Cuenta, RTRIM(COD_FORMA_PAGO) AS FormaPago
-                    FROM SIF_FORMAS_PAGO
-                    WHERE TIPO = 'S' AND Activa = 1;");
+                return FND_Anulaciones_Documento_Obtener(codEmpresa, parametros);
             }
 
-            var cuenta = connection.QueryFirstOrDefault<string>(
-                "SELECT RTRIM(COD_CUENTA) FROM SIF_DOCUMENTOS WHERE TIPO_DOCUMENTO = @TipoDoc;",
-                new { TipoDoc = TipoDocumentoAnulacion });
+            var resultado = DbHelper.WithConn(
+                new PortalDB(_config),
+                codEmpresa,
+                connection => connection.QueryFirstOrDefault<SalidaAnulacion>(@"
+                    SELECT RTRIM(COD_CUENTA) AS Cuenta,
+                           RTRIM(COD_FORMA_PAGO) AS FormaPago
+                    FROM SIF_FORMAS_PAGO
+                    WHERE TIPO = 'S' AND Activa = 1;"));
 
-            return string.IsNullOrWhiteSpace(cuenta)
-                ? null
-                : new SalidaAnulacion { Cuenta = cuenta.Trim(), FormaPago = string.Empty };
+            if (resultado.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse<SalidaAnulacion>(
+                    resultado.Description ?? "Error al consultar la forma de pago.",
+                    -1,
+                    null);
+            }
+
+            if (resultado.Result is null ||
+                string.IsNullOrWhiteSpace(resultado.Result.Cuenta) ||
+                string.IsNullOrWhiteSpace(resultado.Result.FormaPago))
+            {
+                return DbHelper.CreateErrorResponse<SalidaAnulacion>(
+                    "No existe una forma de pago de saldo a favor activa con cuenta configurada.",
+                    -2,
+                    null);
+            }
+
+            return DbHelper.CreateOkResponse(resultado.Result);
+        }
+
+        /// <summary>
+        /// Consulta FNC y exige los datos del diálogo cuando corresponde.
+        /// </summary>
+        private ErrorDto<SalidaAnulacion> FND_Anulaciones_Documento_Obtener(
+            int codEmpresa,
+            FndAnulacionesParams parametros)
+        {
+            var enlace = new MProGrxMain(_config)
+                .EmpresaEnlaceObtener()
+                ?.FirstOrDefault();
+
+            if (enlace is null)
+            {
+                return DbHelper.CreateErrorResponse<SalidaAnulacion>(
+                    "No se pudo obtener la configuración documental de la empresa.",
+                    -1,
+                    null);
+            }
+
+            // El VB6 revisado no define FNC en la rama documental v1.
+            if (enlace.SysDocVersion == 1)
+            {
+                return DbHelper.CreateErrorResponse<SalidaAnulacion>(
+                    "La anulación a cuenta contable requiere definir la configuración "
+                    + "del documento FNC para la versión documental 1.",
+                    -2,
+                    null);
+            }
+
+            var configuracion = new FrmCcDocCuentasDb(_config)
+                .CC_DocCuentas_Documento_Verificar(codEmpresa, TipoDocumentoAnulacion);
+
+            if (configuracion.Code != 0 || configuracion.Result is null)
+            {
+                return DbHelper.CreateErrorResponse<SalidaAnulacion>(
+                    configuracion.Description ?? "Error al consultar el documento FNC.",
+                    configuracion.Code == -2 ? -2 : -1,
+                    null);
+            }
+
+            if (configuracion.Result.verificar)
+            {
+                return FND_Anulaciones_Documento_Validar(
+                    codEmpresa, parametros.documento);
+            }
+
+            return FND_Anulaciones_CuentaConfigurada_Validar(
+                codEmpresa, configuracion.Result.cuenta);
+        }
+
+        /// <summary>
+        /// Usa la cuenta configurada sin máscara cuando FNC no requiere captura.
+        /// </summary>
+        private ErrorDto<SalidaAnulacion> FND_Anulaciones_CuentaConfigurada_Validar(
+            int codEmpresa,
+            string cuentaConfigurada)
+        {
+            var cuentasDb = new MCntLinkDB(_config);
+            var cuenta = cuentasDb.fxgCntCuentaFormato(
+                codEmpresa, false, cuentaConfigurada, 0);
+
+            if (string.IsNullOrWhiteSpace(cuenta) ||
+                !cuentasDb.fxgCntCuentaValida(codEmpresa, cuenta))
+            {
+                return DbHelper.CreateErrorResponse<SalidaAnulacion>(
+                    "El documento FNC no tiene una cuenta contable válida configurada.",
+                    -2,
+                    null);
+            }
+
+            return DbHelper.CreateOkResponse(new SalidaAnulacion
+            {
+                Cuenta = cuenta
+            });
+        }
+
+        /// <summary>
+        /// Revalida los datos mediante el validador compartido.
+        /// La bandera valido del cliente no sustituye esta validación.
+        /// </summary>
+        private ErrorDto<SalidaAnulacion> FND_Anulaciones_Documento_Validar(
+            int codEmpresa,
+            CcDocCuentasResultadoData? documento)
+        {
+            if (documento is null)
+            {
+                return DbHelper.CreateErrorResponse<SalidaAnulacion>(
+                    "Debe indicar la cuenta contable y el detalle del documento.",
+                    -2,
+                    null);
+            }
+
+            var resultado = new FrmCcDocCuentasDb(_config)
+                .CC_DocCuentas_Documento_Validar(
+                    codEmpresa,
+                    new CcDocCuentasValidarRequest
+                    {
+                        cuenta = NormalizarTexto(documento.cuenta),
+                        referencia = NormalizarTexto(documento.deposito),
+                        detalle = NormalizarTexto(documento.detalle)
+                    });
+
+            if (resultado.Code != 0 || resultado.Result is null)
+            {
+                return DbHelper.CreateErrorResponse<SalidaAnulacion>(
+                    resultado.Description ?? "No fue posible validar el documento.",
+                    resultado.Code == -2 ? -2 : -1,
+                    null);
+            }
+
+            if (!resultado.Result.valido ||
+                string.IsNullOrWhiteSpace(resultado.Result.cuenta))
+            {
+                return DbHelper.CreateErrorResponse<SalidaAnulacion>(
+                    "Debe indicar un documento contable válido.",
+                    -2,
+                    null);
+            }
+
+            return DbHelper.CreateOkResponse(new SalidaAnulacion
+            {
+                Cuenta = resultado.Result.cuenta,
+                Documento = resultado.Result.detalle,
+                Deposito = resultado.Result.deposito
+            });
         }
 
         private static AnulacionDistribucion CalcularDistribucion(decimal monto, decimal aporteActual, decimal rendimientoActual)
@@ -495,6 +691,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     WHERE cod_operadora = @Operadora AND cod_plan = @Plan AND cod_contrato = @Contrato AND IdX = @Id;",
                 llave, transaction);
 
+            if (monto.anulacion > actual.aportes + actual.rendimiento)
+            {
+                throw new InvalidOperationException(
+                    $"El saldo de la subcuenta {monto.idx} cambió antes de aplicar el desglose.");
+            }
+
             connection.Execute(@"
                     INSERT INTO dbo.fnd_SubCuentas_detalle (Idx, Cod_operadora, Cod_plan, Cod_Contrato, Fecha, Monto, Fecha_Proceso, Tcon, Ncon)
                     VALUES (@Id, @Operadora, @Plan, @Contrato, @Fecha, @Monto * -1, @Proceso, @TipoDoc, @NumDoc);",
@@ -563,8 +765,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             }
             else
             {
-                result.Code = -2;
-                result.Description = $"Anulaci&oacute;n aplicada, con Nota de Cr&eacute;dito # {numDoc}, pero no se pudo generar el recibo: {result.Description}";
+                result.Code = -1;
+                result.Description = $"Anulaci&oacute;n aplicada, con Nota de Cr&eacute;dito # {numDoc}, pero no se pudo generar el recibo. No repita la anulación. Detalle técnico: {result.Description}";
             }
 
             return result;
@@ -610,9 +812,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             };
         }
 
-
-
-
         private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();
 
         private const string TipoDocumentoAnulacion = "FNC";
@@ -620,6 +819,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private const string AccionSaldoFavor = "S";
         private const string SpAnulaAporte = "dbo.spFondos_Anula_Aporte";
         private const string TipoGestionAnulacion = "N";
+
+        /// <summary>Extiende los saldos existentes con la configuración del plan.</summary>
+        private sealed class ContratoAnulacion : FndAnulacionesSubCuentasDto
+        {
+            public int cuentamaestra { get; set; }
+            public int tipo_cdp { get; set; }
+            public bool permite_mov_cajas { get; set; }
+        }
 
         private sealed class AnulacionDistribucion
         {
@@ -631,6 +838,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         {
             public string Cuenta { get; init; } = string.Empty;
             public string FormaPago { get; init; } = string.Empty;
+            public string Documento { get; init; } = string.Empty;
+            public string Deposito { get; init; } = string.Empty;
         }
     }
 }
