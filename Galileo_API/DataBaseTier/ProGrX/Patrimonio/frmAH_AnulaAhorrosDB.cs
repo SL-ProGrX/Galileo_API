@@ -334,42 +334,58 @@ exec spSIFDocsAsiento
     string cedula,
     string tipoRubro)
         {
-            var sql = @"
+            // Igual que el VB6 (sbDocumento): saldo del rubro en vPAT_Consulta_Integrada y
+            // cuenta contable del rubro en par_afah según la divisa de la persona.
+            const string sql = @"
+select top 1
+    case @tipoRubro
+        when 'P' then isnull(P.Aporte, 0)
+        when 'X' then isnull(P.Custodia, 0)
+        when 'O' then isnull(P.ahorro, 0)
+        when 'C' then isnull(P.capitaliza, 0)
+        else 0
+    end as aporte,
+    rtrim(isnull((
         select top 1
             case @tipoRubro
-                when 'PAT' then isnull(aporte_patronal, 0)
-                when 'OBR' then isnull(aporte_obrero, 0)
-                when 'TOT' then isnull(aporte_total, 0)
-                else 0
-            end as aporte,
-            case @tipoRubro
-                when 'PAT' then rtrim(isnull(cuenta_patronal, ''))
-                when 'OBR' then rtrim(isnull(cuenta_obrero, ''))
-                when 'TOT' then rtrim(isnull(cuenta_total, ''))
+                when 'P' then A.Cta_Patronal
+                when 'X' then A.cta_custodia
+                when 'O' then A.cta_obrero
+                when 'C' then A.cta_capitaliza
                 else ''
-            end as cuenta
-        from vPAT_Consolidado
-        where cedula = @cedula;";
+            end
+        from par_afah A
+        where A.Cod_Divisa = P.Cod_Divisa), '')) as cuenta
+from vPAT_Consulta_Integrada P
+where P.cedula = @cedula;";
 
             return conn.QueryFirstOrDefault<ConsultarCuentaAporteResult>(
                 sql,
                 new
                 {
                     cedula,
-                    tipoRubro
+                    tipoRubro = NormalizarCodigoRubro(tipoRubro)
                 },
                 tx) ?? new ConsultarCuentaAporteResult();
         }
 
-       
-        private static ErrorDto<FrmAhAnulaAhorrosProcesarResponse> Ah_AnulaAhorros_ValidarRequestProcesar(
+        private static string NormalizarCodigoRubro(string? tipoRubro) => (tipoRubro ?? "").Trim().ToUpper() switch
+        {
+            "O" or "OBR" => "O",
+            "P" or "PAT" => "P",
+            "C" or "CAP" => "C",
+            "X" or "CST" => "X",
+            _ => string.Empty
+        };
+
+        private static ErrorDto<FrmAhAnulaAhorrosProcesarResponse>? Ah_AnulaAhorros_ValidarRequestProcesar(
     FrmAhAnulaAhorrosProcesarRequest request,
     FrmAhAnulaAhorrosProcesarResponse response)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.cedula) || string.IsNullOrWhiteSpace(request.usuario))
                 return DbHelper.CreateErrorResponse("La solicitud es inválida.", -2, response);
 
-            return new ErrorDto<FrmAhAnulaAhorrosProcesarResponse>();
+            return null;
         }
 
         private static FrmAhAnulaAhorrosConsultaResponse Ah_AnulaAhorros_ConsultarPersona(
