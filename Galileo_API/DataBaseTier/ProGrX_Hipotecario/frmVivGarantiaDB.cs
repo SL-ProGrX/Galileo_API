@@ -264,7 +264,9 @@ WHERE IdGarantia = @id_garantia
             {
                 var parametros = new DynamicParameters();
 
-                parametros.Add("@IdGarantia", request.id_garantia, DbType.Int32, ParameterDirection.InputOutput);
+                // VB6 usa -1 para una garantía nueva; el SP solo inserta con @IdGarantia = -1
+                int idGarantiaSp = request.id_garantia > 0 ? (int)request.id_garantia : -1;
+                parametros.Add("@IdGarantia", idGarantiaSp, DbType.Int32, ParameterDirection.InputOutput);
                 parametros.Add("@IdZona", request.id_zona, DbType.Int32);
                 parametros.Add("@UbicacionProvincia", request.ubicacion_provincia.Trim(), DbType.String);
                 parametros.Add("@UbicacionCanton", request.ubicacion_canton.Trim(), DbType.String);
