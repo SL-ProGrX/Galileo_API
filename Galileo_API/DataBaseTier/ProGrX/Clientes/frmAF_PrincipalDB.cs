@@ -110,6 +110,8 @@ namespace Galileo.DataBaseTier
                       WHERE ACTIVA = 1
                       ORDER BY DESCRIPCION").ToList();
 
+                CargarCatalogosUnidadesAse(connection, catalogos);
+
                 return catalogos;
             });
 

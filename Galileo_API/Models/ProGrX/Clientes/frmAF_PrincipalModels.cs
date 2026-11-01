@@ -23,6 +23,8 @@
         public List<DropDownListaGenericaModel>? Deductoras { get; set; }
         public List<DropDownListaGenericaModel>? Departamentos { get; set; }
         public List<DropDownListaGenericaModel>? Secciones { get; set; }
+        public List<DropDownListaGenericaModel>? UProgramaticas { get; set; }
+        public List<DropDownListaGenericaModel>? UTrabajos { get; set; }
         public List<DropDownListaGenericaModel>? Actividades { get; set; }
         public List<DropDownListaGenericaModel>? Unidad { get; set; }
     }
