@@ -15,7 +15,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
         private readonly MRecibos _mRecibos;
         private readonly MProGrxMain _mProGrx;
         private readonly MCajas _mCajas;
+        private readonly MCntLinkDB _mCntLinkDb;
+        private readonly FrmCcDocCuentasDb _docCuentasDb;
         private const int vModulo = 2;
+        private const string TipoDocumentoNd = "ND";
+        private const string MensajeCuentaNoEspecificada =
+            "No se puede realizar movimiento porque no se especificó una cuenta contable válida para esta operación.";
 
         public FrmAHAnulaAhorrosDB(IConfiguration config)
         {
@@ -24,6 +29,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Patrimonio
             _mRecibos = new MRecibos(config);
             _mProGrx = new MProGrxMain(config);
             _mCajas = new MCajas(config);
+            _mCntLinkDb = new MCntLinkDB(config);
+            _docCuentasDb = new FrmCcDocCuentasDb(config);
         }
 
         /// <summary>
@@ -137,14 +144,15 @@ order by fecha desc;";
                 if (!destino.EsValido)
                     return DbHelper.CreateErrorResponse(destino.MensajeError, -2, response);
 
-                const string tipoDocumento = "ND";
+                const string tipoDocumento = TipoDocumentoNd;
                 string numDocumento = _mRecibos.FxDocumentoConsecutivo(codEmpresa, tipoDocumento).ToString();
                 decimal tipoCambio = _mCajas.fxCajasTipoCambio(codEmpresa, 0, consulta.cod_divisa);
                 decimal factorAplicado = TipoCambioApl(tipoCambio);
                 decimal saldoActual = saldoRubro - monto;
 
                 string nombreCliente = string.IsNullOrWhiteSpace(request.nombre) ? consulta.nombre : request.nombre;
-                string detalle = string.IsNullOrWhiteSpace(request.notas) ? "Anulación de ahorro" : request.notas.Trim();
+                string detalle = Ah_AnulaAhorros_ObtenerDetalle(request);
+                string referenciaDocumento = (request.referencia_documento ?? string.Empty).Trim();
                 string[] lineas = Ah_AnulaAhorros_ConstruirLineasProcesar(request, consulta, cuentaAporte.aporte, monto, saldoActual);
 
                 Ah_AnulaAhorros_InsertarTransaccion(
@@ -157,6 +165,7 @@ order by fecha desc;";
                         numDocumento = numDocumento,
                         monto = monto,
                         detalle = detalle,
+                        documento = referenciaDocumento,
                         nombreCliente = nombreCliente,
                         oficinaTitular = globales.GOficinaTitular,
                         lineas = lineas
@@ -181,7 +190,7 @@ order by fecha desc;";
                          cuenta = cuentaAporte.cuenta,
                          referencia1 = $"Pat:{request.tipo_rubro}",
                          referencia2 = request.cedula,
-                         referencia3 = string.Empty
+                         referencia3 = referenciaDocumento
                     });
 
                 EjecutarAsiento(
@@ -201,7 +210,7 @@ order by fecha desc;";
                         cuenta = destino.CuentaDestino,
                         referencia1 = $"Pat:{request.tipo_rubro}",
                         referencia2 = request.cedula,
-                        referencia3 = string.Empty
+                        referencia3 = referenciaDocumento
                     });
 
                 Ah_AnulaAhorros_RegistrarSaldoFavorSiAplica(
@@ -487,7 +496,7 @@ values
                 linea9 = parametros.lineas[8],
                 linea10 = parametros.lineas[9],
                 detalle = parametros.detalle,
-                documento = string.Empty,
+                documento = parametros.documento,
                 cod_caja = string.Empty
             }, tx);
         }
@@ -601,14 +610,36 @@ where TIPO = 'S' and Activa = 1;", transaction: tx);
                     saldoFavor.cod_forma_pago);
             }
 
-            string cuentaDestino = _mRecibos.FxDocumentoCuenta(codEmpresa, "ND").Trim();
-            if (string.IsNullOrWhiteSpace(cuentaDestino))
+            // fxDocumentoCuenta("ND"): usa la cuenta capturada en frmCC_DocCuentas cuando el documento la exige;
+            // si no la exige, usa la cuenta configurada del documento.
+            string cuentaCapturada = (request.cuenta_documento ?? string.Empty).Trim();
+            if (cuentaCapturada.Length > 0)
             {
-                return PatrimoniofrmAHAnulaAhorrosCuentaDestino.CrearInvalido(
-                    "No se puede realizar movimiento porque no se especificó una cuenta contable válida para esta operación.");
+                return _mCntLinkDb.fxgCntCuentaValida(codEmpresa, cuentaCapturada)
+                    ? PatrimoniofrmAHAnulaAhorrosCuentaDestino.CrearNormal(cuentaCapturada)
+                    : PatrimoniofrmAHAnulaAhorrosCuentaDestino.CrearInvalido(
+                        "La cuenta contable indicada no es válida o no acepta movimientos.");
             }
 
-            return PatrimoniofrmAHAnulaAhorrosCuentaDestino.CrearNormal(cuentaDestino);
+            var verificacion = _docCuentasDb.CC_DocCuentas_Documento_Verificar(codEmpresa, TipoDocumentoNd);
+            if (verificacion.Result?.verificar == true)
+                return PatrimoniofrmAHAnulaAhorrosCuentaDestino.CrearInvalido(MensajeCuentaNoEspecificada);
+
+            string cuentaDestino = _mRecibos.FxDocumentoCuenta(codEmpresa, TipoDocumentoNd).Trim();
+            return string.IsNullOrWhiteSpace(cuentaDestino)
+                ? PatrimoniofrmAHAnulaAhorrosCuentaDestino.CrearInvalido(MensajeCuentaNoEspecificada)
+                : PatrimoniofrmAHAnulaAhorrosCuentaDestino.CrearNormal(cuentaDestino);
+        }
+
+        /// <summary>
+        /// En VB6 (accion Cuenta Contable) txtNotas = vAseDocDetalle; si no hay detalle capturado se usan las notas.
+        /// </summary>
+        private static string Ah_AnulaAhorros_ObtenerDetalle(FrmAhAnulaAhorrosProcesarRequest request)
+        {
+            if (!string.IsNullOrWhiteSpace(request.detalle_documento) && !Ah_AnulaAhorros_EsAccionSaldoFavor(request.accion))
+                return request.detalle_documento.Trim();
+
+            return string.IsNullOrWhiteSpace(request.notas) ? "Anulación de ahorro" : request.notas.Trim();
         }
 
         private static bool Ah_AnulaAhorros_EsAccionSaldoFavor(string accion)

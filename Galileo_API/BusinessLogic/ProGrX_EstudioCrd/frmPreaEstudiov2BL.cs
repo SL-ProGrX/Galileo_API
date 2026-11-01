@@ -103,6 +103,16 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Recalcula las cargas sociales sin guardar. VB6: sbCalcula_Cargas.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2CargasResponse> Prea_frmPreaEstudiov2_Cargas_Calcular(
+            int codEmpresa, decimal salarioMensual, bool aplicaAsociacion, bool aplicaFrap, decimal ptsExtraFrap)
+        {
+            return _db.Prea_frmPreaEstudiov2_Cargas_Calcular(
+                codEmpresa, salarioMensual, aplicaAsociacion, aplicaFrap, ptsExtraFrap);
+        }
+
+        /// <summary>
         /// Indica si el par Línea/Destino aplica Primera Cuota. VB6: sbAplicaPrimeraCta
         /// -&gt; EXEC spCRDPreaDestinos_TXAplicaPrimCta.
         /// </summary>

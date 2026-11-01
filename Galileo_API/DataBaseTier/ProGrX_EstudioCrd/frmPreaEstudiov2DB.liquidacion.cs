@@ -1,4 +1,6 @@
 using Dapper;
+using Galileo.Models.ERROR;
+using Galileo_API.Models.ProGrX_EstudioCrd;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
@@ -119,6 +121,77 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 + (aplicaCargaFrap ? result.CargaFrap : 0m)
                 + result.CargaImpuestoSalario
                 + result.CargaCcss;
+
+            return result;
+        }
+
+        /// <summary>
+        /// VB6: txtCedula_LostFocus -> gPreAnalisis.Socio = socios.EstadoActual; el formulario
+        /// solo lo trata como asociado cuando vale "S" (sbEstructuraActualiza).
+        /// </summary>
+        private static bool ObtenerEsSocio(IDbConnection connection, string cedula)
+        {
+            if (string.IsNullOrWhiteSpace(cedula))
+            {
+                return false;
+            }
+
+            try
+            {
+                var estado = connection.QueryFirstOrDefault<string>(
+                    "SELECT EstadoActual FROM socios WHERE cedula = @Cedula",
+                    new { Cedula = cedula.Trim() });
+                return string.Equals(estado?.Trim(), "S", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// VB6: sbCalcula_Cargas. Calcula las cargas con el salario devengado del mes y los
+        /// checks actuales de pantalla, sin persistir. Cada componente se redondea a 2
+        /// decimales como Format(..., "Standard") y el total suma solo lo que aplica.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2CargasResponse> Prea_frmPreaEstudiov2_Cargas_Calcular(
+            int codEmpresa,
+            decimal salarioMensual,
+            bool aplicaAsociacion,
+            bool aplicaFrap,
+            decimal ptsExtraFrap)
+        {
+            var result = new ErrorDto<FrmPreaEstudiov2CargasResponse>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new FrmPreaEstudiov2CargasResponse()
+            };
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+                var cargas = CalcularCargas(connection, salarioMensual, aplicaAsociacion, aplicaFrap, ptsExtraFrap);
+
+                var ccss = Math.Round(cargas.CargaCcss, 2);
+                var asociacion = Math.Round(cargas.CargaAsociacion, 2);
+                var frap = Math.Round(cargas.CargaFrap, 2);
+                var renta = Math.Round(cargas.CargaImpuestoSalario, 2);
+
+                result.Result = new FrmPreaEstudiov2CargasResponse
+                {
+                    carga_ccss = ccss,
+                    carga_asociacion = asociacion,
+                    carga_frap = frap,
+                    carga_impuesto_salario = renta,
+                    total_cargas = (aplicaAsociacion ? asociacion : 0m) + (aplicaFrap ? frap : 0m) + renta + ccss
+                };
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+            }
 
             return result;
         }

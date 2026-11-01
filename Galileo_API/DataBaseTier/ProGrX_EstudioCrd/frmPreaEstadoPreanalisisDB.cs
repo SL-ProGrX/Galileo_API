@@ -118,7 +118,7 @@ WHERE COD_PREANALISIS = @cod_preanalisis
                     transaction,
                     commandType: CommandType.Text);
 
-                InsertarTag(connection, transaction, expediente, estado, request.usuario);
+                var advertencia = InsertarTag(connection, transaction, expediente, estado, request.usuario);
                 var abrirNotificacion = Prea_frmPreaEstadoPreanalisis_Notificacion_Abrir(connection, transaction);
                 transaction.Commit();
 
@@ -128,7 +128,8 @@ WHERE COD_PREANALISIS = @cod_preanalisis
                     estado = estado,
                     estado_desc = ObtenerEstadoDescripcion(estado),
                     abrir_notificacion = abrirNotificacion,
-                    mensaje = "La informacion fue actualizada correctamente."
+                    mensaje = "La informacion fue actualizada correctamente.",
+                    advertencia = advertencia
                 });
             }
             catch (DbException ex)
@@ -146,6 +147,40 @@ WHERE COD_PREANALISIS = @cod_preanalisis
             catch (ArgumentException ex)
             {
                 return DbHelper.CreateErrorResponse(ex.Message, -1, new FrmPreaEstadoPreanalisisGuardarResponse());
+            }
+        }
+
+        /// <summary>
+        /// Valida la resolucion del comite antes de aprobar o denegar (VB6 fxValida).
+        /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa usado para resolver la conexion del cliente.</param>
+        /// <param name="usuario">Usuario de sesion que aplica la resolucion.</param>
+        /// <param name="cod_preanalisis">Codigo de expediente de preanalisis.</param>
+        /// <returns>Mensaje de validacion; vacio si la resolucion puede aplicarse.</returns>
+        public ErrorDto<string> Prea_frmPreaEstadoPreanalisis_Validar(
+            int codEmpresa,
+            string usuario,
+            string cod_preanalisis)
+        {
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                connection.Open();
+
+                return DbHelper.CreateOkResponse(
+                    ValidarResolucion(connection, null, cod_preanalisis, usuario));
+            }
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse(ex.Message, -1, string.Empty);
+            }
+            catch (DataException ex)
+            {
+                return DbHelper.CreateErrorResponse(ex.Message, -1, string.Empty);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return DbHelper.CreateErrorResponse(ex.Message, -1, string.Empty);
             }
         }
 
@@ -312,7 +347,7 @@ ORDER BY ISNULL(Pa.REGISTRO_FECHA, GETDATE()) ASC, Cg.COD_CAUSAS;";
 
         private static string ValidarResolucion(
             IDbConnection connection,
-            IDbTransaction transaction,
+            IDbTransaction? transaction,
             string codPreanalisis,
             string usuario)
         {
@@ -333,7 +368,12 @@ WHERE COD_PREANALISIS = @cod_preanalisis;";
                 commandType: CommandType.Text) ?? string.Empty;
         }
 
-        private static void InsertarTag(
+        /// <summary>
+        /// Inserta el tag del movimiento (VB6 sbInsertarTag). Si la parametrizacion del tag es
+        /// invalida, no revierte el cambio de estado y devuelve el aviso que VB6 mostraba.
+        /// </summary>
+        /// <returns>Mensaje de advertencia, o vacio si el tag se registro.</returns>
+        private static string InsertarTag(
             IDbConnection connection,
             IDbTransaction transaction,
             string codPreanalisis,
@@ -341,9 +381,14 @@ WHERE COD_PREANALISIS = @cod_preanalisis;";
             string usuario)
         {
             var tag = ObtenerTag(connection, transaction, estado);
+            if (tag is null)
+            {
+                return "No existe en parametros la informacion del tag asignado para este movimiento.";
+            }
+
             if (string.IsNullOrWhiteSpace(tag))
             {
-                return;
+                return "No esta definido en parametros, el tag para este movimiento.";
             }
 
             const string existeTagSql = "SELECT COUNT(*) FROM CRD_TAGS WHERE TAG_CODIGO = @tag;";
@@ -360,7 +405,7 @@ WHERE COD_PREANALISIS = @cod_preanalisis;";
 
             if (existeTag <= 0)
             {
-                return;
+                return "El tag definido en parametros para este movimiento, no existe en el catalogo de tags.";
             }
 
             const string insertSql = @"
@@ -410,9 +455,11 @@ VALUES
                 parameters,
                 transaction,
                 commandType: CommandType.Text);
+
+            return string.Empty;
         }
 
-        private static string ObtenerTag(IDbConnection connection, IDbTransaction transaction, string estado)
+        private static string? ObtenerTag(IDbConnection connection, IDbTransaction transaction, string estado)
         {
             var codParametro = estado switch
             {
@@ -440,7 +487,7 @@ WHERE COD_PARAMETRO = @cod_parametro;";
                 sql,
                 parameters,
                 transaction,
-                commandType: CommandType.Text) ?? string.Empty;
+                commandType: CommandType.Text);
         }
 
         /// <summary>

@@ -28,6 +28,15 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             return _bl.Prea_frmPreaEstadoPreanalisis_Cargar(codEmpresa, usuario, cod_preanalisis, tipo ?? string.Empty);
         }
 
+        [HttpGet("Prea_frmPreaEstadoPreanalisis_Validar")]
+        public ErrorDto<string> Prea_frmPreaEstadoPreanalisis_Validar(
+            int codEmpresa,
+            string usuario,
+            string cod_preanalisis)
+        {
+            return _bl.Prea_frmPreaEstadoPreanalisis_Validar(codEmpresa, usuario, cod_preanalisis);
+        }
+
         [ValidateAntiForgeryToken]
         [HttpPut("Prea_frmPreaEstadoPreanalisis_Guardar")]
         public ErrorDto<FrmPreaEstadoPreanalisisGuardarResponse> Prea_frmPreaEstadoPreanalisis_Guardar(
