@@ -336,7 +336,7 @@ namespace Galileo_API.DataBaseTier
                     filtros = selectionFormula,
                     Empresa = empresaNombre,
                     Usuario,
-                    CedJur = empresaCedJur
+                    fxCedJur = empresaCedJur
                 });
             }
             else

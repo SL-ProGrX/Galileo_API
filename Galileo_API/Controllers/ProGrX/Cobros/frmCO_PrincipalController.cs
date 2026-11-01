@@ -82,6 +82,21 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CobroFiadores_Listar(codEmpresa, operacion);
         }
 
+        /// <summary>
+        /// Obtiene los fiadores activos asociados a una operación para sus estados adjuntos.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="operacion">Número de operación de crédito.</param>
+        /// <returns>Identificaciones de los fiadores activos.</returns>
+        [Authorize]
+        [HttpGet("EstadosAdjuntos_Fiadores_Listar")]
+        public ErrorDto<List<string>> EstadosAdjuntos_Fiadores_Listar(
+            int codEmpresa,
+            int operacion)
+        {
+            return _bl.EstadosAdjuntos_Fiadores_Listar(codEmpresa, operacion);
+        }
+
         [Authorize]
         [ValidateAntiForgeryToken]
         [HttpPost("CobroFiador_Cancelar")]
