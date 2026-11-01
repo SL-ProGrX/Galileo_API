@@ -53,7 +53,8 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Ejecuta una consulta que retorna una lista usando una empresa previamente validada.
         /// </summary>
-        public static ErrorDto<List<T>> ExecuteListQuery<T>(PortalDB portalDb, int codEmpresa, string sql, object? parameters = null)
+        public static ErrorDto<List<T>> ExecuteListQuery<T>(PortalDB portalDb, int codEmpresa, string sql, object? parameters = null,
+            int? commandTimeout = null)
         {
             var result = CreateOkResponse(new List<T>());
 
@@ -63,7 +64,7 @@ namespace Galileo.DataBaseTier
                 var sqlSeguro = ValidarSql(sql);
 
                 using var connection = portalDb.CreateConnection(codEmpresaSeguro);
-                result.Result = connection.Query<T>(sqlSeguro, parameters).ToList();
+                result.Result = connection.Query<T>(sqlSeguro, parameters, commandTimeout: commandTimeout).ToList();
             }
             catch (Exception ex)
             {
