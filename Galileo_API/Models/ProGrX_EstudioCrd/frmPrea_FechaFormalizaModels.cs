@@ -54,10 +54,11 @@
 
         internal class FrmPreaFechaFormalizaBaseData
         {
-            public DateTime? planilla_aplica { get; set; }
-            public DateTime? planilla_envio { get; set; }
-            public DateTime? fecha_corte { get; set; }
-            public DateTime? formalizacion { get; set; }
+            // El SP devuelve las fechas como texto dd/MM/yyyy; se convierten en el DB tier.
+            public object? planilla_aplica { get; set; }
+            public object? planilla_envio { get; set; }
+            public object? fecha_corte { get; set; }
+            public object? formalizacion { get; set; }
             public decimal monto { get; set; }
             public decimal tasa { get; set; }
         }

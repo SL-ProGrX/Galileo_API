@@ -41,9 +41,9 @@ namespace Galileo.Controllers
         [Authorize]
         [ValidateAntiForgeryToken]
         [HttpPost("AF_Persona_Guardar")]
-        public ErrorDto AF_Persona_Guardar(int CodEmpresa, string request, string mov)
+        public ErrorDto AF_Persona_Guardar(int CodEmpresa, [FromBody] AfPersonaGuardarDto req)
         {
-            return _bl.AF_Persona_Guardar(CodEmpresa, request, mov);
+            return _bl.AF_Persona_Guardar(CodEmpresa, req.request, req.mov);
         }
 
         [ValidateAntiForgeryToken]
