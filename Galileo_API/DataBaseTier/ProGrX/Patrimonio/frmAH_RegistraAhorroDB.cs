@@ -592,7 +592,7 @@ values(
                 return DbHelper.CreateErrorResponse("No se especificó ningún monto detallado en Caja.", -2, response);
 
             if (!request.es_ajuste
-                && request.aporte_autorizado != request.total_cajas
+                && request.aporte_autorizado != request.monto
                 && !AH_RegistraAhorro_EsAutorizada(request.gestion_estado))
             {
                 return DbHelper.CreateErrorResponse(
