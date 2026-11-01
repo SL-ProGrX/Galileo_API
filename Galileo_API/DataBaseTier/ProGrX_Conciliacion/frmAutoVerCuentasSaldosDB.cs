@@ -11,6 +11,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
         private const string PeriodoInvalidoMensaje =
             "El a&ntilde;o y mes indicados no son v&aacute;lidos.";
 
+        // Las consultas de detalle (tendencia, no contabilizados, cambios, analítico)
+        // pueden superar el timeout por defecto de Dapper (30 s).
+        private const int CommandTimeoutSeconds = 360;
+
         private const string ResumenSelect = """
             SELECT
                 anio,
@@ -164,7 +168,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                         cuenta =
                             validacion.cuenta,
                         tendencia
-                    });
+                    },
+                    commandTimeout: CommandTimeoutSeconds);
         }
 
         /// <summary>
@@ -338,7 +343,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                             request.mes,
                             cuenta =
                                 validacion.cuenta
-                        });
+                        },
+                        commandTimeout: CommandTimeoutSeconds);
         }
 
         /// <summary>
@@ -373,7 +379,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                     {
                         request.anio,
                         request.mes
-                    });
+                    },
+                    commandTimeout: CommandTimeoutSeconds);
         }
 
         /// <summary>
@@ -447,7 +454,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Conciliacion
                         request.mes,
                         cuenta =
                             validacion.cuenta
-                    });
+                    },
+                    commandTimeout: CommandTimeoutSeconds);
         }
 
         /// <summary>

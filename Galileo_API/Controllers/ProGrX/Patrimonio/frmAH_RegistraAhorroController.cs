@@ -18,10 +18,11 @@ namespace Galileo_API.Controllers.ProGrX.Patrimonio
             _bl = new FrmAhRegistraAhorroBL(config);
         }
 
-        [HttpGet("AH_RegistraAhorro_Cargar")]
+        [ValidateAntiForgeryToken]
+        [HttpPost("AH_RegistraAhorro_Cargar")]
         public ErrorDto<FrmAhRegistraAhorroCargarResponse> AH_RegistraAhorro_Cargar(
             [FromQuery] int codEmpresa,
-            [FromQuery] FrmAhRegistraAhorroCargarRequest request)
+            [FromBody] FrmAhRegistraAhorroCargarRequest request)
         {
             return _bl.AH_RegistraAhorro_Cargar(codEmpresa, request);
         }

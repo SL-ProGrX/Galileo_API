@@ -23,6 +23,7 @@
     public class CntXAsientoDetalleData
     {
         public string cod_cuenta { get; set; } = string.Empty;
+        public string? cod_cuenta_Mask { get; set; }
         public string descripcion { get; set; } = string.Empty;
         public string documento { get; set; } = string.Empty;
         public string? detalle { get; set; }

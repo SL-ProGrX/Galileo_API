@@ -19,7 +19,7 @@ namespace Galileo.DataBaseTier
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
 
         // Timeout de comandos SQL para los datasets de reportes (los default de 30 s son insuficientes)
-        private const int CommandTimeoutSeconds = 300;
+        private const int CommandTimeoutSeconds = 900;
 
         public bool TryExecDataSet(
             SqlConnection connection,

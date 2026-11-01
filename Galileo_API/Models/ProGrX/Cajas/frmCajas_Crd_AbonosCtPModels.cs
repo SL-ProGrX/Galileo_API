@@ -75,7 +75,7 @@
 
         public int? caja_Valida_Concepto { get; set; }
 
-        public int? control { get; set; }
+        public decimal? control { get; set; }
 
         public int? iva_porc { get; set; }
     }

@@ -63,7 +63,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns></returns>
         public ErrorDto<List<CntXAsientoDetalleData>> CntXAsientos_Detalle_Obtener(int codEmpresa, int codConta, string tipoAsiento, string numAsiento)
         {
-            const string query = @"select A.cod_cuenta,B.descripcion,A.documento,A.detalle,A.monto_debito,A.monto_credito,A.num_linea
+            const string query = @"select A.cod_cuenta,B.cod_cuenta_Mask,B.descripcion,A.documento,A.detalle,A.monto_debito,A.monto_credito,A.num_linea
                 ,isnull(M.saldo_inicial,0) as Saldo_Inicial,isnull(M.total_debitos,0) as Total_debitos
                 ,isnull(M.total_creditos,0) as Total_creditos,A.cod_unidad,U.descripcion as UniDes
                 ,A.cod_divisa,Y.descripcion as Divisa,isnull(A.Tipo_Cambio,1) as TC,isnull(A.Tipo_Cambio_Ajuste,0) as TC_Ajuste
