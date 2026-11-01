@@ -45,6 +45,9 @@ namespace Galileo.Models.AH
         public string accion { get; set; } = "C";
         public decimal monto { get; set; } = 0;
         public string notas { get; set; } = string.Empty;
+        public string cuenta_documento { get; set; } = string.Empty;
+        public string referencia_documento { get; set; } = string.Empty;
+        public string detalle_documento { get; set; } = string.Empty;
         public List<FrmAhAnulaAhorrosMovimientoSeleccionadoRequest> movimientos { get; set; } = [];
     }
 
@@ -110,6 +113,7 @@ namespace Galileo.Models.AH
         public string nombreCliente { get; set; } = string.Empty;
         public decimal monto { get; set; } = 0;
         public string detalle { get; set; } = string.Empty;
+        public string documento { get; set; } = string.Empty;
         public string[] lineas { get; set; } = [];
     }
 

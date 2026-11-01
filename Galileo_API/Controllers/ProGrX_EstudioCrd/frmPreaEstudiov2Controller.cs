@@ -135,6 +135,21 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Recalcula las cargas sociales e impositivas sin guardar (VB6: sbCalcula_Cargas).
+        /// </summary>
+        [HttpGet("Prea_frmPreaEstudiov2_Cargas_Calcular")]
+        public ErrorDto<FrmPreaEstudiov2CargasResponse> Prea_frmPreaEstudiov2_Cargas_Calcular(
+            int codEmpresa,
+            [FromQuery] decimal salarioMensual,
+            [FromQuery] bool aplicaAsociacion,
+            [FromQuery] bool aplicaFrap,
+            [FromQuery] decimal ptsExtraFrap)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Cargas_Calcular(
+                codEmpresa, salarioMensual, aplicaAsociacion, aplicaFrap, ptsExtraFrap);
+        }
+
+        /// <summary>
         /// Indica si el par Línea/Destino aplica Primera Cuota (VB6: sbAplicaPrimeraCta).
         /// </summary>
         [HttpGet("Prea_frmPreaEstudiov2_Destino_PrimeraCuota")]

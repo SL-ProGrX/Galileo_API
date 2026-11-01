@@ -47,6 +47,22 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             return _db.Prea_frmPreaEstadoPreanalisis_Cargar(codEmpresa, usuario, cod_preanalisis, tipo);
         }
 
+        public ErrorDto<string> Prea_frmPreaEstadoPreanalisis_Validar(
+            int codEmpresa,
+            string usuario,
+            string cod_preanalisis)
+        {
+            if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(cod_preanalisis))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Debe indicar el usuario y el expediente.",
+                    -1,
+                    string.Empty);
+            }
+
+            return _db.Prea_frmPreaEstadoPreanalisis_Validar(codEmpresa, usuario, cod_preanalisis);
+        }
+
         public ErrorDto<FrmPreaEstadoPreanalisisGuardarResponse> Prea_frmPreaEstadoPreanalisis_Guardar(
             int codEmpresa,
             FrmPreaEstadoPreanalisisGuardarRequest request)

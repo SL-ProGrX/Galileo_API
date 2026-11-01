@@ -345,6 +345,10 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         public decimal pts_extra_frap { get; set; }
         /// <summary>CRD_PREA_PARAMETROS '08' (GlobalPorcAsocSolidarista), usado por el recálculo local.</summary>
         public decimal porc_asociacion { get; set; }
+        /// <summary>CRD_PREA_PARAMETROS '07' (GlobalPorcCCSS).</summary>
+        public decimal porc_ccss { get; set; }
+        /// <summary>gPreAnalisis.Socio = "S" (socios.EstadoActual de la cédula); marca chkCargaAsociacion.</summary>
+        public bool es_socio { get; set; }
         /// <summary>CRD_PREA_PARAMETROS '09' (GlobalPorcFRAPFAP), usado por el recálculo local.</summary>
         public decimal porc_frap_fap { get; set; }
         /// <summary>chkCargaAsociacion.Tag = "S" cuando CARGA_ASOCIACION es mayor a 0.</summary>
@@ -1437,6 +1441,20 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
     public class FrmPreaEstudiov2PrendarioEstadoResponse
     {
         public string mensaje { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Resultado de sbCalcula_Cargas (VB6) para refrescar el bloque "Cargas Sociales e
+    /// Impositivas" sin guardar el expediente. Cada componente va redondeado a 2 decimales
+    /// (Format "Standard" en VB6).
+    /// </summary>
+    public class FrmPreaEstudiov2CargasResponse
+    {
+        public decimal carga_ccss { get; set; }
+        public decimal carga_asociacion { get; set; }
+        public decimal carga_frap { get; set; }
+        public decimal carga_impuesto_salario { get; set; }
+        public decimal total_cargas { get; set; }
     }
 
     #endregion

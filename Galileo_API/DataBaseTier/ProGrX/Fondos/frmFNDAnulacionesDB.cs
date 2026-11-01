@@ -356,16 +356,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 return DbHelper.CreateErrorResponse("El Usuario no tiene nivel de Autorizaci&oacute;n para realizar este movimiento!", -2, true);
             }
 
-            var limite = FND_Anulaciones_Limite_Consultar(connection, parametros);
-            if (limite is null || limite.autorizado != 1)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "No se encontró un límite de autorización válido para este usuario y plan.",
-                    -2, false);
-            }
-
+            // VB6 no valida "autorizado" aquí: sin límite (mAutorizaMonto = 0) el monto exige gestión autorizada.
             // El límite se obtiene del servidor, nunca del request.
-            if (parametros.aporte > limite.monto && !GestionAutorizada(connection, parametros.gestion_id))
+            var limite = FND_Anulaciones_Limite_Consultar(connection, parametros);
+            var montoAutorizado = limite?.monto ?? 0m;
+
+            if (parametros.aporte > montoAutorizado && !GestionAutorizada(connection, parametros.gestion_id))
             {
                 return DbHelper.CreateErrorResponse("- Este movimiento requiere AUTORIZACI&Oacute;N, verifique el estado de la misma y/o solicite una!", -2, true);
             }

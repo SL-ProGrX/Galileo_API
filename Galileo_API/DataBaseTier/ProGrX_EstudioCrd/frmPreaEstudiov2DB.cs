@@ -9,6 +9,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 {
     public partial class FrmPreaEstudiov2DB
     {
+        private const string ColCedula = "Cedula";
+
         private readonly PortalDB _portalDb;
 
         public FrmPreaEstudiov2DB(IConfiguration config)
@@ -111,7 +113,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 // en un solo batch (antes eran cuatro consultas sueltas).
                 var datosPersona = ObtenerDatosPersona(
                     connection,
-                    GetString(row, "Cedula"),
+                    GetString(row, ColCedula),
                     GetDateTime(row, "fecha_nacimiento"),
                     codPreanalisis);
 
@@ -161,7 +163,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     },
                     encabezado = new FrmPreaEstudiov2EncabezadoDto
                     {
-                        cedula = GetString(row, "Cedula"),
+                        cedula = GetString(row, ColCedula),
                         nombre = GetString(row, "Nombre"),
                         sexo = GetString(row, "sexo"),
                         fecha_nacimiento = GetDateTime(row, "fecha_nacimiento"),
@@ -173,7 +175,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         edad_descripcion = edadPlazo.Descripcion,
                         plazo_maximo = edadPlazo.PlazoMaximo,
                         edad_excede_limite = edadPlazo.ExcedeLimite,
-                        clasificacion_crediticia = ObtenerClasificacionCrediticia(connection, GetString(row, "Cedula"), GetString(row, "Estado")),
+                        clasificacion_crediticia = ObtenerClasificacionCrediticia(connection, GetString(row, ColCedula), GetString(row, "Estado")),
                         edad_aplica = datosPersona.EdadAplica,
                         edad_justificacion = datosPersona.EdadJustificacion,
                         observacion_analista = GetString(row, "OBSERVACION_ANALISTA"),
@@ -194,6 +196,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         carga_impuesto_salario = GetDecimal(row, "CARGA_IMPUESTO_SALARIO"),
                         pts_extra_frap = ptsExtraFrap,
                         porc_asociacion = parametros.Decimal("08"),
+                        porc_ccss = parametros.Decimal("07"),
+                        es_socio = ObtenerEsSocio(connection, GetString(row, ColCedula)),
                         porc_frap_fap = porcFrapFap,
                         aplica_carga_asociacion = GetDecimal(row, "CARGA_ASOCIACION") > 0m,
                         aplica_carga_frap = GetDecimal(row, "CARGA_FRAP") > 0m,
