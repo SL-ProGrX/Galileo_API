@@ -2,6 +2,7 @@ using Dapper;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
 using System.Data;
+using System.Data.Common;
 
 namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 {
@@ -143,7 +144,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     new { Cedula = cedula.Trim() });
                 return string.Equals(estado?.Trim(), "S", StringComparison.OrdinalIgnoreCase);
             }
-            catch
+            catch (DbException)
             {
                 return false;
             }
