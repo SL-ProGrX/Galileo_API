@@ -65,6 +65,20 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             return _db.CobroFiadores_Listar(codEmpresa, operacion);
         }
 
+        /// <summary>
+        /// Obtiene las identificaciones de los fiadores activos de una operación
+        /// para generar sus estados de cuenta adjuntos.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="operacion">Número de operación de crédito.</param>
+        /// <returns>Identificaciones de los fiadores activos.</returns>
+        public ErrorDto<List<string>> EstadosAdjuntos_Fiadores_Listar(
+            int codEmpresa,
+            int operacion)
+        {
+            return _db.EstadosAdjuntos_Fiadores_Listar(codEmpresa, operacion);
+        }
+
         public ErrorDto<string> CobroFiador_Cancelar(int codEmpresa, int operacion, string usuario)
         {
             return _db.CobroFiador_Cancelar(codEmpresa, operacion, usuario);

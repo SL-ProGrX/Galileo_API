@@ -73,40 +73,34 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         "No se encontró la operación solicitada.");
                 }
 
-                const string sqlMora = @"
-                    EXEC spCbrCobroJudicialInteresesHoy @IdSolicitud, @FechaServer;";
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                var mora = CobroJudicialInteresesHoyDB.Consultar(
+                    connection,
+                    idSolicitud,
+                    operacionResult.Result.FechaServer,
+                    operacionResult.Result.Proceso.Trim().Equals(
+                        "J",
+                        StringComparison.OrdinalIgnoreCase) ? 1 : 0);
 
-                var moraResult = DbHelper.ExecuteSingleQuery<CrdIncobrablesMoraDbModel>(
-                    _portalDb,
-                    codEmpresa,
-                    sqlMora,
-                    defaultValue: null,
-                    parameters: new
-                    {
-                        IdSolicitud = idSolicitud,
-                        FechaServer = operacionResult.Result.FechaServer.ToString("yyyy/MM/dd")
-                    });
-
-                if (moraResult.Code != 0 || moraResult.Result is null)
+                if (mora is null)
                 {
                     return DbHelper.CreateErrorResponse<CrdIncobrableDetalleResponse>(
-                        moraResult.Description ?? "Error al consultar mora de la operación.");
+                        "No fue posible consultar la mora de la operación.");
                 }
 
                 var response = operacionResult.Result;
-                var mora = moraResult.Result;
 
                 response.Estado = ObtenerDescripcionEstado(response.Estado);
                 response.Proceso = ObtenerDescripcionProceso(response.Proceso);
-                response.IntCor = mora.RegIntCor;
-                response.IntMor = mora.RegIntMor;
-                response.Amortizacion = mora.RegPrincipal;
-                response.Cargos = mora.Cargos;
-                response.Poliza = mora.Poliza;
-                response.TotalMora = mora.RegIntCor + mora.RegIntMor + mora.Cargos + mora.Poliza + mora.RegPrincipal;
-                response.TotalMoraLegal = mora.RegIntCor + mora.RegIntMor + mora.Cargos + mora.Poliza + response.Saldo;
+                response.IntCor = mora.RegIntCor ?? 0;
+                response.IntMor = mora.RegIntMor ?? 0;
+                response.Amortizacion = mora.RegPrincipal ?? 0;
+                response.Cargos = mora.Cargos ?? 0;
+                response.Poliza = mora.Poliza ?? 0;
+                response.TotalMora = response.IntCor + response.IntMor + response.Cargos + response.Poliza + response.Amortizacion;
+                response.TotalMoraLegal = response.IntCor + response.IntMor + response.Cargos + response.Poliza + response.Saldo;
                 response.TotalAtrasado = response.TotalMoraLegal;
-                response.EstadoMoroso = mora.Antiguedad;
+                response.EstadoMoroso = mora.Antiguedad ?? string.Empty;
                 response.ExisteIncobrable = false;
                 response.IncobrableActivo = false;
                 response.MostrarTabRegistro = true;

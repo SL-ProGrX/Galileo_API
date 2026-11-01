@@ -9,7 +9,7 @@ using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
-    public class FrmCOPrincipalDB
+    public partial class FrmCOPrincipalDB
     {
         private readonly PortalDB _portalDb;
         private readonly IConfiguration _config;
@@ -310,20 +310,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     WHERE rc.id_solicitud = @operacion
                 ";
 
-                const string sqlMoraBase = @"
-                    EXEC spCbrCobroJudicialInteresesHoy @operacion, @fechaCorte
-                ";
-
-                const string sqlMoraCobroJudicial = @"
-                    EXEC spCbrCobroJudicialInteresesHoy @operacion, @fechaCorte, @cobroJudicial
-                ";
-
-                const string sqlFirmaMora = @"
-                    SELECT CASE WHEN COUNT(*) >= 3 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END
-                    FROM sys.parameters
-                    WHERE object_id = OBJECT_ID('dbo.spCbrCobroJudicialInteresesHoy', 'P')
-                ";
-
                 var estado = cn.QueryFirstOrDefault<CoEstadoDto>(
                     sqlOperacion,
                     new { operacion });
@@ -335,29 +321,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     return response;
                 }
 
-                var admiteIndicadorCobroJudicial = cn.QuerySingle<bool>(sqlFirmaMora);
-                var sqlMora = admiteIndicadorCobroJudicial
-                    ? sqlMoraCobroJudicial
-                    : sqlMoraBase;
-
-                DynamicParameters CrearParametrosMora(int? cobroJudicial = null)
-                {
-                    var parametros = new DynamicParameters();
-                    parametros.Add("operacion", operacion);
-                    parametros.Add("fechaCorte", fecha.ToString("yyyy/MM/dd"));
-
-                    if (cobroJudicial.HasValue)
-                    {
-                        parametros.Add("cobroJudicial", cobroJudicial.Value);
-                    }
-
-                    return parametros;
-                }
-
-                // La firma nueva recibe el indicador; la anterior sólo operación y fecha.
-                var mora = cn.QueryFirstOrDefault(
-                    sqlMora,
-                    CrearParametrosMora(admiteIndicadorCobroJudicial ? 0 : null));
+                var mora = CobroJudicialInteresesHoyDB.Consultar(
+                    cn,
+                    operacion,
+                    fecha,
+                    estado.proceso == "J" ? 1 : 0);
 
                 if (mora != null)
                 {
@@ -367,24 +335,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     estado.principal_atrasado = mora.RegPrincipal ?? 0;
                     estado.cargos = mora.Cargos ?? 0;
                     estado.polizas = mora.Poliza ?? 0;
-
-                    // Si es Cobro Judicial, se hace segunda llamada con parámetro 1
-                    // y se sobreescriben los valores de mora
-                    if (estado.proceso == "J" && admiteIndicadorCobroJudicial)
-                    {
-                        var moraJudicial = cn.QueryFirstOrDefault(
-                            sqlMoraCobroJudicial,
-                            CrearParametrosMora(1));
-
-                        if (moraJudicial != null)
-                        {
-                            estado.interes_corriente = moraJudicial.RegIntCor ?? 0;
-                            estado.interes_moratorio = moraJudicial.RegIntMor ?? 0;
-                            estado.principal_atrasado = moraJudicial.RegPrincipal ?? 0;
-                            estado.cargos = moraJudicial.Cargos ?? 0;
-                            estado.polizas = moraJudicial.Poliza ?? 0;
-                        }
-                    }
 
                     estado.mora_financiera =
                         estado.interes_corriente +
