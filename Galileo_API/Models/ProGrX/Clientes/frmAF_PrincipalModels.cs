@@ -712,6 +712,12 @@
         public string? Cedula { get; set; } = default;
         public string? Usuario { get; set; } = default;
     }
+
+    public class AfPersonaGuardarDto
+    {
+        public string request { get; set; } = string.Empty;
+        public string mov { get; set; } = string.Empty;
+    }
     
     public class AfCumplimientoDto
     {

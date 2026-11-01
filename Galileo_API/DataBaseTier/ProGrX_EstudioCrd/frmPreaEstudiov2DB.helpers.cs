@@ -299,13 +299,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 }
 
                 const string sql = @"EXEC spCrdPreaGestionaComiteResolutivo
-                    @Comite, @Expediente, @NuevoEstado, @IndicadorEditable";
+                    @Comite, @Expediente, @NuevoEstado, @IndicadorEditable, @pUsuario = @Usuario";
                 connection.Execute(sql, new
                 {
                     Comite = comite,
                     Expediente = exp,
                     NuevoEstado = nuevoEstado,
-                    IndicadorEditable = indicadorEditable
+                    IndicadorEditable = indicadorEditable,
+                    Usuario = (request.usuario ?? string.Empty).Trim()
                 });
 
                 if (tipoAprobacion == "M")

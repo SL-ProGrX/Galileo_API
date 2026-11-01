@@ -4,16 +4,38 @@ using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
 using Galileo_API.Models.ProGrX_EstudioCrd.Galileo_API.Models.ProGrX_EstudioCrd;
 using System.Data;
+using System.Globalization;
 
 namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 {
     public class FrmPreaFechaFormalizaDB
     {
+        private static readonly string[] FormatosFecha = { "dd/MM/yyyy", "dd/MM/yyyy HH:mm:ss", "yyyy-MM-dd" };
+
         private readonly PortalDB _portalDb;
 
         public FrmPreaFechaFormalizaDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
+        }
+
+        /// <summary>
+        /// Convierte el valor de una columna de fecha del SP (DateTime o texto dd/MM/yyyy)
+        /// sin depender de la cultura del servidor (en-US).
+        /// </summary>
+        private static DateTime? ConvertirFecha(object? valor)
+        {
+            if (valor is DateTime fecha)
+            {
+                return fecha;
+            }
+
+            if (valor is string texto && DateTime.TryParseExact(texto.Trim(), FormatosFecha, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parseada))
+            {
+                return parseada;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -38,10 +60,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 var Result = new FrmPreaFechaFormalizaCargarResponse
                 {
                     cod_preanalisis = request.cod_preanalisis.Trim(),
-                    planilla_aplica = baseData.planilla_aplica,
-                    planilla_envio = baseData.planilla_envio,
-                    fecha_corte = baseData.fecha_corte,
-                    formalizacion = baseData.formalizacion,
+                    planilla_aplica = ConvertirFecha(baseData.planilla_aplica),
+                    planilla_envio = ConvertirFecha(baseData.planilla_envio),
+                    fecha_corte = ConvertirFecha(baseData.fecha_corte),
+                    formalizacion = ConvertirFecha(baseData.formalizacion),
                     monto = baseData.monto,
                     tasa = baseData.tasa,
                     dias = 0,
@@ -84,14 +106,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         Monto = baseData.monto,
                         Tasa = baseData.tasa,
                         Formalizacion = request.fecha_formaliza,
-                        Corte = baseData.fecha_corte
+                        Corte = ConvertirFecha(baseData.fecha_corte)
                     },
                     commandType: CommandType.StoredProcedure
                 ) ?? new FrmPreaFechaFormalizaCalculoSpData();
 
                 var Result = new FrmPreaFechaFormalizaCalcularResponse
                 {
-                    fecha_corte = baseData.fecha_corte,
+                    fecha_corte = ConvertirFecha(baseData.fecha_corte),
                     fecha_formaliza = request.fecha_formaliza,
                     dias = calculo.dias,
                     monto_interes = calculo.monto_interes
