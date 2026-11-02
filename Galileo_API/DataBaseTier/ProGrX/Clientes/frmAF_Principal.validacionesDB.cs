@@ -1,4 +1,5 @@
 using Dapper;
+using Newtonsoft.Json;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
@@ -8,7 +9,119 @@ namespace Galileo.DataBaseTier
 {
     public partial class FrmAFPrincipalDB
     {
-        private static DynamicParameters BuildPersonaParameters(AfPersonaAddRequestDto req, string mov)
+        /// <summary>
+        /// Valida Persona
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="req"></param>
+        /// <returns></returns>
+        public ErrorDto AF_Persona_Validar(int CodEmpresa, string req)
+        {
+            var lectura = AF_Persona_Solicitud_Leer(req);
+            if (lectura.Code != 0 || lectura.Result is null)
+            {
+                return DbHelper.ErrorResponse(lectura.Description ?? "No se recibieron datos de la persona.",
+                    lectura.Code.GetValueOrDefault(-1));
+            }
+
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            {
+                connection.Open();
+                return AF_Persona_Datos_Validar(connection, lectura.Result);
+            });
+            return AF_Persona_Resultado_Obtener(result);
+        }
+
+        /// <summary>
+        /// Deserializa y valida la estructura; el movimiento explícito del guardado prevalece.
+        /// </summary>
+        private static ErrorDto<AfPersonaAddRequestDto> AF_Persona_Solicitud_Leer(
+            string request, string? movimiento = null)
+        {
+            if (string.IsNullOrWhiteSpace(request))
+            {
+                return DbHelper.CreateErrorResponse<AfPersonaAddRequestDto>(
+                    "No se recibieron los datos de la persona.", -2);
+            }
+
+            try
+            {
+                var dto = JsonConvert.DeserializeObject<AfPersonaAddRequestDto>(request);
+                if (dto is null)
+                {
+                    return DbHelper.CreateErrorResponse<AfPersonaAddRequestDto>(
+                        "No se recibieron los datos de la persona.", -2);
+                }
+
+                var mov = (movimiento ?? dto.Mov.ToString()).Trim().ToUpperInvariant();
+                if (mov is not ("A" or "E"))
+                {
+                    return DbHelper.CreateErrorResponse<AfPersonaAddRequestDto>(
+                        "La operación debe indicar agregar o editar una persona.", -2);
+                }
+
+                dto.Mov = mov[0];
+                dto.Cedula = dto.Cedula?.Trim();
+                dto.Usuario = dto.Usuario?.Trim();
+                var validacion = AF_Persona_Solicitud_Validar(dto);
+                return validacion.Code == 0
+                    ? DbHelper.CreateOkResponse(dto)
+                    : DbHelper.CreateErrorResponse<AfPersonaAddRequestDto>(
+                        validacion.Description ?? "Solicitud incompleta.", -2);
+            }
+            catch (JsonException ex)
+            {
+                return DbHelper.CreateErrorResponse<AfPersonaAddRequestDto>(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Rechaza solicitudes incompletas antes de consultar o ejecutar el procedimiento.
+        /// </summary>
+        private static ErrorDto AF_Persona_Solicitud_Validar(AfPersonaAddRequestDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Cedula))
+            {
+                return DbHelper.ErrorResponse("Debe indicar la cédula de la persona.", -2);
+            }
+            if (dto.Cedula.Length > 20)
+            {
+                return DbHelper.ErrorResponse("La cédula no puede superar 20 caracteres.", -2);
+            }
+            if (dto.TipoId <= 0)
+            {
+                return DbHelper.ErrorResponse("Debe seleccionar el tipo de identificación.", -2);
+            }
+            if (string.IsNullOrWhiteSpace(dto.Usuario))
+            {
+                return DbHelper.ErrorResponse("No se recibió el usuario que realiza la operación.", -2);
+            }
+            return DbHelper.OkResponse("Solicitud válida");
+        }
+
+        /// <summary>
+        /// Conserva errores de conexión y validación sin convertir resultados ausentes en éxito.
+        /// </summary>
+        private static ErrorDto AF_Persona_Resultado_Obtener(ErrorDto<ErrorDto> resultado)
+        {
+            if (resultado.Code != 0)
+            {
+                return DbHelper.ErrorResponse(resultado.Description ?? "Error al procesar la persona.",
+                    resultado.Code.GetValueOrDefault(-1));
+            }
+            return resultado.Result ?? DbHelper.ErrorResponse("No se recibió el resultado de la operación.");
+        }
+
+        /// <summary>
+        /// Admite el indicador numérico del front-end y el formato S/N del modelo y del SP.
+        /// </summary>
+        private static string AF_Persona_Embargo_Normalizar(string? valor)
+        {
+            return valor?.Trim().ToUpperInvariant() is "1" or "S" ? "S" : "N";
+        }
+
+        /// <summary>Construye los parámetros originales del procedimiento de guardado.</summary>
+        private static DynamicParameters AF_Persona_Parametros_Construir(AfPersonaAddRequestDto req, string mov)
         {
             var p = new DynamicParameters();
             p.Add("@TipoId", req.TipoId);
@@ -77,7 +190,7 @@ namespace Galileo.DataBaseTier
             p.Add("@SalarioDevengado", req.SalarioDevengado);
             p.Add("@SalarioRebajos", req.SalarioRebajos);
             p.Add("@SalarioNeto", req.SalarioNeto);
-            p.Add("@SalarioEmbargo", req.SalarioEmbargo == "1" ? "S" : "N");
+            p.Add("@SalarioEmbargo", AF_Persona_Embargo_Normalizar(req.SalarioEmbargo));
             p.Add("@AdminitraAportePatronal", req.AdministraAportePatronal);
             p.Add("@Sugef", req.Sugef);
             p.Add("@I_Beneficiario", req.I_Beneficiario);
@@ -97,7 +210,7 @@ namespace Galileo.DataBaseTier
             p.Add("@TraDistrito", req.TraDistrito);
             p.Add("@TraDireccion", req.TraDireccion);
             p.Add("@PaisResidencia", req.PaisResidencia);
-            p.Add("@OrigenRecursos", req.OrigenRecursos);
+            p.Add("@OrigenRecursosId", req.OrigenRecursos);
             p.Add("@OrigenRecursosOtros", req.OrigenRecursosOtros);
             p.Add("@OtrosIngresos", req.OtrosIngresos);
 
@@ -110,31 +223,32 @@ namespace Galileo.DataBaseTier
         /// <param name="connection"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        private static ErrorDto ValidarPersona(SqlConnection connection, AfPersonaAddRequestDto dto)
+        private static ErrorDto AF_Persona_Datos_Validar(SqlConnection connection, AfPersonaAddRequestDto dto)
         {
             var errores = new List<string>();
-            var esAlta = char.ToUpperInvariant(dto.Mov) != 'E';
 
-            ValidarCedula(connection, dto, errores, esAlta);
-            ValidarEmails(dto, errores);
-            ValidarDatosBasicos(dto, errores);
-            ValidarSalario(dto, errores);
-            ValidarUbicacionYActividad(dto, errores);
-            ValidarPromotorYFechas(connection, dto, errores, esAlta);
-            ValidarDatosLaborales(dto, errores);
+
+            AF_Persona_Cedula_Validar(connection, dto, errores);
+            AF_Persona_Emails_Validar(dto, errores);
+            AF_Persona_Basicos_Validar(dto, errores);
+            AF_Persona_Salario_Validar(dto, errores);
+            AF_Persona_Ubicacion_Validar(dto, errores);
+            AF_Persona_PromotorFechas_Validar(connection, dto, errores);
+            AF_Persona_Laborales_Validar(dto, errores);
 
             return errores.Count > 0
                 ? DbHelper.ErrorResponse(string.Join(Environment.NewLine, errores), -2)
                 : DbHelper.OkResponse("Validación correcta");
         }
 
-        private static void ValidarCedula(SqlConnection connection, AfPersonaAddRequestDto dto, List<string> errores, bool esAlta)
+        /// <summary>Valida los campos de la persona según las reglas vigentes del formulario.</summary>
+        private static void AF_Persona_Cedula_Validar(SqlConnection connection, AfPersonaAddRequestDto dto, List<string> errores)
         {
             var largo = connection.QueryFirstOrDefault<int>(
                 "SELECT LARGO_MINIMO FROM AFI_TIPOS_IDS WHERE TIPO_ID = @TipoId",
                 new { dto.TipoId });
 
-            if (esAlta && !string.IsNullOrEmpty(dto.Cedula) && dto.Cedula.Length != largo)
+            if (dto.Mov == 'A' && !string.IsNullOrEmpty(dto.Cedula) && dto.Cedula.Length != largo)
             {
                 errores.Add($"Número de Identidad inválido, se espera {largo} caracteres.");
             }
@@ -145,20 +259,22 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        private static void ValidarEmails(AfPersonaAddRequestDto dto, List<string> errores)
+        /// <summary>Valida los campos de la persona según las reglas vigentes del formulario.</summary>
+        private static void AF_Persona_Emails_Validar(AfPersonaAddRequestDto dto, List<string> errores)
         {
-            if (string.IsNullOrEmpty(dto.Email_1) || !EsEmailValido(dto.Email_1))
+            if (string.IsNullOrEmpty(dto.Email_1) || !AF_Persona_Email_Validar(dto.Email_1))
             {
                 errores.Add("Email principal no es válido.");
             }
 
-            if (!string.IsNullOrEmpty(dto.Email_2) && !EsEmailValido(dto.Email_2))
+            if (!string.IsNullOrEmpty(dto.Email_2) && !AF_Persona_Email_Validar(dto.Email_2))
             {
                 errores.Add("Email secundario no es válido.");
             }
         }
 
-        private static void ValidarDatosBasicos(AfPersonaAddRequestDto dto, List<string> errores)
+        /// <summary>Valida los campos de la persona según las reglas vigentes del formulario.</summary>
+        private static void AF_Persona_Basicos_Validar(AfPersonaAddRequestDto dto, List<string> errores)
         {
             if (string.IsNullOrWhiteSpace(dto.Apellido_1)) errores.Add("Falta el Apellido 1.");
             if (string.IsNullOrWhiteSpace(dto.Apellido_2)) errores.Add("Falta el Apellido 2.");
@@ -167,7 +283,8 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(dto.EstadoCivil)) errores.Add("No se especificó el Estado Civil.");
         }
 
-        private static void ValidarSalario(AfPersonaAddRequestDto dto, List<string> errores)
+        /// <summary>Valida los campos de la persona según las reglas vigentes del formulario.</summary>
+        private static void AF_Persona_Salario_Validar(AfPersonaAddRequestDto dto, List<string> errores)
         {
             if (dto.SalarioDivisa == "COL")
             {
@@ -185,7 +302,8 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        private static void ValidarUbicacionYActividad(AfPersonaAddRequestDto dto, List<string> errores)
+        /// <summary>Valida los campos de la persona según las reglas vigentes del formulario.</summary>
+        private static void AF_Persona_Ubicacion_Validar(AfPersonaAddRequestDto dto, List<string> errores)
         {
             if (string.IsNullOrWhiteSpace(dto.Provincia)) errores.Add("No se especificó la Provincia.");
             if (string.IsNullOrWhiteSpace(dto.Canton)) errores.Add("No se especificó el Cantón.");
@@ -193,15 +311,16 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(dto.Direccion)) errores.Add("No se especificó la Dirección.");
             if (string.IsNullOrWhiteSpace(dto.Actividad)) errores.Add("No se especificó Actividad (Oficina Cumplimiento).");
 
-            if (string.IsNullOrWhiteSpace(dto.Departamento) || string.IsNullOrWhiteSpace(dto.UP))
+            if (string.IsNullOrWhiteSpace(dto.Departamento) && string.IsNullOrWhiteSpace(dto.UP))
             {
                 errores.Add("No se especificó el Departamento o la Unidad Programática.");
             }
         }
 
-        private static void ValidarPromotorYFechas(SqlConnection connection, AfPersonaAddRequestDto dto, List<string> errores, bool esAlta)
+        /// <summary>Valida los campos de la persona según las reglas vigentes del formulario.</summary>
+        private static void AF_Persona_PromotorFechas_Validar(SqlConnection connection, AfPersonaAddRequestDto dto, List<string> errores)
         {
-            if (!esAlta)
+            if (dto.Mov != 'A')
             {
                 return;
             }
@@ -226,7 +345,8 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        private static void ValidarDatosLaborales(AfPersonaAddRequestDto dto, List<string> errores)
+        /// <summary>Valida los campos de la persona según las reglas vigentes del formulario.</summary>
+        private static void AF_Persona_Laborales_Validar(AfPersonaAddRequestDto dto, List<string> errores)
         {
             if (dto.Profesion <= 0)
             {
@@ -254,7 +374,8 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        private static bool EsEmailValido(string email)
+        /// <summary>Valida los campos de la persona según las reglas vigentes del formulario.</summary>
+        private static bool AF_Persona_Email_Validar(string email)
         {
             if (string.IsNullOrWhiteSpace(email)) return false;
             return Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.None, RegexTimeout);
