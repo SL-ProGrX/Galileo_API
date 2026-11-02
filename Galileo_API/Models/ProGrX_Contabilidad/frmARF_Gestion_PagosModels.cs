@@ -4,6 +4,7 @@ namespace Galileo_API.Models.ProGrX_Contabilidad;
 
 public class ArfGestionPagosFiltroDto
 {
+    [JsonRequired]
     public DateTime Corte { get; set; }
     public string Arrendador { get; set; } = string.Empty;
     public string Unidad { get; set; } = string.Empty;
@@ -25,8 +26,12 @@ public class ArfGestionPagoDto
 
 public class ArfGenerarPagoDto
 {
+    [JsonRequired]
     public long Operacion { get; set; }
+    [JsonRequired]
     public decimal Id_Seq { get; set; }
+    [JsonRequired]
     public DateTime Corte { get; set; }
+    [JsonRequired]
     public decimal Cuota { get; set; }
 }
