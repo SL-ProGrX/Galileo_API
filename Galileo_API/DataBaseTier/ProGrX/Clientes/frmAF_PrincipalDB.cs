@@ -11,7 +11,7 @@ namespace Galileo.DataBaseTier
 {
     public partial class FrmAFPrincipalDB
     {
-        
+
         #region Campos y constructor
         private readonly IConfiguration _config;
         private const string CONSULTA_REALIZADA_CORRECTAMENTE = "Consulta realizada correctamente";
@@ -148,7 +148,7 @@ namespace Galileo.DataBaseTier
         private string ObtenerFechaProcesoCredito(int CodEmpresa)
         {
             const string query = @"
-                SELECT FORMAT(dbo.MyGetdate(), 'yyyyMM')
+                SELECT FORMAT(Getdate(), 'yyyyMM')
                 FROM CntX_Contabilidades
                 WHERE cod_contabilidad = @CodEmpresa";
 
@@ -173,33 +173,34 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto AF_Persona_Guardar(int CodEmpresa, string request, string mov)
         {
-            var req = JsonConvert.DeserializeObject<AfPersonaAddRequestDto>(request) ?? new AfPersonaAddRequestDto();
-
-            var validar = AF_Persona_Validar(CodEmpresa, request);
-            if (validar.Code != 0)
+            var lectura = AF_Persona_Solicitud_Leer(request, mov);
+            if (lectura.Code != 0 || lectura.Result is null)
             {
-                return validar;
+                return DbHelper.ErrorResponse(lectura.Description ?? "No se recibieron datos de la persona.",
+                    lectura.Code.GetValueOrDefault(-1));
             }
 
+            var dto = lectura.Result;
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                var p = BuildPersonaParameters(req, mov);
-                var spResult = connection.QuerySingle<AfPersonaAddResultDto>(
-                    "dbo.spAFI_Persona_Add",
-                    p,
-                    commandType: CommandType.StoredProcedure);
-
-                if (spResult.Pass == 0)
+                connection.Open();
+                var validacion = AF_Persona_Datos_Validar(connection, dto);
+                if (validacion.Code != 0)
                 {
-                    throw new InvalidOperationException(spResult.Error_Msj ?? "No se pudo procesar el registro.");
+                    return validacion;
                 }
 
-                return true;
+                var respuesta = connection.QuerySingle<AfPersonaAddResultDto>(
+                    "dbo.spAFI_Persona_Add",
+                    AF_Persona_Parametros_Construir(dto, dto.Mov.ToString()),
+                    commandType: CommandType.StoredProcedure);
+
+                return respuesta.Pass == 0
+                    ? DbHelper.ErrorResponse(respuesta.Error_Msj ?? "El procedimiento no confirmó el guardado.")
+                    : DbHelper.OkResponse(OPERACION_REALIZADA_CORRECTAMENTE);
             });
 
-            return result.Code == 0
-                ? DbHelper.OkResponse(OPERACION_REALIZADA_CORRECTAMENTE)
-                : DbHelper.ErrorResponse(result.Description ?? "Error al guardar persona.", result.Code.GetValueOrDefault(-1));
+            return AF_Persona_Resultado_Obtener(result);
         }
 
         /// <summary>
@@ -819,21 +820,6 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Valida Persona
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="req"></param>
-        /// <returns></returns>
-        public ErrorDto AF_Persona_Validar(int CodEmpresa, string req)
-        {
-            var dto = JsonConvert.DeserializeObject<AfPersonaAddRequestDto>(req) ?? new AfPersonaAddRequestDto();
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection => ValidarPersona(connection, dto));
-
-            return result.Code == 0
-                ? result.Result ?? DbHelper.OkResponse("Validación correcta")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al validar persona.", result.Code.GetValueOrDefault(-1));
-        }
-        /// <summary>
         /// Obtiene Persona patron nacional
         /// </summary>
         /// <param name="codEmpresa"></param>
@@ -941,7 +927,7 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.ExecuteSingleQuery<DateTime>(
                 CreatePortalDb(),
                 CodEmpresa,
-                "SELECT dbo.MyGetdate() AS Fecha",
+                "SELECT Getdate() AS Fecha",
                 default);
 
             return result.Code == 0
