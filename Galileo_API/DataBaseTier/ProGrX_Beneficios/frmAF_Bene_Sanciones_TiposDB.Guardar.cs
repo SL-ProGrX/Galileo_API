@@ -81,7 +81,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <param name="CodCliente">Código de empresa.</param>
         /// <param name="tipo_sancion">Código del tipo de sanción a eliminar.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto AfBeneTipoSancion_Eliminar(int CodCliente, int tipo_sancion)
+        public ErrorDto AfBeneTipoSancion_Eliminar(int CodCliente, string tipo_sancion)
         {
             const string sql = "DELETE FROM AFI_BENE_SANCIONES_TIPOS WHERE TIPO_SANCION = @tipo_sancion";
 

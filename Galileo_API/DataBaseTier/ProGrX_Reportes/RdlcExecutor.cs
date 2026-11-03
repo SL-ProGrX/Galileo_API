@@ -37,6 +37,8 @@ namespace Galileo.DataBaseTier
             {
                 var paramPairs = BuildParameterPairs(ds, ctx, jsonParams);
                 var sqlText    = PrepareSql(ds, jsonParams, allowFiltrosReplacement);
+                if (EsProcedimientoAlmacenado(ds, sqlText))
+                    paramPairs = FiltrarParametrosProcedimiento(connection, sqlText, paramPairs);
                 var dp         = BuildDynamicParameters(paramPairs);
 
                 return ExecuteQuery(connection, ds, sqlText, dp, out rows, out error);
@@ -109,6 +111,37 @@ namespace Galileo.DataBaseTier
             }
 
             return sqlText;
+        }
+
+        private static bool EsProcedimientoAlmacenado(RdlcDataSetMeta ds, string sqlText)
+        {
+            var isStoredProc = string.Equals(ds.CommandType, "StoredProcedure", StringComparison.OrdinalIgnoreCase)
+                               || LooksLikeSpName(sqlText);
+            return isStoredProc && !sqlText.StartsWith("exec ", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Deja solo los parámetros que el procedimiento almacenado declara. Los demás (CodEmpresa, filtros del
+        /// formulario, etc.) hacen que SQL Server responda "too many arguments specified".
+        /// Si el procedimiento no se encuentra, se conservan todos los parámetros.
+        /// </summary>
+        private static List<(string Name, object? Value)> FiltrarParametrosProcedimiento(
+            SqlConnection connection,
+            string nombreProcedimiento,
+            List<(string Name, object? Value)> paramPairs)
+        {
+            var declarados = connection.Query<string>(
+                    "SELECT p.name FROM sys.parameters p WHERE p.object_id = OBJECT_ID(@nombre)",
+                    new { nombre = nombreProcedimiento })
+                .Select(NormalizeParamName)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (declarados.Count == 0)
+                return paramPairs;
+
+            return paramPairs
+                .Where(p => declarados.Contains(NormalizeParamName(p.Name)))
+                .ToList();
         }
 
         private static DynamicParameters BuildDynamicParameters(IEnumerable<(string Name, object? Value)> paramPairs)

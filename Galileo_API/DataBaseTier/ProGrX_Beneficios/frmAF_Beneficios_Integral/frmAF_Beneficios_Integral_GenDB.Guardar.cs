@@ -312,9 +312,9 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
                 if (ExisteRegitro(CodCliente, beneficio.consec, codBeneficio, "MON"))
                 {
-                    var montoAnterior = connection.QueryFirstOrDefault<float>(
+                    var montoAnterior = connection.QueryFirstOrDefault<float?>(
                         "SELECT MONTO_NUEVO FROM AFI_BENE_REGISTRO_MONTOS WHERE CONSEC = @consec AND COD_BENEFICIO = @codBeneficio",
-                        new { consec = beneficio.consec, codBeneficio });
+                        new { consec = beneficio.consec, codBeneficio }) ?? 0;
 
                     connection.Execute(
                         @"UPDATE [dbo].[AFI_BENE_REGISTRO_MONTOS]

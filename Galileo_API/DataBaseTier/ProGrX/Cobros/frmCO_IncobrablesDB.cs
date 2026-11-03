@@ -371,7 +371,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     const string sqlCancelacion = @"
                         EXEC spCrdPlanPagosInfoCancelacion @IdSolicitud, @FechaServer;";
 
-                    var infoCancelacion = connection.QueryFirstOrDefault<CrdIncobrablesMoraDbModel>(
+                    var infoCancelacion = connection.QueryFirstOrDefault<CrdIncobrablesPlanPagosCancelacionDbModel>(
                         sqlCancelacion,
                         new
                         {
@@ -379,8 +379,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                             FechaServer = data.FechaServer.ToString("yyyy/MM/dd")
                         });
 
-                    intCor = infoCancelacion?.RegIntCor ?? 0M;
-                    intMor = infoCancelacion?.RegIntMor ?? 0M;
+                    intCor = infoCancelacion?.IntCor ?? 0M;
+                    intMor = infoCancelacion?.IntMor ?? 0M;
                     cargos = infoCancelacion?.Cargos ?? 0M;
                     poliza = infoCancelacion?.Poliza ?? 0M;
                 }
