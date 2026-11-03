@@ -37,6 +37,6 @@ namespace Galileo.Models.GEN
         public string cuenta { get; set; } = string.Empty;
         public string deposito { get; set; } = string.Empty;
         public string detalle { get; set; } = string.Empty;
-        public bool valido { get; set; }
+        public bool valido { get; set; } = false;
     }
 }
