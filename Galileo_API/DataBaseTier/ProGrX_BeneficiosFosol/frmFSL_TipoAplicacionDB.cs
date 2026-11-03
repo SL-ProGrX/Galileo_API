@@ -72,14 +72,14 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Obtiene los planes de aplicaci&oacute;n FOSOL con
-        /// filtro, ordenamiento y paginaci&oacute;n.
+        /// Obtiene los planes de aplicación FOSOL con
+        /// filtro, ordenamiento y paginación.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="filtros">
-        /// Filtros, ordenamiento y paginaci&oacute;n.
+        /// Filtros, ordenamiento y paginación.
         /// </param>
         /// <returns>
         /// Lista paginada de planes.
@@ -255,13 +255,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Obtiene las causas asociadas con un plan FOSOL.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="codPlan">
-        /// C&oacute;digo del plan.
+        /// Código del plan.
         /// </param>
         /// <param name="filtros">
-        /// Filtros, ordenamiento y paginaci&oacute;n.
+        /// Filtros, ordenamiento y paginación.
         /// </param>
         /// <returns>
         /// Lista paginada de causas.
@@ -472,7 +472,7 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// selector de causas.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <returns>
         /// Planes activos.

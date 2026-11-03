@@ -1328,7 +1328,7 @@ namespace Galileo_API.DataBaseTier
 
                 _mKindo.UpdateErrorTransaccionSinpe(
                     CodEmpresa,
-                    respuesta.CodigoReferencia
+                    respuesta?.CodigoReferencia
                         ?? ElResultadoDeSendTransfer?.PINSendingResult?.SINPERefNumber
                         ?? string.Empty,
                     idRechazo,
