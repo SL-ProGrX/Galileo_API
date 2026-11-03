@@ -5,6 +5,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Inversiones;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 
 namespace Galileo.DataBaseTier.ProGrX_Inversiones;
 
@@ -13,7 +14,6 @@ public sealed class FrmIvrRecBancosRegistroDb
     private const int CodigoValidacion = -2;
     private const string ConceptoCupon = "Cupon";
     private readonly PortalDB _portalDb;
-    private readonly MCntLinkDB _contabilidad;
 
     private const string SqlLista = """
         SELECT TRANSAC_ID AS transac_id, ISNULL(Tipo_Mov_Desc, '') AS tipo_mov_desc,
@@ -29,19 +29,14 @@ public sealed class FrmIvrRecBancosRegistroDb
         ORDER BY TRANSAC_ID;
         """;
 
+    /// <summary>Inicializa las dependencias existentes del API.</summary>
     public FrmIvrRecBancosRegistroDb(IConfiguration config)
     {
         ArgumentNullException.ThrowIfNull(config);
         _portalDb = new PortalDB(config);
-        _contabilidad = new MCntLinkDB(config);
     }
 
-    /// <summary>
-    /// Carga inversión, moneda local, contabilidad y movimientos del contexto.
-    /// </summary>
-    /// <param name="codEmpresa"></param>
-    /// <param name="request"></param>
-    /// <returns></returns>
+    /// <summary>Carga inversión, moneda local, contabilidad y movimientos del contexto.</summary>
     public ErrorDto<IvrRecBancosRegistroInicialData> IVR_Rec_Bancos_Registro_Inicializar(
         int codEmpresa, IvrRecBancosRegistroContextoRequest? request)
     {
@@ -49,13 +44,13 @@ public sealed class FrmIvrRecBancosRegistroDb
         if (error != null)
             return DbHelper.CreateErrorResponse<IvrRecBancosRegistroInicialData>(error, CodigoValidacion);
 
-        var parametros = _contabilidad.sbgCntParametros(codEmpresa);
-        if (parametros.Code != 0 || parametros.Result == null)
-            return DbHelper.CreateErrorResponse<IvrRecBancosRegistroInicialData>(
-                parametros.Description ?? "No fue posible obtener los parámetros contables.");
-
         return IVR_Rec_Bancos_Registro_Ejecutar(codEmpresa, connection =>
         {
+            var codContabilidad = IVR_Rec_Bancos_Registro_Contabilidad_Consultar(connection);
+            if (codContabilidad <= 0)
+                return DbHelper.CreateErrorResponse<IvrRecBancosRegistroInicialData>(
+                    "No se encuentra configurada la contabilidad de la empresa.", CodigoValidacion);
+
             const string sql = """
                 SELECT TITULO_ID AS titulo_id, Administrador_Desc AS administrador_desc,
                        Instrumento_Desc AS instrumento_desc, Portafolio_Desc AS portafolio_desc,
@@ -78,18 +73,13 @@ public sealed class FrmIvrRecBancosRegistroDb
             {
                 inversion = inversion,
                 divisa_local = local,
-                cod_contabilidad = parametros.Result.gEnlace,
+                cod_contabilidad = codContabilidad,
                 movimientos = IVR_Rec_Bancos_Registro_Lista_Consultar(connection, request!)
             });
         });
     }
 
-    /// <summary>
-    /// Obtiene movimientos y recalcula registrado y pendiente sin persistencia.
-    /// </summary>
-    /// <param name="codEmpresa"></param>
-    /// <param name="request"></param>
-    /// <returns></returns>
+    /// <summary>Obtiene movimientos y recalcula registrado y pendiente sin persistencia.</summary>
     public ErrorDto<IvrRecBancosRegistroListaData> IVR_Rec_Bancos_Registro_Transacciones_Obtener(
         int codEmpresa, IvrRecBancosRegistroContextoRequest? request)
     {
@@ -101,12 +91,7 @@ public sealed class FrmIvrRecBancosRegistroDb
             DbHelper.CreateOkResponse(IVR_Rec_Bancos_Registro_Lista_Consultar(connection, request!)));
     }
 
-    /// <summary>
-    /// Resuelve cuenta interna o enmascarada dentro de la contabilidad de la empresa.
-    /// </summary>
-    /// <param name="codEmpresa"></param>
-    /// <param name="request"></param>
-    /// <returns></returns>
+    /// <summary>Resuelve cuenta interna o enmascarada dentro de la contabilidad de la empresa.</summary>
     public ErrorDto<CtnxCuentasDto> IVR_Rec_Bancos_Registro_Cuenta_Obtener(
         int codEmpresa, IvrRecBancosRegistroCuentaRequest? request)
     {
@@ -115,13 +100,13 @@ public sealed class FrmIvrRecBancosRegistroDb
             return DbHelper.CreateErrorResponse<CtnxCuentasDto>(
                 "Indique una cuenta contable válida.", CodigoValidacion);
 
-        var parametros = _contabilidad.sbgCntParametros(codEmpresa);
-        if (parametros.Code != 0 || parametros.Result == null)
-            return DbHelper.CreateErrorResponse<CtnxCuentasDto>(
-                parametros.Description ?? "No fue posible obtener los parámetros contables.");
-
         return IVR_Rec_Bancos_Registro_Ejecutar(codEmpresa, connection =>
         {
+            var codContabilidad = IVR_Rec_Bancos_Registro_Contabilidad_Consultar(connection);
+            if (codContabilidad <= 0)
+                return DbHelper.CreateErrorResponse<CtnxCuentasDto>(
+                    "No se encuentra configurada la contabilidad de la empresa.", CodigoValidacion);
+
             const string sql = """
                 SELECT RTRIM(COD_CUENTA) AS cod_cuenta,
                        RTRIM(COD_CUENTA_MASK) AS cod_cuenta_Mask,
@@ -134,7 +119,7 @@ public sealed class FrmIvrRecBancosRegistroDb
                   AND (COD_CUENTA = @cuenta OR COD_CUENTA_MASK = @cuenta);
                 """;
             var data = connection.QuerySingleOrDefault<CtnxCuentasDto>(sql,
-                new { contabilidad = parametros.Result.gEnlace, cuenta });
+                new { contabilidad = codContabilidad, cuenta });
             if (data == null)
                 return DbHelper.CreateErrorResponse<CtnxCuentasDto>(
                     "La cuenta no existe en la contabilidad de la empresa.", CodigoValidacion);
@@ -145,12 +130,7 @@ public sealed class FrmIvrRecBancosRegistroDb
         });
     }
 
-    /// <summary>
-    /// Registra Cuenta en Tránsito mediante el SP y confirma la fila dentro de la transacción.
-    /// </summary>
-    /// <param name="codEmpresa"></param>
-    /// <param name="request"></param>
-    /// <returns></returns>
+    /// <summary>Registra Cuenta en Tránsito mediante el SP y confirma la fila dentro de la transacción.</summary>
     public ErrorDto<IvrRecBancosRegistroGuardarData> IVR_Rec_Bancos_Registro_Guardar(
         int codEmpresa, IvrRecBancosRegistroGuardarRequest? request)
     {
@@ -168,12 +148,7 @@ public sealed class FrmIvrRecBancosRegistroDb
             IVR_Rec_Bancos_Registro_Guardar_Ejecutar(connection, request, cuenta.Result));
     }
 
-    /// <summary>
-    /// Elimina las filas seleccionadas; revierte el lote si alguna no pertenece al contexto.
-    /// </summary>
-    /// <param name="codEmpresa"></param>
-    /// <param name="request"></param>
-    /// <returns></returns>
+    /// <summary>Elimina las filas seleccionadas; revierte el lote si alguna no pertenece al contexto.</summary>
     public ErrorDto<int> IVR_Rec_Bancos_Registro_Eliminar(
         int codEmpresa, IvrRecBancosRegistroEliminarRequest? request)
     {
@@ -216,13 +191,7 @@ public sealed class FrmIvrRecBancosRegistroDb
         });
     }
 
-    /// <summary>
-    /// Abre la conexión con DbHelper y conserva separados errores controlados y técnicos.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="codEmpresa"></param>
-    /// <param name="action"></param>
-    /// <returns></returns>
+    /// <summary>Abre la conexión con DbHelper y conserva separados errores controlados y técnicos.</summary>
     private ErrorDto<T> IVR_Rec_Bancos_Registro_Ejecutar<T>(
         int codEmpresa, Func<SqlConnection, ErrorDto<T>> action)
     {
@@ -237,13 +206,7 @@ public sealed class FrmIvrRecBancosRegistroDb
             : DbHelper.CreateErrorResponse<T>(result.Description ?? "No fue posible completar la operación.");
     }
 
-    /// <summary>
-    /// Ejecuta el SP con sus parámetros reales; no interpreta ExecuteNonQuery como resultado de negocio.
-    /// </summary>
-    /// <param name="connection"></param>
-    /// <param name="request"></param>
-    /// <param name="cuenta"></param>
-    /// <returns></returns>
+    /// <summary>Ejecuta el SP con sus parámetros reales; no interpreta ExecuteNonQuery como resultado de negocio.</summary>
     private static ErrorDto<IvrRecBancosRegistroGuardarData> IVR_Rec_Bancos_Registro_Guardar_Ejecutar(
         SqlConnection connection, IvrRecBancosRegistroGuardarRequest request, CtnxCuentasDto cuenta)
     {
@@ -312,12 +275,7 @@ public sealed class FrmIvrRecBancosRegistroDb
         }, "Movimiento registrado satisfactoriamente.");
     }
 
-    /// <summary>
-    /// Consulta la moneda local; reutiliza la transacción cuando corresponde.
-    /// </summary>
-    /// <param name="connection"></param>
-    /// <param name="transaction"></param>
-    /// <returns></returns>
+    /// <summary>Consulta la moneda local; reutiliza la transacción cuando corresponde.</summary>
     private static string? IVR_Rec_Bancos_Registro_DivisaLocal_Consultar(
         SqlConnection connection, SqlTransaction? transaction = null)
     {
@@ -325,12 +283,14 @@ public sealed class FrmIvrRecBancosRegistroDb
         return connection.QuerySingleOrDefault<string>(sql, transaction: transaction);
     }
 
-    /// <summary>
-    /// Obtiene el mismo detalle de sbIVR_Transac_Load y suma IMPORTE, no MONTO.
-    /// </summary>
-    /// <param name="connection"></param>
-    /// <param name="request"></param>
-    /// <returns></returns>
+    /// <summary>Obtiene el enlace contable sin exigir un período contable abierto.</summary>
+    private static int IVR_Rec_Bancos_Registro_Contabilidad_Consultar(SqlConnection connection)
+    {
+        const string sql = "SELECT TOP (1) COD_EMPRESA_ENLACE FROM sif_empresa;";
+        return connection.QuerySingleOrDefault<int>(sql);
+    }
+
+    /// <summary>Obtiene el mismo detalle de sbIVR_Transac_Load y suma IMPORTE, no MONTO.</summary>
     private static IvrRecBancosRegistroListaData IVR_Rec_Bancos_Registro_Lista_Consultar(
         SqlConnection connection, IvrRecBancosRegistroContextoRequest request)
     {
@@ -350,12 +310,7 @@ public sealed class FrmIvrRecBancosRegistroDb
         };
     }
 
-    /// <summary>
-    /// Comprueba inversión y, para Cupones, pertenencia y estado S antes de mutar.
-    /// </summary>
-    /// <param name="scope"></param>
-    /// <param name="request"></param>
-    /// <returns></returns>
+    /// <summary>Comprueba inversión y, para Cupones, pertenencia y estado S antes de mutar.</summary>
     private static string? IVR_Rec_Bancos_Registro_Origen_Validar(
         RegistroScope scope, IvrRecBancosRegistroContextoRequest request)
     {
@@ -378,11 +333,7 @@ public sealed class FrmIvrRecBancosRegistroDb
             : "El cupón no pertenece a la inversión o ya no se encuentra en Solicitud.";
     }
 
-    /// <summary>
-    /// Valida el contexto compartido y limita los orígenes a los observados en VB6.
-    /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
+    /// <summary>Valida el contexto compartido y limita los orígenes a los observados en VB6.</summary>
     private static string? IVR_Rec_Bancos_Registro_Contexto_Validar(
         IvrRecBancosRegistroContextoRequest? request)
     {
@@ -410,11 +361,7 @@ public sealed class FrmIvrRecBancosRegistroDb
         return null;
     }
 
-    /// <summary>
-    /// Valida importes y longitudes conforme a la firma real del procedimiento.
-    /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
+    /// <summary>Valida importes y longitudes conforme a la firma real del procedimiento.</summary>
     private static string? IVR_Rec_Bancos_Registro_Guardar_Validar(
         IvrRecBancosRegistroGuardarRequest? request)
     {
