@@ -129,8 +129,8 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
         [Authorize]
         [ValidateAntiForgeryToken]
         [HttpDelete("AfiRemesa_Eliminar")]
-        public ErrorDto AfiRemesa_Eliminar(int CodCliente, long cod_remesa)
-            => _bl.AfiRemesa_Eliminar(CodCliente, cod_remesa);
+        public ErrorDto AfiRemesa_Eliminar(int CodCliente, long cod_remesa, string? usuario = null)
+            => _bl.AfiRemesa_Eliminar(CodCliente, cod_remesa, usuario);
 
         /// <summary>Aplica una remesa a los beneficios seleccionados.</summary>
         [Authorize]

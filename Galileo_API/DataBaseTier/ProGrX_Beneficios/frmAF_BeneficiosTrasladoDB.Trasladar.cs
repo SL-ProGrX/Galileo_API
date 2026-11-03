@@ -60,7 +60,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                                           INNER JOIN Afi_Estados_Persona E ON S.EstadoActual = E.Cod_Estado
                                           INNER JOIN Tes_Bancos Ban ON B.cod_Banco = Ban.id_Banco
                                           WHERE O.cod_remesa = @cod_remesa
-                                            AND B.registro_fecha BETWEEN @fecha_inicio AND @fecha_corte
+                                            AND B.registro_fecha >= CAST(@fecha_inicio AS date) AND B.registro_fecha < DATEADD(DAY, 1, CAST(@fecha_corte AS date))
                                             AND O.ESTADO IN (SELECT COD_ESTADO FROM AFI_BENE_ESTADOS WHERE P_FINALIZA = 1 AND PROCESO = 'A')
                                             AND B.tesoreria IS NULL
                                             AND (@aplicaFiltro = 0
@@ -79,7 +79,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                                      INNER JOIN Afi_Estados_Persona E ON S.EstadoActual = E.Cod_Estado
                                      INNER JOIN Tes_Bancos Ban ON B.cod_Banco = Ban.id_Banco
                                      WHERE O.cod_remesa = @cod_remesa
-                                       AND B.registro_fecha BETWEEN @fecha_inicio AND @fecha_corte
+                                       AND B.registro_fecha >= CAST(@fecha_inicio AS date) AND B.registro_fecha < DATEADD(DAY, 1, CAST(@fecha_corte AS date))
                                        AND O.ESTADO IN (SELECT COD_ESTADO FROM AFI_BENE_ESTADOS WHERE P_FINALIZA = 1 AND PROCESO = 'A')
                                        AND B.tesoreria IS NULL
                                        AND (@aplicaFiltro = 0

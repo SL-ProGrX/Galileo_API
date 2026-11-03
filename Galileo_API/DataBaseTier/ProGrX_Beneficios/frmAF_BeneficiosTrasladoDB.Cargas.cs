@@ -81,10 +81,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             return DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
-                var response = new AfiBeneficiosCargasDataLista
-                {
-                    Total = connection.QueryFirstOrDefault<int>(SqlContarCargas)
-                };
+                var response = new AfiBeneficiosCargasDataLista();
 
                 var fechas = ObtenerFechasRemesa(connection, filtro.cod_remesa);
                 var supervisar = filtro.cod_banco == string.Empty
@@ -92,7 +89,10 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     || fxSupervisaBanco(connection, filtro.cod_banco);
 
                 var parametros = new DynamicParameters();
-                var sql = ConstruirQueryCargas(CodCliente, filtro, fechas, supervisar, parametros);
+                var origen = ConstruirOrigenCargas(CodCliente, filtro, fechas, parametros);
+
+                response.Total = connection.QueryFirstOrDefault<int>("SELECT COUNT(*) " + origen, parametros);
+                var sql = ConstruirQueryCargas(filtro, supervisar, origen, parametros);
 
                 response.Beneficios = connection.Query<AfiBeneficiosCargasData>(sql, parametros).ToList();
                 ValidarCargas(CodCliente, response.Beneficios, filtro.registro_usuario);
@@ -112,23 +112,16 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         }
 
         /// <summary>
-        /// Construye la consulta de cargas con los filtros aplicados de forma parametrizada.
+        /// Construye el origen (FROM + WHERE) de las cargas con los filtros aplicados de forma parametrizada.
+        /// Es compartido por el conteo y por la consulta paginada para que el total coincida con los filtros.
         /// </summary>
-        private string ConstruirQueryCargas(int CodCliente, AfiFiltrosCargas filtro,
-            AfiBeneficiosRemesasDto fechas, bool supervisar, DynamicParameters parametros)
+        private string ConstruirOrigenCargas(int CodCliente, AfiFiltrosCargas filtro,
+            AfiBeneficiosRemesasDto fechas, DynamicParameters parametros)
         {
-            var columnaDuplicado = supervisar
-                ? "dbo.fxTesSupervisa(B.cedula,S.nombre,B.monto,0,'C') AS 'Duplicado',"
-                : string.Empty;
-
             parametros.Add("fechaInicio", MProGrXAuxiliarDB.validaFechaGlobal(fechas.fecha_inicio, "yyyy-MM-dd") + " 00:00:00");
             parametros.Add("fechaCorte", MProGrXAuxiliarDB.validaFechaGlobal(fechas.fecha_corte, "yyyy-MM-dd") + " 23:59:59");
 
-            var sql = $@"SELECT B.*, S.Nombre, E.Descripcion AS 'EstadoPersona', Ban.Descripcion AS 'BancoDesc',
-                                O.id_beneficio, {columnaDuplicado} O.REGISTRA_FECHA,
-                                (SELECT DESCRIPCION FROM AFI_BENEFICIOS WHERE COD_BENEFICIO = B.COD_BENEFICIO) AS BENEFICIO_DESC,
-                                A.COD_CATEGORIA
-                         FROM afi_bene_pago B
+            var sql = @"FROM afi_bene_pago B
                          INNER JOIN socios S ON B.cedula = S.cedula
                          INNER JOIN afi_bene_otorga O ON B.cod_beneficio = O.cod_beneficio AND B.consec = O.consec
                          INNER JOIN Afi_Estados_Persona E ON S.EstadoActual = E.Cod_Estado
@@ -144,7 +137,24 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 sql += " AND O.Analista_Revision = 'S' ";
             }
 
-            sql += ConstruirFiltrosCargas(filtro, parametros);
+            return sql + ConstruirFiltrosCargas(filtro, parametros);
+        }
+
+        /// <summary>
+        /// Construye la consulta de cargas (columnas, orden y paginación) sobre el origen ya filtrado.
+        /// </summary>
+        private static string ConstruirQueryCargas(AfiFiltrosCargas filtro, bool supervisar,
+            string origen, DynamicParameters parametros)
+        {
+            var columnaDuplicado = supervisar
+                ? "dbo.fxTesSupervisa(B.cedula,S.nombre,B.monto,0,'C') AS 'Duplicado',"
+                : string.Empty;
+
+            var sql = $@"SELECT B.*, S.Nombre, E.Descripcion AS 'EstadoPersona', Ban.Descripcion AS 'BancoDesc',
+                                O.id_beneficio, {columnaDuplicado} O.REGISTRA_FECHA,
+                                (SELECT DESCRIPCION FROM AFI_BENEFICIOS WHERE COD_BENEFICIO = B.COD_BENEFICIO) AS BENEFICIO_DESC,
+                                A.COD_CATEGORIA
+                         {origen}";
 
             var paginado = string.Empty;
             if (filtro.pagina != null)
@@ -406,15 +416,5 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 return connection.Query<AfiBeneficiosRemesasDto>(sql).ToList();
             });
         }
-
-        private const string SqlContarCargas = @"SELECT COUNT(B.CEDULA)
-            FROM afi_bene_pago B
-            INNER JOIN socios S ON B.cedula = S.cedula
-            INNER JOIN afi_bene_otorga O ON B.cod_beneficio = O.cod_beneficio AND B.consec = O.consec
-            INNER JOIN Afi_Estados_Persona E ON S.EstadoActual = E.Cod_Estado
-            INNER JOIN Tes_Bancos Ban ON B.cod_Banco = Ban.id_Banco
-            INNER JOIN AFI_BENEFICIOS A ON B.cod_beneficio = A.cod_beneficio
-            WHERE O.cod_remesa IS NULL
-              AND O.ESTADO IN (SELECT COD_ESTADO FROM AFI_BENE_ESTADOS WHERE P_FINALIZA = 1 AND PROCESO = 'A')";
     }
 }

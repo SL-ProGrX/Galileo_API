@@ -28,22 +28,28 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     return new FxMontosResult { Code = 4, Description = "- No se encontró membresía para esta persona en este beneficio" };
                 }
 
-                var montoBene = connection.QueryFirstOrDefault<float>(
+                var montoBene = connection.QueryFirstOrDefault<float?>(
                     @"SELECT monto FROM afi_beneficio_montos
                       WHERE cod_beneficio = @codBeneficio AND @membresia BETWEEN inicio AND corte",
                     new { codBeneficio = datos.cod_beneficio, membresia });
-                info.montoGira = montoBene;
+
+                if (montoBene == null)
+                {
+                    return new FxMontosResult { Code = 4, Description = "- No se encontro membresia para esta persona en este beneficio" };
+                }
+
+                info.montoGira = montoBene.Value;
 
                 var montoPagado = ObtenerMontoPagado(connection, datos);
 
                 var mensaje = string.Empty;
 
-                if (montoPagado >= datos.monto && !datos.bConsulta && !fxValida(CodCliente, ref mensaje).Result && !datos.bNuevo) 
+                if (montoPagado >= montoBene.Value && !datos.bConsulta && !fxValida(CodCliente, ref mensaje).Result && !datos.bNuevo) 
                 {
                     return new FxMontosResult { Code = 1, Description = "Ya le fue asignado el monto de la ayuda" };
                 }
 
-                if (datos.monto <= 0)
+                if (montoBene.Value <= 0)
                 {
                     return new FxMontosResult { Code = 2, Description = "- No cumple con la membresía para este beneficio" };
                 }
@@ -52,7 +58,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 {
                     fxValida(CodCliente, ref mensaje);
                     info.Code = 3;
-                    AplicarMontoSegunGrupo(info, datos, montoBene, mensaje);
+                    AplicarMontoSegunGrupo(info, datos, montoBene.Value, mensaje);
                 }
                 else
                 {
@@ -109,7 +115,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             }
             else
             {
-                info.monto = datos.monto;
+                info.monto = montoBene;
                 info.Description += mensaje;
             }
         }
@@ -143,7 +149,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                         @"SELECT COUNT(*) AS cantidad, ISNULL(SUM(B.MONTO), 0) AS monto
                           FROM afi_bene_otorga B
                           INNER JOIN afi_grupo_beneficio G ON B.cod_beneficio = G.cod_beneficio
-                          WHERE B.cedula = @cedula", new { cedula = _datosBase.cedula });
+                          WHERE B.cedula = @cedula AND G.Cod_Grupo = @grupo", new { cedula = _datosBase.cedula, grupo = _datosBase.iGrupo });
 
                     if (dt != null)
                     {

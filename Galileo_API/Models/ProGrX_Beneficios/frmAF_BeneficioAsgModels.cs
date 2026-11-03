@@ -161,6 +161,7 @@ namespace Galileo.Models.AF
         public string? txtBeneficioId { get; set; }
         //otros parametros
         public int? consec { get; set; } = 0;
+        public bool? montoModificado { get; set; } = false;
 
 
 

@@ -9,9 +9,18 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
     public partial class FrmAfBeneficioAsgDB
     {
         /// <summary>
+        /// Guarda la asignación del beneficio y devuelve en Result el consecutivo del registro.
+        /// </summary>
+        public ErrorDto<int?> AfBeneficioAsg_Guardar(int CodCliente, string usuario, AfiBeneficioAsgInsertar datos)
+        {
+            var info = AfBeneficioAsg_GuardarAsignacion(CodCliente, usuario, datos);
+            return new ErrorDto<int?> { Code = info.Code, Description = info.Description, Result = datos.consec };
+        }
+
+        /// <summary>
         /// Guarda la asignación del beneficio (monetario o de productos), validando datos y parcialidad.
         /// </summary>
-        public ErrorDto AfBeneficioAsg_Guardar(int CodCliente, string usuario, AfiBeneficioAsgInsertar datos)
+        private ErrorDto AfBeneficioAsg_GuardarAsignacion(int CodCliente, string usuario, AfiBeneficioAsgInsertar datos)
         {
             try
             {
@@ -115,18 +124,20 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         private ErrorDto GuardarBeneficioMonetario(int CodCliente, AfiBeneficioAsgInsertar datos, string usuario)
         {
+            var modificaMonto = datos.montoModificado == true ? "S" : "N";
+
             if (_bAplicaParcial)
             {
                 if (datos.disponible > 0)
                 {
                     datos.monto = datos.montoGira;
                 }
-                return Guardar_Beneficio(CodCliente, datos, "S", usuario);
+                return Guardar_Beneficio(CodCliente, datos, modificaMonto, usuario);
             }
 
             if (datos.disponible == 0 && datos.solicita != null)
             {
-                return Guardar_Beneficio(CodCliente, datos, "N", usuario);
+                return Guardar_Beneficio(CodCliente, datos, modificaMonto, usuario);
             }
 
             return new ErrorDto { Code = -1, Description = "No ha distribuido el disponible" };
@@ -181,6 +192,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
+                connection.Open();
                 using var transaction = connection.BeginTransaction(System.Data.IsolationLevel.Serializable);
 
                 try
@@ -252,6 +264,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             }
 
             var vBeneConsec = result.Result;
+            datos.consec = (int)vBeneConsec;
                 Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodCliente,
@@ -293,6 +306,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
+                connection.Open();
                 using var transaction = connection.BeginTransaction();
 
                 try
@@ -387,8 +401,11 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 Usuario = usuario,
                 EsNuevo = esNuevo
             };
-            var result = DbHelper.WithConn(CreatePortalDb(), CodCliente,
-                connection => AF_BeneficioAsg_Productos_Procesar(connection, solicitud));
+            var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
+            {
+                connection.Open();
+                return AF_BeneficioAsg_Productos_Procesar(connection, solicitud);
+            });
 
             if (result.Code != 0)
             {
@@ -407,6 +424,11 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     Movimiento = esNuevo ? "REGISTRA - WEB" : "MODIFICA - WEB",
                     Modulo = 7
                 });
+            }
+
+            if (esNuevo && result.Result > 0)
+            {
+                datos.consec = (int)result.Result;
             }
 
             return result.Result > 0
