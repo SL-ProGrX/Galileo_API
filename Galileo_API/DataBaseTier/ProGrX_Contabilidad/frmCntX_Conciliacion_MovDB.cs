@@ -95,7 +95,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     Cuenta = request.cuenta,
                     FechaInicio = request.fecha_inicio.Date,
                     FechaCorte = request.fecha_corte.Date.AddHours(23).AddMinutes(59).AddSeconds(59)
-                });
+                },
+                commandTimeout: 180);
         }
 
         /// <summary>
