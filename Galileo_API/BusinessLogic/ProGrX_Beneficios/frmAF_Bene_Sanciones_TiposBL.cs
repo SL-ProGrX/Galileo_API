@@ -38,7 +38,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
             => _db.AfBeneTipoSancion_Actualizar(CodCliente, tipo_sancion);
 
         /// <summary>Elimina un tipo de sanción.</summary>
-        public ErrorDto AfBeneTipoSancion_Eliminar(int CodCliente, int tipo_sancion)
+        public ErrorDto AfBeneTipoSancion_Eliminar(int CodCliente, string tipo_sancion)
             => _db.AfBeneTipoSancion_Eliminar(CodCliente, tipo_sancion);
     }
 }
