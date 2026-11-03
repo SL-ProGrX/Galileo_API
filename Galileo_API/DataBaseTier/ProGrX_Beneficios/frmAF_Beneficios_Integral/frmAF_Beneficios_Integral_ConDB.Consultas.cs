@@ -148,8 +148,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             var fechaInicio = filtro.fechaInicio.GetValueOrDefault();
             var fechaCorte = filtro.fechaCorte.GetValueOrDefault();
-            var fechaIni = fechaInicio.ToString("yyyy-dd-MM", CultureInfo.InvariantCulture);
-            var fechaFin = fechaCorte.ToString("yyyy-dd-MM", CultureInfo.InvariantCulture);
+            var fechaIni = fechaInicio.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            var fechaFin = fechaCorte.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
             p.Add("@todasFechas", 0);
             p.Add("@tipoFecha", filtro.tipoFecha);

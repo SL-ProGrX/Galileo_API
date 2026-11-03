@@ -55,7 +55,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
         [Authorize]
         [ValidateAntiForgeryToken]
         [HttpDelete("AfBeneTipoSancion_Eliminar")]
-        public ErrorDto AfBeneTipoSancion_Eliminar(int CodCliente, int tipo_sancion)
+        public ErrorDto AfBeneTipoSancion_Eliminar(int CodCliente, string tipo_sancion)
             => _bl.AfBeneTipoSancion_Eliminar(CodCliente, tipo_sancion);
     }
 }

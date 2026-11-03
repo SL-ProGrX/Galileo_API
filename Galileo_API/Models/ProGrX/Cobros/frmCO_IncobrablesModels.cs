@@ -98,6 +98,17 @@
             public string Antiguedad { get; set; } = string.Empty;
         }
 
+        /// <summary>
+        /// Resultado de spCrdPlanPagosInfoCancelacion (columnas IntCor / IntMor, igual que en VB6)
+        /// </summary>
+        public class CrdIncobrablesPlanPagosCancelacionDbModel
+        {
+            public decimal IntCor { get; set; } = 0;
+            public decimal IntMor { get; set; } = 0;
+            public decimal Poliza { get; set; } = 0;
+            public decimal Cargos { get; set; } = 0;
+        }
+
         public class CrdIncobrableDocumentoDbModel
         {
             public string NumDoc { get; set; } = string.Empty;
