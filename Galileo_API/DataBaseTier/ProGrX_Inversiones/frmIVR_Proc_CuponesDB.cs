@@ -740,24 +740,23 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
                         + "n&uacute;mero de transacci&oacute;n.");
             }
 
-            var estadoResultado =
-                string.IsNullOrWhiteSpace(response.Result.estado)
-                    ? estado
-                    : response.Result.estado;
+            var resultado = response.Result;
 
-            response.Result.estado = estadoResultado;
-            response.Result.estado_descripcion =
+            var estadoResultado =
+                string.IsNullOrWhiteSpace(resultado.estado)
+                    ? estado
+                    : resultado.estado;
+
+            resultado.estado = estadoResultado;
+            resultado.estado_descripcion =
                 IVR_Proc_Cupones_Estado_Descripcion_Obtener(
                     estadoResultado);
 
-            response.Description =
+            return DbHelper.CreateOkResponse(
+                resultado,
                 estado == EstadoAplicado
-                    ? "Transacci&oacute;n procesada "
-                      + MensajeSatisfactoriamente
-                    : "Solicitud registrada "
-                      + MensajeSatisfactoriamente;
-
-            return response;
+                    ? "Transacción procesada " + MensajeSatisfactoriamente
+                    : "Solicitud registrada " + MensajeSatisfactoriamente);
         }
 
         /// <summary>
