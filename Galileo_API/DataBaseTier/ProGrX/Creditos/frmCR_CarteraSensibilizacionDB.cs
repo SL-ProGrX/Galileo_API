@@ -472,8 +472,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     C.Liq_Valor,
                     R.plazo + DATEDIFF(mm, Getdate(),
                         CONVERT(DATETIME,
-                            substring(convert(varchar(6), R.prideduc), 1,4) + '/' +
-                            substring(convert(varchar(6), R.prideduc), 5,2) + '/28'
+                            substring(convert(varchar(6), convert(int, R.prideduc)), 1,4) + '/' +
+                            substring(convert(varchar(6), convert(int, R.prideduc)), 5,2) + '/28'
                         )
                     ) as plazofaltante,
                     isnull(R.liqTasa,0) as liqtasa,
