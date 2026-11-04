@@ -28,9 +28,9 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         [HttpGet("CrCarteraSensibilizacion_Linea_Combos_Obtener")]
         public ErrorDto<CrCarteraSensibilizacionPantallaData> CrCarteraSensibilizacion_Linea_Combos_Obtener(
             int codEmpresa,
-            string codigo,
+            string? codigo,
             bool todasLineas)
-            => _bl.CrCarteraSensibilizacion_Linea_Combos_Obtener(codEmpresa, codigo, todasLineas);
+            => _bl.CrCarteraSensibilizacion_Linea_Combos_Obtener(codEmpresa, codigo ?? string.Empty, todasLineas);
 
         [HttpGet("CrCarteraSensibilizacion_Catalogo_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> CrCarteraSensibilizacion_Catalogo_Obtener(
