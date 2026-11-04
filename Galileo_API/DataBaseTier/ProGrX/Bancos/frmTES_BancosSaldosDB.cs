@@ -189,6 +189,7 @@ FETCH NEXT @fetch ROWS ONLY;";
         /// <param name="CodEmpresa"></param>
         /// <param name="Banco"></param>
         /// <param name="filtros"></param>
+        /// <param name="CodGrupo">Código de grupo opcional para filtrar el histórico.</param>
         /// <returns></returns>
         public ErrorDto<TablasListaGenericaModel> TES_BancosSaldos_Historico_Obtener(
     int CodEmpresa,

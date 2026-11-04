@@ -9,13 +9,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
     public sealed partial class FrmFslTipoAplicacionDB
     {
         /// <summary>
-        /// Registra un plan de aplicaci&oacute;n FOSOL.
+        /// Registra un plan de aplicación FOSOL.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n del plan.
+        /// Información del plan.
         /// </param>
         /// <returns>
         /// Resultado del registro.
@@ -32,16 +32,16 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Actualiza un plan de aplicaci&oacute;n FOSOL.
+        /// Actualiza un plan de aplicación FOSOL.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n del plan.
+        /// Información del plan.
         /// </param>
         /// <returns>
-        /// Resultado de la actualizaci&oacute;n.
+        /// Resultado de la actualización.
         /// </returns>
         public ErrorDto
             FSL_TipoAplicacion_Plan_Actualizar(
@@ -55,19 +55,19 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Elimina un plan de aplicaci&oacute;n FOSOL.
+        /// Elimina un plan de aplicación FOSOL.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="codPlan">
-        /// C&oacute;digo del plan.
+        /// Código del plan.
         /// </param>
         /// <param name="usuario">
         /// Usuario responsable.
         /// </param>
         /// <returns>
-        /// Resultado de la eliminaci&oacute;n.
+        /// Resultado de la eliminación.
         /// </returns>
         public ErrorDto
             FSL_TipoAplicacion_Plan_Eliminar(
@@ -115,10 +115,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Registra una causa asociada con un plan FOSOL.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n de la causa.
+        /// Información de la causa.
         /// </param>
         /// <returns>
         /// Resultado del registro.
@@ -138,13 +138,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Actualiza una causa asociada con un plan FOSOL.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n de la causa.
+        /// Información de la causa.
         /// </param>
         /// <returns>
-        /// Resultado de la actualizaci&oacute;n.
+        /// Resultado de la actualización.
         /// </returns>
         public ErrorDto
             FSL_TipoAplicacion_Causa_Actualizar(
@@ -161,19 +161,19 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Elimina una causa asociada con un plan FOSOL.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="codPlan">
-        /// C&oacute;digo del plan.
+        /// Código del plan.
         /// </param>
         /// <param name="codCausa">
-        /// C&oacute;digo de la causa.
+        /// Código de la causa.
         /// </param>
         /// <param name="usuario">
         /// Usuario responsable.
         /// </param>
         /// <returns>
-        /// Resultado de la eliminaci&oacute;n.
+        /// Resultado de la eliminación.
         /// </returns>
         public ErrorDto
             FSL_TipoAplicacion_Causa_Eliminar(
@@ -224,20 +224,20 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Coordina el registro o la actualizaci&oacute;n
-        /// de un plan de aplicaci&oacute;n.
+        /// Coordina el registro o la actualización
+        /// de un plan de aplicación.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n del plan.
+        /// Información del plan.
         /// </param>
         /// <param name="modo">
-        /// Operaci&oacute;n de persistencia.
+        /// Operación de persistencia.
         /// </param>
         /// <returns>
-        /// Resultado de la operaci&oacute;n.
+        /// Resultado de la operación.
         /// </returns>
         private ErrorDto
             FSL_TipoAplicacion_Plan_Guardar(
@@ -285,13 +285,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Crea la informaci&oacute;n normalizada de un plan.
+        /// Crea la información normalizada de un plan.
         /// </summary>
         /// <param name="request">
-        /// Informaci&oacute;n recibida.
+        /// Información recibida.
         /// </param>
         /// <returns>
-        /// Informaci&oacute;n normalizada.
+        /// Información normalizada.
         /// </returns>
         private static FslTipoAplicacionPlanDatos
             FSL_TipoAplicacion_Plan_Datos_Crear(
@@ -316,17 +316,17 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Persiste el registro o la actualizaci&oacute;n
+        /// Persiste el registro o la actualización
         /// de un plan.
         /// </summary>
         /// <param name="connection">
-        /// Conexi&oacute;n SQL activa.
+        /// Conexión SQL activa.
         /// </param>
         /// <param name="datos">
-        /// Informaci&oacute;n normalizada del plan.
+        /// Información normalizada del plan.
         /// </param>
         /// <param name="modo">
-        /// Operaci&oacute;n de persistencia.
+        /// Operación de persistencia.
         /// </param>
         /// <returns>
         /// Resultado de la persistencia.
@@ -378,10 +378,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Ejecuta el registro de un plan.
         /// </summary>
         /// <param name="connection">
-        /// Conexi&oacute;n SQL activa.
+        /// Conexión SQL activa.
         /// </param>
         /// <param name="datos">
-        /// Informaci&oacute;n normalizada del plan.
+        /// Información normalizada del plan.
         /// </param>
         /// <returns>
         /// Resultado del registro.
@@ -429,16 +429,16 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Ejecuta la actualizaci&oacute;n de un plan.
+        /// Ejecuta la actualización de un plan.
         /// </summary>
         /// <param name="connection">
-        /// Conexi&oacute;n SQL activa.
+        /// Conexión SQL activa.
         /// </param>
         /// <param name="datos">
-        /// Informaci&oacute;n normalizada del plan.
+        /// Información normalizada del plan.
         /// </param>
         /// <returns>
-        /// Resultado de la actualizaci&oacute;n.
+        /// Resultado de la actualización.
         /// </returns>
         private static ErrorDto
             FSL_TipoAplicacion_Plan_Actualizar_Ejecutar(
@@ -470,16 +470,16 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Ejecuta la eliminaci&oacute;n de un plan.
+        /// Ejecuta la eliminación de un plan.
         /// </summary>
         /// <param name="connection">
-        /// Conexi&oacute;n SQL activa.
+        /// Conexión SQL activa.
         /// </param>
         /// <param name="codigo">
-        /// C&oacute;digo del plan.
+        /// Código del plan.
         /// </param>
         /// <returns>
-        /// Resultado de la eliminaci&oacute;n.
+        /// Resultado de la eliminación.
         /// </returns>
         private static ErrorDto
             FSL_TipoAplicacion_Plan_Eliminar_Ejecutar(
@@ -514,20 +514,20 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Coordina el registro o la actualizaci&oacute;n
+        /// Coordina el registro o la actualización
         /// de una causa.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="request">
-        /// Informaci&oacute;n de la causa.
+        /// Información de la causa.
         /// </param>
         /// <param name="modo">
-        /// Operaci&oacute;n de persistencia.
+        /// Operación de persistencia.
         /// </param>
         /// <returns>
-        /// Resultado de la operaci&oacute;n.
+        /// Resultado de la operación.
         /// </returns>
         private ErrorDto
             FSL_TipoAplicacion_Causa_Guardar(
@@ -575,13 +575,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Crea la informaci&oacute;n normalizada de una causa.
+        /// Crea la información normalizada de una causa.
         /// </summary>
         /// <param name="request">
-        /// Informaci&oacute;n recibida.
+        /// Información recibida.
         /// </param>
         /// <returns>
-        /// Informaci&oacute;n normalizada.
+        /// Información normalizada.
         /// </returns>
         private static FslTipoAplicacionCausaDatos
             FSL_TipoAplicacion_Causa_Datos_Crear(
@@ -612,17 +612,17 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Persiste el registro o la actualizaci&oacute;n
+        /// Persiste el registro o la actualización
         /// de una causa.
         /// </summary>
         /// <param name="connection">
-        /// Conexi&oacute;n SQL activa.
+        /// Conexión SQL activa.
         /// </param>
         /// <param name="datos">
-        /// Informaci&oacute;n normalizada de la causa.
+        /// Información normalizada de la causa.
         /// </param>
         /// <param name="modo">
-        /// Operaci&oacute;n de persistencia.
+        /// Operación de persistencia.
         /// </param>
         /// <returns>
         /// Resultado de la persistencia.
@@ -675,10 +675,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Ejecuta el registro de una causa.
         /// </summary>
         /// <param name="connection">
-        /// Conexi&oacute;n SQL activa.
+        /// Conexión SQL activa.
         /// </param>
         /// <param name="datos">
-        /// Informaci&oacute;n normalizada de la causa.
+        /// Información normalizada de la causa.
         /// </param>
         /// <returns>
         /// Resultado del registro.
@@ -735,16 +735,16 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Ejecuta la actualizaci&oacute;n de una causa.
+        /// Ejecuta la actualización de una causa.
         /// </summary>
         /// <param name="connection">
-        /// Conexi&oacute;n SQL activa.
+        /// Conexión SQL activa.
         /// </param>
         /// <param name="datos">
-        /// Informaci&oacute;n normalizada de la causa.
+        /// Información normalizada de la causa.
         /// </param>
         /// <returns>
-        /// Resultado de la actualizaci&oacute;n.
+        /// Resultado de la actualización.
         /// </returns>
         private static ErrorDto
             FSL_TipoAplicacion_Causa_Actualizar_Ejecutar(
@@ -784,19 +784,19 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Ejecuta la eliminaci&oacute;n de una causa.
+        /// Ejecuta la eliminación de una causa.
         /// </summary>
         /// <param name="connection">
-        /// Conexi&oacute;n SQL activa.
+        /// Conexión SQL activa.
         /// </param>
         /// <param name="codigoPlan">
-        /// C&oacute;digo del plan.
+        /// Código del plan.
         /// </param>
         /// <param name="codigoCausa">
-        /// C&oacute;digo de la causa.
+        /// Código de la causa.
         /// </param>
         /// <returns>
-        /// Resultado de la eliminaci&oacute;n.
+        /// Resultado de la eliminación.
         /// </returns>
         private static ErrorDto
             FSL_TipoAplicacion_Causa_Eliminar_Ejecutar(
@@ -836,17 +836,17 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Ejecuta una operaci&oacute;n y registra su bit&aacute;cora
+        /// Ejecuta una operación y registra su bitácora
         /// cuando finaliza correctamente.
         /// </summary>
         /// <param name="CodEmpresa">
-        /// C&oacute;digo de empresa.
+        /// Código de empresa.
         /// </param>
         /// <param name="operacion">
-        /// Informaci&oacute;n de la operaci&oacute;n.
+        /// Información de la operación.
         /// </param>
         /// <returns>
-        /// Resultado de la operaci&oacute;n.
+        /// Resultado de la operación.
         /// </returns>
         private ErrorDto
             FSL_TipoAplicacion_Operacion_Ejecutar(
@@ -897,10 +897,10 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Determina si existe un plan.
         /// </summary>
         /// <param name="connection">
-        /// Conexi&oacute;n SQL activa.
+        /// Conexión SQL activa.
         /// </param>
         /// <param name="codigo">
-        /// C&oacute;digo del plan.
+        /// Código del plan.
         /// </param>
         /// <returns>
         /// Verdadero cuando el plan existe.
@@ -929,13 +929,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Determina si existe una causa asociada con un plan.
         /// </summary>
         /// <param name="connection">
-        /// Conexi&oacute;n SQL activa.
+        /// Conexión SQL activa.
         /// </param>
         /// <param name="codigoPlan">
-        /// C&oacute;digo del plan.
+        /// Código del plan.
         /// </param>
         /// <param name="codigoCausa">
-        /// C&oacute;digo de la causa.
+        /// Código de la causa.
         /// </param>
         /// <returns>
         /// Verdadero cuando la causa existe.
@@ -965,13 +965,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Valida la informaci&oacute;n requerida de un plan.
+        /// Valida la información requerida de un plan.
         /// </summary>
         /// <param name="request">
-        /// Informaci&oacute;n del plan.
+        /// Información del plan.
         /// </param>
         /// <returns>
-        /// Mensaje de validaci&oacute;n o texto vac&iacute;o.
+        /// Mensaje de validación o texto vacío.
         /// </returns>
         private static string
             FSL_TipoAplicacion_Plan_Validar(
@@ -1011,13 +1011,13 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Valida la informaci&oacute;n requerida de una causa.
+        /// Valida la información requerida de una causa.
         /// </summary>
         /// <param name="request">
-        /// Informaci&oacute;n de la causa.
+        /// Información de la causa.
         /// </param>
         /// <returns>
-        /// Mensaje de validaci&oacute;n o texto vac&iacute;o.
+        /// Mensaje de validación o texto vacío.
         /// </returns>
         private static string
             FSL_TipoAplicacion_Causa_Validar(
@@ -1077,19 +1077,19 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         }
 
         /// <summary>
-        /// Valida un c&oacute;digo y el usuario responsable.
+        /// Valida un código y el usuario responsable.
         /// </summary>
         /// <param name="codigo">
-        /// C&oacute;digo requerido.
+        /// Código requerido.
         /// </param>
         /// <param name="usuario">
         /// Usuario responsable.
         /// </param>
         /// <param name="mensajeCodigo">
-        /// Mensaje utilizado cuando el c&oacute;digo es inv&aacute;lido.
+        /// Mensaje utilizado cuando el código es inválido.
         /// </param>
         /// <returns>
-        /// Mensaje de validaci&oacute;n o texto vac&iacute;o.
+        /// Mensaje de validación o texto vacío.
         /// </returns>
         private static string
             FSL_TipoAplicacion_CodigoUsuario_Validar(
@@ -1111,16 +1111,16 @@ namespace Galileo.DataBaseTier.ProGrX_BeneficiosFosol
         /// Valida los datos requeridos para eliminar una causa.
         /// </summary>
         /// <param name="codigoPlan">
-        /// C&oacute;digo del plan.
+        /// Código del plan.
         /// </param>
         /// <param name="codigoCausa">
-        /// C&oacute;digo de la causa.
+        /// Código de la causa.
         /// </param>
         /// <param name="usuario">
         /// Usuario responsable.
         /// </param>
         /// <returns>
-        /// Mensaje de validaci&oacute;n o texto vac&iacute;o.
+        /// Mensaje de validación o texto vacío.
         /// </returns>
         private static string
             FSL_TipoAplicacion_CausaEliminar_Validar(

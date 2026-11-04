@@ -117,7 +117,7 @@ namespace Galileo_API.Controllers.ProGrX_Beneficios
         [Authorize]
         [ValidateAntiForgeryToken]
         [HttpPost("AfBeneficioAsg_Guardar")]
-        public ErrorDto AfBeneficioAsg_Guardar(int CodCliente, string usuario, [FromBody] AfiBeneficioAsgInsertar beneficio)
+        public ErrorDto<int?> AfBeneficioAsg_Guardar(int CodCliente, string usuario, [FromBody] AfiBeneficioAsgInsertar beneficio)
             => _bl.AfBeneficioAsg_Guardar(CodCliente, usuario, beneficio);
     }
 }

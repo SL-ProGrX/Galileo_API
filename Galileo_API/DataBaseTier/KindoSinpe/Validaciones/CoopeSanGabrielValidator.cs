@@ -25,7 +25,7 @@ namespace Galileo_API.DataBaseTier
         private readonly MKindoServiceDb _mKindo;
         private readonly MTesoreria _mTesoreria;
         private readonly bool _usaSimuladorKindo;
-        private Galileo.Models.KindoSinpe.ParametrosSinpe _parametrosSinpe;
+        private Galileo.Models.KindoSinpe.ParametrosSinpe _parametrosSinpe = new();
 
         public enum SinpeTipo { PIN, TR }
 
@@ -97,11 +97,10 @@ namespace Galileo_API.DataBaseTier
         private ErrorDto ValidarRespuestaCuenta(int CodEmpresa, string cedula, Galileo.Models.KindoSinpe.ResAccountInfo cuentaInfo)
         {
             if (cuentaInfo.Account == null)
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = cuentaInfo.Errors[0].Message
-                };
+            {
+                var mensaje = cuentaInfo.Errors is { Length: > 0 } ? cuentaInfo.Errors[0].Message : null;
+                return DbHelper.ErrorResponse(mensaje ?? SinpeRejectionMessage);
+            }
 
             if (cuentaInfo.Account.AccountNumber == null)
             {
@@ -233,8 +232,11 @@ namespace Galileo_API.DataBaseTier
             return ConstruirRespuestaEstado(codEmpresa, cuenta.Account.State.Value, info, cuenta);
         }
 
-        private void ActualizaHolderIdEnCuenta(int codEmpresa, string solicitud, string holder)
+        private void ActualizaHolderIdEnCuenta(int codEmpresa, string solicitud, string? holder)
         {
+            if (holder is null)
+                return;
+
             _mKindo.fxTesActualizaHolderId(codEmpresa, solicitud, holder);
         }
 
