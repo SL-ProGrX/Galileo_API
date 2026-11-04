@@ -272,7 +272,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 if (result.Result)
                 {
-                    RegistrarBitacora(codEmpresa, param.Usuario ?? "", param.Persona.Cedula ?? "", "REGISTRA-WEB");
+                    RegistrarBitacora(codEmpresa, param.Usuario ?? "", param.Persona.Cedula, "REGISTRA-WEB");
                 }
 
                 return result;
@@ -322,7 +322,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 if (result.Result)
                 {
-                    RegistrarBitacora(codEmpresa, param.Usuario ?? "", param.Persona.Cedula ?? "", "MODIFICA-WEB");
+                    RegistrarBitacora(codEmpresa, param.Usuario ?? "", param.Persona.Cedula, "MODIFICA-WEB");
                 }
 
                 return result;
