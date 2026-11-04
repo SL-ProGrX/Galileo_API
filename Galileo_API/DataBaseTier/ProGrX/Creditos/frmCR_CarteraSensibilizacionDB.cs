@@ -86,6 +86,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 todas_fechas_default = false,
                 filtros_add_default = false,
                 tbp_pts_add_default = false,
+                cr_tbp = ObtenerTbp(codEmpresa),
                 pts_add_default = 0m
             });
         }
@@ -342,6 +343,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 order by x.orden, x.descripcion;";
 
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, sql);
+        }
+
+        private decimal ObtenerTbp(int codEmpresa)
+        {
+            const string sql = "select cr_tbp from par_ahcr";
+            var resp = DbHelper.ExecuteSingleQuery<decimal?>(_portalDb, codEmpresa, sql, 0);
+            return resp.Result ?? 0;
         }
 
         private ErrorDto<List<DropDownListaGenericaModel>> ObtenerRecursosTodos(int codEmpresa)

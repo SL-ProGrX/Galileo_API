@@ -13,6 +13,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public bool todas_fechas_default { get; set; } = false;
         public bool filtros_add_default { get; set; } = false;
         public bool tbp_pts_add_default { get; set; } = false;
+        public decimal cr_tbp { get; set; } = 0;
         public decimal pts_add_default { get; set; } = 0;
     }
 
