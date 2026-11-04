@@ -688,7 +688,10 @@ WHERE REFERENCIA_SINPE = @referencia;";
 
                 // Dapper expone las columnas con el nombre exacto del SP (distingue mayúsculas); se lee sin distinguirlas
                 // y tolerando que el SP no devuelva alguna columna.
-                var fila = new Dictionary<string, object?>((IDictionary<string, object>)result, StringComparer.OrdinalIgnoreCase);
+                var fila = ((IDictionary<string, object>)result).ToDictionary(
+                    columna => columna.Key,
+                    columna => (object?)columna.Value,
+                    StringComparer.OrdinalIgnoreCase);
                 int codigoResultado = fila.TryGetValue("CodigoResultado", out var codigo) && codigo != null
                     ? Convert.ToInt32(codigo)
                     : 0;

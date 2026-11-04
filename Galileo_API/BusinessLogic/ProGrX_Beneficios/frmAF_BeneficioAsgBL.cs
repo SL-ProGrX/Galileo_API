@@ -81,7 +81,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
             => _db.AsientoContableData_Obtener(CodCliente, cod_beneficio, cedula, consec);
 
         /// <summary>Guarda la asignación del beneficio (monetario o de productos).</summary>
-        public ErrorDto AfBeneficioAsg_Guardar(int CodCliente, string usuario, AfiBeneficioAsgInsertar beneficio)
+        public ErrorDto<int?> AfBeneficioAsg_Guardar(int CodCliente, string usuario, AfiBeneficioAsgInsertar beneficio)
             => _db.AfBeneficioAsg_Guardar(CodCliente, usuario, beneficio);
     }
 }

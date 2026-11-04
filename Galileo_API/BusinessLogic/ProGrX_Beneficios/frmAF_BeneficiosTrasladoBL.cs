@@ -87,8 +87,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_Beneficios
             => _db.AfiRemesa_Actualizar(CodCliente, remesa);
 
         /// <summary>Elimina una remesa de traslado.</summary>
-        public ErrorDto AfiRemesa_Eliminar(int CodCliente, long cod_remesa)
-            => _db.AfiRemesa_Eliminar(CodCliente, cod_remesa);
+        public ErrorDto AfiRemesa_Eliminar(int CodCliente, long cod_remesa, string? usuario = null)
+            => _db.AfiRemesa_Eliminar(CodCliente, cod_remesa, usuario);
 
         /// <summary>Aplica una remesa a los beneficios seleccionados.</summary>
         public ErrorDto CargaCarga_Aplicar(int CodCliente, string carga)
