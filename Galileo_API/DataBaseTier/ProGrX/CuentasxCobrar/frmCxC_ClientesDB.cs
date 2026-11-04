@@ -266,11 +266,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 )";
                 var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
                 {
-                    var rows = conn.Execute(sql, dbParams);
-                    return rows > 0;
+                    conn.Execute(sql, dbParams);
+                    return true;
                 });
 
-                RegistrarBitacora(codEmpresa, param.Usuario ?? "", param.Persona.Cedula ?? "", "REGISTRA-WEB");
+                if (result.Result)
+                {
+                    RegistrarBitacora(codEmpresa, param.Usuario ?? "", param.Persona.Cedula ?? "", "REGISTRA-WEB");
+                }
+
                 return result;
             }
             else
@@ -312,11 +316,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     WHERE cedula = @Cedula";
                 var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
                 {
-                    var rows = conn.Execute(sql, dbParams);
-                    return rows > 0;
+                    conn.Execute(sql, dbParams);
+                    return true;
                 });
 
-                RegistrarBitacora(codEmpresa, param.Usuario ?? "", param.Persona.Cedula ?? "", "MODIFICA-WEB");
+                if (result.Result)
+                {
+                    RegistrarBitacora(codEmpresa, param.Usuario ?? "", param.Persona.Cedula ?? "", "MODIFICA-WEB");
+                }
+
                 return result;
             }
         }
