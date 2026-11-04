@@ -29,7 +29,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
     public class CrDeteccionFraudesReporteResult
     {
         public string nombreReporte { get; set; } = string.Empty;
-        public string folder { get; set; } = "Credito";
+        public string folder { get; set; } = "Creditos";
         public string parametros { get; set; } = string.Empty;
     }
 
