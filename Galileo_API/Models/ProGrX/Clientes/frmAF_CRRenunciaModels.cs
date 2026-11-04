@@ -239,7 +239,7 @@ namespace Galileo.Models.ProGrX.Clientes
         public int? IdPromotor { get; set; }
         public bool? Mortalidad { get; set; }
         public bool? Reingreso { get; set; }
-        public bool? AltPlanilla { get; set; }
+        public bool AltPlanilla { get; set; } = false;
         public bool? Volver { get; set; }
         public bool? AumentoPuntos { get; set; }
         public bool? AporteObrero { get; set; }
