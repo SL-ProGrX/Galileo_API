@@ -88,11 +88,10 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     || !filtro.extraFiltros
                     || fxSupervisaBanco(connection, filtro.cod_banco);
 
-                var parametros = new DynamicParameters();
-                var origen = ConstruirOrigenCargas(CodCliente, filtro, fechas, parametros);
+                var parametros = CrearParametrosCargas(CodCliente, filtro, fechas);
 
-                response.Total = connection.QueryFirstOrDefault<int>("SELECT COUNT(*) " + origen, parametros);
-                var sql = ConstruirQueryCargas(filtro, supervisar, origen, parametros);
+                response.Total = connection.QueryFirstOrDefault<int>(SqlConteoCargas, parametros);
+                var sql = ObtenerQueryCargas(supervisar, filtro.pagina.HasValue);
 
                 response.Beneficios = connection.Query<AfiBeneficiosCargasData>(sql, parametros).ToList();
                 ValidarCargas(CodCliente, response.Beneficios, filtro.registro_usuario);
@@ -111,17 +110,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             return connection.QueryFirstOrDefault<AfiBeneficiosRemesasDto>(sql, new { cod_remesa }) ?? new AfiBeneficiosRemesasDto();
         }
 
-        /// <summary>
-        /// Construye el origen (FROM + WHERE) de las cargas con los filtros aplicados de forma parametrizada.
-        /// Es compartido por el conteo y por la consulta paginada para que el total coincida con los filtros.
-        /// </summary>
-        private string ConstruirOrigenCargas(int CodCliente, AfiFiltrosCargas filtro,
-            AfiBeneficiosRemesasDto fechas, DynamicParameters parametros)
-        {
-            parametros.Add("fechaInicio", MProGrXAuxiliarDB.validaFechaGlobal(fechas.fecha_inicio, "yyyy-MM-dd") + " 00:00:00");
-            parametros.Add("fechaCorte", MProGrXAuxiliarDB.validaFechaGlobal(fechas.fecha_corte, "yyyy-MM-dd") + " 23:59:59");
-
-            var sql = @"FROM afi_bene_pago B
+        // El conteo y el detalle comparten los mismos filtros, siempre parametrizados.
+        private const string SqlOrigenCargas = @"FROM afi_bene_pago B
                          INNER JOIN socios S ON B.cedula = S.cedula
                          INNER JOIN afi_bene_otorga O ON B.cod_beneficio = O.cod_beneficio AND B.consec = O.consec
                          INNER JOIN Afi_Estados_Persona E ON S.EstadoActual = E.Cod_Estado
@@ -130,85 +120,66 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                          WHERE B.cod_remesa IS NULL
                            AND B.registro_fecha BETWEEN @fechaInicio AND @fechaCorte
                            AND B.ESTADO = 'S' AND B.tesoreria IS NULL
-                           AND O.ESTADO IN (SELECT COD_ESTADO FROM AFI_BENE_ESTADOS WHERE P_FINALIZA = 1 AND PROCESO = 'A')";
+                           AND O.ESTADO IN (SELECT COD_ESTADO FROM AFI_BENE_ESTADOS WHERE P_FINALIZA = 1 AND PROCESO = 'A')
+                           AND (@revisarAnalista = 0 OR O.Analista_Revision = 'S')
+                           AND (@filtrarOficina = 0 OR O.cod_oficina = @cod_oficina)
+                           AND (@filtrarBanco = 0 OR B.cod_banco = @cod_banco)
+                           AND (@filtrarUsuario = 0 OR B.Registro_usuario = @usuario)
+                           AND (@filtrarBeneficio = 0 OR B.cod_beneficio = @cod_beneficio)
+                           AND (@filtrarTexto = 0 OR (
+                               (B.cedula LIKE @vfiltro OR B.cta_Bancaria LIKE @vfiltro OR S.Nombre LIKE @vfiltro
+                                OR Ban.Descripcion LIKE @vfiltro OR B.cod_Banco LIKE @vfiltro OR O.cod_beneficio LIKE @vfiltro
+                                OR O.id_beneficio LIKE @vfiltro OR O.consec LIKE @vfiltro)
+                               AND dbo.fxTesSupervisa(B.cedula,S.nombre,B.monto,0,'C') != 1))";
 
-            if (_mBeneficiosDB.fxSIFParametros(CodCliente, "16") == "S")
-            {
-                sql += " AND O.Analista_Revision = 'S' ";
-            }
-
-            return sql + ConstruirFiltrosCargas(filtro, parametros);
-        }
-
-        /// <summary>
-        /// Construye la consulta de cargas (columnas, orden y paginación) sobre el origen ya filtrado.
-        /// </summary>
-        private static string ConstruirQueryCargas(AfiFiltrosCargas filtro, bool supervisar,
-            string origen, DynamicParameters parametros)
-        {
-            var columnaDuplicado = supervisar
-                ? "dbo.fxTesSupervisa(B.cedula,S.nombre,B.monto,0,'C') AS 'Duplicado',"
-                : string.Empty;
-
-            var sql = $@"SELECT B.*, S.Nombre, E.Descripcion AS 'EstadoPersona', Ban.Descripcion AS 'BancoDesc',
-                                O.id_beneficio, {columnaDuplicado} O.REGISTRA_FECHA,
+        private const string SqlConteoCargas = "SELECT COUNT(*) " + SqlOrigenCargas;
+        private const string SqlColumnasCargas = @"SELECT B.*, S.Nombre, E.Descripcion AS 'EstadoPersona', Ban.Descripcion AS 'BancoDesc',
+                                O.id_beneficio, ";
+        private const string SqlDetalleCargas = @" O.REGISTRA_FECHA,
                                 (SELECT DESCRIPCION FROM AFI_BENEFICIOS WHERE COD_BENEFICIO = B.COD_BENEFICIO) AS BENEFICIO_DESC,
-                                A.COD_CATEGORIA
-                         {origen}";
+                                A.COD_CATEGORIA " + SqlOrigenCargas + " ORDER BY B.cedula ";
+        private const string SqlCargas = SqlColumnasCargas + SqlDetalleCargas;
+        private const string SqlCargasSupervisadas = SqlColumnasCargas
+            + "dbo.fxTesSupervisa(B.cedula,S.nombre,B.monto,0,'C') AS 'Duplicado'," + SqlDetalleCargas;
+        private const string SqlPaginacionCargas = " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY ";
 
-            var paginado = string.Empty;
-            if (filtro.pagina != null)
+        /// <summary>
+        /// Selecciona una consulta constante según la supervisión y la paginación.
+        /// </summary>
+        private static string ObtenerQueryCargas(bool supervisar, bool paginar)
+        {
+            if (supervisar)
             {
-                paginado = " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY ";
-                parametros.Add("offset", filtro.pagina);
-                parametros.Add("fetch", filtro.paginacion);
+                return paginar ? SqlCargasSupervisadas + SqlPaginacionCargas : SqlCargasSupervisadas;
             }
 
-            return sql + " ORDER BY B.cedula " + paginado;
+            return paginar ? SqlCargas + SqlPaginacionCargas : SqlCargas;
         }
 
         /// <summary>
-        /// Construye las condiciones de filtro adicionales de forma parametrizada.
+        /// Prepara los valores y la activación de cada filtro sin modificar el SQL.
         /// </summary>
-        private static string ConstruirFiltrosCargas(AfiFiltrosCargas filtro, DynamicParameters parametros)
+        private DynamicParameters CrearParametrosCargas(int CodCliente, AfiFiltrosCargas filtro,
+            AfiBeneficiosRemesasDto fechas)
         {
-            var sql = string.Empty;
-
-            if (filtro.cod_oficina != "")
+            return new DynamicParameters(new
             {
-                sql += " AND O.cod_oficina = @cod_oficina ";
-                parametros.Add("cod_oficina", filtro.cod_oficina);
-            }
-
-            if (filtro.extraFiltros)
-            {
-                if (filtro.cod_banco != "")
-                {
-                    sql += " AND B.cod_banco = @cod_banco ";
-                    parametros.Add("cod_banco", filtro.cod_banco);
-                }
-                if (filtro.usuario != "")
-                {
-                    sql += " AND B.Registro_usuario = @usuario ";
-                    parametros.Add("usuario", filtro.usuario);
-                }
-                if (filtro.cod_beneficio != "")
-                {
-                    sql += " AND B.cod_beneficio = @cod_beneficio ";
-                    parametros.Add("cod_beneficio", filtro.cod_beneficio);
-                }
-            }
-
-            if (!string.IsNullOrEmpty(filtro.vfiltro))
-            {
-                sql += @" AND (B.cedula LIKE @vfiltro OR B.cta_Bancaria LIKE @vfiltro OR S.Nombre LIKE @vfiltro
-                               OR Ban.Descripcion LIKE @vfiltro OR B.cod_Banco LIKE @vfiltro OR O.cod_beneficio LIKE @vfiltro
-                               OR O.id_beneficio LIKE @vfiltro OR O.consec LIKE @vfiltro)
-                          AND dbo.fxTesSupervisa(B.cedula,S.nombre,B.monto,0,'C') != 1";
-                parametros.Add("vfiltro", $"%{filtro.vfiltro}%");
-            }
-
-            return sql;
+                fechaInicio = MProGrXAuxiliarDB.validaFechaGlobal(fechas.fecha_inicio, "yyyy-MM-dd") + " 00:00:00",
+                fechaCorte = MProGrXAuxiliarDB.validaFechaGlobal(fechas.fecha_corte, "yyyy-MM-dd") + " 23:59:59",
+                revisarAnalista = _mBeneficiosDB.fxSIFParametros(CodCliente, "16") == "S",
+                filtrarOficina = filtro.cod_oficina != "",
+                filtrarBanco = filtro.extraFiltros && filtro.cod_banco != "",
+                filtrarUsuario = filtro.extraFiltros && filtro.usuario != "",
+                filtrarBeneficio = filtro.extraFiltros && filtro.cod_beneficio != "",
+                filtrarTexto = !string.IsNullOrEmpty(filtro.vfiltro),
+                filtro.cod_oficina,
+                filtro.cod_banco,
+                filtro.usuario,
+                filtro.cod_beneficio,
+                vfiltro = $"%{filtro.vfiltro}%",
+                offset = filtro.pagina,
+                fetch = filtro.paginacion
+            });
         }
 
         /// <summary>
