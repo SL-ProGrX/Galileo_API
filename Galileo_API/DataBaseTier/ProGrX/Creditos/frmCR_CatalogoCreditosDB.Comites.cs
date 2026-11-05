@@ -133,17 +133,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             int codEmpresa,
             CrCatalogoCreditoComiteEstudioGuardarRequest request)
         {
-            if (request is null || request.comite is null)
-            {
-                return DbHelper.CreateErrorResponse<int>(
-                    "Debe indicar la línea y el comité.");
-            }
-
-            NormalizarComiteEstudioRequest(request);
-
-            if (string.IsNullOrWhiteSpace(request.codigo) ||
-                request.comite.id_comite <= 0 ||
-                string.IsNullOrWhiteSpace(request.comite.comite))
+            if (!CrCatalogoCreditos_ComiteEstudio_SolicitudValida(request))
             {
                 return DbHelper.CreateErrorResponse<int>(
                     "Debe indicar la línea y el comité.");
@@ -289,5 +279,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             return respuesta;
         }
+
+        /// <summary>
+/// Normaliza y valida los datos necesarios para guardar el comité.
+/// </summary>
+private static bool CrCatalogoCreditos_ComiteEstudio_SolicitudValida(
+    CrCatalogoCreditoComiteEstudioGuardarRequest? request)
+{
+    if (request?.comite is null)
+    {
+        return false;
+    }
+
+    NormalizarComiteEstudioRequest(request);
+
+    return !string.IsNullOrWhiteSpace(request.codigo)
+        && request.comite.id_comite > 0
+        && !string.IsNullOrWhiteSpace(request.comite.comite);
+}
     }
 }
