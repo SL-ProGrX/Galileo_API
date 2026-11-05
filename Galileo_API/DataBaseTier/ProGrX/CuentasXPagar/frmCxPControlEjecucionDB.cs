@@ -1216,144 +1216,161 @@ namespace Galileo.DataBaseTier
             if (data.Tipo_Cancelacion == "C" && data.Pagos.Any(pago => pago.Tipo_Cambio <= 0))
                 return DbHelper.CreateErrorResponse<EjecucionPagosResultado>("El tipo de cambio de los pagos debe ser mayor que cero.", -1);
 
-            var etapa = "apertura";
-            var pagosCompletados = 0;
-            var pagoActual = 0;
-            var solicitud = 0;
-            var escrituraIniciada = false;
-
+            var estado = new EstadoEjecucionPagos();
             try
             {
                 using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodEmpresa);
                 connection.Open();
+                return CxP_ControlEjecucion_Pagos_Ejecutar(connection, data, estado);
+            }
+            catch (Exception)
+            {
+                return CxP_ControlEjecucion_Error_Crear(data, estado);
+            }
+        }
 
-                foreach (var pago in data.Pagos)
+        /// <summary>Ejecuta los pagos y el traslado en el orden del proceso original.</summary>
+        private static ErrorDto<EjecucionPagosResultado> CxP_ControlEjecucion_Pagos_Ejecutar(
+            IDbConnection connection, EjecucionPagosAplicar data, EstadoEjecucionPagos estado)
+        {
+            foreach (var pago in data.Pagos)
+            {
+                estado.PagoActual = pago.Npago;
+                if (data.Tipo_Cancelacion == "C")
                 {
-                    pagoActual = pago.Npago;
-                    if (data.Tipo_Cancelacion == "C")
-                    {
-                        etapa = "registro de cargos directos";
-                        escrituraIniciada = true;
-                        connection.Execute(
-                            "spCxP_EjecucionPagos_RegistroCargos",
-                            new
-                            {
-                                Proveedor = pago.Cod_Proveedor,
-                                Factura = pago.Cod_Factura,
-                                NPago = pago.Npago,
-                                CodCargo = data.Cod_Cargo,
-                                Divisa = pago.Cod_Divisa,
-                                Monto = pago.Neto,
-                                TipoCambio = pago.Tipo_Cambio,
-                                Usuario = data.Usuario
-                            },
-                            commandType: CommandType.StoredProcedure);
-                    }
-
-                    etapa = "aplicación de cargos flotantes";
-                    escrituraIniciada = true;
+                    estado.Etapa = "registro de cargos directos";
+                    estado.EscrituraIniciada = true;
                     connection.Execute(
-                        "spCxP_EjecucionPagos_AplicaCargosFlotantes",
+                        "spCxP_EjecucionPagos_RegistroCargos",
                         new
                         {
                             Proveedor = pago.Cod_Proveedor,
                             Factura = pago.Cod_Factura,
                             NPago = pago.Npago,
-                            Disponible = pago.Monto - pago.Cargo_Directo,
-                            Corte = data.Corte_Cargos.Date.AddDays(1).AddTicks(-1),
-                            AplicaCargos = pago.Apl_Cargo_Flotante,
+                            CodCargo = data.Cod_Cargo,
+                            Divisa = pago.Cod_Divisa,
+                            Monto = pago.Neto,
+                            TipoCambio = pago.Tipo_Cambio,
                             Usuario = data.Usuario
                         },
                         commandType: CommandType.StoredProcedure);
-                    pagosCompletados++;
                 }
 
-                pagoActual = 0;
-                etapa = "actualización de saldos porcentuales";
-                escrituraIniciada = true;
+                estado.Etapa = "aplicación de cargos flotantes";
+                estado.EscrituraIniciada = true;
                 connection.Execute(
-                    "spCxP_EjecucionPagos_ActualizaSaldosConCargosPorc",
-                    commandType: CommandType.StoredProcedure);
-
-                if (data.Tipo_Cancelacion == "D")
-                {
-                    etapa = "creación de la solicitud de Tesorería";
-                    solicitud = CrearSolicitudTesoreria(connection, data);
-                    if (solicitud <= 0)
-                        throw new InvalidOperationException("Tesorería no devolvió una solicitud válida.");
-                }
-
-                etapa = "actualización de pagos";
-                if (data.Tipo_Cancelacion == "D")
-                {
-                    connection.Execute(
-                        @"UPDATE cxp_pagoprov
-                             SET tesoreria = @Solicitud,
-                                 fecha_traslada = dbo.MyGetdate(),
-                                 user_traslada = @Usuario,
-                                 pago_tercero = @PagoTercero
-                           WHERE user_traslada = 'xBITxTesx'
-                             AND cod_proveedor = @Proveedor",
-                        new
-                        {
-                            Solicitud = solicitud,
-                            data.Usuario,
-                            PagoTercero = data.Pagar_Tercero ? data.Pago_Tercero : string.Empty,
-                            Proveedor = data.Cod_Proveedor
-                        });
-                }
-                else
-                {
-                    connection.Execute(
-                        @"UPDATE cxp_pagoprov
-                             SET tesoreria = 0,
-                                 Tipo_Cancelacion = 'C',
-                                 Tesoreria_Estado = 'E',
-                                 fecha_traslada = dbo.MyGetdate(),
-                                 user_traslada = @Usuario,
-                                 pago_tercero = '',
-                                 Tesoreria_Emision = dbo.MyGetdate()
-                           WHERE user_traslada = 'xBITxTesx'
-                             AND cod_proveedor = @Proveedor",
-                        new { data.Usuario, Proveedor = data.Cod_Proveedor });
-                }
-
-                etapa = "actualización del detalle de Tesorería";
-                connection.Execute(
-                    "spCxP_Tesoreria_Detalle_Update",
-                    commandType: CommandType.StoredProcedure);
-
-                return DbHelper.CreateOkResponse(
-                    new EjecucionPagosResultado
+                    "spCxP_EjecucionPagos_AplicaCargosFlotantes",
+                    new
                     {
-                        NSolicitud = solicitud,
-                        Tipo_Cancelacion = data.Tipo_Cancelacion
+                        Proveedor = pago.Cod_Proveedor,
+                        Factura = pago.Cod_Factura,
+                        NPago = pago.Npago,
+                        Disponible = pago.Monto - pago.Cargo_Directo,
+                        Corte = data.Corte_Cargos.Date.AddDays(1).AddTicks(-1),
+                        AplicaCargos = pago.Apl_Cargo_Flotante,
+                        Usuario = data.Usuario
                     },
-                    data.Tipo_Cancelacion == "D"
-                        ? $"Pago registrado en Tesorería. Solicitud: {solicitud}"
-                        : "Cuenta por pagar descontada vía cargos.");
+                    commandType: CommandType.StoredProcedure);
+                estado.PagosCompletados++;
             }
-            catch (Exception)
-            {
-                if (!escrituraIniciada)
-                    return DbHelper.CreateErrorResponse<EjecucionPagosResultado>(
-                        "No se pudo iniciar la ejecución de pagos.", -1);
 
-                var referenciaPago = pagoActual > 0 ? $" Pago en curso: {pagoActual}." : "";
-                var referenciaSolicitud = solicitud > 0 ? $" Solicitud de Tesorería: {solicitud}." : "";
-                var mensaje = $"La ejecución falló durante {etapa}. Se completaron {pagosCompletados} pago(s)." +
-                              referenciaPago + referenciaSolicitud +
-                              " La llamada fallida y los pasos anteriores pueden haber modificado saldos, cargos o Tesorería. " +
-                              "Revise los pagos, el proveedor y la solicitud antes de reintentar; no repita el proceso automáticamente.";
-                return DbHelper.CreateErrorResponse(
-                    mensaje,
-                    -1,
-                    new EjecucionPagosResultado
+            estado.PagoActual = 0;
+            estado.Etapa = "actualización de saldos porcentuales";
+            estado.EscrituraIniciada = true;
+            connection.Execute(
+                "spCxP_EjecucionPagos_ActualizaSaldosConCargosPorc",
+                commandType: CommandType.StoredProcedure);
+
+            if (data.Tipo_Cancelacion == "D")
+            {
+                estado.Etapa = "creación de la estado.Solicitud de Tesorería";
+                estado.Solicitud = CrearSolicitudTesoreria(connection, data);
+                if (estado.Solicitud <= 0)
+                    throw new InvalidOperationException("Tesorería no devolvió una estado.Solicitud válida.");
+            }
+
+            estado.Etapa = "actualización de pagos";
+            if (data.Tipo_Cancelacion == "D")
+            {
+                connection.Execute(
+                    @"UPDATE cxp_pagoprov
+                         SET tesoreria = @Solicitud,
+                             fecha_traslada = dbo.MyGetdate(),
+                             user_traslada = @Usuario,
+                             pago_tercero = @PagoTercero
+                       WHERE user_traslada = 'xBITxTesx'
+                         AND cod_proveedor = @Proveedor",
+                    new
                     {
-                        NSolicitud = solicitud,
-                        Tipo_Cancelacion = data.Tipo_Cancelacion
+                        Solicitud = estado.Solicitud,
+                        data.Usuario,
+                        PagoTercero = data.Pagar_Tercero ? data.Pago_Tercero : string.Empty,
+                        Proveedor = data.Cod_Proveedor
                     });
             }
+            else
+            {
+                connection.Execute(
+                    @"UPDATE cxp_pagoprov
+                         SET tesoreria = 0,
+                             Tipo_Cancelacion = 'C',
+                             Tesoreria_Estado = 'E',
+                             fecha_traslada = dbo.MyGetdate(),
+                             user_traslada = @Usuario,
+                             pago_tercero = '',
+                             Tesoreria_Emision = dbo.MyGetdate()
+                       WHERE user_traslada = 'xBITxTesx'
+                         AND cod_proveedor = @Proveedor",
+                    new { data.Usuario, Proveedor = data.Cod_Proveedor });
+            }
+
+            estado.Etapa = "actualización del detalle de Tesorería";
+            connection.Execute(
+                "spCxP_Tesoreria_Detalle_Update",
+                commandType: CommandType.StoredProcedure);
+
+            return DbHelper.CreateOkResponse(
+                new EjecucionPagosResultado
+                {
+                    NSolicitud = estado.Solicitud,
+                    Tipo_Cancelacion = data.Tipo_Cancelacion
+                },
+                data.Tipo_Cancelacion == "D"
+                    ? $"Pago registrado en Tesorería. Solicitud: {estado.Solicitud}"
+                    : "Cuenta por pagar descontada vía cargos.");
+        }
+
+        /// <summary>Informa los cambios que pudieron quedar aplicados tras un error.</summary>
+        private static ErrorDto<EjecucionPagosResultado> CxP_ControlEjecucion_Error_Crear(
+            EjecucionPagosAplicar data, EstadoEjecucionPagos estado)
+        {
+            if (!estado.EscrituraIniciada)
+                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>(
+                    "No se pudo iniciar la ejecución de pagos.", -1);
+
+            var referenciaPago = estado.PagoActual > 0 ? $" Pago en curso: {estado.PagoActual}." : "";
+            var referenciaSolicitud = estado.Solicitud > 0 ? $" Solicitud de Tesorería: {estado.Solicitud}." : "";
+            var mensaje = $"La ejecución falló durante {estado.Etapa}. Se completaron {estado.PagosCompletados} pago(s)." +
+                          referenciaPago + referenciaSolicitud +
+                          " La llamada fallida y los pasos anteriores pueden haber modificado saldos, cargos o Tesorería. " +
+                          "Revise los pagos, el proveedor y la solicitud antes de reintentar; no repita el proceso automáticamente.";
+            return DbHelper.CreateErrorResponse(
+                mensaje, -1,
+                new EjecucionPagosResultado
+                {
+                    NSolicitud = estado.Solicitud,
+                    Tipo_Cancelacion = data.Tipo_Cancelacion
+                });
+        }
+
+        /// <summary>Conserva la etapa y los resultados parciales de la ejecución.</summary>
+        private sealed class EstadoEjecucionPagos
+        {
+            public string Etapa { get; set; } = "apertura";
+            public int PagosCompletados { get; set; }
+            public int PagoActual { get; set; }
+            public int Solicitud { get; set; }
+            public bool EscrituraIniciada { get; set; }
         }
 
         private static string? ValidarEjecucionPagos(EjecucionPagosAplicar data)
