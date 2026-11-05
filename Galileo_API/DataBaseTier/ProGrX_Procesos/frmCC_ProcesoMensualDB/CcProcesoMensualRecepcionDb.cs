@@ -38,7 +38,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         /// <param name="connection">Conexión activa a base de datos.</param>
         /// <param name="transaction">Transacción activa.</param>
         /// <param name="request">Parámetros de solicitud del desglose.</param>
-        public void CrDesgloce(IDbConnection connection, IDbTransaction transaction, CcProcesoMensualDesgloseRequest request)
+        /// <param name="correlacionId">Identificador generado por el servidor para correlacionar los logs.</param>
+        public void CrDesgloce(
+            IDbConnection connection,
+            IDbTransaction transaction,
+            CcProcesoMensualDesgloseRequest request,
+            Guid correlacionId)
         {
             var configuracion = ObtenerConfiguracionCreditoDesglose(connection, transaction, request.CodInstitucion);
 
@@ -49,7 +54,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             decimal fechaAnterior = request.FechaProceso;
 
             RegistrarAvance(
-                request,
+                correlacionId,
                 "Configuración de créditos obtenida",
                 $"Histórico: {historicoCobroEnvio}; aplica inconsistencias: {aplicaIncon}");
 
@@ -60,7 +65,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             EliminarCreditosProceso(connection, transaction, request.CodInstitucion, request.FechaProceso, fechaAnterior);
 
-            RegistrarAvance(request, "Registros anteriores de créditos eliminados");
+            RegistrarAvance(correlacionId, "Registros anteriores de créditos eliminados");
 
             var resultado = EjecutarCreditoDesglose(
                 connection, transaction,
@@ -81,7 +86,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             var numeroLote = 1;
 
             RegistrarAvance(
-                request,
+                correlacionId,
                 "Lote de créditos finalizado",
                 $"Lote: {numeroLote}; total: {total}; pendientes: {pendientes}");
 
@@ -104,7 +109,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 pendientes = total == 0 ? 0 : resultado.Pendientes;
 
                 RegistrarAvance(
-                    request,
+                    correlacionId,
                     "Lote de créditos finalizado",
                     $"Lote: {numeroLote}; total: {total}; pendientes: {pendientes}");
             }
@@ -218,8 +223,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             }
 
             var duracionTotal = Stopwatch.StartNew();
+            var correlacionId = Guid.NewGuid();
 
-            RegistrarAvance(request, "Inicio del desglose de planilla");
+            RegistrarAvance(correlacionId, "Inicio del desglose de planilla");
 
             using var connection = DbHelper.OpenConnection(_portalDb, request.CodEmpresa);
             _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, request.CodEmpresa, "04", "PRE", request.Usuario, request.CodInstitucion, request.FechaProceso);
@@ -230,30 +236,30 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             try
             {
                 var duracionEtapa = Stopwatch.StartNew();
-                RegistrarAvance(request, "Iniciando detalle de aportes");
+                RegistrarAvance(correlacionId, "Iniciando detalle de aportes");
                 DetallarAportes(connection, transaction, request.FechaProceso, request.CodInstitucion);
                 RegistrarAvance(
-                    request,
+                    correlacionId,
                     "Detalle de aportes finalizado",
                     $"Duración: {duracionEtapa.ElapsedMilliseconds} ms");
 
                 duracionEtapa.Restart();
-                RegistrarAvance(request, "Iniciando desglose de créditos");
-                CrDesgloce(connection, transaction, request);
+                RegistrarAvance(correlacionId, "Iniciando desglose de créditos");
+                CrDesgloce(connection, transaction, request, correlacionId);
                 RegistrarAvance(
-                    request,
+                    correlacionId,
                     "Desglose de créditos finalizado",
                     $"Duración: {duracionEtapa.ElapsedMilliseconds} ms");
 
                 duracionEtapa.Restart();
-                RegistrarAvance(request, "Marcando institución como desglosada");
+                RegistrarAvance(correlacionId, "Marcando institución como desglosada");
                 MarcarInstitucionComoDesglosada(connection, transaction, request.CodInstitucion);
                 RegistrarAvance(
-                    request,
+                    correlacionId,
                     "Institución actualizada",
                     $"Duración: {duracionEtapa.ElapsedMilliseconds} ms");
 
-                RegistrarAvance(request, "Registrando bitácora y confirmando transacción");
+                RegistrarAvance(correlacionId, "Registrando bitácora y confirmando transacción");
                 MProcesoMensualDb.SbBitacoraPlanilla(connection,
                                                   new CcProcesoMensualBitacoraPlanillaDto
                                                   {
@@ -268,7 +274,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, request.CodEmpresa, "04", "POS", request.Usuario, request.CodInstitucion, request.FechaProceso);
 
                 RegistrarAvance(
-                    request,
+                    correlacionId,
                     "Desglose de planilla finalizado correctamente",
                     $"Duración total: {duracionTotal.ElapsedMilliseconds} ms");
 
@@ -287,11 +293,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
                 _logger.LogError(
                     ex,
-                    "Error en el desglose de planilla después de {DuracionMs} ms. Empresa {CodEmpresa}, institución {CodInstitucion}, período {FechaProceso}",
-                    duracionTotal.ElapsedMilliseconds,
-                    request.CodEmpresa,
-                    request.CodInstitucion,
-                    request.FechaProceso);
+                    "Error en el desglose de planilla. Correlación {CorrelacionId}; duración {DuracionMs} ms",
+                    correlacionId,
+                    duracionTotal.ElapsedMilliseconds);
 
                 return DbHelper.CreateErrorResponse<CcProcesoMensualDesglosePlanillaResponse>(
                     ex.Message,
@@ -351,21 +355,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         /// <summary>
         /// Registra el avance de una etapa del desglose con su contexto de ejecución.
         /// </summary>
-        /// <param name="request">Solicitud que identifica empresa, institución, período y usuario.</param>
+        /// <param name="correlacionId">Identificador generado por el servidor para agrupar la ejecución.</param>
         /// <param name="etapa">Nombre de la etapa que se está ejecutando.</param>
         /// <param name="detalle">Información adicional de diagnóstico.</param>
         private void RegistrarAvance(
-            CcProcesoMensualDesgloseRequest request,
+            Guid correlacionId,
             string etapa,
             string detalle = "")
         {
             _logger.LogInformation(
-                "Proceso mensual: {Etapa}. Empresa {CodEmpresa}, institución {CodInstitucion}, período {FechaProceso}, usuario {Usuario}. {Detalle}",
+                "Proceso mensual: {Etapa}. Correlación {CorrelacionId}. {Detalle}",
                 etapa,
-                request.CodEmpresa,
-                request.CodInstitucion,
-                request.FechaProceso,
-                request.Usuario,
+                correlacionId,
                 detalle);
         }
         #endregion 
