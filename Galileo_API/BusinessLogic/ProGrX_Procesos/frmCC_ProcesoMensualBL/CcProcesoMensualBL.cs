@@ -26,7 +26,14 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
         private readonly MSecurityMainDb _Security_MainDB;
 
 
-        public CcProcesoMensualBL(IConfiguration config)
+        /// <summary>
+        /// Inicializa la lógica del proceso mensual y sus dependencias.
+        /// </summary>
+        /// <param name="config">Configuración general de la aplicación.</param>
+        /// <param name="loggerFactory">Fábrica utilizada para crear los logs del proceso.</param>
+        public CcProcesoMensualBL(
+            IConfiguration config,
+            ILoggerFactory loggerFactory)
         {
             _dbEstado = new CcProcesoMensualEstadoDB(config);
             _dbBitacora = new CcProcesoMensualBitacoraDb(config);
@@ -34,7 +41,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
             _dbEnvio = new CcProcesoMensualEnvioDb(config);
             _portalDb = new PortalDB(config);
             _Security_MainDB = new MSecurityMainDb(config);
-            _dbRecepcion = new CcProcesoMensualRecepcionDb(config);
+            _dbRecepcion = new CcProcesoMensualRecepcionDb(
+                config,
+                loggerFactory.CreateLogger<CcProcesoMensualRecepcionDb>());
             _dbAplicacionAhorros = new CcProcesoMensualAplicacionAhorrosDb(config);
             _dbAplicacionCreditos = new CcProcesoMensualAplicacionCreditosDb(config);
         }
