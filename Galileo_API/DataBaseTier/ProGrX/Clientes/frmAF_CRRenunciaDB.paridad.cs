@@ -92,7 +92,6 @@ public partial class FrmAFCrenunciaDB
             using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodEmpresa);
             connection.Open();
 
-            etapa = 1;
             AF_CR_Renuncias_Proceso_Validar(connection, request);
             AF_CR_Renuncias_Importes_Validar(connection, request);
 
@@ -128,7 +127,7 @@ public partial class FrmAFCrenunciaDB
 
             return DbHelper.CreateOkResponse(id);
         }
-        catch (InvalidOperationException ex) when (etapa == 1)
+        catch (InvalidOperationException ex) when (etapa == 0)
         {
             return DbHelper.CreateErrorResponse<int>(ex.Message);
         }
