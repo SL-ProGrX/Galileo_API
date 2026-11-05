@@ -196,7 +196,8 @@ namespace Galileo.DataBaseTier
 
         private static string? NormalizarFiltroOpcional(string? valor)
         {
-            return valor is null ? null : valor.Trim();
+            // Llave vacía o nula = sin filtro (paridad VB6: se buscan documentos relacionados a la llave 1)
+            return string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
         }
 
         /// <summary>
