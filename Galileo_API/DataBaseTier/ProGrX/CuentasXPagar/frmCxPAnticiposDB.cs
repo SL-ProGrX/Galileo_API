@@ -51,33 +51,8 @@ namespace Galileo.DataBaseTier
                 })
                 .ToList();
 
-            if (filtro.proveedor <= 0 || string.IsNullOrWhiteSpace(cargoPrincipal) || filtro.monto <= 0)
-                return DbHelper.ErrorResponse("Proveedor, cargo y monto son obligatorios.", -1);
-
-            if (cargoPrincipal.Length > 10 || cargosAdicionales.Any(cargo =>
-                    string.IsNullOrWhiteSpace(cargo.codCargo) || cargo.codCargo.Length > 10))
-                return DbHelper.ErrorResponse("Los códigos de cargo deben tener entre 1 y 10 caracteres.", -1);
-
-            if (filtro.monto > 99999999999999.99m || decimal.Round(filtro.monto, 2) != filtro.monto ||
-                cargosAdicionales.Any(cargo => cargo.monto > 99999999999999.99m ||
-                    decimal.Round(cargo.monto, 2) != cargo.monto))
-                return DbHelper.ErrorResponse("Los montos deben tener como máximo dos decimales.", -1);
-
-            decimal totalCargos;
-            try
-            {
-                totalCargos = cargosAdicionales.Sum(cargo => cargo.monto);
-            }
-            catch (OverflowException)
-            {
-                return DbHelper.ErrorResponse("El total de cargos adicionales es demasiado grande.", -1);
-            }
-            if (totalCargos > filtro.monto)
-                return DbHelper.ErrorResponse("Los cargos adicionales son mayores que el monto del anticipo.", -1);
-
-            if (string.IsNullOrWhiteSpace(filtro.usuario) || filtro.usuario.Length > 30 ||
-                (filtro.documento?.Length ?? 0) > 30 || (filtro.notas?.Length ?? 0) > 500)
-                return DbHelper.ErrorResponse("Usuario, documento o notas inválidos.", -1);
+            var errorDatos = ExeAnticipos_ValidarDatos(filtro, cargoPrincipal, cargosAdicionales);
+            if (errorDatos is not null) return errorDatos;
 
             var spIniciado = false;
             var spFinalizado = false;
@@ -170,17 +145,82 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception)
             {
-                if (!spIniciado)
-                    return DbHelper.ErrorResponse("No se pudo iniciar el registro del anticipo. No se ejecutó el procedimiento.", -1);
-
-                var referencia = anticipoEsperado is null ? string.Empty : $" Referencia prevista: {anticipoEsperado}.";
-                var etapa = spFinalizado
-                    ? $"El procedimiento terminó y se completaron {cargosCompletados} cargo(s) adicional(es)."
-                    : "El procedimiento pudo haber registrado una parte del anticipo.";
-                return DbHelper.ErrorResponse(
-                    $"No se completó el registro del anticipo.{referencia} {etapa} " +
-                    "Revise el cargo flotante, anticipo, factura, detalle y pago antes de reintentar.", -1);
+                return ExeAnticipos_ErrorRegistro(
+                    spIniciado, spFinalizado, cargosCompletados, anticipoEsperado);
             }
+        }
+
+        /// <summary>Valida los datos del anticipo antes de abrir la conexión.</summary>
+        private static ErrorDto? ExeAnticipos_ValidarDatos(
+            CxpAnticiposFiltros filtro,
+            string cargoPrincipal,
+            List<CargoAdicionalAnticipoDto> cargosAdicionales)
+        {
+            if (filtro.proveedor <= 0 ||
+                string.IsNullOrWhiteSpace(cargoPrincipal) ||
+                filtro.monto <= 0)
+                return DbHelper.ErrorResponse("Proveedor, cargo y monto son obligatorios.", -1);
+
+            if (cargoPrincipal.Length > 10 ||
+                cargosAdicionales.Any(cargo =>
+                    string.IsNullOrWhiteSpace(cargo.codCargo) || cargo.codCargo.Length > 10))
+                return DbHelper.ErrorResponse("Los códigos de cargo deben tener entre 1 y 10 caracteres.", -1);
+
+            if (!ExeAnticipos_MontosValidos(filtro, cargosAdicionales))
+                return DbHelper.ErrorResponse("Los montos deben tener como máximo dos decimales.", -1);
+
+            decimal totalCargos;
+            try
+            {
+                totalCargos = cargosAdicionales.Sum(cargo => cargo.monto);
+            }
+            catch (OverflowException)
+            {
+                return DbHelper.ErrorResponse("El total de cargos adicionales es demasiado grande.", -1);
+            }
+
+            if (totalCargos > filtro.monto)
+                return DbHelper.ErrorResponse("Los cargos adicionales son mayores que el monto del anticipo.", -1);
+
+            if (string.IsNullOrWhiteSpace(filtro.usuario) || filtro.usuario.Length > 30 ||
+                (filtro.documento?.Length ?? 0) > 30 || (filtro.notas?.Length ?? 0) > 500)
+                return DbHelper.ErrorResponse("Usuario, documento o notas inválidos.", -1);
+
+            return null;
+        }
+
+        /// <summary>Comprueba la precisión y el límite de los montos.</summary>
+        private static bool ExeAnticipos_MontosValidos(
+            CxpAnticiposFiltros filtro,
+            List<CargoAdicionalAnticipoDto> cargosAdicionales)
+        {
+            const decimal maximo = 99999999999999.99m;
+            return filtro.monto <= maximo &&
+                   decimal.Round(filtro.monto, 2) == filtro.monto &&
+                   cargosAdicionales.All(cargo =>
+                       cargo.monto <= maximo && decimal.Round(cargo.monto, 2) == cargo.monto);
+        }
+
+        /// <summary>Informa los cambios que pueden haber quedado tras un error.</summary>
+        private static ErrorDto ExeAnticipos_ErrorRegistro(
+            bool spIniciado,
+            bool spFinalizado,
+            int cargosCompletados,
+            string? anticipoEsperado)
+        {
+            if (!spIniciado)
+                return DbHelper.ErrorResponse(
+                    "No se pudo iniciar el registro del anticipo. No se ejecutó el procedimiento.", -1);
+
+            var referencia = anticipoEsperado is null
+                ? string.Empty
+                : $" Referencia prevista: {anticipoEsperado}.";
+            var etapa = spFinalizado
+                ? $"El procedimiento terminó y se completaron {cargosCompletados} cargo(s) adicional(es)."
+                : "El procedimiento pudo haber registrado una parte del anticipo.";
+            return DbHelper.ErrorResponse(
+                $"No se completó el registro del anticipo.{referencia} {etapa} " +
+                "Revise el cargo flotante, anticipo, factura, detalle y pago antes de reintentar.", -1);
         }
 
         /// <summary>Comprueba que el cargo exista antes de registrar el anticipo.</summary>
