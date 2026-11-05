@@ -25,7 +25,7 @@ namespace Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels
     {
         public int CodInstitucion { get; set; } = 0;
         public decimal FechaProceso { get; set; } = 0;
-        public string TipoProceso { get; set; } = string.Empty; // '02', '03' o '04'
+        public string TipoProceso { get; set; } = string.Empty; // '02', '03', '04' u '08'
         public string ContextoJson { get; set; } = string.Empty;
     }
 
@@ -99,6 +99,15 @@ namespace Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels
     public sealed class CcProcesoMensualDesgloseContexto
     {
         public string Usuario { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Contexto serializado para la aplicación de abonos y recaudos.
+    /// </summary>
+    public sealed class CcProcesoMensualAplicacionCreditosContexto
+    {
+        public string Usuario { get; set; } = string.Empty;
+        public DateTime FechaSistema { get; set; }
     }
 
     /// <summary>
