@@ -156,7 +156,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             }
 
             var lineaEnProceso = 0;
-            var guardadoCompleto = false;
 
             try
             {
@@ -185,8 +184,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                         commandType: CommandType.StoredProcedure,
                         commandTimeout: 0);
                 }
-
-                guardadoCompleto = true;
             }
             catch (Exception)
             {
@@ -202,12 +199,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     + $"{lineaEnProceso} de {request.beneficiarios.Count}. "
                     + "La póliza puede haber quedado con beneficiarios parciales. "
                     + "Consulte el registro antes de volver a intentar.");
-            }
-
-            if (!guardadoCompleto)
-            {
-                return DbHelper.ErrorResponse(
-                    "No fue posible completar el guardado de beneficiarios.");
             }
 
             try
