@@ -2,11 +2,8 @@
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Microsoft.Data.SqlClient;
 using System.Data;
 using static Galileo_API.Models.ProGrX.Creditos.FrmCrComisionesPagoModels;
-
-
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
@@ -54,7 +51,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 const string query = """
             EXEC spCrd_Comisiones_Pago_ConsultaBancos;
             """;
-          
+
                 return connection
                     .Query<BancoDropDownDbModel>(query)
                     .Select(item => new DropDownListaGenericaModel
@@ -237,14 +234,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// </summary>
         public ErrorDto<CrdComisionesPagoRemesaGuardarResponse> CrdComisionesPago_Remesa_Guardar(int CodEmpresa, CrdComisionesPagoRemesaGuardarRequest request)
         {
-            using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
-            connection.Open();
-
-            SqlTransaction? transaction = null;
-
             try
             {
-                transaction = connection.BeginTransaction();
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                connection.Open();
 
                 var validacion = ValidarRemesaGuardar(request);
 
@@ -262,14 +255,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 int codRemesa;
                 if (esNueva)
                 {
-                    codRemesa = InsertarRemesa(connection, transaction, CodEmpresa, request);
+                    codRemesa = InsertarRemesa(connection, CodEmpresa, request);
                 }
                 else
                 {
-                    var actualizacion = ActualizarRemesa(connection, transaction, CodEmpresa, request);
+                    var actualizacion = ActualizarRemesa(connection, CodEmpresa, request);
                     if (actualizacion.Code != 0)
                     {
-                        transaction.Rollback();
                         return DbHelper.CreateErrorResponse(
                            "La remesa no existe o no se encuentra abierta.",
                            -2,
@@ -278,8 +270,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                     codRemesa = actualizacion.Result;
                 }
-
-                transaction.Commit();
 
                 return DbHelper.CreateOkResponse(
                     new CrdComisionesPagoRemesaGuardarResponse
@@ -293,7 +283,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
             catch (Exception ex)
             {
-                transaction?.Rollback();
 
                 return DbHelper.CreateErrorResponse(
                     $"Error al guardar la remesa de comisiones: {ex.Message}",
@@ -341,17 +330,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// Inserta una nueva remesa en la base de datos y devuelve el código de la remesa creada.
         /// </summary>
         /// <param name="connection"></param>
-        /// <param name="transaction"></param>
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        private int InsertarRemesa(IDbConnection connection, IDbTransaction transaction, int CodEmpresa, CrdComisionesPagoRemesaGuardarRequest request)
+        private int InsertarRemesa(IDbConnection connection, int CodEmpresa, CrdComisionesPagoRemesaGuardarRequest request)
         {
             const string query = """
         DECLARE @CodRemesa int;
 
         SELECT @CodRemesa = ISNULL(MAX(cod_remesa), 0) + 1
-        FROM CRD_COMISIONES_REMESAS WITH (UPDLOCK, HOLDLOCK);
+        FROM CRD_COMISIONES_REMESAS ;
 
         INSERT INTO CRD_COMISIONES_REMESAS
         (
@@ -395,23 +383,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 TesTipo = request.TesTipo.Trim()
             };
 
-            Bitacora_Registrar(CodEmpresa, request.Usuario, "Registra", $"Remesa Comisiones de Créditos:  {request.CodRemesa}");
-
-            return connection.QuerySingle<int>(
-                query,
-                parametros,
-                transaction);
+            var id = connection.QuerySingle<int>(query, parametros);
+            Bitacora_Registrar(CodEmpresa, request.Usuario, "Registra", $"Remesa Comisiones de Créditos:  {id}");
+            return id;
         }
 
         /// <summary>
         /// Actualiza una remesa existente en la base de datos.
         /// </summary>
         /// <param name="connection"></param>
-        /// <param name="transaction"></param>
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        private ErrorDto<int> ActualizarRemesa(IDbConnection connection, IDbTransaction transaction, int CodEmpresa, CrdComisionesPagoRemesaGuardarRequest request)
+        private ErrorDto<int> ActualizarRemesa(IDbConnection connection, int CodEmpresa, CrdComisionesPagoRemesaGuardarRequest request)
         {
             const string query = """
                 UPDATE CRD_COMISIONES_REMESAS
@@ -445,11 +429,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             var filas = connection.QuerySingle<int>(
                 query,
-                parametros,
-                transaction);
+                parametros);
 
             if (filas == 0)
-            {                
+            {
                 return DbHelper.CreateErrorResponse<int>(
                     "La remesa no existe o no se encuentra abierta.",
                     -2);
@@ -553,75 +536,44 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// </summary>
         public ErrorDto<CrdComisionesPagoProcesoResponse> CrdComisionesPago_Remesa_Cargar(int CodEmpresa, CrdComisionesPagoCargaRequest request)
         {
-            using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
-            connection.Open();
-            using var transaction = connection.BeginTransaction();
+            if (request is null || request.CodRemesa <= 0 || request.Solicitudes is null || request.Solicitudes.Count == 0)
+                return DbHelper.CreateErrorResponse("Debe indicar la remesa y seleccionar operaciones.", -1, new CrdComisionesPagoProcesoResponse());
 
+            var solicitudes = request.Solicitudes.Where(id => id > 0).Distinct().ToList();
+            if (solicitudes.Count == 0)
+                return DbHelper.CreateErrorResponse("Debe seleccionar operaciones válidas.", -1, new CrdComisionesPagoProcesoResponse());
+
+            var completadas = 0;
+            var llamadaIniciada = false;
             try
             {
-                if (request.Solicitudes.Count == 0)
-                {
-                    return DbHelper.CreateErrorResponse(
-                        "Debe seleccionar al menos una operación.",
-                        -1,
-                        new CrdComisionesPagoProcesoResponse());
-                }
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                connection.Open();
+                var validacion = ValidarRemesaProcesable(connection, request.CodRemesa);
+                if (validacion is not null)
+                    return DbHelper.CreateErrorResponse(validacion, -1, new CrdComisionesPagoProcesoResponse());
 
-                var validacionRemesa = ValidarRemesaProcesable(
-                    connection,
-                    transaction,
-                    request.CodRemesa);
-
-                if (validacionRemesa is not null)
-                {
-                    transaction.Rollback();
-
-                    return DbHelper.CreateErrorResponse(
-                        validacionRemesa,
-                        -1,
-                        new CrdComisionesPagoProcesoResponse());
-                }
-
-                var solicitudes = request.Solicitudes
-                    .Where(id => id > 0)
-                    .Distinct()
-                    .ToList();
-
-                const string query = """
-                        EXEC spCrd_Comisiones_Pago_RemesaCarga
-                            @CodRemesa,
-                            @IdSolicitud;
-                        """;
-
+                const string query = "EXEC spCrd_Comisiones_Pago_RemesaCarga @CodRemesa, @IdSolicitud;";
                 foreach (var idSolicitud in solicitudes)
                 {
-                    connection.Execute(
-                        query,
-                        new
-                        {
-                            request.CodRemesa,
-                            IdSolicitud = idSolicitud
-                        },
-                        transaction);
+                    llamadaIniciada = true;
+                    connection.Execute(query, new { request.CodRemesa, IdSolicitud = idSolicitud });
+                    llamadaIniciada = false;
+                    completadas++;
                 }
 
-                transaction.Commit();
-
-                return DbHelper.CreateOkResponse(
-                    new CrdComisionesPagoProcesoResponse
-                    {
-                        CantidadProcesada = solicitudes.Count,
-                        Mensaje = "Operaciones cargadas satisfactoriamente."
-                    });
+                return DbHelper.CreateOkResponse(new CrdComisionesPagoProcesoResponse
+                {
+                    CantidadProcesada = completadas,
+                    Mensaje = "Operaciones cargadas satisfactoriamente."
+                });
             }
             catch (Exception)
             {
-                transaction.Rollback();
-
-                return DbHelper.CreateErrorResponse(
-                    "Error al cargar las operaciones en la remesa.",
-                    -1,
-                    new CrdComisionesPagoProcesoResponse());
+                var mensaje = completadas > 0 || llamadaIniciada
+                    ? $"Falló la carga. Se completaron {completadas} llamada(s); la operación que falló pudo modificar datos. Revise el detalle de la remesa antes de reintentar."
+                    : "No se pudo iniciar la carga de operaciones.";
+                return DbHelper.CreateErrorResponse(mensaje, -1, new CrdComisionesPagoProcesoResponse { CantidadProcesada = completadas });
             }
         }
 
@@ -629,14 +581,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// Valida si una remesa está en un estado procesable (abierta o en proceso).
         /// </summary>
         /// <param name="connection"></param>
-        /// <param name="transaction"></param>
         /// <param name="codRemesa"></param>
         /// <returns></returns>
-        private static string? ValidarRemesaProcesable(IDbConnection connection, IDbTransaction transaction, int codRemesa)
+        private static string? ValidarRemesaProcesable(IDbConnection connection, int codRemesa)
         {
             const string query = """
         SELECT COUNT(1)
-        FROM CRD_COMISIONES_REMESAS WITH (UPDLOCK, HOLDLOCK)
+        FROM CRD_COMISIONES_REMESAS 
         WHERE cod_remesa = @CodRemesa
           AND estado IN (@EstadoAbierto, @EstadoProceso);
         """;
@@ -648,8 +599,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     CodRemesa = codRemesa,
                     EstadoAbierto = CrdComisionesPagoEstados.Abierta,
                     EstadoProceso = CrdComisionesPagoEstados.Proceso
-                },
-                transaction);
+                });
 
             if (existe == 0)
             {
@@ -663,51 +613,35 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// </summary>
         public ErrorDto<bool> CrdComisionesPago_Remesa_Cerrar(int CodEmpresa, CrdComisionesPagoCerrarRequest request)
         {
-            using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
-            connection.Open();
-            using var transaction = connection.BeginTransaction();
+            if (request is null || request.CodRemesa <= 0)
+                return DbHelper.CreateErrorResponse("Debe indicar una remesa válida.", -1, false);
 
+            var cierreIniciado = false;
+            var cierreTerminado = false;
             try
             {
-                var validacionRemesa = ValidarRemesaProcesable(
-                    connection,
-                    transaction,
-                    request.CodRemesa);
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                connection.Open();
+                var validacion = ValidarRemesaProcesable(connection, request.CodRemesa);
+                if (validacion is not null)
+                    return DbHelper.CreateErrorResponse(validacion, -2, false);
 
-                if (validacionRemesa is not null)
-                {
-                    transaction.Rollback();
-
-                    return DbHelper.CreateErrorResponse(
-                        validacionRemesa,
-                        -2,
-                        false);
-                }
-
-                const string query = """
-                    EXEC spCrd_Comisiones_Pago_RemesaCierra
-                        @CodRemesa;
-                    """;
-
-                connection.Execute(
-                    query,
-                    new { request.CodRemesa },
-                    transaction);
-
-                Bitacora_Registrar(CodEmpresa, request.Usuario, "Aplica", $"Comisiones de Colocación [CIERRA] Remesa Id:  {request.CodRemesa}");
-
-                transaction.Commit();
-
+                cierreIniciado = true;
+                connection.Execute("EXEC spCrd_Comisiones_Pago_RemesaCierra @CodRemesa, @Usuario;",
+                    new { request.CodRemesa, request.Usuario });
+                cierreTerminado = true;
+                Bitacora_Registrar(CodEmpresa, request.Usuario, "Aplica",
+                    $"Comisiones de Colocación [CIERRA] Remesa Id: {request.CodRemesa}");
                 return DbHelper.CreateOkResponse(true);
             }
             catch (Exception)
             {
-                transaction.Rollback();
-
-                return DbHelper.CreateErrorResponse(
-                    "Error al cerrar la remesa de comisiones.",
-                    -1,
-                    false);
+                var mensaje = cierreTerminado
+                    ? "La remesa se cerró, pero falló un paso posterior. Verifique la bitácora antes de reintentar."
+                    : cierreIniciado
+                        ? "Falló el cierre. El procedimiento pudo crear el resumen o cambiar el estado parcialmente. Revise la remesa antes de reintentar."
+                        : "No se pudo iniciar el cierre de la remesa.";
+                return DbHelper.CreateErrorResponse(mensaje, -1, false);
             }
         }
 
@@ -735,61 +669,53 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// </summary>
         public ErrorDto<CrdComisionesPagoProcesoResponse> CrdComisionesPago_Remesa_Trasladar(int CodEmpresa, CrdComisionesPagoTrasladarRequest request)
         {
-            using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
-            connection.Open();
-            using var transaction = connection.BeginTransaction();
+            if (request is null || request.CodRemesa <= 0 || request.Ejecutivos is null || request.Ejecutivos.Count == 0 ||
+                string.IsNullOrWhiteSpace(request.Usuario) || string.IsNullOrWhiteSpace(request.Aplicacion))
+                return DbHelper.CreateErrorResponse("Debe indicar remesa, ejecutivos y usuario válidos.", -1, new CrdComisionesPagoProcesoResponse());
 
+            if (request.Ejecutivos.Any(id => !int.TryParse(id, out var numero) || numero <= 0))
+                return DbHelper.CreateErrorResponse("Hay ejecutivos inválidos en la selección.", -1, new CrdComisionesPagoProcesoResponse());
+
+            var ejecutivos = request.Ejecutivos.Distinct().ToList();
+            var completados = 0;
+            var llamadaIniciada = false;
+            var estadoActualizado = false;
             try
-            { 
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+                connection.Open();
+                ValidarRemesaCerrada(connection, request.CodRemesa);
 
-               
-                ValidarRemesaCerrada(
-                    connection,
-                    transaction,
-                    request.CodRemesa);
-
-                var cantidadProcesada = ProcesarTraslados(
-                    connection,
-                    transaction,
-                    request);
-
-                ActualizarEstadoTrasladado(
-                    connection,
-                    transaction,
-                    request.CodRemesa);
-
-                if(cantidadProcesada > 0)
+                foreach (var ejecutivoId in ejecutivos)
                 {
-                    Bitacora_Registrar(CodEmpresa, request.Usuario, "Registra", $"Comisiones de Colocación [TRASLADA] Remesa Id: {request.CodRemesa}");
-
+                    llamadaIniciada = true;
+                    var tesoreriaId = connection.QuerySingle<int>(
+                        "EXEC spCrd_Comisiones_Pago_RemesaTraslado @CodRemesa, @EjecutivoId, @Usuario, @Aplicacion;",
+                        new { request.CodRemesa, EjecutivoId = int.Parse(ejecutivoId), request.Usuario, request.Aplicacion });
+                    llamadaIniciada = false;
+                    if (tesoreriaId > 0) completados++;
                 }
 
-                transaction.Commit();
+                ActualizarEstadoTrasladado(connection, request.CodRemesa);
+                estadoActualizado = true;
+                Bitacora_Registrar(CodEmpresa, request.Usuario, "Registra",
+                    $"Comisiones de Colocación [TRASLADA] Remesa Id: {request.CodRemesa}");
 
-                return DbHelper.CreateOkResponse(
-                    new CrdComisionesPagoProcesoResponse
-                    {
-                        CantidadProcesada = request.Ejecutivos.Count,
-                        Mensaje = "Caso Enviados a Bancos para su desembolso!"
-                    });
-            }
-            catch (InvalidOperationException exception)
-            {
-                transaction.Rollback();
-
-                return DbHelper.CreateErrorResponse(
-                    exception.Message,
-                    -1,
-                    new CrdComisionesPagoProcesoResponse());
+                return DbHelper.CreateOkResponse(new CrdComisionesPagoProcesoResponse
+                {
+                    CantidadProcesada = completados,
+                    Mensaje = "Casos enviados a Bancos para su desembolso."
+                });
             }
             catch (Exception)
             {
-                transaction.Rollback();
-
-                return DbHelper.CreateErrorResponse(
-                    "Error al trasladar las comisiones a tesorería.",
-                    -1,
-                    new CrdComisionesPagoProcesoResponse());
+                var mensaje = estadoActualizado
+                    ? "Los traslados y el cambio de estado se completaron, pero falló un paso posterior. Revise la bitácora."
+                    : completados > 0 || llamadaIniciada
+                        ? $"Traslado incompleto: {completados} llamada(s) terminaron. La llamada que falló pudo modificar Tesorería. Revise remesa y transacciones antes de reintentar."
+                        : "No se pudo iniciar el traslado. Revise el estado de la remesa.";
+                return DbHelper.CreateErrorResponse(mensaje, -1,
+                    new CrdComisionesPagoProcesoResponse { CantidadProcesada = completados, Mensaje = mensaje });
             }
         }
 
@@ -797,14 +723,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// Valida si una remesa está cerrada antes de permitir su traslado.
         /// </summary>
         /// <param name="connection"></param>
-        /// <param name="transaction"></param>
         /// <param name="codRemesa"></param>
         /// <exception cref="InvalidOperationException"></exception>
-        private static void ValidarRemesaCerrada(IDbConnection connection, IDbTransaction transaction, int codRemesa)
+        private static void ValidarRemesaCerrada(IDbConnection connection, int codRemesa)
         {
             const string query = """
         SELECT COUNT(1)
-        FROM CRD_COMISIONES_REMESAS WITH (UPDLOCK, HOLDLOCK)
+        FROM CRD_COMISIONES_REMESAS 
         WHERE cod_remesa = @CodRemesa
           AND estado = @EstadoCerrado;
         """;
@@ -815,8 +740,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 {
                     CodRemesa = codRemesa,
                     EstadoCerrado = CrdComisionesPagoEstados.Cerrada
-                },
-                transaction);
+                });
 
             if (existe == 0)
             {
@@ -829,35 +753,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// Procesa el traslado de comisiones para una remesa específica.
         /// </summary>
         /// <param name="connection"></param>
-        /// <param name="transaction"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        private static int ProcesarTraslados(IDbConnection connection, IDbTransaction transaction, CrdComisionesPagoTrasladarRequest request)
-        {
-            const string query = """
-                EXEC spCrd_Comisiones_Pago_RemesaTraslado
-                    @CodRemesa,
-                    @EjecutivoId,
-                    @Usuario,
-                    @Aplicacion;
-                """;
-
-
-            var parametros = request.Ejecutivos.Select(ejecutivoId => new
-            {
-                request.CodRemesa,
-                EjecutivoId = ejecutivoId,
-                request.Usuario,
-                request.Aplicacion
-            });
-
-            return connection.Execute(
-                query,
-                parametros,
-                transaction);
-        }
-
-        private static void ActualizarEstadoTrasladado(IDbConnection connection, IDbTransaction transaction, int codRemesa)
+        private static void ActualizarEstadoTrasladado(IDbConnection connection, int codRemesa)
         {
             const string query = """
                     UPDATE CRD_COMISIONES_REMESAS
@@ -874,8 +772,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     CodRemesa = codRemesa,
                     EstadoTrasladado = CrdComisionesPagoEstados.Trasladada,
                     EstadoCerrado = CrdComisionesPagoEstados.Cerrada
-                },
-                transaction);
+                });
 
             if (filas == 0)
             {

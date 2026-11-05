@@ -1,8 +1,9 @@
 ﻿using Dapper;
-using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
+using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace Galileo.DataBaseTier
 {
@@ -11,63 +12,64 @@ namespace Galileo.DataBaseTier
         private readonly IConfiguration _config;
 
         private const string SqlPromotoresActivos = @"
-                    SELECT id_promotor AS item,
-                           nombre AS descripcion
-                    FROM dbo.PROMOTORES
-                    WHERE estado = 1;";
+            SELECT id_promotor AS item,
+                   nombre AS descripcion
+            FROM dbo.PROMOTORES
+            WHERE estado = 1;";
 
         private const string SqlActivarSocio = @"
-                    UPDATE dbo.socios
-                    SET estadoactual = 'S',
-                        FechaIngreso = dbo.MyGetdate(),
-                        priDeduc = @PriDeduc,
-                        reg_user = @Usuario,
-                        reg_fecha = dbo.MyGetdate(),
-                        Fecha_Comision = NULL,
-                        id_promotor = @IdPromotor,
-                        cod_oficina = @CodOficina
-                    WHERE cedula = @Cedula;";
+            UPDATE dbo.socios
+            SET estadoactual = 'S',
+                FechaIngreso = GETDATE(),
+                priDeduc = @PriDeduc,
+                reg_user = @Usuario,
+                reg_fecha = GETDATE(),
+                Fecha_Comision = NULL,
+                id_promotor = @IdPromotor,
+                cod_oficina = @CodOficina
+            WHERE cedula = @Cedula;";
 
         private const string SqlPromotorActivo = @"
-                    SELECT ISNULL(MAX(estado), 0)
-                    FROM dbo.promotores
-                    WHERE id_promotor = @IdPromotor;";
+            SELECT ISNULL(MAX(estado), 0)
+            FROM dbo.promotores
+            WHERE id_promotor = @IdPromotor;";
 
         private const string SqlInsertarIngreso = @"
-                    INSERT INTO dbo.afi_ingresos
-                    (
-                        Cedula,
-                        fecha_ingreso,
-                        id_promotor,
-                        Boleta,
-                        Usuario,
-                        Fecha,
-                        cod_oficina
-                    )
-                    VALUES
-                    (
-                        @Cedula,
-                        dbo.MyGetdate(),
-                        @IdPromotor,
-                        @Boleta,
-                        @Usuario,
-                        dbo.MyGetdate(),
-                        @CodOficina
-                    );";
+            INSERT INTO dbo.afi_ingresos
+            (
+                Cedula,
+                fecha_ingreso,
+                id_promotor,
+                Boleta,
+                Usuario,
+                Fecha,
+                cod_oficina
+            )
+            VALUES
+            (
+                @Cedula,
+                GETDATE(),
+                @IdPromotor,
+                @Boleta,
+                @Usuario,
+                GETDATE(),
+                @CodOficina
+            );";
 
-        private const string SpVinculaPatrimonio = "spAFI_PERSONA_PATRIMONIO_Vincula";
+        private const string SpVinculaPatrimonio =
+            "spAFI_PERSONA_PATRIMONIO_Vincula";
 
         public FrmAFReingresosDB(IConfiguration config)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _config = config
+                ?? throw new ArgumentNullException(nameof(config));
         }
 
         /// <summary>
         /// Obtiene los promotores activos disponibles para reingreso.
         /// </summary>
-        /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <returns>Listado de promotores activos.</returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> AF_PromotoresReingreso_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            AF_PromotoresReingreso_Obtener(int CodEmpresa)
         {
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 CreatePortalDb(),
@@ -75,126 +77,173 @@ namespace Galileo.DataBaseTier
                 SqlPromotoresActivos);
         }
 
-
         /// <summary>
-        /// Activa un socio, registra ingreso y vincula patrimonio en una sola transacción.
+        /// Activa el socio, registra su ingreso y vincula su patrimonio
+        /// directamente, sin una transacción iniciada por este DB.
         /// </summary>
-        /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <param name="request">Datos serializados de activación.</param>
-        /// <returns>Resultado de la operación.</returns>
-        public ErrorDto AF_Persona_ActivarYVincular(int CodEmpresa, string request)
+        public ErrorDto AF_Persona_ActivarYVincular(
+            int CodEmpresa,
+            string request)
         {
-            var req = DbHelper.DeserializeOrNew<AfPersonaActivacionDto>(request);
+            AfPersonaActivacionDto req;
+
+            try
+            {
+                req = DbHelper.DeserializeOrNew<AfPersonaActivacionDto>(
+                    request);
+            }
+            catch (Exception)
+            {
+                return DbHelper.ErrorResponse(
+                    "Los datos de activación no tienen un formato válido.",
+                    -2);
+            }
+
             var validacion = ValidarActivacion(req);
             if (validacion.Code != 0)
             {
                 return validacion;
             }
 
-            var promotorActivo = ValidarPromotorActivo(CodEmpresa, req.id_promotor);
+            var promotorActivo = ValidarPromotorActivo(
+                CodEmpresa,
+                req.id_promotor);
+
             if (promotorActivo.Code != 0)
             {
                 return promotorActivo;
             }
 
-            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            var etapa = 0;
+
+            try
             {
+                using var connection = DbHelper.OpenConnection(
+                    CreatePortalDb(),
+                    CodEmpresa);
+
                 connection.Open();
-                using var transaction = connection.BeginTransaction();
 
-                try
-                {
-                    ActivarSocio(connection, transaction, req);
-                    RegistrarIngreso(connection, transaction, req);
-                    VincularPatrimonio(connection, transaction, req);
-                    transaction.Commit();
-                    return true;
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
-                }
-            });
+                etapa = 1;
+                var sociosActualizados = ActivarSocio(connection, req);
 
-            return result.Code == 0
-                ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(result.Description ?? "Error al activar y vincular persona.", result.Code.GetValueOrDefault(-1));
+                if (sociosActualizados == 0)
+                {
+                    return DbHelper.ErrorResponse(
+                        "No se encontró el socio para activar. " +
+                        "No se registró el ingreso ni se vinculó el patrimonio.",
+                        -1);
+                }
+
+                etapa = 2;
+                RegistrarIngreso(connection, req);
+
+                etapa = 3;
+                VincularPatrimonio(connection, req);
+
+                return DbHelper.OkResponse(
+                    "Persona activada, ingreso registrado y patrimonio vinculado.");
+            }
+            catch (Exception)
+            {
+                var mensaje = etapa switch
+                {
+                    1 =>
+                        "Falló la activación del socio. Verifique su estado " +
+                        "antes de reintentar.",
+
+                    2 =>
+                        "El socio quedó activado, pero falló el registro " +
+                        "del ingreso. Verifique si se insertó algún ingreso " +
+                        "antes de reintentar.",
+
+                    3 =>
+                        "El socio fue activado y se registró su ingreso, " +
+                        "pero falló la vinculación del patrimonio. " +
+                        "Revise los tres datos antes de reintentar.",
+
+                    _ =>
+                        "No se pudo abrir la conexión para activar " +
+                        "a la persona."
+                };
+
+                return DbHelper.ErrorResponse(mensaje, -1);
+            }
         }
-
 
         /// <summary>
         /// Valida los datos requeridos para activar una persona.
         /// </summary>
-        private static ErrorDto ValidarActivacion(AfPersonaActivacionDto req)
+        private static ErrorDto ValidarActivacion(
+            AfPersonaActivacionDto req)
         {
-            if (string.IsNullOrWhiteSpace(req.cedula))
+            if (req is null ||
+                string.IsNullOrWhiteSpace(req.cedula))
             {
-                return DbHelper.ErrorResponse("La cédula es requerida.", -2);
+                return DbHelper.ErrorResponse(
+                    "La cédula es requerida.",
+                    -2);
             }
 
             if (string.IsNullOrWhiteSpace(req.usuario))
             {
-                return DbHelper.ErrorResponse("El usuario es requerido.", -2);
+                return DbHelper.ErrorResponse(
+                    "El usuario es requerido.",
+                    -2);
             }
 
             if (req.id_promotor <= 0)
             {
-                return DbHelper.ErrorResponse("El promotor es requerido.", -2);
+                return DbHelper.ErrorResponse(
+                    "El promotor es requerido.",
+                    -2);
             }
 
             return DbHelper.OkResponse("Ok");
         }
 
         /// <summary>
-        /// Actualiza la información del socio para activar su estado.
+        /// Actualiza el socio y devuelve la cantidad de filas afectadas.
         /// </summary>
-        /// <param name="connection">Conexión SQL abierta.</param>
-        /// <param name="transaction">Transacción activa.</param>
-        /// <param name="req">Datos de activación.</param>
-        private static void ActivarSocio(SqlConnection connection, SqlTransaction transaction, AfPersonaActivacionDto req)
+        private static int ActivarSocio(
+            SqlConnection connection,
+            AfPersonaActivacionDto req)
         {
-            connection.Execute(
+            return connection.Execute(
                 SqlActivarSocio,
-                CrearParametrosActivacion(req),
-                transaction);
+                CrearParametrosActivacion(req));
         }
 
         /// <summary>
         /// Registra el ingreso de la persona.
         /// </summary>
-        /// <param name="connection">Conexión SQL abierta.</param>
-        /// <param name="transaction">Transacción activa.</param>
-        /// <param name="req">Datos de ingreso.</param>
-        private static void RegistrarIngreso(SqlConnection connection, SqlTransaction transaction, AfPersonaActivacionDto req)
+        private static void RegistrarIngreso(
+            SqlConnection connection,
+            AfPersonaActivacionDto req)
         {
             connection.Execute(
                 SqlInsertarIngreso,
-                CrearParametrosIngreso(req),
-                transaction);
+                CrearParametrosIngreso(req));
         }
 
         /// <summary>
-        /// Vincula el patrimonio de la persona.
+        /// Ejecuta el procedimiento existente que vincula el patrimonio.
         /// </summary>
-        /// <param name="connection">Conexión SQL abierta.</param>
-        /// <param name="transaction">Transacción activa.</param>
-        /// <param name="req">Datos de la persona.</param>
-        private static void VincularPatrimonio(SqlConnection connection, SqlTransaction transaction, AfPersonaActivacionDto req)
+        private static void VincularPatrimonio(
+            SqlConnection connection,
+            AfPersonaActivacionDto req)
         {
             connection.Execute(
                 SpVinculaPatrimonio,
                 new { Cedula = NormalizarTexto(req.cedula) },
-                transaction,
-                commandType: System.Data.CommandType.StoredProcedure);
+                commandType: CommandType.StoredProcedure);
         }
 
         /// <summary>
-        /// Crea parámetros seguros para activar un socio.
+        /// Crea los parámetros para activar el socio.
         /// </summary>
-        /// <param name="req">Datos de activación.</param>
-        /// <returns>Parámetros para actualizar el socio.</returns>
-        private static object CrearParametrosActivacion(AfPersonaActivacionDto req)
+        private static object CrearParametrosActivacion(
+            AfPersonaActivacionDto req)
         {
             return new
             {
@@ -207,11 +256,10 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Crea parámetros seguros para registrar el ingreso.
+        /// Crea los parámetros para registrar el ingreso.
         /// </summary>
-        /// <param name="req">Datos de ingreso.</param>
-        /// <returns>Parámetros para insertar el histórico de ingreso.</returns>
-        private static object CrearParametrosIngreso(AfPersonaActivacionDto req)
+        private static object CrearParametrosIngreso(
+            AfPersonaActivacionDto req)
         {
             return new
             {
@@ -224,17 +272,16 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Crea una instancia de acceso al portal usando la configuración inyectada.
+        /// Crea el acceso al portal con la configuración inyectada.
         /// </summary>
         private PortalDB CreatePortalDb() => new(_config);
 
         /// <summary>
-        /// Verifica si el promotor recibido existe y está activo.
+        /// Verifica que el promotor exista y esté activo.
         /// </summary>
-        /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <param name="idPromotor">Código del promotor.</param>
-        /// <returns>Resultado de la validación.</returns>
-        private ErrorDto ValidarPromotorActivo(int CodEmpresa, int idPromotor)
+        private ErrorDto ValidarPromotorActivo(
+            int CodEmpresa,
+            int idPromotor)
         {
             var estado = DbHelper.ExecuteSingleQuery<int>(
                 CreatePortalDb(),
@@ -245,19 +292,23 @@ namespace Galileo.DataBaseTier
 
             if (estado.Code != 0)
             {
-                return DbHelper.ErrorResponse(estado.Description ?? "Error al validar el promotor.", estado.Code.GetValueOrDefault(-1));
+                return DbHelper.ErrorResponse(
+                    estado.Description
+                        ?? "Error al validar el promotor.",
+                    estado.Code.GetValueOrDefault(-1));
             }
 
             return estado.Result == 1
                 ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse("El promotor indicado se encuentra inactivo o no existe.", -2);
+                : DbHelper.ErrorResponse(
+                    "El promotor indicado se encuentra inactivo o no existe.",
+                    -2);
         }
 
         /// <summary>
-        /// Normaliza valores de texto recibidos desde formularios.
+        /// Quita espacios al inicio y al final del texto recibido.
         /// </summary>
-        /// <param name="valor">Valor a normalizar.</param>
-        /// <returns>Valor sin espacios al inicio o al final.</returns>
-        private static string NormalizarTexto(string? valor) => (valor ?? string.Empty).Trim();
+        private static string NormalizarTexto(string? valor)
+            => (valor ?? string.Empty).Trim();
     }
 }

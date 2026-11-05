@@ -148,7 +148,7 @@ public sealed class FrmIvrRecBancosRegistroDb
             IVR_Rec_Bancos_Registro_Guardar_Ejecutar(connection, request, cuenta.Result));
     }
 
-    /// <summary>Elimina las filas seleccionadas; revierte el lote si alguna no pertenece al contexto.</summary>
+    /// <summary>Elimina en una sola sentencia los movimientos que aún pertenecen al contexto.</summary>
     public ErrorDto<int> IVR_Rec_Bancos_Registro_Eliminar(
         int codEmpresa, IvrRecBancosRegistroEliminarRequest? request)
     {
@@ -157,16 +157,11 @@ public sealed class FrmIvrRecBancosRegistroDb
             return DbHelper.CreateErrorResponse<int>(error, CodigoValidacion);
         if (request!.transacciones == null || request.transacciones.Count is 0 or > 500
             || request.transacciones.Any(id => id <= 0))
-            return DbHelper.CreateErrorResponse<int>("Seleccione entre 1 y 500 movimientos válidos.", CodigoValidacion);
+            return DbHelper.CreateErrorResponse<int>(
+                "Seleccione entre 1 y 500 movimientos válidos.", CodigoValidacion);
 
         return IVR_Rec_Bancos_Registro_Ejecutar(codEmpresa, connection =>
         {
-            using var transaction = connection.BeginTransaction();
-            var scope = new RegistroScope(connection, transaction);
-            var validation = IVR_Rec_Bancos_Registro_Origen_Validar(scope, request);
-            if (validation != null)
-                return DbHelper.CreateErrorResponse<int>(validation, CodigoValidacion);
-
             var ids = request.transacciones.Distinct().ToArray();
             const string sql = """
                 DECLARE @eliminadas TABLE (transac_id int);
@@ -182,12 +177,18 @@ public sealed class FrmIvrRecBancosRegistroDb
                 request.ref_tipo,
                 ref_codigo = request.ref_codigo.ToString(CultureInfo.InvariantCulture),
                 request.ref_concepto
-            }, transaction);
+            });
+
             if (eliminados != ids.Length)
                 return DbHelper.CreateErrorResponse<int>(
-                    "Uno o más movimientos ya no existen o no pertenecen a esta solicitud.", CodigoValidacion);
-            transaction.Commit();
-            return DbHelper.CreateOkResponse(eliminados, "Movimientos eliminados satisfactoriamente.");
+                    $"Se eliminaron {eliminados} de {ids.Length} movimientos solicitados. "
+                    + "Los restantes ya no existían o no pertenecían a este contexto.",
+                    CodigoValidacion,
+                    eliminados);
+
+            return DbHelper.CreateOkResponse(
+                eliminados,
+                "Movimientos eliminados satisfactoriamente.");
         });
     }
 

@@ -27,56 +27,96 @@ namespace Galileo.DataBaseTier
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto ExeAnticipos(int CodCliente, string filtros)
         {
-            CxpAnticiposFiltros filtro = JsonConvert.DeserializeObject<CxpAnticiposFiltros>(filtros) ?? new CxpAnticiposFiltros();
-            string cargoPrincipal = filtro.cargoCod.Trim();
-            List<CargoAdicionalAnticipoDto> cargosAdicionales = filtro.cargosAdicionales
-                .Where(cargo => cargo.monto > 0)
-                .Select(cargo => new CargoAdicionalAnticipoDto { codCargo = cargo.codCargo.Trim(), monto = cargo.monto })
+            if (string.IsNullOrWhiteSpace(filtros))
+                return DbHelper.ErrorResponse("Debe indicar los datos del anticipo.", -1);
+
+            CxpAnticiposFiltros filtro;
+            try
+            {
+                filtro = JsonConvert.DeserializeObject<CxpAnticiposFiltros>(filtros)
+                    ?? new CxpAnticiposFiltros();
+            }
+            catch (JsonException)
+            {
+                return DbHelper.ErrorResponse("Los datos del anticipo no tienen un formato válido.", -1);
+            }
+
+            var cargoPrincipal = filtro.cargoCod?.Trim() ?? string.Empty;
+            var cargosAdicionales = (filtro.cargosAdicionales ?? new List<CargoAdicionalAnticipoDto>())
+                .Where(cargo => cargo is not null && cargo.monto > 0)
+                .Select(cargo => new CargoAdicionalAnticipoDto
+                {
+                    codCargo = cargo.codCargo?.Trim() ?? string.Empty,
+                    monto = cargo.monto
+                })
                 .ToList();
 
             if (filtro.proveedor <= 0 || string.IsNullOrWhiteSpace(cargoPrincipal) || filtro.monto <= 0)
                 return DbHelper.ErrorResponse("Proveedor, cargo y monto son obligatorios.", -1);
 
-            if (cargosAdicionales.Any(cargo => string.IsNullOrWhiteSpace(cargo.codCargo)))
-                return DbHelper.ErrorResponse("Todos los cargos adicionales deben tener un código válido.", -1);
+            if (cargoPrincipal.Length > 10 || cargosAdicionales.Any(cargo =>
+                    string.IsNullOrWhiteSpace(cargo.codCargo) || cargo.codCargo.Length > 10))
+                return DbHelper.ErrorResponse("Los códigos de cargo deben tener entre 1 y 10 caracteres.", -1);
 
-            if (cargosAdicionales.Sum(cargo => cargo.monto) > filtro.monto)
+            if (filtro.monto > 99999999999999.99m || decimal.Round(filtro.monto, 2) != filtro.monto ||
+                cargosAdicionales.Any(cargo => cargo.monto > 99999999999999.99m ||
+                    decimal.Round(cargo.monto, 2) != cargo.monto))
+                return DbHelper.ErrorResponse("Los montos deben tener como máximo dos decimales.", -1);
+
+            decimal totalCargos;
+            try
+            {
+                totalCargos = cargosAdicionales.Sum(cargo => cargo.monto);
+            }
+            catch (OverflowException)
+            {
+                return DbHelper.ErrorResponse("El total de cargos adicionales es demasiado grande.", -1);
+            }
+            if (totalCargos > filtro.monto)
                 return DbHelper.ErrorResponse("Los cargos adicionales son mayores que el monto del anticipo.", -1);
 
-            using var connection = CreatePortalDb().CreateConnection(CodCliente);
-            connection.Open();
-            using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
+            if (string.IsNullOrWhiteSpace(filtro.usuario) || filtro.usuario.Length > 30 ||
+                (filtro.documento?.Length ?? 0) > 30 || (filtro.notas?.Length ?? 0) > 500)
+                return DbHelper.ErrorResponse("Usuario, documento o notas inválidos.", -1);
+
+            var spIniciado = false;
+            var spFinalizado = false;
+            var cargosCompletados = 0;
+            string? anticipoEsperado = null;
 
             try
             {
-                if (!CargoExiste(connection, transaction, cargoPrincipal))
-                    return RollbackError(transaction, $"El cargo '{cargoPrincipal}' no existe.", -1);
+                using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente);
+                connection.Open();
 
-                CargoAdicionalAnticipoDto? cargoInvalido = cargosAdicionales
-                    .FirstOrDefault(cargo => !CargoExiste(connection, transaction, cargo.codCargo));
-                if (cargoInvalido != null)
-                    return RollbackError(transaction, $"El cargo adicional '{cargoInvalido.codCargo}' no existe.", -1);
+                if (!CargoExiste(connection, cargoPrincipal))
+                    return DbHelper.ErrorResponse($"El cargo '{cargoPrincipal}' no existe.", -1);
 
-                int consecutivo = connection.ExecuteScalar<int>(
-                    @"select isnull(max(IDX), 0) + 1
-                      from CXP_ANTICIPOS with (updlock, holdlock)
-                      where COD_PROVEEDOR = @Proveedor",
-                    new { Proveedor = filtro.proveedor },
-                    transaction);
+                var cargoInvalido = cargosAdicionales
+                    .FirstOrDefault(cargo => !CargoExiste(connection, cargo.codCargo));
+                if (cargoInvalido is not null)
+                    return DbHelper.ErrorResponse($"El cargo adicional '{cargoInvalido.codCargo}' no existe.", -1);
 
-                string anticipoEsperado = $"ANT.{filtro.proveedor}.{consecutivo:00000}";
-                int registrosParciales = connection.ExecuteScalar<int>(
-                    @"select case when
-                         exists(select 1 from CXP_FACTURAS where COD_PROVEEDOR = @Proveedor and COD_FACTURA = @Anticipo)
-                         or exists(select 1 from CXP_FACTURAS_DETALLE where COD_PROVEEDOR = @Proveedor and COD_FACTURA = @Anticipo)
-                         or exists(select 1 from CXP_PAGOPROV where COD_PROVEEDOR = @Proveedor and COD_FACTURA = @Anticipo)
-                       then 1 else 0 end",
-                    new { Proveedor = filtro.proveedor, Anticipo = anticipoEsperado },
-                    transaction);
+                var consecutivo = connection.ExecuteScalar<int>(
+                    @"SELECT ISNULL(MAX(IDX), 0) + 1
+                      FROM CXP_ANTICIPOS
+                      WHERE COD_PROVEEDOR = @Proveedor;",
+                    new { Proveedor = filtro.proveedor });
+
+                anticipoEsperado = $"ANT.{filtro.proveedor}.{consecutivo:00000}";
+                var registrosParciales = connection.ExecuteScalar<int>(
+                    @"SELECT CASE WHEN
+                         EXISTS(SELECT 1 FROM CXP_FACTURAS WHERE COD_PROVEEDOR = @Proveedor AND COD_FACTURA = @Anticipo)
+                         OR EXISTS(SELECT 1 FROM CXP_FACTURAS_DETALLE WHERE COD_PROVEEDOR = @Proveedor AND COD_FACTURA = @Anticipo)
+                         OR EXISTS(SELECT 1 FROM CXP_PAGOPROV WHERE COD_PROVEEDOR = @Proveedor AND COD_FACTURA = @Anticipo)
+                       THEN 1 ELSE 0 END;",
+                    new { Proveedor = filtro.proveedor, Anticipo = anticipoEsperado });
 
                 if (registrosParciales > 0)
-                    return RollbackError(transaction, $"Existen registros parciales para el anticipo {anticipoEsperado}. Deben revisarse antes de volver a guardar.", -1);
+                    return DbHelper.ErrorResponse(
+                        $"Existen registros parciales para el anticipo {anticipoEsperado}. Revise esos registros antes de volver a guardar.", -1);
 
+                spIniciado = true;
                 connection.Execute(
                     "spCxP_Anticipos",
                     new
@@ -90,28 +130,31 @@ namespace Galileo.DataBaseTier
                         Usuario = filtro.usuario,
                         FechaCargo = filtro.fechaCargo
                     },
-                    transaction,
                     commandType: CommandType.StoredProcedure);
+                spFinalizado = true;
 
-                string? anticipoRegistrado = connection.QuerySingleOrDefault<string>(
-                    @"select ANTICIPOS
-                      from CXP_ANTICIPOS
-                      where COD_PROVEEDOR = @Proveedor and IDX = @Consecutivo",
-                    new { Proveedor = filtro.proveedor, Consecutivo = consecutivo },
-                    transaction);
+                var anticipoRegistrado = connection.QuerySingleOrDefault<string>(
+                    @"SELECT ANTICIPOS
+                      FROM CXP_ANTICIPOS
+                      WHERE COD_PROVEEDOR = @Proveedor AND IDX = @Consecutivo
+                        AND USUARIO = @Usuario AND MONTO = @Monto
+                        AND ISNULL(DOCUMENTO, '') = ISNULL(@Documento, '');",
+                    new { Proveedor = filtro.proveedor, Consecutivo = consecutivo, Usuario = filtro.usuario, Monto = filtro.monto, Documento = filtro.documento });
 
-                if (string.IsNullOrWhiteSpace(anticipoRegistrado))
-                    return RollbackError(transaction, "El procedimiento no generó el registro del anticipo.", -1);
+                if (string.IsNullOrWhiteSpace(anticipoRegistrado) ||
+                    !string.Equals(anticipoRegistrado, anticipoEsperado, StringComparison.OrdinalIgnoreCase))
+                    return DbHelper.ErrorResponse(
+                        "El procedimiento terminó, pero no se pudo identificar con seguridad el anticipo generado. Revise cargos, factura y pago antes de reintentar.", -1);
 
-                foreach (CargoAdicionalAnticipoDto cargo in cargosAdicionales)
+                foreach (var cargo in cargosAdicionales)
                 {
                     connection.Execute(
-                        @"insert CXP_PAGOPROVCARGOS
+                        @"INSERT CXP_PAGOPROVCARGOS
                             (NPAGO, COD_FACTURA, COD_PROVEEDOR, COD_CARGO, MONTO, REGISTRO_FECHA,
                              REGISTRO_USUARIO, COD_DIVISA, TIPO_CAMBIO, TIPO_CARGO, TIPO_PROCESO)
-                          values
+                          VALUES
                             (1, @Anticipo, @Proveedor, @CodCargo, @Monto, dbo.MyGetdate(),
-                             @Usuario, 'COL', 1, 'M', 'D')",
+                             @Usuario, 'COL', 1, 'M', 'D');",
                         new
                         {
                             Anticipo = anticipoRegistrado,
@@ -119,36 +162,33 @@ namespace Galileo.DataBaseTier
                             CodCargo = cargo.codCargo,
                             cargo.monto,
                             Usuario = filtro.usuario
-                        },
-                        transaction);
+                        });
+                    cargosCompletados++;
                 }
 
-                transaction.Commit();
                 return DbHelper.OkResponse("Los datos han sido guardados satisfactoriamente!");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                try { transaction.Rollback(); }
-                catch (Exception rollbackEx)
-                {
-                    return DbHelper.ErrorResponse($"{ex.Message}. Además, falló el rollback: {rollbackEx.Message}", -1);
-                }
-                return DbHelper.ErrorResponse(ex.Message, -1);
+                if (!spIniciado)
+                    return DbHelper.ErrorResponse("No se pudo iniciar el registro del anticipo. No se ejecutó el procedimiento.", -1);
+
+                var referencia = anticipoEsperado is null ? string.Empty : $" Referencia prevista: {anticipoEsperado}.";
+                var etapa = spFinalizado
+                    ? $"El procedimiento terminó y se completaron {cargosCompletados} cargo(s) adicional(es)."
+                    : "El procedimiento pudo haber registrado una parte del anticipo.";
+                return DbHelper.ErrorResponse(
+                    $"No se completó el registro del anticipo.{referencia} {etapa} " +
+                    "Revise el cargo flotante, anticipo, factura, detalle y pago antes de reintentar.", -1);
             }
         }
 
-        private static bool CargoExiste(IDbConnection connection, IDbTransaction transaction, string codCargo)
+        /// <summary>Comprueba que el cargo exista antes de registrar el anticipo.</summary>
+        private static bool CargoExiste(IDbConnection connection, string codCargo)
         {
             return connection.ExecuteScalar<int>(
-                "select count(1) from CXP_CARGOS where LTRIM(RTRIM(COD_CARGO)) = @CodCargo",
-                new { CodCargo = codCargo },
-                transaction) > 0;
-        }
-
-        private static ErrorDto RollbackError(IDbTransaction transaction, string mensaje, int codigo)
-        {
-            transaction.Rollback();
-            return DbHelper.ErrorResponse(mensaje, codigo);
+                "SELECT COUNT(1) FROM CXP_CARGOS WHERE LTRIM(RTRIM(COD_CARGO)) = @CodCargo;",
+                new { CodCargo = codCargo }) > 0;
         }
 
         /// <summary>
@@ -240,12 +280,12 @@ namespace Galileo.DataBaseTier
                 ? new ErrorDto { Code = result.Result, Description = string.Empty }
                 : DbHelper.ErrorResponse(result.Description ?? "Error al obtener el consecutivo del anticipo.", result.Code.GetValueOrDefault(-1));
         }
-        
+
         /// <summary>
         /// Crea una instancia de <see cref="PortalDB"/> usando la configuración actual.
         /// </summary>
         /// <returns>Instancia de acceso a configuración de base de datos.</returns>
         private PortalDB CreatePortalDb() => new(_config);
-    
+
     }//end class
 }//end namespace

@@ -9,43 +9,52 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
     public partial class FrmCrCatalogoCreditosDb
     {
-
         /// <summary>
-        /// Obtiene los comites de estudio de credito configurables por linea.
+        /// Obtiene los comités de estudio de crédito configurables por línea.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codigo"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CrCatalogoCreditoComiteEstudioData>> CrCatalogoCreditos_ComitesEstudio_Obtener(int codEmpresa, string codigo)
+        public ErrorDto<List<CrCatalogoCreditoComiteEstudioData>> CrCatalogoCreditos_ComitesEstudio_Obtener(
+                int codEmpresa,
+                string codigo)
         {
             codigo = codigo.Trim().ToUpperInvariant();
+
             if (string.IsNullOrWhiteSpace(codigo))
             {
-                return new ErrorDto<List<CrCatalogoCreditoComiteEstudioData>>
-                {
-                    Code = -1,
-                    Description = "Debe consultar una linea de credito."
-                };
+                return DbHelper.CreateErrorResponse(
+                    "Debe consultar una línea de crédito.",
+                    -1,
+                    new List<CrCatalogoCreditoComiteEstudioData>());
             }
 
-            const string query = "EXEC spCRD_ComitesPreanalisis_Consulta @Codigo;";
+            const string query =
+                "EXEC spCRD_ComitesPreanalisis_Consulta @Codigo;";
 
-            return DbHelper.WithConn(_portalDb, codEmpresa, connection =>
-                connection.Query(query, new { Codigo = codigo })
+            return DbHelper.WithConn(
+                _portalDb,
+                codEmpresa,
+                connection => connection
+                    .Query(query, new { Codigo = codigo })
                     .Select(MapearComiteEstudio)
                     .ToList());
         }
 
-        private static CrCatalogoCreditoComiteEstudioData MapearComiteEstudio(dynamic fila)
+        private static CrCatalogoCreditoComiteEstudioData
+            MapearComiteEstudio(dynamic fila)
         {
-            IDictionary<string, object> valores = (IDictionary<string, object>)fila;
+            IDictionary<string, object> valores =
+                (IDictionary<string, object>)fila;
+
             return new CrCatalogoCreditoComiteEstudioData
             {
                 id = ValorComiteEntero(valores, 0, "id"),
-                linea = ValorComiteTexto(valores, 1, "linea", "codigo", "cod_linea"),
-                id_comite = ValorComiteEntero(valores, 2, "id_comite", "idcomite"),
-                comite = ValorComiteTexto(valores, 3, "comite", "descripcion"),
-                porcentaje = ValorComiteDecimal(valores, 4, "porcentaje", "porc_extras")
+                linea = ValorComiteTexto(
+                    valores, 1, "linea", "codigo", "cod_linea"),
+                id_comite = ValorComiteEntero(
+                    valores, 2, "id_comite", "idcomite"),
+                comite = ValorComiteTexto(
+                    valores, 3, "comite", "descripcion"),
+                porcentaje = ValorComiteDecimal(
+                    valores, 4, "porcentaje", "porc_extras")
             };
         }
 
@@ -56,16 +65,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             foreach (string nombre in alias)
             {
-                KeyValuePair<string, object> valor = fila.FirstOrDefault(item =>
-                    string.Equals(item.Key, nombre, StringComparison.OrdinalIgnoreCase));
+                KeyValuePair<string, object> valor =
+                    fila.FirstOrDefault(item =>
+                        string.Equals(
+                            item.Key,
+                            nombre,
+                            StringComparison.OrdinalIgnoreCase));
+
                 if (!string.IsNullOrEmpty(valor.Key))
                 {
-                    return valor.Value is DBNull ? null : valor.Value;
+                    return valor.Value is DBNull
+                        ? null
+                        : valor.Value;
                 }
             }
 
-            object? valorPosicional = fila.Values.ElementAtOrDefault(posicion);
-            return valorPosicional is DBNull ? null : valorPosicional;
+            object? valorPosicional =
+                fila.Values.ElementAtOrDefault(posicion);
+
+            return valorPosicional is DBNull
+                ? null
+                : valorPosicional;
         }
 
         private static string ValorComiteTexto(
@@ -74,7 +94,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             params string[] alias)
             => Convert.ToString(
                 ValorComite(fila, posicion, alias),
-                CultureInfo.InvariantCulture)?.Trim() ?? string.Empty;
+                CultureInfo.InvariantCulture)?.Trim()
+               ?? string.Empty;
 
         private static int ValorComiteEntero(
             IDictionary<string, object> fila,
@@ -82,7 +103,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             params string[] alias)
         {
             object? valor = ValorComite(fila, posicion, alias);
-            return valor is null ? 0 : Convert.ToInt32(valor, CultureInfo.InvariantCulture);
+
+            return valor is null
+                ? 0
+                : Convert.ToInt32(
+                    valor,
+                    CultureInfo.InvariantCulture);
         }
 
         private static decimal ValorComiteDecimal(
@@ -91,47 +117,73 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             params string[] alias)
         {
             object? valor = ValorComite(fila, posicion, alias);
-            return valor is null ? 0 : Convert.ToDecimal(valor, CultureInfo.InvariantCulture);
+
+            return valor is null
+                ? 0
+                : Convert.ToDecimal(
+                    valor,
+                    CultureInfo.InvariantCulture);
         }
 
-
         /// <summary>
-        /// Guarda el porcentaje de extras por comite para estudio de credito.
+        /// Actualiza la descripción del comité y guarda su porcentaje
+        /// mediante spCrd_ComitesPreanalisis_Add, sin transacción externa.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto<int> CrCatalogoCreditos_ComiteEstudio_Guardar(int codEmpresa, CrCatalogoCreditoComiteEstudioGuardarRequest request)
+        public ErrorDto<int> CrCatalogoCreditos_ComiteEstudio_Guardar(
+            int codEmpresa,
+            CrCatalogoCreditoComiteEstudioGuardarRequest request)
         {
+            if (request is null || request.comite is null)
+            {
+                return DbHelper.CreateErrorResponse<int>(
+                    "Debe indicar la línea y el comité.");
+            }
+
             NormalizarComiteEstudioRequest(request);
+
             if (string.IsNullOrWhiteSpace(request.codigo) ||
                 request.comite.id_comite <= 0 ||
                 string.IsNullOrWhiteSpace(request.comite.comite))
             {
-                return new ErrorDto<int>
-                {
-                    Code = -1,
-                    Description = "Debe indicar la linea y el comite."
-                };
+                return DbHelper.CreateErrorResponse<int>(
+                    "Debe indicar la línea y el comité.");
             }
+
+            bool descripcionActualizada = false;
+            bool procedimientoIniciado = false;
+            int id;
 
             try
             {
-                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                using var connection =
+                    DbHelper.OpenConnection(_portalDb, codEmpresa);
+
                 connection.Open();
-                using var transaction = connection.BeginTransaction();
 
                 connection.Execute(
-                    "UPDATE comites SET descripcion = @Descripcion WHERE id_comite = @IdComite;",
+                    """
+                    UPDATE comites
+                    SET descripcion = @Descripcion
+                    WHERE id_comite = @IdComite;
+                    """,
                     new
                     {
                         Descripcion = request.comite.comite,
                         IdComite = request.comite.id_comite
-                    },
-                    transaction);
+                    });
 
-                int id = connection.QueryFirstOrDefault<int>(
-                    "EXEC spCrd_ComitesPreanalisis_Add @Id, @Codigo, @IdComite, @Porcentaje, @Usuario;",
+                descripcionActualizada = true;
+                procedimientoIniciado = true;
+
+                id = connection.QueryFirstOrDefault<int>(
+                    """
+                    EXEC spCrd_ComitesPreanalisis_Add
+                         @Id,
+                         @Codigo,
+                         @IdComite,
+                         @Porcentaje,
+                         @Usuario;
+                    """,
                     new
                     {
                         Id = request.comite.id,
@@ -139,31 +191,62 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         IdComite = request.comite.id_comite,
                         Porcentaje = request.comite.porcentaje,
                         Usuario = request.usuario
-                    },
-                    transaction);
+                    });
 
-                transaction.Commit();
+                if (id <= 0)
+                {
+                    return DbHelper.CreateErrorResponse<int>(
+                        "El procedimiento no devolvió un identificador válido. " +
+                        "La descripción del comité pudo quedar actualizada. " +
+                        "Revise el registro antes de reintentar.");
+                }
+            }
+            catch (SqlException)
+            {
+                return DbHelper.CreateErrorResponse<int>(
+                    procedimientoIniciado
+                        ? "Falló el guardado del porcentaje. La descripción del " +
+                          "comité ya pudo quedar actualizada. Revise ambos datos " +
+                          "antes de reintentar."
+                        : descripcionActualizada
+                            ? "Falló el guardado después de actualizar la " +
+                              "descripción del comité. Revise los datos antes " +
+                              "de reintentar."
+                            : "No se pudo actualizar el comité.");
+            }
+            catch (Exception)
+            {
+                return DbHelper.CreateErrorResponse<int>(
+                    procedimientoIniciado || descripcionActualizada
+                        ? "No se pudo completar el guardado. La descripción " +
+                          "del comité pudo quedar actualizada. Revise ambos " +
+                          "datos antes de reintentar."
+                        : "No se pudo iniciar el guardado del comité.");
+            }
 
+            try
+            {
                 RegistrarBitacora(
                     codEmpresa,
                     request.usuario,
-                    request.comite.id == 0 ? "Registra - WEB" : "Modifica - WEB",
-                    $"Config: Porc. Extras [Linea: {request.codigo}, Id Reg: {id}...Comite: {request.comite.comite}] Porc: {request.comite.porcentaje:N2}");
+                    request.comite.id == 0
+                        ? "Registra - WEB"
+                        : "Modifica - WEB",
+                    $"Config: Porc. Extras [Linea: {request.codigo}, " +
+                    $"Id Reg: {id}...Comite: {request.comite.comite}] " +
+                    $"Porc: {request.comite.porcentaje:N2}");
+            }
+            catch (Exception)
+            {
+                return DbHelper.CreateErrorResponse<int>(
+                    "El comité y su porcentaje se guardaron con el " +
+                    $"identificador {id}, pero falló el registro en bitácora. " +
+                    "Verifique la bitácora antes de reintentar.",
+                    -1,
+                    id);
+            }
 
-                return new ErrorDto<int>
-                {
-                    Code = 0,
-                    Result = id
-                };
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<int>(ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return DbHelper.CreateErrorResponse<int>(ex.Message);
-            }
+            return DbHelper.CreateOkResponse(id);
         }
 
         /// <summary>
@@ -176,6 +259,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             string usuario)
         {
             codigo = codigo.Trim().ToUpperInvariant();
+
             if (string.IsNullOrWhiteSpace(codigo) || id <= 0)
             {
                 return new ErrorDto
@@ -185,9 +269,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 };
             }
 
-            const string query = @"
+            const string query = """
                 DELETE FROM CRD_ComitesPreanalisis
-                WHERE id = @Id;";
+                WHERE id = @Id;
+                """;
 
             var respuesta = DbHelper.ExecuteNonQuery(
                 _portalDb,
