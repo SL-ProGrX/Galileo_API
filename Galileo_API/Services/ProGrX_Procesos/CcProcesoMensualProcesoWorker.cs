@@ -31,13 +31,15 @@ namespace Galileo_API.Services.ProGrX_Procesos
             CcProcesoMensualProcesoQueue queue,
             IConfiguration config,
             ILogger<CcProcesoMensualProcesoWorker> logger,
-            ILogger<CcProcesoMensualRecepcionDb> recepcionLogger)
+            ILoggerFactory loggerFactory)
         {
             _queue = queue;
             _procesoDb = new CcProcesoMensualProcesoDb(config);
             _envioDb = new CcProcesoMensualEnvioDb(config);
             _cargaArchivosDb = new CcProcesoMensualCargaArchivosDb(config);
-            _recepcionDb = new CcProcesoMensualRecepcionDb(config, recepcionLogger);
+            _recepcionDb = new CcProcesoMensualRecepcionDb(
+                config,
+                loggerFactory.CreateLogger<CcProcesoMensualRecepcionDb>());
             _logger = logger;
         }
 
