@@ -206,22 +206,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return DbHelper.CreateErrorResponse<int>(
                     procedimientoIniciado
                         ? "Falló el guardado del porcentaje. La descripción del " +
-                          "comité ya pudo quedar actualizada. Revise ambos datos " +
+                          "comité pudo quedar actualizada. Revise ambos datos " +
                           "antes de reintentar."
-                        : descripcionActualizada
-                            ? "Falló el guardado después de actualizar la " +
-                              "descripción del comité. Revise los datos antes " +
-                              "de reintentar."
-                            : "No se pudo actualizar el comité.");
+                        : "Falló la actualización de la descripción del comité. " +
+                          "Revise su estado antes de reintentar.");
             }
             catch (Exception)
             {
                 return DbHelper.CreateErrorResponse<int>(
-                    procedimientoIniciado || descripcionActualizada
+                    procedimientoIniciado
                         ? "No se pudo completar el guardado. La descripción " +
                           "del comité pudo quedar actualizada. Revise ambos " +
                           "datos antes de reintentar."
-                        : "No se pudo iniciar el guardado del comité.");
+                        : "No se pudo iniciar o completar la actualización " +
+                          "del comité. Revise su estado antes de reintentar.");
             }
 
             try
