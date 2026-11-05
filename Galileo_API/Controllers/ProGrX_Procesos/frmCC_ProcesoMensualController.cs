@@ -19,9 +19,11 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
 
         private readonly CcProcesoMensualBL _bl;
 
-        public FrmCcProcesoMensualController(IConfiguration config)
+        public FrmCcProcesoMensualController(
+            IConfiguration config,
+            ILoggerFactory loggerFactory)
         {
-            _bl = new CcProcesoMensualBL(config);
+            _bl = new CcProcesoMensualBL(config, loggerFactory);
         }
 
         [HttpGet("CcProcesoMensual_Inicial_Obtener")]

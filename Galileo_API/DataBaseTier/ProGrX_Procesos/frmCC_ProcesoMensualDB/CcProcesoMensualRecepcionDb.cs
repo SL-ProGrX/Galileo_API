@@ -2,6 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.Security;
 using Galileo.Models.ERROR;
+using System.Diagnostics;
 using System.Data;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels;
 
@@ -9,19 +10,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 {
     public class CcProcesoMensualRecepcionDb
     {
+        private const int CommandTimeoutSeconds = 0;
         private readonly PortalDB _portalDb;
         private readonly MCobroDb _mCobroDb;
         private readonly CcProcesoMensualGeneralDb _mGeneral;
+        private readonly ILogger<CcProcesoMensualRecepcionDb> _logger;
 
         /// <summary>
         /// Inicializa una nueva instancia para gestionar la recepción y desglose del proceso mensual.
         /// </summary>
         /// <param name="config">Configuración general de la aplicación.</param>
-        public CcProcesoMensualRecepcionDb(IConfiguration config)
+        /// <param name="logger">Logger estructurado para el seguimiento del proceso.</param>
+        public CcProcesoMensualRecepcionDb(
+            IConfiguration config,
+            ILogger<CcProcesoMensualRecepcionDb> logger)
         {
             _portalDb = new PortalDB(config);
             _mCobroDb = new MCobroDb(config);
             _mGeneral = new CcProcesoMensualGeneralDb(config);
+            _logger = logger;
         }
 
         #region sbCrDesgloce
@@ -41,12 +48,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             decimal fechaAnterior = request.FechaProceso;
 
+            _logger.LogInformation(
+                "Desglose de créditos: configuración obtenida. Institución {CodInstitucion}, período {FechaProceso}, histórico {HistoricoCobroEnvio}, aplica inconsistencias {AplicaIncon}",
+                request.CodInstitucion,
+                request.FechaProceso,
+                historicoCobroEnvio,
+                aplicaIncon);
+
             for (var i = 1; i <= historicoCobroEnvio; i++)
             {
                 fechaAnterior = _mCobroDb.fxFechaProcesoAnterior(request.CodEmpresa, fechaAnterior);
             }
 
             EliminarCreditosProceso(connection, transaction, request.CodInstitucion, request.FechaProceso, fechaAnterior);
+
+            _logger.LogInformation(
+                "Desglose de créditos: registros anteriores eliminados. Institución {CodInstitucion}, período {FechaProceso}",
+                request.CodInstitucion,
+                request.FechaProceso);
 
             var resultado = EjecutarCreditoDesglose(
                 connection, transaction,
@@ -64,9 +83,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
              
             var total = resultado.Total;
             var pendientes = total == 0 ? 0 : resultado.Pendientes;
+            var numeroLote = 1;
+
+            _logger.LogInformation(
+                "Desglose de créditos: lote {NumeroLote} finalizado. Total {Total}, pendientes {Pendientes}",
+                numeroLote,
+                total,
+                pendientes);
 
             while (pendientes > 0)
             {
+                numeroLote++;
                 resultado = EjecutarCreditoDesglose(
                     connection, transaction,
                   new CcProcesoMensualCreditoDesgloseDbRequest
@@ -81,6 +108,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                  
                 total = resultado.Total;
                 pendientes = total == 0 ? 0 : resultado.Pendientes;
+
+                _logger.LogInformation(
+                    "Desglose de créditos: lote {NumeroLote} finalizado. Total {Total}, pendientes {Pendientes}",
+                    numeroLote,
+                    total,
+                    pendientes);
             }
         }
 
@@ -103,7 +136,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             return connection.QueryFirstOrDefault<CcProcesoMensualCreditoDesgloseConfigDbModel>(
                 query,
-                new { CodInstitucion = codInstitucion }, transaction)
+                new { CodInstitucion = codInstitucion },
+                transaction,
+                commandTimeout: CommandTimeoutSeconds)
                 ?? new CcProcesoMensualCreditoDesgloseConfigDbModel();
         }
 
@@ -132,7 +167,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                     CodInstitucion = codInstitucion,
                     FechaProceso = fechaProceso,
                     FechaAnterior = fechaAnterior
-                }, transaction);
+                },
+                transaction,
+                commandTimeout: CommandTimeoutSeconds);
         }
 
         /// <summary>
@@ -163,7 +200,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 request.AplicaIncon,
                 request.PrimeraVez,
                 request.Cantidad
-            }, transaction)
+            },
+            transaction,
+            commandTimeout: CommandTimeoutSeconds)
             ?? new CcProcesoMensualCreditoDesgloseResultadoDbModel();
         }
         #endregion 
@@ -185,6 +224,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             }
 
+            var duracionTotal = Stopwatch.StartNew();
+
+            _logger.LogInformation(
+                "Inicio del desglose de planilla. Empresa {CodEmpresa}, institución {CodInstitucion}, período {FechaProceso}, usuario {Usuario}",
+                request.CodEmpresa,
+                request.CodInstitucion,
+                request.FechaProceso,
+                request.Usuario);
+
             using var connection = DbHelper.OpenConnection(_portalDb, request.CodEmpresa);
             _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, request.CodEmpresa, "04", "PRE", request.Usuario, request.CodInstitucion, request.FechaProceso);
 
@@ -193,12 +241,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
             try
             {
+                var duracionEtapa = Stopwatch.StartNew();
+                _logger.LogInformation("Desglose de planilla: iniciando detalle de aportes");
                 DetallarAportes(connection, transaction, request.FechaProceso, request.CodInstitucion);
+                _logger.LogInformation(
+                    "Desglose de planilla: detalle de aportes finalizado en {DuracionMs} ms",
+                    duracionEtapa.ElapsedMilliseconds);
 
+                duracionEtapa.Restart();
+                _logger.LogInformation("Desglose de planilla: iniciando desglose de créditos");
                 CrDesgloce(connection, transaction, request);
+                _logger.LogInformation(
+                    "Desglose de planilla: desglose de créditos finalizado en {DuracionMs} ms",
+                    duracionEtapa.ElapsedMilliseconds);
 
+                duracionEtapa.Restart();
+                _logger.LogInformation("Desglose de planilla: marcando institución como desglosada");
                 MarcarInstitucionComoDesglosada(connection, transaction, request.CodInstitucion);
+                _logger.LogInformation(
+                    "Desglose de planilla: institución actualizada en {DuracionMs} ms",
+                    duracionEtapa.ElapsedMilliseconds);
 
+                _logger.LogInformation("Desglose de planilla: registrando bitácora y confirmando transacción");
                 MProcesoMensualDb.SbBitacoraPlanilla(connection,
                                                   new CcProcesoMensualBitacoraPlanillaDto
                                                   {
@@ -212,6 +276,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 
                 _mGeneral.CcProcesoMensual_ProcesosAdd_Ejecutar(connection, request.CodEmpresa, "04", "POS", request.Usuario, request.CodInstitucion, request.FechaProceso);
 
+                _logger.LogInformation(
+                    "Desglose de planilla finalizado correctamente en {DuracionMs} ms. Empresa {CodEmpresa}, institución {CodInstitucion}, período {FechaProceso}",
+                    duracionTotal.ElapsedMilliseconds,
+                    request.CodEmpresa,
+                    request.CodInstitucion,
+                    request.FechaProceso);
+
                 return DbHelper.CreateOkResponse(
                    new CcProcesoMensualDesglosePlanillaResponse
                    {
@@ -224,6 +295,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             catch (Exception ex)
             {
                 transaction.Rollback();
+
+                _logger.LogError(
+                    ex,
+                    "Error en el desglose de planilla después de {DuracionMs} ms. Empresa {CodEmpresa}, institución {CodInstitucion}, período {FechaProceso}",
+                    duracionTotal.ElapsedMilliseconds,
+                    request.CodEmpresa,
+                    request.CodInstitucion,
+                    request.FechaProceso);
 
                 return DbHelper.CreateErrorResponse<CcProcesoMensualDesglosePlanillaResponse>(
                     ex.Message,
@@ -252,7 +331,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 {
                     FechaProceso = fechaProceso,
                     CodInstitucion = codInstitucion
-                }, transaction: transaction);
+                },
+                transaction: transaction,
+                commandTimeout: CommandTimeoutSeconds);
         }
 
         /// <summary>
@@ -273,7 +354,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 new
                 {
                     CodInstitucion = codInstitucion
-                }, transaction);
+                },
+                transaction,
+                commandTimeout: CommandTimeoutSeconds);
         }
         #endregion 
     }
