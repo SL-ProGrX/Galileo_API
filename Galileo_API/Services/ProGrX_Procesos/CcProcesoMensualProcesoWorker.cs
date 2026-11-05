@@ -19,6 +19,7 @@ namespace Galileo_API.Services.ProGrX_Procesos
         private readonly CcProcesoMensualProcesoDb _procesoDb;
         private readonly CcProcesoMensualEnvioDb _envioDb;
         private readonly CcProcesoMensualCargaArchivosDb _cargaArchivosDb;
+        private readonly CcProcesoMensualRecepcionDb _recepcionDb;
         private readonly ILogger<CcProcesoMensualProcesoWorker> _logger;
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
@@ -29,12 +30,16 @@ namespace Galileo_API.Services.ProGrX_Procesos
         public CcProcesoMensualProcesoWorker(
             CcProcesoMensualProcesoQueue queue,
             IConfiguration config,
-            ILogger<CcProcesoMensualProcesoWorker> logger)
+            ILogger<CcProcesoMensualProcesoWorker> logger,
+            ILoggerFactory loggerFactory)
         {
             _queue = queue;
             _procesoDb = new CcProcesoMensualProcesoDb(config);
             _envioDb = new CcProcesoMensualEnvioDb(config);
             _cargaArchivosDb = new CcProcesoMensualCargaArchivosDb(config);
+            _recepcionDb = new CcProcesoMensualRecepcionDb(
+                config,
+                loggerFactory.CreateLogger<CcProcesoMensualRecepcionDb>());
             _logger = logger;
         }
 
@@ -101,6 +106,9 @@ namespace Galileo_API.Services.ProGrX_Procesos
                         break;
                     case "03":
                         await ProcesarCargaDeduccionesAsync(trabajo, proceso, contextoJson, ct);
+                        break;
+                    case "04":
+                        await ProcesarDesglosePlanillaAsync(trabajo, proceso, contextoJson, ct);
                         break;
                     default:
                         _procesoDb.Proceso_Error_Registrar(
@@ -279,6 +287,118 @@ namespace Galileo_API.Services.ProGrX_Procesos
             _procesoDb.Proceso_Finalizar(
                 trabajo.CodEmpresa, trabajo.ProcesoId,
                 mensajeFinal);
+        }
+
+        /// <summary>
+        /// Ejecuta el detalle de aportes y abonos, publicando la cantidad real procesada.
+        /// </summary>
+        /// <param name="trabajo">Trabajo encolado.</param>
+        /// <param name="proceso">Estado y parámetros generales del proceso.</param>
+        /// <param name="contextoJson">Contexto serializado con el usuario ejecutor.</param>
+        /// <param name="ct">Token de cancelación del worker.</param>
+        private async Task ProcesarDesglosePlanillaAsync(
+            CcProcesoMensualProcesoTrabajo trabajo,
+            CcProcesoMensualProcesoResultado proceso,
+            string contextoJson,
+            CancellationToken ct)
+        {
+            var contexto = JsonSerializer.Deserialize<CcProcesoMensualDesgloseContexto>(
+                contextoJson,
+                JsonOptions);
+
+            if (contexto is null)
+            {
+                _procesoDb.Proceso_Error_Registrar(
+                    trabajo.CodEmpresa,
+                    trabajo.ProcesoId,
+                    "Error al deserializar el contexto del detalle de aportes y abonos.");
+                return;
+            }
+
+            var historialLogs = new List<string>();
+
+            string AcumularLog(string mensaje)
+            {
+                var mensajeNormalizado = mensaje.Trim();
+                if (!string.IsNullOrWhiteSpace(mensajeNormalizado)
+                    && (historialLogs.Count == 0 || historialLogs[^1] != mensajeNormalizado))
+                {
+                    historialLogs.Add(mensajeNormalizado);
+                }
+
+                const int maximoLogsVisibles = 20;
+                if (historialLogs.Count > maximoLogsVisibles)
+                {
+                    historialLogs.RemoveRange(0, historialLogs.Count - maximoLogsVisibles);
+                }
+
+                return string.Join(Environment.NewLine, historialLogs);
+            }
+
+            void PublicarAvance(
+                int? total,
+                int? procesadas,
+                int? exitosas,
+                int? errores,
+                string mensaje)
+            {
+                _procesoDb.Proceso_Avance_Actualizar(
+                    trabajo.CodEmpresa,
+                    trabajo.ProcesoId,
+                    total,
+                    procesadas,
+                    exitosas,
+                    errores,
+                    AcumularLog(mensaje));
+            }
+
+            PublicarAvance(
+                total: 0,
+                procesadas: 0,
+                exitosas: 0,
+                errores: 0,
+                mensaje: "Detallando Aportes...");
+
+            await Task.Yield();
+            ct.ThrowIfCancellationRequested();
+
+            var request = new CcProcesoMensualDesgloseRequest
+            {
+                CodEmpresa = trabajo.CodEmpresa,
+                CodInstitucion = proceso.CodInstitucion,
+                FechaProceso = proceso.FechaProceso,
+                Usuario = contexto.Usuario
+            };
+
+            var resultado = _recepcionDb.CcProcesoMensual_DesglosarPlanilla_Ejecutar(
+                request,
+                (total, procesadas, mensaje) =>
+                    PublicarAvance(
+                        total: total,
+                        procesadas: procesadas,
+                        exitosas: procesadas,
+                        errores: 0,
+                        mensaje: mensaje),
+                mensaje => PublicarAvance(
+                    total: null,
+                    procesadas: null,
+                    exitosas: null,
+                    errores: null,
+                    mensaje: mensaje));
+
+            if (resultado.Code == -1 || resultado.Result?.Desglosado != true)
+            {
+                _procesoDb.Proceso_Error_Registrar(
+                    trabajo.CodEmpresa,
+                    trabajo.ProcesoId,
+                    resultado.Description ?? "Error al detallar los aportes y abonos.");
+                return;
+            }
+
+            _procesoDb.Proceso_Finalizar(
+                trabajo.CodEmpresa,
+                trabajo.ProcesoId,
+                resultado.Result.Mensaje);
         }
 
         private static string RemoverCamposDelContexto(string contextoJson, params string[] campos)
