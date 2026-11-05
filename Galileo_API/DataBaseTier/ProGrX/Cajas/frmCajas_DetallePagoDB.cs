@@ -107,28 +107,21 @@ namespace Galileo.DataBaseTier
         /// <returns>Saldos a favor encontrados para el cliente.</returns>
         public ErrorDto<List<CajasSaldoFavorDetDto>> Cajas_SaldoFavor_Obtener(int codEmpresa, string clienteid, int referencia, string referencia_texto)
         {
-            var response = DbHelper.CreateOkResponse(new List<CajasSaldoFavorDetDto>());
+            const string sql = @"exec spCajas_SaldoFavor
+                                    @ClienteId,
+                                    @ReferenciaId,
+                                    @ReferenciaTexto";
 
-            try
-            {
-                var connectionString = _portalDb.ObtenerDbConnStringEmpresa(codEmpresa);
-                var result = DbHelper.ExecuteStoredProcedureList<CajasSaldoFavorDetDto>(
-                    connectionString,
-                    "spCajas_SaldoFavor",
-                    new { clienteid, referencia, referenciatexto = referencia_texto });
-
-                response.Code = result.Code;
-                response.Description = result.Description;
-                response.Result = result.Result ?? new List<CajasSaldoFavorDetDto>();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = "Error en Cajas_SaldoFavor_Obtener: " + ex.Message;
-                response.Result = null;
-            }
-
-            return response;
+            return DbHelper.ExecuteListQuery<CajasSaldoFavorDetDto>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                new
+                {
+                    ClienteId = clienteid,
+                    ReferenciaId = referencia,
+                    ReferenciaTexto = referencia_texto
+                });
         }
 
         /// <summary>
@@ -516,6 +509,15 @@ namespace Galileo.DataBaseTier
         /// <returns>Resultado consolidado de las validaciones.</returns>
         private static ErrorDto ValidarDesglocePago(SqlConnection connection, CajasDesglocePagoRequest request, int? lineaActual = null)
         {
+            request.cod_entidad_pago = NormalizarCodigoOpcional(request.cod_entidad_pago);
+            request.cod_origen_recursos = NormalizarCodigoOpcional(request.cod_origen_recursos);
+
+            var validacionOrigenRecursos = ValidarOrigenRecursos(connection, request);
+            if (validacionOrigenRecursos.Code != 0)
+            {
+                return validacionOrigenRecursos;
+            }
+
             var tipoFormaPago = connection.ExecuteScalar<string?>(
                 "select top 1 Tipo from SIF_FORMAS_PAGO where COD_FORMA_PAGO = @FormaPago",
                 new { FormaPago = request.cod_forma_pago })?.Trim() ?? string.Empty;
@@ -539,6 +541,60 @@ namespace Galileo.DataBaseTier
             }
 
             return ValidarSaldoFavor(connection, request, tipoFormaPago);
+        }
+
+        /// <summary>Convierte los códigos opcionales vacíos en valores nulos para respetar las llaves foráneas.</summary>
+        /// <param name="codigo">Código opcional recibido desde la pantalla.</param>
+        /// <returns>El código recortado o null cuando no fue informado.</returns>
+        private static string? NormalizarCodigoOpcional(string? codigo)
+        {
+            return string.IsNullOrWhiteSpace(codigo) ? null : codigo.Trim();
+        }
+
+        /// <summary>Valida la entidad pagadora y el origen de recursos cuando la forma de pago los requiere.</summary>
+        /// <param name="connection">Conexión abierta a la empresa.</param>
+        /// <param name="request">Solicitud con la forma de pago y los códigos seleccionados.</param>
+        /// <returns>Resultado de la validación de los catálogos relacionados.</returns>
+        private static ErrorDto ValidarOrigenRecursos(SqlConnection connection, CajasDesglocePagoRequest request)
+        {
+            var aplicaOrigenRecursos = connection.ExecuteScalar<int?>(
+                "select top (1) OR_APLICA from SIF_FORMAS_PAGO where COD_FORMA_PAGO = @FormaPago",
+                new { FormaPago = request.cod_forma_pago }).GetValueOrDefault();
+
+            if (aplicaOrigenRecursos == 0)
+            {
+                request.cod_entidad_pago = null;
+                request.cod_origen_recursos = null;
+                return DbHelper.OkResponse("OK");
+            }
+
+            if (request.cod_entidad_pago is null || request.cod_origen_recursos is null)
+            {
+                return DbHelper.ErrorResponse("Debe seleccionar el pagador y el origen de los recursos");
+            }
+
+            var entidadExiste = connection.ExecuteScalar<int>(
+                @"select count(1)
+                  from SIF_ENTIDADES_PAGO
+                  where COD_ENTIDAD_PAGO = @EntidadPago
+                    and ACTIVA = 1",
+                new { EntidadPago = request.cod_entidad_pago }) > 0;
+
+            if (!entidadExiste)
+            {
+                return DbHelper.ErrorResponse("La entidad pagadora seleccionada no existe o se encuentra inactiva");
+            }
+
+            var origenExiste = connection.ExecuteScalar<int>(
+                @"select count(1)
+                  from SIF_ORIGEN_RECURSOS
+                  where COD_ORIGEN_RECURSOS = @OrigenRecursos
+                    and ACTIVA = 1",
+                new { OrigenRecursos = request.cod_origen_recursos }) > 0;
+
+            return origenExiste
+                ? DbHelper.OkResponse("OK")
+                : DbHelper.ErrorResponse("El origen de recursos seleccionado no existe o se encuentra inactivo");
         }
 
         /// <summary>Valida el estado del depósito conforme al parámetro 10 de Cajas.</summary>
