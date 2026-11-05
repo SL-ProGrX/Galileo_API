@@ -636,11 +636,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
             catch (Exception)
             {
-                var mensaje = cierreTerminado
-                    ? "La remesa se cerró, pero falló un paso posterior. Verifique la bitácora antes de reintentar."
-                    : cierreIniciado
-                        ? "Falló el cierre. El procedimiento pudo crear el resumen o cambiar el estado parcialmente. Revise la remesa antes de reintentar."
-                        : "No se pudo iniciar el cierre de la remesa.";
+                string mensaje;
+                if (cierreTerminado)
+                {
+                    mensaje = "La remesa se cerró, pero falló un paso posterior. " +
+                              "Verifique la bitácora antes de reintentar.";
+                }
+                else if (cierreIniciado)
+                {
+                    mensaje = "Falló el cierre. El procedimiento pudo crear el resumen " +
+                              "o cambiar el estado parcialmente. Revise la remesa antes de reintentar.";
+                }
+                else
+                {
+                    mensaje = "No se pudo iniciar el cierre de la remesa.";
+                }
                 return DbHelper.CreateErrorResponse(mensaje, -1, false);
             }
         }
@@ -709,11 +719,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
             catch (Exception)
             {
-                var mensaje = estadoActualizado
-                    ? "Los traslados y el cambio de estado se completaron, pero falló un paso posterior. Revise la bitácora."
-                    : completados > 0 || llamadaIniciada
-                        ? $"Traslado incompleto: {completados} llamada(s) terminaron. La llamada que falló pudo modificar Tesorería. Revise remesa y transacciones antes de reintentar."
-                        : "No se pudo iniciar el traslado. Revise el estado de la remesa.";
+                string mensaje;
+                if (estadoActualizado)
+                {
+                    mensaje = "Los traslados y el cambio de estado se completaron, " +
+                              "pero falló un paso posterior. Revise la bitácora.";
+                }
+                else if (completados > 0 || llamadaIniciada)
+                {
+                    mensaje = $"Traslado incompleto: {completados} llamada(s) terminaron. " +
+                              "La llamada que falló pudo modificar Tesorería. " +
+                              "Revise remesa y transacciones antes de reintentar.";
+                }
+                else
+                {
+                    mensaje = "No se pudo iniciar el traslado. Revise el estado de la remesa.";
+                }
                 return DbHelper.CreateErrorResponse(mensaje, -1,
                     new CrdComisionesPagoProcesoResponse { CantidadProcesada = completados, Mensaje = mensaje });
             }
