@@ -138,6 +138,20 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         {
             var resp = new ErrorDto<FndPlanRetiroDto> { Code = 0 };
 
+            if (dto.porcentaje < 0 || dto.porcentaje > 999.99m)
+            {
+                resp.Code = -1;
+                resp.Description = "El porcentaje de multa debe estar entre 0 y 999.99.";
+                return resp;
+            }
+
+            if (dto.desde < 0 || dto.desde > 32767 || dto.hasta < 0 || dto.hasta > 32767)
+            {
+                resp.Code = -1;
+                resp.Description = "Los días Desde y Hasta deben estar entre 0 y 32767.";
+                return resp;
+            }
+
             try
             {
                 string connStr = new PortalDB(_config)

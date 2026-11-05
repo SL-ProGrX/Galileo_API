@@ -15,6 +15,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private const string SqlUpdatePlan = @"
                     UPDATE dbo.FND_Planes SET
                         descripcion = @descripcion,
+                        tipo_deduc = @tipodeduc,
+                        porc_deduc = @porc_deduc,
                         notas = @notas,
                         plazo_minimo = @plazo_minimo,
                         monto_minimo = @monto_minimo,
@@ -55,7 +57,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         comision_vta_inv = @comision_vta_inv,
                         cuenta_rendimiento = @ctarnd,
                         deduce_independiente = @deduce_independiente,
-                        codigo_deduc = @tipodeduc,
                         requiere_beneficiarios = @requiere_beneficiarios,
                         patrimonio_enlace = @patrimonio_enlace,
                         patrimonio_tipo = @patrimonio_tipo,
@@ -68,7 +69,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         cuenta_impuestos = @ctaimpuesto,
                         impuesto_renta = @impuesto_renta,
                         sinpe_cuenta = @sinpe_cuenta,
-                        sinpe_producto = @sinpe_producto,
+                        sinpe_producto = dbo.fxFndSinpeProducto(@codplan),
                         mov_entre_fondos = @mov_entre_fondos,
                         forma_pago_pos = @forma_pago_pos,
                         mov_entre_fondos_terceros = @mov_entre_fondos_terceros,
@@ -93,16 +94,17 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         web_modifica_couta = @web_modifica_couta,
                         tasa_margen_negociacion = @tasa_margen_negociacion,
                         vence_notifica = @vence_notifica,
-                        SubCuentasMax = @subcuentas_max
+                        SubCuentasMax = @subcuentas_max,
+                        web_valida_vence = 0
                     WHERE cod_operadora = @codoperadora
                       AND cod_plan = @codplan;";
 
         private const string SqlInsertPlan = @"
                     INSERT INTO dbo.FND_Planes
                     (
-                        cod_operadora, cod_plan, descripcion, notas,
+                        cod_operadora, cod_plan, descripcion, tipo_deduc, porc_deduc, notas,
                         plazo_minimo, monto_minimo, cuenta_conta, cuenta_gasto,
-                        codigo_ase, estado, sirve_garantia, calcula_rend, ulttasa,
+                        codigo_ase, estado, sirve_garantia, calcula_rend, consecutivo, rend_corte,
                         cod_grupo, cuenta_maestra, visible_ec, apl_liq_socio,
                         website, plazo_tipo, inversion_minimo, cod_moneda,
                         garantia_porc_disp, garantia_integrada, garantia_tasaad,
@@ -125,13 +127,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         mov_sinpe_tipos, mov_sinpe, sif_liquida, pago_cupones,
                         IndAplicarAMora, web_crear, web_modifica_couta,
                         tasa_margen_negociacion, vence_notifica, SubCuentasMax,
-                        SINPE_PROC_ENLINEA, SINPE_PROC_INTERNO
+                        SINPE_PROC_ENLINEA, SINPE_PROC_INTERNO,
+                        forma_pago_servicios, vence_plazo, web_valida_vence
                     )
                     VALUES
                     (
-                        @codoperadora, @codplan, @descripcion, @notas,
+                        @codoperadora, @codplan, @descripcion, @tipodeduc, @porc_deduc, @notas,
                         @plazo_minimo, @monto_minimo, @cuenta_conta, @cuenta_gasto,
-                        @codigo_ase, @estado, @sirve_garantia, @calcula_rend, @ulttasa,
+                        @codigo_ase, @estado, @sirve_garantia, @calcula_rend, 0, dbo.MyGetdate(),
                         @codgrupo, @cuenta_maestra, @visible_ec, @apl_liq_socio,
                         @website, @plazo_tipo, @inversion_minimo, @cod_moneda,
                         @garantia_porc_disp, @garantia_integrada, @garantia_tasa_ad,
@@ -141,11 +144,11 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         @num_contratos_activos, @tasa_comision_aportes,
                         @tasa_comision_rend, @ctacomisionadm, @ctaingretiros,
                         @ctagstcomision, @comision_vta_monto, @comision_vta_inv,
-                        @ctarnd, @deduce_independiente, @tipodeduc,
+                        @ctarnd, @deduce_independiente, '',
                         @requiere_beneficiarios, @patrimonio_enlace, @patrimonio_tipo,
                         @web_vence, @tasa_ajuste_vencimiento, @tasa_ajuste, @web_liquida,
                         @permite_giro_terceros, @permite_retiros_cajas, @ctaimpuesto,
-                        @impuesto_renta, @sinpe_cuenta, @sinpe_producto,
+                        @impuesto_renta, @sinpe_cuenta, dbo.fxFndSinpeProducto(@codplan),
                         @mov_entre_fondos, @forma_pago_pos, @mov_entre_fondos_terceros,
                         @renta_global, @apl_rend_automatico, @permite_ret_parcial,
                         @patrimonio_unifica, @vence_accion, @vence_plan,
@@ -154,7 +157,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         @mov_sinpe_tipos, @mov_sinpe, @sif_liquida, @pago_cupones,
                         @ind_aplicar_amora, @web_crear, @web_modifica_couta,
                         @tasa_margen_negociacion, @vence_notifica, @subcuentas_max,
-                        @sinpe_proc_enlinea, @sinpe_proc_interno
+                        @sinpe_proc_enlinea, @sinpe_proc_interno,
+                        0, 0, 0
                     );";
 
         private const string SqlDeletePlan = @"
@@ -235,7 +239,11 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
             if (result.Code != 0)
             {
-                return DbHelper.CreateErrorResponse(result.Description ?? "Error al eliminar plan.", result.Code.GetValueOrDefault(-1), CrearPlanVacio());
+                var mensaje = (result.Description ?? string.Empty).Contains("REFERENCE constraint", StringComparison.OrdinalIgnoreCase)
+                    ? "No se pudo borrar porque el plan está siendo usado en otros registros."
+                    : result.Description ?? "Error al eliminar plan.";
+
+                return DbHelper.CreateErrorResponse(mensaje, result.Code.GetValueOrDefault(-1), CrearPlanVacio());
             }
 
             return result.Result == 0
@@ -305,8 +313,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 usuario = NormalizarTexto(usuario),
                 dto.codoperadora,
-                codplan = NormalizarTexto(dto.codplan),
-                descripcion = NormalizarTexto(dto.descripcion),
+                codplan = NormalizarTexto(dto.codplan).ToUpperInvariant(),
+                descripcion = NormalizarTexto(dto.descripcion).ToUpperInvariant(),
                 notas = NormalizarTexto(dto.notas),
                 dto.plazo_minimo,
                 dto.monto_minimo,
@@ -316,7 +324,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 estado = NormalizarTexto(dto.estado),
                 dto.sirve_garantia,
                 dto.calcula_rend,
-                dto.ulttasa,
                 dto.codgrupo,
                 cuenta_maestra = dto.cuenta_maestra,
                 dto.visible_ec,
@@ -348,7 +355,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 dto.comision_vta_inv,
                 ctarnd = NormalizarCuentaContable(dto.ctarnd),
                 dto.deduce_independiente,
-                tipodeduc = dto.tipodeduc,
+                tipodeduc = NormalizarTexto(dto.tipodeduc),
+                dto.porc_deduc,
                 dto.requiere_beneficiarios,
                 dto.patrimonio_enlace,
                 dto.patrimonio_tipo,
@@ -361,7 +369,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 ctaimpuesto = NormalizarCuentaContable(dto.ctaimpuesto),
                 dto.impuesto_renta,
                 sinpe_cuenta = dto.sinpe_cuenta,
-                sinpe_producto = NormalizarTexto(dto.sinpe_producto),
                 dto.mov_entre_fondos,
                 dto.forma_pago_pos,
                 dto.mov_entre_fondos_terceros,
