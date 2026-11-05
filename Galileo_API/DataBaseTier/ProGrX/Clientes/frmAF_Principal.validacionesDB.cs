@@ -235,6 +235,7 @@ namespace Galileo.DataBaseTier
             AF_Persona_Ubicacion_Validar(dto, errores);
             AF_Persona_PromotorFechas_Validar(connection, dto, errores);
             AF_Persona_Laborales_Validar(dto, errores);
+            AF_Persona_Relacionados_Validar(connection, dto, errores);
 
             return errores.Count > 0
                 ? DbHelper.ErrorResponse(string.Join(Environment.NewLine, errores), -2)
@@ -308,13 +309,30 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(dto.Provincia)) errores.Add("No se especificó la Provincia.");
             if (string.IsNullOrWhiteSpace(dto.Canton)) errores.Add("No se especificó el Cantón.");
             if (string.IsNullOrWhiteSpace(dto.Distrito)) errores.Add("No se especificó el Distrito.");
-            if (string.IsNullOrWhiteSpace(dto.Direccion)) errores.Add("No se especificó la Dirección.");
+            if (!AF_Persona_Direccion_Validar(dto.Direccion)) errores.Add("No se especificó la Dirección.");
+
+            AF_Persona_UbicacionTrabajo_Validar(dto, errores);
+
             if (string.IsNullOrWhiteSpace(dto.Actividad)) errores.Add("No se especificó Actividad (Oficina Cumplimiento).");
 
             if (string.IsNullOrWhiteSpace(dto.Departamento) && string.IsNullOrWhiteSpace(dto.UP))
             {
                 errores.Add("No se especificó el Departamento o la Unidad Programática.");
             }
+        }
+
+        /// <summary>La dirección de trabajo es opcional, pero si se indica se revisa completa.</summary>
+        private static void AF_Persona_UbicacionTrabajo_Validar(AfPersonaAddRequestDto dto, List<string> errores)
+        {
+            if (string.IsNullOrEmpty(dto.TraDireccion))
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.TraProvincia)) errores.Add("No se especificó la Provincia de la Dirección de Trabajo.");
+            if (string.IsNullOrWhiteSpace(dto.TraCanton)) errores.Add("No se especificó el Cantón de la Dirección de Trabajo.");
+            if (string.IsNullOrWhiteSpace(dto.TraDistrito)) errores.Add("No se especificó el Distrito en la Dirección de Trabajo.");
+            if (!AF_Persona_Direccion_Validar(dto.TraDireccion)) errores.Add("La Dirección Exacta de Trabajo no fue suministrada correctamente.");
         }
 
         /// <summary>Valida los campos de la persona según las reglas vigentes del formulario.</summary>
@@ -372,6 +390,57 @@ namespace Galileo.DataBaseTier
             {
                 errores.Add("Tienen que indicar el Puesto que desempeña.");
             }
+        }
+
+        /// <summary>
+        /// Valida beneficiarios, albacea y teléfonos registrados (paridad con fxValida de VB6).
+        /// Solo aplica a personas existentes: en un alta aún no hay datos relacionados.
+        /// </summary>
+        private static void AF_Persona_Relacionados_Validar(SqlConnection connection, AfPersonaAddRequestDto dto, List<string> errores)
+        {
+            if (dto.Mov != 'E' || string.IsNullOrWhiteSpace(dto.Cedula))
+            {
+                return;
+            }
+
+            var estado = connection.QueryFirst<AfPersonaRelacionadosEstado>(
+                @"SELECT CAST(dbo.fxAFI_Afiliacion_Valida_Beneficiarios(@Cedula) AS int) AS Beneficiarios,
+                         CAST(dbo.fxAFI_Afiliacion_Valida_Telefonos(@Cedula) AS int) AS Telefonos,
+                         CAST(dbo.fxAFI_Afiliacion_Valida_Beneficiarios_MenoresSinAlbacea(@Cedula) AS int) AS MenoresSinAlbacea",
+                new { dto.Cedula });
+
+            if (estado.Beneficiarios == 0 && dto.I_Beneficiario)
+            {
+                errores.Add("No se han registrado los Beneficiarios o están incompletos.");
+            }
+
+            if (estado.MenoresSinAlbacea > 0 && dto.I_Beneficiario && (dto.AlbaceaCedula?.Trim().Length ?? 0) <= 5)
+            {
+                errores.Add("Existen Beneficiarios menores de edad y no se han indicado los Albaceas.");
+            }
+
+            if (estado.Telefonos == 0)
+            {
+                errores.Add("No se han registrado los teléfonos de contacto.");
+            }
+        }
+
+        private sealed class AfPersonaRelacionadosEstado
+        {
+            public int Beneficiarios { get; set; }
+            public int Telefonos { get; set; }
+            public int MenoresSinAlbacea { get; set; }
+        }
+
+        /// <summary>
+        /// Paridad con fxDireccion_Valida de VB6: sin los caracteres de relleno "-", "#" y "*",
+        /// la dirección debe tener al menos 3 palabras y 20 caracteres.
+        /// </summary>
+        private static bool AF_Persona_Direccion_Validar(string? direccion)
+        {
+            var limpia = (direccion ?? string.Empty).Replace("-", "").Replace("#", "").Replace("*", "");
+            var palabras = limpia.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+            return palabras >= 3 && limpia.Length >= 20;
         }
 
         /// <summary>Valida los campos de la persona según las reglas vigentes del formulario.</summary>
