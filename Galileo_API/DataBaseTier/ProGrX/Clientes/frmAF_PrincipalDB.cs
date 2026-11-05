@@ -289,7 +289,14 @@ namespace Galileo.DataBaseTier
         public ErrorDto AF_Persona_Salarios_Add(int CodEmpresa, string req, string mov)
         {
             var request = JsonConvert.DeserializeObject<AfPersonaSalarioAddDto>(req) ?? new AfPersonaSalarioAddDto();
-            return ExecuteStoredProcedure(
+
+            // VB6 (btnSalarios_Click): solo registra si el devengado es mayor a cero.
+            if (request.Devengado <= 0)
+            {
+                return DbHelper.ErrorResponse("El salario devengado debe ser mayor a cero.", -2);
+            }
+
+            var salario = ExecuteStoredProcedure(
                 CodEmpresa,
                 "spAFI_Persona_Salarios_Add",
                 new
@@ -305,6 +312,20 @@ namespace Galileo.DataBaseTier
                     Usuario = request.Usuario,
                     mov = "A"
                 });
+
+            if (salario.Code != 0)
+            {
+                return salario;
+            }
+
+            // VB6 registra junto al salario el ingreso económico (perfil transaccional, tipo 1).
+            return AF_Persona_Ingresos_Economicos_Add(CodEmpresa, new AfPersonaIngresoEconomicoAddDto
+            {
+                Cedula = request.Cedula,
+                Ingreso = request.Devengado,
+                Usuario = request.Usuario,
+                Tipo = 1
+            });
         }
 
         /// <summary>
