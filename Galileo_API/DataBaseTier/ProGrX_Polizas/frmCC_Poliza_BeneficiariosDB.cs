@@ -132,39 +132,49 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         }
 
         /// <summary>
-        /// Reemplaza los beneficiarios de una persona y póliza dentro de una transacción.
+        /// Registra los beneficiarios mediante el procedimiento existente e informa
+        /// la etapa exacta cuando el guardado se interrumpe.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="usuario">Usuario que realiza el registro.</param>
         /// <param name="request">Persona, póliza y beneficiarios por guardar.</param>
-        /// <returns>Resultado del proceso.</returns>
+        /// <returns>Resultado del guardado.</returns>
         public ErrorDto CC_Poliza_Beneficiarios_Guardar(
             int codEmpresa,
             string usuario,
             CcPolizaBeneficiariosGuardarRequest request)
         {
+            if (request is null)
+            {
+                return DbHelper.ErrorResponse("La solicitud es requerida.", -2);
+            }
+
             var validacion = ValidarGuardar(usuario, request);
             if (!string.IsNullOrEmpty(validacion))
             {
                 return DbHelper.ErrorResponse(validacion, -2);
             }
 
-            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-            connection.Open();
-            using var transaction = connection.BeginTransaction();
+            var lineaEnProceso = 0;
+            var guardadoCompleto = false;
 
             try
             {
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                connection.Open();
+
                 for (var index = 0; index < request.beneficiarios.Count; index++)
                 {
+                    lineaEnProceso = index + 1;
                     var beneficiario = request.beneficiarios[index];
+
                     connection.Execute(
                         "spPoliza_Persona_Beneficiarios_Add",
                         new
                         {
                             Cedula = request.cedula.Trim(),
                             Poliza = request.cod_poliza.Trim(),
-                            Linea = index + 1,
+                            Linea = lineaEnProceso,
                             Tipo_ID = beneficiario.tipo_id,
                             Identificacion = beneficiario.identificacion.Trim(),
                             Nombre = beneficiario.nombre.Trim(),
@@ -172,20 +182,47 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                             Porcentaje = beneficiario.porcentaje,
                             Usuario = usuario.Trim()
                         },
-                        transaction,
                         commandType: CommandType.StoredProcedure,
                         commandTimeout: 0);
                 }
 
-                transaction.Commit();
-                RegistrarBitacora(codEmpresa, usuario, request);
-                return DbHelper.OkResponse("Beneficiarios registrados satisfactoriamente.");
+                guardadoCompleto = true;
             }
             catch (Exception)
             {
-                transaction.Rollback();
-                return DbHelper.ErrorResponse("No fue posible guardar los beneficiarios.");
+                if (lineaEnProceso == 0)
+                {
+                    return DbHelper.ErrorResponse(
+                        "No fue posible abrir la conexión para guardar los beneficiarios. "
+                        + "Verifique el registro antes de volver a intentar.");
+                }
+
+                return DbHelper.ErrorResponse(
+                    $"El guardado se interrumpió al procesar el beneficiario "
+                    + $"{lineaEnProceso} de {request.beneficiarios.Count}. "
+                    + "La póliza puede haber quedado con beneficiarios parciales. "
+                    + "Consulte el registro antes de volver a intentar.");
             }
+
+            if (!guardadoCompleto)
+            {
+                return DbHelper.ErrorResponse(
+                    "No fue posible completar el guardado de beneficiarios.");
+            }
+
+            try
+            {
+                RegistrarBitacora(codEmpresa, usuario, request);
+            }
+            catch (Exception)
+            {
+                return DbHelper.OkResponse(
+                    "Los beneficiarios se guardaron, pero no fue posible completar "
+                    + "la bitácora. Verifique el registro de auditoría.");
+            }
+
+            return DbHelper.OkResponse(
+                "Beneficiarios registrados satisfactoriamente.");
         }
 
         /// <summary>
@@ -205,13 +242,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 return "El usuario, la identificación y la póliza son requeridos.";
             }
 
-            if (request.beneficiarios.Count is < 1 or > 6)
+            if (request.beneficiarios is null
+                || request.beneficiarios.Count is < 1 or > 6)
             {
                 return "Debe registrar entre uno y seis beneficiarios.";
             }
 
             if (request.beneficiarios.Any(item =>
-                item.tipo_id <= 0
+                item is null
+                || item.tipo_id <= 0
                 || string.IsNullOrWhiteSpace(item.identificacion)
                 || string.IsNullOrWhiteSpace(item.nombre)
                 || string.IsNullOrWhiteSpace(item.cod_parentesco)
@@ -231,7 +270,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <param name="codEmpresa">Código de la empresa activa.</param>
         /// <param name="usuario">Usuario que realizó el registro.</param>
         /// <param name="request">Persona, póliza y beneficiarios registrados.</param>
-        /// <returns>No retorna un valor.</returns>
         private void RegistrarBitacora(
             int codEmpresa,
             string usuario,
