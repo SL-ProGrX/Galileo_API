@@ -238,37 +238,64 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
             => EjecutarCorteActivo(codEmpresa, request, connection =>
                 connection.Execute("exec spCRDAPAGARANTIAS_H_Actualiza @Acreedor, @Operacion, @FechaCorte", ClaveParametros(request)));
 
-        /// <summary>Excluye en lote las garantías marcadas de un corte activo.</summary>
+        /// <summary>Excluye las garantías seleccionadas de un corte activo e informa el avance si ocurre un error.</summary>
         public ErrorDto CR_APA_CortesGarantias_Excluir(int codEmpresa, FrmCrApaCortesGarantiasExcluirRequest request)
-            => EjecutarCorteActivo(codEmpresa, request, connection =>
+        {
+            if (request?.solicitudes is null || request.solicitudes.Count == 0)
             {
-                using var transaction = connection.BeginTransaction();
-                try
+                return DbHelper.ErrorResponse("Seleccione al menos una garantía para excluir.", -2);
+            }
+
+            List<int> solicitudes = request.solicitudes.Distinct().ToList();
+            return EjecutarCorteActivo(codEmpresa, request, connection =>
+            {
+                int completadas = 0;
+                foreach (int solicitud in solicitudes)
                 {
-                    foreach (int solicitud in request.solicitudes.Distinct())
+                    try
                     {
                         connection.Execute(
                             "exec spCRDAPAGARANTIAS_H_Excluir @Acreedor, @Operacion, @FechaCorte, @Solicitud, @Tipo",
-                            new { Acreedor = request.cod_acreedor.Trim(), Operacion = request.operacion.Trim(), FechaCorte = request.fecha_corte, Solicitud = solicitud, request.tipo },
-                            transaction);
+                            new
+                            {
+                                Acreedor = request.cod_acreedor.Trim(),
+                                Operacion = request.operacion.Trim(),
+                                FechaCorte = request.fecha_corte.Date,
+                                Solicitud = solicitud,
+                                Tipo = request.tipo
+                            });
+                        completadas++;
                     }
-                    transaction.Commit();
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException(
+                            $"No se pudo excluir la solicitud {solicitud}. Se completaron {completadas} de {solicitudes.Count} llamadas. "
+                            + "El corte puede haber quedado actualizado parcialmente; consulte el detalle antes de reintentar.",
+                            ex);
+                    }
                 }
             });
+        }
 
-        /// <summary>Incluye en lote las garantías marcadas en un corte activo.</summary>
+        /// <summary>Incluye las garantías seleccionadas en un corte activo e informa el avance si ocurre un error.</summary>
         public ErrorDto CR_APA_CortesGarantias_Incluir(int codEmpresa, FrmCrApaCortesGarantiasIncluirRequest request)
-            => EjecutarCorteActivo(codEmpresa, request, connection =>
+        {
+            if (request?.garantias is null || request.garantias.Count == 0)
             {
-                using var transaction = connection.BeginTransaction();
-                try
+                return DbHelper.ErrorResponse("Seleccione al menos una garantía para incluir.", -2);
+            }
+
+            List<FrmCrApaCortesGarantiasDetalleDto> garantias = request.garantias
+                .GroupBy(item => item.id_solicitud)
+                .Select(group => group.First())
+                .ToList();
+
+            return EjecutarCorteActivo(codEmpresa, request, connection =>
+            {
+                int completadas = 0;
+                foreach (FrmCrApaCortesGarantiasDetalleDto garantia in garantias)
                 {
-                    foreach (FrmCrApaCortesGarantiasDetalleDto garantia in request.garantias.GroupBy(item => item.id_solicitud).Select(group => group.First()))
+                    try
                     {
                         connection.Execute(
                             @"exec spCRDAPAGARANTIAS_H_A @Acreedor, @Operacion, @FechaCorte, @Solicitud,
@@ -277,7 +304,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                             {
                                 Acreedor = request.cod_acreedor.Trim(),
                                 Operacion = request.operacion.Trim(),
-                                FechaCorte = request.fecha_corte,
+                                FechaCorte = request.fecha_corte.Date,
                                 Solicitud = garantia.id_solicitud,
                                 garantia.tasa,
                                 garantia.plazo,
@@ -287,17 +314,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Pasivos
                                 MoraIntereses = garantia.mora_intereses,
                                 MoraPrincipal = garantia.mora_principal,
                                 MoraCuotas = garantia.mora_cuotas
-                            },
-                            transaction);
+                            });
+                        completadas++;
                     }
-                    transaction.Commit();
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException(
+                            $"No se pudo incluir la solicitud {garantia.id_solicitud}. Se completaron {completadas} de {garantias.Count} llamadas. "
+                            + "El corte puede haber quedado actualizado parcialmente; consulte el detalle antes de reintentar.",
+                            ex);
+                    }
                 }
             });
+        }
 
         private ErrorDto EjecutarCorteActivo(int codEmpresa, FrmCrApaCortesGarantiasClaveRequest request, Action<SqlConnection> action)
             => Ejecutar(codEmpresa, connection =>

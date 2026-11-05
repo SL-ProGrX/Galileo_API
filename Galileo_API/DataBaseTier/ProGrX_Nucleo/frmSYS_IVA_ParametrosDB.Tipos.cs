@@ -60,6 +60,11 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             SysIvaTipoSaveRequest request,
             bool insertar)
         {
+            if (request is null)
+                return ErrorTipoIva(2, "La solicitud es requerida.");
+            if (string.IsNullOrWhiteSpace(usuario))
+                return ErrorTipoIva(2, "El usuario es requerido.");
+
             string codigo = (insertar ? request.Cod_IVA : codigoExistente)?.Trim() ?? string.Empty;
             string descripcion = request.Descripcion?.Trim() ?? string.Empty;
             string cuenta = request.Cod_Cuenta?.Trim() ?? string.Empty;
@@ -68,14 +73,15 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             if (errorValidacion is not null)
                 return errorValidacion;
 
+            TipoIvaFactura? tipoIva;
+            TipoIvaMovimiento? movimiento;
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
                 using var connection = new SqlConnection(stringConn);
                 connection.Open();
-                using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
 
-                var anterior = ConsultarTiposIva(connection, codigo, transaction).FirstOrDefault();
+                var anterior = ConsultarTiposIva(connection, codigo).FirstOrDefault();
                 if (insertar && anterior is not null)
                     return ErrorTipoIva(2, "Ya existe un tipo de IVA con ese código.");
                 if (!insertar && anterior is null)
@@ -85,8 +91,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     @"SELECT COUNT(1)
                       FROM vCNTX_CUENTAS_LOCAL
                       WHERE COD_CUENTA = @Cuenta AND ACEPTA_MOVIMIENTOS = 1",
-                    new { Cuenta = cuenta },
-                    transaction);
+                    new { Cuenta = cuenta });
                 if (cuentaValida == 0)
                     return ErrorTipoIva(2, "La cuenta indicada no es válida o no acepta movimientos.");
 
@@ -97,14 +102,14 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 parametros.Add("@CodCuenta", cuenta);
                 parametros.Add("@Porcentaje", request.Porcentaje.GetValueOrDefault());
                 parametros.Add("@CodHacienda", (request.Cod_Hacienda ?? anterior?.Cod_Hacienda ?? codigo).Trim());
-                parametros.Add("@Usuario", usuario);
+                parametros.Add("@Usuario", usuario.Trim());
                 parametros.Add("@ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-                var movimiento = connection.QueryFirstOrDefault<TipoIvaMovimiento>(
+                movimiento = connection.QueryFirstOrDefault<TipoIvaMovimiento>(
                     "dbo.spSys_IVA_Tipos_Add",
                     parametros,
-                    transaction,
                     commandType: CommandType.StoredProcedure);
+
                 var errorMovimiento = ValidarResultadoMovimiento(
                     parametros.Get<int>("@ReturnValue"),
                     movimiento,
@@ -112,32 +117,44 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 if (errorMovimiento is not null)
                     return errorMovimiento;
 
-                _security_MainDB.Bitacora(new BitacoraInsertarDto
+                try
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    Modulo = vModulo,
-                    Movimiento = insertar ? "Registra - WEB" : "Modifica - WEB",
-                    DetalleMovimiento = $"Tipo de IVA: {codigo} -> {descripcion}; {request.Porcentaje.GetValueOrDefault()}%"
-                });
-
-                var tipoIva = ConsultarTiposIva(connection, codigo, transaction).FirstOrDefault();
+                    tipoIva = ConsultarTiposIva(connection, codigo).FirstOrDefault();
+                }
+                catch (Exception)
+                {
+                    return ErrorTipoIva(
+                        -1,
+                        "El tipo de IVA se guardó, pero no fue posible consultar el resultado. Recargue la tabla antes de reintentar.");
+                }
 
                 if (tipoIva is null)
-                    throw new InvalidOperationException("No se pudo consultar el tipo de IVA guardado.");
-
-                transaction.Commit();
-                return new ErrorDto<TipoIvaFactura>
-                {
-                    Code = 0,
-                    Description = "Ok",
-                    Result = tipoIva
-                };
+                    return ErrorTipoIva(
+                        -1,
+                        "El procedimiento terminó correctamente, pero no se encontró el tipo de IVA al consultar. Recargue la tabla antes de reintentar.");
             }
             catch (Exception ex)
             {
                 return ErrorTipoIva(-1, ex.Message);
             }
+
+            ErrorDto bitacora = _security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = usuario.Trim(),
+                Modulo = vModulo,
+                Movimiento = insertar ? "Registra - WEB" : "Modifica - WEB",
+                DetalleMovimiento = $"Tipo de IVA: {codigo} -> {descripcion}; {request.Porcentaje.GetValueOrDefault()}%"
+            });
+
+            return new ErrorDto<TipoIvaFactura>
+            {
+                Code = 0,
+                Description = bitacora.Code == 0
+                    ? movimiento?.Mensaje ?? "Tipo de IVA guardado correctamente."
+                    : "El tipo de IVA se guardó, pero no fue posible registrar la bitácora.",
+                Result = tipoIva
+            };
         }
 
         private static ErrorDto<TipoIvaFactura>? ValidarResultadoMovimiento(

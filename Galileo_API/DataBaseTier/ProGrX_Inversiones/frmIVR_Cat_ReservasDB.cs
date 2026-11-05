@@ -226,11 +226,11 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
         }
 
         /// <summary>
-        /// Sustituye la cuenta vinculada mediante el SP original dentro de una transacción.
+        /// Sustituye la cuenta vinculada mediante el SP original sin transacción externa.
         /// </summary>
         /// <param name="codEmpresa">Empresa donde se modifica el vínculo.</param>
         /// <param name="request">Reserva, cuenta anterior, nueva cuenta y usuario del cambio.</param>
-        /// <returns>Resultado de la sustitución; conserva el vínculo anterior si falla.</returns>
+        /// <returns>Resultado de la sustitución o aviso de cambio parcial si falla.</returns>
         public ErrorDto IVR_Cat_Reservas_Cuenta_Actualizar(
             int codEmpresa,
             IvrCatReservaCuentaRequest? request)
@@ -251,6 +251,9 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
             return GuardarCuenta(codEmpresa, request, true, false);
         }
 
+        /// <summary>
+        /// Valida y ejecuta directamente el cambio de vínculo, sin transacción externa.
+        /// </summary>
         private ErrorDto GuardarCuenta(
             int codEmpresa,
             IvrCatReservaCuentaRequest? request,
@@ -258,105 +261,102 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
             bool reemplazar)
         {
             if (request == null)
-            {
-                return DbHelper.ErrorResponse(
-                    "Los datos del vínculo son requeridos.", CodigoMensajeControlado);
-            }
-            var req = request;
-            var validacion = ValidarIdentificacion(req.Cod_Reserva, req.Usuario);
-            if (validacion != null)
-            {
-                return validacion;
-            }
-            if (string.IsNullOrWhiteSpace(req.Cod_Cuenta)
-                || (reemplazar && string.IsNullOrWhiteSpace(req.Cuenta_Anterior)))
-            {
+                return DbHelper.ErrorResponse("Los datos del vínculo son requeridos.", CodigoMensajeControlado);
+
+            var validacion = ValidarIdentificacion(request.Cod_Reserva, request.Usuario);
+            if (validacion != null) return validacion;
+
+            if (string.IsNullOrWhiteSpace(request.Cod_Cuenta) ||
+                (reemplazar && string.IsNullOrWhiteSpace(request.Cuenta_Anterior)))
                 return DbHelper.ErrorResponse(
                     "Debe indicar la cuenta y, al modificar, la cuenta anterior.", CodigoMensajeControlado);
-            }
 
-            var resultado = DbHelper.WithConn(_portalDb, codEmpresa, connection =>
+            if (request.Cod_Reserva.Trim().Length > 10 || request.Cod_Cuenta.Trim().Length > 60 ||
+                (reemplazar && request.Cuenta_Anterior.Trim().Length > 60) || request.Usuario.Trim().Length > 30)
+                return DbHelper.ErrorResponse("Los datos del vínculo superan la longitud permitida.", CodigoMensajeControlado);
+
+            var escrituraIniciada = false;
+            try
             {
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 connection.Open();
-                using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
-                var reserva = req.Cod_Reserva.Trim();
+
+                var reserva = request.Cod_Reserva.Trim();
                 const string sqlReserva = "SELECT COUNT(*) FROM IVR_RESERVAS WHERE COD_RESERVA = @reserva;";
-                if (connection.ExecuteScalar<int>(sqlReserva, new { reserva }, transaction) == 0)
-                {
+                if (connection.ExecuteScalar<int>(sqlReserva, new { reserva }) == 0)
                     return DbHelper.ErrorResponse("La reserva indicada no existe.", CodigoMensajeControlado);
-                }
-                var cuenta = ConsultarCuenta(connection, transaction, req.Cod_Cuenta.Trim());
+
+                var cuenta = ConsultarCuenta(connection, request.Cod_Cuenta.Trim());
                 if (cuenta == null)
-                {
                     return DbHelper.ErrorResponse("La cuenta contable indicada no existe.", CodigoMensajeControlado);
-                }
-                var cambio = CambiarVinculo(connection, transaction, reserva, cuenta, req, eliminar, reemplazar);
-                if (cambio.Code == 0)
-                {
-                    transaction.Commit();
-                }
-                return cambio;
-            });
-            return resultado.Code == 0 && resultado.Result != null
-                ? resultado.Result
-                : DbHelper.ErrorResponse(resultado.Description ?? "No fue posible guardar el vínculo.");
+
+                return CambiarVinculo(connection, reserva, cuenta, request,
+                    eliminar, reemplazar, ref escrituraIniciada);
+            }
+            catch (Exception)
+            {
+                if (!escrituraIniciada)
+                    return DbHelper.ErrorResponse("No se pudo validar o iniciar el cambio de vínculo.", -1);
+
+                return DbHelper.ErrorResponse(
+                    reemplazar
+                        ? "La sustitución quedó inconclusa. Pueden estar vinculadas la cuenta anterior, la nueva o ambas. Revise los vínculos antes de reintentar."
+                        : "El procedimiento pudo cambiar el vínculo, aunque no se confirmó el resultado. Revise las cuentas de la reserva antes de reintentar.",
+                    -1);
+            }
         }
 
+        /// <summary>Aplica una vinculación, desvinculación o sustitución validada.</summary>
         private static ErrorDto CambiarVinculo(
             IDbConnection connection,
-            IDbTransaction transaction,
             string reserva,
             IvrCatReservaCuentaDto cuenta,
             IvrCatReservaCuentaRequest request,
             bool eliminar,
-            bool reemplazar)
+            bool reemplazar,
+            ref bool escrituraIniciada)
         {
             if (reemplazar)
-            {
-                return ReemplazarVinculo(connection, transaction, reserva, cuenta, request);
-            }
-            var existe = TieneVinculo(connection, transaction, reserva, cuenta.Cod_Cuenta);
+                return ReemplazarVinculo(connection, reserva, cuenta, request, ref escrituraIniciada);
+
+            var existe = TieneVinculo(connection, reserva, cuenta.Cod_Cuenta);
             if (eliminar && !existe)
-            {
                 return DbHelper.ErrorResponse("La cuenta no está vinculada a esta reserva.", CodigoMensajeControlado);
-            }
             if (!eliminar && existe)
-            {
                 return DbHelper.ErrorResponse("La cuenta ya está vinculada a esta reserva.", CodigoMensajeControlado);
-            }
-            ProcesarVinculo(connection, transaction, reserva, cuenta, !eliminar, request.Usuario);
+
+            ProcesarVinculo(connection, reserva, cuenta, !eliminar, request.Usuario, ref escrituraIniciada);
             return DbHelper.OkResponse("Proceso concluido satisfactoriamente.");
         }
 
+        /// <summary>
+        /// Vincula la nueva cuenta antes de desvincular la anterior para conservar
+        /// el vínculo previo si falla la primera llamada al procedimiento.
+        /// </summary>
         private static ErrorDto ReemplazarVinculo(
             IDbConnection connection,
-            IDbTransaction transaction,
             string reserva,
             IvrCatReservaCuentaDto cuenta,
-            IvrCatReservaCuentaRequest request)
+            IvrCatReservaCuentaRequest request,
+            ref bool escrituraIniciada)
         {
-            var anterior = ConsultarCuenta(connection, transaction, request.Cuenta_Anterior.Trim());
-            if (anterior == null || !TieneVinculo(connection, transaction, reserva, anterior.Cod_Cuenta))
-            {
+            var anterior = ConsultarCuenta(connection, request.Cuenta_Anterior.Trim());
+            if (anterior == null || !TieneVinculo(connection, reserva, anterior.Cod_Cuenta))
                 return DbHelper.ErrorResponse("La cuenta anterior ya no está vinculada a la reserva.", CodigoMensajeControlado);
-            }
+
             if (anterior.Cod_Cuenta == cuenta.Cod_Cuenta)
-            {
                 return DbHelper.OkResponse("La cuenta seleccionada conserva el vínculo actual.");
-            }
-            if (TieneVinculo(connection, transaction, reserva, cuenta.Cod_Cuenta))
-            {
+
+            if (TieneVinculo(connection, reserva, cuenta.Cod_Cuenta))
                 return DbHelper.ErrorResponse("La cuenta ya está vinculada a esta reserva.", CodigoMensajeControlado);
-            }
-            ProcesarVinculo(connection, transaction, reserva, anterior, false, request.Usuario);
-            ProcesarVinculo(connection, transaction, reserva, cuenta, true, request.Usuario);
+
+            ProcesarVinculo(connection, reserva, cuenta, true, request.Usuario, ref escrituraIniciada);
+            ProcesarVinculo(connection, reserva, anterior, false, request.Usuario, ref escrituraIniciada);
             return DbHelper.OkResponse("Proceso concluido satisfactoriamente.");
         }
 
-        private static IvrCatReservaCuentaDto? ConsultarCuenta(
-            IDbConnection connection,
-            IDbTransaction transaction,
-            string cuenta)
+        /// <summary>Resuelve la cuenta contable y su máscara.</summary>
+        private static IvrCatReservaCuentaDto? ConsultarCuenta(IDbConnection connection, string cuenta)
         {
             const string sql = """
                 SELECT TOP (1)
@@ -366,44 +366,40 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones
                 FROM vCNTX_CUENTAS_LOCAL
                 WHERE COD_CUENTA = @cuenta OR COD_CUENTA_MASK = @cuenta;
                 """;
-            return connection.QueryFirstOrDefault<IvrCatReservaCuentaDto>(sql, new { cuenta }, transaction);
+            return connection.QueryFirstOrDefault<IvrCatReservaCuentaDto>(sql, new { cuenta });
         }
 
-        private static bool TieneVinculo(
-            IDbConnection connection,
-            IDbTransaction transaction,
-            string reserva,
-            string cuenta)
+        /// <summary>Comprueba la vinculación actual de la cuenta.</summary>
+        private static bool TieneVinculo(IDbConnection connection, string reserva, string cuenta)
         {
             const string sql = """
                 SELECT COUNT(*) FROM IVR_RESERVAS_CUENTAS
                 WHERE COD_RESERVA = @reserva AND COD_CUENTA = @cuenta;
                 """;
-            return connection.ExecuteScalar<int>(sql, new { reserva, cuenta }, transaction) > 0;
+            return connection.ExecuteScalar<int>(sql, new { reserva, cuenta }) > 0;
         }
 
+        /// <summary>Ejecuta y comprueba el cambio solicitado mediante el SP existente.</summary>
         private static void ProcesarVinculo(
             IDbConnection connection,
-            IDbTransaction transaction,
             string reserva,
             IvrCatReservaCuentaDto cuenta,
             bool vincular,
-            string usuario)
+            string usuario,
+            ref bool escrituraIniciada)
         {
-            // El VB6 envía la cuenta con máscara y los cuatro argumentos por posición.
+            // El procedimiento recibe la cuenta con máscara y cuatro argumentos por posición.
             const string sql = "EXEC spIVR_RESERVAS_CUENTAS_REGISTRO @reserva, @cuenta, @vincula, @usuario;";
+            escrituraIniciada = true;
             connection.Execute(sql, new
             {
                 reserva,
                 cuenta = cuenta.Cod_Cuenta_Mask,
                 vincula = vincular ? 1 : 0,
                 usuario = usuario.Trim()
-            }, transaction);
-            if (TieneVinculo(connection, transaction, reserva, cuenta.Cod_Cuenta) != vincular)
-            {
-                throw new InvalidOperationException(
-                    "El procedimiento no completó el cambio del vínculo solicitado.");
-            }
+            });
+            if (TieneVinculo(connection, reserva, cuenta.Cod_Cuenta) != vincular)
+                throw new InvalidOperationException("El procedimiento no completó el cambio del vínculo solicitado.");
         }
     }
 }

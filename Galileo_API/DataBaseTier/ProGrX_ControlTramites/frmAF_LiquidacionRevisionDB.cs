@@ -442,10 +442,18 @@
             int CodEmpresa,
             AfLiquidacionRevisionAplicarRequest request)
         {
+            if (request is null
+                || string.IsNullOrWhiteSpace(request.Cedula)
+                || string.IsNullOrWhiteSpace(request.Documento)
+                || string.IsNullOrWhiteSpace(request.Tag)
+                || string.IsNullOrWhiteSpace(request.Usuario))
+            {
+                return DbHelper.ErrorResponse(
+                    "La cédula, el documento, la etiqueta y el usuario son requeridos.",
+                    -2);
+            }
+
             const string sqlOmisiones = @"
-                -- Aplica omisiones seleccionadas (frmAF_LiquidacionRevision / sbAplicarErrores).
-                -- @Cedula: cédula del socio.
-                -- @Documento: consecutivo/boleta de la liquidación.
                 UPDATE SIF_OMISIONESG
                 SET APLICADO = 'S'
                 WHERE cedula = @Cedula
@@ -453,12 +461,13 @@
                   AND CODIGO = @Cedula
                   AND DOCUMENTO = @Documento";
 
-            var cedula = request.Cedula.Trim();
-            var documento = request.Documento.Trim();
+            string cedula = request.Cedula.Trim();
+            string documento = request.Documento.Trim();
 
             var resp = DbHelper.WithConn(_portalDb, CodEmpresa, connection =>
             {
-                using var transaction = connection.BeginTransaction();
+                connection.Open();
+                bool procedimientoFinalizo = false;
 
                 try
                 {
@@ -469,45 +478,46 @@
                             Codigo = cedula,
                             Tag = request.Tag.Trim(),
                             Usuario = request.Usuario.Trim(),
-                            Notas = request.Observacion ?? string.Empty,
+                            Notas = request.Observacion?.Trim() ?? string.Empty,
                             Documento = documento,
                             Modulo = "LIQ",
                             Llave_01 = documento,
                             Llave_02 = string.Empty,
-                            Llave_03 = string.Empty,
+                            Llave_03 = string.Empty
                         },
-                        transaction,
                         commandType: CommandType.StoredProcedure);
+
+                    procedimientoFinalizo = true;
 
                     connection.Execute(
                         sqlOmisiones,
                         new
                         {
                             Cedula = cedula,
-                            Documento = documento,
-                        },
-                        transaction);
+                            Documento = documento
+                        });
 
-                    transaction.Commit();
                     return true;
                 }
-                catch
+                catch (Exception ex)
                 {
-                    transaction.Rollback();
-                    throw;
+                    string mensaje = procedimientoFinalizo
+                        ? "El procedimiento de la etiqueta finalizó, pero no fue posible marcar las omisiones como aplicadas. Consulte el seguimiento y las omisiones antes de reintentar."
+                        : "No fue posible completar el registro de la etiqueta. El procedimiento pudo haber aplicado cambios parciales; consulte el seguimiento antes de reintentar.";
+
+                    throw new InvalidOperationException(mensaje, ex);
                 }
             });
 
-            if (resp.Code == -1)
+            if (resp.Code != 0)
             {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = resp.Description,
-                };
+                return DbHelper.ErrorResponse(
+                    resp.Description ?? "No fue posible aplicar la revisión.",
+                    -1);
             }
 
-            return DbHelper.CreateOkResponse();
+            return DbHelper.OkResponse("Revisión aplicada satisfactoriamente.");
         }
+
     }
 }

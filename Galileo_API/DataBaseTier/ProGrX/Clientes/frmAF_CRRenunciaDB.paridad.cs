@@ -67,38 +67,84 @@ public partial class FrmAFCrenunciaDB
         return reglas.Where(x => x.Error).Select(x => x.Mensaje).ToList();
     }
 
-    /// <summary>Registra encabezado, motivos, todos los planes y abonos en una transacción.</summary>
+    /// <summary>Registra encabezado, motivos, planes y abonos directamente, sin transacción externa.</summary>
     public ErrorDto<int> AF_CR_Renuncias_Proceso_Guardar(int CodEmpresa, AfRenunciaProceso request)
     {
+        if (request is null)
+            return DbHelper.CreateErrorResponse<int>("Debe indicar los datos de la renuncia.");
+
         var reingresoError = AF_CR_Renuncias_Reingreso_Error(CodEmpresa, request);
         if (reingresoError != null) return reingresoError;
 
         var globales = new MProGrxMain(_config).sbSifParametrosInicializa(CodEmpresa, request.Usuario);
         if (globales.Code != 0 || globales.Result == null)
             return DbHelper.CreateErrorResponse<int>(globales.Description ?? "No fue posible obtener la oficina titular.");
+
         request.Oficina = globales.Result.GOficinaTitular ?? "";
-        return DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+        var etapa = 0;
+        var id = request.CodRenuncia;
+        var motivosCompletados = 0;
+        var planesCompletados = 0;
+        var abonosCompletados = 0;
+
+        try
         {
-            if (connection.State != ConnectionState.Open) connection.Open();
-            using var transaction = connection.BeginTransaction();
-            AF_CR_Renuncias_Proceso_Validar(connection, transaction, request);
-            AF_CR_Renuncias_Importes_Validar(connection, transaction, request);
-            var id = AF_CR_Renuncias_Liquidacion_Guarda_Ejecutar(connection, request, transaction);
+            using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodEmpresa);
+            connection.Open();
+
+            AF_CR_Renuncias_Proceso_Validar(connection, request);
+            AF_CR_Renuncias_Importes_Validar(connection, request);
+
+            etapa = 2;
+            id = AF_CR_Renuncias_Liquidacion_Guarda_Ejecutar(connection, request, null);
+            if (id <= 0)
+                throw new InvalidOperationException("El guardado no devolvió un identificador válido.");
+
+            etapa = 3;
             foreach (var motivo in request.Motivos.Distinct())
-                connection.Execute("exec spAFI_CR_Motivos_Registra @id, @motivo, 'A', @usuario", new { id, motivo, usuario = request.Usuario }, transaction);
+            {
+                connection.Execute(
+                    "EXEC spAFI_CR_Motivos_Registra @id, @motivo, 'A', @usuario;",
+                    new { id, motivo, usuario = request.Usuario });
+                motivosCompletados++;
+            }
+
+            etapa = 4;
             foreach (var plan in request.Planes)
             {
                 plan.CodRenuncia = id;
-                AF_CR_Renuncias_Plan_Insertar_Ejecutar(connection, plan, transaction);
+                AF_CR_Renuncias_Plan_Insertar_Ejecutar(connection, plan, null);
+                planesCompletados++;
             }
+
+            etapa = 5;
             foreach (var abono in request.Abonos)
             {
                 abono.CodRenuncia = id;
-                AF_CR_Renuncias_Abono_Insertar_Ejecutar(connection, abono, transaction);
+                AF_CR_Renuncias_Abono_Insertar_Ejecutar(connection, abono, null);
+                abonosCompletados++;
             }
-            transaction.Commit();
-            return id;
-        });
+
+            return DbHelper.CreateOkResponse(id);
+        }
+        catch (InvalidOperationException ex) when (etapa == 0)
+        {
+            return DbHelper.CreateErrorResponse<int>(ex.Message);
+        }
+        catch (Exception)
+        {
+            if (etapa < 2)
+                return DbHelper.CreateErrorResponse<int>(
+                    "No se pudo validar o iniciar el guardado de la renuncia.");
+
+            var referencia = id > 0 ? $" Renuncia Id: {id}." : "";
+            return DbHelper.CreateErrorResponse<int>(
+                $"El guardado quedó inconcluso.{referencia} El procedimiento de encabezado pudo haber realizado cambios. " +
+                $"Motivos completados: {motivosCompletados}; planes: {planesCompletados}; abonos: {abonosCompletados}. " +
+                "La llamada que falló también pudo modificar datos. Revise la renuncia y sus detalles antes de reintentar.",
+                -1,
+                id);
+        }
     }
 
     private ErrorDto<int>? AF_CR_Renuncias_Reingreso_Error(int CodEmpresa, AfRenunciaProceso request)
@@ -113,18 +159,18 @@ public partial class FrmAFCrenunciaDB
             : DbHelper.CreateErrorResponse<int>(string.Join(Environment.NewLine, validacion.Result));
     }
 
-    private static void AF_CR_Renuncias_Proceso_Validar(SqlConnection connection, SqlTransaction transaction, AfRenunciaProceso r)
+    private static void AF_CR_Renuncias_Proceso_Validar(SqlConnection connection, AfRenunciaProceso r)
     {
         AF_CR_Renuncias_Datos_Validar(r);
-        var existe = connection.ExecuteScalar<int>("SELECT COUNT(*) FROM socios WHERE cedula = @Cedula", r, transaction);
+        var existe = connection.ExecuteScalar<int>("SELECT COUNT(*) FROM socios WHERE cedula = @Cedula", r);
         if (existe == 0) throw new InvalidOperationException("La persona no existe.");
         var activa = connection.ExecuteScalar<int>(r.CodRenuncia == 0
             ? "SELECT dbo.fxAFI_Renuncia_Activa(@Cedula)"
-            : "SELECT dbo.fxAFI_Renuncia_Activa_Otra(@Cedula, @CodRenuncia)", r, transaction);
+            : "SELECT dbo.fxAFI_Renuncia_Activa_Otra(@Cedula, @CodRenuncia)", r);
         if (activa == 1) throw new InvalidOperationException("La persona tiene otra renuncia en trámite o la actual fue liquidada.");
-        var estado = connection.ExecuteScalar<string>("SELECT estado FROM AFI_CR_RENUNCIAS WHERE cod_renuncia = @CodRenuncia", r, transaction);
+        var estado = connection.ExecuteScalar<string>("SELECT estado FROM AFI_CR_RENUNCIAS WHERE cod_renuncia = @CodRenuncia", r);
         if (estado == "P") throw new InvalidOperationException("Esta renuncia se encuentra perdida y no puede modificarse.");
-        var patronal = connection.ExecuteScalar<string>("SELECT VALOR FROM SIF_PARAMETROS WHERE COD_PARAMETRO = 'PAT_R'", transaction: transaction);
+        var patronal = connection.ExecuteScalar<string>("SELECT VALOR FROM SIF_PARAMETROS WHERE COD_PARAMETRO = 'PAT_R'");
         AF_CR_Renuncias_AportePatronal_Validar(r, patronal);
         r.AporteObrero = true;
         r.Capitalizacion = true;
@@ -152,28 +198,28 @@ public partial class FrmAFCrenunciaDB
 
     private static decimal AF_CR_Renuncias_Monto(decimal value) => Math.Round(value, 2, MidpointRounding.ToEven);
 
-    private static void AF_CR_Renuncias_Importes_Validar(SqlConnection connection, SqlTransaction transaction, AfRenunciaProceso r)
+    private static void AF_CR_Renuncias_Importes_Validar(SqlConnection connection, AfRenunciaProceso r)
     {
         var p = connection.QuerySingle<AfRenunciaLiqConsultaPatrimonio>(SpLiqConsultaPatrimonio,
-            new { r.Cedula }, transaction, commandType: CommandType.StoredProcedure);
+            new { r.Cedula }, commandType: CommandType.StoredProcedure);
         // Los checks indican aplicación a deudas; la liquidación se determina por tipo.
         var baseMonto = AF_CR_Renuncias_Monto(p.Ahorro) + AF_CR_Renuncias_Monto(p.Capitaliza) + AF_CR_Renuncias_Monto(p.Extra);
         var patronal = AF_CR_Renuncias_Monto(p.Aporte) + AF_CR_Renuncias_Monto(p.Custodia);
         var retencion = AF_CR_Renuncias_Monto(p.Renta) + AF_CR_Renuncias_Monto(p.Exc_Renta);
-        var planes = AF_CR_Renuncias_Planes_Validar(connection, transaction, r);
+        var planes = AF_CR_Renuncias_Planes_Validar(connection, r);
         var liquidar = baseMonto + planes - retencion;
         if (r.Tipo == "P") liquidar += patronal + (p.Exc_Aplica == 1 ? AF_CR_Renuncias_Monto(p.Excedente) : 0);
         var disponibleDeudas = baseMonto + AF_CR_Renuncias_Monto(p.Excedente) - retencion + planes;
         if (r.AportePatronal == true) disponibleDeudas += patronal;
         // El ISR de planes se consulta con los rendimientos gravables de la lista original.
         var lista = connection.Query<AfRenunciaLiquidaListaPlanes>(SpLiquidaListaPlanes,
-            new { r.Cedula, TipoLiq = r.Tipo }, transaction, commandType: CommandType.StoredProcedure).ToList();
+            new { r.Cedula, TipoLiq = r.Tipo }, commandType: CommandType.StoredProcedure).ToList();
         var rendimiento = lista.Where(x => x.Renta_Global == 1 && r.Planes.Any(y => y.CodContrato == x.Cod_Contrato && y.Marcada))
             .Sum(x => AF_CR_Renuncias_Monto(x.Rendimiento) + AF_CR_Renuncias_Monto(x.RendPendiente));
         var renta = connection.QuerySingle<AfRenunciaRentaGlobal>(SpRentaGlobal,
-            new { r.Cedula, Corte = DateTime.Now, MntRetiro = rendimiento, Plan = "" }, transaction, commandType: CommandType.StoredProcedure);
+            new { r.Cedula, Corte = DateTime.Now, MntRetiro = rendimiento, Plan = "" }, commandType: CommandType.StoredProcedure);
         disponibleDeudas -= AF_CR_Renuncias_Monto(renta.ISR_Monto);
-        AF_CR_Renuncias_Abonos_Validar(connection, transaction, r, disponibleDeudas);
+        AF_CR_Renuncias_Abonos_Validar(connection, r, disponibleDeudas);
         var girar = liquidar - r.Abonos.Sum(x => x.Abono);
         if (Math.Abs(r.Disponible - liquidar) > 0.01m || Math.Abs(r.TotalNeto - girar) > 0.01m || Math.Abs(r.RetenerMonto - retencion) > 0.01m)
             throw new InvalidOperationException("Los importes cambiaron. Vuelva a cargar Patrimonio y revise la liquidación antes de guardar.");
@@ -182,10 +228,10 @@ public partial class FrmAFCrenunciaDB
         r.RetenerMonto = retencion;
     }
 
-    private static decimal AF_CR_Renuncias_Planes_Validar(SqlConnection connection, SqlTransaction transaction, AfRenunciaProceso r)
+    private static decimal AF_CR_Renuncias_Planes_Validar(SqlConnection connection, AfRenunciaProceso r)
     {
         var actuales = connection.Query<AfRenunciaLiquidaListaPlanes>(SpLiquidaListaPlanes,
-            new { r.Cedula, TipoLiq = r.Tipo }, transaction, commandType: CommandType.StoredProcedure).ToList();
+            new { r.Cedula, TipoLiq = r.Tipo }, commandType: CommandType.StoredProcedure).ToList();
         if (r.Planes.Count != actuales.Count || r.Planes.Select(x => x.CodContrato).Distinct().Count() != actuales.Count)
             throw new InvalidOperationException("La lista de planes cambió; vuelva a cargarla.");
         foreach (var plan in r.Planes)
@@ -210,15 +256,15 @@ public partial class FrmAFCrenunciaDB
         return r.Planes.Where(x => x.Marcada).Sum(x => x.Disponible);
     }
 
-    private static void AF_CR_Renuncias_Abonos_Validar(SqlConnection connection, SqlTransaction transaction, AfRenunciaProceso r, decimal disponible)
+    private static void AF_CR_Renuncias_Abonos_Validar(SqlConnection connection, AfRenunciaProceso r, decimal disponible)
     {
         var actuales = connection.Query<AfRenunciaLiquidacionCreditosPersona>(SpLiquidacionCreditosPersona,
-            new { r.Cedula, Abono = disponible }, transaction, commandType: CommandType.StoredProcedure).ToList();
+            new { r.Cedula, Abono = disponible }, commandType: CommandType.StoredProcedure).ToList();
         if (r.Abonos.Count != actuales.Count || r.Abonos.Select(x => x.IdSolicitud).Distinct().Count() != actuales.Count)
             throw new InvalidOperationException("La lista de créditos cambió; vuelva a cargarla.");
         if (r.Abonos.Sum(x => x.Abono) > Math.Max(0, disponible))
             throw new InvalidOperationException("Los abonos superan el disponible de aplicación.");
-        var ajuste = connection.ExecuteScalar<int>("SELECT AJUSTE_TASAS FROM causas_renuncias WHERE id_causa = @IdCausa", r, transaction);
+        var ajuste = connection.ExecuteScalar<int>("SELECT AJUSTE_TASAS FROM causas_renuncias WHERE id_causa = @IdCausa", r);
         foreach (var abono in r.Abonos)
         {
             var actual = actuales.SingleOrDefault(x => x.Id_Solicitud == abono.IdSolicitud)

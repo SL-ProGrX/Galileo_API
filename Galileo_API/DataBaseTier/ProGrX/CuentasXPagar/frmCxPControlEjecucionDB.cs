@@ -1198,132 +1198,179 @@ namespace Galileo.DataBaseTier
                 new { Cod_Proveedor });
         }
 
+        /// <summary>
+        /// Ejecuta los pagos y su traslado directamente, sin transacción externa.
+        /// Informa la etapa que pudo quedar aplicada si ocurre un error.
+        /// </summary>
         public ErrorDto<EjecucionPagosResultado> EjecucionPagos_Aplicar(int CodEmpresa, EjecucionPagosAplicar data)
         {
+            if (data is null || data.Pagos is null)
+                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>("Debe indicar los pagos a ejecutar.", -1);
+
             var errorValidacion = ValidarEjecucionPagos(data);
             if (errorValidacion is not null)
-            {
-                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>(
-                    errorValidacion, -1);
-            }
+                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>(errorValidacion, -1);
 
+            if (data.Tipo_Cancelacion == "D" && data.Banco_Tipo_Cambio <= 0)
+                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>("El tipo de cambio bancario debe ser mayor que cero.", -1);
+            if (data.Tipo_Cancelacion == "C" && data.Pagos.Any(pago => pago.Tipo_Cambio <= 0))
+                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>("El tipo de cambio de los pagos debe ser mayor que cero.", -1);
+
+            var estado = new EstadoEjecucionPagos();
             try
             {
-                using var connection = CreatePortalDb().CreateConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodEmpresa);
                 connection.Open();
-                using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
-
-                try
-                {
-                    foreach (var pago in data.Pagos)
-                    {
-                        if (data.Tipo_Cancelacion == "C")
-                        {
-                            connection.Execute(
-                                "spCxP_EjecucionPagos_RegistroCargos",
-                                new
-                                {
-                                    Proveedor = pago.Cod_Proveedor,
-                                    Factura = pago.Cod_Factura,
-                                    NPago = pago.Npago,
-                                    CodCargo = data.Cod_Cargo,
-                                    Divisa = pago.Cod_Divisa,
-                                    Monto = pago.Neto,
-                                    TipoCambio = pago.Tipo_Cambio,
-                                    Usuario = data.Usuario
-                                },
-                                transaction,
-                                commandType: CommandType.StoredProcedure);
-                        }
-
-                        connection.Execute(
-                            "spCxP_EjecucionPagos_AplicaCargosFlotantes",
-                            new
-                            {
-                                Proveedor = pago.Cod_Proveedor,
-                                Factura = pago.Cod_Factura,
-                                NPago = pago.Npago,
-                                Disponible = pago.Monto - pago.Cargo_Directo,
-                                Corte = data.Corte_Cargos.Date.AddDays(1).AddTicks(-1),
-                                AplicaCargos = pago.Apl_Cargo_Flotante,
-                                Usuario = data.Usuario
-                            },
-                            transaction,
-                            commandType: CommandType.StoredProcedure);
-                    }
-
-                    connection.Execute(
-                        "spCxP_EjecucionPagos_ActualizaSaldosConCargosPorc",
-                        transaction: transaction,
-                        commandType: CommandType.StoredProcedure);
-
-                    var solicitud = data.Tipo_Cancelacion == "D"
-                        ? CrearSolicitudTesoreria(connection, transaction, data)
-                        : 0;
-
-                    if (data.Tipo_Cancelacion == "D")
-                    {
-                        connection.Execute(
-                            @"UPDATE cxp_pagoprov
-                                 SET tesoreria = @Solicitud,
-                                     fecha_traslada = dbo.MyGetdate(),
-                                     user_traslada = @Usuario,
-                                     pago_tercero = @PagoTercero
-                               WHERE user_traslada = 'xBITxTesx'
-                                 AND cod_proveedor = @Proveedor",
-                            new
-                            {
-                                Solicitud = solicitud,
-                                data.Usuario,
-                                PagoTercero = data.Pagar_Tercero ? data.Pago_Tercero : string.Empty,
-                                Proveedor = data.Cod_Proveedor
-                            },
-                            transaction);
-                    }
-                    else
-                    {
-                        connection.Execute(
-                            @"UPDATE cxp_pagoprov
-                                 SET tesoreria = 0,
-                                     Tipo_Cancelacion = 'C',
-                                     Tesoreria_Estado = 'E',
-                                     fecha_traslada = dbo.MyGetdate(),
-                                     user_traslada = @Usuario,
-                                     pago_tercero = '',
-                                     Tesoreria_Emision = dbo.MyGetdate()
-                               WHERE user_traslada = 'xBITxTesx'
-                                 AND cod_proveedor = @Proveedor",
-                            new { data.Usuario, Proveedor = data.Cod_Proveedor },
-                            transaction);
-                    }
-
-                    connection.Execute(
-                        "spCxP_Tesoreria_Detalle_Update",
-                        transaction: transaction,
-                        commandType: CommandType.StoredProcedure);
-
-                    transaction.Commit();
-                    return DbHelper.CreateOkResponse(
-                        new EjecucionPagosResultado
-                        {
-                            NSolicitud = solicitud,
-                            Tipo_Cancelacion = data.Tipo_Cancelacion
-                        },
-                        data.Tipo_Cancelacion == "D"
-                            ? $"Pago registrado en Tesorería. Solicitud: {solicitud}"
-                            : "Cuenta por pagar descontada vía cargos.");
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
-                }
+                return CxP_ControlEjecucion_Pagos_Ejecutar(connection, data, estado);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>(
-                    ex.Message, -1);
+                return CxP_ControlEjecucion_Error_Crear(data, estado);
             }
+        }
+
+        /// <summary>Ejecuta los pagos y el traslado en el orden del proceso original.</summary>
+        private static ErrorDto<EjecucionPagosResultado> CxP_ControlEjecucion_Pagos_Ejecutar(
+            IDbConnection connection, EjecucionPagosAplicar data, EstadoEjecucionPagos estado)
+        {
+            foreach (var pago in data.Pagos)
+            {
+                estado.PagoActual = pago.Npago;
+                if (data.Tipo_Cancelacion == "C")
+                {
+                    estado.Etapa = "registro de cargos directos";
+                    estado.EscrituraIniciada = true;
+                    connection.Execute(
+                        "spCxP_EjecucionPagos_RegistroCargos",
+                        new
+                        {
+                            Proveedor = pago.Cod_Proveedor,
+                            Factura = pago.Cod_Factura,
+                            NPago = pago.Npago,
+                            CodCargo = data.Cod_Cargo,
+                            Divisa = pago.Cod_Divisa,
+                            Monto = pago.Neto,
+                            TipoCambio = pago.Tipo_Cambio,
+                            Usuario = data.Usuario
+                        },
+                        commandType: CommandType.StoredProcedure);
+                }
+
+                estado.Etapa = "aplicación de cargos flotantes";
+                estado.EscrituraIniciada = true;
+                connection.Execute(
+                    "spCxP_EjecucionPagos_AplicaCargosFlotantes",
+                    new
+                    {
+                        Proveedor = pago.Cod_Proveedor,
+                        Factura = pago.Cod_Factura,
+                        NPago = pago.Npago,
+                        Disponible = pago.Monto - pago.Cargo_Directo,
+                        Corte = data.Corte_Cargos.Date.AddDays(1).AddTicks(-1),
+                        AplicaCargos = pago.Apl_Cargo_Flotante,
+                        Usuario = data.Usuario
+                    },
+                    commandType: CommandType.StoredProcedure);
+                estado.PagosCompletados++;
+            }
+
+            estado.PagoActual = 0;
+            estado.Etapa = "actualización de saldos porcentuales";
+            estado.EscrituraIniciada = true;
+            connection.Execute(
+                "spCxP_EjecucionPagos_ActualizaSaldosConCargosPorc",
+                commandType: CommandType.StoredProcedure);
+
+            if (data.Tipo_Cancelacion == "D")
+            {
+                estado.Etapa = "creación de la estado.Solicitud de Tesorería";
+                estado.Solicitud = CrearSolicitudTesoreria(connection, data);
+                if (estado.Solicitud <= 0)
+                    throw new InvalidOperationException("Tesorería no devolvió una estado.Solicitud válida.");
+            }
+
+            estado.Etapa = "actualización de pagos";
+            if (data.Tipo_Cancelacion == "D")
+            {
+                connection.Execute(
+                    @"UPDATE cxp_pagoprov
+                         SET tesoreria = @Solicitud,
+                             fecha_traslada = dbo.MyGetdate(),
+                             user_traslada = @Usuario,
+                             pago_tercero = @PagoTercero
+                       WHERE user_traslada = 'xBITxTesx'
+                         AND cod_proveedor = @Proveedor",
+                    new
+                    {
+                        Solicitud = estado.Solicitud,
+                        data.Usuario,
+                        PagoTercero = data.Pagar_Tercero ? data.Pago_Tercero : string.Empty,
+                        Proveedor = data.Cod_Proveedor
+                    });
+            }
+            else
+            {
+                connection.Execute(
+                    @"UPDATE cxp_pagoprov
+                         SET tesoreria = 0,
+                             Tipo_Cancelacion = 'C',
+                             Tesoreria_Estado = 'E',
+                             fecha_traslada = dbo.MyGetdate(),
+                             user_traslada = @Usuario,
+                             pago_tercero = '',
+                             Tesoreria_Emision = dbo.MyGetdate()
+                       WHERE user_traslada = 'xBITxTesx'
+                         AND cod_proveedor = @Proveedor",
+                    new { data.Usuario, Proveedor = data.Cod_Proveedor });
+            }
+
+            estado.Etapa = "actualización del detalle de Tesorería";
+            connection.Execute(
+                "spCxP_Tesoreria_Detalle_Update",
+                commandType: CommandType.StoredProcedure);
+
+            return DbHelper.CreateOkResponse(
+                new EjecucionPagosResultado
+                {
+                    NSolicitud = estado.Solicitud,
+                    Tipo_Cancelacion = data.Tipo_Cancelacion
+                },
+                data.Tipo_Cancelacion == "D"
+                    ? $"Pago registrado en Tesorería. Solicitud: {estado.Solicitud}"
+                    : "Cuenta por pagar descontada vía cargos.");
+        }
+
+        /// <summary>Informa los cambios que pudieron quedar aplicados tras un error.</summary>
+        private static ErrorDto<EjecucionPagosResultado> CxP_ControlEjecucion_Error_Crear(
+            EjecucionPagosAplicar data, EstadoEjecucionPagos estado)
+        {
+            if (!estado.EscrituraIniciada)
+                return DbHelper.CreateErrorResponse<EjecucionPagosResultado>(
+                    "No se pudo iniciar la ejecución de pagos.", -1);
+
+            var referenciaPago = estado.PagoActual > 0 ? $" Pago en curso: {estado.PagoActual}." : "";
+            var referenciaSolicitud = estado.Solicitud > 0 ? $" Solicitud de Tesorería: {estado.Solicitud}." : "";
+            var mensaje = $"La ejecución falló durante {estado.Etapa}. Se completaron {estado.PagosCompletados} pago(s)." +
+                          referenciaPago + referenciaSolicitud +
+                          " La llamada fallida y los pasos anteriores pueden haber modificado saldos, cargos o Tesorería. " +
+                          "Revise los pagos, el proveedor y la solicitud antes de reintentar; no repita el proceso automáticamente.";
+            return DbHelper.CreateErrorResponse(
+                mensaje, -1,
+                new EjecucionPagosResultado
+                {
+                    NSolicitud = estado.Solicitud,
+                    Tipo_Cancelacion = data.Tipo_Cancelacion
+                });
+        }
+
+        /// <summary>Conserva la etapa y los resultados parciales de la ejecución.</summary>
+        private sealed class EstadoEjecucionPagos
+        {
+            public string Etapa { get; set; } = "apertura";
+            public int PagosCompletados { get; set; }
+            public int PagoActual { get; set; }
+            public int Solicitud { get; set; }
+            public bool EscrituraIniciada { get; set; }
         }
 
         private static string? ValidarEjecucionPagos(EjecucionPagosAplicar data)
@@ -1355,7 +1402,6 @@ namespace Galileo.DataBaseTier
 
         private static int CrearSolicitudTesoreria(
             IDbConnection connection,
-            IDbTransaction transaction,
             EjecucionPagosAplicar data)
         {
             var desembolso = connection.QuerySingleOrDefault<DesembolsoNetos>(
@@ -1366,8 +1412,7 @@ namespace Galileo.DataBaseTier
                   FROM vCXP_Pagos
                   WHERE cod_Proveedor = @Proveedor
                   GROUP BY cod_proveedor, CEDJUR",
-                new { Proveedor = data.Cod_Proveedor },
-                transaction) ?? throw new InvalidOperationException(
+                new { Proveedor = data.Cod_Proveedor }) ?? throw new InvalidOperationException(
                     "No se encontraron pagos preparados para el desembolso.");
 
             if (desembolso.Neto <= 0)
@@ -1394,14 +1439,12 @@ namespace Galileo.DataBaseTier
                 {
                     Contabilidad = data.Cod_Contabilidad,
                     Proveedor = data.Cod_Proveedor
-                },
-                transaction) ?? throw new InvalidOperationException(
+                }) ?? throw new InvalidOperationException(
                     "No se encontró la información contable del proveedor.");
 
             var cuentaBanco = connection.QuerySingleOrDefault<string>(
                 "SELECT CTACONTA FROM Tes_Bancos WHERE id_banco = @Banco",
-                new { Banco = data.Banco_Id },
-                transaction) ?? string.Empty;
+                new { Banco = data.Banco_Id }) ?? string.Empty;
             if (string.IsNullOrWhiteSpace(cuentaBanco))
             {
                 throw new InvalidOperationException(
@@ -1411,8 +1454,7 @@ namespace Galileo.DataBaseTier
             var parametros = connection.Query<(string Cod_Parametro, string Valor)>(
                 @"SELECT cod_parametro, valor
                   FROM cxp_parametros
-                  WHERE cod_parametro IN ('01', '02')",
-                transaction: transaction)
+                  WHERE cod_parametro IN ('01', '02')")
                 .ToDictionary(item => item.Cod_Parametro, item => item.Valor);
             var unidad = parametros.GetValueOrDefault("01", "GEN");
             var concepto = parametros.GetValueOrDefault("02", "GEN");
@@ -1453,13 +1495,11 @@ namespace Galileo.DataBaseTier
                     OP = 0,
                     Referencia = 0,
                     Token = string.Empty
-                },
-                transaction);
+                });
 
             var linea = 1;
             InsertarDetalleTesoreria(
                 connection,
-                transaction,
                 new DetalleTesoreria
                 {
                     Solicitud = solicitud,
@@ -1490,8 +1530,7 @@ namespace Galileo.DataBaseTier
                   INNER JOIN CXP_CARGOS Cr ON Cp.COD_CARGO = Cr.COD_CARGO
                   WHERE Cp.COD_PROVEEDOR = @Proveedor
                     AND Pf.user_traslada = 'xBITxTesx'",
-                new { Proveedor = data.Cod_Proveedor },
-                transaction)
+                new { Proveedor = data.Cod_Proveedor })
                 .ToList();
 
             foreach (var anticipo in anticipos)
@@ -1499,7 +1538,6 @@ namespace Galileo.DataBaseTier
                 linea++;
                 InsertarDetalleTesoreria(
                     connection,
-                    transaction,
                     new DetalleTesoreria
                     {
                         Solicitud = solicitud,
@@ -1520,8 +1558,7 @@ namespace Galileo.DataBaseTier
                   FROM CNTX_DIVISAS
                   WHERE DIVISA_LOCAL = 1
                     AND COD_CONTABILIDAD = @Contabilidad",
-                new { Contabilidad = data.Cod_Contabilidad },
-                transaction) ?? string.Empty;
+                new { Contabilidad = data.Cod_Contabilidad }) ?? string.Empty;
             var tipoCambioProveedor = ObtenerTipoCambioProveedor(
                 proveedor,
                 desembolso,
@@ -1530,7 +1567,6 @@ namespace Galileo.DataBaseTier
             linea++;
             InsertarDetalleTesoreria(
                 connection,
-                transaction,
                 new DetalleTesoreria
                 {
                     Solicitud = solicitud,
@@ -1565,7 +1601,6 @@ namespace Galileo.DataBaseTier
 
         private static void InsertarDetalleTesoreria(
             IDbConnection connection,
-            IDbTransaction transaction,
             DetalleTesoreria detalle)
         {
             connection.Execute(
@@ -1585,8 +1620,7 @@ namespace Galileo.DataBaseTier
                     detalle.Unidad,
                     detalle.Divisa,
                     detalle.TipoCambio
-                },
-                transaction);
+                });
         }
 
         private sealed class DetalleTesoreria
@@ -1600,7 +1634,7 @@ namespace Galileo.DataBaseTier
             public string Divisa { get; init; } = string.Empty;
             public decimal TipoCambio { get; init; }
         }
-        
+
         /// <summary>
         /// Crea una instancia de <see cref="PortalDB"/> usando la configuración actual.
         /// </summary>
