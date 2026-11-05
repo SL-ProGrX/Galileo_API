@@ -154,14 +154,17 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 return DbHelper.CreateErrorResponse("Los filtros de banco son requeridos.", -2, new List<AfRenunciaBancos>());
             }
 
+            var parametros = new DynamicParameters();
+            parametros.Add("Usuario", NormalizarTexto(filtro.Usuario));
+            if (!string.IsNullOrWhiteSpace(filtro.Divisa))
+            {
+                parametros.Add("Divisa", NormalizarTexto(filtro.Divisa));
+            }
+
             return EjecutarStoredProcedureList<AfRenunciaBancos>(
                 CodEmpresa,
                 SpBancos,
-                new
-                {
-                    Usuario = NormalizarTexto(filtro.Usuario),
-                    Divisa = NormalizarTexto(filtro.Divisa)
-                });
+                parametros);
         }
 
 
