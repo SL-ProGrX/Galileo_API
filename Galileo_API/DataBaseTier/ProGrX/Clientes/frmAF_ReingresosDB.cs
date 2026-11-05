@@ -114,8 +114,6 @@ namespace Galileo.DataBaseTier
                 return promotorActivo;
             }
 
-            var etapa = 0;
-
             try
             {
                 using var connection = DbHelper.OpenConnection(
@@ -124,8 +122,17 @@ namespace Galileo.DataBaseTier
 
                 connection.Open();
 
-                etapa = 1;
-                var sociosActualizados = ActivarSocio(connection, req);
+                int sociosActualizados;
+                try
+                {
+                    sociosActualizados = ActivarSocio(connection, req);
+                }
+                catch (Exception)
+                {
+                    return DbHelper.ErrorResponse(
+                        "Falló la activación del socio. Verifique su estado antes de reintentar.",
+                        -1);
+                }
 
                 if (sociosActualizados == 0)
                 {
@@ -135,39 +142,38 @@ namespace Galileo.DataBaseTier
                         -1);
                 }
 
-                etapa = 2;
-                RegistrarIngreso(connection, req);
+                try
+                {
+                    RegistrarIngreso(connection, req);
+                }
+                catch (Exception)
+                {
+                    return DbHelper.ErrorResponse(
+                        "El socio quedó activado, pero falló el registro del ingreso. " +
+                        "Verifique si se insertó algún ingreso antes de reintentar.",
+                        -1);
+                }
 
-                etapa = 3;
-                VincularPatrimonio(connection, req);
+                try
+                {
+                    VincularPatrimonio(connection, req);
+                }
+                catch (Exception)
+                {
+                    return DbHelper.ErrorResponse(
+                        "El socio fue activado y se registró su ingreso, pero falló " +
+                        "la vinculación del patrimonio. Revise los tres datos antes de reintentar.",
+                        -1);
+                }
 
                 return DbHelper.OkResponse(
                     "Persona activada, ingreso registrado y patrimonio vinculado.");
             }
             catch (Exception)
             {
-                var mensaje = etapa switch
-                {
-                    1 =>
-                        "Falló la activación del socio. Verifique su estado " +
-                        "antes de reintentar.",
-
-                    2 =>
-                        "El socio quedó activado, pero falló el registro " +
-                        "del ingreso. Verifique si se insertó algún ingreso " +
-                        "antes de reintentar.",
-
-                    3 =>
-                        "El socio fue activado y se registró su ingreso, " +
-                        "pero falló la vinculación del patrimonio. " +
-                        "Revise los tres datos antes de reintentar.",
-
-                    _ =>
-                        "No se pudo abrir la conexión para activar " +
-                        "a la persona."
-                };
-
-                return DbHelper.ErrorResponse(mensaje, -1);
+                return DbHelper.ErrorResponse(
+                    "No se pudo abrir la conexión para activar a la persona.",
+                    -1);
             }
         }
 
