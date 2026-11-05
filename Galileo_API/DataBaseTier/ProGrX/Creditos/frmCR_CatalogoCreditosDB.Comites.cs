@@ -139,7 +139,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     "Debe indicar la línea y el comité.");
             }
 
-            bool descripcionActualizada = false;
             bool procedimientoIniciado = false;
             int id;
 
@@ -162,7 +161,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         IdComite = request.comite.id_comite
                     });
 
-                descripcionActualizada = true;
                 procedimientoIniciado = true;
 
                 id = connection.QueryFirstOrDefault<int>(
