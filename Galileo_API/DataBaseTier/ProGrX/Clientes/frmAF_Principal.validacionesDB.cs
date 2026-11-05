@@ -311,14 +311,7 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(dto.Distrito)) errores.Add("No se especificó el Distrito.");
             if (!AF_Persona_Direccion_Validar(dto.Direccion)) errores.Add("No se especificó la Dirección.");
 
-            // La dirección de trabajo es opcional, pero si se indica se revisa completa.
-            if (!string.IsNullOrEmpty(dto.TraDireccion))
-            {
-                if (string.IsNullOrWhiteSpace(dto.TraProvincia)) errores.Add("No se especificó la Provincia de la Dirección de Trabajo.");
-                if (string.IsNullOrWhiteSpace(dto.TraCanton)) errores.Add("No se especificó el Cantón de la Dirección de Trabajo.");
-                if (string.IsNullOrWhiteSpace(dto.TraDistrito)) errores.Add("No se especificó el Distrito en la Dirección de Trabajo.");
-                if (!AF_Persona_Direccion_Validar(dto.TraDireccion)) errores.Add("La Dirección Exacta de Trabajo no fue suministrada correctamente.");
-            }
+            AF_Persona_UbicacionTrabajo_Validar(dto, errores);
 
             if (string.IsNullOrWhiteSpace(dto.Actividad)) errores.Add("No se especificó Actividad (Oficina Cumplimiento).");
 
@@ -326,6 +319,20 @@ namespace Galileo.DataBaseTier
             {
                 errores.Add("No se especificó el Departamento o la Unidad Programática.");
             }
+        }
+
+        /// <summary>La dirección de trabajo es opcional, pero si se indica se revisa completa.</summary>
+        private static void AF_Persona_UbicacionTrabajo_Validar(AfPersonaAddRequestDto dto, List<string> errores)
+        {
+            if (string.IsNullOrEmpty(dto.TraDireccion))
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.TraProvincia)) errores.Add("No se especificó la Provincia de la Dirección de Trabajo.");
+            if (string.IsNullOrWhiteSpace(dto.TraCanton)) errores.Add("No se especificó el Cantón de la Dirección de Trabajo.");
+            if (string.IsNullOrWhiteSpace(dto.TraDistrito)) errores.Add("No se especificó el Distrito en la Dirección de Trabajo.");
+            if (!AF_Persona_Direccion_Validar(dto.TraDireccion)) errores.Add("La Dirección Exacta de Trabajo no fue suministrada correctamente.");
         }
 
         /// <summary>Valida los campos de la persona según las reglas vigentes del formulario.</summary>
