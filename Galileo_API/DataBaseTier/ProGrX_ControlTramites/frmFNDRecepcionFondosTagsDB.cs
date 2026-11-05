@@ -295,97 +295,112 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
             string movimiento =
                 FND_frmFNDRecepcionFondosTags_Movimiento_Normalizar(
                     request!.movimiento);
+            int verificados = 0;
+            string contratoActual = string.Empty;
 
             try
             {
                 using var connection =
                     DbHelper.OpenConnection(_portalDb, codEmpresa);
                 connection.Open();
-                using var transaction = connection.BeginTransaction();
 
-                try
-                {
-                    var tags = FND_frmFNDRecepcionFondosTags_Tags_Obtener(
-                        connection,
-                        transaction);
-                    string tag = movimiento == MovimientoRecepcion
-                        ? tags.tag_recepcion
-                        : tags.tag_devolucion;
-                    string notas = movimiento == MovimientoRecepcion
-                        ? "Recibida la documentación del contrato"
-                        : "Devolución de la documentación del contrato";
-                    int aplicados = 0;
+                var tags = FND_frmFNDRecepcionFondosTags_Tags_Obtener(
+                    connection,
+                    null);
+                string tag = movimiento == MovimientoRecepcion
+                    ? tags.tag_recepcion
+                    : tags.tag_devolucion;
+                string notas = movimiento == MovimientoRecepcion
+                    ? "Recibida la documentación del contrato"
+                    : "Devolución de la documentación del contrato";
+                int estadoEsperado = movimiento == MovimientoRecepcion ? 1 : 2;
 
-                    foreach (var item in request.contratos
-                        .GroupBy(x => new
-                        {
-                            Plan = x.cod_plan.Trim(),
-                            x.cod_contrato
-                        })
-                        .Select(group => group.First()))
+                foreach (var item in request.contratos
+                    .GroupBy(x => new
                     {
-                        string plan = item.cod_plan.Trim();
-                        var contrato =
-                            FND_frmFNDRecepcionFondosTags_Contrato_Consultar(
-                                connection,
-                                transaction,
-                                plan,
-                                item.cod_contrato,
-                                movimiento,
-                                true);
+                        Plan = x.cod_plan.Trim(),
+                        x.cod_contrato
+                    })
+                    .Select(group => group.First()))
+                {
+                    string plan = item.cod_plan.Trim();
+                    contratoActual = $"{plan}-{item.cod_contrato}";
+                    var contrato =
+                        FND_frmFNDRecepcionFondosTags_Contrato_Consultar(
+                            connection,
+                            null,
+                            plan,
+                            item.cod_contrato,
+                            movimiento,
+                            true);
 
-                        if (contrato is null)
-                        {
-                            throw new InvalidOperationException(
-                                $"El contrato {plan}-{item.cod_contrato} ya no cumple el estado requerido.");
-                        }
-
-                        connection.Execute(
-                            "spSIFRegistraTags",
-                            new
-                            {
-                                Codigo = contrato.cod_plan,
-                                Tag = tag,
-                                Usuario = request.usuario.Trim(),
-                                Notas = notas,
-                                Documento = contrato.cod_contrato.ToString(),
-                                Modulo,
-                                Llave_01 = contrato.cod_plan,
-                                Llave_02 = contrato.cod_contrato.ToString(),
-                                Llave_03 = string.Empty
-                            },
-                            transaction,
-                            commandType: CommandType.StoredProcedure);
-                        aplicados++;
+                    if (contrato is null)
+                    {
+                        throw new InvalidOperationException(
+                            $"El contrato {contratoActual} ya no cumple el estado requerido.");
                     }
 
-                    transaction.Commit();
-                    return DbHelper.CreateOkResponse(
-                        new FndRecepcionFondosTagsAplicarResponse
+                    connection.Execute(
+                        "spSIFRegistraTags",
+                        new
                         {
-                            registros_aplicados = aplicados
+                            Codigo = contrato.cod_plan,
+                            Tag = tag,
+                            Usuario = request.usuario.Trim(),
+                            Notas = notas,
+                            Documento = contrato.cod_contrato.ToString(),
+                            Modulo,
+                            Llave_01 = contrato.cod_plan,
+                            Llave_02 = contrato.cod_contrato.ToString(),
+                            Llave_03 = string.Empty
                         },
-                        "Proceso concluido con éxito.");
+                        commandType: CommandType.StoredProcedure);
+
+                    int? estadoActual = connection.QuerySingleOrDefault<int?>(
+                        """
+                        select ANALISTA_RECEPCION
+                        from FND_CONTRATOS
+                        where COD_PLAN = @CodPlan
+                          and COD_CONTRATO = @CodContrato
+                          and COD_OPERADORA = @CodOperadora;
+                        """,
+                        new
+                        {
+                            CodPlan = contrato.cod_plan,
+                            CodContrato = contrato.cod_contrato,
+                            CodOperadora = contrato.cod_operadora
+                        });
+
+                    if (estadoActual != estadoEsperado)
+                    {
+                        throw new InvalidOperationException(
+                            $"El procedimiento terminó, pero no se confirmó el estado esperado del contrato {contratoActual}.");
+                    }
+
+                    verificados++;
                 }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
-                }
+
+                return DbHelper.CreateOkResponse(
+                    new FndRecepcionFondosTagsAplicarResponse
+                    {
+                        registros_aplicados = verificados
+                    },
+                    "Proceso concluido con éxito.");
             }
-            catch (SqlException ex)
+            catch (Exception ex) when (ex is SqlException or InvalidOperationException)
             {
+                string detalle = string.IsNullOrEmpty(contratoActual)
+                    ? "No se inició el procesamiento de contratos."
+                    : $"El proceso se interrumpió en el contrato {contratoActual}.";
+
                 return DbHelper.CreateErrorResponse(
-                    ex.Message,
+                    $"{detalle} Se verificaron {verificados} contrato(s). "
+                    + "Puede haber cambios parciales en el contrato actual; consulte su estado y seguimiento antes de reintentar.",
                     -1,
-                    new FndRecepcionFondosTagsAplicarResponse());
-            }
-            catch (InvalidOperationException ex)
-            {
-                return DbHelper.CreateErrorResponse(
-                    ex.Message,
-                    -1,
-                    new FndRecepcionFondosTagsAplicarResponse());
+                    new FndRecepcionFondosTagsAplicarResponse
+                    {
+                        registros_aplicados = verificados
+                    });
             }
         }
 
