@@ -402,6 +402,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         /// Ejecuta la aplicación masiva de abonos por pasos hasta completar el proceso.
         /// </summary>
         /// <param name="context">Contexto de aplicación de créditos.</param>
+        /// <param name="reportarProgreso">Callback para publicar el avance de cada paso.</param>
         private static void AplicarAbonosMasivo(
             CreditoAplicacionContext context,
             Action<int, int, string>? reportarProgreso)
@@ -451,6 +452,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
         /// Aplica abonos en lotes mientras existan créditos pendientes por procesar.
         /// </summary>
         /// <param name="context">Contexto de aplicación de créditos.</param>
+        /// <param name="reportarProgreso">Callback para publicar las cantidades procesadas.</param>
         private static int AplicarAbonosPorLote(
             CreditoAplicacionContext context,
             Action<int, int, string>? reportarProgreso)
