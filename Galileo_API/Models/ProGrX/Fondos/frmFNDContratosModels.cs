@@ -519,6 +519,16 @@ namespace Galileo.Models.ProGrX.Fondos
         public List<DropDownListaGenericaModel>? socios { get; set; }
     }
 
+    /// <summary>
+    /// Resultado de spFnd_Contrato_Registro: código del contrato y datos del movimiento (VB6: rs!Cod_Contrato, rs!Movimiento, rs!Mensaje).
+    /// </summary>
+    public class FndContratoRegistroData
+    {
+        public int cod_contrato { get; set; }
+        public string? movimiento { get; set; }
+        public string? mensaje { get; set; }
+    }
+
     public class FndSolicitudTpData
     {
         public long? gestion_id { get; set; }
