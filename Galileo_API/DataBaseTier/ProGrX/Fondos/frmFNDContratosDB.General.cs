@@ -11,7 +11,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private const string SpContratoConsulta = "spFnd_Contrato_Consulta";
         private const string SpInversionPlazos = "spFnd_Inversion_Plazos";
         private const string SpContratoNotificaEmail = "spFnd_Contrato_Notifica_Email";
-        private const string SpCdpCupones = "spFndCDPCupones";
         private const string SpCuponFrecuenciaMeses = "spFnd_Cupon_Frecuencia_Meses";
         private const string SpCuponFrecuencia = "spFnd_Cupon_Frecuencia";
         private const string SpInversionPlazosDias = "spFnd_Inversion_Plazos_Dias";
@@ -385,10 +384,9 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// </summary>
         /// <param name="CodEmpresa">Código de empresa.</param>
         /// <param name="usuario">Usuario que realiza la operación.</param>
-        /// <param name="vCambios">Datos de control para cambios del contrato.</param>
         /// <param name="contrato">Datos del contrato a guardar.</param>
         /// <returns>Resultado de la operación de guardado.</returns>
-        public ErrorDto Fnd_Contratos_Guardar(int CodEmpresa, string usuario, FndCambios vCambios, ContratosModels contrato)
+        public ErrorDto Fnd_Contratos_Guardar(int CodEmpresa, string usuario, ContratosModels contrato)
         {
             var response = fxVerificaDatos(CodEmpresa, contrato);
 
@@ -396,59 +394,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 return response;
             }
-            else
-            {
-                if (contrato.inversion > 0)
-                {
-                    // pPlazoInversionId = contrato.plazo_id ?? "Null"; // Removed useless assignment
 
-                    if (contrato.pago_cuponescdp == true)
-                    {
-                        pCuponPaga = "1";
-                        pCuponFrecuencia = contrato.cupon_frecuencia ?? string.Empty;
-                        pCuponFrecuenciaId = NormalizarCuponFrecuenciaId(contrato.idcupon_frecuencia);
-                    }
-                    else
-                    {
-                        pCuponPaga = "0";
-                        pCuponFrecuencia = "N";
-                        pCuponFrecuenciaId = null;
-                    }
-                }
-                else
-                {
-                    pCuponFrecuencia = "N";
-                    pCuponFrecuenciaId = null;
-                    // pPlazoInversionId = "Null"; // Removed useless assignment
-                    pCuponPaga = "0";
-                }
-
-                response = !contrato.isNew
-                    ? actualizarContrato(CodEmpresa, usuario, vCambios, contrato)
-                    : insertarContrato(CodEmpresa, usuario, contrato);
-
-                if (response.Code == 0 && contrato.tipo_cdp == true)
-                {
-                    DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-                    {
-                        connection.Execute(
-                            SpCdpCupones,
-                            new
-                            {
-                                Operadora = contrato.cod_operadora,
-                                Plan = NormalizarTexto(contrato.cod_plan),
-                                Contrato = contrato.cod_contrato,
-                                Usuario = NormalizarTexto(usuario)
-                            },
-                            commandType: System.Data.CommandType.StoredProcedure);
-
-                        return true;
-                    });
-                }
-            }
-
-            return response;
-
+            return registrarContrato(CodEmpresa, usuario, contrato);
         }
 
 

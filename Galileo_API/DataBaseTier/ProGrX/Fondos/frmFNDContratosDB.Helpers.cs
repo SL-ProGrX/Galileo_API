@@ -46,134 +46,13 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     WHERE cod_operadora = @Operadora
                       AND cod_plan = @CodPlan;";
 
-        private const string SqlInsertContrato = @"
-                    INSERT INTO dbo.FND_Contratos
-                    (
-                        Cod_operadora,
-                        Cod_plan,
-                        Cod_Contrato,
-                        Cedula,
-                        Cod_Vendedor,
-                        Tipo_Deduc,
-                        PORC_DEDUC,
-                        Estado,
-                        Fecha_Inicio,
-                        Plazo,
-                        Monto,
-                        Renueva,
-                        Inc_Anual,
-                        Inc_Tipo,
-                        Ind_comision,
-                        Cod_Banco,
-                        Cuenta_Ahorros,
-                        Tipo_Pago,
-                        CapExc,
-                        rend_corte,
-                        rend_saldo,
-                        fecha_corte,
-                        usuario,
-                        albacea_cedula,
-                        albacea_nombre,
-                        plazo_tipo,
-                        inversion,
-                        tasa_referencia,
-                        Tasa_Tipo,
-                        Tasa_PtsAdd,
-                        Cupon_Frecuencia,
-                        Cupon_Proximo,
-                        Cupon_Consec,
-                        ind_deduccion,
-                        PERMITE_GIRO_TERCEROS,
-                        IDCUPON_FRECUENCIA,
-                        PAGO_CUPONESCDP,
-                        ID_PER_TASA
-                    )
-                    VALUES
-                    (
-                        @cod_operadora,
-                        @cod_plan,
-                        @cod_contrato,
-                        @cedula,
-                        @cod_vendedor,
-                        @tipo_deduc,
-                        @porc_deduc,
-                        @estado,
-                        @fecha_inicio,
-                        @plazo,
-                        @monto,
-                        @renueva,
-                        @inc_anual,
-                        @inc_tipo,
-                        @ind_comision,
-                        @cod_banco,
-                        @cuenta_ahorros,
-                        @tipo_pago,
-                        @cap_exc,
-                        @rend_corte,
-                        @rend_saldo,
-                        @fecha_corte,
-                        @usuario,
-                        @albacea_cedula,
-                        @albacea_nombre,
-                        @plazo_tipo,
-                        @inversion,
-                        @tasa_referencia,
-                        @tasa_tipo,
-                        @tasa_ptsadd,
-                        @cupon_frecuencia,
-                        @cupon_proximo,
-                        @cupon_consec,
-                        @ind_deduccion,
-                        @permite_giro_terceros,
-                        @idcupon_frecuencia,
-                        @pago_cuponescdp,
-                        dbo.fxFnd_ReglaId_Tasa(@cod_plan, @fecha_inicio)
-                    );";
+        // Paridad VB6 (sbGuardar): un solo SP registra o modifica según el código del contrato (0 = nuevo)
+        private const string SpContratoRegistro = "spFnd_Contrato_Registro";
 
-        private const string SqlUpdateContrato = @"
-                    UPDATE dbo.FND_Contratos
-                    SET cod_Vendedor = @cod_vendedor,
-                        Plazo = @plazo,
-                        fecha_corte = @fecha_corte,
-                        Monto = @monto,
-                        Renueva = @renueva,
-                        Inc_Anual = @inc_anual,
-                        Inc_Tipo = @inc_tipo,
-                        Cod_Banco = @cod_banco,
-                        Cuenta_Ahorros = @cuenta_ahorros,
-                        tipo_Pago = @tipo_pago,
-                        CapExc = @cap_exc,
-                        albacea_Cedula = @albacea_cedula,
-                        albacea_nombre = @albacea_nombre,
-                        plazo_tipo = @plazo_tipo,
-                        inversion = @inversion,
-                        tasa_referencia = @tasa_referencia,
-                        modifica_fecha = dbo.MyGetdate(),
-                        modifica_usuario = @modifica_usuario,
-                        cupon_frecuencia = @cupon_frecuencia,
-                        cupon_proximo = @cupon_proximo,
-                        ind_deduccion = @ind_deduccion,
-                        PERMITE_GIRO_TERCEROS = @permite_giro_terceros,
-                        Tipo_Deduc = @tipo_deduc,
-                        PORC_DEDUC = @porc_deduc,
-                        IDCUPON_FRECUENCIA = @idcupon_frecuencia,
-                        PAGO_CUPONESCDP = @pago_cuponescdp,
-                        ID_PER_TASA = dbo.fxFnd_ReglaId_Tasa(@cod_plan, @fecha_inicio)
-                    WHERE cod_operadora = @cod_operadora
-                      AND cod_plan = @cod_plan
-                      AND cod_Contrato = @cod_contrato;";
-
-        private const string SqlConsecutivoContrato = @"
-                    SELECT ISNULL(Consecutivo, 0) + 1
-                    FROM dbo.fnd_planes
-                    WHERE cod_operadora = @Operadora
-                      AND cod_plan = @CodPlan;";
-
-        private const string SqlUpdateConsecutivoContrato = @"
-                    UPDATE dbo.fnd_planes
-                    SET Consecutivo = @NuevoConsecutivo
-                    WHERE cod_operadora = @Operadora
-                      AND cod_plan = @CodPlan;";
+        private const string SqlContratoRegistro =
+            "exec " + SpContratoRegistro +
+            " @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17" +
+            ", @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28, @p29, @p30, @p31, @p32, @p33";
 
         private const string SqlRequiereBeneficiarios = @"
                     SELECT REQUIERE_BENEFICIARIOS
@@ -260,47 +139,49 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         }
 
         /// <summary>
-        /// Inserta un contrato nuevo y registra bitácora, cambios y trazabilidad.
+        /// Registra o modifica un contrato con spFnd_Contrato_Registro (paridad VB6: sbGuardar).
+        /// El SP decide por el código del contrato (0 = nuevo) y se encarga del consecutivo, la tasa,
+        /// el historial de cambios, las etiquetas de seguimiento y los cupones CDP.
         /// </summary>
         /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <param name="usuario">Usuario que registra el contrato.</param>
+        /// <param name="usuario">Usuario que registra o modifica el contrato.</param>
         /// <param name="contrato">Datos del contrato.</param>
-        /// <returns>Resultado de la inserción.</returns>
-        private ErrorDto insertarContrato(int CodEmpresa, string usuario, ContratosModels contrato)
+        /// <returns>Resultado de la operación; el código final queda en contrato.cod_contrato.</returns>
+        private ErrorDto registrarContrato(int CodEmpresa, string usuario, ContratosModels contrato)
         {
             var response = DbHelper.CreateOkResponse();
 
             try
             {
-                var plan = NormalizarTexto(contrato.cod_plan);
-                if (string.IsNullOrWhiteSpace(plan))
+                var codigo = contrato.isNew ? 0 : contrato.cod_contrato;
+
+                var registro = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+                    connection.QueryFirstOrDefault<FndContratoRegistroData>(
+                        SqlContratoRegistro,
+                        CrearParametrosContratoRegistro(contrato, codigo, usuario)));
+
+                if (registro.Code != 0 || registro.Result is null)
                 {
-                    return DbHelper.ErrorResponse("El código del plan es requerido.", -2);
+                    return DbHelper.ErrorResponse(
+                        registro.Description ?? "No se recibió respuesta al registrar el contrato.",
+                        registro.Code.GetValueOrDefault(-1));
                 }
 
-                contrato.cod_contrato = fxConsecutivoContrato(CodEmpresa, contrato.cod_operadora, plan).Result;
+                contrato.cod_contrato = registro.Result.cod_contrato;
 
-                var result = DbHelper.ExecuteNonQuery(
-                    CreatePortalDb(),
-                    CodEmpresa,
-                    SqlInsertContrato,
-                    CrearParametrosContratoInsert(contrato));
+                // VB6 compara Movimiento = "Registra"; el SP devuelve el código '05' para el registro inicial
+                var esNuevo = registro.Result.movimiento is "05" or "Registra";
 
-                if (result.Code != 0)
+                RegistrarBitacoraContrato(CodEmpresa, usuario, contrato, esNuevo ? "Registra - WEB" : "Modifica - WEB");
+                sbTrazabilidad_Inserta(CodEmpresa, "04", CrearConsecutivoTrazabilidad(contrato), contrato.cod_contrato.ToString(), usuario, esNuevo);
+
+                // Paridad VB6: guarda Destinos/Objetivos elegidos antes de registrar el contrato
+                GuardarDestinosPendientes(CodEmpresa, usuario, contrato);
+
+                if (esNuevo)
                 {
-                    return result;
+                    ValidarBeneficiariosContrato(CodEmpresa, contrato, response);
                 }
-
-                ValidarBeneficiariosContrato(CodEmpresa, contrato, response);
-                if (response.Code != 0)
-                {
-                    return response;
-                }
-
-                RegistrarBitacoraContrato(CodEmpresa, usuario, contrato, "Registra - WEB");
-                RegistrarTagContrato(contrato, usuario);
-                sbGuardaCambios(CodEmpresa, contrato.cod_operadora, plan, contrato.cod_contrato, usuario, 05, $"Mensualidad: {contrato.monto} ¦ Inversión: {contrato.inversion}");
-                sbTrazabilidad_Inserta(CodEmpresa, "04", CrearConsecutivoTrazabilidad(contrato), contrato.cod_contrato.ToString(), usuario);
             }
             catch (Exception ex)
             {
@@ -310,111 +191,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
             return response;
         }
-
-        /// <summary>
-        /// Actualiza un contrato existente y registra bitácora, cambios y trazabilidad.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <param name="usuario">Usuario que actualiza el contrato.</param>
-        /// <param name="vCambios">Valores anteriores usados para registrar cambios.</param>
-        /// <param name="contrato">Datos actualizados del contrato.</param>
-        /// <returns>Resultado de la actualización.</returns>
-        private ErrorDto actualizarContrato(int CodEmpresa, string usuario, FndCambios vCambios, ContratosModels contrato)
-        {
-            var response = DbHelper.CreateOkResponse();
-
-            try
-            {
-                var result = DbHelper.ExecuteNonQuery(
-                    CreatePortalDb(),
-                    CodEmpresa,
-                    SqlUpdateContrato,
-                    CrearParametrosContratoUpdate(contrato));
-
-                if (result.Code != 0)
-                {
-                    return result;
-                }
-
-                RegistrarBitacoraContrato(CodEmpresa, usuario, contrato, "Modifica - WEB");
-                RegistrarCambiosContrato(CodEmpresa, usuario, vCambios, contrato);
-                sbTrazabilidad_Inserta(CodEmpresa, "04", CrearConsecutivoTrazabilidad(contrato), contrato.cod_contrato.ToString(), usuario);
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
-        }
-
-        /// <summary>
-        /// Obtiene y actualiza el consecutivo siguiente para contratos del plan.
-        /// </summary>
-        /// <param name="CodEmpresa">Código de empresa.</param>
-        /// <param name="operadora">Código de operadora.</param>
-        /// <param name="plan">Código del plan.</param>
-        /// <returns>Consecutivo disponible para el contrato.</returns>
-        private ErrorDto<int> fxConsecutivoContrato(int CodEmpresa, int operadora, string plan)
-        {
-            var response = DbHelper.CreateOkResponse(0);
-
-            try
-            {
-                var parametros = new
-                {
-                    Operadora = operadora,
-                    CodPlan = NormalizarTexto(plan)
-                };
-
-                var consecutivo = DbHelper.ExecuteSingleQuery(
-                    CreatePortalDb(),
-                    CodEmpresa,
-                    SqlConsecutivoContrato,
-                    0,
-                    parametros);
-
-                if (consecutivo.Code != 0)
-                {
-                    return consecutivo;
-                }
-
-                if (consecutivo.Result <= 0)
-                {
-                    return response;
-                }
-
-                var update = DbHelper.ExecuteNonQuery(
-                    CreatePortalDb(),
-                    CodEmpresa,
-                    SqlUpdateConsecutivoContrato,
-                    new
-                    {
-                        NuevoConsecutivo = consecutivo.Result,
-                        Operadora = operadora,
-                        CodPlan = NormalizarTexto(plan)
-                    });
-
-                if (update.Code != 0)
-                {
-                    response.Code = update.Code;
-                    response.Description = update.Description;
-                    return response;
-                }
-
-                response.Result = consecutivo.Result;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = 0;
-            }
-
-            return response;
-        }
-
 
         private ErrorDto<bool> fxAplicaBeneficiarios(int CodEmpresa, string plan, int operadora)
         {
@@ -783,6 +559,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// </summary>
         private bool TieneDestinosIndicados(int codEmpresa, ContratosModels contrato)
         {
+            // VB6 revisa la tabla en pantalla: un destino elegido aún sin guardar también cuenta
+            if (contrato.destinos_pendientes?.Count > 0)
+            {
+                return true;
+            }
+
             var plan = NormalizarTexto(contrato.cod_plan);
             if (string.IsNullOrWhiteSpace(plan))
             {
@@ -833,59 +615,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         }
 
         /// <summary>
-        /// Registra el tag de seguimiento del contrato.
-        /// </summary>
-        private void RegistrarTagContrato(ContratosModels contrato, string usuario)
-        {
-            _mProGrxMain.SbSIFRegistraTags(new SifRegistraTagsRequestDto
-            {
-                Codigo = NormalizarTexto(contrato.cod_plan),
-                Tag = "S09",
-                Observacion = "Fondos",
-                Documento = contrato.cod_contrato.ToString(),
-                Modulo = "FND",
-                Llave_01 = NormalizarTexto(contrato.cod_plan),
-                Llave_02 = contrato.cod_contrato.ToString(),
-                Llave_03 = NormalizarTexto(contrato.cedula),
-                Usuario = NormalizarTexto(usuario)
-            });
-        }
-
-        /// <summary>
-        /// Registra cambios comparando valores anteriores contra valores actuales del contrato.
-        /// </summary>
-        private void RegistrarCambiosContrato(int codEmpresa, string usuario, FndCambios cambios, ContratosModels contrato)
-        {
-            var plan = NormalizarTexto(contrato.cod_plan);
-            var usuarioSeguro = NormalizarTexto(usuario);
-            if (string.IsNullOrWhiteSpace(plan) || string.IsNullOrWhiteSpace(usuarioSeguro))
-            {
-                return;
-            }
-            if (cambios.vCuota != contrato.monto)
-            {
-                sbGuardaCambios(codEmpresa, contrato.cod_operadora, plan, contrato.cod_contrato, usuario, 01, $"Anterior {cambios.vCuota} - Nueva {contrato.monto} ");
-            }
-
-            if (cambios.vPlazo != contrato.plazo)
-            {
-                sbGuardaCambios(codEmpresa, contrato.cod_operadora, plan, contrato.cod_contrato, usuario, 02, $"Anterior {cambios.vPlazo} - Nueva {contrato.plazo} ");
-            }
-
-            if (cambios.vInversion != contrato.inversion)
-            {
-                sbGuardaCambios(codEmpresa, contrato.cod_operadora, plan, contrato.cod_contrato, usuario, 03, $"Anterior {cambios.vInversion} - Nueva {contrato.inversion} ");
-            }
-
-            if (cambios.vDedPlanilla != contrato.ind_deduccion)
-            {
-                var anterior = cambios.vDedPlanilla ? "SI" : "NO";
-                var nuevo = contrato.ind_deduccion.HasValue && contrato.ind_deduccion.Value ? "SI" : "NO";
-                sbGuardaCambios(codEmpresa, contrato.cod_operadora, plan, contrato.cod_contrato, usuario, 06, $"Anterior {anterior} - Nueva {nuevo} ");
-            }
-        }
-
-        /// <summary>
         /// Crea el consecutivo usado por trazabilidad.
         /// </summary>
         private static string CrearConsecutivoTrazabilidad(ContratosModels contrato) => $"{contrato.cod_contrato}-{NormalizarTexto(contrato.cod_plan)}";
@@ -926,72 +655,61 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         }
 
         /// <summary>
-        /// Crea los parámetros de inserción del contrato.
+        /// Crea los 33 parámetros posicionales de spFnd_Contrato_Registro, en el mismo orden que usa VB6.
         /// </summary>
-        private object CrearParametrosContratoInsert(ContratosModels contrato)
+        private static object CrearParametrosContratoRegistro(ContratosModels contrato, int codigo, string usuario)
         {
-            return CrearParametrosContrato(contrato, "A", NormalizarTexto(contrato.usuario));
-        }
+            var (cuponFrecuencia, cuponPaga, cuponFrecuenciaId) = ObtenerCuponContrato(contrato);
 
-        /// <summary>
-        /// Crea los parámetros de actualización del contrato.
-        /// </summary>
-        private object CrearParametrosContratoUpdate(ContratosModels contrato)
-        {
-            return CrearParametrosContrato(
-                contrato,
-                NormalizarTexto(contrato.estado),
-                NormalizarTexto(contrato.usuario));
-        }
-
-        /// <summary>
-        /// Crea parámetros comunes para insertar o actualizar contratos.
-        /// </summary>
-        private object CrearParametrosContrato(ContratosModels contrato, string? estado, string? usuario)
-        {
-            var usuarioSeguro = NormalizarTexto(usuario);
-            var estadoSeguro = NormalizarTexto(estado);
             return new
             {
-                cod_operadora = contrato.cod_operadora,
-                cod_plan = NormalizarTexto(contrato.cod_plan),
-                cod_contrato = contrato.cod_contrato,
-                cedula = NormalizarTexto(contrato.cedula),
-                cod_vendedor = contrato.cod_vendedor,
-                tipo_deduc = NormalizarTexto(contrato.tipo_deduc),
-                porc_deduc = contrato.porc_deduc,
-                estado = estadoSeguro,
-                fecha_inicio = contrato.fecha_inicio,
-                plazo = contrato.plazo,
-                monto = contrato.monto,
-                renueva = contrato.renueva,
-                inc_anual = contrato.inc_anual,
-                inc_tipo = contrato.inc_tipo,
-                ind_comision = 0,
-                cod_banco = contrato.cod_banco,
-                cuenta_ahorros = NormalizarTexto(contrato.cuenta_ahorros),
-                tipo_pago = NormalizarTexto(contrato.tipo_pago),
-                cap_exc = contrato.capexc,
-                rend_corte = 0,
-                rend_saldo = 0,
-                fecha_corte = contrato.fecha_corte,
-                usuario = usuarioSeguro,
-                albacea_cedula = NormalizarTexto(contrato.albacea_cedula),
-                albacea_nombre = NormalizarTexto(contrato.albacea_nombre),
-                plazo_tipo = NormalizarTexto(contrato.plazo_tipo),
-                inversion = contrato.inversion,
-                tasa_referencia = contrato.tasa_referencia,
-                tasa_tipo = NormalizarTexto(contrato.tasa_tipo),
-                tasa_ptsadd = contrato.tasa_ptsadd,
-                cupon_frecuencia = pCuponFrecuencia,
-                cupon_proximo = contrato.cupon_proximo,
-                cupon_consec = 0,
-                ind_deduccion = contrato.ind_deduccion,
-                permite_giro_terceros = contrato.permite_giro_terceros,
-                idcupon_frecuencia = pCuponFrecuenciaId,
-                pago_cuponescdp = pCuponPaga,
-                modifica_usuario = usuarioSeguro
+                p1 = contrato.cod_operadora,
+                p2 = NormalizarTexto(contrato.cod_plan),
+                p3 = codigo,
+                p4 = NormalizarTexto(contrato.cedula),
+                p5 = contrato.cod_vendedor,
+                p6 = NormalizarTexto(contrato.tipo_deduc ?? contrato.mTipoDeduc),
+                p7 = contrato.porc_deduc,
+                p8 = "A",
+                p9 = contrato.fecha_corte,
+                p10 = contrato.plazo,
+                p11 = contrato.monto,
+                p12 = contrato.inversion,
+                p13 = contrato.renueva,
+                p14 = contrato.inc_anual,
+                p15 = contrato.inc_tipo,
+                p16 = 0,
+                p17 = contrato.cod_banco,
+                p18 = NormalizarTexto(contrato.cuenta_ahorros),
+                p19 = NormalizarTexto(contrato.tipo_pago),
+                p20 = contrato.capexc,
+                p21 = NormalizarTexto(contrato.albacea_cedula),
+                p22 = NormalizarTexto(contrato.albacea_nombre),
+                p23 = NormalizarTexto(contrato.plazo_tipo),
+                p24 = contrato.tasa_referencia,
+                p25 = NormalizarTexto(contrato.tasa_tipo),
+                p26 = contrato.tasa_ptsadd,
+                p27 = cuponFrecuencia,
+                p28 = cuponFrecuenciaId,
+                p29 = cuponPaga,
+                p30 = contrato.cupon_proximo,
+                p31 = contrato.ind_deduccion == true ? 1 : 0,
+                p32 = contrato.permite_giro_terceros == true ? 1 : 0,
+                p33 = NormalizarTexto(usuario)
             };
+        }
+
+        /// <summary>
+        /// Define frecuencia, indicador y id de cupón (VB6: pCuponFrecuencia, pCuponPaga, pCuponFrecuenciaId).
+        /// </summary>
+        private static (string Frecuencia, int Paga, int? FrecuenciaId) ObtenerCuponContrato(ContratosModels contrato)
+        {
+            if (contrato.inversion > 0 && contrato.pago_cuponescdp == true)
+            {
+                return (contrato.cupon_frecuencia ?? string.Empty, 1, NormalizarCuponFrecuenciaId(contrato.idcupon_frecuencia));
+            }
+
+            return ("N", 0, null);
         }
 
         /// <summary>

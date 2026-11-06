@@ -296,6 +296,13 @@ namespace Galileo.Models.ProGrX.Fondos
         public int? frecuencia_cupon_id { get; set; }
         public string? frecuencia_cupon_desc { get; set; }
         public bool? aplicaBeneficiarios { get; set; } = false;
+
+        /// <summary>
+        /// Destinos/objetivos elegidos antes de registrar el contrato (VB6: filas marcadas con -1).
+        /// Se registran con spFnd_Contrato_Destinos_Add una vez insertado el contrato.
+        /// </summary>
+        [JsonPropertyName("destinos_pendientes")]
+        public List<FndContratoDestinoData>? destinos_pendientes { get; set; }
         public decimal? intereses { get; set; } = 0;
         public decimal? tasa { get; set; } = 0;
         public bool isNew { get; set; } = false;
@@ -457,9 +464,9 @@ namespace Galileo.Models.ProGrX.Fondos
         public string? descripcion { get; set; }
         public int? id_registro { get; set; }
         public string? cod_plan { get; set; }
-        public required long cod_contrato { get; set; }
+        public long? cod_contrato { get; set; }
         public string? observaciones { get; set; }
-        public required DateTime fec_registro { get; set; }
+        public DateTime? fec_registro { get; set; }
         public string? usu_registro { get; set; }
         public Nullable<DateTime> fec_modifica { get; set; }
         public string? usu_modifica { get; set; }
@@ -510,6 +517,16 @@ namespace Galileo.Models.ProGrX.Fondos
     {
         public int total { get; set; }
         public List<DropDownListaGenericaModel>? socios { get; set; }
+    }
+
+    /// <summary>
+    /// Resultado de spFnd_Contrato_Registro: código del contrato y datos del movimiento (VB6: rs!Cod_Contrato, rs!Movimiento, rs!Mensaje).
+    /// </summary>
+    public class FndContratoRegistroData
+    {
+        public int cod_contrato { get; set; }
+        public string? movimiento { get; set; }
+        public string? mensaje { get; set; }
     }
 
     public class FndSolicitudTpData
