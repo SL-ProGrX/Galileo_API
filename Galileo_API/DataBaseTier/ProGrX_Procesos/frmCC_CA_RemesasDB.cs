@@ -348,7 +348,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             {
                 var lista = conn.Query<CcCaRemesasArchivoBancoRow>(
                     "spPrm_CA_Remesa_Archivo_Envia",
-                    new { Remesa = numeroGeneracion },
+                    new { NGeneracion = numeroGeneracion },
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: 0).ToList();
 

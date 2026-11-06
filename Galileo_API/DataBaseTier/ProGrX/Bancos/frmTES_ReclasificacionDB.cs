@@ -322,7 +322,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 }
 
                 var bitacora =
-                    $"Solicitud {data.nsolicitud} reclasificada a Banco {data.id_banco}, Tipo {data.tipo} y Cod_ID {data.tipoId}";
+                    $"Solicitud {data.nsolicitud} reclasificada a Banco {data.id_banco}, Tipo {data.tipo} y Cod_ID {data.tipoId} - Notas: {parametros.Notas}";
 
                 _Security_MainDB.Bitacora(
                     new BitacoraInsertarDto
