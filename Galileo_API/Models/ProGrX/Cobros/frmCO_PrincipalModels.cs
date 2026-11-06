@@ -152,7 +152,7 @@
 
         public int plazo { get; set; }
 
-        public decimal interespendiente { get; set; }
+        public decimal interesPendiente { get; set; }
         public decimal cargos { get; set; }
         public decimal polizas { get; set; }
 
@@ -169,6 +169,11 @@
         public required int plazo { get; set; }
         public required decimal tasa { get; set; }
         public required decimal tasapts { get; set; }
+
+        /// <summary>
+        /// Observación de la reversión (en VB6 se digita en un InputBox; vacía = "NADA").
+        /// </summary>
+        public string observacion { get; set; } = string.Empty;
 
         public List<int> operacionesseleccionadas { get; set; } = new();
     }

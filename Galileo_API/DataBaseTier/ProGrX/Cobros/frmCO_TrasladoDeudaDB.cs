@@ -425,15 +425,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 priDeduc = priDeduc
             };
         }
-        private static DateTime ObtenerFechaServidor(SqlConnection conn)
+        internal static DateTime ObtenerFechaServidor(SqlConnection conn)
         {
             return conn.QueryFirstOrDefault<DateTime>("select dbo.MyGetdate();", commandTimeout: 0);
         }
-        private static int ObtenerContabilidadEnlace(SqlConnection conn)
+        internal static int ObtenerContabilidadEnlace(SqlConnection conn)
         {
             return conn.QueryFirstOrDefault<int>("select isnull(COD_EMPRESA_ENLACE,0) from SIF_EMPRESA;", commandTimeout: 0);
         }
-        private static int ObtenerSysPlanPagos(SqlConnection conn)
+        internal static int ObtenerSysPlanPagos(SqlConnection conn)
         {
             const string sqlExiste = @"
         select isnull(count(*),0)
@@ -695,7 +695,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             return row;
         }
-        private static string ObtenerOficinaTitular(SqlConnection conn)
+        internal static string ObtenerOficinaTitular(SqlConnection conn)
         {
             const string sql = @"
                 select top 1 isnull(cod_oficina,'')
