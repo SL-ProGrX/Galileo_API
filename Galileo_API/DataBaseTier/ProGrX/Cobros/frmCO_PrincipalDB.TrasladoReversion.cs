@@ -198,7 +198,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return (ctx, null);
         }
 
-        private List<TrasladadaRow> ObtenerOperacionesTrasladadas(SqlConnection cn, int operacion)
+        private static List<TrasladadaRow> ObtenerOperacionesTrasladadas(SqlConnection cn, int operacion)
         {
             return cn.Query<TrasladadaRow>(
                 "exec spCbr_Operaciones_Trasladadas @operacion",
