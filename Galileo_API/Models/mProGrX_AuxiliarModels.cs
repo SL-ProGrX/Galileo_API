@@ -133,6 +133,11 @@
         public object? lista { get; set; }
     }
 
+    public class PersonasFiltro : FiltrosLazyLoadData
+    {
+        public bool soloAsociados { get; set; }
+    }
+
     public class FiltrosLazyLoadData
     {
         public string? filtro { get; set; } //filtro del buscar en tablas o buscador
