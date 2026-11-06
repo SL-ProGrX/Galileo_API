@@ -26,6 +26,7 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
                 return DbHelper.CreateErrorResponse("Los filtros de autorización NAT son requeridos.", -2, new List<AfNatAutorizacion>());
             }
 
+
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
                 connection.Query<AfNatAutorizacion>(
                     "spAFI_Renuncias_NAT_Control_Consulta",
