@@ -361,7 +361,7 @@ public partial class FrmAFCrenunciaDB
             }
             else if (Math.Abs(credito.TC_APL - 1d) > 1e-9)
             {
-                // LAB_05 convierte MORA, pero omite MORA_INTCOR.
+                // Convierte MORA, pero omite MORA_INTCOR.
                 credito.Mora_Intcor = Math.Round(
                     credito.Mora_Intcor * Convert.ToDecimal(credito.TC_APL),
                     2,
