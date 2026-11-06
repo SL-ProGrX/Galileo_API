@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.HttpOverrides;
 
 namespace Galileo_API.Extensions;
 
@@ -6,6 +7,7 @@ public static class ApiHostApplicationBuilderExtensions
 {
     public static WebApplication UseApiPipeline(this WebApplication app)
     {
+        app.UseForwardedHeaders();
         ConfigureOpenApi(app);
         app.UseHttpsRedirection();
         app.UseRouting();

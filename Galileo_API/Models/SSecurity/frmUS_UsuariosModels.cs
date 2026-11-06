@@ -24,6 +24,8 @@
         public string tfa_metodo { get; set; } = string.Empty;
         public DateTime? tfa_vence { get; set; }
         public string tfa_activo { get; set; } = string.Empty;
+        public string AppVersion { get; set; } = string.Empty;
+        public string Maquina { get; set; } = string.Empty;
     }
 
     public class UsuarioClienteAsignaDto
@@ -35,6 +37,7 @@
         public string Estado { get; set; } = string.Empty;
         public string AppName { get; set; } = string.Empty;
         public string AppVersion { get; set; } = string.Empty;
+        public string Maquina { get; set; } = string.Empty;
     }
 
     public class UsuarioClienteDto
