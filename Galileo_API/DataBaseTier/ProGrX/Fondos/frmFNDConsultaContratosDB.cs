@@ -208,7 +208,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Fondos
                     cedula = vCedula,
                     cod_plan = filtros.plan,
                     contrato = filtros.contrato,
-                    chkTodas = (filtros.chkTodas == false)? 0 : 1,
+                    chkTodas = filtros.chkTodas ? 1 : 0,
                     fechaDesde = vFechaIni,
                     fechaHasta = vFechaCorte
                 }).ToList();
