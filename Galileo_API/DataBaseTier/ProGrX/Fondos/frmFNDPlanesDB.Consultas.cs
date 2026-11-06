@@ -191,10 +191,6 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 };
 
                 var plan = connection.QueryFirstOrDefault<FndPlanDto>(SqlPlanDetalle, parametros);
-                if (plan is null)
-                {
-                    return null;
-                }
 
                 var ultima = connection.QueryFirstOrDefault<PlanUltimaTasaDto>(SqlPlanUltimaTasa, parametros);
                 AplicarUltimaTasa(plan, ultima);
