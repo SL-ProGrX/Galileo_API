@@ -444,34 +444,24 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 return DbHelper.CreateErrorResponse("Los filtros de liquidación de créditos son requeridos.", -2, new List<AfRenunciaLiquidacionCreditosPersona>());
             }
 
+            return DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                if (filtro is null)
-                {
-                    return DbHelper.CreateErrorResponse(
-                        "Los filtros de liquidación de créditos son requeridos.",
-                        -2,
-                        new List<AfRenunciaLiquidacionCreditosPersona>());
-                }
+                var creditos = connection
+                    .Query<AfRenunciaLiquidacionCreditosPersona>(
+                        SpLiquidacionCreditosPersona,
+                        new
+                        {
+                            Cedula = NormalizarTexto(filtro.Cedula),
+                            filtro.Abono
+                        },
+                        commandType: System.Data.CommandType.StoredProcedure)
+                    .ToList();
 
-                return DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-                {
-                    var creditos = connection
-                        .Query<AfRenunciaLiquidacionCreditosPersona>(
-                            SpLiquidacionCreditosPersona,
-                            new
-                            {
-                                Cedula = NormalizarTexto(filtro.Cedula),
-                                filtro.Abono
-                            },
-                            commandType: System.Data.CommandType.StoredProcedure)
-                        .ToList();
-
-                    return AF_CR_Renuncias_Abonos_Distribuir(
-                        connection,
-                        creditos,
-                        filtro.Abono);
-                });
-            }
+                return AF_CR_Renuncias_Abonos_Distribuir(
+                    connection,
+                    creditos,
+                    filtro.Abono);
+            });
         }
 
 
