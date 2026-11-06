@@ -359,7 +359,7 @@ public partial class FrmAFCrenunciaDB
                     + credito.Cargos
                     + credito.Polizas;
             }
-            else if (credito.TC_APL != 1)
+            else if (Math.Abs(credito.TC_APL - 1d) > 1e-9)
             {
                 // LAB_05 convierte MORA, pero omite MORA_INTCOR.
                 credito.Mora_Intcor = Math.Round(
