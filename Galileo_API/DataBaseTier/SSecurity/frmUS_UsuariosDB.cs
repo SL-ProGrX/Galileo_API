@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -100,9 +100,9 @@ namespace Galileo.DataBaseTier
                     parameters.Add("@ModoEdicion", (usuarioDto.ModoEdicion ?? false) ? 1 : 0);
                     parameters.Add("@EmpresaId", usuarioDto.EmpresaId);
                     parameters.Add("@NombreEmpresa", usuarioDto.NombreEmpresa);
-                    parameters.Add("@AppVersion", string.Empty);
+                    parameters.Add("@AppVersion", usuarioDto.AppVersion);
                     parameters.Add("@AppName", "SSECURITY- WEB");
-                    parameters.Add("@Maquina", string.Empty);
+                    parameters.Add("@Maquina", usuarioDto.Maquina);
                     parameters.Add("@MACAdress", string.Empty);
                     parameters.Add("@Tfa_ind", (usuarioDto.tfa_ind ?? false) ? 1 : 0);
                     parameters.Add("@Tfa_metodo", usuarioDto.tfa_metodo);
@@ -394,7 +394,7 @@ namespace Galileo.DataBaseTier
                                 Transac = "08",
                                 Notas = valNota,
                                 UserMov = usuarioClienteAsignaDto.UsuarioRegistra,
-                                Equipo = string.Empty,
+                                Equipo = usuarioClienteAsignaDto.Maquina,
                                 EquipoMAC = string.Empty
                             };
 

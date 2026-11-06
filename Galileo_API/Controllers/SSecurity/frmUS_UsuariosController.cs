@@ -6,6 +6,7 @@ using Galileo.Models.Security;
 using Microsoft.AspNetCore.Authorization;
 using Galileo.Models.Auth;
 using System.Security.Claims;
+using Galileo_API.Extensions;
 
 namespace Galileo.Controllers
 {
@@ -77,6 +78,7 @@ namespace Galileo.Controllers
                     return Forbid();
 
                 usuarioModel.UsuarioRegistro = actor.Trim();
+                usuarioModel.Maquina = HttpContext.GetClientIpForAudit();
                 return Ok(UsuariosBL.UsuarioGuardarActualizar(usuarioModel,
                     permissions.Admin_Portal || permissions.Rol_AdminView,
                     permissions.Admin_Portal || permissions.Rol_DirGlobal));
@@ -100,6 +102,7 @@ namespace Galileo.Controllers
         [ValidateAntiForgeryToken]
         public ErrorDto UsuarioClienteAsignar(UsuarioClienteAsignaDto usuarioClienteAsignaDto)
         {
+            usuarioClienteAsignaDto.Maquina = HttpContext.GetClientIpForAudit();
             return UsuariosBL.UsuarioClienteAsignar(usuarioClienteAsignaDto);
         }
 
