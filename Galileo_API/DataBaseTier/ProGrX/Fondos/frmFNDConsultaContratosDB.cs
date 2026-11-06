@@ -157,8 +157,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Fondos
 
             return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
             {
-                string? vFechaIni = MProGrXAuxiliarDB.validaFechaGlobal(filtros.fechaInicio, "yyyy-MM-dd HH:mm:ss");
-                string? vFechaCorte = MProGrXAuxiliarDB.validaFechaGlobal(filtros.fechaCorte, "yyyy-MM-dd HH:mm:ss");
+                // Paridad VB6: D.Fecha between 'inicio 00:00:00' and 'corte 23:59:59'
+                string? vFechaIni = MProGrXAuxiliarDB.validaFechaGlobal(filtros.fechaInicio?.Date, "yyyy-MM-dd HH:mm:ss");
+                string? vFechaCorte = MProGrXAuxiliarDB.validaFechaGlobal(filtros.fechaCorte?.Date.AddDays(1).AddSeconds(-1), "yyyy-MM-dd HH:mm:ss");
 
                 // obtengo la operadora del socio
                 var qry = @"select cod_operadora from fnd_contratos where cedula = @cedula";
@@ -207,7 +208,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Fondos
                     cedula = vCedula,
                     cod_plan = filtros.plan,
                     contrato = filtros.contrato,
-                    chkTodas = filtros.chkTodas,
+                    chkTodas = (filtros.chkTodas == false)? 0 : 1,
                     fechaDesde = vFechaIni,
                     fechaHasta = vFechaCorte
                 }).ToList();

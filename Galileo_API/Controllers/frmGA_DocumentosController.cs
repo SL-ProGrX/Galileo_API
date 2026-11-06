@@ -82,8 +82,8 @@ namespace Galileo.Controllers
             [FromQuery] int? CodEmpresa,
             [FromQuery] int? CodCliente,
             string llave01,
-            string llave02,
-            string llave03,
+            string? llave02,
+            string? llave03,
             string usuario)
         {
             var empresaId = CodEmpresa ?? CodCliente;

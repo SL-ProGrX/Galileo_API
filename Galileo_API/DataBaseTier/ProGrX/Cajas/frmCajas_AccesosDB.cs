@@ -59,7 +59,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <summary>
         /// Abre caja para el usuario
         /// </summary>
-        public ErrorDto<CajasAperturaDto> Cajas_AbreCaja(int codEmpresa, string codCaja, string usuario, string clave)
+        public ErrorDto<CajasAperturaDto> Cajas_AbreCaja(int codEmpresa, string codCaja, string usuario, string clave, string appVersion = "")
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
@@ -105,6 +105,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     {
                         Caja = codCaja,
                         Usuario = usuario,
+                        AppVersion = string.IsNullOrWhiteSpace(appVersion) ? string.Empty : appVersion,
                     },
                     commandType: CommandType.StoredProcedure);
 

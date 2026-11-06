@@ -17,9 +17,9 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
             return DbfrmCajas_Accesos.Cajas_Apertura_Obtener(CodEmpresa, usuario, cierreActivo);
         }
 
-        public ErrorDto<CajasAperturaDto> Cajas_AbreCaja(int codEmpresa, string codCaja, string usuario, string clave)
+        public ErrorDto<CajasAperturaDto> Cajas_AbreCaja(int codEmpresa, string codCaja, string usuario, string clave, string appVersion = "")
         {
-            return DbfrmCajas_Accesos.Cajas_AbreCaja(codEmpresa, codCaja, usuario, clave);
+            return DbfrmCajas_Accesos.Cajas_AbreCaja(codEmpresa, codCaja, usuario, clave, appVersion);
         }
     }
 }
