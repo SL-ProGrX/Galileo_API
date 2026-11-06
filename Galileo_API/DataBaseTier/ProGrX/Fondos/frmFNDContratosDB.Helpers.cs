@@ -301,6 +301,9 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 RegistrarTagContrato(contrato, usuario);
                 sbGuardaCambios(CodEmpresa, contrato.cod_operadora, plan, contrato.cod_contrato, usuario, 05, $"Mensualidad: {contrato.monto} ¦ Inversión: {contrato.inversion}");
                 sbTrazabilidad_Inserta(CodEmpresa, "04", CrearConsecutivoTrazabilidad(contrato), contrato.cod_contrato.ToString(), usuario);
+
+                // Paridad VB6: guarda Destinos/Objetivos elegidos antes de registrar el contrato
+                GuardarDestinosPendientes(CodEmpresa, usuario, contrato);
             }
             catch (Exception ex)
             {
@@ -783,6 +786,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// </summary>
         private bool TieneDestinosIndicados(int codEmpresa, ContratosModels contrato)
         {
+            // VB6 revisa la tabla en pantalla: un destino elegido aún sin guardar también cuenta
+            if (contrato.destinos_pendientes?.Count > 0)
+            {
+                return true;
+            }
+
             var plan = NormalizarTexto(contrato.cod_plan);
             if (string.IsNullOrWhiteSpace(plan))
             {
