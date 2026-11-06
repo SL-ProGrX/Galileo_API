@@ -362,7 +362,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                     connection =>
                     {
                         connection.Open();
-                        using var transaction = connection.BeginTransaction();
 
                         const string sqlContrato = """
                             select count(1)
@@ -381,13 +380,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                                 Cedula = request!.cedula.Trim(),
                                 CodPlan = request.cod_plan.Trim(),
                                 CodContrato = request.cod_contrato
-                            },
-                            transaction);
+                            });
 
                         if (existeContrato == 0)
                         {
-                            transaction.Rollback();
-
                             return CrearErrorCambioOmision(
                                 "El contrato seleccionado no se encuentra pendiente de revisi&oacute;n.",
                                 -2);
@@ -416,13 +412,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
                             int? lineaExistente = connection.QueryFirstOrDefault<int?>(
                                 sqlExistente,
-                                parametrosClave,
-                                transaction);
+                                parametrosClave);
 
                             if (lineaExistente.HasValue)
                             {
-                                transaction.Commit();
-
                                 return DbHelper.CreateOkResponse(
                                     new FndSeguimientoRevisionOmisionCambiarData
                                     {
@@ -450,13 +443,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                                 {
                                     IdError = request.id_error,
                                     Modulo
-                                },
-                                transaction);
+                                });
 
                             if (existeOmision == 0)
                             {
-                                transaction.Rollback();
-
                                 return CrearErrorCambioOmision(
                                     "La omisi&oacute;n seleccionada no es v&aacute;lida.",
                                     -2);
@@ -496,10 +486,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                                     CodPlan = request.cod_plan.Trim(),
                                     CodContrato = request.cod_contrato.ToString(),
                                     Usuario = request.usuario.Trim()
-                                },
-                                transaction);
-
-                            transaction.Commit();
+                                });
 
                             return DbHelper.CreateOkResponse(
                                 new FndSeguimientoRevisionOmisionCambiarData
@@ -522,13 +509,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
                         string aplicado = connection.QueryFirstOrDefault<string>(
                             sqlAplicado,
-                            parametrosClave,
-                            transaction) ?? "N";
+                            parametrosClave) ?? "N";
 
                         if (aplicado.Equals("S", StringComparison.OrdinalIgnoreCase))
                         {
-                            transaction.Rollback();
-
                             return DbHelper.CreateErrorResponse(
                                 "La omisi&oacute;n ya fue aplicada y no puede eliminarse.",
                                 -2,
@@ -550,10 +534,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
 
                         connection.Execute(
                             sqlEliminar,
-                            parametrosClave,
-                            transaction);
-
-                        transaction.Commit();
+                            parametrosClave);
 
                         return DbHelper.CreateOkResponse(
                             new FndSeguimientoRevisionOmisionCambiarData
@@ -598,7 +579,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                 connection =>
                 {
                     connection.Open();
-                    using var transaction = connection.BeginTransaction();
 
                     const string sqlContrato = """
                         select count(1)
@@ -619,13 +599,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                             CodOperadora = request.cod_operadora,
                             CodPlan = request.cod_plan.Trim(),
                             CodContrato = request.cod_contrato
-                        },
-                        transaction);
+                        });
 
                     if (existeContrato == 0)
                     {
-                        transaction.Rollback();
-
                         return DbHelper.ErrorResponse(
                             "El contrato seleccionado no se encuentra pendiente de revisi&oacute;n.",
                             -2);
@@ -659,36 +636,36 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                             TagCodigo = request.tag_codigo.Trim(),
                             Modulo,
                             Usuario = request.usuario.Trim()
-                        },
-                        transaction);
+                        });
 
                     if (existeEtiqueta == 0)
                     {
-                        transaction.Rollback();
-
                         return DbHelper.ErrorResponse(
                             "La etiqueta seleccionada no es v&aacute;lida para el usuario.",
                             -2);
                     }
 
-                    connection.Execute(
-                        "spSIFRegistraTags",
-                        new
-                        {
-                            Codigo = request.cod_plan.Trim(),
-                            Tag = request.tag_codigo.Trim(),
-                            Usuario = request.usuario.Trim(),
-                            Notas = request.observacion.Trim(),
-                            Documento = request.cod_contrato.ToString(),
-                            Modulo,
-                            Llave_01 = request.cod_plan.Trim(),
-                            Llave_02 = request.cod_contrato.ToString(),
-                            Llave_03 = request.cedula.Trim()
-                        },
-                        transaction,
-                        commandType: CommandType.StoredProcedure);
+                    bool etiquetaRegistrada = false;
+                    try
+                    {
+                        connection.Execute(
+                            "spSIFRegistraTags",
+                            new
+                            {
+                                Codigo = request.cod_plan.Trim(),
+                                Tag = request.tag_codigo.Trim(),
+                                Usuario = request.usuario.Trim(),
+                                Notas = request.observacion.Trim(),
+                                Documento = request.cod_contrato.ToString(),
+                                Modulo,
+                                Llave_01 = request.cod_plan.Trim(),
+                                Llave_02 = request.cod_contrato.ToString(),
+                                Llave_03 = request.cedula.Trim()
+                            },
+                            commandType: CommandType.StoredProcedure);
+                        etiquetaRegistrada = true;
 
-                    const string sqlAplicarOmisiones = """
+                        const string sqlAplicarOmisiones = """
                         update SIF_OMISIONESG
                            set APLICADO = 'S'
                         where CEDULA = @Cedula
@@ -697,18 +674,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_ControlTramites
                           and DOCUMENTO = @CodContrato;
                         """;
 
-                    connection.Execute(
-                        sqlAplicarOmisiones,
-                        new
-                        {
-                            Cedula = request.cedula.Trim(),
-                            Modulo,
-                            CodPlan = request.cod_plan.Trim(),
-                            CodContrato = request.cod_contrato.ToString()
-                        },
-                        transaction);
-
-                    transaction.Commit();
+                        connection.Execute(
+                            sqlAplicarOmisiones,
+                            new
+                            {
+                                Cedula = request.cedula.Trim(),
+                                Modulo,
+                                CodPlan = request.cod_plan.Trim(),
+                                CodContrato = request.cod_contrato.ToString()
+                            });
+                    }
+                    catch (Exception ex)
+                    {
+                        string mensaje = etiquetaRegistrada
+                            ? "El procedimiento de la etiqueta terminó, pero no fue posible marcar las omisiones como aplicadas. Consulte el seguimiento y las omisiones antes de reintentar."
+                            : "No fue posible completar el registro de la etiqueta. El procedimiento pudo haber aplicado cambios parciales; consulte el seguimiento antes de reintentar.";
+                        throw new InvalidOperationException(mensaje, ex);
+                    }
 
                     return DbHelper.OkResponse(
                         "Proceso concluido con &eacute;xito.");

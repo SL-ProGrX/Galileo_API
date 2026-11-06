@@ -967,24 +967,33 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Registra una factura y sus movimientos relacionados dentro de una única transacción.
+        /// Guarda la factura y después sus asientos y detalle de IVA sin una transacción externa.
         /// </summary>
         public ErrorDto FacturaCompleta_Insertar(int CodEmpresa, FacturaGuardarCompleta data)
         {
+            if (data?.Factura is null)
+                return DbHelper.ErrorResponse("La factura es requerida.", -2);
+            if (data.Asientos is null || data.IvaDetalle is null)
+                return DbHelper.ErrorResponse("Las líneas de asiento y el detalle de IVA son requeridos.", -2);
+
             FacturaDto factura = data.Factura;
-            factura.Cod_Factura = factura.Cod_Factura.Trim();
+            factura.Cod_Factura = factura.Cod_Factura?.Trim() ?? string.Empty;
 
             ErrorDto? validacion = ValidarFacturaCompleta(data, factura);
             if (validacion is not null)
                 return validacion;
 
-            using var connection = CreatePortalDb().CreateConnection(CodEmpresa);
-            connection.Open();
-            using var transaction = connection.BeginTransaction(IsolationLevel.Serializable);
+            FacturaProcesoResultado proceso;
+            string etapa = "abrir la conexión";
+            bool facturaGuardada = false;
 
             try
             {
-                var proceso = connection.QuerySingle<FacturaProcesoResultado>(
+                using var connection = CreatePortalDb().CreateConnection(CodEmpresa);
+                connection.Open();
+
+                etapa = "guardar la factura";
+                proceso = connection.QuerySingle<FacturaProcesoResultado>(
                     "[spCxP_Factura_Add]",
                     new
                     {
@@ -1005,35 +1014,56 @@ namespace Galileo.DataBaseTier
                         SubTotal = factura.Sub_Total,
                         AplicaCargoFlotante = data.PagoContado?.Apl_Cargo_Flotante ?? 0
                     },
-                    transaction,
                     commandType: CommandType.StoredProcedure);
+                facturaGuardada = true;
 
+                etapa = "reemplazar los asientos";
                 connection.Execute(
                     @"DELETE FROM cxp_facturas_detalle
                       WHERE cod_factura = @Cod_Factura AND cod_proveedor = @Cod_Proveedor",
-                    new { factura.Cod_Factura, factura.Cod_Proveedor },
-                    transaction);
-                InsertarAsientosFactura(connection, transaction, factura, data.Asientos);
-                GuardarDetalleIva(connection, transaction, factura, data);
+                    new { factura.Cod_Factura, factura.Cod_Proveedor });
 
-                transaction.Commit();
-                var actualizado = string.Equals(proceso.Accion, "UPDATE", StringComparison.OrdinalIgnoreCase);
-                RegistrarBitacoraFactura(
-                    CodEmpresa,
-                    factura.Creacion_User,
-                    "CxP Factura: " + factura.Cod_Factura + " Prov: " + factura.Cod_Proveedor,
-                    actualizado ? "MODIFICA - WEB" : "REGISTRA - WEB");
-                return DbHelper.OkResponse(actualizado ? "Factura actualizada correctamente." : "Factura creada correctamente.");
+                InsertarAsientosFactura(connection, null, factura, data.Asientos);
+
+                etapa = "guardar el detalle de IVA";
+                GuardarDetalleIva(connection, null, factura, data);
             }
             catch (Exception ex)
             {
-                try { transaction.Rollback(); }
-                catch
-                {
-                    // Ignorado: el rollback puede fallar si la transacción ya fue completada o descartada.
-                }
-                return DbHelper.ErrorResponse(ex.Message, -1);
+                if (facturaGuardada)
+                    return DbHelper.ErrorResponse(
+                        $"La factura se guardó, pero falló el paso de {etapa}. "
+                        + "Los asientos o el detalle de IVA pueden estar incompletos. "
+                        + "Consulte la factura antes de reintentar. "
+                        + $"Detalle: {ex.Message}",
+                        -1);
+
+                return DbHelper.ErrorResponse(
+                    $"No fue posible {etapa}. {ex.Message}",
+                    -1);
             }
+
+            bool actualizado = string.Equals(
+                proceso.Accion, "UPDATE", StringComparison.OrdinalIgnoreCase);
+
+            ErrorDto bitacora = Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = factura.Creacion_User,
+                DetalleMovimiento = "CxP Factura: " + factura.Cod_Factura
+                    + " Prov: " + factura.Cod_Proveedor,
+                Movimiento = actualizado ? "MODIFICA - WEB" : "REGISTRA - WEB",
+                Modulo = 30
+            });
+
+            if (bitacora.Code != 0)
+                return DbHelper.OkResponse(
+                    "La factura y sus detalles se guardaron, pero no fue posible registrar la bitácora.");
+
+            return DbHelper.OkResponse(
+                actualizado
+                    ? "Factura actualizada correctamente."
+                    : "Factura creada correctamente.");
         }
 
         private static ErrorDto? ValidarFacturaCompleta(FacturaGuardarCompleta data, FacturaDto factura)
@@ -1096,7 +1126,7 @@ namespace Galileo.DataBaseTier
                 : null;
         }
 
-        private static void GuardarDetalleIva(IDbConnection connection, IDbTransaction transaction, FacturaDto factura, FacturaGuardarCompleta data)
+        private static void GuardarDetalleIva(IDbConnection connection, IDbTransaction? transaction, FacturaDto factura, FacturaGuardarCompleta data)
         {
             var lineas = data.IvaDetallado == true
                 ? data.IvaDetalle.Where(item => item.Monto_Base > 0).ToList()
@@ -1143,7 +1173,7 @@ namespace Galileo.DataBaseTier
 
         private static void InsertarAsientosFactura(
             IDbConnection connection,
-            IDbTransaction transaction,
+            IDbTransaction? transaction,
             FacturaDto factura,
             List<AsientoFactura> asientos)
         {

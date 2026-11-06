@@ -154,33 +154,30 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Valida los filtros y coordina la rama de catálogo o resultados dentro de una transacción.
+        /// Valida los filtros y prepara la rama de resultados o catálogo.
         /// </summary>
         /// <param name="connection">Conexión de la empresa.</param>
         /// <param name="codContabilidad">Código de la contabilidad.</param>
         /// <param name="f">Filtros seleccionados en la pantalla.</param>
-        /// <returns>True cuando toda la preparación finaliza correctamente.</returns>
+        /// <returns>True cuando la preparación finaliza correctamente.</returns>
         private static bool PrepararReporte(
             SqlConnection connection,
             int codContabilidad,
             CntxRepMovPeriodoFiltroDto f)
         {
             ValidarFiltros(f);
-
             connection.Open();
-            using var transaction = connection.BeginTransaction();
 
+            if (f.reporte == "03")
+            {
+                PrepararResultados(connection, codContabilidad, f);
+                return true;
+            }
+
+            using var transaction = connection.BeginTransaction();
             try
             {
-                if (f.reporte == "03")
-                {
-                    PrepararResultados(connection, transaction, codContabilidad, f);
-                }
-                else
-                {
-                    PrepararCatalogo(connection, transaction, codContabilidad, f);
-                }
-
+                PrepararCatalogo(connection, transaction, codContabilidad, f);
                 transaction.Commit();
                 return true;
             }
@@ -282,27 +279,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Prepara los resultados con el procedimiento utilizado por el formulario VB6.
+        /// Prepara resultados mediante el procedimiento que administra su propia transacción.
         /// </summary>
         /// <param name="connection">Conexión abierta de la empresa.</param>
-        /// <param name="transaction">Transacción activa.</param>
         /// <param name="codContabilidad">Código de la contabilidad.</param>
         /// <param name="f">Filtros validados del reporte.</param>
         private static void PrepararResultados(
             SqlConnection connection,
-            SqlTransaction transaction,
             int codContabilidad,
             CntxRepMovPeriodoFiltroDto f)
         {
             var parametros = CrearParametros(codContabilidad, f);
             parametros.Add("Nivel", f.nivel, DbType.String);
+            parametros.Add(
+                "Resultado",
+                dbType: DbType.Int32,
+                direction: ParameterDirection.ReturnValue);
 
             connection.Execute(
                 "dbo.spCntX_Movimientos_Periodo_Resultados",
                 parametros,
-                transaction,
                 commandTimeout: 0,
                 commandType: CommandType.StoredProcedure);
+
+            if (parametros.Get<int>("Resultado") != 0)
+                throw new InvalidOperationException(
+                    "No se pudo preparar el reporte de resultados. "
+                    + "El procedimiento revirtió sus cambios; revise los filtros y la configuración del período.");
         }
 
         /// <summary>

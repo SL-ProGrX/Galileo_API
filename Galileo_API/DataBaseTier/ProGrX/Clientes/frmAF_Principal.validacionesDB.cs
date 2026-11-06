@@ -313,7 +313,7 @@ namespace Galileo.DataBaseTier
 
             AF_Persona_UbicacionTrabajo_Validar(dto, errores);
 
-            if (string.IsNullOrWhiteSpace(dto.Actividad)) errores.Add("No se especificó Actividad (Oficina Cumplimiento).");
+            if (!dto.C_Actividad.HasValue) errores.Add("No se especificó Actividad (Oficina Cumplimiento).");
 
             if (string.IsNullOrWhiteSpace(dto.Departamento) && string.IsNullOrWhiteSpace(dto.UP))
             {

@@ -99,6 +99,10 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                 .Select(Path.GetFullPath)
                 .Where(path => IsUnderDirectory(directory, path))
                 .Where(path => AllowedExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+                .OrderBy(path => string.Equals(
+                    Path.GetExtension(path),
+                    ".rdl",
+                    StringComparison.OrdinalIgnoreCase) ? 0 : 1)
                 .FirstOrDefault(path => string.Equals(
                     Path.GetFileNameWithoutExtension(path),
                     requestedName,

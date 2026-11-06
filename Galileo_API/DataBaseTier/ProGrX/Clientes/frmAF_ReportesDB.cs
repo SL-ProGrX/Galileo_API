@@ -17,54 +17,59 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
+        /// <summary>
+        /// Elimina directamente las relaciones y luego el grupo, sin transacción externa.
+        /// Informa cuando un fallo puede haber dejado la eliminación incompleta.
+        /// </summary>
         private ErrorDto EjecutarEliminacionGrupo(
             int CodEmpresa,
-            Action<SqlConnection, IDbTransaction> eliminarRelaciones,
-            Func<SqlConnection, IDbTransaction, int> eliminarGrupo)
+            Func<SqlConnection, bool> grupoExiste,
+            Action<SqlConnection> eliminarRelaciones,
+            Func<SqlConnection, int> eliminarGrupo)
         {
-            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto { Code = 0 };
+            var eliminacionIniciada = false;
+            var grupoEliminado = false;
 
             try
             {
-                using var connection = new SqlConnection(conn);
+                var portalDb = new PortalDB(_config);
+                using var connection = DbHelper.OpenConnection(portalDb, CodEmpresa);
                 connection.Open();
-                using var transaction = connection.BeginTransaction();
 
-                eliminarRelaciones(connection, transaction);
-                var rows = eliminarGrupo(connection, transaction);
-
-                if (rows == 0)
+                if (!grupoExiste(connection))
                 {
-                    transaction.Rollback();
-                    response.Code = -1;
-                    response.Description = "No se encontrÃ³ el grupo a eliminar.";
-                    return response;
+                    return DbHelper.ErrorResponse("No se encontró el grupo a eliminar.", -1);
                 }
 
-                transaction.Commit();
-                response.Description = "Grupo eliminado correctamente.";
-            }
-            catch (SqlException ex)
-            {
-                AsignarError(response, ex);
-            }
-            catch (InvalidOperationException ex)
-            {
-                AsignarError(response, ex);
-            }
-            catch (DataException ex)
-            {
-                AsignarError(response, ex);
-            }
+                eliminacionIniciada = true;
+                eliminarRelaciones(connection);
 
-            return response;
-        }
+                var filas = eliminarGrupo(connection);
+                if (filas == 0)
+                {
+                    return DbHelper.ErrorResponse(
+                        "El grupo ya no está disponible. Algunas relaciones pueden haberse eliminado; revise su estado antes de reintentar.",
+                        -1);
+                }
 
-        private static void AsignarError(ErrorDto response, Exception ex)
-        {
-            response.Code = -1;
-            response.Description = ex.Message;
+                grupoEliminado = true;
+                return DbHelper.OkResponse("Grupo eliminado correctamente.");
+            }
+            catch (Exception)
+            {
+                if (grupoEliminado)
+                {
+                    return DbHelper.ErrorResponse(
+                        "El grupo se eliminó, pero falló un paso posterior. Verifique su estado antes de reintentar.",
+                        -1);
+                }
+
+                return DbHelper.ErrorResponse(
+                    eliminacionIniciada
+                        ? "No se completó la eliminación. Algunas relaciones pueden haberse eliminado; revise el grupo antes de reintentar."
+                        : "No se pudo iniciar la eliminación del grupo.",
+                    -1);
+            }
         }
 
         /// <summary>
@@ -704,16 +709,22 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto AF_Grupos_Eliminar(int CodEmpresa, string cod_grupo)
         {
+            if (string.IsNullOrWhiteSpace(cod_grupo))
+            {
+                return DbHelper.ErrorResponse("Debe indicar el grupo a eliminar.", -1);
+            }
+
             return EjecutarEliminacionGrupo(
                 CodEmpresa,
-                (connection, transaction) => connection.Execute(
+                connection => connection.ExecuteScalar<int>(
+                    "SELECT COUNT(1) FROM AFI_Grupos WHERE cod_grupo = @cod_grupo;",
+                    new { cod_grupo }) > 0,
+                connection => connection.Execute(
                     "DELETE FROM afi_grpusers WHERE cod_grupo = @cod_grupo;",
-                    new { cod_grupo },
-                    transaction),
-                (connection, transaction) => connection.Execute(
+                    new { cod_grupo }),
+                connection => connection.Execute(
                     "DELETE FROM AFI_Grupos WHERE cod_grupo = @cod_grupo;",
-                    new { cod_grupo },
-                    transaction));
+                    new { cod_grupo }));
         }
         /// <summary>
         /// Guarda los miembros
@@ -870,24 +881,29 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto AF_Reportes_Grupo_Eliminar(int CodEmpresa, int codgrupo)
         {
+            if (codgrupo <= 0)
+            {
+                return DbHelper.ErrorResponse("Debe indicar el grupo a eliminar.", -1);
+            }
+
             return EjecutarEliminacionGrupo(
                 CodEmpresa,
-                (connection, transaction) =>
+                connection => connection.ExecuteScalar<int>(
+                    "SELECT COUNT(1) FROM afi_reportes_grp WHERE cod_grupo = @codgrupo;",
+                    new { codgrupo }) > 0,
+                connection =>
                 {
                     connection.Execute(
                         "DELETE FROM afi_reportes_grp_usr WHERE cod_grupo = @codgrupo;",
-                        new { codgrupo },
-                        transaction);
+                        new { codgrupo });
 
                     connection.Execute(
                         "DELETE FROM afi_reportes_GRP_AUT WHERE cod_grupo = @codgrupo;",
-                        new { codgrupo },
-                        transaction);
+                        new { codgrupo });
                 },
-                (connection, transaction) => connection.Execute(
+                connection => connection.Execute(
                     "DELETE FROM afi_reportes_grp WHERE cod_grupo = @codgrupo;",
-                    new { codgrupo },
-                    transaction));
+                    new { codgrupo }));
         }
         /// <summary>
         /// Guarda los miembros de grupo de reporte
