@@ -209,17 +209,18 @@ namespace Galileo.DataBaseTier
         /// <param name="llave03"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto Documentos_Eliminar(int CodEmpresa, string llave01, string llave02, string llave03, string usuario)
+        public ErrorDto Documentos_Eliminar(int CodEmpresa, string llave01, string? llave02, string? llave03, string usuario)
         {
             ErrorDto resp = new ErrorDto();
             try
             {
                 var procedure = "[spGA_EliminarDocumentos]";
 
+                // Se comparan las 3 llaves; vacías se envían como '' (igual que se guardan en el insert)
                 var parameters = new DynamicParameters();
-                parameters.Add("llave01", llave01, DbType.String);
-                parameters.Add("llave02", llave02.Trim(), DbType.String);
-                parameters.Add("llave03", llave03, DbType.String);
+                parameters.Add("llave01", NormalizarTexto(llave01), DbType.String);
+                parameters.Add("llave02", NormalizarTexto(llave02), DbType.String);
+                parameters.Add("llave03", NormalizarTexto(llave03), DbType.String);
                 parameters.Add("usuario", usuario, DbType.String);
 
 

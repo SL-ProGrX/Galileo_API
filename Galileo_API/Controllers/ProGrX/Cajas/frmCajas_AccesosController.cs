@@ -27,9 +27,9 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         [Authorize]
         [ValidateAntiForgeryToken]
         [HttpPost("Cajas_AbreCaja")]
-        public ErrorDto<CajasAperturaDto> Cajas_AbreCaja(int codEmpresa, string codCaja, string usuario, string clave)
+        public ErrorDto<CajasAperturaDto> Cajas_AbreCaja(int codEmpresa, string codCaja, string usuario, string clave, string appVersion = "")
         {
-            return BL_Cajas_Accesos.Cajas_AbreCaja(codEmpresa, codCaja, usuario, clave);
+            return BL_Cajas_Accesos.Cajas_AbreCaja(codEmpresa, codCaja, usuario, clave, appVersion);
         }
     }
 }

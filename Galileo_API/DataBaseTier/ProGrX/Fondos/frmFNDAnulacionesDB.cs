@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Fondos;
 using Galileo.Models.Security;
@@ -492,15 +493,27 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         }
 
         /// <summary>
+        /// Lee la configuración de la empresa desde la base de la empresa activa
+        /// (sif_empresa no está en la conexión por defecto del portal).
+        /// </summary>
+        private EmpresaEnlaceResultDto? FND_Anulaciones_Empresa_Obtener(int codEmpresa)
+        {
+            var resultado = DbHelper.ExecuteListQuery<EmpresaEnlaceResultDto>(
+                new PortalDB(_config),
+                codEmpresa,
+                "SELECT cod_empresa_enlace, Nombre, SysCrdPlanPago, SysDocVersion, SysTesVersion FROM dbo.sif_empresa");
+
+            return resultado.Code == 0 ? resultado.Result?.FirstOrDefault() : null;
+        }
+
+        /// <summary>
         /// Consulta FNC y exige los datos del diálogo cuando corresponde.
         /// </summary>
         private ErrorDto<SalidaAnulacion> FND_Anulaciones_Documento_Obtener(
             int codEmpresa,
             FndAnulacionesParams parametros)
         {
-            var enlace = new MProGrxMain(_config)
-                .EmpresaEnlaceObtener()
-                ?.FirstOrDefault();
+            var enlace = FND_Anulaciones_Empresa_Obtener(codEmpresa);
 
             if (enlace is null)
             {
@@ -745,8 +758,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
         private ErrorDto<object> ImprimirResultadoAnulacion(int codEmpresa, FndAnulacionesParams parametros, string numDoc)
         {
-            var empresaEnlace = new MProGrxMain(_config).EmpresaEnlaceObtener();
-            var sysDocVersion = empresaEnlace?.FirstOrDefault()?.SysDocVersion ?? 0;
+            var sysDocVersion = FND_Anulaciones_Empresa_Obtener(codEmpresa)?.SysDocVersion ?? 0;
             var result = sysDocVersion == 1 && long.TryParse(numDoc, out var recibo)
                 ? _mFNDFunciones.sbgFNDImprimeRecibo(codEmpresa, recibo, TipoDocumentoAnulacion, parametros.operadora)
                 : new MRecibos(_config).sbImprimeRecibo(

@@ -8,24 +8,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
     public partial class FrmFndContratosDB
     {
         private const string SpContratoDestinosList = "spFnd_Contrato_Destinos_List";
-
-        private const string SqlContratoDestinos = @"
-                    SELECT
-                        D.cod_destino,
-                        D.descripcion,
-                        A.cod_contrato
-                    FROM dbo.fnd_destinos D
-                    LEFT JOIN dbo.fnd_contratos_destinos A
-                        ON D.cod_destino = A.cod_destino
-                       AND A.cod_operadora = @Operadora
-                       AND A.cod_plan = @Plan
-                       AND A.cod_contrato = @Contrato
-                    WHERE D.cod_destino IN
-                    (
-                        SELECT cod_destino
-                        FROM dbo.fnd_planes_destinos
-                        WHERE cod_plan = @Plan
-                    );";
+        private const string SpContratoDestinosAdd = "spFnd_Contrato_Destinos_Add";
 
         private const string SqlExisteDestinoAhorro = @"
                     SELECT COUNT(1)
@@ -100,36 +83,49 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns>Listado de destinos del contrato.</returns>
         public ErrorDto<List<FndContratoDestinoData>> Fnd_Contratos_Destinos_Obtener(int CodEmpresa, int pOperadora, string pPlan, long pContrato)
         {
-            var parametros = new
-            {
-                Operadora = pOperadora,
-                Plan = NormalizarTexto(pPlan),
-                Contrato = pContrato
-            };
+            // Paridad VB6 (sbDestinos_Load): exec posicional; contrato 0 si aún no existe
+            return DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+                connection.Query<FndContratoDestinoData>(
+                    $"exec {SpContratoDestinosList} @p1, @p2, @p3",
+                    new
+                    {
+                        p1 = pOperadora,
+                        p2 = NormalizarTexto(pPlan),
+                        p3 = pContrato
+                    }).ToList());
+        }
 
-            var response = DbHelper.ExecuteListQuery<FndContratoDestinoData>(
-                CreatePortalDb(),
-                CodEmpresa,
-                SqlContratoDestinos,
-                parametros);
-
-            if (response.Code != 0 || response.Result?.Count > 0)
+        /// <summary>
+        /// Registra los destinos elegidos antes de existir el contrato (paridad VB6: exec posicional de spFnd_Contrato_Destinos_Add).
+        /// </summary>
+        private void GuardarDestinosPendientes(int codEmpresa, string usuario, ContratosModels contrato)
+        {
+            if (contrato.destinos_pendientes is null || contrato.destinos_pendientes.Count == 0)
             {
-                return response;
+                return;
             }
 
-            var fallback = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-                connection.Query<FndContratoDestinoData>(
-                    SpContratoDestinosList,
-                    parametros,
-                    commandType: System.Data.CommandType.StoredProcedure).ToList());
+            var plan = NormalizarTexto(contrato.cod_plan);
 
-            return new ErrorDto<List<FndContratoDestinoData>>
+            foreach (var destino in contrato.destinos_pendientes)
             {
-                Code = fallback.Code,
-                Description = fallback.Description,
-                Result = fallback.Result ?? new List<FndContratoDestinoData>()
-            };
+                var resultado = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
+                    connection.QueryFirstOrDefault<long>(
+                        $"exec {SpContratoDestinosAdd} @p1, @p2, @p3, @p4, @p5",
+                        new
+                        {
+                            p1 = destino.id_destino,
+                            p2 = plan,
+                            p3 = contrato.cod_contrato,
+                            p4 = NormalizarTexto(destino.observaciones),
+                            p5 = NormalizarTexto(usuario)
+                        }));
+
+                if (resultado.Code != 0)
+                {
+                    throw new InvalidOperationException(resultado.Description ?? "Error al registrar el destino del contrato.");
+                }
+            }
         }
 
         /// <summary>

@@ -20,7 +20,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <param name="plan">Código del plan.</param>
         /// <param name="contrato">Número de contrato.</param>
         /// <param name="cedula">Cédula del titular.</param>
-        /// <returns>Información de la tasa preferencial asociada al contrato.</returns>
+        /// <returns>Última solicitud registrada; Result es null si el contrato no tiene solicitudes (VB6: rs.EOF).</returns>
         public ErrorDto<FndContratoTasaPreferencial> Fnd_Contratos_TP_Obtener(int CodEmpresa, int operadora, string plan, int contrato, string cedula)
         {
             if (contrato == 0)
@@ -41,8 +41,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         contrato,
                         cedula = NormalizarTexto(cedula)
                     },
-                    commandType: System.Data.CommandType.StoredProcedure)
-                ?? new FndContratoTasaPreferencial());
+                    commandType: System.Data.CommandType.StoredProcedure));
         }
 
         /// <summary>
@@ -61,25 +60,25 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     new FndSolicitudTpData());
             }
 
+            // Paridad VB6: exec posicional (los nombres reales de parámetros del SP no se asumen)
             return DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
                 connection.QueryFirstOrDefault<FndSolicitudTpData>(
-                    SpTpSolicitud,
+                    $"exec {SpTpSolicitud} @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12",
                     new
                     {
-                        Operadora = solicitud.operadora,
-                        Plan = NormalizarTexto(solicitud.cod_plan),
-                        Contrato = solicitud.contrato,
-                        Cedula = NormalizarTexto(solicitud.cedula),
-                        TasaCalulada = solicitud.tasa_calculada,
-                        MargenMax = solicitud.margen_maximo,
-                        TasaSolicitada = solicitud.tasa_solicitada,
-                        Plazo = solicitud.plazo,
-                        fCuponId = solicitud.frecuencia,
-                        Inversion = solicitud.inversion,
-                        Usuario = NormalizarTexto(solicitud.usuario),
-                        Observacion = NormalizarTexto(solicitud.notas)
-                    },
-                    commandType: System.Data.CommandType.StoredProcedure)
+                        p1 = solicitud.operadora,
+                        p2 = NormalizarTexto(solicitud.cod_plan),
+                        p3 = solicitud.contrato,
+                        p4 = NormalizarTexto(solicitud.cedula),
+                        p5 = solicitud.tasa_calculada,
+                        p6 = solicitud.margen_maximo,
+                        p7 = solicitud.tasa_solicitada,
+                        p8 = solicitud.plazo,
+                        p9 = solicitud.frecuencia,
+                        p10 = solicitud.inversion,
+                        p11 = NormalizarTexto(solicitud.usuario),
+                        p12 = NormalizarTexto(solicitud.notas)
+                    })
                 ?? new FndSolicitudTpData());
         }
 
@@ -93,9 +92,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         {
             return DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
                 connection.QueryFirstOrDefault<FndSolicitudTpData>(
-                    SpTpEstado,
-                    new { gestion_id },
-                    commandType: System.Data.CommandType.StoredProcedure)
+                    $"exec {SpTpEstado} @p1",
+                    new { p1 = gestion_id })
                 ?? new FndSolicitudTpData());
         }
 

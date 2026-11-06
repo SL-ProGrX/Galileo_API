@@ -60,12 +60,11 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
         /// </summary>
         /// <param name="CodEmpresa">Código de empresa.</param>
         /// <param name="usuario">Usuario que registra el cambio.</param>
-        /// <param name="vCambios">Valores anteriores del contrato para registrar cambios.</param>
         /// <param name="contrato">Datos actuales del contrato a guardar.</param>
         /// <returns>Resultado de la operación con el código de contrato resultante.</returns>
-        public ErrorDto<long> Fnd_Contratos_Guardar(int CodEmpresa, string usuario, FndCambios vCambios, ContratosModels contrato)
+        public ErrorDto<long> Fnd_Contratos_Guardar(int CodEmpresa, string usuario, ContratosModels contrato)
         {
-            var result = _Db.Fnd_Contratos_Guardar(CodEmpresa, usuario, vCambios, contrato);
+            var result = _Db.Fnd_Contratos_Guardar(CodEmpresa, usuario, contrato);
             if (result.Code != 0)
             {
                 return new ErrorDto<long> { Code = result.Code, Description = result.Description };
