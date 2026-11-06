@@ -1431,8 +1431,8 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<TablasListaGenericaModel> Personas_Obtener(int CodEmpresa, string jfiltro)
         {
-            var filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltro) ??
-                         new FiltrosLazyLoadData();
+            var filtro = JsonConvert.DeserializeObject<PersonasFiltro>(jfiltro) ??
+                         new PersonasFiltro();
 
             var response = new ErrorDto<TablasListaGenericaModel>
             {
@@ -1445,12 +1445,17 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                const string countSql = "SELECT COUNT(*) FROM socios;";
-                response.Result.total = connection.QueryFirstOrDefault<int>(countSql);
-
                 var parameters = new DynamicParameters();
 
                 AddLikeFilter(parameters, FiltroParam, filtro.filtro);
+                parameters.Add("@SoloAsociados", filtro.soloAsociados, DbType.Boolean);
+
+                const string countSql = @"
+                    SELECT COUNT(*) FROM socios
+                    WHERE (@SoloAsociados = 0 OR estadoactual = 'S')
+                      AND (@Filtro IS NULL OR cedula LIKE @Filtro
+                           OR cedulaR LIKE @Filtro OR nombre LIKE @Filtro);";
+                response.Result.total = connection.QueryFirstOrDefault<int>(countSql, parameters);
 
                 var sortField = string.IsNullOrWhiteSpace(filtro.sortField)
                     ? "cedula"
@@ -1464,7 +1469,8 @@ namespace Galileo.DataBaseTier
                 const string dataSql = @"
                     SELECT cedula, cedulaR, nombre 
                     FROM socios
-                    WHERE (
+                    WHERE (@SoloAsociados = 0 OR estadoactual = 'S')
+                      AND (
                             @Filtro IS NULL
                          OR cedula  LIKE @Filtro
                          OR cedulaR LIKE @Filtro
