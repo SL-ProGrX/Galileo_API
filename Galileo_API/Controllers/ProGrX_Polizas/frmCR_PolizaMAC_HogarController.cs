@@ -45,28 +45,6 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
 
         #endregion
 
-        #region Recepcion
-        [ValidateAntiForgeryToken]
-        [HttpPost("Cr_PolizaMacHogar_Recepcion_Validar")]
-        public ErrorDto<List<CrPolizaMacHogarRecepcionRowDto>> Cr_PolizaMacHogar_Recepcion_Validar(
-            int codEmpresa,
-            string usuario,
-            CrPolizaMacHogarRecepcionValidarRequest request)
-        {
-            return _bl.Cr_PolizaMacHogar_Recepcion_Validar(codEmpresa, usuario, request);
-        }
-
-        [ValidateAntiForgeryToken]
-        [HttpPost("Cr_PolizaMacHogar_Recepcion_Procesar")]
-        public static ErrorDto Cr_PolizaMacHogar_Recepcion_Procesar(
-            int codEmpresa,
-            string usuario,
-            CrPolizaMacHogarRecepcionProcesarRequest request)
-        {
-            return FrmCrPolizaMacHogarBL.Cr_PolizaMacHogar_Recepcion_Procesar(codEmpresa, usuario, request);
-        }
-        #endregion
-
         #region Consulta
         [ValidateAntiForgeryToken]
         [HttpPost("Cr_PolizaMacHogar_Consulta_Obtener")]
@@ -83,10 +61,9 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         [HttpGet("Cr_PolizaMacHogar_Beneficiarios_Lista")]
         public ErrorDto<List<CrPolizaMacHogarBeneficiariosRowDto>> Cr_PolizaMacHogar_Beneficiarios_Lista(
             int codEmpresa,
-            string usuario,
-            string poliza)
+            string usuario)
         {
-            return _bl.Cr_PolizaMacHogar_Beneficiarios_Lista(codEmpresa, usuario, poliza);
+            return _bl.Cr_PolizaMacHogar_Beneficiarios_Lista(codEmpresa, usuario);
         }
         #endregion
     }

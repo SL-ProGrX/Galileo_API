@@ -27,15 +27,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                const string query = @"EXEC spPolizas_MAC_Incendio_List";
+                var lista = new List<DropDownListaGenericaModel>();
 
-                var result = conn.Query<dynamic>(query).ToList();
-
-                var lista = result.Select(x => new DropDownListaGenericaModel
+                using (var reader = conn.ExecuteReader(
+                    "spPolizas_MAC_Incendio_List",
+                    commandType: CommandType.StoredProcedure))
                 {
-                    item = x.IdX,
-                    descripcion = x.ItmX
-                }).ToList();
+                    var itemOrdinal = reader.GetOrdinal("IdX");
+                    var descripcionOrdinal = reader.GetOrdinal("ItmX");
+
+                    while (reader.Read())
+                    {
+                        lista.Add(new DropDownListaGenericaModel
+                        {
+                            item = reader.IsDBNull(itemOrdinal)
+                                ? null
+                                : reader.GetValue(itemOrdinal),
+                            descripcion = !reader.IsDBNull(descripcionOrdinal)
+                                ? Convert.ToString(reader.GetValue(descripcionOrdinal))?.Trim() ?? string.Empty
+                                : string.Empty
+                        });
+                    }
+                }
 
                 return lista;
             });
@@ -56,6 +69,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <summary>
         /// Método para consultar el corte del tab Envío.
         /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="usuario">Usuario que ejecuta la consulta.</param>
+        /// <param name="request">Póliza, corte, beneficiarios y movimiento.</param>
+        /// <returns>Datos del corte en el orden original de MAC Hogar.</returns>
         public ErrorDto<List<CrPolizaMacHogarEnvioRow>> Cr_PolizaMacHogar_Envio_Consulta(
             int codEmpresa,
             string usuario,
@@ -85,118 +102,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 parameters.Add("@Usuario", usuario, DbType.String, size: 30);
                 parameters.Add("@Movimiento", request.TipoMovimiento, DbType.String, size: 5);
 
-                var data = conn.Query<CrPolizaMacHogarEnvioRow>(
-                    "spPoliza_Incendio_Cierre",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                ).ToList();
-
-                return data;
+                return ConsultarCorte(conn, parameters);
             });
         }
 
-        #endregion
-
-        #region Recepcion
-        /// <summary>
-        /// Método para validar la información cargada en recepción de MAC Hogar.
-        /// Valida estructura mínima y devuelve la lista normalizada para mostrar en grid.
-        /// </summary>
-        public ErrorDto<List<CrPolizaMacHogarRecepcionRowDto>> Cr_PolizaMacHogar_Recepcion_Validar(
-            int codEmpresa,
-            string usuario,
-            CrPolizaMacHogarRecepcionValidarRequest request)
-        {
-            if (request == null)
-            {
-                return DbHelper.CreateErrorResponse<List<CrPolizaMacHogarRecepcionRowDto>>(
-                    "Request inválido.");
-            }
-
-            if (string.IsNullOrWhiteSpace(request.Poliza))
-            {
-                return DbHelper.CreateErrorResponse<List<CrPolizaMacHogarRecepcionRowDto>>(
-                    "Debe seleccionar la póliza.");
-            }
-
-            if (request.Filas == null || request.Filas.Count == 0)
-            {
-                return DbHelper.CreateErrorResponse<List<CrPolizaMacHogarRecepcionRowDto>>(
-                    "No se recibieron filas para validar.");
-            }
-
-            var filasNormalizadas = new List<CrPolizaMacHogarRecepcionRowDto>();
-
-            for (int i = 0; i < request.Filas.Count; i++)
-            {
-                var fila = request.Filas[i];
-
-                if (string.IsNullOrWhiteSpace(fila.cedula))
-                {
-                    return DbHelper.CreateErrorResponse<List<CrPolizaMacHogarRecepcionRowDto>>(
-                        $"La fila {fila.numero_linea} no contiene identificación.");
-                }
-
-                if (string.IsNullOrWhiteSpace(fila.nombre))
-                {
-                    return DbHelper.CreateErrorResponse<List<CrPolizaMacHogarRecepcionRowDto>>(
-                        $"La fila {fila.numero_linea} no contiene nombre.");
-                }
-
-                filasNormalizadas.Add(new CrPolizaMacHogarRecepcionRowDto
-                {
-                    numero_linea = fila.numero_linea,
-                    documento = fila.documento?.Trim() ?? string.Empty,
-                    fecha_proceso = fila.fecha_proceso,
-                    cod_operadora = fila.cod_operadora,
-                    cod_plan = fila.cod_plan?.Trim() ?? string.Empty,
-                    cod_contrato = fila.cod_contrato,
-                    cedula = fila.cedula.Trim(),
-                    nombre = fila.nombre.Trim(),
-                    fondos = fila.fondos,
-                    cod_institucion = fila.cod_institucion,
-                    existe_persona = fila.existe_persona,
-                    existe_contrato = fila.existe_contrato,
-                    procesado = fila.procesado
-                });
-            }
-
-            return DbHelper.CreateOkResponse(filasNormalizadas);
-        }
-
-        /// <summary>
-        /// Método para procesar la recepción de MAC Hogar.
-        /// El proceso final no está definido en VB6, por lo que se responde de forma controlada.
-        /// </summary>
-        public static ErrorDto Cr_PolizaMacHogar_Recepcion_Procesar(
-            int codEmpresa,
-            string usuario,
-            CrPolizaMacHogarRecepcionProcesarRequest request)
-        {
-            if (request == null)
-            {
-                return DbHelper.ErrorResponse("Request inválido.");
-            }
-
-            if (string.IsNullOrWhiteSpace(request.Poliza))
-            {
-                return DbHelper.ErrorResponse("Debe seleccionar la póliza.");
-            }
-
-            if (request.Filas == null || request.Filas.Count == 0)
-            {
-                return DbHelper.ErrorResponse("No existen filas para procesar.");
-            }
-
-            return DbHelper.ErrorResponse(
-                "El proceso de recepción MAC Hogar aún no está definido funcionalmente en ProGrX.");
-        }
         #endregion
 
         #region Consulta
         /// <summary>
         /// Método para consultar información del tab Consultas.
         /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="usuario">Usuario que ejecuta la consulta.</param>
+        /// <param name="request">Póliza, corte y tipo de movimiento.</param>
+        /// <returns>Datos del corte en el orden original de MAC Hogar.</returns>
         public ErrorDto<List<CrPolizaMacHogarEnvioRow>> Cr_PolizaMacHogar_Consulta_Obtener(
             int codEmpresa,
             string usuario,
@@ -229,44 +148,161 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 parameters.Add("@Usuario", usuario, DbType.String, size: 30);
                 parameters.Add("@Movimiento", movimiento, DbType.String, size: 5);
 
-                var data = conn.Query<CrPolizaMacHogarEnvioRow>(
-                    "spPoliza_Incendio_Cierre",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                ).ToList();
-
-                return data;
+                return ConsultarCorte(conn, parameters);
             });
+        }
+
+        /// <summary>
+        /// Ejecuta el procedimiento y conserva el orden fijo de las 77 columnas
+        /// definido por el vGrid del formulario original frmCR_PolizaMAC_Hogar.
+        /// </summary>
+        /// <param name="conn">Conexión abierta por DbHelper.</param>
+        /// <param name="parameters">Parámetros de spPoliza_Incendio_Cierre.</param>
+        /// <returns>Filas normalizadas para Envío y Consultas.</returns>
+        private static List<CrPolizaMacHogarEnvioRow> ConsultarCorte(
+            IDbConnection conn,
+            DynamicParameters parameters)
+        {
+            using var reader = conn.ExecuteReader(
+                "spPoliza_Incendio_Cierre",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+
+            var data = new List<CrPolizaMacHogarEnvioRow>();
+
+            while (reader.Read())
+            {
+                data.Add(MapearFilaCorte(reader));
+            }
+
+            return data;
+        }
+
+        /// <summary>
+        /// Mapea por ordinal porque el procedimiento usa encabezados heredados
+        /// y el contrato visual original depende del orden de las columnas.
+        /// </summary>
+        /// <param name="row">Registro devuelto por spPoliza_Incendio_Cierre.</param>
+        /// <returns>Fila de MAC Hogar con las 77 columnas.</returns>
+        private static CrPolizaMacHogarEnvioRow MapearFilaCorte(IDataRecord row)
+        {
+            return new CrPolizaMacHogarEnvioRow
+            {
+                corte = ObtenerValor(row, 0),
+                direccion_riesgo = ObtenerValor(row, 1),
+                provincia_riesgo = ObtenerValor(row, 2),
+                canton_riesgo = ObtenerValor(row, 3),
+                distrito_riesgo = ObtenerValor(row, 4),
+                folio_real = ObtenerValor(row, 5),
+                monto_residencia = ObtenerValor(row, 6),
+                monto_otras_estructuras = ObtenerValor(row, 7),
+                monto_familiar = ObtenerValor(row, 8),
+                cob_d = ObtenerValor(row, 9),
+                cob_x = ObtenerValor(row, 10),
+                cob_y = ObtenerValor(row, 11),
+                correo_electronico = ObtenerValor(row, 12),
+                incluir_cobertura = ObtenerValor(row, 13),
+                latitud = ObtenerValor(row, 14),
+                longitud = ObtenerValor(row, 15),
+                pisos = ObtenerValor(row, 16),
+                tipo_id = ObtenerValor(row, 17),
+                identificacion = ObtenerValor(row, 18),
+                primer_apellido = ObtenerValor(row, 19),
+                segundo_apellido = ObtenerValor(row, 20),
+                primer_nombre = ObtenerValor(row, 21),
+                segundo_nombre = ObtenerValor(row, 22),
+                direccion_completa = ObtenerValor(row, 23),
+                fecha_nacimiento = ObtenerValor(row, 24),
+                genero = ObtenerValor(row, 25),
+                telefono = ObtenerValor(row, 26),
+                correo_persona = ObtenerValor(row, 27),
+                pais_buc_num = ObtenerValor(row, 28),
+                anos_construccion = ObtenerValor(row, 29),
+                bien_asegurado = ObtenerValor(row, 30),
+                es_esquina = ObtenerValor(row, 31),
+                tipo_ocupacion = ObtenerValor(row, 32),
+                tipo_construccion = ObtenerValor(row, 33),
+                cob_v = ObtenerValor(row, 34),
+                no_aplica = ObtenerValor(row, 35),
+                aseguramiento_m = ObtenerValor(row, 36),
+                aseguramiento_p1 = ObtenerValor(row, 37),
+                aseguramiento_p2 = ObtenerValor(row, 38),
+                aseguramiento_p3 = ObtenerValor(row, 39),
+                aseguramiento_x = ObtenerValor(row, 40),
+                aseguramiento_y = ObtenerValor(row, 41),
+                tarifa_cob_d = ObtenerValor(row, 42),
+                tarifa_cob_v = ObtenerValor(row, 43),
+                tarifa_cob_y = ObtenerValor(row, 44),
+                monto_propiedad_personal = ObtenerValor(row, 45),
+                solvencia = ObtenerValor(row, 46),
+                poliza_migrada = ObtenerValor(row, 47),
+                numero_referencia = ObtenerValor(row, 48),
+                agente = ObtenerValor(row, 49),
+                nombre_completo = ObtenerValor(row, 50),
+                sucursal_emision = ObtenerValor(row, 51),
+                numero_contrato = ObtenerValor(row, 52),
+                forma_pago = ObtenerValor(row, 53),
+                base_aseguramiento = ObtenerValor(row, 54),
+                descripcion = ObtenerValor(row, 55),
+                agrupador_riesgo = ObtenerValor(row, 56),
+                cedula_intermediario = ObtenerValor(row, 57),
+                observaciones_poliza = ObtenerValor(row, 58),
+                numero_poliza = ObtenerValor(row, 59),
+                razon_cancelacion = ObtenerValor(row, 60),
+                migracion_cb = ObtenerValor(row, 61),
+                mco = ObtenerValor(row, 62),
+                sys = ObtenerValor(row, 63),
+                poliza = ObtenerValor(row, 64),
+                mod = ObtenerValor(row, 65),
+                tipo_variacion_incendio = ObtenerValor(row, 66),
+                fecha_formalizacion = ObtenerValor(row, 67),
+                tipo_identificacion = ObtenerValor(row, 68),
+                identificacion_acreedor = ObtenerValor(row, 69),
+                nombre_acreedor = ObtenerValor(row, 70),
+                monto = ObtenerValor(row, 71),
+                rubro_acreencia = ObtenerValor(row, 72),
+                observaciones = ObtenerValor(row, 73),
+                movimiento = ObtenerValor(row, 74),
+                nacionalidad_descripcion = ObtenerValor(row, 75),
+                nacionalidad_codigo_alterno = ObtenerValor(row, 76)
+            };
+        }
+
+        /// <summary>
+        /// Obtiene un valor sin fallar cuando una instalación antigua devuelve
+        /// menos columnas o un valor SQL NULL.
+        /// </summary>
+        /// <param name="row">Registro devuelto por SQL Server.</param>
+        /// <param name="ordinal">Posición original de la columna.</param>
+        /// <returns>Valor de la columna o null.</returns>
+        private static object? ObtenerValor(IDataRecord row, int ordinal)
+        {
+            return ordinal < row.FieldCount && !row.IsDBNull(ordinal)
+                ? row.GetValue(ordinal)
+                : null;
         }
 
         #endregion
 
         #region Beneficiarios
         /// <summary>
-        /// Método para obtener la lista de beneficiarios por póliza.
+        /// Método para obtener la lista de beneficiarios de MAC Hogar.
         /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="usuario">Usuario que ejecuta la consulta.</param>
+        /// <returns>Beneficiarios asociados al tipo PC, igual que en ProGrX.</returns>
         public ErrorDto<List<CrPolizaMacHogarBeneficiariosRowDto>> Cr_PolizaMacHogar_Beneficiarios_Lista(
             int codEmpresa,
-            string usuario,
-            string poliza)
+            string usuario)
         {
-            if (string.IsNullOrWhiteSpace(poliza))
-            {
-                return DbHelper.CreateErrorResponse<List<CrPolizaMacHogarBeneficiariosRowDto>>(
-                    "Debe indicar la póliza.");
-            }
-
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
                 const string sql = @"
-                    EXEC dbo.spPoliza_Beneficiarios_Lista 'PC'";
+                    EXEC dbo.spPoliza_Beneficiarios_Lista @TipoPoliza";
 
-                var parametros = new
-                {
-                    Poliza = poliza.Trim()
-                };
-
-                var data = conn.Query<CrPolizaMacHogarBeneficiariosRowDto>(sql, parametros).ToList();
+                var data = conn.Query<CrPolizaMacHogarBeneficiariosRowDto>(
+                    sql,
+                    new { TipoPoliza = "PC" }).ToList();
                 return data;
             });
         }
