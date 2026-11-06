@@ -127,11 +127,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
             var rows = data
                 .Select(r => (IDictionary<string, object>)r)
-                .Select(dict => dict.ToDictionary(
-                    k => k.Key.ToUpperInvariant(),
-                    v => (object?)v.Value,
-                    StringComparer.OrdinalIgnoreCase
-                ))
+                .Select(dict => dict
+                    .GroupBy(k => k.Key, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(
+                        group => group.Key.ToUpperInvariant(),
+                        group => (object?)group.First().Value,
+                        StringComparer.OrdinalIgnoreCase
+                    ))
                 .ToList();
 
             var columns = BuildColumnsByTipo(tipo);

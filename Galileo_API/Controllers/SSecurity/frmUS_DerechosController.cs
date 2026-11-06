@@ -3,6 +3,7 @@ using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Microsoft.AspNetCore.Authorization;
+using Galileo_API.Extensions;
 
 namespace Galileo.Controllers
 {
@@ -74,6 +75,7 @@ namespace Galileo.Controllers
         [ValidateAntiForgeryToken]
         public ErrorDto RegistrarBitacora([FromBody] SegLogInsertarDto request)
         {
+            request.AppMaquina = HttpContext.GetClientIpForAudit();
             return DerechosBL.RegistrarBitacora(request);
         }
 
