@@ -256,24 +256,69 @@ public partial class FrmAFCrenunciaDB
         return r.Planes.Where(x => x.Marcada).Sum(x => x.Disponible);
     }
 
-    private static void AF_CR_Renuncias_Abonos_Validar(SqlConnection connection, AfRenunciaProceso r, decimal disponible)
+    private static void AF_CR_Renuncias_Abonos_Validar(
+        SqlConnection connection,
+        AfRenunciaProceso r,
+        decimal disponible)
     {
-        var actuales = connection.Query<AfRenunciaLiquidacionCreditosPersona>(SpLiquidacionCreditosPersona,
-            new { r.Cedula, Abono = disponible }, commandType: CommandType.StoredProcedure).ToList();
-        if (r.Abonos.Count != actuales.Count || r.Abonos.Select(x => x.IdSolicitud).Distinct().Count() != actuales.Count)
-            throw new InvalidOperationException("La lista de créditos cambió; vuelva a cargarla.");
+        var actuales = connection
+            .Query<AfRenunciaLiquidacionCreditosPersona>(
+                SpLiquidacionCreditosPersona,
+                new { r.Cedula, Abono = disponible },
+                commandType: CommandType.StoredProcedure)
+            .ToList();
+
+        actuales = AF_CR_Renuncias_Abonos_Distribuir(
+            connection,
+            actuales,
+            disponible);
+
+        if (r.Abonos.Count != actuales.Count ||
+            r.Abonos.Select(x => x.IdSolicitud).Distinct().Count() != actuales.Count)
+        {
+            throw new InvalidOperationException(
+                "La lista de créditos cambió; vuelva a cargarla.");
+        }
+
         if (r.Abonos.Sum(x => x.Abono) > Math.Max(0, disponible))
-            throw new InvalidOperationException("Los abonos superan el disponible de aplicación.");
-        var ajuste = connection.ExecuteScalar<int>("SELECT AJUSTE_TASAS FROM causas_renuncias WHERE id_causa = @IdCausa", r);
+        {
+            throw new InvalidOperationException(
+                "Los abonos superan el disponible de aplicación.");
+        }
+
+        var ajuste = connection.ExecuteScalar<int>(
+            "SELECT AJUSTE_TASAS FROM causas_renuncias WHERE id_causa = @IdCausa",
+            new { r.IdCausa });
+
         foreach (var abono in r.Abonos)
         {
-            var actual = actuales.SingleOrDefault(x => x.Id_Solicitud == abono.IdSolicitud)
-                ?? throw new InvalidOperationException("El crédito no pertenece a la persona.");
-            var deuda = actual.Saldo + actual.INTC + actual.INTM + actual.Cargos + actual.Polizas;
-            if (ajuste != 1 && abono.Abono != AF_CR_Renuncias_Monto(actual.Abono))
-                throw new InvalidOperationException("La causa no permite modificar abonos manualmente; aplique distribución automática.");
-            if (abono.Abono < 0 || abono.Abono > AF_CR_Renuncias_Monto(deuda))
-                throw new InvalidOperationException("El abono debe estar entre cero y el total adeudado.");
+            var actual = actuales.SingleOrDefault(
+                x => x.Id_Solicitud == abono.IdSolicitud)
+                ?? throw new InvalidOperationException(
+                    "El crédito no pertenece a la persona.");
+
+            var deuda = AF_CR_Renuncias_Monto(
+                actual.Saldo +
+                actual.INTC +
+                actual.INTM +
+                actual.Cargos +
+                actual.Polizas +
+                actual.IVA);
+
+            if (ajuste != 1 &&
+                abono.Abono != AF_CR_Renuncias_Monto(actual.Abono))
+            {
+                throw new InvalidOperationException(
+                    "La causa no permite modificar abonos manualmente; " +
+                    "aplique distribución automática.");
+            }
+
+            if (abono.Abono < 0 || abono.Abono > deuda)
+            {
+                throw new InvalidOperationException(
+                    "El abono debe estar entre cero y el total adeudado.");
+            }
+
             abono.Codigo = actual.Codigo;
             abono.Saldo = actual.Saldo;
             abono.Cargos = actual.Cargos + actual.Polizas;
@@ -285,6 +330,98 @@ public partial class FrmAFCrenunciaDB
             abono.CodDivisa = actual.Cod_Divisa;
             abono.TipoCambio = actual.Tipo_Cambio;
         }
+    }
+
+    /// <summary>
+    /// Normaliza la morosidad y distribuye el disponible:
+    /// primero mora, luego sobre ahorros y finalmente las demás garantías.
+    /// </summary>
+    private static List<AfRenunciaLiquidacionCreditosPersona>
+        AF_CR_Renuncias_Abonos_Distribuir(
+            SqlConnection connection,
+            List<AfRenunciaLiquidacionCreditosPersona> creditos,
+            decimal disponible)
+    {
+        var sinPlanPagos = connection.ExecuteScalar<int>(
+            "SELECT TOP (1) SysCrdPlanPago FROM SIF_EMPRESA") == 0;
+
+        foreach (var credito in creditos)
+        {
+            credito.Abono = 0;
+
+            if (sinPlanPagos)
+            {
+                // Esta rama del SP devuelve MORA y MORA_INTCOR en cero.
+                credito.Mora_Intcor = credito.INTC;
+                credito.Mora = credito.Amortiza
+                    + credito.INTC
+                    + credito.INTM
+                    + credito.Cargos
+                    + credito.Polizas;
+            }
+            else if (Math.Abs(credito.TC_APL - 1d) > 1e-9)
+            {
+                // Convierte MORA, pero omite MORA_INTCOR.
+                credito.Mora_Intcor = Math.Round(
+                    credito.Mora_Intcor * Convert.ToDecimal(credito.TC_APL),
+                    2,
+                    MidpointRounding.ToEven);
+            }
+        }
+
+        var restante = Math.Max(0, disponible);
+
+        decimal Deuda(AfRenunciaLiquidacionCreditosPersona credito) =>
+            Math.Max(0, credito.Saldo
+                + credito.INTC
+                + credito.INTM
+                + credito.Cargos
+                + credito.Polizas
+                + credito.IVA);
+
+        void Aplicar(
+            AfRenunciaLiquidacionCreditosPersona credito,
+            decimal limite)
+        {
+            if (restante <= 0) return;
+
+            var pendiente = Math.Max(
+                0,
+                Math.Min(limite, Deuda(credito)) - credito.Abono);
+
+            var aplicar = Math.Min(restante, pendiente);
+            credito.Abono += aplicar;
+            restante -= aplicar;
+        }
+
+        // 1. Toda la mora, incluida la de créditos sobre ahorros.
+        foreach (var credito in creditos
+            .Where(x => x.Mora > 0)
+            .OrderBy(x => x.Prioridad, StringComparer.Ordinal)
+            .ThenBy(x => x.Id_Solicitud))
+        {
+            Aplicar(credito, credito.Mora);
+        }
+
+        // 2. Cancelar sobre ahorros con lo que quede disponible.
+        foreach (var credito in creditos
+            .Where(x => x.Sobre_Ahorros == 1)
+            .OrderBy(Deuda)
+            .ThenBy(x => x.Id_Solicitud))
+        {
+            Aplicar(credito, Deuda(credito));
+        }
+
+        // 3. Aplicar el resto según la prioridad de garantía.
+        foreach (var credito in creditos
+            .Where(x => x.Sobre_Ahorros != 1)
+            .OrderBy(x => x.Prioridad, StringComparer.Ordinal)
+            .ThenBy(x => x.Id_Solicitud))
+        {
+            Aplicar(credito, Deuda(credito));
+        }
+
+        return creditos;
     }
 }
 

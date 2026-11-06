@@ -35,13 +35,22 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
                 {
                     Inicio = Filtro.Inicio,
                     Corte = Filtro.Corte,
-                    Tipo = Filtro.Tipo,
-                    Institucion = Filtro.Institucion,
-                    Causa = Filtro.Causa,
-                    Cedula = Filtro.Cedula ?? string.Empty,
-                    Nombre = Filtro.Nombre ?? string.Empty,
-                    Ejecutivo = Filtro.Ejecutivo ?? string.Empty,
-                    Usuario = Filtro.Usuario ?? string.Empty
+                    Tipo = string.IsNullOrWhiteSpace(Filtro.Tipo) ||
+                       Filtro.Tipo.Trim().Equals(
+                           "T",
+                           StringComparison.OrdinalIgnoreCase)
+                    ? null
+                    : Filtro.Tipo.Trim().ToUpperInvariant(),
+                                Institucion = Filtro.Institucion > 0
+                    ? Filtro.Institucion
+                    : null,
+                                Causa = Filtro.Causa > 0
+                    ? Filtro.Causa
+                    : null,
+                    Cedula = Filtro.Cedula?.Trim() ?? string.Empty,
+                    Nombre = Filtro.Nombre?.Trim() ?? string.Empty,
+                    Ejecutivo = Filtro.Ejecutivo?.Trim() ?? string.Empty,
+                    Usuario = Filtro.Usuario?.Trim() ?? string.Empty
                 });
         }
 
@@ -53,52 +62,74 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
         /// <param name="inicio"></param>
         /// <param name="corte"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> AF_LiquidacionMasiva_Obtener_Causas(int CodEmpresa, string? tipoApl = null, DateTime? inicio = null, DateTime? corte = null)
+        /// <summary>
+        /// Consulta las causas activas aplicables al tipo de liquidación.
+        /// Opcionalmente limita las causas a renuncias del rango indicado.
+        /// </summary>
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            AF_LiquidacionMasiva_Obtener_Causas(
+                int CodEmpresa,
+                string? tipoApl = null,
+                DateTime? inicio = null,
+                DateTime? corte = null)
         {
-            string query;
-            object? parameters = null;
+            var tipo = tipoApl?.Trim().ToUpperInvariant();
 
-            if (tipoApl == null && inicio == null && corte == null)
+            if (string.IsNullOrEmpty(tipo) || tipo == "T")
+                tipo = null;
+
+            if (tipo != null && tipo != "A" && tipo != "P")
             {
-                query = @"SELECT id_Causa AS item, Descripcion AS descripcion
-                          FROM causas_renuncias
-                          WHERE ACTIVO = 1";
+                return DbHelper.CreateErrorResponse(
+                    "El tipo de liquidación no es válido.",
+                    -2,
+                    new List<DropDownListaGenericaModel>());
             }
-            else if (inicio == null && corte == null)
+
+            if (inicio.HasValue != corte.HasValue ||
+                (inicio.HasValue && inicio.Value.Date > corte!.Value.Date))
             {
-                query = @"SELECT id_Causa AS item, Descripcion AS descripcion
-                          FROM causas_renuncias
-                          WHERE ACTIVO = 1
-                            AND Tipo_Apl IN ('A', @TipoApl)";
-                parameters = new { TipoApl = tipoApl };
+                return DbHelper.CreateErrorResponse(
+                    "Verifique el rango de fechas.",
+                    -2,
+                    new List<DropDownListaGenericaModel>());
             }
-            else
-            {
-                query = @"SELECT id_Causa AS item, Descripcion AS descripcion
-                          FROM causas_renuncias
-                          WHERE ACTIVO = 1
-                            AND id_Causa IN (
-                                SELECT ID_CAUSA
-                                FROM AFI_CR_RENUNCIAS
-                                WHERE registro_Fecha BETWEEN @Inicio AND @Corte
-                                  AND Tipo IN ('A', @Tipo)
-                                  AND Estado = 'P'
-                                  AND LIQ IS NULL
-                                GROUP BY ID_CAUSA
-                            )";
-                parameters = new
-                {
-                    Inicio = inicio?.Date.ToString("yyyy-MM-dd") + " 00:00:00",
-                    Corte = corte?.Date.ToString("yyyy-MM-dd") + " 23:59:59",
-                    Tipo = tipoApl ?? "P"
-                };
-            }
+
+            const string query = @"
+            SELECT C.id_Causa AS item,
+                   C.Descripcion AS descripcion
+            FROM causas_renuncias C
+            WHERE C.ACTIVO = 1
+              AND (
+                    @Tipo IS NULL
+                    OR C.Tipo_Apl IN ('A', @TipoAplicacion)
+                  )
+              AND (
+                    @Inicio IS NULL
+                    OR EXISTS (
+                        SELECT 1
+                        FROM AFI_CR_RENUNCIAS R
+                        WHERE R.ID_CAUSA = C.id_Causa
+                          AND R.registro_Fecha >= @Inicio
+                          AND R.registro_Fecha < @CorteExclusivo
+                          AND (@Tipo IS NULL OR R.Tipo = @Tipo)
+                          AND R.Estado = 'P'
+                          AND R.LIQ IS NULL
+                    )
+                  )
+            ORDER BY C.Descripcion, C.id_Causa;";
 
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 CreatePortalDb(),
                 CodEmpresa,
                 query,
-                parameters);
+                new
+                {
+                    Tipo = tipo,
+                    TipoAplicacion = tipo == "A" ? "I" : tipo,
+                    Inicio = inicio?.Date,
+                    CorteExclusivo = corte?.Date.AddDays(1)
+                });
         }
 
         /// <summary>
