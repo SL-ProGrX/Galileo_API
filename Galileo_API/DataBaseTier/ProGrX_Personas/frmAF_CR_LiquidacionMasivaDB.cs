@@ -8,6 +8,25 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
 {
     public class FrmAFCrLiquidacionMasivaDB
     {
+        // Valida antes de cualquier movimiento del SP; no corrige registros ya liquidados.
+        private const string SqlValidarDestinoJudicial = @"
+IF EXISTS (SELECT 1 FROM AFI_CR_RENUNCIAS
+           WHERE COD_RENUNCIA = @RenunciaId AND ISNULL(LIQ,0) = 0
+             AND dbo.fxCBR_Cobro_Judicial_Indica(CEDULA) = 1)
+BEGIN
+    IF (SELECT COUNT(*) FROM AFI_PARAMETROS
+        WHERE COD_PARAMETRO = '14.2' AND LTRIM(RTRIM(VALOR)) = 'DIVCJ') <> 1
+        THROW 50001, 'Configure el parámetro AFI 14.2 con DIVCJ antes de liquidar.', 1;
+    IF (SELECT COUNT(*) FROM FND_PLANES WHERE COD_PLAN = 'DIVCJ') <> 1
+        THROW 50002, 'Debe existir un único plan DIVCJ antes de liquidar.', 1;
+    IF EXISTS (
+        SELECT 1 FROM AFI_CR_RENUNCIAS R
+        LEFT JOIN AFI_CR_RENUNCIAS_DATOS D ON D.COD_RENUNCIA = R.COD_RENUNCIA
+        WHERE R.COD_RENUNCIA = @RenunciaId AND R.TIPO = 'A'
+          AND ISNULL(D.TIPO_DOCUMENTO,'') <> 'FD')
+        THROW 50003, 'La renuncia judicial de asociación debe guardarse con desembolso Fondos antes de liquidar.', 1;
+END;";
+
         private readonly IConfiguration _config;
 
         public FrmAFCrLiquidacionMasivaDB(IConfiguration config)
@@ -41,10 +60,10 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
                            StringComparison.OrdinalIgnoreCase)
                     ? null
                     : Filtro.Tipo.Trim().ToUpperInvariant(),
-                                Institucion = Filtro.Institucion > 0
+                    Institucion = Filtro.Institucion > 0
                     ? Filtro.Institucion
                     : null,
-                                Causa = Filtro.Causa > 0
+                    Causa = Filtro.Causa > 0
                     ? Filtro.Causa
                     : null,
                     Cedula = Filtro.Cedula?.Trim() ?? string.Empty,
@@ -342,6 +361,7 @@ SELECT LIQ FROM AFI_CR_RENUNCIAS WHERE COD_RENUNCIA = @Renuncia;";
 
             try
             {
+                conn.Execute(SqlValidarDestinoJudicial, new { RenunciaId = row.Cod_Renuncia });
                 conn.Execute(
                     "spAFI_Renuncia_Liquidacion_Procesa",
                     new { RenunciaId = row.Cod_Renuncia, Usuario = usuario, S06 = row.S06 },
@@ -415,6 +435,7 @@ SELECT LIQ FROM AFI_CR_RENUNCIAS WHERE COD_RENUNCIA = @Renuncia;";
         {
             var result = DbHelper.WithConn(CreatePortalDb(), codEmpresa, connection =>
             {
+                connection.Execute(SqlValidarDestinoJudicial, parameters);
                 connection.Execute(storedProcedure, parameters, commandType: System.Data.CommandType.StoredProcedure);
                 return true;
             });
