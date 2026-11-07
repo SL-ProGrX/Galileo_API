@@ -9,6 +9,8 @@ namespace Galileo.DataBaseTier.ProGrX_Inversiones;
 public sealed class FrmIvrProcFondosMovDb
 {
     private const int CodigoValidacion = -2;
+    private const string ConceptoAporte = "FI_APO";
+    private const string ConceptoRetiro = "FI_RET";
     private const string EstadoSolicitud = "S";
     private const string EstadoAplicado = "A";
     private const string EstadoAnulado = "X";
@@ -28,7 +30,7 @@ public sealed class FrmIvrProcFondosMovDb
             int tituloId,
             string concepto)
     {
-        if (tituloId <= 0 || concepto is not ("FI_APO" or "FI_RET"))
+        if (tituloId <= 0 || concepto is not (ConceptoAporte or ConceptoRetiro))
         {
             return DbHelper.CreateErrorResponse<IvrProcFondosMovInicialData>(
                 "La inversión o el tipo de movimiento no es válido.",
@@ -88,7 +90,7 @@ public sealed class FrmIvrProcFondosMovDb
                     divisa = inversion?.cod_divisa ?? string.Empty,
                     tipo_cambio = 1,
                     concepto = concepto,
-                    tipo_mov = concepto == "FI_APO" ? "A" : "R"
+                    tipo_mov = concepto == ConceptoAporte ? "A" : "R"
                 };
             });
 
@@ -167,7 +169,7 @@ public sealed class FrmIvrProcFondosMovDb
             int transacId,
             string concepto)
     {
-        if (transacId <= 0 || concepto is not ("FI_APO" or "FI_RET"))
+        if (transacId <= 0 || concepto is not (ConceptoAporte or ConceptoRetiro))
         {
             return DbHelper.CreateErrorResponse
                 <IvrProcFondosMovTransaccionesData>(
@@ -250,27 +252,12 @@ public sealed class FrmIvrProcFondosMovDb
             IvrProcFondosMovGuardarRequest? request,
             string estado)
     {
-        if (request == null
-            || request.titulo_id <= 0
-            || request.concepto is not ("FI_APO" or "FI_RET")
-            || request.transac_id < 0
-            || request.seq_id < 0
-            || request.monto < 0
-            || request.v_participaciones <= 0
-            || request.n_participaciones < 0
-            || request.tipo_cambio == 0
-            || string.IsNullOrWhiteSpace(request.divisa)
-            || request.divisa.Length > 10
-            || string.IsNullOrWhiteSpace(request.usuario)
-            || request.usuario.Length > 30
-            || request.documento.Length > 30
-            || request.notas.Length > 500)
+        if (!IVR_Proc_Fondos_Mov_Datos_Validar(request))
         {
             return DbHelper.CreateErrorResponse<IvrProcFondosMovGuardarData>(
                 "Los datos del movimiento no son válidos.",
                 CodigoValidacion);
         }
-
         if (estado != EstadoSolicitud && request.transac_id <= 0)
         {
             return DbHelper.CreateErrorResponse<IvrProcFondosMovGuardarData>(
@@ -299,40 +286,13 @@ public sealed class FrmIvrProcFondosMovDb
                 var ultimoCorte =
                     connection.QuerySingle<DateTime>(sqlCorte);
 
-                if (estado == EstadoAplicado
-                    && request.fecha < ultimoCorte)
-                {
-                    throw new InvalidOperationException(
-                        "La fecha es menor al último corte.");
-                }
-
                 if (estado == EstadoAplicado)
                 {
-                    var registrado =
-                        IVR_Proc_Fondos_Mov_Registrado_Consultar(
-                            connection,
-                            request.transac_id,
-                            request.concepto);
-
-                    var importeLocal = decimal.Round(
-                        request.monto
-                        * Convert.ToDecimal(
-                            MProGrxMain.fxSys_Tipo_Cambio_Apl(
-                                request.tipo_cambio)),
-                        2,
-                        MidpointRounding.AwayFromZero);
-
-                    if (importeLocal <= 0
-                        || importeLocal != registrado)
-                    {
-                        throw new InvalidOperationException(
-                            "El importe del movimiento no está "
-                            + "registrado completamente.");
-                    }
+                    IVR_Proc_Fondos_Mov_Aplicacion_Validar(
+                        connection, request, ultimoCorte);
                 }
-
                 var tipoMov =
-                    request.concepto == "FI_APO" ? "A" : "R";
+                    request.concepto == ConceptoAporte ? "A" : "R";
                 var montoFirmado =
                     tipoMov == "A" ? request.monto : -request.monto;
 
@@ -390,6 +350,54 @@ public sealed class FrmIvrProcFondosMovDb
             });
     }
 
+    /// <summary>Valida el contenido de la solicitud antes de registrar.</summary>
+    private static bool IVR_Proc_Fondos_Mov_Datos_Validar(
+        IvrProcFondosMovGuardarRequest? request)
+    {
+        if (request is null)
+            return false;
+
+        if (request.titulo_id <= 0
+            || request.concepto is not (ConceptoAporte or ConceptoRetiro)
+            || request.transac_id < 0
+            || request.seq_id < 0
+            || request.monto < 0
+            || request.v_participaciones <= 0
+            || request.n_participaciones < 0
+            || request.tipo_cambio == 0)
+            return false;
+
+        return !string.IsNullOrWhiteSpace(request.divisa)
+            && request.divisa.Length <= 10
+            && !string.IsNullOrWhiteSpace(request.usuario)
+            && request.usuario.Length <= 30
+            && request.documento is { Length: <= 30 }
+            && request.notas is { Length: <= 500 };
+    }
+
+    /// <summary>Valida corte e importe bancario antes de aplicar.</summary>
+    private static void IVR_Proc_Fondos_Mov_Aplicacion_Validar(
+        SqlConnection connection,
+        IvrProcFondosMovGuardarRequest request,
+        DateTime ultimoCorte)
+    {
+        if (request.fecha < ultimoCorte)
+            throw new InvalidOperationException(
+                "La fecha es menor al último corte.");
+
+        var registrado = IVR_Proc_Fondos_Mov_Registrado_Consultar(
+            connection, request.transac_id, request.concepto);
+        var importeLocal = decimal.Round(
+            request.monto
+            * Convert.ToDecimal(
+                MProGrxMain.fxSys_Tipo_Cambio_Apl(request.tipo_cambio)),
+            2,
+            MidpointRounding.AwayFromZero);
+
+        if (importeLocal <= 0 || importeLocal != registrado)
+            throw new InvalidOperationException(
+                "El importe del movimiento no está registrado completamente.");
+    }
     /// <summary>Suma el importe de los registros bancarios vinculados al fondo.</summary>
     private static decimal IVR_Proc_Fondos_Mov_Registrado_Consultar(
         SqlConnection connection,
