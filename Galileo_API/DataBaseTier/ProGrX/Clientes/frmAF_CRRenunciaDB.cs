@@ -187,7 +187,10 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 new
                 {
                     filtro.BancoId,
-                    filtro.Mortalidad
+                    filtro.Mortalidad,
+                    filtro.Cedula,
+                    filtro.TipoRen,
+                    filtro.IdCausa
                 });
         }
 
@@ -624,43 +627,56 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
 
         private static int AF_CR_Renuncias_Liquidacion_Guarda_Ejecutar(SqlConnection connection, AfRenunciaLiquidacion request, SqlTransaction? transaction)
         {
-                var parameters = new DynamicParameters();
+            var documentos = connection.Query<AfRenunciaEmiteTDoc>(
+                SpRenunciaEmiteTDoc,
+                new
+                {
+                    BancoId = request.Banco,
+                    Mortalidad = request.Mortalidad == true ? 1 : 0,
+                    request.Cedula,
+                    TipoRen = request.Tipo,
+                    IdCausa = request.IdCausa
+                },
+                transaction: transaction, commandType: System.Data.CommandType.StoredProcedure);
+            if (!documentos.Any(d => string.Equals(d.IdX?.Trim(), request.Documento?.Trim(), StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("El documento de desembolso no está permitido. Recargue la renuncia y seleccione un documento válido.");
+            var parameters = new DynamicParameters();
 
-                parameters.Add("@Codigo", request.CodRenuncia);
-                parameters.Add("@Cedula", request.Cedula);
-                parameters.Add("@Causa", request.IdCausa);
-                parameters.Add("@Promotor", request.IdPromotor);
-                parameters.Add("@Mortalidad", request.Mortalidad);
-                parameters.Add("@Reingreso", request.Reingreso);
-                parameters.Add("@AltPlanilla", request.AltPlanilla);
-                parameters.Add("@Volver", request.Volver);
-                parameters.Add("@AumentoPuntos", request.AumentoPuntos);
-                parameters.Add("@AporteObrero", request.AporteObrero);
-                parameters.Add("@AportePatronal", request.AportePatronal);
-                parameters.Add("@Capitalizacion", request.Capitalizacion);
-                parameters.Add("@AhorroExtraordinario", request.AhorroExtraordinario);
-                parameters.Add("@AceptaPatronal", request.AceptaPatronal);
-                parameters.Add("@Tipo", request.Tipo);
-                parameters.Add("@Usuario", request.Usuario);
-                parameters.Add("@Notas", request.Notas);
-                parameters.Add("@Oficina", request.Oficina);
-                parameters.Add("@Documento", request.Documento);
-                parameters.Add("@Banco", request.Banco);
-                parameters.Add("@Cuenta", request.Cuenta);
-                parameters.Add("@CodPlan", string.IsNullOrWhiteSpace(request.CodPlan) ? null : request.CodPlan);
-                parameters.Add("@TotalNeto", request.TotalNeto);
-                parameters.Add("@Disponible", request.Disponible);
-                parameters.Add("@RetenerMonto", request.RetenerMonto);
-                parameters.Add("@AcFecha", request.AcFecha);
-                parameters.Add("@Boleta", request.Boleta);
-                parameters.Add("@Equipo", request.Equipo);
-                parameters.Add("@Version", request.Version);
-                parameters.Add("@IdDocumento", request.Tipo == "A" ? (int?)null : request.IdDocumento);
+            parameters.Add("@Codigo", request.CodRenuncia);
+            parameters.Add("@Cedula", request.Cedula);
+            parameters.Add("@Causa", request.IdCausa);
+            parameters.Add("@Promotor", request.IdPromotor);
+            parameters.Add("@Mortalidad", request.Mortalidad);
+            parameters.Add("@Reingreso", request.Reingreso);
+            parameters.Add("@AltPlanilla", request.AltPlanilla);
+            parameters.Add("@Volver", request.Volver);
+            parameters.Add("@AumentoPuntos", request.AumentoPuntos);
+            parameters.Add("@AporteObrero", request.AporteObrero);
+            parameters.Add("@AportePatronal", request.AportePatronal);
+            parameters.Add("@Capitalizacion", request.Capitalizacion);
+            parameters.Add("@AhorroExtraordinario", request.AhorroExtraordinario);
+            parameters.Add("@AceptaPatronal", request.AceptaPatronal);
+            parameters.Add("@Tipo", request.Tipo);
+            parameters.Add("@Usuario", request.Usuario);
+            parameters.Add("@Notas", request.Notas);
+            parameters.Add("@Oficina", request.Oficina);
+            parameters.Add("@Documento", request.Documento);
+            parameters.Add("@Banco", request.Banco);
+            parameters.Add("@Cuenta", request.Cuenta);
+            parameters.Add("@CodPlan", string.IsNullOrWhiteSpace(request.CodPlan) ? null : request.CodPlan);
+            parameters.Add("@TotalNeto", request.TotalNeto);
+            parameters.Add("@Disponible", request.Disponible);
+            parameters.Add("@RetenerMonto", request.RetenerMonto);
+            parameters.Add("@AcFecha", request.AcFecha);
+            parameters.Add("@Boleta", request.Boleta);
+            parameters.Add("@Equipo", request.Equipo);
+            parameters.Add("@Version", request.Version);
+            parameters.Add("@IdDocumento", request.Tipo == "A" ? (int?)null : request.IdDocumento);
 
-                return connection.QuerySingle<int>(
-                    "spAFI_Renuncia_Liquidacion_Guarda",
-                    parameters,
-                    transaction: transaction, commandType: System.Data.CommandType.StoredProcedure);
+            return connection.QuerySingle<int>(
+                "spAFI_Renuncia_Liquidacion_Guarda",
+                parameters,
+                transaction: transaction, commandType: System.Data.CommandType.StoredProcedure);
 
         }
 
@@ -678,25 +694,25 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
 
         private static void AF_CR_Renuncias_Plan_Insertar_Ejecutar(SqlConnection connection, AfRenunciaPlan request, SqlTransaction? transaction)
         {
-                var query = @"INSERT INTO AFI_CR_RENUNCIAS_PLANES
+            var query = @"INSERT INTO AFI_CR_RENUNCIAS_PLANES
             (COD_RENUNCIA, COD_CONTRATO, COD_OPERADORA, COD_PLAN, DISPONIBLE, MULTA, REND_PENDIENTE, LIQ_FND, APORTES, RENDIMIENTOS, COD_DIVISA, TIPO_CAMBIO, MARCADA)
             VALUES (@CodRenuncia, @CodContrato, @CodOperadora, @CodPlan, @Disponible, @Multa, @RendPendiente, 0, @Aportes, @Rendimientos, @CodDivisa, @TipoCambio, @Marcada)";
 
-                connection.Execute(query, new
-                {
-                    request.CodRenuncia,
-                    request.CodContrato,
-                    request.CodOperadora,
-                    request.CodPlan,
-                    request.Disponible,
-                    request.Multa,
-                    request.RendPendiente,
-                    request.Aportes,
-                    request.Rendimientos,
-                    request.CodDivisa,
-                    request.TipoCambio,
-                    Marcada = request.Marcada ? 1 : 0
-                }, transaction);
+            connection.Execute(query, new
+            {
+                request.CodRenuncia,
+                request.CodContrato,
+                request.CodOperadora,
+                request.CodPlan,
+                request.Disponible,
+                request.Multa,
+                request.RendPendiente,
+                request.Aportes,
+                request.Rendimientos,
+                request.CodDivisa,
+                request.TipoCambio,
+                Marcada = request.Marcada ? 1 : 0
+            }, transaction);
 
         }
 
@@ -714,11 +730,11 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
 
         private static void AF_CR_Renuncias_Abono_Insertar_Ejecutar(SqlConnection connection, AfRenunciaAbono request, SqlTransaction? transaction)
         {
-                var query = @"INSERT INTO AFI_CR_RENUNCIAS_ABONOS
+            var query = @"INSERT INTO AFI_CR_RENUNCIAS_ABONOS
             (COD_RENUNCIA, ID_SOLICITUD, CODIGO, ABONO, SALDO, CARGOS, MORA_INTC, MORA_INTM, MORA_PRIN, COD_DIVISA, TIPO_CAMBIO, TIPO, GARANTIA, MARCADO)
             VALUES (@CodRenuncia, @IdSolicitud, @Codigo, @Abono, @Saldo, @Cargos, @MoraIntC, @MoraIntM, @MoraPrin, @CodDivisa, @TipoCambio, @Tipo, @Garantia, 1)";
 
-                connection.Execute(query, request, transaction);
+            connection.Execute(query, request, transaction);
 
         }
     }
