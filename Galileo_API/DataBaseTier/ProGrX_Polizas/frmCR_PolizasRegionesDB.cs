@@ -402,29 +402,35 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             return select + join + where + "\nORDER BY P.DESCRIPCION, C.DESCRIPCION;";
         }
 
-        private static string GetJoinByModo(CrdCantonesModo modo) =>
-            modo == CrdCantonesModo.no_asignados
-                ? @"
+        private static string GetJoinByModo(CrdCantonesModo modo)
+        {
+            switch (modo)
+            {
+                case CrdCantonesModo.no_asignados:
+                    return @"
                     LEFT JOIN CRD_POLIZAS_REGION_DETALLE RD
                         ON C.CANTON = RD.CANTON
                        AND C.PROVINCIA = RD.PROVINCIA
                        AND RD.COD_POLIZA = @cod_poliza
-                    "
-                : modo == CrdCantonesModo.solo_asignados
-                ? @"
+                    ";
+                case CrdCantonesModo.solo_asignados:
+                    return @"
                     INNER JOIN CRD_POLIZAS_REGION_DETALLE RD
                         ON C.CANTON = RD.CANTON
                        AND C.PROVINCIA = RD.PROVINCIA
                        AND RD.COD_POLIZA = @cod_poliza
                        AND RD.COD_REGION = @cod_region
-                    "
-                                    : @"
+                    ";
+                default:
+                    return @"
                     LEFT JOIN CRD_POLIZAS_REGION_DETALLE RD
                         ON C.CANTON = RD.CANTON
                        AND C.PROVINCIA = RD.PROVINCIA
                        AND RD.COD_POLIZA = @cod_poliza
                        AND RD.COD_REGION = @cod_region
                     ";
+            }
+        }
 
         private static string GetWhereByModo(CrdCantonesModo modo, bool filtraProvincia)
         {
