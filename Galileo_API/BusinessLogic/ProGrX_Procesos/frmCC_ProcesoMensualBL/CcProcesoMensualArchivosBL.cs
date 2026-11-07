@@ -5,6 +5,7 @@ using Galileo_API.DataBaseTier;
 using Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB;
 using Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archivos;
 using System.Data;
+using System.IO.Compression;
 using static Galileo_API.Models.ProGrX_Procesos.frmCC_ProcesoMensualModels.CcProcesoMensualModels; 
 
 
@@ -188,34 +189,110 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
             }
 
             var archivosGenerados = new List<string>();
-            CcProcesoMensualArchivoGeneradoModel? ultimaRespuesta = null;
 
             foreach (var unidad in new[] { "01", "02", "03" })
             {
                 var requestUnidad = ClonarRequest(request);
                 requestUnidad.Unidad = unidad;
 
-                ultimaRespuesta = GenerarPorCodigo(
+                var resultadoUnidad = GenerarPorCodigo(
                     connection,
                     requestUnidad,
                     "03_A");
 
-                archivosGenerados.AddRange(ultimaRespuesta.ArchivosGenerados);
+                archivosGenerados.AddRange(resultadoUnidad.ArchivosGenerados);
             }
-            return CombinarResultados("03", ultimaRespuesta, archivosGenerados);
+
+            return CombinarResultadosF03(archivosGenerados);
         }
-        private static CcProcesoMensualArchivoGeneradoModel CombinarResultados(string codigo, CcProcesoMensualArchivoGeneradoModel? ultimoResultado, List<string> archivosGenerados)
+
+        private CcProcesoMensualArchivoGeneradoModel CombinarResultadosF03(List<string> archivosGenerados)
         {
+            var archivosConRegistros = archivosGenerados
+                .Where(ArchivoF03TieneRegistros)
+                .ToList();
+
+            // Nota de compatibilidad: anteriormente se tomaban NombreArchivo, RutaArchivo y
+            // ContentType de la ultima respuesta del ciclo, por lo que siempre se descargaba
+            // u03 aunque ese archivo contuviera unicamente el marcador de cierre "!".
+            // Se deja documentado para poder identificar y restaurar ese comportamiento si
+            // alguna integracion llegara a requerirlo nuevamente.
+            if (archivosConRegistros.Count == 0)
+            {
+                return CrearRespuestaSinGenerar("03");
+            }
+
+            if (archivosConRegistros.Count == 1)
+            {
+                var rutaArchivo = archivosConRegistros[0];
+
+                return new CcProcesoMensualArchivoGeneradoModel
+                {
+                    Generado = true,
+                    CodigoPlanillaEnvio = "03",
+                    NombreArchivo = Path.GetFileName(rutaArchivo),
+                    RutaArchivo = rutaArchivo,
+                    ContentType = "text/plain",
+                    ArchivoBytes = [],
+                    ArchivosGenerados = archivosConRegistros
+                };
+            }
+
             return new CcProcesoMensualArchivoGeneradoModel
             {
-                Generado = archivosGenerados.Count > 0,
-                CodigoPlanillaEnvio = codigo,
-                NombreArchivo = ultimoResultado?.NombreArchivo ?? string.Empty,
-                RutaArchivo = ultimoResultado?.RutaArchivo ?? string.Empty,
-                ContentType = ultimoResultado?.ContentType ?? string.Empty,
-                ArchivoBytes = [],
-                ArchivosGenerados = archivosGenerados
+                Generado = true,
+                CodigoPlanillaEnvio = "03",
+                NombreArchivo = CrearNombreZipF03(archivosConRegistros[0]),
+                RutaArchivo = string.Join("; ", archivosConRegistros),
+                ContentType = "application/zip",
+                ArchivoBytes = CrearZipF03(archivosConRegistros),
+                ArchivosGenerados = archivosConRegistros
             };
+        }
+
+        private bool ArchivoF03TieneRegistros(string rutaArchivo)
+        {
+            var rutaCompleta = ObtenerRutaArchivoDescarga(rutaArchivo);
+
+            return File.Exists(rutaCompleta)
+                && File.ReadLines(rutaCompleta)
+                    .Any(linea =>
+                        !string.IsNullOrWhiteSpace(linea)
+                        && !string.Equals(linea.Trim(), "!", StringComparison.Ordinal));
+        }
+
+        private byte[] CrearZipF03(IEnumerable<string> archivosGenerados)
+        {
+            using var contenidoZip = new MemoryStream();
+
+            using (var zip = new ZipArchive(contenidoZip, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                foreach (var rutaArchivo in archivosGenerados)
+                {
+                    var rutaCompleta = ObtenerRutaArchivoDescarga(rutaArchivo);
+                    zip.CreateEntryFromFile(
+                        rutaCompleta,
+                        Path.GetFileName(rutaCompleta),
+                        CompressionLevel.Optimal);
+                }
+            }
+
+            return contenidoZip.ToArray();
+        }
+
+        private static string CrearNombreZipF03(string rutaPrimerArchivo)
+        {
+            var nombreBase = Path.GetFileNameWithoutExtension(rutaPrimerArchivo);
+
+            if (nombreBase.Length >= 3
+                && nombreBase[^3] == 'u'
+                && char.IsDigit(nombreBase[^2])
+                && char.IsDigit(nombreBase[^1]))
+            {
+                nombreBase = nombreBase[..^3];
+            }
+
+            return $"{nombreBase}.zip";
         }
         private static CcProcesoMensualGeneraArchivoRequest ClonarRequest(CcProcesoMensualGeneraArchivoRequest request)
         {
