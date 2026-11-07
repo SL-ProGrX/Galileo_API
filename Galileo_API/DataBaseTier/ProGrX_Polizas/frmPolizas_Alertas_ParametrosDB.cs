@@ -69,7 +69,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     @ContactoTelefono,
                     @ContactoEmail";
 
-                conn.Execute(execSp, new
+                // VB6: If rs!Pass = 1 -> Bitacora(rs!Movimiento, rs!Detalle); si no, muestra rs!Mensaje
+                var resultado = conn.QueryFirstOrDefault<SpResultado>(execSp, new
                 {
                     UnidadTiempo = (param.UnidadTiempo ?? "DAY").Trim().ToUpper(),
                     param.AlertaRoja,
@@ -80,14 +81,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     param.ContactoEmail
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = (Usuario ?? "").ToUpper(),
-                    Movimiento = "MODIFICA - WEB",
-                    DetalleMovimiento = $"Semáforo Alertas Pólizas: Unidad={param.UnidadTiempo}, Rojo={param.AlertaRoja}, Amarillo={param.AlertaAmarilla}",
-                    Modulo = 11
-                });
+                if (resultado is null || resultado.Pass != 1)
+                    return DbHelper.ErrorResponse($"No fue posible registrar el semáforo, verifique! {resultado?.Mensaje}".Trim());
+
+                RegistrarBitacoraSp(CodEmpresa, Usuario, resultado, "MODIFICA",
+                    $"Semáforo Alertas Pólizas: Unidad={param.UnidadTiempo}, Rojo={param.AlertaRoja}, Amarillo={param.AlertaAmarilla}");
 
                 return DbHelper.OkResponse("Semáforo registrado correctamente");
             }
@@ -141,20 +139,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                 // Opción A: mantener SP (es lo más fiel a VB6)
                 const string execSp = @"exec spPolizas_Alertas_Email_Add @Email, @Usuario";
-                conn.Execute(execSp, new
+                // VB6: If rs!Pass = 1 -> Bitacora(rs!Movimiento, rs!Detalle); si no, muestra rs!Mensaje
+                var resultado = conn.QueryFirstOrDefault<SpResultado>(execSp, new
                 {
                     Email = email,
                     Usuario = Usuario?.Trim()
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = (Usuario ?? "").ToUpper(),
-                    Movimiento = "INSERTA - WEB",
-                    DetalleMovimiento = $"Email alertas pólizas: {email}",
-                    Modulo = 11
-                });
+                if (resultado is null || resultado.Pass != 1)
+                    return DbHelper.ErrorResponse($"No fue posible registrar el correo, verifique! {resultado?.Mensaje}".Trim());
+
+                RegistrarBitacoraSp(CodEmpresa, Usuario, resultado, "INSERTA",
+                    $"Email alertas pólizas: {email}");
 
                 return DbHelper.OkResponse("Correo registrado correctamente");
             }
@@ -199,6 +195,35 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Resultado que devuelven los SP spPolizas_Alertas_*_Add (VB6: rs!Pass, rs!Movimiento, rs!Detalle, rs!Mensaje).
+        /// </summary>
+        private sealed class SpResultado
+        {
+            public int Pass { get; set; }
+            public string? Movimiento { get; set; }
+            public string? Detalle { get; set; }
+            public string? Mensaje { get; set; }
+        }
+
+        /// <summary>
+        /// Registra la bitácora con el movimiento/detalle que devuelve el SP (como VB6); si no vienen, usa los valores por defecto.
+        /// </summary>
+        private void RegistrarBitacoraSp(int codEmpresa, string? usuario, SpResultado resultado, string movimientoDefecto, string detalleDefecto)
+        {
+            var movimiento = string.IsNullOrWhiteSpace(resultado.Movimiento) ? movimientoDefecto : resultado.Movimiento.Trim();
+            var detalle = string.IsNullOrWhiteSpace(resultado.Detalle) ? detalleDefecto : resultado.Detalle.Trim();
+
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = (usuario ?? "").ToUpper(),
+                Movimiento = $"{movimiento} - WEB",
+                DetalleMovimiento = detalle,
+                Modulo = 11
+            });
         }
 
     }

@@ -72,6 +72,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             return DbHelper.CreateOkResponse(result.AsList());
         }
 
+        /// <summary>
+        /// Todos los reclamos de una persona (VB6: sbReclamos_Todos_Load -> spPoliza_Persona_Reclamos_Todos @Cedula).
+        /// </summary>
+        public ErrorDto<List<PolizaPersonaReclamoDto>> Poliza_Persona_Reclamos_Todos(int codEmpresa, PolizaPersonaCreditoParams param)
+        {
+            var sql = "spPoliza_Persona_Reclamos_Todos";
+            var parameters = new { param.Cedula };
+            using var conn = _portalDb.CreateConnection(codEmpresa);
+            var result = conn.Query<PolizaPersonaReclamoDto>(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
+            return DbHelper.CreateOkResponse(result.AsList());
+        }
+
         
     }
 }

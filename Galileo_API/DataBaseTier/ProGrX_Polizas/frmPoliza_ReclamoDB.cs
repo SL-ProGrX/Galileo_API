@@ -2,6 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX_Polizas;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Polizas
@@ -9,10 +10,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
     public class FrmPolizaReclamoDB
     {
         private readonly PortalDB _portalDb;
+        private readonly MSecurityMainDb _dbBitacora;
+        private const int vModulo = 11;
 
         public FrmPolizaReclamoDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
+            _dbBitacora = new MSecurityMainDb(config);
         }
 
         /// <summary>
@@ -650,11 +654,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 if (request.estado_id <= 0)
                     return DbHelper.ErrorResponse("Debe indicar el estado.");
 
-                if (string.IsNullOrWhiteSpace(request.observaciones) || request.observaciones.Trim().Length < 5)
+                if (string.IsNullOrWhiteSpace(request.observaciones) || request.observaciones.Trim().Length < 10)
                     return DbHelper.ErrorResponse("Indique una observación válida.");
 
                 if (request.i_correo == 1 &&
-                    (string.IsNullOrWhiteSpace(request.destinatarios) || request.destinatarios.Trim().Length < 5))
+                    (string.IsNullOrWhiteSpace(request.destinatarios) || request.destinatarios.Trim().Length < 10))
                     return DbHelper.ErrorResponse("No ha indicado destinatarios válidos.");
 
                 const string sql = @"EXEC spPoliza_Reclamo_Seguimiento_Manual_Add
@@ -857,11 +861,30 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     movimiento = x.Movimiento?.ToString() ?? string.Empty
                 };
 
-                return ValidarResultadoOperacion(
+                var resultado = ValidarResultadoOperacion(
                     row,
                     "No se obtuvo respuesta al aplicar el desembolso.",
                     "No fue posible aplicar el desembolso.",
                     mapResponse);
+
+                // VB6: If rs!Pass = 1 Then Bitacora(rs!Movimiento, rs!Mensaje)
+                if (resultado.Code == 0 && resultado.Result is not null)
+                {
+                    var movimiento = string.IsNullOrWhiteSpace(resultado.Result.movimiento)
+                        ? "Registra"
+                        : resultado.Result.movimiento.Trim();
+
+                    _dbBitacora.Bitacora(new BitacoraInsertarDto
+                    {
+                        EmpresaId = codEmpresa,
+                        Usuario = TrimOrEmpty(request.usuario),
+                        DetalleMovimiento = resultado.Result.mensaje,
+                        Movimiento = $"{movimiento} - WEB",
+                        Modulo = vModulo
+                    });
+                }
+
+                return resultado;
             }
             catch (Exception ex)
             {

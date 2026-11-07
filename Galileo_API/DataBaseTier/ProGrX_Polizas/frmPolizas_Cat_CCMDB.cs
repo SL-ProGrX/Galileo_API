@@ -2,6 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models;
+using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX_Polizas;
 using System.Collections.Generic;
 
@@ -10,10 +11,31 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
     public class FrmPolizasCatCcmDB
     {
         private readonly PortalDB _portalDb;
+        private readonly MSecurityMainDb _dbBitacora;
+        private const int vModulo = 11;
 
         public FrmPolizasCatCcmDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
+            _dbBitacora = new MSecurityMainDb(config);
+        }
+
+        /// <summary>
+        /// VB6: If rs!Pass = 1 Then Bitacora(rs!Movimiento, rs!Mensaje).
+        /// </summary>
+        private void RegistrarBitacora(int codEmpresa, string usuario, PolizasConceptosConfigAddResult? result)
+        {
+            if (result is null || result.Pass != 1)
+                return;
+
+            _dbBitacora.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = result.Mensaje,
+                Movimiento = $"{result.Movimiento} - WEB",
+                Modulo = vModulo
+            });
         }
 
         /// <summary>
@@ -75,6 +97,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     },
                     commandType: System.Data.CommandType.StoredProcedure
                 );
+                RegistrarBitacora(codEmpresa, param.Usuario, result);
                 return result;
             });
         }
@@ -94,6 +117,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     new { param.Id, param.Usuario },
                     commandType: System.Data.CommandType.StoredProcedure
                 );
+                RegistrarBitacora(codEmpresa, param.Usuario, result);
                 return result;
             });
         }

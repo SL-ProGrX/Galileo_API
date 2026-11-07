@@ -29,7 +29,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                 return conn.QueryFirstOrDefault<PolizaLookupResponseDto>(
                     query,
-                    new { Cedula = CodPoliza.Trim() }
+                    new { CodPoliza = CodPoliza.Trim() }
                 ) ?? new PolizaLookupResponseDto();
             });
         }
@@ -45,14 +45,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 ? @"
             SELECT TOP 1
                 COD_POLIZA CodPoliza,
-                DESCRIPCION Descripcion
+                DESCRIPCION Descripcion,
+                Poliza_General
             FROM CRD_CATALOGO_POLIZAS
             WHERE COD_POLIZA > @CodPolizaActual
             ORDER BY COD_POLIZA ASC"
                 : @"
             SELECT TOP 1
                 COD_POLIZA CodPoliza,
-                DESCRIPCION Descripcion
+                DESCRIPCION Descripcion,
+                Poliza_General
             FROM CRD_CATALOGO_POLIZAS
             WHERE COD_POLIZA < @CodPolizaActual
             ORDER BY COD_POLIZA DESC";

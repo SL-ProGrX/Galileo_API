@@ -23,5 +23,6 @@
     public class PolizasEstadosReclamosDeleteParams
     {
         public required int Id_Estado { get; set; }
+        public string Usuario { get; set; } = string.Empty;
     }
 }

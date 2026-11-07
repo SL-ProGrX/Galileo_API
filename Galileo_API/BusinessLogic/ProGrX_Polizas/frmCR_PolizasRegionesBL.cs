@@ -23,9 +23,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
             return _db.Crd_Polizas_Region_Guardar(CodEmpresa, usuario, dto);
         }
 
-        public ErrorDto Crd_Polizas_Region_Eliminar(int CodEmpresa, string cod_poliza, int cod_region)
+        public ErrorDto Crd_Polizas_Region_Eliminar(int CodEmpresa, string cod_poliza, int cod_region, string usuario = "")
         {
-            return _db.Crd_Polizas_Region_Eliminar(CodEmpresa, cod_poliza , cod_region);
+            return _db.Crd_Polizas_Region_Eliminar(CodEmpresa, cod_poliza, cod_region, usuario);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> Crd_Polizas_RegionLista_Obtener(int CodEmpresa, string cod_poliza)
