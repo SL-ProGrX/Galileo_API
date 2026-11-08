@@ -44,6 +44,97 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// VB6: cboGarantia_Click, bloque "Carga Examenes Requeridos" (~línea 14388-14418).
+        /// Si el ESTADO_EXAMENES del expediente (spCrd_Prea_Prenda_Datos) no es "A" ejecuta
+        /// spCrdPrea_Examenes_Requeridos_Lista(línea, garantía, edad, monto) y toma los
+        /// requisitos con Id_Requisito &gt; 0 (DESCRIPCION_EXAMENES). Si hay alguno registra
+        /// la notificación con spCRD_PreaRegistraHistoricoExamenes (sbPrendario_Examen_Registra).
+        /// Los parámetros de los SP se envían por posición, igual que el EXEC del VB6.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2ExamenesRequeridosResponse> Prea_frmPreaEstudiov2_Examenes_Requeridos(
+            int codEmpresa, FrmPreaEstudiov2ExamenesRequeridosRequest request)
+        {
+            var result = new ErrorDto<FrmPreaEstudiov2ExamenesRequeridosResponse>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new FrmPreaEstudiov2ExamenesRequeridosResponse()
+            };
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+                var expediente = (request.cod_preanalisis ?? string.Empty).Trim();
+
+                if (ObtenerEstadoExamenes(connection, expediente) == "A")
+                {
+                    return result;
+                }
+
+                var requisitos = connection.Query(
+                    "EXEC spCrdPrea_Examenes_Requeridos_Lista @Linea, @Garantia, @Edad, @Monto",
+                    new
+                    {
+                        Linea = (request.linea ?? string.Empty).Trim(),
+                        Garantia = (request.garantia ?? string.Empty).Trim(),
+                        request.edad,
+                        Monto = request.monto
+                    });
+
+                foreach (IDictionary<string, object> fila in requisitos)
+                {
+                    var idRequisito = GetInt(new Dictionary<string, object>(fila, StringComparer.OrdinalIgnoreCase), "Id_Requisito");
+                    if (idRequisito > 0)
+                    {
+                        result.Result.examenes.Add(
+                            GetString(new Dictionary<string, object>(fila, StringComparer.OrdinalIgnoreCase), "DESCRIPCION_EXAMENES"));
+                    }
+                }
+
+                if (result.Result.examenes.Count > 0 && expediente.Length > 0)
+                {
+                    connection.Execute(
+                        "EXEC spCRD_PreaRegistraHistoricoExamenes @Expediente, @Usuario, @Nota",
+                        new
+                        {
+                            Expediente = expediente,
+                            Usuario = (request.usuario ?? string.Empty).Trim(),
+                            Nota = "Examenes médicos notificados al ejecutivo."
+                        });
+                    result.Result.notificado = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = new FrmPreaEstudiov2ExamenesRequeridosResponse();
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// VB6: m_Examenes_Estado (ESTADO_EXAMENES de spCrd_Prea_Prenda_Datos). Sin
+        /// expediente o sin fila se considera vacío (distinto de "A").
+        /// </summary>
+        private static string ObtenerEstadoExamenes(IDbConnection connection, string expediente)
+        {
+            if (expediente.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            var fila = connection.QueryFirstOrDefault(
+                "EXEC spCrd_Prea_Prenda_Datos @Expediente",
+                new { Expediente = expediente }) as IDictionary<string, object>;
+
+            return fila is null
+                ? string.Empty
+                : GetString(new Dictionary<string, object>(fila, StringComparer.OrdinalIgnoreCase), "ESTADO_EXAMENES");
+        }
+
+        /// <summary>
         /// VB6: cboGarantia_Click (frmPreaEstudiov2.frm ~línea 14292-14355). Solo dos
         /// formularios calculan Monto directamente aquí:
         ///   F01 (Sobre Ahorros): SELECT dbo.fxCrdGarantiaPatMnt('&lt;cedula&gt;','A','M')

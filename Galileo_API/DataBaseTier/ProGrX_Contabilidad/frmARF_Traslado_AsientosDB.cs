@@ -76,6 +76,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Arrendamientos
                 codEmpresa,
                 cn =>
                 {
+                    // BeginTransaction requiere la conexión abierta (Dapper la cierra tras cada consulta si la encuentra cerrada).
+                    if (cn.State != System.Data.ConnectionState.Open)
+                    {
+                        cn.Open();
+                    }
+
                     var trasladados = 0;
                     var periodosCerrados = 0;
 
