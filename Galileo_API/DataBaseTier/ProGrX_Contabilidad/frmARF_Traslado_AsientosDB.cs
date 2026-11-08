@@ -87,88 +87,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Arrendamientos
 
                     foreach (var item in asientos)
                     {
-                        var fecha = cn.QueryFirstOrDefault<DateTime?>(
-                            @"SELECT fecha
-                              FROM ARF_ASIENTOS
-                              WHERE Traslado_Fecha IS NULL
-                                AND COD_CONTABILIDAD = @cod_contabilidad
-                                AND tipo_asiento = @tipo_asiento
-                                AND num_asiento = @num_asiento",
-                            item);
-
-                        if (!fecha.HasValue)
+                        switch (TrasladarAsiento(cn, item))
                         {
-                            continue;
-                        }
-
-                        var periodoAbierto = cn.QueryFirstOrDefault<int?>(
-                            @"SELECT TOP 1 1
-                              FROM CntX_Periodos
-                              WHERE anio = @anio
-                                AND mes = @mes
-                                AND estado = 'P'
-                                AND cod_contabilidad = @cod_contabilidad",
-                            new
-                            {
-                                anio = fecha.Value.Year,
-                                mes = fecha.Value.Month,
-                                item.cod_contabilidad
-                            });
-
-                        if (!periodoAbierto.HasValue)
-                        {
-                            periodosCerrados++;
-                            continue;
-                        }
-
-                        using var tx = cn.BeginTransaction();
-
-                        try
-                        {
-                            const string sql = @"
-                                INSERT INTO CntX_Asientos
-                                    (COD_CONTABILIDAD, tipo_asiento, num_asiento, anio, mes,
-                                     fecha_asiento, descripcion, balanceado, notas, modulo,
-                                     user_crea, referencia)
-                                SELECT COD_CONTABILIDAD, tipo_asiento, num_asiento,
-                                       YEAR(fecha), MONTH(fecha), fecha,
-                                       SUBSTRING(num_asiento + '...' + referencia, 1, 100),
-                                       'S', notas, 20, registro_usuario, referencia
-                                FROM ARF_ASIENTOS
-                                WHERE COD_CONTABILIDAD = @cod_contabilidad
-                                  AND tipo_asiento = @tipo_asiento
-                                  AND num_asiento = @num_asiento;
-
-                                INSERT INTO CntX_Asientos_detalle
-                                    (num_linea, COD_CONTABILIDAD, tipo_Asiento, num_asiento,
-                                     cod_cuenta, documento, detalle, tipo_Cambio, monto_Debito,
-                                     monto_credito, cod_unidad, cod_divisa, cod_centro_costo)
-                                SELECT Linea_Id, COD_CONTABILIDAD, tipo_asiento, num_asiento,
-                                       cod_cuenta, SUBSTRING(documento, 1, 35),
-                                       SUBSTRING(detalle, 1, 100), ISNULL(tipo_Cambio, 1),
-                                       CASE WHEN Movimiento = 'D' THEN Monto ELSE 0 END,
-                                       CASE WHEN Movimiento = 'C' THEN Monto ELSE 0 END,
-                                       cod_unidad, cod_divisa, cod_centro_costo
-                                FROM ARF_ASIENTOS_DETALLE
-                                WHERE COD_CONTABILIDAD = @cod_contabilidad
-                                  AND tipo_asiento = @tipo_asiento
-                                  AND num_asiento = @num_asiento;
-
-                                UPDATE ARF_ASIENTOS
-                                SET Traslado_Fecha = GETDATE(),
-                                    Traslado_Usuario = @usuario
-                                WHERE COD_CONTABILIDAD = @cod_contabilidad
-                                  AND tipo_asiento = @tipo_asiento
-                                  AND num_asiento = @num_asiento;";
-
-                            cn.Execute(sql, item, tx);
-                            tx.Commit();
-                            trasladados++;
-                        }
-                        catch
-                        {
-                            tx.Rollback();
-                            throw;
+                            case ResultadoTraslado.Trasladado:
+                                trasladados++;
+                                break;
+                            case ResultadoTraslado.PeriodoCerrado:
+                                periodosCerrados++;
+                                break;
                         }
                     }
 
@@ -194,6 +120,101 @@ namespace Galileo_API.DataBaseTier.ProGrX_Arrendamientos
             };
 
             return DbHelper.CreateOkResponse(proceso.Result.Trasladados > 0, descripcion);
+        }
+
+        private enum ResultadoTraslado
+        {
+            Omitido,
+            PeriodoCerrado,
+            Trasladado
+        }
+
+        private const string SqlTrasladarAsiento = @"
+            INSERT INTO CntX_Asientos
+                (COD_CONTABILIDAD, tipo_asiento, num_asiento, anio, mes,
+                 fecha_asiento, descripcion, balanceado, notas, modulo,
+                 user_crea, referencia)
+            SELECT COD_CONTABILIDAD, tipo_asiento, num_asiento,
+                   YEAR(fecha), MONTH(fecha), fecha,
+                   SUBSTRING(num_asiento + '...' + referencia, 1, 100),
+                   'S', notas, 20, registro_usuario, referencia
+            FROM ARF_ASIENTOS
+            WHERE COD_CONTABILIDAD = @cod_contabilidad
+              AND tipo_asiento = @tipo_asiento
+              AND num_asiento = @num_asiento;
+
+            INSERT INTO CntX_Asientos_detalle
+                (num_linea, COD_CONTABILIDAD, tipo_Asiento, num_asiento,
+                 cod_cuenta, documento, detalle, tipo_Cambio, monto_Debito,
+                 monto_credito, cod_unidad, cod_divisa, cod_centro_costo)
+            SELECT Linea_Id, COD_CONTABILIDAD, tipo_asiento, num_asiento,
+                   cod_cuenta, SUBSTRING(documento, 1, 35),
+                   SUBSTRING(detalle, 1, 100), ISNULL(tipo_Cambio, 1),
+                   CASE WHEN Movimiento = 'D' THEN Monto ELSE 0 END,
+                   CASE WHEN Movimiento = 'C' THEN Monto ELSE 0 END,
+                   cod_unidad, cod_divisa, cod_centro_costo
+            FROM ARF_ASIENTOS_DETALLE
+            WHERE COD_CONTABILIDAD = @cod_contabilidad
+              AND tipo_asiento = @tipo_asiento
+              AND num_asiento = @num_asiento;
+
+            UPDATE ARF_ASIENTOS
+            SET Traslado_Fecha = GETDATE(),
+                Traslado_Usuario = @usuario
+            WHERE COD_CONTABILIDAD = @cod_contabilidad
+              AND tipo_asiento = @tipo_asiento
+              AND num_asiento = @num_asiento;";
+
+        private static ResultadoTraslado TrasladarAsiento(
+            System.Data.IDbConnection cn,
+            ArfTrasladoRequestDto item)
+        {
+            var fecha = cn.QueryFirstOrDefault<DateTime?>(
+                @"SELECT fecha
+                  FROM ARF_ASIENTOS
+                  WHERE Traslado_Fecha IS NULL
+                    AND COD_CONTABILIDAD = @cod_contabilidad
+                    AND tipo_asiento = @tipo_asiento
+                    AND num_asiento = @num_asiento",
+                item);
+
+            if (!fecha.HasValue)
+            {
+                return ResultadoTraslado.Omitido;
+            }
+
+            var periodoAbierto = cn.QueryFirstOrDefault<int?>(
+                @"SELECT TOP 1 1
+                  FROM CntX_Periodos
+                  WHERE anio = @anio
+                    AND mes = @mes
+                    AND estado = 'P'
+                    AND cod_contabilidad = @cod_contabilidad",
+                new
+                {
+                    anio = fecha.Value.Year,
+                    mes = fecha.Value.Month,
+                    item.cod_contabilidad
+                });
+
+            if (!periodoAbierto.HasValue)
+            {
+                return ResultadoTraslado.PeriodoCerrado;
+            }
+
+            using var tx = cn.BeginTransaction();
+
+            try
+            {
+                cn.Execute(SqlTrasladarAsiento, item, tx);
+                tx.Commit();
+                return ResultadoTraslado.Trasladado;
+            }
+            catch
+            {
+                tx.Rollback();
+                throw;
+            }
         }
     }
 }
