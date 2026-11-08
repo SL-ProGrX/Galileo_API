@@ -77,17 +77,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     {
                         Linea = (request.linea ?? string.Empty).Trim(),
                         Garantia = (request.garantia ?? string.Empty).Trim(),
-                        request.edad,
-                        Monto = request.monto
+                        Edad = request.edad ?? 0,
+                        Monto = request.monto ?? 0m
                     });
 
-                foreach (IDictionary<string, object> fila in requisitos)
+                foreach (var fila in requisitos.Cast<IDictionary<string, object>>())
                 {
-                    var idRequisito = GetInt(new Dictionary<string, object>(fila, StringComparer.OrdinalIgnoreCase), "Id_Requisito");
-                    if (idRequisito > 0)
+                    var dict = new Dictionary<string, object>(fila, StringComparer.OrdinalIgnoreCase);
+                    if (GetInt(dict, "Id_Requisito") > 0)
                     {
-                        result.Result.examenes.Add(
-                            GetString(new Dictionary<string, object>(fila, StringComparer.OrdinalIgnoreCase), "DESCRIPCION_EXAMENES"));
+                        result.Result.examenes.Add(GetString(dict, "DESCRIPCION_EXAMENES"));
                     }
                 }
 
