@@ -35,8 +35,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                         SELECT 
                             COD_POLIZA AS item,
                             DESCRIPCION AS descripcion
-                        FROM CRD_CATALOGO_POLIZAS
-                        ORDER BY DESCRIPCION";
+                        FROM CRD_CATALOGO_POLIZAS";
 
                 var result = conn.Query<DropDownListaGenericaModel>(query).ToList();
 
