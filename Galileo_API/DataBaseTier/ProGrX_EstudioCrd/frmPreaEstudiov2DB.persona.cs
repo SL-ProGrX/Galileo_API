@@ -59,10 +59,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                              S.cedula,
                              S.nombre,
                              S.FECHA_NAC AS fecha_nacimiento,
-                             S.sexo
+                             S.sexo,
+                             S.cod_Institucion AS cod_institucion,
+                             S.ESTADOACTUAL AS estado_actual
                       FROM socios S
                       WHERE S.cedula = @Cedula",
                     parameters) as IDictionary<string, object>;
+
+                var esSocio = row is not null;
 
                 if (row is null)
                 {
@@ -84,7 +88,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 }
 
                 var dict = new Dictionary<string, object>(row, StringComparer.OrdinalIgnoreCase);
-                var fechaNacimiento = GetDateTime(dict, "fecha_nacimiento");
+                // VB6: si la persona no tiene fecha de nacimiento se usa la fecha del sistema.
+                var fechaNacimiento = GetDateTime(dict, "fecha_nacimiento")
+                    ?? ObtenerFechaServidor(connection).Date;
+                var institucion = esSocio ? GetString(dict, "cod_institucion").Trim() : string.Empty;
+                var estadoActual = esSocio ? GetString(dict, "estado_actual").Trim() : string.Empty;
                 var datosPersona = ObtenerDatosPersona(connection, cedulaTrim, fechaNacimiento, codPreanalisis);
                 var edadPlazo = CalcularEdadPlazo(
                     new EdadPlazoDatos(
@@ -114,7 +122,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     edad_excede_limite = edadPlazo.ExcedeLimite,
                     clasificacion_crediticia = ObtenerClasificacionCrediticia(connection, cedulaTrim, estado),
                     edad_aplica = datosPersona.EdadAplica,
-                    edad_justificacion = datosPersona.EdadJustificacion
+                    edad_justificacion = datosPersona.EdadJustificacion,
+                    es_socio = esSocio,
+                    cod_institucion = institucion.Length == 0 ? "-1" : institucion,
+                    estado_actual = estadoActual.Length == 0 ? "N" : estadoActual
                 };
 
                 return result;
@@ -126,6 +137,59 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 result.Result = new FrmPreaEstudiov2EncabezadoDto();
                 return result;
             }
+        }
+
+        /// <summary>
+        /// VB6: fxExiteCedulaEnSubExpediente (frmPreaEstudiov2.frm ~línea 16736). Se usa
+        /// con "Nuevo SubExpediente" o cuando el expediente contiene "-": el padre es la
+        /// parte antes del primer "-" (fxDeCodificaPrimaryKey). Si la cédula ya es la del
+        /// expediente maestro no se permite cargarla como subexpediente.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2CedulaMaestroResponse> Prea_frmPreaEstudiov2_Persona_ExisteEnMaestro(
+            int codEmpresa,
+            string codPreanalisis,
+            string cedula)
+        {
+            var result = new ErrorDto<FrmPreaEstudiov2CedulaMaestroResponse>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new FrmPreaEstudiov2CedulaMaestroResponse()
+            };
+
+            try
+            {
+                var expediente = (codPreanalisis ?? string.Empty).Trim();
+                var cedulaTrim = (cedula ?? string.Empty).Trim();
+                var separador = expediente.IndexOf('-');
+                var expedientePadre = separador > 0 ? expediente[..separador] : expediente;
+
+                if (expedientePadre.Length == 0 || cedulaTrim.Length == 0)
+                {
+                    return result;
+                }
+
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+                var nombre = connection.QueryFirstOrDefault<string?>(
+                    @"SELECT TOP 1 nombre
+                      FROM CRD_PREA_PREANALISIS
+                      WHERE COD_PREANALISIS = @Expediente AND cedula = @Cedula",
+                    new { Expediente = expedientePadre, Cedula = cedulaTrim });
+
+                if (nombre is not null)
+                {
+                    result.Result.existe = true;
+                    result.Result.nombre = nombre.Trim();
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = new FrmPreaEstudiov2CedulaMaestroResponse();
+            }
+
+            return result;
         }
 
         /// <summary>

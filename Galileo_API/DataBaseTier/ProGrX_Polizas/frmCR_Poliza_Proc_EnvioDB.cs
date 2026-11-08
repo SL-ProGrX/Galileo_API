@@ -26,8 +26,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                         SELECT
                             COD_POLIZA     AS item,
                             DESCRIPCION    AS descripcion
-                        FROM CRD_CATALOGO_POLIZAS
-                        ORDER BY DESCRIPCION";
+                        FROM CRD_CATALOGO_POLIZAS";
 
                 return conn.Query<DropDownListaGenericaModel>(query).ToList();
             });
@@ -183,10 +182,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             static GridColumnDto Col(string field, string title, int width, string align = GridConstants.Align.Left, string? format = null)
                 => new() { field = field, title = title, width = width, align = align, format = format };
 
+            // Las filas se devuelven con las llaves en MAYÚSCULAS (ver Crd_PolizasProcEnvio_Consultar),
+            // por eso el field de cada columna también va en mayúsculas para que la grilla lo encuentre.
             static List<GridColumnDto> DedupByField(IEnumerable<GridColumnDto> cols)
                 => cols
                     .GroupBy(c => c.field ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-                    .Select(g => g.First())
+                    .Select(g =>
+                    {
+                        var col = g.First();
+                        col.field = col.field?.ToUpperInvariant();
+                        return col;
+                    })
                     .ToList();
 
             // ============================================================

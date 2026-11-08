@@ -51,6 +51,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 new() { codigo = "12", descripcion = "Recuperación por Garantía", grupo = vGrupoRecuperacion },
                 new() { codigo = "14", descripcion = "Recuperación por Causa de Mora", grupo = vGrupoRecuperacion },
                 new() { codigo = "15", descripcion = "Recuperación por Arreglo de Pago", grupo = vGrupoRecuperacion },
+                new() { codigo = "16", descripcion = "Recuperación por monto y porcentaje", grupo = vGrupoRecuperacion },
                 new() { codigo = "13", descripcion = "Recuperación Informe Estadístico", grupo = vGrupoRecuperacion }
             };
 
