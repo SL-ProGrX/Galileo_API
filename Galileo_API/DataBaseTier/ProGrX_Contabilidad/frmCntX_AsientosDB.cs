@@ -326,7 +326,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     }
 
                     var updateRows = ActualizarAsiento(codEmpresa, usuario, request);
-                    if (updateRows.Code == -1)
+                    if (updateRows.Code != 0)
                     {
                         return updateRows;
                     }
@@ -335,7 +335,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 {
                     var insertAsiento = InsertarAsiento(codEmpresa, usuario, request);
 
-                    if (insertAsiento.Code == -1)
+                    if (insertAsiento.Code != 0)
                     {
                         return insertAsiento;
                     }
@@ -347,13 +347,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     request.asiento.tipo_asiento,
                     request.asiento.num_asiento
                 );
-                if (eliminarDetalle.Code == -1)
+                if (eliminarDetalle.Code != 0)
                 {
                     return eliminarDetalle;
                 }
 
                 var insertarDetalle = InsertarDetalle(codEmpresa, request);
-                if (insertarDetalle.Code == -1)
+                if (insertarDetalle.Code != 0)
                 {
                     return insertarDetalle;
                 }
@@ -394,15 +394,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             try
             {
+                var estado = ValidarAsientoModificable(codEmpresa, new CntXAsientoData
+                {
+                    cod_contabilidad = codConta,
+                    tipo_asiento = tipoAsiento,
+                    num_asiento = numAsiento
+                });
+                if (estado.Code != 0)
+                {
+                    return estado;
+                }
+
                 var concurrenc = _mCalculos.FxCntX_AsientoConcurrencia(
                     codEmpresa,
                     codConta,
                     numAsiento,
                     tipoAsiento
                 );
-
-                bool concurrencResult = TsSonIguales(concurrenc, ts);
-                if (!concurrencResult)
+                if (!TsSonIguales(concurrenc, ts))
                 {
                     return new ErrorDto
                     {
@@ -411,21 +420,35 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     };
                 }
 
-                conn.Execute(
-                    @"delete from Cntx_Asientos_detalle
-                      where cod_contabilidad = @codConta
-                        and tipo_asiento = @tipoAsiento
-                        and num_asiento = @numAsiento;",
-                    new { codConta, tipoAsiento, numAsiento }
-                );
+                using var transaction = conn.BeginTransaction();
+                var parametros = new { codConta, tipoAsiento, numAsiento, ts };
+                const string condicionEstado = @"and fecha_aplicado is null
+                    and (isnull(modulo, 0) = 20 or nullif(ltrim(rtrim(isnull(user_autoriza, ''))), '') is not null)";
 
-                var rows = conn.Execute(
-                    @"delete from Cntx_Asientos
+                conn.Execute(
+                    $@"delete from Cntx_Asientos_detalle
                       where cod_contabilidad = @codConta
                         and tipo_asiento = @tipoAsiento
                         and num_asiento = @numAsiento
-                        and ts = @ts;",
-                    new { codConta, tipoAsiento, numAsiento, ts }
+                        and exists (
+                            select 1 from Cntx_Asientos with (updlock, holdlock)
+                            where cod_contabilidad = @codConta
+                              and tipo_asiento = @tipoAsiento
+                              and num_asiento = @numAsiento
+                              and ts = @ts {condicionEstado}
+                        );",
+                    parametros,
+                    transaction
+                );
+
+                var rows = conn.Execute(
+                    $@"delete from Cntx_Asientos
+                      where cod_contabilidad = @codConta
+                        and tipo_asiento = @tipoAsiento
+                        and num_asiento = @numAsiento
+                        and ts = @ts {condicionEstado};",
+                    parametros,
+                    transaction
                 );
 
                 if (rows == 0)
@@ -433,10 +456,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     return new ErrorDto
                     {
                         Code = -2,
-                        Description = AsientoModificadoPorOtroUsuario
+                        Description = "El asiento fue aplicado, no está autorizado o fue modificado; no se puede eliminar."
                     };
                 }
 
+                transaction.Commit();
                 RegistrarBitacora(
                     codEmpresa,
                     usuario,
@@ -474,9 +498,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                   and tipo_asiento = @tipoAsiento
                   and num_asiento = @numAsiento
                   and fecha_autoriza is null
-                  and modulo <> 20;";
+                  and isnull(modulo, 0) <> 20
+                  and fecha_aplicado is null;";
 
-            var resp = DbHelper.ExecuteNonQuery(
+            var resp = DbHelper.ExecuteNonQueryWithResult(
                 _portalDb,
                 codEmpresa,
                 sql,
@@ -484,16 +509,31 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
 
             if (resp.Code < 0)
-                return resp;
+            {
+                return new ErrorDto { Code = resp.Code, Description = resp.Description };
+            }
+
+            if (resp.Result == 0)
+            {
+                return new ErrorDto
+                {
+                    Code = -2,
+                    Description = "El asiento no existe, ya fue autorizado o es local y no requiere autorización."
+                };
+            }
 
             RegistrarBitacora(
                 codEmpresa,
                 usuario,
                 "Autoriza - WEB",
-                $"Asiento foráneo : {tipoAsiento}-{numAsiento} Conta.{codConta}"
+                $"Asiento Foráneo : {tipoAsiento}-{numAsiento} Conta.{codConta}"
             );
 
-            return resp;
+            return new ErrorDto
+            {
+                Code = 0,
+                Description = "Asiento autorizado satisfactoriamente."
+            };
         }
 
         /// <summary>
@@ -567,6 +607,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns></returns>
         public ErrorDto CntXAsientos_Reversar(int codEmpresa, CntXAsientoData request)
         {
+            if (request == null)
+            {
+                return new ErrorDto { Code = -2, Description = "Debe indicar el asiento que desea reversar." };
+            }
+
+            var estadoAplicado = VerificarAsientoAplicado(codEmpresa, request);
+            if (estadoAplicado.Code != 0)
+            {
+                return estadoAplicado;
+            }
+
             var periodoAbi = _mCalculos.FxCntX_PeriodoVerifica(
                     codEmpresa,
                     request.cod_contabilidad,
@@ -616,6 +667,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns></returns>
         public ErrorDto CntXAsientos_Mayorizar(int codEmpresa, CntXAsientoData request)
         {
+            if (request == null)
+            {
+                return new ErrorDto { Code = -2, Description = "Debe indicar el asiento que desea mayorizar." };
+            }
+
             var periodoAb = _mCalculos.FxCntX_PeriodoVerifica(
                     codEmpresa,
                     request.cod_contabilidad,
@@ -646,6 +702,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     Code = -2,
                     Description = AsientoModificadoPorOtroUsuario
                 };
+            }
+
+            var balance = VerificarBalanceAsientoGuardado(codEmpresa, request);
+            if (balance.Code != 0)
+            {
+                return balance;
             }
 
             const string query = @"exec spCntX_AsientoMayoriza @codConta, @usuario, @tipoAsiento, @numAsiento;";
@@ -730,7 +792,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="usuario"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        private ErrorDto ActualizarAsiento(int codEmpresa,  string usuario, CntXAsientoGuardarRequest request)
+        private ErrorDto ActualizarAsiento(int codEmpresa, string usuario, CntXAsientoGuardarRequest request)
         {
             const string sql = @"update Cntx_Asientos
                 set descripcion = @descripcion,
@@ -744,9 +806,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 where cod_contabilidad = @codConta
                   and tipo_asiento = @tipoAsiento
                   and num_asiento = @numAsiento
-                  and ts = @ts;";
+                  and ts = @ts
+                  and fecha_aplicado is null
+                  and (isnull(modulo, 0) = 20 or nullif(ltrim(rtrim(isnull(user_autoriza, ''))), '') is not null);";
 
-            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sql, new 
+            var resultado = DbHelper.ExecuteNonQueryWithResult(_portalDb, codEmpresa, sql, new
             {
                 descripcion = request.asiento.descripcion,
                 anio = request.asiento.anio,
@@ -761,6 +825,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 numAsiento = request.asiento.num_asiento,
                 ts = request.asiento.ts
             });
+
+            if (resultado.Code < 0)
+                return new ErrorDto { Code = -1, Description = resultado.Description };
+            if (resultado.Result == 0)
+                return new ErrorDto
+                {
+                    Code = -2,
+                    Description = "El asiento fue aplicado, no está autorizado o fue modificado; consulte nuevamente antes de guardar."
+                };
+
+            return new ErrorDto { Code = 0, Description = string.Empty };
         }
 
         /// <summary>
@@ -889,36 +964,31 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             try
             {
+                if (request?.asiento == null)
+                {
+                    return new ErrorDto { Code = -2, Description = "Debe indicar los datos del asiento." };
+                }
+
+                var asiento = request.asiento;
                 var errores = new List<string>();
 
+                VerificarDatosBasicosAsiento(asiento, errores);
+                if (edita)
+                {
+                    AgregarErrorSiAsientoNoModificable(codEmpresa, asiento, errores);
+                }
+
                 VerificarTipoAsiento(codEmpresa, request, errores);
-                var divisaLocal = ObtenerDivisaLocal(codEmpresa, request.asiento.cod_contabilidad);
+                var divisaLocal = ObtenerDivisaLocal(codEmpresa, asiento.cod_contabilidad);
 
                 if (!edita)
                 {
                     VerificarExistenciaAsiento(codEmpresa, request, errores);
                 }
 
-                if (!request.asiento.fecha_asiento.HasValue)
-                {
-                    errores.Add("La fecha del asiento es requerida.");
-                }
-                else
-                {
-                    var fecha = request.asiento.fecha_asiento.Value;
-
-                    if (fecha.Month != request.asiento.mes)
-                    {
-                        errores.Add("El mes del período no coincide con la fecha del asiento.");
-                    }
-
-                    if (fecha.Year != request.asiento.anio)
-                    {
-                        errores.Add("El año del período no coincide con la fecha del asiento.");
-                    }
-                }
-
+                VerificarFechaAsiento(asiento, errores);
                 VerificarDetalleAsiento(codEmpresa, request, divisaLocal, errores);
+                VerificarBalanceDetalle(request, errores);
 
                 if (errores.Count > 0)
                 {
@@ -929,20 +999,152 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     };
                 }
 
-                return new ErrorDto
-                {
-                    Code = 0,
-                    Description = string.Empty
-                };
+                request.balanceado = true;
+                return new ErrorDto { Code = 0, Description = string.Empty };
             }
             catch (Exception ex)
             {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = ex.Message
-                };
+                return new ErrorDto { Code = -1, Description = ex.Message };
             }
+        }
+
+        private static void VerificarDatosBasicosAsiento(CntXAsientoData asiento, List<string> errores)
+        {
+            if (asiento.cod_contabilidad <= 0)
+                errores.Add("Debe indicar la contabilidad.");
+            if (string.IsNullOrWhiteSpace(asiento.tipo_asiento))
+                errores.Add("Debe indicar el tipo de asiento.");
+            if (string.IsNullOrWhiteSpace(asiento.num_asiento))
+                errores.Add("Debe indicar el número de asiento.");
+            if (asiento.anio <= 0 || asiento.mes < 1 || asiento.mes > 12)
+                errores.Add("El período del asiento no es válido.");
+        }
+
+        private void AgregarErrorSiAsientoNoModificable(int codEmpresa, CntXAsientoData asiento, List<string> errores)
+        {
+            var modificable = ValidarAsientoModificable(codEmpresa, asiento);
+            if (modificable.Code != 0)
+            {
+                errores.Add(modificable.Description ?? "No se puede modificar el asiento.");
+            }
+        }
+
+        private static void VerificarFechaAsiento(CntXAsientoData asiento, List<string> errores)
+        {
+            if (!asiento.fecha_asiento.HasValue)
+            {
+                errores.Add("La fecha del asiento es requerida.");
+                return;
+            }
+
+            if (asiento.mes is < 1 or > 12 || asiento.anio <= 0)
+            {
+                return;
+            }
+
+            var fecha = asiento.fecha_asiento.Value;
+            if (fecha.Month != asiento.mes)
+                errores.Add("El mes del período no coincide con la fecha del asiento.");
+            if (fecha.Year != asiento.anio)
+                errores.Add("El año del período no coincide con la fecha del asiento.");
+        }
+
+        private ErrorDto ValidarAsientoModificable(int codEmpresa, CntXAsientoData asiento)
+        {
+            var resultado = ObtenerEstadoAsiento(codEmpresa, asiento);
+            var errorConsulta = CrearErrorConsultaEstadoAsiento(resultado);
+            if (errorConsulta.Code != 0)
+                return errorConsulta;
+            if (resultado.Result == -1)
+                return new ErrorDto { Code = -2, Description = "No se encontró el asiento que desea modificar." };
+            if (resultado.Result == 1)
+                return new ErrorDto { Code = -2, Description = "El asiento ya fue aplicado y no se puede modificar ni eliminar." };
+            if (resultado.Result == 2)
+                return new ErrorDto { Code = -2, Description = "El asiento es foráneo y todavía no está autorizado." };
+
+            return new ErrorDto { Code = 0, Description = string.Empty };
+        }
+
+        private ErrorDto VerificarAsientoAplicado(int codEmpresa, CntXAsientoData asiento)
+        {
+            var resultado = ObtenerEstadoAsiento(codEmpresa, asiento);
+            var errorConsulta = CrearErrorConsultaEstadoAsiento(resultado);
+            if (errorConsulta.Code != 0)
+                return errorConsulta;
+            if (resultado.Result == -1)
+                return new ErrorDto { Code = -2, Description = "No se encontró el asiento que desea reversar." };
+            if (resultado.Result != 1)
+                return new ErrorDto { Code = -2, Description = "Solo se puede reversar un asiento aplicado." };
+
+            return new ErrorDto { Code = 0, Description = string.Empty };
+        }
+
+        private static ErrorDto CrearErrorConsultaEstadoAsiento(ErrorDto<int> resultado)
+        {
+            if (resultado.Code < 0)
+                return new ErrorDto { Code = -1, Description = resultado.Description };
+
+            return new ErrorDto { Code = 0, Description = string.Empty };
+        }
+
+        private ErrorDto<int> ObtenerEstadoAsiento(int codEmpresa, CntXAsientoData asiento)
+        {
+            const string query = @"select case
+                when count(*) = 0 then -1
+                when max(case when fecha_aplicado is not null then 1 else 0 end) = 1 then 1
+                when max(case when isnull(modulo, 0) <> 20
+                    and nullif(ltrim(rtrim(isnull(user_autoriza, ''))), '') is null
+                    then 1 else 0 end) = 1 then 2
+                else 0 end
+                from Cntx_Asientos
+                where cod_contabilidad = @codConta
+                  and tipo_asiento = @tipoAsiento
+                  and num_asiento = @numAsiento;";
+
+            return DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codEmpresa,
+                query,
+                0,
+                new
+                {
+                    codConta = asiento.cod_contabilidad,
+                    tipoAsiento = asiento.tipo_asiento,
+                    numAsiento = asiento.num_asiento
+                }
+            );
+        }
+
+        private ErrorDto VerificarBalanceAsientoGuardado(int codEmpresa, CntXAsientoData asiento)
+        {
+            const string query = @"select case
+                when count(*) > 0
+                  and round(isnull(sum(monto_debito), 0), 2) = round(isnull(sum(monto_credito), 0), 2)
+                then 1 else 0 end
+                from Cntx_Asientos_detalle
+                where cod_contabilidad = @codConta
+                  and tipo_asiento = @tipoAsiento
+                  and num_asiento = @numAsiento;";
+
+            var resultado = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codEmpresa,
+                query,
+                0,
+                new
+                {
+                    codConta = asiento.cod_contabilidad,
+                    tipoAsiento = asiento.tipo_asiento,
+                    numAsiento = asiento.num_asiento
+                }
+            );
+
+            if (resultado.Code < 0)
+                return new ErrorDto { Code = -1, Description = resultado.Description };
+            if (resultado.Result != 1)
+                return new ErrorDto { Code = -2, Description = "No se puede mayorizar porque el detalle guardado no está balanceado." };
+
+            return new ErrorDto { Code = 0, Description = string.Empty };
         }
 
         /// <summary>
@@ -1020,28 +1222,141 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="errores"></param>
         private void VerificarDetalleAsiento(int codEmpresa, CntXAsientoGuardarRequest request, string divisaLocal, List<string> errores)
         {
-            if (request.detalle == null || request.detalle.Count == 0)
+            var lineasConDatos = ObtenerLineasConDatos(request.detalle);
+            if (lineasConDatos.Count == 0)
             {
                 errores.Add("El asiento no contiene líneas de detalle.");
                 return;
             }
-            for (int i = 0; i < request.detalle.Count; i++)
+
+            for (int i = 0; i < lineasConDatos.Count; i++)
             {
-                var linea = request.detalle[i];
-                var numeroLinea = linea.num_linea > 0 ? linea.num_linea : i + 1;
-                var codDivisaLinea = (linea.cod_divisa ?? string.Empty).Trim().ToUpperInvariant();
+                VerificarLineaDetalleAsiento(codEmpresa, request, lineasConDatos[i], i + 1, divisaLocal, errores);
+            }
+        }
 
-                VerificarCuentaLinea(codEmpresa, request, linea, errores);
-                VerificarUnidadLinea(codEmpresa, request, linea, errores);
+        private static List<CntXAsientoDetalleData> ObtenerLineasConDatos(List<CntXAsientoDetalleData>? detalle)
+        {
+            return (detalle ?? new List<CntXAsientoDetalleData>())
+                .Where(TieneDatosLinea)
+                .ToList();
+        }
+
+        private static bool TieneDatosLinea(CntXAsientoDetalleData? linea)
+        {
+            return linea != null && (
+                !string.IsNullOrWhiteSpace(linea.cod_cuenta) ||
+                !string.IsNullOrWhiteSpace(linea.cod_unidad) ||
+                !string.IsNullOrWhiteSpace(linea.cod_centro_costo) ||
+                !string.IsNullOrWhiteSpace(linea.cod_divisa) ||
+                !string.IsNullOrWhiteSpace(linea.documento) ||
+                !string.IsNullOrWhiteSpace(linea.detalle) ||
+                linea.monto_debito != 0 ||
+                linea.monto_credito != 0 ||
+                linea.tc != 0);
+        }
+
+        private void VerificarLineaDetalleAsiento(
+            int codEmpresa,
+            CntXAsientoGuardarRequest request,
+            CntXAsientoDetalleData linea,
+            int indiceLinea,
+            string divisaLocal,
+            List<string> errores)
+        {
+            var numeroLinea = linea.num_linea > 0 ? linea.num_linea : indiceLinea;
+            var cuenta = (linea.cod_cuenta ?? string.Empty).Trim();
+            var unidad = (linea.cod_unidad ?? string.Empty).Trim();
+            var codCentroCosto = (linea.cod_centro_costo ?? string.Empty).Trim();
+            var codDivisaLinea = (linea.cod_divisa ?? string.Empty).Trim().ToUpperInvariant();
+
+            VerificarCampoDetalleRequerido(
+                cuenta,
+                "la cuenta",
+                numeroLinea,
+                errores,
+                () => VerificarCuentaLinea(codEmpresa, request, linea, errores)
+            );
+            VerificarCampoDetalleRequerido(
+                unidad,
+                "la unidad de negocio",
+                numeroLinea,
+                errores,
+                () => VerificarUnidadLinea(codEmpresa, request, linea, errores)
+            );
+            VerificarCentroCostoOpcional(codEmpresa, request, linea, codCentroCosto, errores);
+            VerificarCampoDetalleRequerido(
+                codDivisaLinea,
+                "la divisa",
+                numeroLinea,
+                errores,
+                () => VerificarDivisaLinea(codEmpresa, request, codDivisaLinea, errores)
+            );
+            VerificarMontosLinea(linea, numeroLinea, errores);
+            VerificarTipoCambioLinea(linea, codDivisaLinea, divisaLocal, numeroLinea, errores);
+        }
+
+        private static void VerificarCampoDetalleRequerido(
+            string valor,
+            string campo,
+            int numeroLinea,
+            List<string> errores,
+            Action verificar)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+            {
+                errores.Add($"Línea {numeroLinea}: debe indicar {campo}.");
+                return;
+            }
+
+            verificar();
+        }
+
+        private void VerificarCentroCostoOpcional(
+            int codEmpresa,
+            CntXAsientoGuardarRequest request,
+            CntXAsientoDetalleData linea,
+            string codCentroCosto,
+            List<string> errores)
+        {
+            if (!string.IsNullOrWhiteSpace(codCentroCosto))
                 VerificarCentroCostoLinea(codEmpresa, request, linea, errores);
-                VerificarDivisaLinea(codEmpresa, request, codDivisaLinea, errores);
+        }
 
-                if (!string.IsNullOrWhiteSpace(divisaLocal) &&
-                    codDivisaLinea != divisaLocal &&
-                    linea.tc == 1)
-                {
-                    errores.Add($"Línea {numeroLinea}: tipo de cambio incorrecto.");
-                }
+        private static void VerificarMontosLinea(CntXAsientoDetalleData linea, int numeroLinea, List<string> errores)
+        {
+            var debito = linea.monto_debito;
+            var credito = linea.monto_credito;
+
+            if (debito < 0 || credito < 0)
+                errores.Add($"Línea {numeroLinea}: los montos no pueden ser negativos.");
+            if ((debito > 0) == (credito > 0))
+                errores.Add($"Línea {numeroLinea}: indique un monto de débito o crédito, pero no ambos.");
+        }
+
+        private static void VerificarTipoCambioLinea(
+            CntXAsientoDetalleData linea,
+            string codDivisaLinea,
+            string divisaLocal,
+            int numeroLinea,
+            List<string> errores)
+        {
+            if (linea.tc <= 0)
+                errores.Add($"Línea {numeroLinea}: el tipo de cambio debe ser mayor que cero.");
+            else if (!string.IsNullOrWhiteSpace(divisaLocal) &&
+                codDivisaLinea != divisaLocal && linea.tc == 1)
+                errores.Add($"Línea {numeroLinea}: tipo de cambio incorrecto para la divisa extranjera.");
+        }
+
+        private static void VerificarBalanceDetalle(CntXAsientoGuardarRequest request, List<string> errores)
+        {
+            var detalle = request.detalle ?? new List<CntXAsientoDetalleData>();
+            var lineas = detalle.Where(linea => linea != null && !string.IsNullOrWhiteSpace(linea.cod_cuenta));
+            var debitos = lineas.Sum(linea => linea.monto_debito);
+            var creditos = lineas.Sum(linea => linea.monto_credito);
+            if (debitos != creditos)
+            {
+                errores.Add("El asiento no se encuentra balanceado.");
             }
         }
 
