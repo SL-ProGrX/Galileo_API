@@ -22,7 +22,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
             int codEmpresa,int proveedor, string factura)
                 => _db.CrdPolizaFacturaVer_Factura_Obtener(codEmpresa, proveedor, factura);
         public ErrorDto<CrdPolizaFacturaVerAsientosResponse> CrdPolizaFacturaVer_Asientos_Obtener(
-          int codEmpresa,int proveedor,string factura)
-                 => _db.CrdPolizaFacturaVer_Asientos_Obtener(codEmpresa, proveedor, factura);
+          int codEmpresa,int proveedor,string factura, int codContabilidad = 0)
+                 => _db.CrdPolizaFacturaVer_Asientos_Obtener(codEmpresa, proveedor, factura, codContabilidad);
     }
 }

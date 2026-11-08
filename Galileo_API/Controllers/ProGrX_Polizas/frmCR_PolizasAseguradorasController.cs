@@ -28,23 +28,23 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
 
         [ValidateAntiForgeryToken]
         [HttpPost("Insertar")]
-        public ErrorDto<int> Insertar(int codEmpresa, PolizaAseguradoraDto modelo)
+        public ErrorDto<int> Insertar(int codEmpresa, PolizaAseguradoraDto modelo, string usuario = "")
         {
-            return BL_CR_PolizasAseguradoras.Insertar(codEmpresa, modelo);
+            return BL_CR_PolizasAseguradoras.Insertar(codEmpresa, modelo, usuario);
         }
 
         [ValidateAntiForgeryToken]
         [HttpPut("Actualizar")]
-        public ErrorDto<int> Actualizar(int codEmpresa,PolizaAseguradoraDto modelo)
+        public ErrorDto<int> Actualizar(int codEmpresa,PolizaAseguradoraDto modelo, string usuario = "")
         {
-            return BL_CR_PolizasAseguradoras.Actualizar(codEmpresa, modelo);
+            return BL_CR_PolizasAseguradoras.Actualizar(codEmpresa, modelo, usuario);
         }
 
         [ValidateAntiForgeryToken]
         [HttpDelete("Borrar")]
-        public ErrorDto<int> Borrar(int codEmpresa,string codigo)
+        public ErrorDto<int> Borrar(int codEmpresa,string codigo, string usuario = "")
         {
-            return BL_CR_PolizasAseguradoras.Borrar(codEmpresa, codigo);
+            return BL_CR_PolizasAseguradoras.Borrar(codEmpresa, codigo, usuario);
         }
 
         [HttpGet("Scroll")]

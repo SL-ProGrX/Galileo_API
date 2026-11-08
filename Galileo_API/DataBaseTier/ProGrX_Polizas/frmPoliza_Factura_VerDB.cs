@@ -149,7 +149,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         public ErrorDto<CrdPolizaFacturaVerAsientosResponse> CrdPolizaFacturaVer_Asientos_Obtener(
          int codEmpresa,
          int proveedor,
-         string factura)
+         string factura,
+         int codContabilidad = 0)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
@@ -183,7 +184,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                AND U.cod_contabilidad = D.cod_contabilidad
             LEFT JOIN CNTX_CENTRO_COSTOS X
                 ON D.cod_centro_costo = X.cod_centro_costo
-               AND X.cod_contabilidad = @CodEmpresa
+               AND X.cod_contabilidad = @CodContabilidad
             WHERE D.cod_factura = @factura
               AND D.cod_proveedor = @proveedor
             ORDER BY D.linea;";
@@ -192,7 +193,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     query,
                     new
                     {
-                        CodEmpresa = codEmpresa,
+                        // VB6: GLOBALES.gEnlace (contabilidad); si no llega, se conserva el valor previo
+                        CodContabilidad = codContabilidad > 0 ? codContabilidad : codEmpresa,
                         proveedor,
                         factura
                     }).ToList();

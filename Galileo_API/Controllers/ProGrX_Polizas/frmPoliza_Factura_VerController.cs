@@ -39,7 +39,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         [Authorize]
         [HttpGet("CrdPolizaFacturaVer_Asientos_Obtener")]
         public ErrorDto<CrdPolizaFacturaVerAsientosResponse> CrdPolizaFacturaVer_Asientos_Obtener(
-          int codEmpresa, int proveedor, string factura)
-                 => _db.CrdPolizaFacturaVer_Asientos_Obtener(codEmpresa, proveedor, factura);
+          int codEmpresa, int proveedor, string factura, int codContabilidad = 0)
+                 => _db.CrdPolizaFacturaVer_Asientos_Obtener(codEmpresa, proveedor, factura, codContabilidad);
     }
 }
