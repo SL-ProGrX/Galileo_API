@@ -18,9 +18,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
             return DbfrmCR_PolizasPSDDb.Poliza_PSD_Consulta(codEmpresa,fechaCorte,usuario,tipo);
         }
 
-        public ErrorDto<bool> Poliza_PSD_Genera(int codEmpresa,DateTime fechaCorte,string usuario)
+        public ErrorDto<bool> Poliza_PSD_Genera(int codEmpresa,DateTime fechaCorte,string usuario, string poliza = "")
         {
-            return DbfrmCR_PolizasPSDDb.Poliza_PSD_Genera(codEmpresa,fechaCorte,usuario);
+            return DbfrmCR_PolizasPSDDb.Poliza_PSD_Genera(codEmpresa,fechaCorte,usuario,poliza);
         }
 
     }

@@ -52,9 +52,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
         /// <summary>
         /// Genera el corte SICAMA para la fecha indicada.
         /// </summary>
-        public ErrorDto<bool> Cr_PolizasSicama_Genera(int codEmpresa, DateTime fechaCorte, string usuario)
+        public ErrorDto<bool> Cr_PolizasSicama_Genera(int codEmpresa, DateTime fechaCorte, string usuario, string poliza = "")
         {
-            return _db.Cr_PolizasSicama_Genera(codEmpresa, fechaCorte, usuario);
+            return _db.Cr_PolizasSicama_Genera(codEmpresa, fechaCorte, usuario, poliza);
         }
 
         public ErrorDto Cr_FndPlanillaDirecta_Sube(

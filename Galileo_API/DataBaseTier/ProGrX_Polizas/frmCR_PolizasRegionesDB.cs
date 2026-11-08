@@ -3,6 +3,7 @@ using DocumentFormat.OpenXml.Spreadsheet;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX_Polizas;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -12,10 +13,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
     public class FrmCrPolizasRegionesDB
     {
         private readonly PortalDB _portalDb;
+        private readonly MSecurityMainDb _dbBitacora;
+        private const int vModulo = 11;
 
         public FrmCrPolizasRegionesDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
+            _dbBitacora = new MSecurityMainDb(config);
+        }
+
+        /// <summary>
+        /// Registra un movimiento en la bitácora (VB6: Bitacora).
+        /// </summary>
+        private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
+        {
+            _dbBitacora.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = detalle,
+                Movimiento = movimiento,
+                Modulo = vModulo
+            });
         }
 
         #region Regiones
@@ -102,6 +121,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 var parametros = BuildParams(dto, codPoliza, codRegion, usuario);
 
                 conn.Execute(sql, parametros);
+
+                // VB6: Bitacora("Registra"/"Modifica", "Región: x, Póliza: y")
+                RegistrarBitacora(CodEmpresa, usuario,
+                    esInsert ? "Registra - WEB" : "Modifica - WEB",
+                    $"Región: {codRegion}, Póliza: {codPoliza}");
 
                 var successMessage = esInsert
                     ? "Región creada correctamente."
@@ -194,8 +218,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_poliza"></param>
         /// <param name="cod_region"></param>
+        /// <param name="usuario">Usuario para la bitácora.</param>
         /// <returns></returns>
-        public ErrorDto Crd_Polizas_Region_Eliminar(int CodEmpresa, string cod_poliza, int cod_region)
+        public ErrorDto Crd_Polizas_Region_Eliminar(int CodEmpresa, string cod_poliza, int cod_region, string usuario = "")
         {
             using var conn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
 
@@ -224,6 +249,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         WHERE COD_POLIZA = @cod_poliza
           AND COD_REGION = @cod_region;",
                 new { cod_poliza, cod_region });
+
+            if (rows > 0)
+            {
+                // VB6: Bitacora("Elimina", "Pólizas región: x Póliza: y")
+                RegistrarBitacora(CodEmpresa, usuario, "Elimina - WEB",
+                    $"Pólizas región: {cod_region} Póliza: {cod_poliza}");
+            }
 
             return rows > 0
                 ? DbHelper.OkResponse("Región eliminada correctamente.")
@@ -370,22 +402,35 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             return select + join + where + "\nORDER BY P.DESCRIPCION, C.DESCRIPCION;";
         }
 
-        private static string GetJoinByModo(CrdCantonesModo modo) =>
-            modo == CrdCantonesModo.solo_asignados
-                ? @"
+        private static string GetJoinByModo(CrdCantonesModo modo)
+        {
+            switch (modo)
+            {
+                case CrdCantonesModo.no_asignados:
+                    return @"
+                    LEFT JOIN CRD_POLIZAS_REGION_DETALLE RD
+                        ON C.CANTON = RD.CANTON
+                       AND C.PROVINCIA = RD.PROVINCIA
+                       AND RD.COD_POLIZA = @cod_poliza
+                    ";
+                case CrdCantonesModo.solo_asignados:
+                    return @"
                     INNER JOIN CRD_POLIZAS_REGION_DETALLE RD
                         ON C.CANTON = RD.CANTON
                        AND C.PROVINCIA = RD.PROVINCIA
                        AND RD.COD_POLIZA = @cod_poliza
                        AND RD.COD_REGION = @cod_region
-                    "
-                                    : @"
+                    ";
+                default:
+                    return @"
                     LEFT JOIN CRD_POLIZAS_REGION_DETALLE RD
                         ON C.CANTON = RD.CANTON
                        AND C.PROVINCIA = RD.PROVINCIA
                        AND RD.COD_POLIZA = @cod_poliza
                        AND RD.COD_REGION = @cod_region
                     ";
+            }
+        }
 
         private static string GetWhereByModo(CrdCantonesModo modo, bool filtraProvincia)
         {

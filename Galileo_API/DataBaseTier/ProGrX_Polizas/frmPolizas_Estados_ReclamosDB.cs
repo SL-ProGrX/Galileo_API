@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX_Polizas;
 using System.Collections.Generic;
 
@@ -9,10 +10,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
     public class FrmPolizasEstadosReclamosDB
     {
         private readonly PortalDB _portalDb;
+        private readonly MSecurityMainDb _dbBitacora;
+        private const int vModulo = 11;
 
         public FrmPolizasEstadosReclamosDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
+            _dbBitacora = new MSecurityMainDb(config);
+        }
+
+        /// <summary>
+        /// Registra un movimiento en la bitácora (VB6: Bitacora).
+        /// </summary>
+        private void RegistrarBitacora(int codEmpresa, string? usuario, string movimiento, int idEstado)
+        {
+            _dbBitacora.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario ?? string.Empty,
+                DetalleMovimiento = $"Estados para Proceso Reclamos Id: {idEstado}",
+                Movimiento = movimiento,
+                Modulo = vModulo
+            });
         }
 
         /// <summary>
@@ -51,11 +70,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 (ID_ESTADO, descripcion, Activo, Registro_Fecha, Registro_Usuario)
                 VALUES
                 (@Id_Estado, @Descripcion, @Activo, dbo.MyGetdate(), @Usuario)";
-            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
                 var rows = conn.Execute(sql, param);
                 return rows > 0;
             });
+
+            if (result.Code == 0 && result.Result)
+                RegistrarBitacora(codEmpresa, param.Usuario, "Registra - WEB", param.Id_Estado);
+
+            return result;
         }
 
         private ErrorDto<bool> EstadosReclamos_Actualizar(int codEmpresa, PolizasEstadosReclamosSaveParams param)
@@ -67,11 +91,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     Modifica_Fecha = dbo.MyGetdate(),
                     Modifica_Usuario = @Usuario
                 WHERE ID_ESTADO = @Id_Estado";
-            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
                 var rows = conn.Execute(sql, param);
                 return rows > 0;
             });
+
+            if (result.Code == 0 && result.Result)
+                RegistrarBitacora(codEmpresa, param.Usuario, "Modifica - WEB", param.Id_Estado);
+
+            return result;
         }
 
         /// <summary>
@@ -80,11 +109,16 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         public ErrorDto<bool> EstadosReclamos_Eliminar(int codEmpresa, PolizasEstadosReclamosDeleteParams param)
         {
             var sql = @"DELETE FROM POLIZAS_RECLAMOS_ESTADOS WHERE ID_ESTADO = @Id_Estado";
-            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
                 var rows = conn.Execute(sql, param);
                 return rows > 0;
             });
+
+            if (result.Code == 0 && result.Result)
+                RegistrarBitacora(codEmpresa, param.Usuario, "Elimina - WEB", param.Id_Estado);
+
+            return result;
         }
     }
 }

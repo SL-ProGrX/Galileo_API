@@ -36,9 +36,10 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         public ErrorDto<bool> Cr_PolizasSicama_Genera(
             int codEmpresa,
             string usuario,
-            [FromBody] DateTime fechaCorte)
+            [FromBody] DateTime fechaCorte,
+            string poliza = "")
         {
-            return _bl.Cr_PolizasSicama_Genera(codEmpresa, fechaCorte, usuario);
+            return _bl.Cr_PolizasSicama_Genera(codEmpresa, fechaCorte, usuario, poliza);
         }
 
         [ValidateAntiForgeryToken]

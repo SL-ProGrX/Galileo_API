@@ -12,10 +12,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
     public class FrmCRPolizasAseguradorasDb
     {
         private readonly PortalDB _portalDB;
+        private readonly MSecurityMainDb _dbBitacora;
+        private const int vModulo = 11;
 
         public FrmCRPolizasAseguradorasDb(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
+            _dbBitacora = new MSecurityMainDb(config);
+        }
+
+        /// <summary>
+        /// Registra un movimiento en la bitácora (VB6: Bitacora("Registra"/"Modifica"/"Elimina", "Aseguradora: x")).
+        /// </summary>
+        private void RegistrarBitacora(int codEmpresa, string usuario, string movimiento, string codigo)
+        {
+            _dbBitacora.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = $"Aseguradora: {codigo}",
+                Movimiento = movimiento,
+                Modulo = vModulo
+            });
         }
 
         /// <summary>
@@ -126,7 +144,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <param name="m"></param>
         /// <returns></returns>
 
-        public ErrorDto<int> Insertar(int codEmpresa, PolizaAseguradoraDto m)
+        public ErrorDto<int> Insertar(int codEmpresa, PolizaAseguradoraDto m, string usuario = "")
         {
             var response = new ErrorDto<int> { Code = 0 };
 
@@ -159,7 +177,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             @cod_proveedor, @cod_banco, GETDATE(), @usuario
         )";
 
-                cn.Execute(sql, CrearParametrosAseguradora(m, incluirUsuario: true));
+                cn.Execute(sql, CrearParametrosAseguradora(m, incluirUsuario: true, usuario: usuario));
+
+                RegistrarBitacora(codEmpresa, usuario, "Registra - WEB", m.cod_aseguradora);
 
                 response.Result = 1;
             }
@@ -178,7 +198,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <param name="codEmpresa"></param>
         /// <param name="m"></param>
         /// <returns></returns>
-        public ErrorDto<int> Actualizar(int codEmpresa, PolizaAseguradoraDto m)
+        public ErrorDto<int> Actualizar(int codEmpresa, PolizaAseguradoraDto m, string usuario = "")
         {
             var response = new ErrorDto<int> { Code = 0 };
 
@@ -213,6 +233,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         WHERE cod_aseguradora = @cod_aseguradora";
 
                 cn.Execute(sql, CrearParametrosAseguradora(m));
+
+                RegistrarBitacora(codEmpresa, usuario, "Modifica - WEB", m.cod_aseguradora);
+
                 response.Result = 1;
             }
             catch (Exception ex)
@@ -226,7 +249,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
         private static DynamicParameters CrearParametrosAseguradora(
             PolizaAseguradoraDto m,
-            bool incluirUsuario = false)
+            bool incluirUsuario = false,
+            string usuario = "")
         {
             var parametros = new DynamicParameters();
             parametros.Add("cod_aseguradora", m.cod_aseguradora);
@@ -254,7 +278,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
             if (incluirUsuario)
             {
-                parametros.Add("usuario", "API");
+                parametros.Add("usuario", string.IsNullOrWhiteSpace(usuario) ? "API" : usuario);
             }
 
             return parametros;
@@ -274,7 +298,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <param name="codEmpresa"></param>
         /// <param name="codigo"></param>
         /// <returns></returns>
-        public ErrorDto<int> Borrar(int codEmpresa, string codigo)
+        public ErrorDto<int> Borrar(int codEmpresa, string codigo, string usuario = "")
         {
             var response = new ErrorDto<int> { Code = 0 };
 
@@ -286,6 +310,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 cn.Execute(
                     "DELETE FROM CRD_POLIZAS_ASEGURADORAS WHERE cod_aseguradora = @codigo",
                     new { codigo });
+
+                RegistrarBitacora(codEmpresa, usuario, "Elimina - WEB", codigo);
 
                 response.Result = 1;
             }

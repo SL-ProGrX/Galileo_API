@@ -35,9 +35,9 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
 
         [ValidateAntiForgeryToken]
         [HttpDelete("Crd_Polizas_Region_Eliminar")]
-        public ErrorDto Crd_Polizas_Region_Eliminar(int CodEmpresa, string cod_poliza, int cod_region)
+        public ErrorDto Crd_Polizas_Region_Eliminar(int CodEmpresa, string cod_poliza, int cod_region, string usuario = "")
         {
-            return _dl.Crd_Polizas_Region_Eliminar(CodEmpresa, cod_poliza, cod_region);
+            return _dl.Crd_Polizas_Region_Eliminar(CodEmpresa, cod_poliza, cod_region, usuario);
         }
 
         [HttpGet("Crd_Polizas_RegionLista_Obtener")]

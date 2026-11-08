@@ -25,5 +25,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
 
         public ErrorDto<List<PolizaPersonaReclamoDto>> Poliza_Persona_Reclamos(int codEmpresa, PolizaPersonaReclamoParams param)
             => _db.Poliza_Persona_Reclamos(codEmpresa, param);
+
+        public ErrorDto<List<PolizaPersonaReclamoDto>> Poliza_Persona_Reclamos_Todos(int codEmpresa, PolizaPersonaCreditoParams param)
+            => _db.Poliza_Persona_Reclamos_Todos(codEmpresa, param);
     }
 }

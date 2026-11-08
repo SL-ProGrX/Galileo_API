@@ -104,8 +104,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <param name="codEmpresa"></param>
         /// <param name="fechaCorte"></param>
         /// <param name="usuario"></param>
+        /// <param name="poliza">Código de póliza (@Poliza del SP); vacío si no se filtra.</param>
         /// <returns></returns>
-        public ErrorDto<bool> Cr_PolizasSicama_Genera(int codEmpresa, DateTime fechaCorte, string usuario)
+        public ErrorDto<bool> Cr_PolizasSicama_Genera(int codEmpresa, DateTime fechaCorte, string usuario, string poliza = "")
         {
             var response = new ErrorDto<bool>
             {
@@ -123,8 +124,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     "dbo.spPolizas_Sicama_Genera",
                     new
                     {
-                        pFecha = fechaCorte,
-                        pUsuario = usuario
+                        Poliza = (poliza ?? string.Empty).Trim(),
+                        Corte = fechaCorte,
+                        Beneficiarios = (short)1,
+                        Usuario = usuario,
+                        Movimiento = "T",
+                        Cedula = (string?)null
                     },
                     commandType: CommandType.StoredProcedure
                 );
