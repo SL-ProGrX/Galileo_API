@@ -1254,12 +1254,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             }
 
             // VB6 sbEstadoTxtCbo: cualquier operación en vista_morosidad implica morosidad
-            var presentaMora = true;
-
-            result.estado_mora_tag = presentaMora ? "S" : "N";
-            result.estado_mora_texto = presentaMora
-                ? "Presenta operaciones con morosidad"
-                : "Operaciones Activas al Dia";
+            result.estado_mora_tag = "S";
+            result.estado_mora_texto = "Presenta operaciones con morosidad";
         }
 
         private static void CompletarDatosGestion(
