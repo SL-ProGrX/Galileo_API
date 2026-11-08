@@ -2,6 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Cobros;
 using System.Data;
 using System.Data.Common;
@@ -12,13 +13,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
     public class FrmCOControlListaDB
     {
         private readonly PortalDB _portalDB;
+        private readonly IConfiguration _config;
+        private readonly MSecurityMainDb _securityMainDB;
+        private const int VModulo = 4;
         private readonly string vCedValida  = "Debe indicar la cédula.";
         private readonly string vNormal = "Normal";
         private readonly string vUserValida = "Debe indicar el usuario.";
 
+        // Los SP de búsqueda y análisis de cartera superan el default de 30 s de Dapper
+        private const int CommandTimeoutLargoSegundos = 900;
+
         public FrmCOControlListaDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
+            _config = config;
+            _securityMainDB = new MSecurityMainDb(config);
         }
 
         #region Principal
@@ -74,7 +83,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 using var multi = conn.QueryMultiple(
                     "spCBR_W_ControlLista_Buscar",
                     p,
-                    commandType: CommandType.StoredProcedure);
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: CommandTimeoutLargoSegundos);
 
                 var totales = multi.ReadFirstOrDefault<CoControlListaTotales>() ?? new CoControlListaTotales();
                 var lista = multi.Read<CoControlListaGridRow>().ToList();
@@ -513,22 +523,26 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             {
                 using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-                var garantias = conn.Query<CoControlListaOperacionGarantiaRow>(
+                // VB6 (sbCargarDetalleCuotas) lee las columnas por posición, no por nombre
+                var garantias = conn.Query(
                     "spCbrPersonaMoraGarantia",
                     new
                     {
                         Cedula = request.cedula.Trim(),
                         Tipo = "V"
                     },
-                    commandType: System.Data.CommandType.StoredProcedure
-                ).ToList();
+                    commandType: System.Data.CommandType.StoredProcedure,
+                    commandTimeout: CommandTimeoutLargoSegundos
+                ).Select(MapearGarantiaOperacion).ToList();
 
-                var operaciones = conn.Query<CoControlListaOperacionDetalleRow>(
+                var operaciones = conn.Query(
                     "EXEC spCbrPersonaMoraDetallada @cedula",
                     new
                     {
                         cedula = request.cedula.Trim()
-                    }).ToList();
+                    },
+                    commandTimeout: CommandTimeoutLargoSegundos)
+                    .Select(MapearOperacionDetalle).ToList();
 
                 var resumen = new CoControlListaOperacionesResumen
                 {
@@ -564,6 +578,57 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             {
                 return DbHelper.CreateErrorResponse<CoControlListaOperacionesResponse>(ex.Message);
             }
+        }
+
+        private static object?[] ValoresPorPosicion(dynamic row)
+            => ((IDictionary<string, object?>)row).Values.ToArray();
+
+        private static string TextoEn(object?[] v, int i)
+            => i < v.Length ? Convert.ToString(v[i])?.Trim() ?? string.Empty : string.Empty;
+
+        private static decimal DecimalEn(object?[] v, int i)
+            => i < v.Length && v[i] != null && v[i] is not DBNull ? Convert.ToDecimal(v[i]) : 0m;
+
+        private static CoControlListaOperacionGarantiaRow MapearGarantiaOperacion(dynamic row)
+        {
+            var v = ValoresPorPosicion(row);
+            return new CoControlListaOperacionGarantiaRow
+            {
+                garantia = TextoEn(v, 0),
+                saldo = DecimalEn(v, 1),
+                operaciones = (int)DecimalEn(v, 2),
+                morintcor = DecimalEn(v, 3),
+                morintmor = DecimalEn(v, 4),
+                morcargos = DecimalEn(v, 5),
+                morprincipal = DecimalEn(v, 6),
+                morcuotas = (int)DecimalEn(v, 7),
+                morctaantigua = TextoEn(v, 8),
+                morctaultima = TextoEn(v, 9),
+                moradias = (int)DecimalEn(v, 10),
+                antiguedad = TextoEn(v, 11),
+                cod_antiguedad = TextoEn(v, 12)
+            };
+        }
+
+        private static CoControlListaOperacionDetalleRow MapearOperacionDetalle(dynamic row)
+        {
+            var v = ValoresPorPosicion(row);
+            return new CoControlListaOperacionDetalleRow
+            {
+                id_solicitud = (int)DecimalEn(v, 0),
+                codigo = TextoEn(v, 1),
+                garantia = TextoEn(v, 2),
+                antiguedad = TextoEn(v, 3),
+                oficina = TextoEn(v, 4),
+                intc = DecimalEn(v, 5),
+                intm = DecimalEn(v, 6),
+                cargos = DecimalEn(v, 7),
+                poliza = DecimalEn(v, 8),
+                amortiza = DecimalEn(v, 9),
+                mora_financiera = DecimalEn(v, 10),
+                mora_legal = DecimalEn(v, 11),
+                garantia_detalle = TextoEn(v, 12)
+            };
         }
 
         #endregion
@@ -654,12 +719,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
         private static string FxTipoTelefono(string tipo)
         {
-            return tipo.Trim().ToUpperInvariant() switch
+            // VB6 mAfiliacion.fxTipoTelefono
+            return tipo.Trim() switch
             {
                 "1" => "Habitación",
                 "2" => "Trabajo",
                 "3" => "Celular",
-                _ => tipo
+                "4" => "Beeper",
+                _ => "Otro..."
             };
         }
 
@@ -1016,11 +1083,35 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 }
 
                 tran.Commit();
+
+                RegistrarBitacoraTraslado(codEmpresa, request, casos);
+
                 return DbHelper.CreateOkResponse(true);
             }
             catch (DbException ex)
             {
                 return DbHelper.CreateErrorResponse<bool>(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Registra en bitácora cada caso trasladado (igual que Bitacora("Aplica", ...) del VB6).
+        /// </summary>
+        private void RegistrarBitacoraTraslado(
+            int codEmpresa,
+            CoControlListaTrasladarMarcadosRequest request,
+            List<string> casos)
+        {
+            foreach (var cedula in casos)
+            {
+                _securityMainDB.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = codEmpresa,
+                    Usuario = request.usuario?.Trim() ?? string.Empty,
+                    DetalleMovimiento = $"Traslado Caso CBR Ced:{cedula} de {request.usuario_origen?.Trim()} a {request.usuario_destino.Trim()}",
+                    Movimiento = "Aplica",
+                    Modulo = VModulo
+                });
             }
         }
 
@@ -1073,7 +1164,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             RTRIM(ISNULL(Lt.causaDesc, '')) AS causa_desc,
             RTRIM(ISNULL(Lt.cod_arreglo, '')) AS cod_arreglo,
             RTRIM(ISNULL(Lt.arregloDesc, '')) AS arreglo_desc,
-            Lt.arreglo_vence
+            ISNULL(Lt.arreglo_vence, dbo.MyGetdate()) AS arreglo_vence
         FROM dbo.vCBRControlListado Lt
         WHERE Lt.cedula = @cedula
         """;
@@ -1112,13 +1203,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         INNER JOIN catalogo C
             ON R.codigo = C.codigo
            AND C.Linea_Interna = 1
-        INNER JOIN CRD_GARANTIA_TIPOS G
+        LEFT JOIN CRD_GARANTIA_TIPOS G
             ON R.garantia = G.garantia
-        LEFT JOIN vista_morosidad V
+        INNER JOIN vista_morosidad V
             ON R.id_solicitud = V.id_solicitud
         WHERE R.cedula = @cedula
-          AND R.Estado = 'A'
-          AND (ISNULL(V.Cuota, 0) > 0 OR R.Proceso = 'J')
         ORDER BY R.Fecult, R.id_solicitud
         """;
 
@@ -1164,7 +1253,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return;
             }
 
-            var presentaMora = operacionesRaw.Any(x => Convert.ToDecimal(x.cuota ?? 0) > 0);
+            // VB6 sbEstadoTxtCbo: cualquier operación en vista_morosidad implica morosidad
+            var presentaMora = true;
 
             result.estado_mora_tag = presentaMora ? "S" : "N";
             result.estado_mora_texto = presentaMora
@@ -1417,6 +1507,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     }
                 }
 
+                var oficina = request.oficina?.Trim() ?? string.Empty;
+                if (oficina.Length == 0)
+                {
+                    // GLOBALES.gOficinaTitular del VB6
+                    var globales = new MProGrxMain(_config).sbSifParametrosInicializa(codEmpresa, usuario);
+                    oficina = globales.Result?.GOficinaTitular?.Trim() ?? string.Empty;
+                }
+
                 var operacion = string.Equals(request.operacion?.Trim(), "+ Antigua", StringComparison.OrdinalIgnoreCase)
                     ? "0"
                     : (request.operacion?.Trim() ?? "0");
@@ -1430,7 +1528,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         CodGestion = codGestion,
                         Vence = request.fecha_pago.Value,
                         Notas = request.notas.Trim(),
-                        Oficina = request.oficina?.Trim() ?? string.Empty,
+                        Oficina = oficina,
                         Monto = request.monto,
                         Operacion = operacion,
                         Causa = request.cod_causa?.Trim() ?? string.Empty,
@@ -1460,15 +1558,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             int codEmpresa,
             CoControlListaResumenCarteraUsuarioRequest request)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.usuario))
-            {
-                return DbHelper.CreateErrorResponse<CoControlListaResumenCarteraUsuarioResponse>(
-                    "Debe indicar el usuario.");
-            }
+            // VB6: sin usuario se ejecutan los SP con '' (toda la cartera)
+            var usuario = (request?.usuario ?? string.Empty).Trim();
 
             return DbHelper.WithConn(_portalDB, codEmpresa, conn =>
             {
-                var usuario = request.usuario.Trim();
 
                 const string sqlAlDiaCobroJud = "EXEC spCbrPersonaAlDiaGarantia @usuario";
 
@@ -1476,11 +1570,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 var alDiaCobroJudRaw = conn.Query<CoControlListaResumenCarteraAlDiaRow> (
                     sqlAlDiaCobroJud,
-                    new { usuario }).ToList();
+                    new { usuario },
+                    commandTimeout: CommandTimeoutLargoSegundos).ToList();
 
                 var moraRaw = conn.Query<CoControlListaResumenCarteraMoraRow>(
                     sqlMora,
-                    new { usuario }).ToList();
+                    new { usuario },
+                    commandTimeout: CommandTimeoutLargoSegundos).ToList();
 
                 var totales = new CoControlListaResumenCarteraTotalesResponse
                 {
@@ -1538,7 +1634,8 @@ public ErrorDto<CoControlListaAnalisisCarteraProcesarResponse> CoControlLista_An
 
                 conn.Execute(
                     "spCbrGestionAnalisis",
-                    commandType: CommandType.StoredProcedure);
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 0);
 
                 return DbHelper.CreateOkResponse(new CoControlListaAnalisisCarteraProcesarResponse
                 {

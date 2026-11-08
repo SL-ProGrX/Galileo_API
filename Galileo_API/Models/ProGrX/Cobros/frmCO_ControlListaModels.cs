@@ -295,6 +295,10 @@
     public class CoControlListaTrasladarMarcadosRequest
     {
         public string usuario_destino { get; set; } = string.Empty;
+        /// <summary>Usuario de sesión que ejecuta el traslado (bitácora).</summary>
+        public string usuario { get; set; } = string.Empty;
+        /// <summary>Usuario (ejecutivo) del que se trasladan los casos.</summary>
+        public string usuario_origen { get; set; } = string.Empty;
         public List<CoControlListaTrasladoCasoRequest> casos { get; set; } = new();
     }
 
