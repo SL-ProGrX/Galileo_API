@@ -516,8 +516,8 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         public string cod_preanalisis { get; set; } = string.Empty;
         public string linea { get; set; } = string.Empty;
         public string garantia { get; set; } = string.Empty;
-        public int edad { get; set; }
-        public decimal monto { get; set; }
+        public int? edad { get; set; }
+        public decimal? monto { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 
