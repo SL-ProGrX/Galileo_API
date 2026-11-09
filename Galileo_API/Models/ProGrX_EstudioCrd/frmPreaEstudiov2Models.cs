@@ -293,6 +293,14 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         public List<FrmPreaEstudiov2SalarioDetalleDto> tabla_salarios { get; set; } = [];
         public List<FrmPreaEstudiov2ExtraDto> extras { get; set; } = [];
         public List<FrmPreaEstudiov2IncapacidadDto> incapacidades { get; set; } = [];
+
+        public List<FrmPreaEstudiov2SalarioSeleccionDto> salarios_seleccion { get; set; } = [];
+    }
+
+    public sealed class FrmPreaEstudiov2SalarioSeleccionDto
+    {
+        public decimal salario { get; set; }
+        public DateTime? fecha { get; set; }
     }
 
     public class FrmPreaEstudiov2SalarioDetalleDto

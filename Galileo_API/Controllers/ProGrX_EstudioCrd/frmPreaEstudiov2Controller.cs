@@ -705,5 +705,15 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         {
             return _bl.Prea_frmPreaEstudiov2_Prendario_Estado(codEmpresa, request);
         }
+
+        [HttpPost("Prea_frmPreaEstudiov2_TipoSalario_Aplicar")]
+        public ErrorDto<FrmPreaEstudiov2SalariosDto> Prea_frmPreaEstudiov2_TipoSalario_Aplicar(
+            [FromQuery] int codEmpresa,
+            [FromQuery] string cod_preanalisis,
+            [FromQuery] string tipo_salario)
+        {
+            return _bl.Prea_frmPreaEstudiov2_TipoSalario_Aplicar(
+                codEmpresa, cod_preanalisis, tipo_salario);
+        }
     }
 }
