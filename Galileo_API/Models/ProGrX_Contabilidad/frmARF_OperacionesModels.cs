@@ -91,7 +91,31 @@
         public decimal? gasto_depreciacion { get; set; }
         public decimal? depreciacion_acumulada { get; set; }
         public decimal? valor_libros { get; set; }
-        public string afecta_resultados { get; set; } = string.Empty;
+        public decimal? afecta_resultados { get; set; }
+        public string estado { get; set; } = string.Empty;
+        public string cxp_orden { get; set; } = string.Empty;
+        public int? operacion { get; set; }
+        public decimal? tasa { get; set; }
+        public decimal? tasa_descuento { get; set; }
+    }
+
+    internal sealed class ArfOperacionPlanDbDto
+    {
+        public decimal? id_seq { get; set; }
+        public short? periodo { get; set; }
+        public DateTime? corte { get; set; }
+        public decimal? valor_nominal { get; set; }
+        public decimal? valor_presente { get; set; }
+        public decimal? amortizacion { get; set; }
+        public decimal? intereses { get; set; }
+        public decimal? cuota { get; set; }
+        public decimal? deuda_monto { get; set; }
+        public decimal? saldo_capital { get; set; }
+        public decimal? recalculo { get; set; }
+        public decimal? depreciacion_gasto { get; set; }
+        public decimal? depreciacion_acum { get; set; }
+        public decimal? valor_libros { get; set; }
+        public decimal? afectacion_resultados { get; set; }
         public string estado { get; set; } = string.Empty;
         public string cxp_orden { get; set; } = string.Empty;
         public int? operacion { get; set; }

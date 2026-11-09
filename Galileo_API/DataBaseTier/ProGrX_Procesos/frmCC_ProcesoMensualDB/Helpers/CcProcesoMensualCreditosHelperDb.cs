@@ -5,6 +5,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
 {
     public static class CcProcesoMensualCreditosHelperDb
     {
+        private const int CommandTimeoutSinLimite = 0;
+
         /// <summary>
         /// Calcula el saldo del mes para los créditos de una institución específica.
         /// </summary>
@@ -19,7 +21,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Helper
             {
                 CodInstitucion = codInstitucion,
                 Proceso = proceso
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
         
     }
