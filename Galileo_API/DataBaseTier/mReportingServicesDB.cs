@@ -45,6 +45,7 @@ namespace Galileo.DataBaseTier
         public LocalReport? report { get; set; }
         public Dictionary<string, object>? jsonDataSets { get; set; }
         public List<string>? subErrors { get; set; }
+        public IReadOnlyList<JustifyRule>? justifyRules { get; set; }
     }
 
     /// <summary>
@@ -64,6 +65,7 @@ namespace Galileo.DataBaseTier
         private readonly IRdlcExecutor _exec;
         private readonly IReportParameterBuilder _params;
         private readonly ISubreportCoordinator _subs;
+        private readonly IRdlcTextJustifier _justifier;
 
 
         private readonly MReportingServicesDBDependencies deps = new MReportingServicesDBDependencies();
@@ -79,6 +81,7 @@ namespace Galileo.DataBaseTier
             _exec = deps.Exec ;
             _params = deps.ParamBuilder ;
             _subs = deps.Subs ;
+            _justifier = new RdlcTextJustifier(_config.GetSection("Reportes:JustificarTexto").Get<string[]>());
 
             _portalDB = new PortalDB(config);
 
@@ -163,7 +166,10 @@ namespace Galileo.DataBaseTier
                     data = data,
                     report = report,
                     jsonDataSets = jsonDataSets,
-                    subErrors = subErrors
+                    subErrors = subErrors,
+                    justifyRules = data.cod_reporte == "P"
+                        ? _justifier.ReadRules(data.nombreReporte, finalPath)
+                        : []
                 };
 
                 LoadMainDataSets(request);
@@ -218,7 +224,10 @@ namespace Galileo.DataBaseTier
                 }
 
                 if (request.data != null && request.data.cod_reporte == "P")
-                    request.report?.DataSources.Add(new ReportDataSource(ds.DataSetName, rows));
+                {
+                    var rowsFinal = _justifier.Apply(ds.DataSetName, request.justifyRules ?? [], rows);
+                    request.report?.DataSources.Add(new ReportDataSource(ds.DataSetName, rowsFinal));
+                }
                 else if (request.jsonDataSets != null)
                     request.jsonDataSets[ds.DataSetName] = rows;
             }

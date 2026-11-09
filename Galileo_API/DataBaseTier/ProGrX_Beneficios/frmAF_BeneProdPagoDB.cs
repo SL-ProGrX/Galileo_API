@@ -84,12 +84,16 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 ? null
                 : $"%{request.filtro.Trim()}%";
 
+            var ordenSql = AF_BeneProdPago_Orden_Crear(
+                request.sortField,
+                request.sortOrder);
+
             return DbHelper.WithConn(
                 AF_BeneProdPago_Portal_Crear(),
                 CodEmpresa,
                 connection =>
                 {
-                    const string sql = """
+                    const string sqlBase = """
                         SELECT
                             A.consec,
                             A.cod_beneficio,
@@ -135,10 +139,12 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                             OR cod_beneficio LIKE @filtro
                             OR cedula LIKE @filtro
                             OR nombre LIKE @filtro
-                        ORDER BY consec
+                        ORDER BY {ORDEN}
                         OFFSET @pagina ROWS
                         FETCH NEXT @paginacion ROWS ONLY;
                         """;
+
+                    var sql = sqlBase.Replace("{ORDEN}", ordenSql);
 
                     using var resultados = connection.QueryMultiple(
                         sql,
@@ -221,6 +227,35 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                             })
                         .ToList();
                 });
+        }
+
+        /// <summary>
+        /// Crea la cláusula ORDER BY a partir de una lista cerrada de columnas.
+        /// </summary>
+        /// <param name="sortField">Columna solicitada.</param>
+        /// <param name="sortOrder">1 ascendente, -1 descendente.</param>
+        /// <returns>Cláusula de ordenamiento segura.</returns>
+        private static string AF_BeneProdPago_Orden_Crear(
+            string? sortField,
+            int sortOrder)
+        {
+            var columna = (sortField ?? string.Empty)
+                .Trim()
+                .ToLowerInvariant() switch
+            {
+                "cod_beneficio" => "cod_beneficio",
+                "cedula" => "cedula",
+                "nombre" => "nombre",
+                "cantidad" => "cantidad",
+                "monto" => "monto",
+                _ => "consec"
+            };
+
+            var direccion = sortOrder == -1 ? "DESC" : "ASC";
+
+            return columna == "consec"
+                ? $"consec {direccion}"
+                : $"{columna} {direccion}, consec ASC";
         }
 
         /// <summary>
