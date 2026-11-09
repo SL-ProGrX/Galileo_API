@@ -217,92 +217,104 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         {
             var expediente = (codPreanalisis ?? string.Empty).Trim();
             var tipo = (tipoSalario ?? string.Empty).Trim();
+
             if (expediente.Length == 0 || tipo.Length == 0)
             {
                 return DbHelper.CreateErrorResponse<FrmPreaEstudiov2SalariosDto>(
                     "Debe indicar el expediente y el tipo de salario.");
             }
 
-            return DbHelper.WithConn(_portalDb, codEmpresa, connection =>
-            {
-                var operacion = connection.QuerySingleOrDefault<string>(
+            return DbHelper.WithConn(
+                _portalDb,
+                codEmpresa,
+                connection => AplicarTipoSalario(connection, expediente, tipo));
+        }
+
+        /// <summary>
+        /// Obtiene el salario y la tabla aplicables al tipo seleccionado.
+        /// </summary>
+        private static FrmPreaEstudiov2SalariosDto AplicarTipoSalario(
+            IDbConnection connection,
+            string expediente,
+            string tipo)
+        {
+            var operacion = connection.QuerySingleOrDefault<string>(
                     @"SELECT operacion FROM Crd_Prea_Tipo_Salario
                     WHERE tipo_salario = @Tipo AND activo = 1",
                     new { Tipo = tipo });
-                var codigoOperacion = (operacion ?? string.Empty).Trim().ToLowerInvariant();
-                if (codigoOperacion.Length == 0 || !"abcdefg".Contains(codigoOperacion[0]))
-                {
-                    throw new InvalidOperationException("El tipo de salario no tiene una operación válida.");
-                }
+            var codigoOperacion = (operacion ?? string.Empty).Trim().ToLowerInvariant();
+            if (codigoOperacion.Length == 0 || !"abcdefg".Contains(codigoOperacion[0]))
+            {
+                throw new InvalidOperationException("El tipo de salario no tiene una operación válida.");
+            }
 
-                var raw = connection.QueryFirstOrDefault(
-                    "EXEC spCRDPreaPREANALISIS_T @Expediente",
-                    new { Expediente = expediente }) as IDictionary<string, object>;
-                if (raw is null)
-                {
-                    throw new InvalidOperationException("No se encontr&oacute; el expediente.");
-                }
+            var raw = connection.QueryFirstOrDefault(
+                "EXEC spCRDPreaPREANALISIS_T @Expediente",
+                new { Expediente = expediente }) as IDictionary<string, object>;
+            if (raw is null)
+            {
+                throw new InvalidOperationException("No se encontr&oacute; el expediente.");
+            }
 
-                var row = new Dictionary<string, object>(raw, StringComparer.OrdinalIgnoreCase);
-                if (string.Equals(GetString(row, "ESTADO"), "A", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new InvalidOperationException("No se puede cambiar el salario de un expediente aprobado.");
-                }
+            var row = new Dictionary<string, object>(raw, StringComparer.OrdinalIgnoreCase);
+            if (string.Equals(GetString(row, "ESTADO"), "A", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("No se puede cambiar el salario de un expediente aprobado.");
+            }
 
-                var tabla = InicializarTablaSalariosDesdePersona(
-                    connection, expediente, GetString(row, "CEDULA"),
-                    ObtenerTablaSalarios(connection, expediente));
-                var respuesta = new FrmPreaEstudiov2SalariosDto
-                {
-                    tipo_salario = tipo,
-                    salario_devengado = GetDecimal(row, "SALARIO_DEVENGADO_COLILLA"),
-                    tabla_salarios = tabla
-                };
+            var tabla = InicializarTablaSalariosDesdePersona(
+                connection, expediente, GetString(row, "CEDULA"),
+                ObtenerTablaSalarios(connection, expediente));
+            var respuesta = new FrmPreaEstudiov2SalariosDto
+            {
+                tipo_salario = tipo,
+                salario_devengado = GetDecimal(row, "SALARIO_DEVENGADO_COLILLA"),
+                tabla_salarios = tabla
+            };
 
-                switch (codigoOperacion[0])
-                {
-                    case 'd':
-                        respuesta.salario_devengado = 0;
-                        respuesta.tabla_salarios = [];
-                        break;
-                    case 'g':
-                        respuesta.tabla_salarios = [];
-                        break;
-                    case 'f':
-                        respuesta.salarios_seleccion = connection
-                            .Query<FrmPreaEstudiov2SalarioSeleccionDto>(
-                                "EXEC spCRDPreaSalario @Expediente, @Tipo",
-                                new { Expediente = expediente, Tipo = tipo })
-                            .ToList();
-
-                        if (respuesta.salarios_seleccion.Count == 0)
-                        {
-                            throw new InvalidOperationException(
-                                "No hay salarios hist&oacute;ricos disponibles para seleccionar.");
-                        }
-
-                        respuesta.salario_devengado = 0;
-                        break;
-                    default:
-                        var salarios = connection.Query(
+            switch (codigoOperacion[0])
+            {
+                case 'd':
+                    respuesta.salario_devengado = 0;
+                    respuesta.tabla_salarios = [];
+                    break;
+                case 'g':
+                    respuesta.tabla_salarios = [];
+                    break;
+                case 'f':
+                    respuesta.salarios_seleccion = connection
+                        .Query<FrmPreaEstudiov2SalarioSeleccionDto>(
                             "EXEC spCRDPreaSalario @Expediente, @Tipo",
-                            new { Expediente = expediente, Tipo = tipo }).ToList();
-                        if (salarios.Count != 1)
-                        {
-                            throw new InvalidOperationException(
-                                "Este tipo requiere seleccionar un salario de la lista hist&oacute;rica.");
-                        }
-                        var salario = new Dictionary<string, object>(
-                            (IDictionary<string, object>)salarios[0],
-                            StringComparer.OrdinalIgnoreCase);
-                        respuesta.salario_devengado = GetDecimal(salario, "Salario");
-                        // Lee nuevamente por si el procedimiento actualiza el detalle.
-                        respuesta.tabla_salarios = ObtenerTablaSalarios(connection, expediente);
-                        break;
-                }
+                            new { Expediente = expediente, Tipo = tipo })
+                        .ToList();
 
-                return respuesta;
-            });
+                    if (respuesta.salarios_seleccion.Count == 0)
+                    {
+                        throw new InvalidOperationException(
+                            "No hay salarios hist&oacute;ricos disponibles para seleccionar.");
+                    }
+
+                    respuesta.salario_devengado = 0;
+                    break;
+                default:
+                    var salarios = connection.Query(
+                        "EXEC spCRDPreaSalario @Expediente, @Tipo",
+                        new { Expediente = expediente, Tipo = tipo }).ToList();
+                    if (salarios.Count != 1)
+                    {
+                        throw new InvalidOperationException(
+                            "Este tipo requiere seleccionar un salario de la lista hist&oacute;rica.");
+                    }
+                    var salario = new Dictionary<string, object>(
+                        (IDictionary<string, object>)salarios[0],
+                        StringComparer.OrdinalIgnoreCase);
+                    respuesta.salario_devengado = GetDecimal(salario, "Salario");
+                    // Lee nuevamente por si el procedimiento actualiza el detalle.
+                    respuesta.tabla_salarios = ObtenerTablaSalarios(connection, expediente);
+                    break;
+            }
+
+            return respuesta;
         }
     }
 }
