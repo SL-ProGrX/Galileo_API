@@ -1197,5 +1197,12 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
 
             return _db.Prea_frmPreaEstudiov2_Prendario_Estado(codEmpresa, request);
         }
+
+        public ErrorDto<FrmPreaEstudiov2SalariosDto> Prea_frmPreaEstudiov2_TipoSalario_Aplicar(
+            int codEmpresa, string codPreanalisis, string tipoSalario)
+        {
+            return _db.Prea_frmPreaEstudiov2_TipoSalario_Aplicar(
+                codEmpresa, codPreanalisis, tipoSalario);
+        }
     }
 }
