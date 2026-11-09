@@ -53,6 +53,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 request.deductora_id);
 
             Cr_SeguimientoTramites_Formalizacion_PrimerDeduccion_Descomponer(result);
+
+            const string sqlDiaPago = """
+                select isnull(dbo.fxCRDPoliticaPago(dbo.MyGetdate()), 32);
+                """;
+
+            var diaPagoResp = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codEmpresa,
+                sqlDiaPago,
+                32,
+                new { });
+
+            result.dia_pago = diaPagoResp.Code == 0 ? diaPagoResp.Result : 32;
             return DbHelper.CreateOkResponse(result);
         }
 

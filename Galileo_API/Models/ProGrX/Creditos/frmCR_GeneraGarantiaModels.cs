@@ -13,6 +13,8 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public required bool imprimir_contrato { get; set; }
 
         public required bool imprimir_nombres_cedula { get; set; }
+
+        public bool imprimir_huella { get; set; }
     }
 
     public class CrGeneraGarantiaRangoRequest

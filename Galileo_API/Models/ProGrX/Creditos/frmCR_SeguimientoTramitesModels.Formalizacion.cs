@@ -17,6 +17,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public int primer_deduccion_anio { get; set; }
         public int primer_deduccion_mes { get; set; }
         public int primer_deduccion_quincena { get; set; }
+        public int dia_pago { get; set; } = 32;
     }
 
     public class CrSeguimientoTramitesFormalizacionRecursoDisponibleRequest
