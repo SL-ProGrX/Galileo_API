@@ -36,6 +36,12 @@ namespace Galileo.DataBaseTier
                             out string? error);
     }
 
+    public interface IRdlcTextJustifier
+    {
+        IReadOnlyList<JustifyRule> ReadRules(string reportName, string rdlcPath);
+        IEnumerable<object> Apply(string dataSetName, IReadOnlyList<JustifyRule> rules, IEnumerable<object> rows);
+    }
+
     public interface IReportParameterBuilder
     {
         (List<ReportParameter> reportParams, Dictionary<string, string> ctx, JObject? jsonParams)
