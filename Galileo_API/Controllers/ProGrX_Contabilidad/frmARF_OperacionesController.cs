@@ -19,6 +19,12 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             _bl = new FrmArfOperacionesBl(config);
         }
 
+        [HttpGet("FechaServidor_Obtener")]
+        public ErrorDto<DateTime> FechaServidor_Obtener(int codEmpresa)
+        {
+            return _bl.FechaServidor_Obtener(codEmpresa);
+        }
+
         [HttpGet("Divisas_Listar")]
         public ErrorDto<List<DropDownListaGenericaModel>> Divisas_Listar(int codEmpresa)
         {
