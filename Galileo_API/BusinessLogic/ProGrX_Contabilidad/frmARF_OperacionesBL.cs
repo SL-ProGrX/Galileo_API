@@ -14,6 +14,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             _db = new FrmArfOperacionesDb(config);
         }
 
+        public ErrorDto<DateTime> FechaServidor_Obtener(int codEmpresa)
+        {
+            return _db.FechaServidor_Obtener(codEmpresa);
+        }
+
         public ErrorDto<List<DropDownListaGenericaModel>> Divisas_Listar(int codEmpresa)
         {
             return _db.Divisas_Listar(codEmpresa);
