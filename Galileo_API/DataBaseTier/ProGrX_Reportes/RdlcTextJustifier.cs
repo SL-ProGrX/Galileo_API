@@ -66,13 +66,10 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
         private static string Normalizar(string nombre)
         {
             var limpio = (nombre ?? string.Empty).Trim();
-            foreach (var ext in new[] { ".rdlc", ".rdl" })
-            {
-                if (limpio.EndsWith(ext, StringComparison.OrdinalIgnoreCase))
-                    return limpio[..^ext.Length];
-            }
+            var extension = new[] { ".rdlc", ".rdl" }
+                .FirstOrDefault(ext => limpio.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
 
-            return limpio;
+            return extension is null ? limpio : limpio[..^extension.Length];
         }
     }
 }
