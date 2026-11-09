@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Polizas;
+using Microsoft.Extensions.Caching.Memory;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Polizas
@@ -11,6 +12,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
     {
         private readonly PortalDB _portalDb;
         private readonly MProGrxMain _proGrxMain;
+
+        /// <summary>
+        /// Caché corta del corte: spPoliza_Incendio_Cierre tarda ~11 s, por lo que se reutiliza el
+        /// resultado de una consulta idéntica (empresa, póliza, mes de corte, beneficiarios y movimiento).
+        /// </summary>
+        private static readonly MemoryCache _cacheCorte = new(new MemoryCacheOptions());
+        private static readonly TimeSpan _duracionCacheCorte = TimeSpan.FromMinutes(3);
 
         public FrmCrPolizaMacHogarDB(IConfiguration config)
         {
@@ -102,7 +110,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 parameters.Add("@Usuario", usuario, DbType.String, size: 30);
                 parameters.Add("@Movimiento", request.TipoMovimiento, DbType.String, size: 5);
 
-                return ConsultarCorte(conn, parameters);
+                return ConsultarCorte(codEmpresa, conn, parameters);
             });
         }
 
@@ -148,7 +156,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 parameters.Add("@Usuario", usuario, DbType.String, size: 30);
                 parameters.Add("@Movimiento", movimiento, DbType.String, size: 5);
 
-                return ConsultarCorte(conn, parameters);
+                return ConsultarCorte(codEmpresa, conn, parameters);
             });
         }
 
@@ -160,13 +168,52 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <param name="parameters">Parámetros de spPoliza_Incendio_Cierre.</param>
         /// <returns>Filas normalizadas para Envío y Consultas.</returns>
         private static List<CrPolizaMacHogarEnvioRow> ConsultarCorte(
+            int codEmpresa,
+            IDbConnection conn,
+            DynamicParameters parameters)
+        {
+            var llaveCache = ConstruirLlaveCache(codEmpresa, parameters);
+
+            if (_cacheCorte.TryGetValue(llaveCache, out List<CrPolizaMacHogarEnvioRow>? enCache)
+                && enCache is not null)
+            {
+                return enCache;
+            }
+
+            var data = EjecutarCorte(conn, parameters);
+
+            _cacheCorte.Set(llaveCache, data, _duracionCacheCorte);
+
+            return data;
+        }
+
+        /// <summary>
+        /// Llave de caché por empresa, póliza, mes del corte, beneficiarios y movimiento.
+        /// El SP trabaja por mes (fxSIFDateTimeToProceso), por eso se usa año-mes del corte.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="parameters">Parámetros enviados al SP.</param>
+        /// <returns>Llave única de la consulta.</returns>
+        private static string ConstruirLlaveCache(int codEmpresa, DynamicParameters parameters)
+        {
+            var poliza = Convert.ToString(parameters.Get<object>("@Poliza"));
+            var corte = Convert.ToDateTime(parameters.Get<object>("@Corte"));
+            var beneficiarios = Convert.ToInt16(parameters.Get<object>("@Beneficiarios"));
+            var movimiento = Convert.ToString(parameters.Get<object>("@Movimiento"));
+
+            return $"{codEmpresa}|{poliza}|{corte:yyyyMM}|{beneficiarios}|{movimiento}";
+        }
+
+        private static List<CrPolizaMacHogarEnvioRow> EjecutarCorte(
             IDbConnection conn,
             DynamicParameters parameters)
         {
             using var reader = conn.ExecuteReader(
                 "spPoliza_Incendio_Cierre",
                 parameters,
-                commandType: CommandType.StoredProcedure);
+                commandType: CommandType.StoredProcedure,
+                // El SP tarda ~11 s (lee vPoliza_Incendio_Cierre varias veces); el valor por defecto (30 s) falla en horas de carga.
+                commandTimeout: 300);
 
             var data = new List<CrPolizaMacHogarEnvioRow>();
 

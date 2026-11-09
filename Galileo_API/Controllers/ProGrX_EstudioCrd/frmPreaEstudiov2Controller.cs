@@ -199,6 +199,31 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Exámenes requeridos según línea, garantía, edad y monto (VB6: cboGarantia_Click).
+        /// Registra la notificación en el histórico cuando hay requisitos.
+        /// </summary>
+        [ValidateAntiForgeryToken]
+        [HttpPost("Prea_frmPreaEstudiov2_Examenes_Requeridos")]
+        public ErrorDto<FrmPreaEstudiov2ExamenesRequeridosResponse> Prea_frmPreaEstudiov2_Examenes_Requeridos(
+            int codEmpresa,
+            [FromBody] FrmPreaEstudiov2ExamenesRequeridosRequest request)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Examenes_Requeridos(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Indica si la cédula ya existe como expediente maestro (VB6: fxExiteCedulaEnSubExpediente).
+        /// </summary>
+        [HttpGet("Prea_frmPreaEstudiov2_Persona_ExisteEnMaestro")]
+        public ErrorDto<FrmPreaEstudiov2CedulaMaestroResponse> Prea_frmPreaEstudiov2_Persona_ExisteEnMaestro(
+            int codEmpresa,
+            [FromQuery] string codPreanalisis,
+            [FromQuery] string cedula)
+        {
+            return _bl.Prea_frmPreaEstudiov2_Persona_ExisteEnMaestro(codEmpresa, codPreanalisis, cedula);
+        }
+
+        /// <summary>
         /// Calcula Monto/Tasa/Plazo de un Fondo de Ahorros (y su lista de contratos).
         /// </summary>
         [ValidateAntiForgeryToken]

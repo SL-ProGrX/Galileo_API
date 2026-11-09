@@ -41,5 +41,11 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         [HttpPost("Poliza_Persona_Reclamos")]
         public ErrorDto<List<PolizaPersonaReclamoDto>> Poliza_Persona_Reclamos(int codEmpresa, [FromBody] PolizaPersonaReclamoParams param)
             => _bl.Poliza_Persona_Reclamos(codEmpresa, param);
+
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        [HttpPost("Poliza_Persona_Reclamos_Todos")]
+        public ErrorDto<List<PolizaPersonaReclamoDto>> Poliza_Persona_Reclamos_Todos(int codEmpresa, [FromBody] PolizaPersonaCreditoParams param)
+            => _bl.Poliza_Persona_Reclamos_Todos(codEmpresa, param);
     }
 }

@@ -30,7 +30,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 Usuario = usuario,
                 DetalleMovimiento = detalle,
                 Movimiento = movimiento,
-                Modulo = 3
+                Modulo = 11 // VB6: vModulo = 11
             });
         }
 
@@ -160,12 +160,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             {
                 const string query = @"EXEC spCrdPolizaActualizaCalculo_CtaSld 0";
 
-                var result = connection.Execute(query);
+                connection.Execute(query);
 
-                if (result >= 0)
-                {
-                    return DbHelper.CreateOkResponse<bool>(true);
-                }
+                // VB6: Bitacora("Aplica", "Actualización de Pólizas: Masiva")
+                Bitacora(CodEmpresa, usuario, "Aplica - WEB", "Actualización de Pólizas: Masiva");
 
                 return DbHelper.CreateOkResponse<bool>(true);
             }
@@ -292,10 +290,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     {
                         Poliza = req.cod_poliza.Trim(),
                         Garantia = req.garantia.Trim(),
-                        Mov = req.asignar ? "E" : "A",
+                        // VB6: Checked -> "A" (asigna), Unchecked -> "E" (elimina)
+                        Mov = req.asignar ? "A" : "E",
                         Usuario = usuario
                     }
                 );
+
+                // VB6: If rs!Pass = 1 Then Bitacora(rs!Movimiento, rs!Mensaje)
+                if (response is { pass: 1 })
+                {
+                    Bitacora(CodEmpresa, usuario, $"{response.movimiento} - WEB", response.mensaje ?? string.Empty);
+                }
 
                 return response;
             });
@@ -329,6 +334,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             var errorMessage = existe
                 ? "No se pudo actualizar la póliza."
                 : "No se pudo crear la póliza.";
+
+            if (rows > 0)
+            {
+                // VB6: Bitacora("Registra"/"Modifica", "Poliza (Control de Polizas) : x")
+                Bitacora(CodEmpresa, usuario, existe ? "Modifica - WEB" : "Registra - WEB",
+                    $"Poliza (Control de Polizas) : {codPoliza}");
+            }
 
             return rows > 0
                 ? DbHelper.OkResponse(successMessage)
@@ -808,7 +820,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                 if (rows > 0)
                 {
-                    Bitacora(CodEmpresa, usuario, $"Acreedor de Pólizas : {cod_acreedor}", "Elimina - WEB");
+                    Bitacora(CodEmpresa, usuario, "Elimina - WEB", $"Acreedor de Pólizas : {cod_acreedor}");
                 }
                 else
                 {
@@ -918,7 +930,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 {
                     return DbHelper.ErrorResponse("No se pudo guardar el registro.");
                 }
-                Bitacora(CodEmpresa, usuario, $"Acreedor de Pólizas : {cod}", existe == 0 ? "Registra-Web" : "Modifica-Web");
+                Bitacora(CodEmpresa, usuario, existe == 0 ? "Registra - WEB" : "Modifica - WEB", $"Acreedor de Pólizas : {cod}");
 
                 return DbHelper.OkResponse($"Acreedor {(existe == 0 ? "registrado" : "actualizado")} exitosamente.");
             }

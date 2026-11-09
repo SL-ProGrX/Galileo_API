@@ -504,7 +504,29 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
             AgregarFiltroSexo(request, filtros, subTitulo);
 
-            return string.Join(" AND ", filtros);
+            return string.Join(" AND ", AjustarFiltrosMovimientos(request, filtros));
+        }
+
+        /// <summary>
+        /// El reporte de Movimientos por Operación (R002) no incluye la vista de detalle de movimientos en su consulta,
+        /// por lo que los filtros de proceso y fecha de movimiento se aplican como subconsulta sobre la operación
+        /// en lugar de referenciar columnas de una tabla ausente. El listado general (R001) ya la une y no cambia.
+        /// </summary>
+        /// <param name="request">Filtros seleccionados por el usuario.</param>
+        /// <param name="filtros">Condiciones SQL ya construidas.</param>
+        /// <returns>Condiciones listas para la cláusula WHERE.</returns>
+        private static IEnumerable<string> AjustarFiltrosMovimientos(CrdPolizasReportesRequest request, List<string> filtros)
+        {
+            if (request.CodigoReporte != CrdPolizasReportesConstantes.ReporteMovimientosOperacion)
+            {
+                return filtros;
+            }
+
+            const string vistaDetalle = "vCRD_Polizas_ReporteMovPolizasDetalle";
+
+            return filtros.Select(f => f.Contains(vistaDetalle + ".")
+                ? $"vPoliza_Informe_Main.ID_SOLICITUD IN (SELECT {vistaDetalle}.ID_SOLICITUD FROM dbo.{vistaDetalle} {vistaDetalle} WHERE {f})"
+                : f);
         }
 
         /// <summary>

@@ -9,6 +9,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 {
     public class CcProcesoMensualEnvioDb
     {
+        private const int CommandTimeoutSinLimite = 0;
         private readonly PortalDB _portalDb;
         private readonly MProGrxMain _mProGrx;
         private readonly MCobroDb _mCobroDb;
@@ -182,7 +183,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 FechaAnterior = fechaAnterior,
                 FechaProceso = fechaProceso,
                 CodInstitucion = codInstitucion
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
 
         /// <summary>
@@ -212,7 +213,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             {
                 request.FechaProceso,
                 request.CodInstitucion
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
 
         /// <summary>
@@ -231,7 +232,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 request.FechaProceso,
                 request.CodInstitucion,
                 Paso = paso
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
 
         /// <summary>
@@ -250,7 +251,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             {
                 request.FechaProceso,
                 request.CodInstitucion
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
 
         /// <summary>
@@ -300,7 +301,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             {
                 request.FechaProceso,
                 request.CodInstitucion
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
 
         /// <summary>
@@ -327,7 +328,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             {
                 request.CodInstitucion,
                 request.FechaProceso
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
 
         /// <summary>
@@ -344,7 +345,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 request.CodInstitucion,
                 request.FechaProceso,
                 request.Redondeo
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
 
         /// <summary>
@@ -365,7 +366,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 request.CodInstitucion,
                 request.FechaProceso,
                 request.Usuario
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
 
         /// <summary>
@@ -381,7 +382,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             {
                 request.CodInstitucion,
                 request.FechaProceso
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
 
         /// <summary>
@@ -439,7 +440,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             {
                 CodInstitucion = codInstitucion,
                 FechaProceso = fechaProceso
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
 
         /// <summary>
@@ -481,7 +482,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             {
                 request.FechaProceso,
                 request.CodInstitucion
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
 
         /// <summary>
@@ -509,7 +510,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
             {
                 request.FechaProceso,
                 request.CodInstitucion
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
 
         /// <summary>
@@ -524,7 +525,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 SET pr_genera = 1
                 WHERE cod_institucion = @CodInstitucion";
 
-            connection.Execute(query, new { CodInstitucion = codInstitucion });
+            connection.Execute(
+                query,
+                new { CodInstitucion = codInstitucion },
+                commandTimeout: CommandTimeoutSinLimite);
         }
 
         /// <summary>

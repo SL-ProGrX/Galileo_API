@@ -155,6 +155,24 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Exámenes requeridos según línea, garantía, edad y monto. VB6: cboGarantia_Click.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2ExamenesRequeridosResponse> Prea_frmPreaEstudiov2_Examenes_Requeridos(
+            int codEmpresa, FrmPreaEstudiov2ExamenesRequeridosRequest request)
+        {
+            return _db.Prea_frmPreaEstudiov2_Examenes_Requeridos(codEmpresa, request);
+        }
+
+        /// <summary>
+        /// Indica si la cédula ya es la del expediente maestro. VB6: fxExiteCedulaEnSubExpediente.
+        /// </summary>
+        public ErrorDto<FrmPreaEstudiov2CedulaMaestroResponse> Prea_frmPreaEstudiov2_Persona_ExisteEnMaestro(
+            int codEmpresa, string codPreanalisis, string cedula)
+        {
+            return _db.Prea_frmPreaEstudiov2_Persona_ExisteEnMaestro(codEmpresa, codPreanalisis, cedula);
+        }
+
+        /// <summary>
         /// Calcula Monto/Tasa/Plazo disponibles de un Fondo de Ahorros (y su lista de
         /// contratos si es cambio de Fondo). VB6: cboFondo_Click / cboFondoContrato_Click.
         /// </summary>

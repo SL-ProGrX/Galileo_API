@@ -7,7 +7,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
 {
     public class CcProcesoMensualGeneralDb
     {
-
+        private const int CommandTimeoutSinLimite = 0;
         private readonly MProGrxMain _mProGrx;
 
         /// <summary>
@@ -105,7 +105,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB
                 {
                     CodInstitucion = codInstitucion,
                     Proceso = proceso
-                });
+                },
+                commandTimeout: CommandTimeoutSinLimite);
         }
 
         /// <summary>

@@ -417,7 +417,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
             // VB6: entre yyyy-mm-dd 00:00:00 y yyyy-mm-dd 23:59:59
             var inicio = request.VenceInicio.Value.Date;
-            var corte = request.VenceCorte.Value.Date.AddDays(1).AddTicks(-1);
+            var corte = request.VenceCorte.Value.Date.AddDays(1).AddSeconds(-1);
 
             sb.AppendLine("AND PE_VENCE BETWEEN @VenceInicio AND @VenceCorte");
             p.Add("@VenceInicio", inicio);

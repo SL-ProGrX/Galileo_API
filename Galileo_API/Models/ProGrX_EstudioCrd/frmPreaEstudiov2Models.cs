@@ -98,6 +98,13 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         public int edad_aplica { get; set; }
         public string edad_justificacion { get; set; } = string.Empty;
 
+        /// <summary>VB6: gPreAnalisis.Socio = ESTADOACTUAL de SOCIOS ("N" si vacío o si no es socio).</summary>
+        public string estado_actual { get; set; } = "N";
+        /// <summary>VB6: gPreAnalisis.Institucion = cod_institucion de SOCIOS ("-1" si no hay).</summary>
+        public string cod_institucion { get; set; } = "-1";
+        /// <summary>True cuando la cédula se encontró en SOCIOS (VB6: txtNombre.Locked = True).</summary>
+        public bool es_socio { get; set; }
+
         /// <summary>txtObservaciones (optObservacion(0), CRD_PREA_PREANALISIS.OBSERVACION_ANALISTA).</summary>
         public string observacion_analista { get; set; } = string.Empty;
         /// <summary>txtObservaciones (optObservacion(1), CRD_PREA_PREANALISIS.OBSERVACION_COMITE).</summary>
@@ -506,6 +513,37 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
     public class FrmPreaEstudiov2GarantiaMontoResponse
     {
         public decimal monto { get; set; }
+    }
+
+    /// <summary>
+    /// VB6: cboGarantia_Click, bloque "Carga Examenes Requeridos" (frmPreaEstudiov2.frm
+    /// ~línea 14388-14418). Se evalúa solo si el estado de exámenes del expediente no es "A".
+    /// </summary>
+    public class FrmPreaEstudiov2ExamenesRequeridosRequest
+    {
+        public string cod_preanalisis { get; set; } = string.Empty;
+        public string linea { get; set; } = string.Empty;
+        public string garantia { get; set; } = string.Empty;
+        public int? edad { get; set; }
+        public decimal? monto { get; set; }
+        public string usuario { get; set; } = string.Empty;
+    }
+
+    public class FrmPreaEstudiov2ExamenesRequeridosResponse
+    {
+        /// <summary>DESCRIPCION_EXAMENES de cada requisito con Id_Requisito &gt; 0.</summary>
+        public List<string> examenes { get; set; } = new();
+        /// <summary>True cuando se registró la notificación en el histórico de exámenes.</summary>
+        public bool notificado { get; set; }
+    }
+
+    /// <summary>
+    /// VB6: fxExiteCedulaEnSubExpediente (frmPreaEstudiov2.frm ~línea 16736).
+    /// </summary>
+    public class FrmPreaEstudiov2CedulaMaestroResponse
+    {
+        public bool existe { get; set; }
+        public string nombre { get; set; } = string.Empty;
     }
 
     /// <summary>

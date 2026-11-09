@@ -22,19 +22,19 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
             return DbfrmCR_PolizasAseguradorasDb.Consultar(codEmpresa, codigo);
         }
 
-        public ErrorDto<int> Insertar(int codEmpresa, PolizaAseguradoraDto m)
+        public ErrorDto<int> Insertar(int codEmpresa, PolizaAseguradoraDto m, string usuario = "")
         {
-            return DbfrmCR_PolizasAseguradorasDb.Insertar(codEmpresa, m);
+            return DbfrmCR_PolizasAseguradorasDb.Insertar(codEmpresa, m, usuario);
         }
 
-        public ErrorDto<int> Actualizar(int codEmpresa, PolizaAseguradoraDto m)
+        public ErrorDto<int> Actualizar(int codEmpresa, PolizaAseguradoraDto m, string usuario = "")
         {
-            return DbfrmCR_PolizasAseguradorasDb.Actualizar(codEmpresa, m);
+            return DbfrmCR_PolizasAseguradorasDb.Actualizar(codEmpresa, m, usuario);
         }
 
-        public ErrorDto<int> Borrar(int codEmpresa, string codigo)
+        public ErrorDto<int> Borrar(int codEmpresa, string codigo, string usuario = "")
         {
-            return DbfrmCR_PolizasAseguradorasDb.Borrar(codEmpresa, codigo);
+            return DbfrmCR_PolizasAseguradorasDb.Borrar(codEmpresa, codigo, usuario);
         }
 
         public ErrorDto<string?> Scroll(int codEmpresa,string codigoActual,int direccion)

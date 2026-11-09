@@ -68,13 +68,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     param.Grupo
                 };
 
-                var response = connection.QueryFirstOrDefault<CbrControlDistribucionResult>(
-                    sql: "exec spCBR_Fondos_Apl_Contratos_Proceso_Carga_Informacion",
+                connection.Execute(
+                    sql: "exec spCBRControlDistribucion @Tipo, @Inicializa, @MantenerNuevos, @CasosMorosos, @CasosAlDia, @Grupo",
                     dbParam,
                     commandTimeout: 0
                 );
 
-                return DbHelper.CreateOkResponse<CbrControlDistribucionResult?>(response);
+                return DbHelper.CreateOkResponse<CbrControlDistribucionResult?>(null);
             }
             catch(Exception ex)
             {

@@ -5,6 +5,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
     public partial class FrmArfOperacionesDb
     {
         /// <summary>
+        /// Calcula la fecha de finalización a partir de la fecha inicial y el plazo en meses.
+        /// </summary>
+        /// <param name="fechaInicio">Fecha en que inicia la operación.</param>
+        /// <param name="plazo">Cantidad de meses de vigencia.</param>
+        /// <returns>Fecha calculada o la fecha inicial cuando no hay un plazo válido.</returns>
+        private static DateTime? CalcularFechaFinaliza(DateTime? fechaInicio, short? plazo)
+        {
+            if (!fechaInicio.HasValue || plazo.GetValueOrDefault() <= 0)
+            {
+                return fechaInicio;
+            }
+
+            return fechaInicio.Value.AddMonths(plazo.GetValueOrDefault());
+        }
+
+        /// <summary>
         /// Ejecuta las validaciones requeridas antes de guardar una operación.
         /// </summary>
         /// <param name="request">Datos de la operación que se desea guardar.</param>
@@ -16,6 +32,43 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             ValidarIncrementos(request);
             ValidarFechas(request);
             ValidarEstadoEditable(estadoActual);
+        }
+
+        /// <summary>
+        /// Valida que la operación consultada cumpla las mismas reglas del formulario original antes de activarse.
+        /// </summary>
+        /// <param name="registro">Datos actuales de la operación que se desea activar.</param>
+        private static void ValidarActivacion(ArfOperacionRegistroDto? registro)
+        {
+            if (registro is null || registro.operacion.GetValueOrDefault() <= 0)
+                throw new ArgumentException("No se encontró la operación que se desea activar.", nameof(registro));
+
+            if (!string.Equals(registro.estado, "R", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("La operación debe encontrarse en estado recibido para ser activada.");
+
+            var request = new ArfOperacionGuardarRequestDto
+            {
+                operacion = registro.operacion,
+                cod_acreedor = registro.cod_acreedor,
+                cod_local = registro.cod_local,
+                tasa_descuento = registro.tasa_descuento,
+                tasa_interes = registro.tasa_interes,
+                periodicidad = registro.periodicidad,
+                cuota = registro.cuota,
+                plazo = registro.plazo,
+                fecha_inicio = registro.fecha_inicio,
+                fecha_finaliza = registro.fecha_finaliza,
+                deposito_garantia_monto = registro.deposito_garantia_monto,
+                deposito_garantia_ind = registro.deposito_garantia_ind,
+                incremento_tipo = registro.incremento_tipo,
+                incremento_valor = registro.incremento_valor,
+                cod_divisa = registro.cod_divisa
+            };
+
+            ValidarCamposObligatorios(request);
+            ValidarRangosPrincipales(request);
+            ValidarIncrementos(request);
+            ValidarFechas(request);
         }
 
         /// <summary>

@@ -27,10 +27,21 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Divisas listar
+        /// Obtiene la fecha vigente configurada en el servidor SQL.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <returns>Fecha del servidor respetando la fecha bloqueada del sistema.</returns>
+        public ErrorDto<DateTime> FechaServidor_Obtener(int codEmpresa)
+        {
+            return DbHelper.WithConn(_portalDb, codEmpresa, cn =>
+                cn.QuerySingle<DateTime>("SELECT dbo.MyGetdate()"));
+        }
+
+        /// <summary>
+        /// Lista las divisas disponibles para registrar la operación.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <returns>Listado de divisas o el detalle del error.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Divisas_Listar(int codEmpresa)
         {
             const string sql = @"
@@ -42,10 +53,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Operaciones listar
+        /// Lista las operaciones disponibles en el buscador.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <returns>Listado de operaciones o el detalle del error.</returns>
         public ErrorDto<List<ArfOperacionBusquedaDto>> Operaciones_Listar(int codEmpresa)
         {
             const string sql = @"
@@ -73,11 +84,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Consultar
+        /// Consulta todos los datos de una operación de arrendamiento.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="operacion"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="operacion">Número de la operación.</param>
+        /// <returns>Datos de la operación o el detalle del error.</returns>
         public ErrorDto<ArfOperacionRegistroDto?> Consultar(int codEmpresa, int operacion)
         {
             const string sql = @"
@@ -141,12 +152,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Scroll
+        /// Obtiene la operación anterior o siguiente.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="operacion"></param>
-        /// <param name="direccion"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="operacion">Número de la operación actual.</param>
+        /// <param name="direccion">Dirección de navegación: -1 anterior, 1 siguiente.</param>
+        /// <returns>Datos de la operación encontrada o el detalle del error.</returns>
         public ErrorDto<ArfOperacionRegistroDto?> Scroll(int codEmpresa, int operacion, int direccion)
         {
             var sql = "select top 1 Operacion from ARF_OPERACIONES ";
@@ -176,10 +187,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Arrendadores listar
+        /// Lista los arrendadores disponibles.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <returns>Listado de arrendadores o el detalle del error.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Arrendadores_Listar(int codEmpresa)
         {
             const string sql = @"
@@ -193,10 +204,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Unidades listar
+        /// Lista las unidades disponibles.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <returns>Listado de unidades o el detalle del error.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Unidades_Listar(int codEmpresa)
         {
             const string sql = @"
@@ -210,11 +221,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Guardar
+        /// Inserta o actualiza una operación de arrendamiento.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Datos de la operación que se guardará.</param>
+        /// <returns>Resultado del guardado y número de operación.</returns>
         public ErrorDto<ArfOperacionGuardarResponseDto> Guardar(int codEmpresa, ArfOperacionGuardarRequestDto request)
         {
             var response = new ErrorDto<ArfOperacionGuardarResponseDto>();
@@ -225,6 +236,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             try
             {
+                request.fecha_finaliza = CalcularFechaFinaliza(request.fecha_inicio, request.plazo);
                 var notas = (request.notas ?? string.Empty).Trim();
                 var estadoActual = ObtenerEstadoActual(cn, tx, request.operacion);
 
@@ -235,7 +247,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 cn.Execute(
                     "spARF_Operacion_Plan_Add",
-                    new { txtOperacion = operacion, Recalcular = 1 },
+                    new { Operacion = operacion, Recalcular = 1 },
                     tx,
                     commandType: CommandType.StoredProcedure);
 
@@ -448,20 +460,27 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Activar
+        /// Valida y activa una operación registrada.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Operación y usuario que ejecuta la activación.</param>
+        /// <returns>Resultado de la activación.</returns>
         public ErrorDto Activar(int codEmpresa, ArfOperacionActivarRequestDto request)
         {
             var response = new ErrorDto();
 
-            using var cn = new SqlConnection(_portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-            cn.Open();
-
             try
             {
+                if (request.operacion.GetValueOrDefault() <= 0)
+                    throw new ArgumentException("Debe especificar una operación válida.", nameof(request));
+
+                var consulta = Consultar(codEmpresa, request.operacion.GetValueOrDefault());
+                if (consulta.Code == -1)
+                    throw new InvalidOperationException(consulta.Description);
+
+                ValidarActivacion(consulta.Result);
+
+                using var cn = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 cn.Execute(
                     "spARF_Operacion_Activacion",
                     new
@@ -490,23 +509,53 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Plan listar
+        /// Lista el plan financiero de la operación.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="operacion"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="operacion">Número de la operación.</param>
+        /// <returns>Detalle del plan o el error encontrado.</returns>
         public ErrorDto<List<ArfOperacionPlanDto>> Plan_Listar(int codEmpresa, int operacion)
         {
-            const string sql = @"exec spARF_Operacion_Plan @operacion";
-            return DbHelper.ExecuteListQuery<ArfOperacionPlanDto>(_portalDb, codEmpresa, sql, new { operacion });
+            return DbHelper.WithConn(
+                _portalDb,
+                codEmpresa,
+                connection => connection
+                    .Query<ArfOperacionPlanDbDto>(
+                        "spARF_Operacion_Plan",
+                        new { operacion },
+                        commandType: CommandType.StoredProcedure)
+                    .Select(item => new ArfOperacionPlanDto
+                    {
+                        id_seq = item.id_seq.HasValue ? decimal.ToInt32(item.id_seq.Value) : null,
+                        periodo = item.periodo,
+                        corte = item.corte,
+                        valor_nominal = item.valor_nominal,
+                        valor_presente = item.valor_presente,
+                        amortizacion = item.amortizacion,
+                        intereses = item.intereses,
+                        cuota = item.cuota,
+                        monto_pasivo = item.deuda_monto,
+                        saldo_capital = item.saldo_capital,
+                        recalculo = item.recalculo,
+                        gasto_depreciacion = item.depreciacion_gasto,
+                        depreciacion_acumulada = item.depreciacion_acum,
+                        valor_libros = item.valor_libros,
+                        afecta_resultados = item.afectacion_resultados,
+                        estado = item.estado,
+                        cxp_orden = item.cxp_orden,
+                        operacion = item.operacion,
+                        tasa = item.tasa,
+                        tasa_descuento = item.tasa_descuento
+                    })
+                    .ToList());
         }
 
         /// <summary>
-        /// Cierres listar
+        /// Lista los cierres registrados para la operación.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="operacion"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="operacion">Número de la operación.</param>
+        /// <returns>Cierres de la operación o el error encontrado.</returns>
         public ErrorDto<List<ArfOperacionCierreDto>> Cierres_Listar(int codEmpresa, int operacion)
         {
             const string sql = @"
@@ -527,13 +576,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Asientos main listar
+        /// Lista los asientos contables relacionados con la operación.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="operacion"></param>
-        /// <param name="fechaInicio"></param>
-        /// <param name="fechaCorte"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="operacion">Número de la operación.</param>
+        /// <param name="fechaInicio">Fecha inicial del rango de consulta.</param>
+        /// <param name="fechaCorte">Fecha final del rango de consulta.</param>
+        /// <returns>Asientos maestros o el error encontrado.</returns>
         public ErrorDto<List<ArfOperacionAsientoMainDto>> AsientosMain_Listar(
             int codEmpresa,
             int operacion,
@@ -563,13 +612,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Asiento detalle listar
+        /// Lista el detalle de un asiento contable.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <param name="tipoAsiento"></param>
-        /// <param name="numAsiento"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="codContabilidad">Código de la contabilidad.</param>
+        /// <param name="tipoAsiento">Tipo del asiento contable.</param>
+        /// <param name="numAsiento">Número del asiento contable.</param>
+        /// <returns>Movimientos del asiento o el error encontrado.</returns>
         public ErrorDto<List<ArfOperacionAsientoDetalleDto>> AsientoDetalle_Listar(
             int codEmpresa,
             int codContabilidad,
@@ -592,11 +641,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Cambios listar
+        /// Lista los cambios de condiciones aplicados a la operación.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="operacion"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="operacion">Número de la operación.</param>
+        /// <returns>Cambios aplicados o el error encontrado.</returns>
         public ErrorDto<List<ArfOperacionCambioDto>> Cambios_Listar(int codEmpresa, int operacion)
         {
             const string sql = @"
@@ -622,11 +671,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Cierre actual obtener
+        /// Obtiene la información del cierre vigente para preparar el finiquito.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="operacion"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="operacion">Número de la operación.</param>
+        /// <returns>Vista previa del finiquito o el error encontrado.</returns>
         public ErrorDto<ArfOperacionFiniquitoPreviewDto?> CierreActual_Obtener(int codEmpresa, int operacion)
         {
             const string sql = @"exec spARF_Cierre_Actual @operacion";
@@ -634,11 +683,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Cambio aplicar
+        /// Aplica un cambio de condiciones a la operación.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Condiciones, periodo, notas y usuario del cambio.</param>
+        /// <returns>Resultado de la aplicación del cambio.</returns>
         public ErrorDto Cambio_Aplicar(int codEmpresa, ArfOperacionCambioRequestDto request)
         {
             try
@@ -710,11 +759,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
 
         /// <summary>
-        /// Finiquito aplicar
+        /// Aplica el finiquito de una operación.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="request">Periodo, notas y usuario que aplica el finiquito.</param>
+        /// <returns>Resultado del proceso de finiquito.</returns>
         public ErrorDto Finiquito_Aplicar(int codEmpresa, ArfOperacionFiniquitoRequestDto request)
         {
             try

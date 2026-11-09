@@ -75,7 +75,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse(
                     ex.Message,
@@ -118,7 +118,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     lista = lista
                 });
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
                 return ErrorTabla(ex.Message);
             }
@@ -177,7 +177,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(MapDesembolso(CodEmpresa, conn, data));
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse(
                     ex.Message,
@@ -223,7 +223,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(lista);
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse(
                     ex.Message,
@@ -265,7 +265,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(data);
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse(
                     ex.Message,
@@ -293,7 +293,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 return DbHelper.CreateOkResponse(ObtenerBancos(conn, usuario));
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse(ex.Message, -1, new List<CrSeguimientoDesembolsosBancoDto>());
             }
@@ -337,7 +337,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(lista);
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse(ex.Message, -1, new List<CrSeguimientoDesembolsosCuentaBancariaDto>());
             }
@@ -361,6 +361,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (conn.State != ConnectionState.Open) conn.Open();
 
             using var tx = conn.BeginTransaction();
+            var confirmada = false;
 
             try
             {
@@ -368,6 +369,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var id = GuardarDesembolso(conn, tx, data);
 
                 tx.Commit();
+                confirmada = true;
 
                 RegistrarBitacoraGuardar(CodEmpresa, data, id);
                 if (!data.id_solicitud.HasValue)
@@ -385,9 +387,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.CreateOkResponse(resumen);
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
-                tx.Rollback();
+                if (!confirmada)
+                    tx.Rollback();
+
                 return DbHelper.CreateErrorResponse(ex.Message, -1, new CrSeguimientoDesembolsosResumenDto());
             }
         }
@@ -434,7 +438,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var resumen = ObtenerResumenOperacion(CodEmpresa, conn, idSolicitud);
                 return DbHelper.CreateOkResponse(resumen);
             }
-            catch (SqlException ex)
+            catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse(ex.Message, -1, new CrSeguimientoDesembolsosResumenDto());
             }
@@ -707,7 +711,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             if (interes > 0)
             {
-                var fecha = row.fecha_inicio_calculo ?? row.fechaforp;
+                var fecha = row.fecha_inicio_calculo ?? row.fechaforp ?? DateTime.Today;
                 interes = MCobroDb.fxInteresesDiasPrimerCuota(
                     fecha,
                     row.montoapr,
@@ -1228,7 +1232,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             public decimal interesv { get; set; }
             public decimal prideduc { get; set; }
             public int dia_pago { get; set; }
-            public DateTime fechaforp { get; set; }
+            public DateTime? fechaforp { get; set; }
             public DateTime? fecha_inicio_calculo { get; set; }
             public string convenio { get; set; } = "N";
         }
