@@ -516,8 +516,38 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns>Detalle del plan o el error encontrado.</returns>
         public ErrorDto<List<ArfOperacionPlanDto>> Plan_Listar(int codEmpresa, int operacion)
         {
-            const string sql = @"exec spARF_Operacion_Plan @operacion";
-            return DbHelper.ExecuteListQuery<ArfOperacionPlanDto>(_portalDb, codEmpresa, sql, new { operacion });
+            return DbHelper.WithConn(
+                _portalDb,
+                codEmpresa,
+                connection => connection
+                    .Query<ArfOperacionPlanDbDto>(
+                        "spARF_Operacion_Plan",
+                        new { operacion },
+                        commandType: CommandType.StoredProcedure)
+                    .Select(item => new ArfOperacionPlanDto
+                    {
+                        id_seq = item.id_seq.HasValue ? decimal.ToInt32(item.id_seq.Value) : null,
+                        periodo = item.periodo,
+                        corte = item.corte,
+                        valor_nominal = item.valor_nominal,
+                        valor_presente = item.valor_presente,
+                        amortizacion = item.amortizacion,
+                        intereses = item.intereses,
+                        cuota = item.cuota,
+                        monto_pasivo = item.deuda_monto,
+                        saldo_capital = item.saldo_capital,
+                        recalculo = item.recalculo,
+                        gasto_depreciacion = item.depreciacion_gasto,
+                        depreciacion_acumulada = item.depreciacion_acum,
+                        valor_libros = item.valor_libros,
+                        afecta_resultados = item.afectacion_resultados,
+                        estado = item.estado,
+                        cxp_orden = item.cxp_orden,
+                        operacion = item.operacion,
+                        tasa = item.tasa,
+                        tasa_descuento = item.tasa_descuento
+                    })
+                    .ToList());
         }
 
         /// <summary>

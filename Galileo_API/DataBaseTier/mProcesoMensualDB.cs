@@ -7,6 +7,8 @@ namespace Galileo_API.DataBaseTier
 {
     public static class MProcesoMensualDb
     {
+        private const int CommandTimeoutSinLimite = 0;
+
         public static string FxPlanillaTipoTransac(string? pTransaccion)
         {
             string transaccion = (pTransaccion ?? string.Empty).Trim();
@@ -116,7 +118,7 @@ namespace Galileo_API.DataBaseTier
             {
                 CodInstitucion = codInstitucion,
                 FechaProceso = fechaProceso
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
         private static void AplicarMasivoEnFalso(IDbConnection connection, int codInstitucion, decimal fechaProceso)
         {
@@ -126,7 +128,7 @@ namespace Galileo_API.DataBaseTier
             {
                 CodInstitucion = codInstitucion,
                 FechaProceso = fechaProceso
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
         private static void AplicarAbonosRestantesEnFalso(IDbConnection connection, int codInstitucion, decimal glngFechaCR)
         {
@@ -149,7 +151,8 @@ namespace Galileo_API.DataBaseTier
                     CodInstitucion = codInstitucion,
                     FechaProceso = fechaProceso,
                     Bloque = 300
-                }) ?? new SbCrEnviaConPlanillaTransitoModel();
+                },
+                commandTimeout: CommandTimeoutSinLimite) ?? new SbCrEnviaConPlanillaTransitoModel();
         }
         private static void GenerarResultadosCuotasOrdinarias(IDbConnection connection, int codInstitucion, decimal fechaProceso)
         {
@@ -162,7 +165,7 @@ namespace Galileo_API.DataBaseTier
             {
                 FechaProceso = fechaProceso,
                 CodInstitucion = codInstitucion
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
         private static void GenerarResultadosCuotasMorosas(IDbConnection connection, int codInstitucion, decimal fechaProceso)
         {
@@ -175,7 +178,7 @@ namespace Galileo_API.DataBaseTier
             {
                 FechaProceso = fechaProceso,
                 CodInstitucion = codInstitucion
-            });
+            }, commandTimeout: CommandTimeoutSinLimite);
         }
 
     }
