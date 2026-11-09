@@ -32,6 +32,19 @@ namespace Galileo.Models.AF
         public int pagina { get; set; } = 0;
         public int paginacion { get; set; } = 30;
         public string filtro { get; set; } = string.Empty;
+        public string sortField { get; set; } = string.Empty;
+        public int sortOrder { get; set; } = 1;
+    }
+
+    public class AfiBeneProdEntregaProducto
+    {
+        public string cod_beneficio { get; set; } = string.Empty;
+        public int consec { get; set; } = 0;
+        public string cod_producto { get; set; } = string.Empty;
+        public decimal cantidad { get; set; } = 0;
+        public decimal costo_unidad { get; set; } = 0;
+        public string? cod_producto_inv { get; set; }
+        public string? expediente { get; set; }
     }
 
     public class AfiBeneProdPagoEntregaRequest
