@@ -108,7 +108,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <summary>
         /// Ejecuta todos los pasos transaccionales de la entrega.
         /// </summary>
-        private void AF_BeneProdPago_Entrega_Registrar(
+        private static void AF_BeneProdPago_Entrega_Registrar(
             SqlConnection connection,
             SqlTransaction transaction,
             string usuario,
