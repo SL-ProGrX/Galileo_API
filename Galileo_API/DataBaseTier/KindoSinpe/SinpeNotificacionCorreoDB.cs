@@ -1,3 +1,4 @@
+using System.Globalization;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
@@ -6,7 +7,7 @@ namespace Galileo_API.DataBaseTier
 {
     /// <summary>
     /// Arma la notificación SINPE por correo a partir de PSL_PLANTILLAS_NOTIFICACIONES
-    /// y la guarda en SIF_EMAIL. El envío lo realiza otro proceso.
+    /// y la guarda en PSL_EMAIL. El envío lo realiza otro proceso.
     /// </summary>
     public class SinpeNotificacionCorreoDB
     {
@@ -14,11 +15,16 @@ namespace Galileo_API.DataBaseTier
         private const int TipoBeneficiarioProveedor = 3;
         private const int TipoBeneficiarioDesembolso = 8;
         private const string GrupoBancoInterno = "INT";
+        public const int CodigoSinCorreo = 2;
+        public const string MensajeSinCorreo = "Notificación no enviada: la solicitud no tiene correo electrónico.";
+        private static readonly CultureInfo CulturaCr = new("es-CR");
 
+        private readonly IConfiguration _config;
         private readonly PortalDB _portalDb;
 
         public SinpeNotificacionCorreoDB(IConfiguration config)
         {
+            _config = config;
             _portalDb = new PortalDB(config);
         }
 
@@ -43,6 +49,111 @@ namespace Galileo_API.DataBaseTier
             var cuerpo = ReemplazarTokens(plantilla.Plantilla ?? string.Empty, datos);
             return InsertarSifEmail(codEmpresa, para, plantilla, cuerpo);
         }
+
+        /// <summary>
+        /// Punto único de notificación de una transferencia SINPE. Si falló usa TRAN_RE;
+        /// si no, resuelve la plantilla según la solicitud. El destinatario es el correo de la
+        /// solicitud cuando AppSettings:EnviaEmail es "Y"; en cualquier otro caso, AppSettings:TestEmail.
+        /// </summary>
+        public ErrorDto NotificarTransferencia(
+            int codEmpresa,
+            TesTransaccion solicitud,
+            bool fallo,
+            string? referencia,
+            string? motivo)
+        {
+            try
+            {
+                var destino = DestinoNotificacion(codEmpresa, solicitud);
+                if (destino.Code != 0)
+                    return new ErrorDto { Code = destino.Code, Description = destino.Description ?? string.Empty };
+
+                var tipo = fallo
+                    ? Resultado(TipoPlantillaSinpe.TranRe)
+                    : ResolverTipoPlantilla(codEmpresa, solicitud);
+                if (tipo.Code != 0 || tipo.Result is null)
+                    return new ErrorDto { Code = -1, Description = tipo.Description ?? string.Empty };
+
+                return GuardarNotificacionSinpe(
+                    codEmpresa,
+                    tipo.Result.Value,
+                    destino.Result,
+                    ArmarDatos(solicitud, tipo.Result.Value, fallo, referencia, motivo));
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto { Code = -1, Description = ex.Message };
+            }
+        }
+
+        /// <summary>
+        /// Con EnviaEmail en "N" el correo va a TestEmail. Con "Y" usa el correo de la solicitud
+        /// y, si no tiene, lo busca en el maestro (SOCIOS o cxp_proveedores). Sin correo, devuelve CodigoSinCorreo.
+        /// </summary>
+        private ErrorDto<string?> DestinoNotificacion(int codEmpresa, TesTransaccion solicitud)
+        {
+            if (!string.Equals(_config["AppSettings:EnviaEmail"], "Y", StringComparison.OrdinalIgnoreCase))
+                return new ErrorDto<string?> { Code = 0, Description = "Ok", Result = _config["AppSettings:TestEmail"] };
+
+            var correo = solicitud.CorreoNotifica?.Trim();
+            if (string.IsNullOrWhiteSpace(correo))
+                correo = ObtenerCorreoMaestro(codEmpresa, solicitud);
+
+            if (string.IsNullOrWhiteSpace(correo))
+                return new ErrorDto<string?> { Code = CodigoSinCorreo, Description = MensajeSinCorreo, Result = null };
+
+            return new ErrorDto<string?> { Code = 0, Description = "Ok", Result = correo };
+        }
+
+        private string? ObtenerCorreoMaestro(int codEmpresa, TesTransaccion solicitud)
+        {
+            var codigo = solicitud.Codigo?.Trim() ?? string.Empty;
+            var tipo = (int?)solicitud.TIPO_BENEFICIARIO;
+
+            var sql = tipo switch
+            {
+                TipoBeneficiarioProveedor => "SELECT TOP 1 RTRIM(ISNULL(email, '')) FROM cxp_proveedores WHERE CEDJUR = @Codigo;",
+                TipoBeneficiarioPersona or TipoBeneficiarioDesembolso => "SELECT TOP 1 RTRIM(ISNULL(af_email, '')) FROM socios WHERE cedula = @Codigo;",
+                _ => null
+            };
+            if (sql is null || string.IsNullOrWhiteSpace(codigo))
+                return null;
+
+            var correo = DbHelper.ExecuteSingleQuery<string>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                defaultValue: string.Empty,
+                parameters: new { Codigo = codigo }
+            ).Result;
+
+            return string.IsNullOrWhiteSpace(correo) ? null : correo.Trim();
+        }
+
+        private static SinpeNotificacionDatos ArmarDatos(
+            TesTransaccion solicitud,
+            TipoPlantillaSinpe tipo,
+            bool fallo,
+            string? referencia,
+            string? motivo) => new()
+        {
+            NombreLogin = tipo == TipoPlantillaSinpe.TranAs ? solicitud.Beneficiario : solicitud.NombreOrigen,
+            NSolicitud = solicitud.NumeroSolicitud.ToString(),
+            FechaHora = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss", CulturaCr),
+            PersonaDestino = solicitud.Beneficiario,
+            CtaIBAN = solicitud.Cuenta,
+            RefTransaccion = referencia,
+            MontoTransaccion = solicitud.Monto.ToString("N2", CulturaCr),
+            Moneda = solicitud.Divisa is "USD" or "DOL" ? "Dólares" : "Colones",
+            Detalle = string.Concat(solicitud.Detalle1, solicitud.Detalle2, solicitud.Detalle3, solicitud.Detalle4, solicitud.Detalle5),
+            CedulaOrigen = solicitud.CedulaOrigen,
+            CedulaDestino = solicitud.Codigo,
+            IBAN = solicitud.Cuenta,
+            NombreOrigenTransaccion = solicitud.NombreOrigen,
+            NombreDestinoTransaccion = solicitud.Beneficiario,
+            EstadoTransaccion = fallo ? motivo : "Exitosa",
+            CedulaOrigenTransaccion = solicitud.CedulaOrigen
+        };
 
         /// <summary>
         /// Determina la plantilla según TIPO_BENEFICIARIO de la solicitud:
@@ -155,7 +266,7 @@ WHERE TIPO_PLANTILLA = @TipoPlantilla;";
         private ErrorDto InsertarSifEmail(int codEmpresa, string para, PlantillaNotificacionSinpe plantilla, string cuerpo)
         {
             const string sql = @"
-INSERT INTO dbo.SIF_EMAIL (PARA, CUERPO, ASUNTO, PRIORIDAD, ESTADO, FECHA)
+INSERT INTO dbo.PSL_EMAIL (PARA, CUERPO, ASUNTO, PRIORIDAD, ESTADO, FECHA)
 VALUES (@Para, @Cuerpo, @Asunto, @Prioridad, 'P', GETDATE());";
 
             return DbHelper.ExecuteNonQuery(
@@ -166,7 +277,7 @@ VALUES (@Para, @Cuerpo, @Asunto, @Prioridad, 'P', GETDATE());";
                 {
                     Para = para,
                     Cuerpo = cuerpo,
-                    Asunto = plantilla.Asunto,
+                    Asunto = plantilla.Asunto is { Length: > 100 } asunto ? asunto[..100] : plantilla.Asunto,
                     Prioridad = plantilla.Prioridad
                 }
             );
