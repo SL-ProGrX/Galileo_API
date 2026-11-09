@@ -43,12 +43,14 @@ namespace Galileo_API.DataBaseTier
         private readonly MKindoServiceDb _mKindo;
         private readonly MTesoreria _mTesoreria;
         private readonly PortalDB _portalDB;
+        private readonly SinpeNotificacionCorreoDB _notificacionCorreo;
 
         public AseccssSinpeValidator(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
             _mTesoreria = new MTesoreria(config);
             _mKindo = new MKindoServiceDb(config);
+            _notificacionCorreo = new SinpeNotificacionCorreoDB(config);
             _parametrosSinpe = new Galileo.Models.KindoSinpe.ParametrosSinpe();
 
         }
@@ -855,6 +857,7 @@ namespace Galileo_API.DataBaseTier
                                 idRechazo,
                                 rechazo);
                         _mKindo.UpdateErrorTransaccionSinpe(CodEmpresa, string.Empty, idRechazo, Nsolicitud, vUsuario);
+                        NotificarRechazoServicio(CodEmpresa, Nsolicitud);
                     }
                     else
                     {
@@ -1100,6 +1103,8 @@ namespace Galileo_API.DataBaseTier
                 resp.Result = null;
             }
 
+            NotificarResultadoSinpe(CodEmpresa, solicitud!, resp.Code == 0 ? resp.Result?.MotivoError : 201, resp.Result?.CodigoReferencia);
+
             return resp;
         }
 
@@ -1268,10 +1273,11 @@ namespace Galileo_API.DataBaseTier
                             idRechazo = 83;
                             rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result ?? "Motivo desconocido.";
                             _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Emisión Transferencia Sinpe: {rechazo}", vUsuario);
+                            NotificarRechazoServicio(CodEmpresa, Nsolicitud);
                         }
                         else
                         {
-                            respuesta = fxTesEnvioSinpeTiempoReal(solicitud).Result;
+                            respuesta = fxTesEnvioSinpeTiempoReal(CodEmpresa, solicitud).Result;
 
                             if (respuesta!.MotivoError != 0)
                             {
@@ -1475,7 +1481,7 @@ namespace Galileo_API.DataBaseTier
             return response;
         }
 
-        private ErrorDto<Sinpe_TFT.RespuestaRegistro> fxTesEnvioSinpeTiempoReal(Galileo.Models.KindoSinpe.TesTransaccion solicitud)
+        private ErrorDto<Sinpe_TFT.RespuestaRegistro> fxTesEnvioSinpeTiempoReal(int CodEmpresa, Galileo.Models.KindoSinpe.TesTransaccion solicitud)
         {
             var resp = new ErrorDto<Sinpe_TFT.RespuestaRegistro>
             {
@@ -1566,6 +1572,8 @@ namespace Galileo_API.DataBaseTier
                 resp.Description = "Error al procesar la solicitud de emisión de SINPE Tiempo Real.";
                 resp.Result = new Sinpe_TFT.RespuestaRegistro();
             }
+
+            NotificarResultadoSinpe(CodEmpresa, solicitud, resp.Code == 0 ? resp.Result?.MotivoError : 201, resp.Result?.CodigoReferencia);
 
             return resp;
         }
@@ -2035,6 +2043,54 @@ namespace Galileo_API.DataBaseTier
                 response.Result = TipoId ?? 0;
             }
             return response;
+        }
+
+        /// <summary>
+        /// Guarda la notificación por correo de la transferencia. Un fallo al preparar el correo
+        /// no interrumpe la transferencia.
+        /// </summary>
+        private void NotificarResultadoSinpe(
+            int CodEmpresa,
+            Galileo.Models.KindoSinpe.TesTransaccion solicitud,
+            int? motivoError,
+            string? referencia)
+        {
+            try
+            {
+                var error = motivoError ?? 201;
+                var fallo = error != 0;
+                var motivo = fallo ? _mKindo.fxTesConsultaMotivo(CodEmpresa, error).Result ?? "Motivo desconocido." : null;
+                var resultado = _notificacionCorreo.NotificarTransferencia(CodEmpresa, solicitud, fallo, referencia, motivo);
+                var mensaje = resultado.Code switch
+                {
+                    0 => null,
+                    SinpeNotificacionCorreoDB.CodigoSinCorreo => SinpeNotificacionCorreoDB.MensajeSinCorreo,
+                    _ => $"Notificación por correo no guardada: {resultado.Description}"
+                };
+                if (mensaje is not null)
+                    _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, solicitud.NumeroSolicitud, "10", mensaje, solicitud.UsuarioGenera ?? string.Empty);
+            }
+            catch (Exception)
+            {
+                // no rompas la transferencia por un fallo al preparar la notificación
+            }
+        }
+
+        /// <summary>
+        /// Notifica el rechazo (TRAN_RE) cuando el servicio SINPE no está disponible y la transferencia no se envía.
+        /// </summary>
+        private void NotificarRechazoServicio(int CodEmpresa, int Nsolicitud)
+        {
+            try
+            {
+                var solicitud = _mKindo.fxTesConsultaSolicitud(CodEmpresa, Nsolicitud).Result;
+                if (solicitud is not null)
+                    NotificarResultadoSinpe(CodEmpresa, solicitud, 83, null);
+            }
+            catch (Exception)
+            {
+                // no rompas el proceso por un fallo al preparar la notificación
+            }
         }
 
         /// <summary>

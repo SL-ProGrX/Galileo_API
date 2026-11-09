@@ -1358,10 +1358,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     var (orderBy, dir) = BuildOrderBy(f, whitelist);
 
                     var sql = $@"
-                        select item, descripcion
+                        select item, descripcion, correo
                         from (
-                            select cedula as item, nombre as descripcion
-                            from vCxC_Cuentas_Desembolsos_Pendientes {where}
+                            select cedula as item, nombre as descripcion,
+                                   (select top 1 rtrim(isnull(s.af_email, '')) from socios s where s.cedula = v.cedula) as correo
+                            from vCxC_Cuentas_Desembolsos_Pendientes v {where}
                         ) t
                         order by {orderBy} {dir}
                         offset @offset rows fetch next @pageSize rows only;";
