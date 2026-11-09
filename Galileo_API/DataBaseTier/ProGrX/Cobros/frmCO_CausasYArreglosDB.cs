@@ -64,6 +64,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         RTRIM(COD_CAUSA) AS cod_causa,
                         RTRIM(DESCRIPCION) AS descripcion,
                         CASE WHEN ISNULL(ACTIVA,1) = 1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS activa,
+                        ISNULL(RTRIM(MODIFICA_USUARIO),'') AS modifica_usuario,
+                        ISNULL(CONVERT(varchar(19), MODIFICA_FECHA, 120),'') AS modifica_fecha,
                         CAST(0 AS bit) AS isNew
                     FROM dbo.CBR_CAUSAS_MOROSIDAD;";
 
@@ -215,6 +217,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         RTRIM(COD_ARREGLO) AS cod_arreglo,
                         RTRIM(DESCRIPCION) AS descripcion,
                         CASE WHEN ISNULL(ACTIVO,1) = 1 THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS activo,
+                        ISNULL(RTRIM(MODIFICA_USUARIO),'') AS modifica_usuario,
+                        ISNULL(CONVERT(varchar(19), MODIFICA_FECHA, 120),'') AS modifica_fecha,
                         CAST(0 AS bit) AS isNew
                     FROM dbo.CBR_TIPOS_ARREGLOS;";
 
@@ -404,11 +408,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 const string q = @"
                     UPDATE dbo.CBR_CAUSAS_MOROSIDAD
                     SET
-                        DESCRIPCION = @desc,
-                        ACTIVA      = @activa
+                        DESCRIPCION      = @desc,
+                        ACTIVA           = @activa,
+                        MODIFICA_USUARIO = @user,
+                        MODIFICA_FECHA   = dbo.MyGetdate()
                     WHERE UPPER(RTRIM(COD_CAUSA)) = @cod;";
 
-                conn.Execute(q, new { cod, desc, activa });
+                conn.Execute(q, new { cod, desc, activa, user = (usuario ?? "").Trim() });
 
                 DBBitacora.Bitacora(new BitacoraInsertarDto
                 {
@@ -499,11 +505,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 const string q = @"
                     UPDATE dbo.CBR_TIPOS_ARREGLOS
                     SET
-                        DESCRIPCION = @desc,
-                        ACTIVO      = @activo
+                        DESCRIPCION      = @desc,
+                        ACTIVO           = @activo,
+                        MODIFICA_USUARIO = @user,
+                        MODIFICA_FECHA   = dbo.MyGetdate()
                     WHERE UPPER(RTRIM(COD_ARREGLO)) = @cod;";
 
-                conn.Execute(q, new { cod, desc, activo });
+                conn.Execute(q, new { cod, desc, activo, user = (usuario ?? "").Trim() });
 
                 DBBitacora.Bitacora(new BitacoraInsertarDto
                 {

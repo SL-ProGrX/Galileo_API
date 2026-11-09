@@ -5,6 +5,8 @@
         public string cod_causa { get; set; } = "";
         public string descripcion { get; set; } = "";
         public bool activa { get; set; } = true;
+        public string modifica_usuario { get; set; } = "";
+        public string modifica_fecha { get; set; } = "";
         public bool isNew { get; set; } = false;
     }
 
@@ -13,6 +15,8 @@
         public string cod_arreglo { get; set; } = "";
         public string descripcion { get; set; } = "";
         public bool activo { get; set; } = true;
+        public string modifica_usuario { get; set; } = "";
+        public string modifica_fecha { get; set; } = "";
         public bool isNew { get; set; } = false;
     }
 
