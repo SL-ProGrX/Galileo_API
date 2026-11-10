@@ -24,10 +24,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
             try
             {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
+                var expediente = (cod_preanalisis ?? string.Empty).Trim();
+                if (expediente.Length == 0)
+                    throw new InvalidOperationException("Debe indicar el expediente.");
+
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                connection.Open();
+
+                var estado = connection.QuerySingleOrDefault<string>(
+                    @"SELECT ESTADO FROM CRD_PREA_PREANALISIS
+                      WHERE COD_PREANALISIS = @Expediente",
+                    new { Expediente = expediente });
+                if (string.IsNullOrWhiteSpace(estado))
+                    throw new InvalidOperationException("No se encontró el expediente.");
+
+                var permiteModificar = estado.Trim().Equals("R", StringComparison.OrdinalIgnoreCase)
+                    || estado.Trim().Equals("P", StringComparison.OrdinalIgnoreCase);
 
                 var parameters = new DynamicParameters();
-                parameters.Add("@COD_PREANALISIS", cod_preanalisis.Trim(), DbType.String);
+                parameters.Add("@COD_PREANALISIS", expediente, DbType.String);
 
                 var rawRows = connection.Query(
                     "spCrdPreaConsultaDeducciones",
@@ -52,6 +67,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         descripcion = GetString(dict, "Descripcion"),
                         cuota_colilla = cuotaColilla,
                         cuota_mensual = cuotaMensual,
+                        permite_editar = permiteModificar && GetInt(dict, "AUTOMATICA") == 0,
                     });
 
                     totalColilla += cuotaColilla;
@@ -63,6 +79,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     deducciones = deducciones,
                     total_colilla = totalColilla,
                     total_mensual = totalMensual,
+                    permite_editar = permiteModificar,
                 };
             }
             catch (Exception ex)
@@ -76,61 +93,208 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
 
         /// <summary>
-        /// Agrega una deducción. VB6: btnDeduccion_Click, línea ~13042:
-        ///   EXEC spCrdPrea_Deducciones_Add '&lt;expediente&gt;', 0, &lt;cod_deduccion&gt;,
-        ///     '&lt;descripcion&gt;', &lt;monto&gt;, &lt;monto*NumPagos&gt;, '&lt;usuario&gt;'
-        /// El SP devuelve Pass (1 = éxito) y Mensaje (motivo si falla) — no bloqueante en
-        /// el sentido de excepción, pero VB6 sí detiene el flujo si Pass &lt;&gt; 1.
+        /// Agrega una deducción o actualiza sus cuotas mediante consultas secuenciales.
+        /// Valida el expediente y la configuración antes de ejecutar el procedimiento.
         /// </summary>
-        /// <param name="codEmpresa">Código de la empresa donde se registra la deducción.</param>
-        /// <param name="request">Expediente, tipo, descripción, monto y usuario de la deducción.</param>
-        /// <returns>Listado y totales de deducciones actualizados.</returns>
-        public ErrorDto<FrmPreaEstudiov2DeduccionesResponse> Prea_frmPreaEstudiov2_Deducciones_Agregar(
-            int codEmpresa,
-            FrmPreaEstudiov2DeduccionesAgregarRequest request)
+        public ErrorDto<FrmPreaEstudiov2DeduccionesResponse>
+            Prea_frmPreaEstudiov2_Deducciones_Agregar(
+                int codEmpresa,
+                FrmPreaEstudiov2DeduccionesAgregarRequest request)
         {
+            var operacionConfirmada = false;
+
             try
             {
+                if (request is null)
+                    throw new InvalidOperationException("Debe indicar la deducción.");
+
+                var expediente = (request.cod_preanalisis ?? string.Empty).Trim();
+                var usuario = (request.usuario ?? string.Empty).Trim();
+                var descripcion = (request.descripcion ?? string.Empty).Trim();
+
+                if (expediente.Length == 0 || usuario.Length == 0)
+                {
+                    throw new InvalidOperationException(
+                        "Debe indicar el expediente y el usuario.");
+                }
+
+                if (request.id_x < 0 || request.monto <= 0)
+                {
+                    throw new InvalidOperationException(
+                        "El identificador debe ser válido y la cuota colilla mayor a cero.");
+                }
+
+                if (request.id_x == 0 &&
+                    (descripcion.Length <= 5 || descripcion.Length > 100))
+                {
+                    throw new InvalidOperationException(
+                        "La descripción debe tener entre 6 y 100 caracteres.");
+                }
+
                 using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 connection.Open();
 
-                var expediente = request.cod_preanalisis.Trim();
+                Prea_frmPreaEstudiov2_Deducciones_ValidarEstado(
+                    connection, expediente);
+
+                var idDeduccion = Prea_frmPreaEstudiov2_Deducciones_ObtenerTipo(
+                    connection, expediente, request);
+
                 var numPagos = ObtenerNumPagosDeduccion(connection, expediente);
-                var monto = request.monto;
 
                 const string sql = @"EXEC spCrdPrea_Deducciones_Add
-                    @Expediente, 0, @CodDeduccion, @Descripcion, @Monto, @MontoTotal, @Usuario";
-                var row = connection.QueryFirstOrDefault(sql, new
-                {
-                    Expediente = expediente,
-                    CodDeduccion = string.IsNullOrWhiteSpace(request.cod_deduccion) ? "0" : request.cod_deduccion.Trim(),
-                    Descripcion = request.descripcion?.Trim() ?? string.Empty,
-                    Monto = monto,
-                    MontoTotal = monto * numPagos,
-                    Usuario = request.usuario?.Trim() ?? string.Empty
-                }) as IDictionary<string, object>;
-                if (row is not null)
-                {
-                    var dict = new Dictionary<string, object>(row, StringComparer.OrdinalIgnoreCase);
-                    var pass = GetInt(dict, "Pass");
-                    if (pass != 1)
+                    @Expediente, @Id, @CodDeduccion, @Descripcion,
+                    @Monto, @MontoTotal, @Usuario";
+
+                var raw = connection.QueryFirstOrDefault(
+                    sql,
+                    new
                     {
-                        return DbHelper.CreateErrorResponse(
-                            GetString(dict, "Mensaje"),
-                            -1,
-                            new FrmPreaEstudiov2DeduccionesResponse());
-                    }
+                        Expediente = expediente,
+                        Id = request.id_x,
+                        CodDeduccion = idDeduccion,
+                        Descripcion = descripcion,
+                        Monto = request.monto,
+                        MontoTotal = decimal.Round(
+                            request.monto * numPagos,
+                            2,
+                            MidpointRounding.AwayFromZero),
+                        Usuario = usuario
+                    }) as IDictionary<string, object>;
+
+                if (raw is null)
+                {
+                    throw new InvalidOperationException(
+                        "El procedimiento no devolvió confirmación. " +
+                        "Actualice la lista antes de volver a guardar.");
                 }
 
-                return Prea_frmPreaEstudiov2_Deducciones_Consultar(codEmpresa, expediente);
+                var resultado = new Dictionary<string, object>(
+                    raw, StringComparer.OrdinalIgnoreCase);
+
+                if (GetInt(resultado, "Pass") != 1)
+                {
+                    throw new InvalidOperationException(
+                        GetString(resultado, "Mensaje") +
+                        " Actualice la lista antes de volver a guardar: " +
+                        "el procedimiento puede haber aplicado cambios.");
+                }
+
+                operacionConfirmada = true;
+
+                var consulta = Prea_frmPreaEstudiov2_Deducciones_Consultar(
+                    codEmpresa, expediente);
+
+                if (consulta.Code != 0)
+                {
+                    consulta.Description =
+                        "La deducción se guardó, pero no se pudo actualizar la lista. " +
+                        "No repita el registro. Detalle: " + consulta.Description;
+                }
+
+                return consulta;
             }
             catch (Exception ex)
             {
+                var mensaje = operacionConfirmada
+                    ? "La deducción se guardó. Error al actualizar la información: "
+                        + ex.Message
+                    : ex.Message;
+
                 return DbHelper.CreateErrorResponse(
-                    ex.Message,
+                    mensaje,
                     -1,
                     new FrmPreaEstudiov2DeduccionesResponse());
             }
+        }
+
+        /// <summary>
+        /// Verifica que exista el expediente y admita cambios de deducciones.
+        /// </summary>
+        private static void Prea_frmPreaEstudiov2_Deducciones_ValidarEstado(
+            IDbConnection connection,
+            string expediente)
+        {
+            const string sql = @"SELECT ESTADO
+                FROM CRD_PREA_PREANALISIS
+                WHERE COD_PREANALISIS = @Expediente";
+
+            var estado = connection.QuerySingleOrDefault<string>(
+                sql, new { Expediente = expediente });
+
+            if (string.IsNullOrWhiteSpace(estado))
+            {
+                throw new InvalidOperationException(
+                    "No se encontró el expediente o no tiene un estado válido.");
+            }
+
+            var codigo = estado.Trim().ToUpperInvariant();
+
+            if (codigo != "R" && codigo != "P")
+            {
+                throw new InvalidOperationException(
+                    "El estado actual del estudio no permite modificar deducciones.");
+            }
+        }
+
+        /// <summary>
+        /// Obtiene el tipo real de una fila existente o valida el seleccionado
+        /// para una nueva deducción. Rechaza deducciones automáticas.
+        /// </summary>
+        private static int Prea_frmPreaEstudiov2_Deducciones_ObtenerTipo(
+            IDbConnection connection,
+            string expediente,
+            FrmPreaEstudiov2DeduccionesAgregarRequest request)
+        {
+            int idDeduccion;
+
+            if (request.id_x > 0)
+            {
+                const string sqlDetalle = @"SELECT ID_DEDUCCION
+                FROM CRD_PREA_DETALLE_DEDUC
+                WHERE COD_PREANALISIS = @Expediente
+                  AND IDX = @Id";
+
+                var idExistente = connection.QuerySingleOrDefault<int?>(
+                    sqlDetalle,
+                    new
+                    {
+                        Expediente = expediente,
+                        Id = request.id_x
+                    });
+
+                idDeduccion = idExistente
+                    ?? throw new InvalidOperationException(
+                        "La deducción no existe o no pertenece al expediente.");
+            }
+            else if (!int.TryParse(request.cod_deduccion, out idDeduccion)
+                || idDeduccion <= 0)
+            {
+                throw new InvalidOperationException(
+                    "Debe seleccionar un tipo de deducción válido.");
+            }
+
+            const string sqlConfiguracion = @"SELECT AUTOMATICA
+                FROM CRD_PREA_V2_DEDUCCIONES_CONFIG
+                WHERE ID_DEDUCCION = @IdDeduccion";
+
+            var automatica = connection.QuerySingleOrDefault<int?>(
+                sqlConfiguracion,
+                new { IdDeduccion = idDeduccion });
+
+            if (automatica is null)
+            {
+                throw new InvalidOperationException(
+                    "La deducción no tiene una configuración válida.");
+            }
+
+            if (automatica.Value == 1)
+            {
+                throw new InvalidOperationException(
+                    "La deducción es automática y no permite modificación manual.");
+            }
+
+            return idDeduccion;
         }
 
         /// <summary>
@@ -187,32 +351,50 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             int codEmpresa,
             FrmPreaEstudiov2DeduccionesBorrarRequest request)
         {
-            var response = new ErrorDto<FrmPreaEstudiov2DeduccionesResponse>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new FrmPreaEstudiov2DeduccionesResponse()
-            };
-
+            var operacionConfirmada = false;
             try
             {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
+                if (request is null)
+                    throw new InvalidOperationException("Debe indicar la deducción.");
 
-                const string sql = "EXEC spCRDPreaDETALLE_DEDUC_B @Id, @Expediente";
-                connection.Execute(sql, new
-                {
-                    Id = (request.id_x ?? string.Empty).Trim(),
-                    Expediente = request.cod_preanalisis.Trim()
-                });
+                var expediente = (request.cod_preanalisis ?? string.Empty).Trim();
+                if (expediente.Length == 0
+                    || !int.TryParse(request.id_x, out var id) || id <= 0)
+                    throw new InvalidOperationException(
+                        "Debe indicar un expediente y un identificador de deducción válidos.");
 
-                return Prea_frmPreaEstudiov2_Deducciones_Consultar(codEmpresa, request.cod_preanalisis.Trim());
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                connection.Open();
+                Prea_frmPreaEstudiov2_Deducciones_ValidarEstado(connection, expediente);
+
+                var idDeduccion = connection.QuerySingleOrDefault<int?>(
+                    @"SELECT ID_DEDUCCION FROM CRD_PREA_DETALLE_DEDUC
+                      WHERE COD_PREANALISIS = @Expediente AND IDX = @Id",
+                    new { Expediente = expediente, Id = id });
+                if (idDeduccion is null)
+                    throw new InvalidOperationException(
+                        "La deducción no existe o no pertenece al expediente.");
+
+                connection.Execute(
+                    "EXEC spCRDPreaDETALLE_DEDUC_B @Id, @Expediente",
+                    new { Id = id, Expediente = expediente });
+                operacionConfirmada = true;
+
+                var consulta = Prea_frmPreaEstudiov2_Deducciones_Consultar(
+                    codEmpresa, expediente);
+                if (consulta.Code != 0)
+                    consulta.Description =
+                        "La deducción se eliminó, pero no se pudo actualizar la lista. " +
+                        "No repita la operación. Detalle: " + consulta.Description;
+                return consulta;
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = new FrmPreaEstudiov2DeduccionesResponse();
-                return response;
+                var mensaje = operacionConfirmada
+                    ? "La deducción se eliminó. Error al actualizar la lista: " + ex.Message
+                    : ex.Message;
+                return DbHelper.CreateErrorResponse(
+                    mensaje, -1, new FrmPreaEstudiov2DeduccionesResponse());
             }
         }
     }
