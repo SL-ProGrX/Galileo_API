@@ -263,7 +263,9 @@ select dbo.fxCBR_Creditos_Balloons_Aplicacion_Valida(
                     sql: "exec spCBR_Creditos_Balloons_Consulta",
                     commandTimeout: 0).ToList();
 
-                IEnumerable<CoAplicaAbonosBalloonsListaItemDto> query = lista;
+                var operacionesEnMora = ObtenerOperacionesEnMora(conn, lista);
+                IEnumerable<CoAplicaAbonosBalloonsListaItemDto> query =
+                    ConsolidarCasosEnMora(lista, operacionesEnMora);
 
                 query = ApplyFiltro(query, filtros);
                 query = ApplySort(query, filtros);
@@ -283,6 +285,86 @@ select dbo.fxCBR_Creditos_Balloons_Aplicacion_Valida(
             {
                 return DbHelper.CreateErrorResponse(ex.Message, -1, result);
             }
+        }
+
+        /// <summary>
+        /// Obtiene las operaciones que actualmente poseen registros en la vista de morosidad.
+        /// </summary>
+        /// <param name="conn">Conexión abierta a la base de datos de la empresa.</param>
+        /// <param name="casos">Casos devueltos por la consulta de créditos balloons.</param>
+        /// <returns>Conjunto de operaciones que se encuentran en mora.</returns>
+        private static HashSet<decimal> ObtenerOperacionesEnMora(
+            SqlConnection conn,
+            IEnumerable<CoAplicaAbonosBalloonsListaItemDto> casos)
+        {
+            var operaciones = casos
+                .Select(x => x.operacion)
+                .Where(x => x > 0)
+                .Distinct()
+                .ToArray();
+
+            var operacionesEnMora = new HashSet<decimal>();
+            const string sql = @"
+SELECT DISTINCT CAST(ID_SOLICITUD AS decimal(18, 0))
+FROM VISTA_MOROSIDAD WITH (NOLOCK)
+WHERE ID_SOLICITUD IN @Operaciones;";
+
+            foreach (var lote in operaciones.Chunk(1000))
+            {
+                var resultado = conn.Query<decimal>(
+                    sql,
+                    new { Operaciones = lote },
+                    commandTimeout: 0);
+
+                operacionesEnMora.UnionWith(resultado);
+            }
+
+            return operacionesEnMora;
+        }
+
+        /// <summary>
+        /// Conserva únicamente casos en mora y consolida las filas repetidas generadas por
+        /// las uniones de contratos y fondos del procedimiento original.
+        /// </summary>
+        /// <param name="casos">Casos devueltos por el procedimiento original.</param>
+        /// <param name="operacionesEnMora">Operaciones presentes en la vista de morosidad.</param>
+        /// <returns>Un caso por combinación de cédula y operación.</returns>
+        private static IEnumerable<CoAplicaAbonosBalloonsListaItemDto> ConsolidarCasosEnMora(
+            IEnumerable<CoAplicaAbonosBalloonsListaItemDto> casos,
+            IReadOnlySet<decimal> operacionesEnMora)
+        {
+            return casos
+                .Where(x => operacionesEnMora.Contains(x.operacion))
+                .GroupBy(x => new
+                {
+                    Cedula = Clean(x.cedula),
+                    x.operacion
+                })
+                .Select(grupo =>
+                {
+                    var caso = grupo.First();
+
+                    return new CoAplicaAbonosBalloonsListaItemDto
+                    {
+                        cedula = Clean(caso.cedula),
+                        nombre = Clean(caso.nombre),
+                        codigo = Clean(caso.codigo),
+                        operacion = caso.operacion,
+                        cuota = grupo.Max(x => x.cuota),
+                        preanalisis = grupo
+                            .Select(x => Clean(x.preanalisis))
+                            .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? string.Empty,
+                        periodicidad = grupo
+                            .Select(x => Clean(x.periodicidad))
+                            .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? string.Empty,
+                        disponible_cuenta = grupo.Max(x => x.disponible_cuenta),
+                        disponible_sobres = grupo.Max(x => x.disponible_sobres),
+                        disponible_fondos = grupo.Max(x => x.disponible_fondos),
+                        disponible_fondos_especial = grupo.Max(x => x.disponible_fondos_especial),
+                        indicador = grupo.Any(x => x.indicador),
+                        traslado_salario = grupo.Any(x => x.traslado_salario)
+                    };
+                });
         }
 
         /// <summary>
