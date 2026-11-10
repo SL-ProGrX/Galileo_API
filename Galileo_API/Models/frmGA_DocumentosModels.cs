@@ -46,7 +46,7 @@ namespace Galileo.Models.GA
 
     public class GaDocumentoEliminarRequest
     {
-        public long fileid { get; set; }
+        public long fileid { get; set; } = 0;
         public string typeid { get; set; } = string.Empty;
         public string moduloid { get; set; } = string.Empty;
         public string llave01 { get; set; } = string.Empty;
