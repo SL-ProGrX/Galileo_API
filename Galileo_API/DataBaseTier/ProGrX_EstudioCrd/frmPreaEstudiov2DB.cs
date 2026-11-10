@@ -239,6 +239,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 var salarioMinimoInembargable = parametros.Decimal("17");
                 result.Result.salario_minimo_inembargable = salarioMinimoInembargable;
                 result.Result.salario_normativa = salarioMinimoInembargable + parametros.Decimal("22");
+                result.Result.poliza_factor_desempleo = parametros.Decimal("82");
 
                 // '01' -> GlobalEdadMaximaPermitidaHombre, '02' -> ...Mujeres.
                 result.Result.edad_maxima_hombres = parametros.Entero("01");
