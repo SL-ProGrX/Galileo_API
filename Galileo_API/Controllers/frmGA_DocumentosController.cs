@@ -81,18 +81,13 @@ namespace Galileo.Controllers
         public ErrorDto Documentos_Eliminar(
             [FromQuery] int? CodEmpresa,
             [FromQuery] int? CodCliente,
-            string llave01,
-            string? llave02,
-            string? llave03,
-            string usuario)
+            [FromQuery] GaDocumentoEliminarRequest request)
         {
             var empresaId = CodEmpresa ?? CodCliente;
-            if (!empresaId.HasValue)
-            {
+            if (!empresaId.HasValue || empresaId.Value <= 0)
                 return new ErrorDto { Code = -1, Description = "CodEmpresa requerido." };
-            }
 
-            return new FrmGaDocumentosBl(_config).Documentos_Eliminar(empresaId.Value, llave01, llave02, llave03, usuario);
+            return BL_GA_Documentos.Documentos_Eliminar(empresaId.Value, request);
         }
     }
 }

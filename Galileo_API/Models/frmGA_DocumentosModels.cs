@@ -43,4 +43,15 @@ namespace Galileo.Models.GA
         [FromForm(Name = "info")]
         public string? Info { get; set; }
     }
+
+    public class GaDocumentoEliminarRequest
+    {
+        public long fileid { get; set; }
+        public string typeid { get; set; } = string.Empty;
+        public string moduloid { get; set; } = string.Empty;
+        public string llave01 { get; set; } = string.Empty;
+        public string? llave02 { get; set; }
+        public string? llave03 { get; set; }
+        public string usuario { get; set; } = string.Empty;
+    }
 }
