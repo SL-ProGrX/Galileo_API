@@ -947,6 +947,7 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         public string descripcion { get; set; } = string.Empty;
         public decimal cuota_colilla { get; set; }
         public decimal cuota_mensual { get; set; }
+        public bool permite_editar { get; set; }
     }
 
     public class FrmPreaEstudiov2DeduccionesAgregarRequest
@@ -959,6 +960,8 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         public string descripcion { get; set; } = string.Empty;
         [System.Text.Json.Serialization.JsonRequired]
         public decimal monto { get; set; }
+
+        public int id_x { get; set; } = 0;
     }
 
     public class FrmPreaEstudiov2DeduccionesBorrarRequest
