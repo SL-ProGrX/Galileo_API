@@ -79,7 +79,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     deducciones = deducciones,
                     total_colilla = totalColilla,
                     total_mensual = totalMensual,
-                    permite_editar = permiteModificar,
                 };
             }
             catch (Exception ex)
