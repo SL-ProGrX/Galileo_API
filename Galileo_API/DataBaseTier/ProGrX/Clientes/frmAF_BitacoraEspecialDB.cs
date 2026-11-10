@@ -52,7 +52,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                       AND (@AplicarFechas = 0 OR
                           (@UsarFechaRevision = 1 AND C.Revisado_fecha BETWEEN @FechaInicio AND @FechaCorte) OR
                           (@UsarFechaRevision = 0 AND C.fecha BETWEEN @FechaInicio AND @FechaCorte))
-                      AND (@AplicarMovimientos = 0 OR C.Movimiento IN @Movimientos)
+                      AND C.Movimiento IN @Movimientos
                       AND (@AplicarUsuario = 0 OR
                           (@UsarFechaRevision = 1 AND C.Revisado_Usuario = @Usuario) OR
                           (@UsarFechaRevision = 0 AND C.Usuario = @Usuario))
@@ -191,7 +191,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 .Distinct()
                 .ToArray() ?? Array.Empty<string>();
 
-            var usarFechaRevision = filtros.chkRevisados == true;
+            var usarFechaRevision = filtros.buscarUsuarioFechaRev == true;
             var aplicarFechas = filtros.chkFechas == false;
             var aplicarUsuario = filtros.chkUsuario == false && !string.IsNullOrWhiteSpace(filtros.usuario);
 
@@ -202,8 +202,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 AplicarFechas = aplicarFechas ? 1 : 0,
                 UsarFechaRevision = usarFechaRevision ? 1 : 0,
                 FechaInicio = filtros.fecha_inicio.Date,
-                FechaCorte = filtros.fecha_corte.Date.AddHours(23).AddMinutes(59).AddSeconds(59),
-                AplicarMovimientos = movimientos.Length > 0 ? 1 : 0,
+                FechaCorte = filtros.fecha_corte.Date.AddHours(23).AddMinutes(59),
                 Movimientos = movimientos,
                 AplicarUsuario = aplicarUsuario ? 1 : 0,
                 Usuario = NormalizarTexto(filtros.usuario),

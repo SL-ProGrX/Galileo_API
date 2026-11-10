@@ -161,8 +161,11 @@ namespace Galileo.DataBaseTier
 
                     if (filtros.llave3 != null)
                     {
-                        query += " AND ISNULL(Llave_03, '') = @llave3";
+                        // Incluye la llave exacta y sus consecutivos de carga múltiple (llave3-2, llave3-3...)
+                        query += @" AND (ISNULL(Llave_03, '') = @llave3
+                                    OR ISNULL(Llave_03, '') LIKE @llave3Consecutivo ESCAPE '\')";
                         parameters.Add("@llave3", filtros.llave3, DbType.String);
+                        parameters.Add("@llave3Consecutivo", EscaparLike(filtros.llave3) + "-[0-9]%", DbType.String);
                     }
 
                     resp = connection.Query<DocumentosArchivoDto>(query, parameters).ToList();
@@ -192,6 +195,11 @@ namespace Galileo.DataBaseTier
         private static string NormalizarTexto(string? valor)
         {
             return valor?.Trim() ?? string.Empty;
+        }
+
+        private static string EscaparLike(string valor)
+        {
+            return valor.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_").Replace("[", "\\[");
         }
 
         private static string? NormalizarFiltroOpcional(string? valor)
