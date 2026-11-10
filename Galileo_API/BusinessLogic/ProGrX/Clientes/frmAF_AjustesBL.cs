@@ -30,14 +30,14 @@ namespace Galileo.BusinessLogic
             return _db.AF_EstadosPersona_ObtenerActivos(CodEmpresa);
         }
 
-        public ErrorDto AF_Ajustes_CambiarIdentificacion(int CodEmpresa, string cedula, int nuevoTipoId)
+        public ErrorDto AF_Ajustes_CambiarIdentificacion(int CodEmpresa, string cedula, int nuevoTipoId, string usuario)
         {
-            return _db.AF_Ajustes_CambiarIdentificacion(CodEmpresa, cedula, nuevoTipoId);
+            return _db.AF_Ajustes_CambiarIdentificacion(CodEmpresa, cedula, nuevoTipoId, usuario);
         }
 
-        public ErrorDto AF_Ajustes_CambiarEstado(int CodEmpresa, string cedula, string nuevoEstado)
+        public ErrorDto AF_Ajustes_CambiarEstado(int CodEmpresa, string cedula, string nuevoEstado, string usuario)
         {
-            return _db.AF_Ajustes_CambiarEstado(CodEmpresa, cedula, nuevoEstado);
+            return _db.AF_Ajustes_CambiarEstado(CodEmpresa, cedula, nuevoEstado, usuario);
         }
 
         public ErrorDto AF_Ajustes_CambiarInstitucion_ASECCSS(int CodEmpresa, string cedula, string cambiosJson)
@@ -65,7 +65,8 @@ namespace Galileo.BusinessLogic
                 cedula,
                 cambios.codInstitucion,
                 cambios.codDepartamento ?? string.Empty,
-                cambios.codSeccion ?? string.Empty
+                cambios.codSeccion ?? string.Empty,
+                cambios.usuario
             );
         }
 

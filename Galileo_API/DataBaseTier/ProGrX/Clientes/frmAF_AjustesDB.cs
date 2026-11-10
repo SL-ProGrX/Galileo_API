@@ -2,6 +2,7 @@ using Dapper;
 using Newtonsoft.Json;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 using System.Data;
 using Galileo.Models.ProGrX.Clientes;
 using Microsoft.Data.SqlClient;
@@ -11,8 +12,54 @@ namespace Galileo.DataBaseTier
     public class FrmAfAjustesDB
     {
         private readonly IConfiguration _config;
+        private readonly MSecurityMainDb _mSecurity;
+        private readonly MAfilicacionDB _mAfiliacion;
 
         private const string SpCatalogosConsulta = "spAF_Catalogos_Consulta";
+
+        private const int ModuloBitacora = 9;
+        private const int LongitudDetalleBitacora = 50;
+        private const string MovimientoModifica = "MODIFICA";
+        private const string ParametroBitacoraEspecial = "07";
+        private const string MovimientoBitacoraIdentificacion = "26";
+        private const string MovimientoBitacoraEstado = "27";
+        private const string MovimientoBitacoraInstitucion = "01";
+
+        private const string SqlDescripcionTipoIdSocio = @"
+                    SELECT RTRIM(T.Descripcion)
+                    FROM dbo.socios S
+                    LEFT JOIN dbo.AFI_TIPOS_IDS T
+                        ON S.tipo_id = T.tipo_id
+                    WHERE S.cedula = @Cedula;";
+
+        private const string SqlDescripcionTipoId = @"
+                    SELECT RTRIM(Descripcion)
+                    FROM dbo.AFI_TIPOS_IDS
+                    WHERE tipo_id = @TipoId;";
+
+        private const string SqlDescripcionEstadoSocio = @"
+                    SELECT RTRIM(Est.Descripcion)
+                    FROM dbo.socios S
+                    INNER JOIN dbo.AFI_ESTADOS_PERSONA Est
+                        ON S.EstadoActual = Est.Cod_Estado
+                    WHERE S.cedula = @Cedula;";
+
+        private const string SqlDescripcionEstado = @"
+                    SELECT RTRIM(Descripcion)
+                    FROM dbo.AFI_ESTADOS_PERSONA
+                    WHERE Cod_Estado = @Estado;";
+
+        private const string SqlUbicacionSocio = @"
+                    SELECT cod_institucion AS CodInstitucion,
+                           RTRIM(cod_departamento) AS CodDepartamento,
+                           RTRIM(cod_seccion) AS CodSeccion
+                    FROM dbo.socios
+                    WHERE cedula = @Cedula;";
+
+        private const string SqlParametroBitacoraEspecial = @"
+                    SELECT TOP 1 RTRIM(valor)
+                    FROM dbo.afi_parametros
+                    WHERE cod_parametro = @Codigo;";
 
         private const string SqlInstituciones = @"
                     SELECT COD_INSTITUCION AS item,
@@ -111,6 +158,8 @@ namespace Galileo.DataBaseTier
         public FrmAfAjustesDB(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
+            _mSecurity = new MSecurityMainDb(_config);
+            _mAfiliacion = new MAfilicacionDB(_config);
         }
 
 
@@ -156,16 +205,6 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Construye una respuesta estándar según el resultado de una ejecución sin retorno relevante.
-        /// </summary>
-        private static ErrorDto CrearRespuestaOperacion(ErrorDto<int> result, string successMessage, string errorMessage)
-        {
-            return result.Code != 0
-                ? DbHelper.ErrorResponse(result.Description ?? errorMessage, result.Code.GetValueOrDefault(-1))
-                : DbHelper.OkResponse(successMessage);
-        }
-
-        /// <summary>
         /// Construye una respuesta estándar a partir de una ejecución WithConn que retorna ErrorDto.
         /// </summary>
         private static ErrorDto CrearRespuestaOperacion(ErrorDto<ErrorDto> result, string errorMessage)
@@ -182,20 +221,30 @@ namespace Galileo.DataBaseTier
         /// <param name="CodEmpresa">Código de empresa.</param>
         /// <param name="cedula">Cédula de la persona.</param>
         /// <param name="nuevoTipoId">Nuevo tipo de identificación.</param>
+        /// <param name="usuario">Usuario que realiza el cambio (bitácora).</param>
         /// <returns>Resultado de la actualización.</returns>
-        public ErrorDto AF_Ajustes_CambiarIdentificacion(int CodEmpresa, string cedula, int nuevoTipoId)
+        public ErrorDto AF_Ajustes_CambiarIdentificacion(int CodEmpresa, string cedula, int nuevoTipoId, string usuario)
         {
-            var result = DbHelper.ExecuteNonQueryWithResult(
-                CreatePortalDb(),
-                CodEmpresa,
-                SqlCambiarIdentificacion,
-                new
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+            {
+                var cedulaSegura = NormalizarTexto(cedula);
+                var tipoAnterior = connection.QueryFirstOrDefault<string>(SqlDescripcionTipoIdSocio, new { Cedula = cedulaSegura }) ?? string.Empty;
+                var tipoNuevo = connection.QueryFirstOrDefault<string>(SqlDescripcionTipoId, new { TipoId = nuevoTipoId }) ?? string.Empty;
+
+                connection.Execute(SqlCambiarIdentificacion, new
                 {
                     TipoId = nuevoTipoId,
-                    Cedula = NormalizarTexto(cedula)
+                    Cedula = cedulaSegura
                 });
 
-           return CrearRespuestaOperacion(result, "Actualizado correctamente", "Error al actualizar identificación.");
+                var detalle = $"Identificación de {tipoAnterior} a {tipoNuevo} {cedulaSegura}";
+                RegistrarBitacoraGeneral(CodEmpresa, usuario, detalle);
+                RegistrarBitacoraEspecialSiHabilitada(connection, CodEmpresa, MovimientoBitacoraIdentificacion, detalle, cedulaSegura, usuario);
+
+                return DbHelper.OkResponse("Actualizado correctamente");
+            });
+
+            return CrearRespuestaOperacion(result, "Error al actualizar identificación.");
         }
 
 
@@ -205,8 +254,9 @@ namespace Galileo.DataBaseTier
         /// <param name="CodEmpresa">Código de empresa.</param>
         /// <param name="cedula">Cédula de la persona.</param>
         /// <param name="nuevoEstado">Nuevo estado solicitado.</param>
+        /// <param name="usuario">Usuario que realiza el cambio (bitácora).</param>
         /// <returns>Resultado del cambio de estado.</returns>
-        public ErrorDto AF_Ajustes_CambiarEstado(int CodEmpresa, string cedula, string nuevoEstado)
+        public ErrorDto AF_Ajustes_CambiarEstado(int CodEmpresa, string cedula, string nuevoEstado, string usuario)
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
@@ -223,11 +273,19 @@ namespace Galileo.DataBaseTier
                     return DbHelper.ErrorResponse("No procede el cambio de estado porque la persona tiene Aporte registrado.");
                 }
 
+                var estadoAnterior = connection.QueryFirstOrDefault<string>(SqlDescripcionEstadoSocio, new { Cedula = cedulaSegura }) ?? string.Empty;
+                var estadoNuevo = connection.QueryFirstOrDefault<string>(SqlDescripcionEstado, new { Estado = estadoSeguro }) ?? string.Empty;
+
                 connection.Execute(SqlCambiarEstado, new
                 {
                     Estado = estadoSeguro,
                     Cedula = cedulaSegura
                 });
+
+                // Texto idéntico al VB6 (sbCambioEstado), incluido el doble espacio.
+                var detalle = $"Estado de  de {estadoAnterior} a {estadoNuevo} {cedulaSegura}";
+                RegistrarBitacoraGeneral(CodEmpresa, usuario, detalle);
+                RegistrarBitacoraEspecialSiHabilitada(connection, CodEmpresa, MovimientoBitacoraEstado, detalle, cedulaSegura, usuario);
 
                 return DbHelper.OkResponse("Estado actualizado correctamente");
             });
@@ -296,13 +354,15 @@ namespace Galileo.DataBaseTier
         /// <param name="codInstitucion">Nueva institución.</param>
         /// <param name="codDepartamento">Nuevo departamento.</param>
         /// <param name="codSeccion">Nueva sección.</param>
+        /// <param name="usuario">Usuario que realiza el cambio (bitácora).</param>
         /// <returns>Resultado de la actualización.</returns>
         public ErrorDto AF_Ajustes_CambiarInstitucion(
             int CodEmpresa,
             string cedula,
             int codInstitucion,
             string codDepartamento,
-            string codSeccion
+            string codSeccion,
+            string usuario
         )
         {
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
@@ -314,13 +374,24 @@ namespace Galileo.DataBaseTier
                     return DbHelper.ErrorResponse("El estado actual del socio no está autorizado en la institución indicada.");
                 }
 
+                var deptNuevo = NormalizarTexto(codDepartamento);
+                var seccionNueva = NormalizarTexto(codSeccion);
+                var ubicacionAnterior = connection.QueryFirstOrDefault<UbicacionSocio>(SqlUbicacionSocio, new { Cedula = cedulaSegura });
+
                 connection.Execute(SqlCambiarInstitucion, new
                 {
                     CodInst = codInstitucion,
-                    CodDept = NormalizarTexto(codDepartamento),
-                    CodSec = NormalizarTexto(codSeccion),
+                    CodDept = deptNuevo,
+                    CodSec = seccionNueva,
                     Cedula = cedulaSegura
                 });
+
+                // VB6 sbCambioinstitucion: bitácora especial "01" solo si hubo cambios; sin bitácora general.
+                var detalle = ConstruirDetalleInstitucion(ubicacionAnterior, codInstitucion, deptNuevo, seccionNueva);
+                if (detalle.Length > 0)
+                {
+                    _mAfiliacion.sbgAFIBitacora_Registrar(CodEmpresa, MovimientoBitacoraInstitucion, detalle, cedulaSegura, usuario);
+                }
 
                 return DbHelper.OkResponse("Institución y dependencias actualizadas correctamente.");
             });
@@ -380,9 +451,9 @@ namespace Galileo.DataBaseTier
             var request = DbHelper.DeserializeOrNew<AFAjuste>(ajuste);
             return codigo switch
             {
-                1 => AF_Ajustes_CambiarIdentificacion(CodEmpresa, request.cedula, request.nuevo_tipo_id),
-                2 => AF_Ajustes_CambiarEstado(CodEmpresa, request.cedula, request.nuevo_estado),
-                3 => AF_Ajustes_CambiarInstitucion(CodEmpresa, request.cedula, request.cod_institucion, request.cod_departamento, request.cod_seccion),
+                1 => AF_Ajustes_CambiarIdentificacion(CodEmpresa, request.cedula, request.nuevo_tipo_id, request.usuario),
+                2 => AF_Ajustes_CambiarEstado(CodEmpresa, request.cedula, request.nuevo_estado, request.usuario),
+                3 => AF_Ajustes_CambiarInstitucion(CodEmpresa, request.cedula, request.cod_institucion, request.cod_departamento, request.cod_seccion, request.usuario),
                 _ => DbHelper.ErrorResponse("Código de ajuste no válido.")
             };
         }
@@ -421,6 +492,75 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <returns>Instancia de PortalDB configurada.</returns>
         private PortalDB CreatePortalDb() => new(_config);
+
+        /// <summary>
+        /// Ubicación de la persona (institución, departamento y sección) antes de un cambio.
+        /// </summary>
+        public sealed class UbicacionSocio
+        {
+            public int CodInstitucion { get; set; }
+            public string? CodDepartamento { get; set; }
+            public string? CodSeccion { get; set; }
+        }
+
+        /// <summary>
+        /// Registra en la bitácora general (equivale al Bitacora de VB6): movimiento MODIFICA y detalle en mayúsculas, máximo 50 caracteres.
+        /// </summary>
+        private void RegistrarBitacoraGeneral(int codEmpresa, string usuario, string detalle)
+        {
+            var detalleBitacora = detalle.ToUpperInvariant();
+            if (detalleBitacora.Length > LongitudDetalleBitacora)
+            {
+                detalleBitacora = detalleBitacora[..LongitudDetalleBitacora];
+            }
+
+            _mSecurity.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = NormalizarTexto(usuario).ToUpperInvariant(),
+                DetalleMovimiento = detalleBitacora,
+                Movimiento = MovimientoModifica,
+                Modulo = ModuloBitacora
+            });
+        }
+
+        /// <summary>
+        /// Registra en la bitácora especial solo si el parámetro 07 (BitacoraEspecial de VB6) está en "S".
+        /// </summary>
+        private void RegistrarBitacoraEspecialSiHabilitada(SqlConnection connection, int codEmpresa, string movimiento, string detalle, string cedula, string usuario)
+        {
+            var habilitada = connection.QueryFirstOrDefault<string>(SqlParametroBitacoraEspecial, new { Codigo = ParametroBitacoraEspecial }) == "S";
+            if (habilitada)
+            {
+                _mAfiliacion.sbgAFIBitacora_Registrar(codEmpresa, movimiento, detalle, cedula, usuario);
+            }
+        }
+
+        /// <summary>
+        /// Construye el detalle de cambios de institución con el formato de VB6; vacío si no hubo cambios.
+        /// </summary>
+        private static string ConstruirDetalleInstitucion(UbicacionSocio? anterior, int codInstitucion, string codDepartamento, string codSeccion)
+        {
+            var actual = anterior ?? new UbicacionSocio();
+            var departamentoAnterior = actual.CodDepartamento?.Trim() ?? string.Empty;
+            var seccionAnterior = actual.CodSeccion?.Trim() ?? string.Empty;
+            var cambios = new List<string>();
+
+            if (actual.CodInstitucion != codInstitucion)
+            {
+                cambios.Add($"Institución: {actual.CodInstitucion} -> {codInstitucion}");
+            }
+            if (departamentoAnterior != codDepartamento)
+            {
+                cambios.Add($"¦ Dept: {departamentoAnterior} -> {codDepartamento}");
+            }
+            if (seccionAnterior != codSeccion)
+            {
+                cambios.Add($"¦ Sección: {seccionAnterior} -> {codSeccion}");
+            }
+
+            return string.Concat(cambios);
+        }
 
         /// <summary>
         /// Valida si el estado solicitado está autorizado para la institución actual del socio.
