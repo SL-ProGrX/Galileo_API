@@ -961,7 +961,7 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         [System.Text.Json.Serialization.JsonRequired]
         public decimal monto { get; set; }
 
-        public int id_x { get; set; }
+        public int id_x { get; set; } = 0;
     }
 
     public class FrmPreaEstudiov2DeduccionesBorrarRequest
