@@ -71,6 +71,12 @@ namespace Galileo.DataBaseTier
                 return DbHelper.CreateErrorResponse("Los datos del beneficiario son requeridos.", -2, 0);
             }
 
+            var porcentajeInvalido = AF_PersonaBeneficiarios_Porcentaje_Validar(CodEmpresa, dto);
+            if (porcentajeInvalido is not null)
+            {
+                return porcentajeInvalido;
+            }
+
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
                 connection.QueryFirstOrDefault<dynamic>(
                     SpPersonaBeneficiariosRegistra,
@@ -90,6 +96,53 @@ namespace Galileo.DataBaseTier
             return lineaId.HasValue
                 ? DbHelper.CreateOkResponse(lineaId.Value, "Guardado correctamente")
                 : DbHelper.CreateErrorResponse("No se obtuvo respuesta del SP", -1, 0);
+        }
+
+
+        /// <summary>
+        /// Igual que V6: el porcentaje debe ser mayor que cero y, junto con el de los demás
+        /// beneficiarios de la persona, no puede superar el 100 %. No aplica al eliminar.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="dto">Datos del beneficiario.</param>
+        /// <returns>Error de validación, o nulo si el porcentaje es válido.</returns>
+        private ErrorDto<int>? AF_PersonaBeneficiarios_Porcentaje_Validar(int CodEmpresa, PersonaBeneficiarioDto dto)
+        {
+            if (string.Equals(NormalizarTexto(dto.TipoMov), "E", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            if (dto.Porcentaje <= 0 || dto.Porcentaje > 100)
+            {
+                return DbHelper.CreateErrorResponse("El porcentaje no es válido.", -2, 0);
+            }
+
+            var otros = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
+                connection.QueryFirstOrDefault<decimal>(
+                    @"SELECT ISNULL(SUM(PORCENTAJE), 0)
+                      FROM dbo.AFI_PERSONA_BENEFICIARIOS
+                      WHERE CEDULA = @Cedula AND LINEA_ID <> @Linea",
+                    new { Cedula = NormalizarTexto(dto.Cedula), Linea = dto.Linea_Id }));
+
+            if (otros.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    otros.Description ?? "No se pudo validar el porcentaje de los beneficiarios.",
+                    otros.Code.GetValueOrDefault(-1),
+                    0);
+            }
+
+            var disponible = 100m - otros.Result;
+            if (dto.Porcentaje > disponible)
+            {
+                return DbHelper.CreateErrorResponse(
+                    $"El porcentaje sobrepasa el total del 100% de los beneficiarios. Disponible: {disponible.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)} %.",
+                    -2,
+                    0);
+            }
+
+            return null;
         }
 
 
