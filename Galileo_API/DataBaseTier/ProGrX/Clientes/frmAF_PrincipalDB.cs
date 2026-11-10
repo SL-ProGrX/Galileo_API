@@ -98,6 +98,16 @@ namespace Galileo.DataBaseTier
                     };
                 }
 
+                // Igual que V6 (Form_Load): solo estados de ingreso, agrupados y ordenados.
+                // El SP repite cada estado por cada movimiento en AFI_ESTADOS_CAMBIO.
+                catalogos.EstadosPersonaIngreso = connection.Query<DropDownListaGenericaModel>(
+                    @"SELECT RTRIM(E.COD_ESTADO) AS item, RTRIM(E.DESCRIPCION) AS descripcion
+                      FROM AFI_ESTADOS_PERSONA E
+                      INNER JOIN AFI_ESTADOS_CAMBIO C ON E.COD_ESTADO = C.COD_ESTADO
+                      WHERE C.COD_MOVIMIENTO = 'ING' AND E.ACTIVO = 1
+                      GROUP BY E.COD_ESTADO, E.DESCRIPCION
+                      ORDER BY RTRIM(E.DESCRIPCION)").ToList();
+
                 catalogos.Generos = connection.Query<DropDownListaGenericaModel>(
                     @"SELECT COD_GENERO AS item, DESCRIPCION AS descripcion
                       FROM SYS_GENEROS

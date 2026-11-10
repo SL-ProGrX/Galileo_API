@@ -376,6 +376,11 @@ namespace Galileo.DataBaseTier
                 errores.Add("Sector no es válido.");
             }
 
+            if (dto.Deductora <= 0)
+            {
+                errores.Add("No se especificó la Deductora.");
+            }
+
             if (string.IsNullOrWhiteSpace(dto.EstadoLaboral))
             {
                 errores.Add("No se especificó el Estado Laboral.");
