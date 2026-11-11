@@ -438,7 +438,8 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         /// </summary>
         private ErrorDto<T> EjecutarConReintentoDeadlock<T>(int codEmpresa, Func<SqlConnection, T> accion)
         {
-            for (int intento = 1; ; intento++)
+            int intento = 1;
+            while (true)
             {
                 try
                 {
@@ -448,6 +449,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 catch (SqlException ex) when (ex.Number == NumeroErrorDeadlock && intento < MaxIntentosDeadlock)
                 {
                     Thread.Sleep(intento * PausaBaseDeadlockMs);
+                    intento++;
                 }
                 catch (Exception ex)
                 {
