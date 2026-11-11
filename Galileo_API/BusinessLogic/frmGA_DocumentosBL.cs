@@ -29,9 +29,9 @@ namespace Galileo.BusinessLogic
             return DbfrmGA_Documentos.Documentos_Obtener(filtros);
         }
 
-        public ErrorDto Documentos_Eliminar(int CodCliente, string llave01, string? llave02, string? llave03, string usuario)
+        public ErrorDto Documentos_Eliminar(int CodEmpresa, GaDocumentoEliminarRequest request)
         {
-            return DbfrmGA_Documentos.Documentos_Eliminar(CodCliente, llave01, llave02, llave03, usuario);
+            return DbfrmGA_Documentos.Documentos_Eliminar(CodEmpresa, request);
         }
     }
 }
