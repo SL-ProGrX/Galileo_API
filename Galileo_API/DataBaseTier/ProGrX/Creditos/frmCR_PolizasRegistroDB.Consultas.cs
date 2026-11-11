@@ -235,6 +235,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return CrPolizasRegistro_OperacionPolizaRequerida(new CrPolizasRegistroFormData());
             }
 
+            var integradaResp = CrPolizasRegistro_PolizaIntegrada_Obtener(codEmpresa, operacion, num_poliza);
+            if (integradaResp.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    integradaResp.Description ?? "No fue posible cargar el detalle de la poliza.",
+                    integradaResp.Code.GetValueOrDefault(-1),
+                    new CrPolizasRegistroFormData());
+            }
+
+            if (integradaResp.Result is not null)
+            {
+                return DbHelper.CreateOkResponse(CrPolizasRegistro_DetalleIntegrada_Crear(integradaResp.Result, num_poliza));
+            }
+
             var detalleResp = CrPolizasRegistro_DetalleBase_Obtener(codEmpresa, operacion, num_poliza);
             if (detalleResp.Code != 0)
             {
@@ -266,6 +280,67 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     detalleResp.Result,
                     num_poliza,
                     complementoResp.Result));
+        }
+
+        /// <summary>
+        /// Datos de una poliza integrada al plan de pagos (VB6 sbPolizaPlanCarga): salen de CRD_OPERACION_POLIZAS, sin reg_creditos.
+        /// </summary>
+        private ErrorDto<CrPolizasRegistroDetalleBase?> CrPolizasRegistro_PolizaIntegrada_Obtener(
+            int codEmpresa,
+            int operacion,
+            int numPoliza)
+        {
+            const string sql = @"
+            select top 1
+                rtrim(Pol.cod_poliza) as cod_poliza,
+                rtrim(Cat.descripcion) as poliza_descripcion,
+                isnull(Pol.estado, '') as estado,
+                isnull(Pol.num_contrato, '') as num_contrato,
+                isnull(Pol.monto, 0) as monto,
+                isnull(Pol.cuota, 0) as cuota,
+                isnull(Pol.pago_monto, 0) as pago_monto,
+                isnull(Pol.cuota_rst_plan, 0) as cuota_rst_plan,
+                isnull(Pol.deduce_plazo_credito, 0) as deduce_plazo_credito,
+                Pol.pago_fecha,
+                Pol.cobertura_inicio,
+                Pol.cobertura_vence,
+                isnull(Pol.pago_frecuencia, 'M') as pago_frecuencia,
+                isnull(Pol.num_seq_inicio, 0) as num_seq_inicio,
+                isnull(Pol.num_ctas_deduce, 0) as num_ctas_deduce,
+                Pol.recaudado_corte,
+                isnull(Pol.recaudado_saldo, 0) as recaudado_saldo,
+                isnull(Pol.id_solicitud_poliza, 0) as id_solicitud_poliza
+            from CRD_OPERACION_POLIZAS Pol
+            inner join CRD_CATALOGO_POLIZAS Cat
+                on Pol.cod_poliza = Cat.cod_poliza
+            where Pol.id_solicitud = @Operacion
+              and Pol.num_poliza = @NumPoliza
+              and isnull(Cat.integra_plan_pagos, 0) = 1;";
+
+            return DbHelper.ExecuteSingleQuery<CrPolizasRegistroDetalleBase>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                null,
+                new
+                {
+                    Operacion = operacion,
+                    NumPoliza = numPoliza
+                });
+        }
+
+        private static CrPolizasRegistroFormData CrPolizasRegistro_DetalleIntegrada_Crear(
+            CrPolizasRegistroDetalleBase detalle,
+            int numPoliza)
+        {
+            // VB6 sbPolizaPlanCarga: num de pagos fijo en 1; no hay datos de retencion ni primer deduccion.
+            var complemento = new CrPolizasRegistroDetalleComplementoData
+            {
+                poliza_pagos_num = 1,
+                poliza_cobertura_meses = CrPolizasRegistro_CoberturaMeses_Obtener(detalle)
+            };
+
+            return CrPolizasRegistro_DetalleForm_Crear(detalle, numPoliza, complemento);
         }
 
         private ErrorDto<CrPolizasRegistroDetalleBase?> CrPolizasRegistro_DetalleBase_Obtener(
