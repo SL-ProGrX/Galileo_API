@@ -1,27 +1,22 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
-using Galileo_API.DataBaseTier.Procesos;
 using Galileo_API.Models.Procesos;
 using Galileo_API.Models.ProGrX.Cobros;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
-    public class FrmCoAplExcProcesaDb
+    public class FrmCoAplExcProcesaDb : CoProcesoDbBase
     {
-        private readonly PortalDB _portalDB;
-        private readonly GenProcesoDb _procesoDb;
-
         public FrmCoAplExcProcesaDb(IConfiguration config)
-            : this(new PortalDB(config))
+            : base(config)
         {
         }
 
         public FrmCoAplExcProcesaDb(PortalDB portalDB)
+            : base(portalDB)
         {
-            _portalDB = portalDB;
-            _procesoDb = new GenProcesoDb(portalDB);
         }
 
         /// <summary>
@@ -152,21 +147,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return response;
         }
 
-        private ErrorDto<CoAplExcProcesadosResult> RegistrarError(int codEmpresa, Guid procesoId, string mensaje)
-        {
-            _procesoDb.Actualizar(codEmpresa, procesoId, GenProcesoEstados.Error, 0, 0, mensaje);
-
-            return new ErrorDto<CoAplExcProcesadosResult>
-            {
-                Code = -1,
-                Description = mensaje,
-                Result = new CoAplExcProcesadosResult
-                {
-                    aplicados = 0,
-                    pendientes = 0
-                }
-            };
-        }
+        private ErrorDto<CoAplExcProcesadosResult> RegistrarError(int codEmpresa, Guid procesoId, string mensaje) =>
+            RespuestaError(codEmpresa, procesoId, mensaje, new CoAplExcProcesadosResult { aplicados = 0, pendientes = 0 });
 
         /// <summary>
         /// Aplica un excedente y valida su resultado.
@@ -178,23 +160,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 @"exec spCBR_Excedente_Apl_Proceso_Aplicacion
                     @Usuario, @Cedula, @AplicacionId;";
 
-            connection.Execute(aplicaSql, new
-            {
-                Usuario = usuario,
-                Cedula = cedula,
-                AplicacionId = idAplicacion
-            }, commandTimeout: 0);
-
             const string validaSql =
                 @"select dbo.fxCBR_Excedente_Apl_Proceso_Valida(
                         @Cedula, @AplicacionId
                       ) as Resultado;";
 
-            return connection.QuerySingle<bool>(validaSql, new
-            {
-                Cedula = cedula,
-                AplicacionId = idAplicacion
-            }, commandTimeout: 0);
+            return AplicarYValidarCaso(connection, usuario, cedula, idAplicacion, aplicaSql, validaSql);
         }
 
         private sealed record ResultadoCasos(int Validos, List<string> Errores);

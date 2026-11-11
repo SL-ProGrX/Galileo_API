@@ -1,27 +1,22 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
-using Galileo_API.DataBaseTier.Procesos;
 using Galileo_API.Models.Procesos;
 using Galileo_API.Models.ProGrX.Cobros;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
-    public class FrmCoAplFndContratosAplicacionDb
+    public class FrmCoAplFndContratosAplicacionDb : CoProcesoDbBase
     {
-        private readonly PortalDB _portalDB;
-        private readonly GenProcesoDb _procesoDb;
-
         public FrmCoAplFndContratosAplicacionDb(IConfiguration config)
-            : this(new PortalDB(config))
+            : base(config)
         {
         }
 
         public FrmCoAplFndContratosAplicacionDb(PortalDB portalDB)
+            : base(portalDB)
         {
-            _portalDB = portalDB;
-            _procesoDb = new GenProcesoDb(portalDB);
         }
 
         /// <summary>
@@ -143,21 +138,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             };
         }
 
-        private ErrorDto<CoAplFndContrAplicadosResult> RegistrarError(int codEmpresa, Guid procesoId, string mensaje)
-        {
-            _procesoDb.Actualizar(codEmpresa, procesoId, GenProcesoEstados.Error, 0, 0, mensaje);
-
-            return new ErrorDto<CoAplFndContrAplicadosResult>
-            {
-                Code = -1,
-                Description = mensaje,
-                Result = new CoAplFndContrAplicadosResult
-                {
-                    aplicados = 0,
-                    pendientes = 0
-                }
-            };
-        }
+        private ErrorDto<CoAplFndContrAplicadosResult> RegistrarError(int codEmpresa, Guid procesoId, string mensaje) =>
+            RespuestaError(codEmpresa, procesoId, mensaje, new CoAplFndContrAplicadosResult { aplicados = 0, pendientes = 0 });
 
         /// <summary>
         /// Aplica los fondos de un caso y valida su resultado.
@@ -168,23 +150,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             const string aplicaSql =
                 @"exec spCBR_Fondos_Apl_Contratos_Proceso_Aplicacion @Usuario, @Cedula, @AplicacionId;";
 
-            connection.Execute(aplicaSql, new
-            {
-                Usuario = usuario,
-                Cedula = cedula,
-                AplicacionId = idAplicacion
-            }, commandTimeout: 0);
-
             const string validaSql =
                 @"select dbo.fxCBR_Fondos_Apl_Contratos_Proceso_Valida(
                         @Cedula, @AplicacionId
                       ) as Resultado;";
 
-            return connection.QuerySingle<bool>(validaSql, new
-            {
-                Cedula = cedula,
-                AplicacionId = idAplicacion
-            }, commandTimeout: 0);
+            return AplicarYValidarCaso(connection, usuario, cedula, idAplicacion, aplicaSql, validaSql);
         }
     }
 }
