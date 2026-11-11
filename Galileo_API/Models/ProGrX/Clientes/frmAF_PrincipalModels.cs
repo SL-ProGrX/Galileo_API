@@ -741,6 +741,7 @@
         public DateTime? Fecha { get; set; }
         public string? TipoDesc { get; set; }
         public DateTime FechaServidor { get; set; }
+        public int IndPrincipal { get; set; }
     }
 
     public class AfTelefonoGuardarRequest
@@ -752,6 +753,7 @@
         public string ext { get; set; } = string.Empty;
         public string contacto { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
+        public int indPrincipal { get; set; } = 0;
     }
 
     public class AfCuentaBancariaDto

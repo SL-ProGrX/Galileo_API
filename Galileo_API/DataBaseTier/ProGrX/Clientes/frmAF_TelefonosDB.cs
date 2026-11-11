@@ -24,11 +24,20 @@ namespace Galileo.DataBaseTier
                            T.Tipo,
                            T.Ext,
                            T.Usuario,
-                           T.Fecha
+                           T.Fecha,
+                           T.IND_PRINCIPAL AS IndPrincipal
                     FROM dbo.Telefonos T
                     WHERE Cedula = @Cedula;";
 
+        /// <summary>
+        /// Inserta un teléfono. Si se marca como principal, quita la marca a los demás de la misma cédula.
+        /// </summary>
         private const string SqlTelefonoInsert = @"
+                    UPDATE dbo.Telefonos
+                    SET IND_PRINCIPAL = 0
+                    WHERE cedula = @Cedula
+                      AND @IndPrincipal = 1;
+
                     INSERT INTO dbo.Telefonos
                     (
                         cedula,
@@ -37,7 +46,8 @@ namespace Galileo.DataBaseTier
                         ext,
                         contacto,
                         usuario,
-                        fecha
+                        fecha,
+                        IND_PRINCIPAL
                     )
                     VALUES
                     (
@@ -47,17 +57,27 @@ namespace Galileo.DataBaseTier
                         @Ext,
                         @Contacto,
                         @Usuario,
-                        dbo.MyGetDate()
+                        dbo.MyGetDate(),
+                        @IndPrincipal
                     );";
 
+        /// <summary>
+        /// Actualiza un teléfono. Si se marca como principal, quita la marca a los demás de la misma cédula.
+        /// </summary>
         private const string SqlTelefonoUpdate = @"
+                    UPDATE dbo.Telefonos
+                    SET IND_PRINCIPAL = 0
+                    WHERE cedula = (SELECT cedula FROM dbo.Telefonos WHERE telefono = @TelefonoId)
+                      AND @IndPrincipal = 1;
+
                     UPDATE dbo.Telefonos
                     SET numero = @Numero,
                         ext = @Ext,
                         contacto = @Contacto,
                         tipo = @TipoId,
                         usuario = @Usuario,
-                        fecha = dbo.MyGetDate()
+                        fecha = dbo.MyGetDate(),
+                        IND_PRINCIPAL = @IndPrincipal
                     WHERE telefono = @TelefonoId;";
 
         private const string SqlTelefonoDelete = @"
@@ -115,13 +135,7 @@ namespace Galileo.DataBaseTier
                 CreatePortalDb(),
                 CodEmpresa,
                 SqlTelefonoInsert,
-                CrearParametrosTelefono(
-                    request.cedula,
-                    request.tipo,
-                    request.numero,
-                    request.ext,
-                    request.contacto,
-                    request.usuario));
+                CrearParametrosTelefono(request));
 
             return result.Code == 0
                 ? DbHelper.OkResponse("Guardado correctamente")
@@ -147,13 +161,7 @@ namespace Galileo.DataBaseTier
                 CreatePortalDb(),
                 CodEmpresa,
                 SqlTelefonoUpdate,
-                CrearParametrosTelefonoActualizacion(
-                    request.telefono,
-                    request.tipo,
-                    request.numero,
-                    request.ext,
-                    request.contacto,
-                    request.usuario));
+                CrearParametrosTelefonoActualizacion(request));
 
             return result.Code == 0
                 ? DbHelper.OkResponse("Actualizado correctamente")
@@ -184,34 +192,41 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Crea parámetros seguros para insertar teléfonos.
         /// </summary>
-        private static object CrearParametrosTelefono(string cedula, int tipoId, string numero, string? ext, string? contacto, string usuario)
+        private static object CrearParametrosTelefono(AfTelefonoGuardarRequest request)
         {
             return new
             {
-                Cedula = NormalizarTexto(cedula),
-                TipoId = tipoId,
-                Numero = NormalizarTexto(numero),
-                Ext = NormalizarOpcional(ext, "0"),
-                Contacto = NormalizarOpcional(contacto, "N/A"),
-                Usuario = NormalizarTexto(usuario)
+                Cedula = NormalizarTexto(request.cedula),
+                TipoId = request.tipo,
+                Numero = NormalizarTexto(request.numero),
+                Ext = NormalizarOpcional(request.ext, "0"),
+                Contacto = NormalizarOpcional(request.contacto, "N/A"),
+                Usuario = NormalizarTexto(request.usuario),
+                IndPrincipal = NormalizarIndPrincipal(request.indPrincipal)
             };
         }
 
         /// <summary>
         /// Crea parámetros seguros para actualizar teléfonos.
         /// </summary>
-        private static object CrearParametrosTelefonoActualizacion(int telefonoId, int tipoId, string numero, string? ext, string? contacto, string usuario)
+        private static object CrearParametrosTelefonoActualizacion(AfTelefonoGuardarRequest request)
         {
             return new
             {
-                TelefonoId = telefonoId,
-                TipoId = tipoId,
-                Numero = NormalizarTexto(numero),
-                Ext = NormalizarOpcional(ext, "0"),
-                Contacto = NormalizarOpcional(contacto, "N/A"),
-                Usuario = NormalizarTexto(usuario)
+                TelefonoId = request.telefono,
+                TipoId = request.tipo,
+                Numero = NormalizarTexto(request.numero),
+                Ext = NormalizarOpcional(request.ext, "0"),
+                Contacto = NormalizarOpcional(request.contacto, "N/A"),
+                Usuario = NormalizarTexto(request.usuario),
+                IndPrincipal = NormalizarIndPrincipal(request.indPrincipal)
             };
         }
+
+        /// <summary>
+        /// Normaliza el indicador de teléfono principal (smallint: 1 = principal, 0 = no).
+        /// </summary>
+        private static int NormalizarIndPrincipal(int valor) => valor == 1 ? 1 : 0;
 
         /// <summary>
         /// Normaliza un valor opcional usando un marcador inválido.

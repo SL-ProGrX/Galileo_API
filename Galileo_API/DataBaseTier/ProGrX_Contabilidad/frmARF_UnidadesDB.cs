@@ -27,7 +27,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> ArfUnidades_Provincias_Obtener(int codEmpresa)
         {
-            string query = @"select Provincia as item, rtrim(Descripcion) as descripcion from Provincias";
+            string query = @"select cast(Provincia as varchar(10)) as item, rtrim(Descripcion) as descripcion from Provincias";
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query);
         }
 
