@@ -37,7 +37,7 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
             if (filtros is null)
             {
                 return DbHelper.CreateErrorResponse("Los filtros de catálogos son requeridos.", -2, new CatalogoLista());
-            }
+            } 
 
             var resultadoVacio = new CatalogoLista
             {
