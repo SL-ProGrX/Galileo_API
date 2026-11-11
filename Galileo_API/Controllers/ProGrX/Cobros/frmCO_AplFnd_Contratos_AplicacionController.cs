@@ -1,6 +1,8 @@
 ﻿using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX.Cobros;
+using Galileo_API.Models.Procesos;
 using Galileo_API.Models.ProGrX.Cobros;
+using Galileo_API.Services.ProGrX.Cobros;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,22 +15,29 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
     {
         private readonly FrmCoAplFndContratosAplicacionBl _bl;
 
-        public FrmCoAplFndContratosAplicacionController(IConfiguration config) => _bl = new FrmCoAplFndContratosAplicacionBl(config);
+        public FrmCoAplFndContratosAplicacionController(IConfiguration config, CoAplFndContrProcesoQueue queue) =>
+            _bl = new FrmCoAplFndContratosAplicacionBl(config, queue);
 
-        
         [HttpGet("CO_AplFndContrApl_Informacion_Obtener")]
         public ErrorDto<List<CoAplFndContrAplInformacionData>> CO_AplFndContrApl_Informacion_Obtener(int codEmpresa)
         {
             return _bl.CO_AplFndContrApl_Informacion_Obtener(codEmpresa);
         }
 
+        /// <summary>
+        /// Encola la aplicación de fondos y devuelve el ProcesoId para consultar el avance.
+        /// </summary>
         [ValidateAntiForgeryToken]
-        [HttpPost("CO_AplFndContrApl_Aplicar")]
-        public ErrorDto<CoAplFndContrAplicadosResult> CO_AplFndContrApl_Aplicar(int CodEmpresa, ContratosAplicarRequest request)
+        [HttpPost("CO_AplFndContrApl_Procesa_Aplicar")]
+        public ErrorDto<GenProcesoIniciadoResult> CO_AplFndContrApl_Procesa_Aplicar(int CodEmpresa, ContratosAplicarRequest request)
         {
-            return _bl.CO_AplFndContrApl_Aplicar(CodEmpresa, request);
+            return _bl.CO_AplFndContrApl_Procesa_Iniciar(CodEmpresa, request);
+        }
+
+        [HttpGet("CO_AplFndContrApl_Procesa_Estado")]
+        public ErrorDto<GenProcesoEstadoResult> CO_AplFndContrApl_Procesa_Estado(int CodEmpresa, Guid ProcesoId)
+        {
+            return _bl.CO_AplFndContrApl_Procesa_Estado(CodEmpresa, ProcesoId);
         }
     }
 }
-
-

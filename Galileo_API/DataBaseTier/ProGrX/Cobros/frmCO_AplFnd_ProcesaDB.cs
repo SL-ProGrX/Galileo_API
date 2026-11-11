@@ -1,22 +1,22 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
+using Galileo_API.Models.Procesos;
 using Galileo_API.Models.ProGrX.Cobros;
+using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
-    public class FrmCoAplFndProcesaDb
+    public class FrmCoAplFndProcesaDb : CoProcesoDbBase
     {
-        private readonly PortalDB _portalDB;
-
         public FrmCoAplFndProcesaDb(IConfiguration config)
-            : this(new PortalDB(config))
+            : base(config)
         {
         }
 
         public FrmCoAplFndProcesaDb(PortalDB portalDB)
+            : base(portalDB)
         {
-            _portalDB = portalDB;
         }
 
         /// <summary>
@@ -38,24 +38,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
         /// <summary>
-        /// Aplicar fondos seleccionados
+        /// Ejecuta la aplicación de fondos de un proceso encolado. Registra el avance en GEN_PROCESO
+        /// y se detiene en el primer caso que no valida (igual que el VB6).
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto<CoAplFndProcesadosResult> CO_AplFnd_Procesa_Aplicar(int CodEmpresa, FondosAplicarRequest request)
+        public ErrorDto<CoAplFndProcesadosResult> CO_AplFnd_Procesa_Ejecutar(int CodEmpresa, Guid procesoId, FondosAplicarRequest request)
         {
-            var response = new ErrorDto<CoAplFndProcesadosResult>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CoAplFndProcesadosResult
-                {
-                    aplicados = 0,
-                    pendientes = 0
-                }
-            };
-
             try
             {
                 var usuario = (request.Usuario ?? string.Empty).Trim().ToUpper();
@@ -70,10 +57,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 if (seleccionados.Count == 0)
                 {
-                    response.Code = -1;
-                    response.Description = "No hay casos a procesar";
-                    return response;
+                    return RegistrarError(CodEmpresa, procesoId, "No hay casos a procesar");
                 }
+
+                _procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.EnProceso, 0, 0);
 
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
@@ -82,74 +69,95 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 int idAplicacion = connection.QuerySingle<int>(guiaSql, new { Usuario = usuario }, commandTimeout: 0);
 
-                int contadorValidos = 0;
-                int totalCasos = seleccionados.Count;
-
-                foreach (var cedula in seleccionados)
-                {
-                    const string aplicaSql =
-                        @"exec spCBR_Fondos_Apl_Proceso_Aplicacion 
-                    @Usuario, @Cedula, @AplicacionId;";
-
-                    connection.Execute(aplicaSql, new
-                    {
-                        Usuario = usuario,
-                        Cedula = cedula,
-                        AplicacionId = idAplicacion
-                    }, commandTimeout: 0);
-
-                    const string validaSql =
-                        @"select dbo.fxCBR_Fondos_Apl_Proceso_Valida(
-                        @Cedula, @AplicacionId
-                      ) as Resultado;";
-
-                    bool valido = connection.QuerySingle<bool>(validaSql, new
-                    {
-                        Cedula = cedula,
-                        AplicacionId = idAplicacion
-                    }, commandTimeout: 0);
-
-                    if (valido)
-                    {
-                        contadorValidos++;
-
-                        response.Result = new CoAplFndProcesadosResult
-                        {
-                            aplicados = contadorValidos,
-                            pendientes = totalCasos - contadorValidos
-                        };
-                    }
-                    else
-                    {
-                        response.Code = -1;
-                        response.Description =
-                            $"El caso {cedula} no se procesó correctamente. " +
-                            $"Aplicación: {idAplicacion}. " +
-                            $"Procesados: {contadorValidos} de {totalCasos}.";
-                        response.Result = new CoAplFndProcesadosResult
-                        {
-                            aplicados = contadorValidos,
-                            pendientes = totalCasos - contadorValidos
-                        };
-                        return response;
-                    }
-                }
-
-                response.Description = "Proceso concluido satisfactoriamente";
-                response.Result = new CoAplFndProcesadosResult
-                {
-                    aplicados = contadorValidos,
-                    pendientes = totalCasos - contadorValidos
-                };
-
-                return response;
+                return ProcesarCasos(CodEmpresa, procesoId, connection, usuario, idAplicacion, seleccionados);
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-                return response;
+                return RegistrarError(CodEmpresa, procesoId, ex.Message);
             }
+        }
+
+        private ErrorDto<CoAplFndProcesadosResult> ProcesarCasos(
+            int codEmpresa, Guid procesoId, IDbConnection connection,
+            string usuario, int idAplicacion, List<string> cedulas)
+        {
+            int contadorValidos = 0;
+            int totalCasos = cedulas.Count;
+
+            foreach (var cedula in cedulas)
+            {
+                if (!AplicarFondo(connection, usuario, cedula, idAplicacion))
+                {
+                    var mensaje =
+                        $"El caso {cedula} no se procesó correctamente. " +
+                        $"Aplicación: {idAplicacion}. " +
+                        $"Procesados: {contadorValidos} de {totalCasos}.";
+
+                    return FinalizarConError(codEmpresa, procesoId, contadorValidos, totalCasos, mensaje);
+                }
+
+                contadorValidos++;
+                _procesoDb.Actualizar(codEmpresa, procesoId, GenProcesoEstados.EnProceso, contadorValidos, 0);
+            }
+
+            return FinalizarOk(codEmpresa, procesoId, contadorValidos, totalCasos);
+        }
+
+        private ErrorDto<CoAplFndProcesadosResult> FinalizarOk(
+            int codEmpresa, Guid procesoId, int contadorValidos, int totalCasos)
+        {
+            const string mensaje = "Proceso concluido satisfactoriamente";
+
+            _procesoDb.Actualizar(codEmpresa, procesoId, GenProcesoEstados.Terminado, totalCasos, 0, mensaje);
+
+            return new ErrorDto<CoAplFndProcesadosResult>
+            {
+                Code = 0,
+                Description = mensaje,
+                Result = new CoAplFndProcesadosResult
+                {
+                    aplicados = contadorValidos,
+                    pendientes = totalCasos - contadorValidos
+                }
+            };
+        }
+
+        private ErrorDto<CoAplFndProcesadosResult> FinalizarConError(
+            int codEmpresa, Guid procesoId, int contadorValidos, int totalCasos, string mensaje)
+        {
+            _procesoDb.Actualizar(codEmpresa, procesoId, GenProcesoEstados.Error, contadorValidos, 1, mensaje);
+
+            return new ErrorDto<CoAplFndProcesadosResult>
+            {
+                Code = -1,
+                Description = mensaje,
+                Result = new CoAplFndProcesadosResult
+                {
+                    aplicados = contadorValidos,
+                    pendientes = totalCasos - contadorValidos
+                }
+            };
+        }
+
+        private ErrorDto<CoAplFndProcesadosResult> RegistrarError(int codEmpresa, Guid procesoId, string mensaje) =>
+            RespuestaError(codEmpresa, procesoId, mensaje, new CoAplFndProcesadosResult { aplicados = 0, pendientes = 0 });
+
+        /// <summary>
+        /// Aplica los fondos de un caso y valida su resultado.
+        /// </summary>
+        /// <returns>true si el caso quedó válido; false si la validación no lo aprobó.</returns>
+        private static bool AplicarFondo(IDbConnection connection, string usuario, string cedula, int idAplicacion)
+        {
+            const string aplicaSql =
+                @"exec spCBR_Fondos_Apl_Proceso_Aplicacion
+                    @Usuario, @Cedula, @AplicacionId;";
+
+            const string validaSql =
+                @"select dbo.fxCBR_Fondos_Apl_Proceso_Valida(
+                        @Cedula, @AplicacionId
+                      ) as Resultado;";
+
+            return AplicarYValidarCaso(connection, usuario, cedula, idAplicacion, aplicaSql, validaSql);
         }
     }
 }

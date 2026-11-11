@@ -1,22 +1,22 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
+using Galileo_API.Models.Procesos;
 using Galileo_API.Models.ProGrX.Cobros;
+using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
-    public class FrmCoAplExcContratosAplicacionDb
+    public class FrmCoAplExcContratosAplicacionDb : CoProcesoDbBase
     {
-        private readonly PortalDB _portalDB;
-
         public FrmCoAplExcContratosAplicacionDb(IConfiguration config)
-            : this(new PortalDB(config))
+            : base(config)
         {
         }
 
         public FrmCoAplExcContratosAplicacionDb(PortalDB portalDB)
+            : base(portalDB)
         {
-            _portalDB = portalDB;
         }
 
         /// <summary>
@@ -38,23 +38,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
         /// <summary>
-        /// Aplica los excedentes a mora para los contratos itemsados
+        /// Ejecuta la aplicación de excedentes a mora de un proceso encolado. Registra el avance en GEN_PROCESO
+        /// y se detiene en el primer caso que no valida (igual que el VB6).
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto<CoAplExcContrAplicadosResult> CO_AplExcContrApl_Aplicar(int CodEmpresa, ExcContratosAplicarRequest request)
+        public ErrorDto<CoAplExcContrAplicadosResult> CO_AplExcContrApl_Procesa_Ejecutar(int CodEmpresa, Guid procesoId, ExcContratosAplicarRequest request)
         {
-            var response = new ErrorDto<CoAplExcContrAplicadosResult>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CoAplExcContrAplicadosResult
-                {
-                    aplicados = 0, pendientes = 0
-                }
-            };
-
             try
             {
                 var usuario = (request.Usuario ?? string.Empty).Trim().ToUpper();
@@ -64,10 +52,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 if (items.Count == 0)
                 {
-                    response.Code = -1;
-                    response.Description = "No hay casos a procesar";
-                    return response;
+                    return RegistrarError(CodEmpresa, procesoId, "No hay casos a procesar");
                 }
+
+                _procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.EnProceso, 0, 0);
 
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
@@ -79,68 +67,96 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     commandTimeout: 0
                 );
 
-                int contValidos = 0;
-                int totalCasos = items.Count;
+                var cedulas = items.Select(x => x.cedula.Trim()).ToList();
 
-                foreach (var cedula in items.Select(x => x.cedula.Trim()))
-                {
-                    const string aplicSql =
-                        @"exec spCBR_Excedente_Apl_Contratos_Proceso_Aplicacion @Usuario, @Cedula, @AplicacionId;";
-
-                    connection.Execute(aplicSql, new
-                    {
-                        Usuario = usuario,
-                        Cedula = cedula,
-                        AplicacionId = idAplicacion
-                    }, commandTimeout: 0);
-
-                    const string validaSql =
-                        @"select dbo.fxCBR_Excedente_Apl_Contratos_Proceso_Valida(
-                        @Cedula, @AplicacionId
-                      ) as Resultado;";
-
-                    bool valido = connection.QuerySingle<bool>(validaSql, new
-                    {
-                        Cedula = cedula,
-                        AplicacionId = idAplicacion
-                    }, commandTimeout: 0);
-
-                    if (valido)
-                    {
-                        contValidos++;
-                    }
-                    else
-                    {
-                        response.Code = -1;
-                        response.Description =
-                            $"El caso {cedula} no se proces&oacute; correctamente. " +
-                            $"Aplicación: {idAplicacion}. " +
-                            $"Procesados: {contValidos} de {totalCasos}.";
-                        response.Result = new CoAplExcContrAplicadosResult
-                        {
-                            aplicados = contValidos,
-                            pendientes = totalCasos - contValidos
-                        };
-                        return response;
-                    }
-                }
-
-                response.Description = "Proceso concluido satisfactoriamente";
-
-                response.Result = new CoAplExcContrAplicadosResult
-                {
-                    aplicados = contValidos,
-                    pendientes = totalCasos - contValidos
-                };
-
-                return response;
+                return ProcesarCasos(CodEmpresa, procesoId, connection, usuario, idAplicacion, cedulas);
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-                return response;
+                return RegistrarError(CodEmpresa, procesoId, ex.Message);
             }
+        }
+
+        private ErrorDto<CoAplExcContrAplicadosResult> ProcesarCasos(
+            int codEmpresa, Guid procesoId, IDbConnection connection,
+            string usuario, int idAplicacion, List<string> cedulas)
+        {
+            int contValidos = 0;
+            int totalCasos = cedulas.Count;
+
+            foreach (var cedula in cedulas)
+            {
+                if (!AplicarExcedenteContrato(connection, usuario, cedula, idAplicacion))
+                {
+                    var mensaje =
+                        $"El caso {cedula} no se procesó correctamente. " +
+                        $"Aplicación: {idAplicacion}. " +
+                        $"Procesados: {contValidos} de {totalCasos}.";
+
+                    return FinalizarConError(codEmpresa, procesoId, contValidos, totalCasos, mensaje);
+                }
+
+                contValidos++;
+                _procesoDb.Actualizar(codEmpresa, procesoId, GenProcesoEstados.EnProceso, contValidos, 0);
+            }
+
+            return FinalizarOk(codEmpresa, procesoId, contValidos, totalCasos);
+        }
+
+        private ErrorDto<CoAplExcContrAplicadosResult> FinalizarOk(
+            int codEmpresa, Guid procesoId, int contValidos, int totalCasos)
+        {
+            const string mensaje = "Proceso concluido satisfactoriamente";
+
+            _procesoDb.Actualizar(codEmpresa, procesoId, GenProcesoEstados.Terminado, totalCasos, 0, mensaje);
+
+            return new ErrorDto<CoAplExcContrAplicadosResult>
+            {
+                Code = 0,
+                Description = mensaje,
+                Result = new CoAplExcContrAplicadosResult
+                {
+                    aplicados = contValidos,
+                    pendientes = totalCasos - contValidos
+                }
+            };
+        }
+
+        private ErrorDto<CoAplExcContrAplicadosResult> FinalizarConError(
+            int codEmpresa, Guid procesoId, int contValidos, int totalCasos, string mensaje)
+        {
+            _procesoDb.Actualizar(codEmpresa, procesoId, GenProcesoEstados.Error, contValidos, 1, mensaje);
+
+            return new ErrorDto<CoAplExcContrAplicadosResult>
+            {
+                Code = -1,
+                Description = mensaje,
+                Result = new CoAplExcContrAplicadosResult
+                {
+                    aplicados = contValidos,
+                    pendientes = totalCasos - contValidos
+                }
+            };
+        }
+
+        private ErrorDto<CoAplExcContrAplicadosResult> RegistrarError(int codEmpresa, Guid procesoId, string mensaje) =>
+            RespuestaError(codEmpresa, procesoId, mensaje, new CoAplExcContrAplicadosResult { aplicados = 0, pendientes = 0 });
+
+        /// <summary>
+        /// Aplica los excedentes de un contrato y valida su resultado.
+        /// </summary>
+        /// <returns>true si el caso quedó válido; false si la validación no lo aprobó.</returns>
+        private static bool AplicarExcedenteContrato(IDbConnection connection, string usuario, string cedula, int idAplicacion)
+        {
+            const string aplicSql =
+                @"exec spCBR_Excedente_Apl_Contratos_Proceso_Aplicacion @Usuario, @Cedula, @AplicacionId;";
+
+            const string validaSql =
+                @"select dbo.fxCBR_Excedente_Apl_Contratos_Proceso_Valida(
+                        @Cedula, @AplicacionId
+                      ) as Resultado;";
+
+            return AplicarYValidarCaso(connection, usuario, cedula, idAplicacion, aplicSql, validaSql);
         }
     }
 }
