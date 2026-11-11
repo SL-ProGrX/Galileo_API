@@ -1,6 +1,8 @@
 ﻿using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX.Cobros;
+using Galileo_API.Models.Procesos;
 using Galileo_API.Models.ProGrX.Cobros;
+using Galileo_API.Services.ProGrX.Cobros;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,7 +14,8 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
     {
         private readonly FrmCoAplFndProcesaBl _bl;
 
-        public FrmCoAplFndProcesaController(IConfiguration config) => _bl = new FrmCoAplFndProcesaBl(config);
+        public FrmCoAplFndProcesaController(IConfiguration config, CoAplFndProcesoQueue queue) =>
+            _bl = new FrmCoAplFndProcesaBl(config, queue);
 
         [Authorize]
         [HttpGet("CO_AplFndProc_Informacion_Obtener")]
@@ -21,14 +24,22 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
             return _bl.CO_AplFndProc_Informacion_Obtener(codEmpresa);
         }
 
+        /// <summary>
+        /// Encola la aplicación de fondos y devuelve el ProcesoId para consultar el avance.
+        /// </summary>
         [Authorize]
         [ValidateAntiForgeryToken]
         [HttpPost("CO_AplFnd_Procesa_Aplicar")]
-        public ErrorDto<CoAplFndProcesadosResult> CO_AplFnd_Procesa_Aplicar(int CodEmpresa, FondosAplicarRequest request)
+        public ErrorDto<GenProcesoIniciadoResult> CO_AplFnd_Procesa_Aplicar(int CodEmpresa, FondosAplicarRequest request)
         {
-            return _bl.CO_AplFnd_Procesa_Aplicar(CodEmpresa, request);
+            return _bl.CO_AplFnd_Procesa_Iniciar(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [HttpGet("CO_AplFnd_Procesa_Estado")]
+        public ErrorDto<GenProcesoEstadoResult> CO_AplFnd_Procesa_Estado(int CodEmpresa, Guid ProcesoId)
+        {
+            return _bl.CO_AplFnd_Procesa_Estado(CodEmpresa, ProcesoId);
         }
     }
 }
-
-

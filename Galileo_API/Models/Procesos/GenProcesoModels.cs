@@ -7,6 +7,7 @@ namespace Galileo_API.Models.Procesos
     {
         public const string CoAplExc = "COBROS_APL_EXC";
         public const string CoAplFnd = "COBROS_APL_FND";
+        public const string CoAplExcContr = "COBROS_APL_EXC_CONTR";
     }
 
     /// <summary>

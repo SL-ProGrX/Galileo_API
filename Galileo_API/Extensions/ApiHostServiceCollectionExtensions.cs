@@ -62,6 +62,8 @@ public static class ApiHostServiceCollectionExtensions
         services.AddCcProcesoMensualProceso();
         services.AddCoAplExcProceso();
         services.AddCoAplFndContrProceso();
+        services.AddCoAplFndProceso();
+        services.AddCoAplExcContrProceso();
         services.AddTesEmisionDocumentosProceso(configuration);
         services.Configure<ArchivosGeneradosOptions>(
             configuration.GetSection("ArchivosGenerados"));
