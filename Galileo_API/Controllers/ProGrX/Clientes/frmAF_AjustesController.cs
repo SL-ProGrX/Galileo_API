@@ -42,17 +42,17 @@ namespace Galileo.Controllers
         [Authorize]
         [ValidateAntiForgeryToken]
         [HttpPost("AF_Ajustes_CambiarIdentificacion")]
-        public ErrorDto AF_Ajustes_CambiarIdentificacion(int CodEmpresa, string cedula, int nuevoTipoId)
+        public ErrorDto AF_Ajustes_CambiarIdentificacion(int CodEmpresa, string cedula, int nuevoTipoId, string usuario = "")
         {
-            return _bl.AF_Ajustes_CambiarIdentificacion(CodEmpresa, cedula, nuevoTipoId);
+            return _bl.AF_Ajustes_CambiarIdentificacion(CodEmpresa, cedula, nuevoTipoId, usuario);
         }
 
         [Authorize]
         [ValidateAntiForgeryToken]
         [HttpPost("AF_Ajustes_CambiarEstado")]
-        public ErrorDto AF_Ajustes_CambiarEstado(int CodEmpresa, string cedula, string nuevoEstado)
+        public ErrorDto AF_Ajustes_CambiarEstado(int CodEmpresa, string cedula, string nuevoEstado, string usuario = "")
         {
-            return _bl.AF_Ajustes_CambiarEstado(CodEmpresa, cedula, nuevoEstado);
+            return _bl.AF_Ajustes_CambiarEstado(CodEmpresa, cedula, nuevoEstado, usuario);
         }
 
         [Authorize]

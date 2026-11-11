@@ -13,6 +13,7 @@
         public int codInstitucion { get; set; }
         public string? codDepartamento { get; set; }
         public string? codSeccion { get; set; }
+        public string usuario { get; set; } = string.Empty;
     }
 
     public class AfAjustePersonaDetalle
