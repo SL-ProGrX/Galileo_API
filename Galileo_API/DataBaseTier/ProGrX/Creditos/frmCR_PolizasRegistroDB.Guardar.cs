@@ -347,7 +347,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     @Monto,
                     0,
                     0,
-                    0,
                     @Monto,
                     @Monto,
                     0,

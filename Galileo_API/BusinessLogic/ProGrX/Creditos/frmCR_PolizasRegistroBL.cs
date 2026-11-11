@@ -18,6 +18,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
         public ErrorDto<List<CrPolizasRegistroPolizaLineaItem>> CrPolizasRegistro_PolizaLinea_Obtener(int codEmpresa)
             => _db.CrPolizasRegistro_PolizaLinea_Obtener(codEmpresa);
 
+        public ErrorDto<CrPolizasRegistroCatalogosData> CrPolizasRegistro_Catalogos_Obtener(
+            int codEmpresa,
+            string codPoliza)
+            => _db.CrPolizasRegistro_Catalogos_Obtener(codEmpresa, codPoliza);
+
         public ErrorDto<int> CrPolizasRegistro_Operacion_Navegar_Obtener(
             int codEmpresa,
             int operacion,

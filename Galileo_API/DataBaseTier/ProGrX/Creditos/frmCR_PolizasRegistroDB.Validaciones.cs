@@ -367,9 +367,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             const string sql = @"
                 select isnull(count(*), 0)
-                from CRD_OPERACION_TRANSAC
+                from crd_operacion_plan_pagos
                 where id_solicitud = @Operacion
-                  and estado = 'A';";
+                  and estado not in ('C')
+                  and num_cuota > 0
+                  and num_cuota_madre = 0;";
 
             return DbHelper.ExecuteSingleQuery<int>(
                 _portalDb,
