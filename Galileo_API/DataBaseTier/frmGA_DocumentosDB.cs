@@ -1,6 +1,5 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
-using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.GA;
 using System.Data;
@@ -16,7 +15,7 @@ namespace Galileo.DataBaseTier
         {
             _config = config;
         }
-        
+
         /// <summary>
         /// Obtiene los tipos de documentos
         /// </summary>
@@ -51,7 +50,7 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Insentar los documentos
+        /// Registra un documento y valida la combinación de empresa, módulo, tipo y llaves.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
@@ -61,7 +60,22 @@ namespace Galileo.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
+                if (data is null)
+                    return new ErrorDto { Code = -1, Description = "Debe indicar el documento." };
+
                 NormalizarDocumento(data);
+                if (CodEmpresa <= 0)
+                    return new ErrorDto { Code = -1, Description = "Debe indicar una empresa válida." };
+
+                data.empresaid = CodEmpresa.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                if (string.IsNullOrWhiteSpace(data.moduloid) || string.IsNullOrWhiteSpace(data.typeid)
+                    || string.IsNullOrWhiteSpace(data.llave_01) || string.IsNullOrWhiteSpace(data.filename)
+                    || data.filecontent is not { Length: > 0 })
+                    return new ErrorDto
+                    {
+                        Code = -1,
+                        Description = "Seleccione el tipo, indique la llave 01 y cargue un archivo con contenido."
+                    };
 
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
@@ -69,22 +83,26 @@ namespace Galileo.DataBaseTier
                         SELECT COUNT(*)
                         FROM GA_Files
                         WHERE EmpresaId = @EmpresaId
-                          AND ModuloId = @ModuloId
+                          AND ModuloId = @ModuloId 
+                          AND TypeId = @TipoId
                           AND Llave_01 = @Llave_01
-                          AND Llave_02 = @Llave_02
+                          AND ISNULL(Llave_02, '') = @Llave_02
                           AND ISNULL(Llave_03, '') = @Llave_03";
                     int count = connection.QuerySingle<int>(queryExist, new
                     {
                         EmpresaId = data.empresaid,
                         ModuloId = data.moduloid,
+                        TipoId = data.typeid,
                         Llave_01 = data.llave_01,
                         Llave_02 = data.llave_02,
                         Llave_03 = data.llave_03
                     });
                     if (count > 0)
                     {
-                        resp.Code = -1;
-                        resp.Description = "Ya existe un documento con la misma llave.";
+                        resp.Code = -2;
+                        resp.Description = "Ya existe un documento del tipo seleccionado con estas referencias. " +
+                            "Si el nuevo documento corresponde a otra referencia, indique su valor en la llave 02 o 03. " +
+                            "El archivo nuevo no se guardó.";
                         return resp;
                     }
 
@@ -201,45 +219,54 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
-        /// Elimina los documentos
+        /// Respalda y elimina únicamente el archivo seleccionado, validando empresa,
+        /// módulo, tipo y llaves. El procedimiento devuelve 0 o -2.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="llave01"></param>
-        /// <param name="llave02"></param>
-        /// <param name="llave03"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto Documentos_Eliminar(int CodEmpresa, string llave01, string? llave02, string? llave03, string usuario)
+        public ErrorDto Documentos_Eliminar(int CodEmpresa, GaDocumentoEliminarRequest request)
         {
-            ErrorDto resp = new ErrorDto();
             try
             {
-                var procedure = "[spGA_EliminarDocumentos]";
+                if (request is null || CodEmpresa <= 0 || request.fileid <= 0
+                    || string.IsNullOrWhiteSpace(request.typeid)
+                    || string.IsNullOrWhiteSpace(request.moduloid)
+                    || string.IsNullOrWhiteSpace(request.llave01)
+                    || string.IsNullOrWhiteSpace(request.usuario))
+                    return new ErrorDto
+                    {
+                        Code = -1,
+                        Description = "Debe seleccionar un documento válido para eliminar."
+                    };
 
-                // Se comparan las 3 llaves; vacías se envían como '' (igual que se guardan en el insert)
-                var parameters = new DynamicParameters();
-                parameters.Add("llave01", NormalizarTexto(llave01), DbType.String);
-                parameters.Add("llave02", NormalizarTexto(llave02), DbType.String);
-                parameters.Add("llave03", NormalizarTexto(llave03), DbType.String);
-                parameters.Add("usuario", usuario, DbType.String);
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                connection.Open();
 
+                var codigo = connection.QuerySingle<int>(
+                    "dbo.spGA_EliminarDocumentos",
+                    new
+                    {
+                        Llave01 = NormalizarTexto(request.llave01),
+                        Llave02 = NormalizarTexto(request.llave02),
+                        Llave03 = NormalizarTexto(request.llave03),
+                        Usuario = request.usuario.Trim(),
+                        TypeId = request.typeid.Trim(),
+                        EmpresaId = CodEmpresa,
+                        ModuloId = request.moduloid.Trim(),
+                        FileId = request.fileid
+                    },
+                    commandType: CommandType.StoredProcedure);
 
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
+                return new ErrorDto
                 {
-                    resp.Code = connection.Query<int>(procedure, parameters, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                    resp.Description = "Ok";
-                }
-
+                    Code = codigo,
+                    Description = codigo == 0
+                        ? "Documento eliminado correctamente."
+                        : "El documento ya no existe o no coincide con la empresa, tipo o referencias seleccionadas. Actualice la lista."
+                };
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                return new ErrorDto { Code = -1, Description = ex.Message };
             }
-
-            return resp;
         }
-
     }
-
 }
