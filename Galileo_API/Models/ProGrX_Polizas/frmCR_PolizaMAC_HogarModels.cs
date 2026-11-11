@@ -6,6 +6,21 @@
         public string pMacH1 { get; set; } = string.Empty;
     }
 
+    public class CrPolizaMacHogarEnvioPaginaRequest : CrPolizaMacHogarEnvioConsultaRequest
+    {
+        public int pagina { get; set; }
+        public int paginacion { get; set; } = 30;
+        public string filtro { get; set; } = string.Empty;
+        public string sortField { get; set; } = string.Empty;
+        public int sortOrder { get; set; } = 1;
+    }
+
+    public class CrPolizaMacHogarEnvioPagina
+    {
+        public int total { get; set; }
+        public List<CrPolizaMacHogarEnvioRow> lista { get; set; } = new();
+    }
+
     public class CrPolizaMacHogarEnvioRow
     {
         public object? corte { get; set; }

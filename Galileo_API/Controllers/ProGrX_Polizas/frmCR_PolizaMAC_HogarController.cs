@@ -43,6 +43,16 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             return _bl.Cr_PolizaMacHogar_Envio_Consulta(codEmpresa, usuario, request);
         }
 
+        [ValidateAntiForgeryToken]
+        [HttpPost("Cr_PolizaMacHogar_Envio_Pagina")]
+        public ErrorDto<CrPolizaMacHogarEnvioPagina> Cr_PolizaMacHogar_Envio_Pagina(
+            int codEmpresa,
+            string usuario,
+            CrPolizaMacHogarEnvioPaginaRequest request)
+        {
+            return _bl.Cr_PolizaMacHogar_Envio_Pagina(codEmpresa, usuario, request);
+        }
+
         #endregion
 
         #region Consulta

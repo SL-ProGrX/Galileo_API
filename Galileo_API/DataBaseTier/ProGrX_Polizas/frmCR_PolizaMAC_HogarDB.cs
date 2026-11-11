@@ -5,6 +5,8 @@ using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Polizas;
 using Microsoft.Extensions.Caching.Memory;
 using System.Data;
+using System.Globalization;
+using System.Reflection;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 {
@@ -19,6 +21,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// </summary>
         private static readonly MemoryCache _cacheCorte = new(new MemoryCacheOptions());
         private static readonly TimeSpan _duracionCacheCorte = TimeSpan.FromMinutes(3);
+        private static readonly PropertyInfo[] _columnasCorte =
+            typeof(CrPolizaMacHogarEnvioRow).GetProperties(BindingFlags.Instance | BindingFlags.Public);
+        private static readonly Comparer<object?> _comparadorCorte = Comparer<object?>.Create(CompararValoresCorte);
 
         public FrmCrPolizaMacHogarDB(IConfiguration config)
         {
@@ -114,6 +119,98 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             });
         }
 
+        /// <summary>
+        /// Obtiene una página del corte de MAC Hogar reutilizando el resultado almacenado en caché.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="usuario">Usuario que ejecuta la consulta.</param>
+        /// <param name="request">Filtros del corte, desplazamiento, tamaño y orden de la página.</param>
+        /// <returns>Página solicitada y cantidad total de registros filtrados.</returns>
+        public ErrorDto<CrPolizaMacHogarEnvioPagina> Cr_PolizaMacHogar_Envio_Pagina(
+            int codEmpresa,
+            string usuario,
+            CrPolizaMacHogarEnvioPaginaRequest request)
+        {
+            if (request == null)
+                return DbHelper.CreateErrorResponse<CrPolizaMacHogarEnvioPagina>("Datos inválidos.");
+
+            var corte = Cr_PolizaMacHogar_Envio_Consulta(codEmpresa, usuario, request);
+
+            if (corte.Code == -1)
+                return DbHelper.CreateErrorResponse<CrPolizaMacHogarEnvioPagina>(
+                    corte.Description ?? "No fue posible consultar el corte.");
+
+            var filasCorte = corte.Result ?? new List<CrPolizaMacHogarEnvioRow>();
+            IEnumerable<CrPolizaMacHogarEnvioRow> consulta = filasCorte;
+            var filtro = request.filtro?.Trim();
+
+            if (!string.IsNullOrWhiteSpace(filtro))
+            {
+                consulta = consulta.Where(fila => _columnasCorte.Any(columna =>
+                    Convert.ToString(columna.GetValue(fila), CultureInfo.CurrentCulture)?
+                        .Contains(filtro, StringComparison.CurrentCultureIgnoreCase) == true));
+            }
+
+            var columnaOrden = _columnasCorte.FirstOrDefault(columna =>
+                columna.Name.Equals(request.sortField, StringComparison.OrdinalIgnoreCase));
+
+            var pagina = Math.Max(0, request.pagina);
+            var paginacion = Math.Clamp(request.paginacion, 1, 100);
+
+            if (string.IsNullOrWhiteSpace(filtro) && columnaOrden == null)
+            {
+                return DbHelper.CreateOkResponse(new CrPolizaMacHogarEnvioPagina
+                {
+                    total = filasCorte.Count,
+                    lista = filasCorte.Skip(pagina).Take(paginacion).ToList()
+                });
+            }
+
+            if (columnaOrden != null)
+            {
+                consulta = request.sortOrder == -1
+                    ? consulta.OrderByDescending(fila => columnaOrden.GetValue(fila), _comparadorCorte)
+                    : consulta.OrderBy(fila => columnaOrden.GetValue(fila), _comparadorCorte);
+            }
+
+            var filasFiltradas = consulta.ToList();
+
+            return DbHelper.CreateOkResponse(new CrPolizaMacHogarEnvioPagina
+            {
+                total = filasFiltradas.Count,
+                lista = filasFiltradas.Skip(pagina).Take(paginacion).ToList()
+            });
+        }
+
+        private static int CompararValoresCorte(object? valorA, object? valorB)
+        {
+            if (valorA == null && valorB == null) return 0;
+            if (valorA == null) return -1;
+            if (valorB == null) return 1;
+
+            if (decimal.TryParse(
+                    Convert.ToString(valorA, CultureInfo.InvariantCulture),
+                    NumberStyles.Any,
+                    CultureInfo.InvariantCulture,
+                    out var numeroA)
+                && decimal.TryParse(
+                    Convert.ToString(valorB, CultureInfo.InvariantCulture),
+                    NumberStyles.Any,
+                    CultureInfo.InvariantCulture,
+                    out var numeroB))
+            {
+                return numeroA.CompareTo(numeroB);
+            }
+
+            if (valorA is DateTime fechaA && valorB is DateTime fechaB)
+                return fechaA.CompareTo(fechaB);
+
+            return string.Compare(
+                Convert.ToString(valorA, CultureInfo.CurrentCulture),
+                Convert.ToString(valorB, CultureInfo.CurrentCulture),
+                StringComparison.CurrentCultureIgnoreCase);
+        }
+
         #endregion
 
         #region Consulta
@@ -164,6 +261,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// Ejecuta el procedimiento y conserva el orden fijo de las 77 columnas
         /// definido por el vGrid del formulario original frmCR_PolizaMAC_Hogar.
         /// </summary>
+        /// <param name="codEmpresa">Código de empresa usado para aislar el resultado en caché.</param>
         /// <param name="conn">Conexión abierta por DbHelper.</param>
         /// <param name="parameters">Parámetros de spPoliza_Incendio_Cierre.</param>
         /// <returns>Filas normalizadas para Envío y Consultas.</returns>
