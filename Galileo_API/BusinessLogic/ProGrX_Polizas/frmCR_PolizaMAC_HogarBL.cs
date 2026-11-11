@@ -45,6 +45,19 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
             return _db.Cr_PolizaMacHogar_Envio_Consulta(codEmpresa, usuario, request);
         }
 
+        /// <summary>Obtiene una página del corte de envío de MAC Hogar.</summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <param name="usuario">Usuario que ejecuta la consulta.</param>
+        /// <param name="request">Filtros, desplazamiento, tamaño y orden solicitados.</param>
+        /// <returns>Página solicitada y total de registros.</returns>
+        public ErrorDto<CrPolizaMacHogarEnvioPagina> Cr_PolizaMacHogar_Envio_Pagina(
+            int codEmpresa,
+            string usuario,
+            CrPolizaMacHogarEnvioPaginaRequest request)
+        {
+            return _db.Cr_PolizaMacHogar_Envio_Pagina(codEmpresa, usuario, request);
+        }
+
         #endregion
 
         #region Consulta
