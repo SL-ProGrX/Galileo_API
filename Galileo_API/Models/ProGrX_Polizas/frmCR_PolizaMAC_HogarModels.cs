@@ -8,7 +8,7 @@
 
     public class CrPolizaMacHogarEnvioPaginaRequest : CrPolizaMacHogarEnvioConsultaRequest
     {
-        public int pagina { get; set; }
+        public required int pagina { get; set; }
         public int paginacion { get; set; } = 30;
         public string filtro { get; set; } = string.Empty;
         public string sortField { get; set; } = string.Empty;
