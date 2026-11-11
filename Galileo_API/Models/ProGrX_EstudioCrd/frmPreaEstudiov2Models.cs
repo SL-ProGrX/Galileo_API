@@ -66,6 +66,7 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         /// </summary>
         public int edad_maxima_hombres { get; set; }
         public int edad_maxima_mujeres { get; set; }
+        public decimal poliza_factor_desempleo { get; set; }
     }
 
     public class FrmPreaEstudiov2EstadoDto
