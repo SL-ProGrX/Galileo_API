@@ -4,6 +4,8 @@ using Galileo.BusinessLogic.ProGrX.Cobros;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cobros;
+using Galileo_API.Models.Procesos;
+using Galileo_API.Services.ProGrX.Cobros;
 
 namespace Galileo.Controllers.ProGrX.Cobros
 {
@@ -13,9 +15,9 @@ namespace Galileo.Controllers.ProGrX.Cobros
     {
         private readonly FrmCOCobroFiadoresBL _bl;
 
-        public FrmCOCobroFiadoresController(IConfiguration config)
+        public FrmCOCobroFiadoresController(IConfiguration config, CoCobroFiadoresProcesoQueue queue)
         {
-            _bl = new FrmCOCobroFiadoresBL(config);
+            _bl = new FrmCOCobroFiadoresBL(config, queue);
         }
         [Authorize]
         [HttpGet("Co_Instituciones_Dropdown_Obtener")]
@@ -78,6 +80,22 @@ namespace Galileo.Controllers.ProGrX.Cobros
         public ErrorDto Co_CobroFiadores_ProcesaCobros_Bulk(int CodEmpresa, string usuario, FrmCOCobroFiadoresAccionBulkDto dto)
         {
             return _bl.Co_CobroFiadores_ProcesaCobros_Bulk(CodEmpresa, usuario, dto);
+        }
+        /// <summary>
+        /// Encola el procesamiento de cobros a fiadores y devuelve el ProcesoId para consultar el avance.
+        /// </summary>
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        [HttpPost("Co_CobroFiadores_ProcesaCobros_Iniciar")]
+        public ErrorDto<GenProcesoIniciadoResult> Co_CobroFiadores_ProcesaCobros_Iniciar(int CodEmpresa, string usuario, FrmCOCobroFiadoresAccionBulkDto dto)
+        {
+            return _bl.Co_CobroFiadores_ProcesaCobros_Iniciar(CodEmpresa, usuario, dto);
+        }
+        [Authorize]
+        [HttpGet("Co_CobroFiadores_ProcesaCobros_Estado")]
+        public ErrorDto<GenProcesoEstadoResult> Co_CobroFiadores_ProcesaCobros_Estado(int CodEmpresa, Guid ProcesoId)
+        {
+            return _bl.Co_CobroFiadores_ProcesaCobros_Estado(CodEmpresa, ProcesoId);
         }
         [Authorize]
         [ValidateAntiForgeryToken]

@@ -3,6 +3,8 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cobros;
 using Galileo.Models.Security;
+using Galileo_API.DataBaseTier.Procesos;
+using Galileo_API.Models.Procesos;
 using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX.Cobros
@@ -12,6 +14,8 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         private readonly IConfiguration _config;
         private readonly int vModulo = 4;
         private readonly MSecurityMainDb _Security_MainDB;
+        private const string ProcesaCobrosProcedimiento = "dbo.spCBR_Cobro_Fiadores_Procesa";
+        private const string MensajeErrorProcesa = "Error al procesar.";
 
         public FrmCOCobroFiadoresDB(IConfiguration config)
         {
@@ -185,12 +189,69 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
                 dto,
                 new CobroFiadoresBulkActionSpec
                 {
-                    Procedimiento = "dbo.spCBR_Cobro_Fiadores_Procesa",
+                    Procedimiento = ProcesaCobrosProcedimiento,
                     ParametroOperacion = "Operacion",
                     DetalleBase = "Cobro a Fiadores: Procesa Cobros",
-                    MensajeError = "Error al procesar."
+                    MensajeError = MensajeErrorProcesa
                 });
         }
+
+        /// <summary>
+        /// Valida los parámetros de cobro a fiadores antes de encolar el procesamiento.
+        /// </summary>
+        /// <returns></returns>
+        public ErrorDto ValidarProcesaCobros(int CodEmpresa)
+        {
+            var exec = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, conn =>
+            {
+                ValidarParametrosCobroFiador(conn, false);
+                return true;
+            });
+
+            return exec.Code != 0
+                ? DbHelper.ErrorResponse(exec.Description ?? MensajeErrorProcesa)
+                : DbHelper.OkResponse("Ok");
+        }
+
+        /// <summary>
+        /// Ejecuta en segundo plano el procesamiento de cobros a fiadores y registra el avance en GEN_PROCESO.
+        /// </summary>
+        public void CO_CobroFiadores_ProcesaCobros_Ejecutar(int CodEmpresa, Guid procesoId, string usuario, IReadOnlyList<int> ids)
+        {
+            var procesoDb = new GenProcesoDb(new PortalDB(_config));
+            var procesados = 0;
+
+            procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.EnProceso, 0, 0);
+
+            var exec = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, conn =>
+            {
+                ValidarParametrosCobroFiador(conn, false);
+
+                foreach (var id in ids)
+                {
+                    conn.Execute(
+                        ProcesaCobrosProcedimiento,
+                        CrearParametrosAccionBulk("Operacion", id, usuario, false),
+                        commandType: System.Data.CommandType.StoredProcedure,
+                        commandTimeout: 0);
+
+                    procesados++;
+                    procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.EnProceso, procesados, 0);
+                }
+
+                return true;
+            });
+
+            if (exec.Code != 0)
+            {
+                procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.Error, procesados, 1, exec.Description ?? MensajeErrorProcesa);
+                return;
+            }
+
+            RegistrarBitacora(CodEmpresa, usuario, $"Cobro a Fiadores: Procesa Cobros - Casos {ids.Count}", "Procesa - WEB");
+            procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.Terminado, ids.Count, 0, "Proceso concluido satisfactoriamente");
+        }
+
         /// <summary>
         /// Cancela cobros a fiadores.
         /// <param name="CodEmpresa"></param>

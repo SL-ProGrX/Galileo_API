@@ -9,6 +9,13 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public int integra_plan_pagos { get; set; } = 0;
     }
 
+    public class CrPolizasRegistroCatalogosData
+    {
+        public List<DropDownListaGenericaModel> destinos { get; set; } = new();
+        public List<DropDownListaGenericaModel> garantias { get; set; } = new();
+        public int primer_deduccion { get; set; } = 0;
+    }
+
     public class CrPolizasRegistroOperacionData
     {
         public int operacion { get; set; } = 0;

@@ -247,7 +247,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 cn.Execute(
                     "spARF_Operacion_Plan_Add",
-                    new { Operacion = operacion, Recalcular = 1 },
+                    new { Operacion = operacion, Inicializa = 1 },
                     tx,
                     commandType: CommandType.StoredProcedure);
 

@@ -235,6 +235,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return CrPolizasRegistro_OperacionPolizaRequerida(new CrPolizasRegistroFormData());
             }
 
+            var integradaResp = CrPolizasRegistro_PolizaIntegrada_Obtener(codEmpresa, operacion, num_poliza);
+            if (integradaResp.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    integradaResp.Description ?? "No fue posible cargar el detalle de la poliza.",
+                    integradaResp.Code.GetValueOrDefault(-1),
+                    new CrPolizasRegistroFormData());
+            }
+
+            if (integradaResp.Result is not null)
+            {
+                return DbHelper.CreateOkResponse(CrPolizasRegistro_DetalleIntegrada_Crear(integradaResp.Result, num_poliza));
+            }
+
             var detalleResp = CrPolizasRegistro_DetalleBase_Obtener(codEmpresa, operacion, num_poliza);
             if (detalleResp.Code != 0)
             {
@@ -266,6 +280,67 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     detalleResp.Result,
                     num_poliza,
                     complementoResp.Result));
+        }
+
+        /// <summary>
+        /// Datos de una poliza integrada al plan de pagos (VB6 sbPolizaPlanCarga): salen de CRD_OPERACION_POLIZAS, sin reg_creditos.
+        /// </summary>
+        private ErrorDto<CrPolizasRegistroDetalleBase?> CrPolizasRegistro_PolizaIntegrada_Obtener(
+            int codEmpresa,
+            int operacion,
+            int numPoliza)
+        {
+            const string sql = @"
+            select top 1
+                rtrim(Pol.cod_poliza) as cod_poliza,
+                rtrim(Cat.descripcion) as poliza_descripcion,
+                isnull(Pol.estado, '') as estado,
+                isnull(Pol.num_contrato, '') as num_contrato,
+                isnull(Pol.monto, 0) as monto,
+                isnull(Pol.cuota, 0) as cuota,
+                isnull(Pol.pago_monto, 0) as pago_monto,
+                isnull(Pol.cuota_rst_plan, 0) as cuota_rst_plan,
+                isnull(Pol.deduce_plazo_credito, 0) as deduce_plazo_credito,
+                Pol.pago_fecha,
+                Pol.cobertura_inicio,
+                Pol.cobertura_vence,
+                isnull(Pol.pago_frecuencia, 'M') as pago_frecuencia,
+                isnull(Pol.num_seq_inicio, 0) as num_seq_inicio,
+                isnull(Pol.num_ctas_deduce, 0) as num_ctas_deduce,
+                Pol.recaudado_corte,
+                isnull(Pol.recaudado_saldo, 0) as recaudado_saldo,
+                isnull(Pol.id_solicitud_poliza, 0) as id_solicitud_poliza
+            from CRD_OPERACION_POLIZAS Pol
+            inner join CRD_CATALOGO_POLIZAS Cat
+                on Pol.cod_poliza = Cat.cod_poliza
+            where Pol.id_solicitud = @Operacion
+              and Pol.num_poliza = @NumPoliza
+              and isnull(Cat.integra_plan_pagos, 0) = 1;";
+
+            return DbHelper.ExecuteSingleQuery<CrPolizasRegistroDetalleBase>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                null,
+                new
+                {
+                    Operacion = operacion,
+                    NumPoliza = numPoliza
+                });
+        }
+
+        private static CrPolizasRegistroFormData CrPolizasRegistro_DetalleIntegrada_Crear(
+            CrPolizasRegistroDetalleBase detalle,
+            int numPoliza)
+        {
+            // VB6 sbPolizaPlanCarga: num de pagos fijo en 1; no hay datos de retencion ni primer deduccion.
+            var complemento = new CrPolizasRegistroDetalleComplementoData
+            {
+                poliza_pagos_num = 1,
+                poliza_cobertura_meses = CrPolizasRegistro_CoberturaMeses_Obtener(detalle)
+            };
+
+            return CrPolizasRegistro_DetalleForm_Crear(detalle, numPoliza, complemento);
         }
 
         private ErrorDto<CrPolizasRegistroDetalleBase?> CrPolizasRegistro_DetalleBase_Obtener(
@@ -627,6 +702,68 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
+        /// Obtiene destinos y garantias para el alta de una poliza a partir de la linea seleccionada.
+        /// Usa el CODIGO_RETENCION de la linea, igual que el formulario VB6 (sbSTCargaCboDestinos / sbSTCargaCboGarantia).
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codPoliza"></param>
+        /// <returns></returns>
+        public ErrorDto<CrPolizasRegistroCatalogosData> CrPolizasRegistro_Catalogos_Obtener(
+            int codEmpresa,
+            string codPoliza)
+        {
+            if (string.IsNullOrWhiteSpace(codPoliza))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Debe indicar la l&iacute;nea de p&oacute;liza.",
+                    -2,
+                    new CrPolizasRegistroCatalogosData());
+            }
+
+            var resultado = new CrPolizasRegistroCatalogosData
+            {
+                primer_deduccion = Convert.ToInt32(_seguimientoDb.fxPrimerDeduccion(codEmpresa))
+            };
+
+            var retencionResp = CrPolizasRegistro_PolizaRetencionData_Obtener(codEmpresa, codPoliza);
+            if (retencionResp.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    retencionResp.Description ?? "No fue posible obtener la l&iacute;nea de p&oacute;liza.",
+                    retencionResp.Code.GetValueOrDefault(-1),
+                    resultado);
+            }
+
+            string codigo = retencionResp.Result?.codigo_retencion ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(codigo))
+            {
+                return DbHelper.CreateOkResponse(resultado);
+            }
+
+            var destinosResp = CrPolizasRegistro_Destinos_Obtener(codEmpresa, codigo);
+            if (destinosResp.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    destinosResp.Description ?? "No fue posible cargar los destinos de la p&oacute;liza.",
+                    destinosResp.Code.GetValueOrDefault(-1),
+                    resultado);
+            }
+
+            var garantiasResp = CrPolizasRegistro_Garantias_Obtener(codEmpresa, codigo);
+            if (garantiasResp.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    garantiasResp.Description ?? "No fue posible cargar las garant&iacute;as de la p&oacute;liza.",
+                    garantiasResp.Code.GetValueOrDefault(-1),
+                    resultado);
+            }
+
+            resultado.destinos = destinosResp.Result ?? new();
+            resultado.garantias = garantiasResp.Result ?? new();
+            return DbHelper.CreateOkResponse(resultado);
+        }
+
+        /// <summary>
         /// Obtiene los destinos permitidos para la linea.
         /// </summary>
         /// <param name="codEmpresa"></param>
@@ -640,11 +777,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 select
                     convert(varchar(20), D.cod_destino) as item,
                     rtrim(D.descripcion) as descripcion
-                from CATALOGO_DESTINOS D
-                inner join CATALOGO_DESTINOS_POLIZAS P
-                    on D.cod_destino = P.cod_destino
-                where P.codigo = @Codigo
-                order by D.descripcion;";
+                from catalogo_destinos D
+                inner join catalogo_destinosASG C
+                    on D.cod_destino = C.cod_destino
+                where C.codigo = @Codigo
+                order by D.prioridad asc;";
 
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
                 _portalDb,
@@ -667,10 +804,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 select
                     rtrim(G.garantia) as item,
                     rtrim(G.descripcion) as descripcion
-                from CRD_GARANTIA_TIPOS G
-                inner join CRD_GARANTIA_TIPOS_POLIZA P
-                    on G.garantia = P.garantia
-                where P.codigo = @Codigo
+                from crd_catalogo_garantias C
+                inner join crd_garantia_tipos G
+                    on C.garantia = G.garantia
+                where C.codigo = @Codigo
                 order by G.descripcion;";
 
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
@@ -698,11 +835,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             const string sql = @"
                 select
                     convert(varchar(20), id_seq) as item,
-                    convert(varchar(20), id_seq) + ' - ' +
-                    convert(varchar(10), fecha_proceso, 103) as descripcion
-                from CRD_OPERACION_TRANSAC
+                    'No.Cuota: ' + convert(varchar(20), num_cuota)
+                    + '   Fecha Pago: ' + isnull(convert(varchar(10), Fecha_Pago, 103), '')
+                    + ' (' + isnull(convert(varchar(10), Fecha_Inicio, 103), '')
+                    + ' : ' + isnull(convert(varchar(10), Fecha_corte, 103), '') + ')' as descripcion
+                from crd_operacion_plan_pagos
                 where id_solicitud = @Operacion
-                  and estado = 'A'
+                  and estado not in ('C')
+                  and num_cuota > 0
+                  and num_cuota_madre = 0
                 order by id_seq;";
 
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(

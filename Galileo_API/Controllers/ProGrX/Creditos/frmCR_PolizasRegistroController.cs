@@ -23,6 +23,12 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         public ErrorDto<List<CrPolizasRegistroPolizaLineaItem>> CrPolizasRegistro_PolizaLinea_Obtener(int codEmpresa)
             => _bl.CrPolizasRegistro_PolizaLinea_Obtener(codEmpresa);
 
+        [HttpGet("CrPolizasRegistro_Catalogos_Obtener")]
+        public ErrorDto<CrPolizasRegistroCatalogosData> CrPolizasRegistro_Catalogos_Obtener(
+            int codEmpresa,
+            string codPoliza)
+            => _bl.CrPolizasRegistro_Catalogos_Obtener(codEmpresa, codPoliza);
+
         [HttpGet("CrPolizasRegistro_Operacion_Navegar_Obtener")]
         public ErrorDto<int> CrPolizasRegistro_Operacion_Navegar_Obtener(
             int codEmpresa,

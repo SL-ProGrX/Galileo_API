@@ -2,11 +2,16 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX.Clientes
 {
     public class FrmAfLiquidacionAsientosDB
     {
+        private const int NumeroErrorDeadlock = 1205;
+        private const int MaxIntentosDeadlock = 3;
+        private const int PausaBaseDeadlockMs = 500;
+
         private readonly PortalDB _portalDb;
         private readonly MTesoreria _mtes;
         private readonly MProGrxMain _main;
@@ -392,7 +397,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
 
             #endregion
 
-            return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
+            return EjecutarConReintentoDeadlock(CodEmpresa, conn =>
             {
                 const string query = @"
                     EXEC spAFI_Liquidacion_Traslado_Bancos_Lista
@@ -425,6 +430,33 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
             });
         }
 
+
+        /// <summary>
+        /// Ejecuta la acción con una conexión nueva. Si SQL Server elige la sesión como víctima de
+        /// deadlock (error 1205), la transacción se revierte y la consulta se reintenta con una
+        /// pausa creciente, en lugar de mostrar el error al usuario.
+        /// </summary>
+        private ErrorDto<T> EjecutarConReintentoDeadlock<T>(int codEmpresa, Func<SqlConnection, T> accion)
+        {
+            int intento = 1;
+            while (true)
+            {
+                try
+                {
+                    using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                    return new ErrorDto<T> { Code = 0, Description = "Ok", Result = accion(conn) };
+                }
+                catch (SqlException ex) when (ex.Number == NumeroErrorDeadlock && intento < MaxIntentosDeadlock)
+                {
+                    Thread.Sleep(intento * PausaBaseDeadlockMs);
+                    intento++;
+                }
+                catch (Exception ex)
+                {
+                    return new ErrorDto<T> { Code = -1, Description = ex.Message, Result = default };
+                }
+            }
+        }
 
         /// <summary>
         /// Normaliza valores tipo catálogo que en VB6 se evaluaban por la primera letra.

@@ -62,6 +62,7 @@ public static class ApiHostServiceCollectionExtensions
         services.AddCcProcesoMensualProceso();
         services.AddCoAplExcProceso();
         services.AddCoAplFndContrProceso();
+        services.AddCoCobroFiadoresProceso();
         services.AddCoAplFndProceso();
         services.AddCoAplExcContrProceso();
         services.AddTesEmisionDocumentosProceso(configuration);
