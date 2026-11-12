@@ -43,14 +43,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     0);
             }
 
-            int? contrato = CrPolizasRegistro_ContratoNumero_Obtener(request.poliza_contrato);
-            if (!string.IsNullOrWhiteSpace(request.poliza_contrato) && !contrato.HasValue)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "El No. de contrato no es v&aacute;lido.",
-                    -2,
-                    0);
-            }
+            // VB6 sbGuardaPolizaPlanPagos: num_contrato se guarda como texto tal cual.
+            string contrato = (request.poliza_contrato ?? string.Empty).Trim();
 
             using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
             conn.Open();
@@ -156,6 +150,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 }
                 else
                 {
+                    // VB6 sbGuardaPolizaPlanPagos (UPDATE): solo estas columnas.
                     const string sqlUpdate = @"
             update CRD_OPERACION_POLIZAS
                set estado = @Estado,
@@ -165,13 +160,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                    cobertura_vence = @CoberturaCorte,
                    deduce_plazo_credito = @PlazoCredito,
                    cuota_rst_plan = @CuotaRestoPlazo,
-                   num_seq_inicio = @Plan,
-                   num_ctas_deduce = @CtasDeduce,
-                   num_seq_corte = @SeqCorte,
-                   pago_frecuencia = @Frecuencia,
-                   pago_fecha = @FechaPago,
-                   pago_monto = @PagoMonto,
-                   num_contrato = @Contrato
+                   num_seq_inicio = @Plan
              where id_solicitud = @Operacion
                and num_poliza = @NumPoliza;";
 
@@ -185,12 +174,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         PlazoCredito = request.poliza_plazo_credito ? 1 : 0,
                         CuotaRestoPlazo = request.poliza_cuota_resto_plazo,
                         Plan = request.poliza_plan,
-                        CtasDeduce = request.poliza_ctas_deduce,
-                        SeqCorte = seqCorte,
-                        Frecuencia = frecuenciaId,
-                        FechaPago = request.poliza_fecha_pago,
-                        PagoMonto = request.poliza_pago_monto,
-                        Contrato = contrato,
                         Operacion = request.operacion,
                         NumPoliza = numPoliza
                     }, tx);
@@ -395,7 +378,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     CodDestino = string.IsNullOrWhiteSpace(request.destino) ? null : request.destino.Trim()
                 }, tx);
 
-                int nuevaOperacion = CrPolizasRegistro_UltimaOperacion_Obtener(codEmpresa, operacionBase.cedula);
+                // VB6 fxUltimaOperacion: debe leerse dentro de la transaccion; con otra conexion
+                // el INSERT aun no es visible y se obtendria la operacion anterior (la madre).
+                int nuevaOperacion = conn.QueryFirst<int>(
+                    @"select isnull(max(id_solicitud), 0)
+                      from reg_creditos
+                      where cedula = @Cedula;",
+                    new { Cedula = operacionBase.cedula.Trim() },
+                    tx);
 
                 const string sqlInsertPoliza = @"
                 insert into CRD_OPERACION_POLIZAS

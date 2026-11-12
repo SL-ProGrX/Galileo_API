@@ -151,9 +151,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
 
             int mesesPendientes = mesesPendientesResp.Result;
-            if (mesesPendientes <= 0)
+
+            // VB6 sbCalculaDatosPoliza: con meses pendientes en 0 o frecuencia sin divisor ("Indefinida",
+            // VB6 compara contra "Indefinido") la division falla y VB6 no actualiza mensualidades;
+            // solo se actualizan las cuotas del plan (sbCalculaMesesPendientePlan).
+            if (mesesPendientes <= 0 || !CrPolizasRegistro_FrecuenciaCalculable(request.poliza_pago_frecuencia))
             {
-                mesesPendientes = 1;
+                return DbHelper.CreateOkResponse(new CrPolizasRegistroPlanPagoDetalleData
+                {
+                    id_seq = request.id_seq,
+                    poliza_ctas_deduce = mesesPendientes,
+                    calculo_valido = false
+                });
             }
 
             int divisorFrecuencia = CrPolizasRegistro_FrecuenciaPagosDivisor_Obtener(request.poliza_pago_frecuencia);
@@ -167,7 +176,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 mesesVigenciaPago = 1;
             }
 
-            int pagosNum = mesesVigenciaPago / divisorFrecuencia;
+            // VB6: iPagos = iMeses / iPagos con iPagos Integer => redondeo medio-par.
+            int pagosNum = (int)Math.Round((double)mesesVigenciaPago / divisorFrecuencia, MidpointRounding.ToEven);
             if (pagosNum <= 0)
             {
                 pagosNum = 1;
@@ -182,9 +192,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 coberturaMeses = 1;
             }
 
-            decimal pagoMonto = request.poliza_monto / pagosNum;
-            decimal cuota = request.poliza_monto / mesesPendientes;
-            decimal cuotaRestoPlazo = request.poliza_monto / coberturaMeses;
+            // VB6 Format(x, "Standard"): 2 decimales.
+            decimal pagoMonto = CrPolizasRegistro_Moneda(request.poliza_monto / pagosNum);
+            decimal cuota = CrPolizasRegistro_Moneda(request.poliza_monto / mesesPendientes);
+            decimal cuotaRestoPlazo = CrPolizasRegistro_Moneda(request.poliza_monto / coberturaMeses);
 
             return DbHelper.CreateOkResponse(new CrPolizasRegistroPlanPagoDetalleData
             {
@@ -194,7 +205,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 poliza_cuota = cuota,
                 poliza_ctas_deduce = mesesPendientes,
                 poliza_cuota_resto_plazo = cuotaRestoPlazo,
-                id_seq = request.id_seq
+                id_seq = request.id_seq,
+                calculo_valido = true
             });
         }
     }
