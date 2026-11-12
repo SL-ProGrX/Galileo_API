@@ -251,7 +251,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     commandTimeout: 0
                 ).ToList();
 
-                etapa = "Validar transacción del caso";
                 CO_AplExc_Procesa_Transaccion_Verificar(connection);
 
                 etapa = "Leer Resultado del procedimiento";
