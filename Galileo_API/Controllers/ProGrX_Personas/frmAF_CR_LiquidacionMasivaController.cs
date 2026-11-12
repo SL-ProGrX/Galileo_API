@@ -81,5 +81,12 @@ namespace Galileo.Controllers.ProGrX_Personas
         {
             return _bl.AF_LiquidacionMasiva_Proceso_Activo_Obtener(CodEmpresa, Usuario);
         }
+
+        [Authorize]
+        [HttpGet("AF_LiquidacionMasiva_Proceso_Errores_Obtener")]
+        public ErrorDto<List<AfLiqMasivaErrorItem>> AF_LiquidacionMasiva_Proceso_Errores_Obtener(int CodEmpresa, Guid ProcesoId)
+        {
+            return _bl.AF_LiquidacionMasiva_Proceso_Errores_Obtener(CodEmpresa, ProcesoId);
+        }
     }
 }

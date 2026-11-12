@@ -53,5 +53,10 @@ namespace Galileo.BusinessLogic.ProGrX_Personas
         {
             return _db.AF_LiquidacionMasiva_Proceso_Activo_Obtener(CodEmpresa, Usuario);
         }
+
+        public ErrorDto<List<AfLiqMasivaErrorItem>> AF_LiquidacionMasiva_Proceso_Errores_Obtener(int CodEmpresa, Guid ProcesoId)
+        {
+            return _db.AF_LiquidacionMasiva_Proceso_Errores_Obtener(CodEmpresa, ProcesoId);
+        }
     }
 }

@@ -11,6 +11,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         private const int NumeroErrorDeadlock = 1205;
         private const int MaxIntentosDeadlock = 3;
         private const int PausaBaseDeadlockMs = 500;
+        private const string TextoDeadlock = "deadlock victim";
 
         private readonly PortalDB _portalDb;
         private readonly MTesoreria _mtes;
@@ -249,10 +250,9 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
 
         /// <summary>
         /// OBJETIVO:      Genera a Tesoreria las liquidaciones.
-        /// 'REFERENCIAS:   AsientoLiquidacionTesoreria - (Genera el Asiento de la liquidacion en el
-        /// '               modulo de Tesoreria)
-        /// '               ProcedimientoErrores - (Registra error en caso de que ocurra uno dentro del
-        /// '               Procedimiento)
+        /// REFERENCIAS:   spAFI_Liquidacion_Traslado_Bancos (Desembolsar) y UPDATE de Liquidacion (Retener).
+        /// OBSERVACIONES: Igual que VB6, cada liquidación se procesa por separado: si una falla se registra
+        ///                y se continúa con las demás. Los deadlocks se reintentan por ítem.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="request">Solicitud con los datos de entrada de la operaci&#243;n.</param>
@@ -286,50 +286,99 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
 
             try
             {
-                foreach (var it in request.items)
-                {
-                    if (!it.marcado) continue;
-                    if (it.duplicado == 1) continue;
-
-                    if (request.accion == "D")
-                    {
-                        // VB6: exec spAFI_Liquidacion_Traslado_Bancos <consec>, '<usuario>', '<token>'
-                        const string sp = "EXEC spAFI_Liquidacion_Traslado_Bancos @Liq, @Usuario, @Token;";
-                        conn.Execute(sp, new
-                        {
-                            Liq = it.consec,
-                            Usuario = request.usuario.Trim(),
-                            Token = request.token.Trim()
-                        });
-                    }
-                    else
-                    {
-                        // VB6: Retener (UPDATE Liquidacion ...)
-                        const string sql = @"
-                                UPDATE Liquidacion
-                                SET Fecha_Traspaso = dbo.MyGetdate(),
-                                    EstadoAsiento = 'G',
-                                    NDocumento = '0',
-                                    Tdocumento = 'RT',
-                                    Tesoreria_Solicitud = 0,
-                                    Traspaso_Usuario = @Usuario
-                                WHERE Consec = @Consec;";
-
-                        conn.Execute(sql, new
-                        {
-                            Usuario = request.usuario.Trim(),
-                            Consec = it.consec
-                        });
-                    }
-
-                    resp.procesados++;
-                }
-
+                ProcesarItemsGenerar(conn, request, resp);
                 return DbHelper.CreateOkResponse<AfLiquidacionAsientosGenerarResponse>(resp);
             }
             catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<AfLiquidacionAsientosGenerarResponse>(ex.Message);
+            }
+        }
+
+
+        /// <summary>
+        /// Recorre los ítems marcados y no duplicados. Cada uno se ejecuta con reintento por deadlock;
+        /// si falla de forma definitiva se registra en <c>resp.errores</c> y se continúa con el siguiente.
+        /// </summary>
+        private void ProcesarItemsGenerar(
+              SqlConnection conn,
+              AfLiquidacionAsientosGenerarRequest request,
+              AfLiquidacionAsientosGenerarResponse resp)
+        {
+            var usuario = request.usuario.Trim();
+            var esDesembolso = request.accion == "D";
+            var token = esDesembolso ? request.token.Trim() : string.Empty;
+
+            foreach (var it in request.items)
+            {
+                if (!it.marcado) continue;
+                if (it.duplicado == 1) continue;
+
+                var error = esDesembolso
+                    ? EjecutarItemConReintento(() => TrasladarBanco(conn, it.consec, usuario, token))
+                    : EjecutarItemConReintento(() => RetenerLiquidacion(conn, it.consec, usuario));
+
+                if (error == null)
+                    resp.procesados++;
+                else
+                    resp.errores.Add(new AfLiquidacionAsientosErrorItem { consec = it.consec, mensaje = error });
+            }
+
+            resp.fallidos = resp.errores.Count;
+        }
+
+
+        /// <summary>
+        /// VB6: exec spAFI_Liquidacion_Traslado_Bancos &lt;consec&gt;, '&lt;usuario&gt;', '&lt;token&gt;'
+        /// </summary>
+        private static void TrasladarBanco(SqlConnection conn, long consec, string usuario, string token)
+        {
+            const string sp = "EXEC spAFI_Liquidacion_Traslado_Bancos @Liq, @Usuario, @Token;";
+            conn.Execute(sp, new { Liq = consec, Usuario = usuario, Token = token });
+        }
+
+
+        /// <summary>
+        /// VB6: Retener (UPDATE Liquidacion ...)
+        /// </summary>
+        private static void RetenerLiquidacion(SqlConnection conn, long consec, string usuario)
+        {
+            const string sql = @"
+                    UPDATE Liquidacion
+                    SET Fecha_Traspaso = dbo.MyGetdate(),
+                        EstadoAsiento = 'G',
+                        NDocumento = '0',
+                        Tdocumento = 'RT',
+                        Tesoreria_Solicitud = 0,
+                        Traspaso_Usuario = @Usuario
+                    WHERE Consec = @Consec;";
+            conn.Execute(sql, new { Usuario = usuario, Consec = consec });
+        }
+
+
+        /// <summary>
+        /// Ejecuta la acción de un ítem. Si es deadlock (víctima), reintenta con pausa creciente.
+        /// Devuelve null si tuvo éxito; de lo contrario, el mensaje del error definitivo.
+        /// </summary>
+        private static string? EjecutarItemConReintento(Action ejecutar)
+        {
+            int intento = 1;
+            while (true)
+            {
+                try
+                {
+                    ejecutar();
+                    return null;
+                }
+                catch (SqlException ex) when (EsDeadlock(ex) && intento < MaxIntentosDeadlock)
+                {
+                    Thread.Sleep(intento * PausaBaseDeadlockMs);
+                    intento++;
+                }
+                catch (Exception ex)
+                {
+                    return ex.Message;
+                }
             }
         }
 
@@ -432,6 +481,15 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
 
 
         /// <summary>
+        /// Detecta deadlock. El SP de traslado re-lanza el error con RAISERROR, por lo que el número
+        /// llega como 50000 y se identifica por el texto del mensaje.
+        /// </summary>
+        private static bool EsDeadlock(SqlException ex) =>
+            ex.Number == NumeroErrorDeadlock
+            || ex.Message.Contains(TextoDeadlock, StringComparison.OrdinalIgnoreCase);
+
+
+        /// <summary>
         /// Ejecuta la acción con una conexión nueva. Si SQL Server elige la sesión como víctima de
         /// deadlock (error 1205), la transacción se revierte y la consulta se reintenta con una
         /// pausa creciente, en lugar de mostrar el error al usuario.
@@ -446,7 +504,7 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
                     return new ErrorDto<T> { Code = 0, Description = "Ok", Result = accion(conn) };
                 }
-                catch (SqlException ex) when (ex.Number == NumeroErrorDeadlock && intento < MaxIntentosDeadlock)
+                catch (SqlException ex) when (EsDeadlock(ex) && intento < MaxIntentosDeadlock)
                 {
                     Thread.Sleep(intento * PausaBaseDeadlockMs);
                     intento++;
