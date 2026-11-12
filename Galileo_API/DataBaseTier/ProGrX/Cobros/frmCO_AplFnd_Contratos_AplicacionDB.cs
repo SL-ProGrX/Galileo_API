@@ -43,7 +43,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             public string? Resultado { get; set; }
         }
 
-        private sealed class ResultadoException : Exception
+        public sealed class ResultadoException : Exception
         {
             public ResultadoException(string mensaje) : base(mensaje)
             {
@@ -255,8 +255,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: 0
                 ).ToList();
-
-                etapa = "Verificar transacción del caso";
+                
                 CO_AplFndContrApl_Transaccion_Verificar(connection);
 
                 etapa = "Leer Resultado del procedimiento";
