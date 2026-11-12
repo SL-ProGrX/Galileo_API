@@ -121,6 +121,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 inner join socios S on R.cedula = S.cedula
                 inner join catalogo C on R.codigo = C.codigo
                 where R.id_solicitud = @Operacion
+                  and R.estado in ('A', 'C')
                   and (C.retencion = 'N' or C.poliza = 'N');";
 
             var resp = DbHelper.ExecuteSingleQuery<CrPolizasRegistroOperacionBase>(
@@ -178,12 +179,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     rtrim(Pol.cod_poliza) as cod_poliza,
                     rtrim(Cat.descripcion) as poliza_descripcion,
                     case when isnull(Cat.integra_plan_pagos,0) = 1 then 'Integrado' else 'Retencion' end as integra_plan_pagos,
-                    case when Pol.estado = 'A' then 'Activa' else 'Inactiva' end as estado,
-                    Pol.cuota,
+                    -- VB6 sbCargaOperacion: retencion -> estado (isnull 'A') y mensualidad de reg_creditos; integrada -> poliza
+                    case when isnull(Cat.integra_plan_pagos,0) = 1
+                         then case when Pol.estado = 'A' then 'Activa' else 'Inactiva' end
+                         else case when isnull(Reg.estado,'A') = 'A' then 'Activa' else 'Cancelada' end
+                    end as estado,
+                    case when isnull(Cat.integra_plan_pagos,0) = 1 then Pol.cuota else isnull(Reg.cuota,0) end as cuota,
                     Pol.monto,
                     isnull(Pol.id_solicitud_poliza,0) as id_solicitud_poliza
                 from CRD_OPERACION_POLIZAS Pol
                 inner join CRD_CATALOGO_POLIZAS Cat on Pol.cod_poliza = Cat.cod_poliza
+                left join reg_creditos Reg on Pol.id_solicitud_poliza = Reg.id_solicitud
                 where Pol.id_solicitud = @Operacion
                 order by Pol.num_poliza;";
 
@@ -211,7 +217,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     tipo_registro = x.integra_plan_pagos,
                     estado = x.estado,
                     cuota = x.cuota,
-                    monto = x.monto
+                    monto = x.monto,
+                    id_solicitud_poliza = x.id_solicitud_poliza
                 })
                 .ToList();
 
@@ -309,6 +316,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 isnull(Pol.num_ctas_deduce, 0) as num_ctas_deduce,
                 Pol.recaudado_corte,
                 isnull(Pol.recaudado_saldo, 0) as recaudado_saldo,
+                isnull(Pol.pago_saldo, 0) as pago_saldo,
                 isnull(Pol.id_solicitud_poliza, 0) as id_solicitud_poliza
             from CRD_OPERACION_POLIZAS Pol
             inner join CRD_CATALOGO_POLIZAS Cat
@@ -367,7 +375,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 isnull(Pol.num_ctas_deduce, 0) as num_ctas_deduce,
                 Pol.recaudado_corte,
                 isnull(Pol.recaudado_saldo, 0) as recaudado_saldo,
+                isnull(Pol.pago_saldo, 0) as pago_saldo,
                 isnull(Pol.id_solicitud_poliza, 0) as id_solicitud_poliza,
+                rtrim(isnull(Reg.estado, '')) as reg_estado,
                 rtrim(isnull(Reg.codigo, '')) as codigo,
                 isnull(Reg.cod_destino, 0) as cod_destino,
                 rtrim(isnull(Cd.descripcion, '')) as destino,
@@ -520,6 +530,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 poliza_pagos_num = complemento.poliza_pagos_num,
                 poliza_cobertura_meses = complemento.poliza_cobertura_meses,
                 recaudado_saldo = detalle.recaudado_saldo,
+                poliza_pago_saldo = detalle.pago_saldo,
+                recaudado_corte = detalle.recaudado_corte,
                 poliza_operacion = detalle.id_solicitud_poliza > 0
                     ? detalle.id_solicitud_poliza.ToString()
                     : string.Empty,
@@ -529,7 +541,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 plazo = detalle.plazo,
                 monto = detalle.monto_base,
                 observaciones = detalle.observacion,
-                estado = detalle.estado == "A" ? "Activa" : "Inactiva",
+                // VB6 sbCargaPoliza: txtEstado = fxEstadoCuota(reg_creditos.estado); integrada no lo muestra.
+                estado = MapearEstadoCuota(detalle.reg_estado),
                 fecha = detalle.fechaforp.HasValue
                     ? detalle.fechaforp.Value.ToString("dd/MM/yyyy")
                     : string.Empty,
@@ -722,7 +735,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             var resultado = new CrPolizasRegistroCatalogosData
             {
-                primer_deduccion = Convert.ToInt32(_seguimientoDb.fxPrimerDeduccion(codEmpresa))
+                primer_deduccion = Convert.ToInt32(_seguimientoDb.fxPrimerDeduccion(codEmpresa)),
+                fecha_servidor = CrPolizasRegistro_FechaServidor_Obtener(codEmpresa)
             };
 
             var retencionResp = CrPolizasRegistro_PolizaRetencionData_Obtener(codEmpresa, codPoliza);
@@ -825,11 +839,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CrPolizasRegistro_PlanPagos_Obtener(
             int codEmpresa,
-            int operacion)
+            int operacion,
+            string usuario)
         {
             if (operacion <= 0)
             {
                 return CrPolizasRegistro_OperacionRequerida(new List<DropDownListaGenericaModel>());
+            }
+
+            // VB6 sbCargaOperacion: el combo de plan solo se llena si SysPlanPagos = 1.
+            if (!CrPolizasRegistro_SysPlanPagos(codEmpresa, usuario))
+            {
+                return DbHelper.CreateOkResponse(new List<DropDownListaGenericaModel>());
             }
 
             const string sql = @"

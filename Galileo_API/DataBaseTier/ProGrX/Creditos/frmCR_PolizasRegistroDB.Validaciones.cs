@@ -75,6 +75,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     return CrPolizasRegistro_FxVerificaRespuesta(errores);
                 }
 
+                // VB6 fxVerifica: la existencia del cliente se valida para ambas ramas.
+                if (!CrPolizasRegistro_ClienteExiste(codEmpresa, operacionBase.cedula))
+                {
+                    errores.Add("- No Existe el cliente definido (debe de Ingresarlo)...");
+                }
+
                 var lineaData = CrPolizasRegistro_LineaPolizaValidar(
                     codEmpresa,
                     request.poliza_linea,
@@ -211,17 +217,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             CrPolizasRegistroPolizaIntegradaGuardarRequest request,
             List<string> errores)
         {
+            // Mensajes copiados textualmente de VB6 (fxVerifica), incluido "v&aacute;lidad".
             if (request.poliza_monto < 1)
             {
-                errores.Add("- La mensualidad de la P&oacute;liza no es v&aacute;lida");
+                errores.Add("- La mensualidad de la P&oacute;liza no es v&aacute;lidad");
             }
 
             if (request.poliza_plazo_credito && request.poliza_cuota_resto_plazo < 1)
             {
-                errores.Add("- La mensualidad de la P&oacute;liza para el resto del Plan no es v&aacute;lida");
+                errores.Add("- La mensualidad de la P&oacute;liza para el resto del Plan no es v&aacute;lidad");
             }
 
-            if (!CrPolizasRegistro_PlanPagos_Disponible(codEmpresa, request.operacion))
+            // VB6: cboPolizaPlan solo se llena con SysPlanPagos = 1; sin combo no hay cuotas.
+            if (!CrPolizasRegistro_SysPlanPagos(codEmpresa, request.usuario)
+                || !CrPolizasRegistro_PlanPagos_Disponible(codEmpresa, request.operacion))
             {
                 errores.Add("- No existen cuotas disponibles dentro del Plan de Pagos en donde registrar la Poliza");
             }

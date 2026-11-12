@@ -85,8 +85,9 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         [HttpGet("CrPolizasRegistro_PlanPagos_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> CrPolizasRegistro_PlanPagos_Obtener(
             int codEmpresa,
-            int operacion)
-            => _bl.CrPolizasRegistro_PlanPagos_Obtener(codEmpresa, operacion);
+            int operacion,
+            string usuario = "")
+            => _bl.CrPolizasRegistro_PlanPagos_Obtener(codEmpresa, operacion, usuario);
 
         [HttpGet("CrPolizasRegistro_Beneficiarios_Obtener")]
         public ErrorDto<List<CrPolizasRegistroBeneficiarioItem>> CrPolizasRegistro_Beneficiarios_Obtener(

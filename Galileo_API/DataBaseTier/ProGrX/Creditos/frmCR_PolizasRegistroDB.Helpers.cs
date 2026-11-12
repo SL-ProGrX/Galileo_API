@@ -120,21 +120,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 new { Operacion = operacion }).Result;
         }
 
-        private int CrPolizasRegistro_UltimaOperacion_Obtener(int codEmpresa, string cedula)
-        {
-            const string sql = @"
-            select isnull(max(id_solicitud), 0)
-            from reg_creditos
-            where cedula = @Cedula;";
-
-            return DbHelper.ExecuteSingleQuery<int>(
-                _portalDb,
-                codEmpresa,
-                sql,
-                0,
-                new { Cedula = (cedula ?? string.Empty).Trim() }).Result;
-        }
-
         private ErrorDto<CrPolizasRegistroOperacionBaseData?> CrPolizasRegistro_OperacionBase_Obtener(
             int codEmpresa,
             int operacion)
@@ -218,6 +203,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             };
         }
 
+        /// <summary>
+        /// VB6 sbCalculaDatosPoliza solo calcula con "Mensual", "Trimestral", "Semestral" o "Anual";
+        /// "Indefinida" no tiene divisor en VB6 (compara contra "Indefinido").
+        /// </summary>
+        private static bool CrPolizasRegistro_FrecuenciaCalculable(string frecuencia)
+        {
+            return (frecuencia ?? string.Empty).Trim() != "Indefinida";
+        }
+
+        private static decimal CrPolizasRegistro_Moneda(decimal valor)
+        {
+            return Math.Round(valor, 2, MidpointRounding.AwayFromZero);
+        }
+
         private static int CrPolizasRegistro_DiferenciaMeses_Obtener(DateTime fechaInicio, DateTime fechaFin)
         {
             return ((fechaFin.Year - fechaInicio.Year) * 12) + fechaFin.Month - fechaInicio.Month;
@@ -261,18 +260,40 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 : "I";
         }
 
-        private static int? CrPolizasRegistro_ContratoNumero_Obtener(string contrato)
+        /// <summary>
+        /// VB6 fxEstadoCuota: traduce el estado de reg_creditos a su descripcion.
+        /// </summary>
+        private static string MapearEstadoCuota(string estado)
         {
-            string valor = (contrato ?? string.Empty).Trim();
-
-            if (string.IsNullOrWhiteSpace(valor))
+            return (estado ?? string.Empty).Trim() switch
             {
-                return null;
-            }
+                "" => string.Empty,
+                "A" => "Activo",
+                "N" => "Anulado",
+                "C" => "Cancelado",
+                "R" => "Refundido",
+                "U" => "Unificado",
+                _ => "Otro..."
+            };
+        }
 
-            return int.TryParse(valor, out int contratoNumero)
-                ? contratoNumero
-                : null;
+        /// <summary>
+        /// VB6 GLOBALES.SysPlanPagos: indica si el plan de pagos esta habilitado.
+        /// </summary>
+        private bool CrPolizasRegistro_SysPlanPagos(int codEmpresa, string usuario)
+        {
+            int sysPlanPagos = _mainDb.sbSifParametrosInicializa(codEmpresa, (usuario ?? string.Empty).Trim())
+                .Result?.SysPlanPagos ?? 0;
+
+            return sysPlanPagos == 1;
+        }
+
+        /// <summary>
+        /// VB6 fxFechaServidor.
+        /// </summary>
+        private DateTime CrPolizasRegistro_FechaServidor_Obtener(int codEmpresa)
+        {
+            return _mainDb.fxFechaServidor(codEmpresa, 0);
         }
     }
 }

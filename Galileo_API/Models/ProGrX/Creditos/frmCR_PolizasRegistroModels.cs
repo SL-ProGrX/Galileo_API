@@ -14,6 +14,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public List<DropDownListaGenericaModel> destinos { get; set; } = new();
         public List<DropDownListaGenericaModel> garantias { get; set; } = new();
         public int primer_deduccion { get; set; } = 0;
+        public DateTime fecha_servidor { get; set; } = DateTime.Today;
     }
 
     public class CrPolizasRegistroOperacionData
@@ -28,6 +29,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
     public class CrPolizasRegistroListadoItem
     {
         public int id_solicitud { get; set; } = 0;
+        public int id_solicitud_poliza { get; set; } = 0;
         public int num_poliza { get; set; } = 0;
         public string cod_poliza { get; set; } = string.Empty;
         public string poliza_descripcion { get; set; } = string.Empty;
@@ -52,6 +54,8 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public decimal poliza_cuota_resto_plazo { get; set; } = 0;
         public int poliza_cobertura_meses { get; set; } = 0;
         public decimal recaudado_saldo { get; set; } = 0;
+        public decimal poliza_pago_saldo { get; set; } = 0;
+        public DateTime? recaudado_corte { get; set; }
         public int poliza_pagos_num { get; set; } = 0;
         public int poliza_ctas_deduce { get; set; } = 0;
         public bool poliza_plazo_credito { get; set; } = false;
@@ -143,7 +147,9 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public int num_ctas_deduce { get; set; } = 0;
         public DateTime? recaudado_corte { get; set; }
         public decimal recaudado_saldo { get; set; } = 0;
+        public decimal pago_saldo { get; set; } = 0;
         public int id_solicitud_poliza { get; set; } = 0;
+        public string reg_estado { get; set; } = string.Empty;
         public string codigo { get; set; } = string.Empty;
         public int cod_destino { get; set; } = 0;
         public string destino { get; set; } = string.Empty;
@@ -198,6 +204,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public decimal poliza_cuota { get; set; } = 0;
         public int poliza_ctas_deduce { get; set; } = 0;
         public decimal poliza_cuota_resto_plazo { get; set; } = 0;
+        public bool calculo_valido { get; set; } = true;
     }
 
     public class CrPolizasRegistroPolizaIntegradaGuardarRequest
