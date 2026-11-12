@@ -7,6 +7,9 @@ using System.Linq;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
+    /// <summary>
+    /// Acceso a datos y coordinación de persistencia para garantías prendarias.
+    /// </summary>
     public partial class FrmCrPrendasDb
     {
         private const string ColPrendaId = "Prenda_Id";
@@ -18,11 +21,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private readonly PortalDB _portalDb;
 
+        /// <summary>
+        /// Inicializa el acceso a datos usando la configuración de la aplicación.
+        /// </summary>
+        /// <param name="config">Configuración utilizada para crear el acceso al portal.</param>
         public FrmCrPrendasDb(IConfiguration config)
             : this(new PortalDB(config))
         {
         }
 
+        /// <summary>
+        /// Inicializa el acceso a datos con una instancia de portal existente.
+        /// </summary>
+        /// <param name="portalDb">Acceso al portal de bases de datos por empresa.</param>
         public FrmCrPrendasDb(PortalDB portalDb)
         {
             _portalDb = portalDb;
@@ -84,154 +95,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 connection.Query(sql, parametros).FirstOrDefault());
         }
 
-        public ErrorDto<List<CrPrendaListaData>> CrPrendas_Obtener(
-            int codEmpresa,
-            long operacion,
-            string expediente)
-        {
-            const string sql = "exec spCrd_Prendas_List @Operacion, @Expediente;";
-
-            return EjecutarListaMapeada(
-                codEmpresa,
-                sql,
-                new { Operacion = operacion, Expediente = expediente ?? string.Empty },
-                MapearPrendaLista);
-        }
-
-        public ErrorDto<CrPrendaDetalleData> CrPrendas_ObtenerDetalle(int codEmpresa, long prendaId)
-        {
-            const string sql = "exec spCrd_Prendas_Garantia_Load @PrendaId;";
-
-            return EjecutarUnicoMapeado(codEmpresa, sql, new { PrendaId = prendaId }, MapearPrendaDetalle);
-        }
-
-        public ErrorDto<string> CrPrendas_AvaluoGuardar(int codEmpresa, CrPrendaAvaluoGuardarRequest request)
-        {
-            const string sql = @"
-                exec spCrd_Operacion_Prenda_Avaluo
-                    @PrendaId,
-                    @Inspector,
-                    @ValorTotal,
-                    @PorcCobertura,
-                    @Cobertura,
-                    @Notas,
-                    @FechaInspeccion,
-                    @ValorFiscal,
-                    @ValorFinal,
-                    @MontoExtras,
-                    @PolizaFactor,
-                    @PolizaFormaliza,
-                    @PolizaRstPlan,
-                    @Usuario;";
-
-            return EjecutarRespuestaSp(
-                codEmpresa,
-                sql,
-                new
-                {
-                    PrendaId = request.prenda_id,
-                    Inspector = request.inspector ?? string.Empty,
-                    ValorTotal = request.valor_total,
-                    Cobertura = request.cobertura,
-                    PorcCobertura = request.porc_cobertura,
-                    Notas = request.notas ?? string.Empty,
-                    FechaInspeccion = ConvertirFechaSql(request.fecha_inspeccion),
-                    ValorFiscal = request.valor_fiscal,
-                    ValorFinal = request.valor_total,
-                    MontoExtras = request.monto_extras,
-                    PolizaFactor = request.poliza_factor,
-                    PolizaFormaliza = request.poliza_formaliza,
-                    PolizaRstPlan = request.poliza_rst_plan,
-                    Usuario = UsuarioNormalizado(request.usuario)
-                },
-                "AvalÃºo registrado satisfactoriamente!");
-        }
-
-        public ErrorDto<string> CrPrendas_NotariadoGuardar(int codEmpresa, CrPrendaNotariadoGuardarRequest request)
-        {
-            const string sql = @"
-                exec spCrd_Operacion_Prenda_Notariado
-                    @PrendaId,
-                    @Notario,
-                    @Tomo,
-                    @Folio,
-                    @Usuario;";
-
-            return EjecutarRespuestaSp(
-                codEmpresa,
-                sql,
-                new
-                {
-                    PrendaId = request.prenda_id,
-                    Notario = request.notario ?? string.Empty,
-                    Tomo = request.tomo ?? string.Empty,
-                    Folio = request.folio ?? string.Empty,
-                    Usuario = UsuarioNormalizado(request.usuario)
-                },
-                "InformaciÃ³n de notariado actualizada satisfactoriamente!");
-        }
-
-        public ErrorDto<string> CrPrendas_NotaGuardar(int codEmpresa, CrPrendaNotaGuardarRequest request)
-        {
-            const string sql = "exec spCrd_Prendas_Anotaciones_Add @PrendaId, @Nota, @Usuario;";
-
-            return EjecutarRespuestaSp(
-                codEmpresa,
-                sql,
-                new
-                {
-                    PrendaId = request.prenda_id,
-                    Nota = request.nota ?? string.Empty,
-                    Usuario = UsuarioNormalizado(request.usuario)
-                },
-                "Registro de Notas de Prenda realizado Satisfactoriamente!");
-        }
-
-        public ErrorDto<string> CrPrendas_PolizaCoberturaGuardar(
-            int codEmpresa,
-            CrPrendaPolizaCoberturaGuardarRequest request)
-        {
-            const string sql = @"
-                exec spCrd_Prendas_Polizas_Add
-                    @PrendaId,
-                    @CoberturaId,
-                    @Usuario,
-                    @Asignado;";
-
-            var resp = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sql, new
-            {
-                PrendaId = request.prenda_id,
-                CoberturaId = request.id_prenda_cobertura,
-                Usuario = UsuarioNormalizado(request.usuario),
-                Asignado = request.asignado
-            });
-
-            return new ErrorDto<string>
-            {
-                Code = resp.Code,
-                Description = resp.Description,
-                Result = resp.Code == -1 ? string.Empty : "Cobertura de pÃ³liza actualizada correctamente."
-            };
-        }
-
-        public ErrorDto<List<CrPrendaHistoricoPolizaData>> CrPrendas_PolizasExternasLista(int codEmpresa, long prendaId)
-        {
-            const string sql = "exec spCrd_Prendas_Polizas_Externas_Lista @PrendaId;";
-
-            return EjecutarListaMapeada(codEmpresa, sql, new { PrendaId = prendaId }, MapearHistoricoPoliza);
-        }
-
-        public ErrorDto<CrPrendaDetalleData> CrPrendas_PolizaExternaLoad(int codEmpresa, long prendaId, int polizaExtId)
-        {
-            const string sql = "exec spCrd_Prendas_Polizas_Externas_Load @PrendaId, @PolizaExtId;";
-
-            return EjecutarUnicoMapeado(
-                codEmpresa,
-                sql,
-                new { PrendaId = prendaId, PolizaExtId = polizaExtId },
-                MapearPolizaExternaDetalle);
-        }
-
+        /// <summary>
+        /// Registra o actualiza una garantía prendaria completa.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa donde se guarda.</param>
+        /// <param name="request">Datos completos de la garantía y usuario responsable.</param>
+        /// <returns>Identificador de la prenda guardada y resultado de la operación.</returns>
         public ErrorDto<long> CrPrendas_Guardar(int codEmpresa, CrPrendaGuardarCompletaRequest request)
         {
             const string sql = @"
@@ -454,6 +323,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             };
         }
 
+        /// <summary>
+        /// Registra o actualiza una póliza externa asociada a una prenda.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa donde se guarda.</param>
+        /// <param name="request">Datos de la póliza externa y usuario responsable.</param>
+        /// <returns>Resultado del registro de la póliza externa.</returns>
         public ErrorDto<string> CrPrendas_PolizaExternaGuardar(
             int codEmpresa,
             CrPrendaPolizaExternaGuardarRequest request)
@@ -491,10 +366,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             return CrearRespuestaMovimiento(
                 resp,
-                "No se obtuvo respuesta al registrar la pÃ³liza externa.",
-                new Func<string, string>(movimiento => $"PÃ³liza Externa {movimiento} satisfactoriamente!"));
+                "No se obtuvo respuesta al registrar la póliza externa.",
+                new Func<string, string>(movimiento => $"Póliza Externa {movimiento} satisfactoriamente!"));
         }
 
+        /// <summary>
+        /// Elimina una garantía prendaria existente.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa donde se elimina.</param>
+        /// <param name="request">Identificador de la prenda y usuario responsable.</param>
+        /// <returns>Resultado de la eliminación.</returns>
         public ErrorDto CrPrendas_Eliminar(int codEmpresa, CrPrendasEliminarRequest request)
         {
             const string sql = "exec spCrd_Operacion_Prenda_Elimina @PrendaId, @Usuario;";
@@ -631,8 +512,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
 
             detalle.pe_status = detalle.pe_vencida == 1
-                ? "Utiliza PÃ³liza Externa y se encuentra Vencida!"
-                : "Utiliza PÃ³liza Externa!";
+                ? "Utiliza Póliza Externa y se encuentra Vencida!"
+                : "Utiliza Póliza Externa!";
         }
 
         private static string NombreCompletoAsegurado(CrPrendaDetalleData detalle)
