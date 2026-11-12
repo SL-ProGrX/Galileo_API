@@ -67,12 +67,14 @@ namespace Galileo_API.Services.ProGrX.Cobros
         {
             try
             {
+                // Conserva el avance que el ejecutor alcanzó antes de una excepción general.
+                var previo = _procesoDb.Estado_Obtener(trabajo.CodEmpresa, trabajo.ProcesoId);
                 _procesoDb.Actualizar(
                     trabajo.CodEmpresa,
                     trabajo.ProcesoId,
                     GenProcesoEstados.Error,
-                    0,
-                    0,
+                    previo?.ItemsProcesados ?? 0,
+                    previo?.ItemsConError ?? 0,
                     mensaje);
             }
             catch (Exception ex)

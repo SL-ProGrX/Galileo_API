@@ -25,6 +25,7 @@ namespace Galileo_API.Services.ProGrX.Cobros
             _queue.LeerAsync(ct);
 
         protected override void EjecutarTrabajo(CoCobroFiadoresProcesoTrabajo trabajo) =>
-            _db.CO_CobroFiadores_ProcesaCobros_Ejecutar(trabajo.CodEmpresa, trabajo.ProcesoId, trabajo.Usuario, trabajo.Ids);
+            _db.CO_CobroFiadores_ProcesaCobros_Ejecutar(trabajo.CodEmpresa, trabajo.ProcesoId,
+                trabajo.Usuario, trabajo.Ids, _queue);
     }
 }
