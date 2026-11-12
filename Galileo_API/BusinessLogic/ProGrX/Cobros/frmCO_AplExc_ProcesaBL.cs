@@ -31,14 +31,54 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
         /// </summary>
         public ErrorDto<GenProcesoIniciadoResult> CO_AplExc_Procesa_Iniciar(int CodEmpresa, ExcedenteAplicarRequest request)
         {
-            var usuario = (request.Usuario ?? string.Empty).Trim().ToUpper();
-            var totalCasos = request.Seleccionados?.Count(x => !string.IsNullOrWhiteSpace(x.cedula)) ?? 0;
+            var usuario = (request.Usuario ?? string.Empty)
+                .Trim()
+                .ToUpperInvariant();
 
-            if (totalCasos == 0)
+            if (usuario.Length == 0 || usuario.Length > 30)
             {
                 return DbHelper.CreateErrorResponse(
-                    "No hay casos a procesar", -1, new GenProcesoIniciadoResult());
+                    "El usuario es obligatorio y admite hasta 30 caracteres.",
+                    -1,
+                    new GenProcesoIniciadoResult());
             }
+
+            var seleccionados = request.Seleccionados;
+
+            if (seleccionados is null || seleccionados.Count == 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "No hay casos a procesar.",
+                    -1,
+                    new GenProcesoIniciadoResult());
+            }
+
+            if (seleccionados.Any(item =>
+                    item is null ||
+                    string.IsNullOrWhiteSpace(item.cedula) ||
+                    item.cedula.Trim().Length > 20))
+            {
+                return DbHelper.CreateErrorResponse(
+                    "La selección contiene identificaciones inválidas.",
+                    -1,
+                    new GenProcesoIniciadoResult());
+            }
+
+            var identificaciones = seleccionados
+                .Select(item => item.cedula.Trim())
+                .ToList();
+
+            if (identificaciones.Distinct(StringComparer.OrdinalIgnoreCase).Count()
+                != identificaciones.Count)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "La selección contiene identificaciones repetidas.",
+                    -1,
+                    new GenProcesoIniciadoResult());
+            }
+
+            request.Usuario = usuario;
+            var totalCasos = seleccionados.Count;
 
             var procesoId = Guid.NewGuid();
 
@@ -66,13 +106,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
         /// <summary>
         /// Consulta el avance de un proceso (polling desde la pantalla).
         /// </summary>
-        public ErrorDto<GenProcesoEstadoResult> CO_AplExc_Procesa_Estado(int CodEmpresa, Guid procesoId)
+        public ErrorDto<CoAplExcProcesoEstadoResult> CO_AplExc_Procesa_Estado(
+            int CodEmpresa,
+            Guid procesoId)
         {
-            var estado = _procesoDb.Estado_Obtener(CodEmpresa, procesoId);
-
-            return estado is null
-                ? DbHelper.CreateErrorResponse("Proceso no encontrado.", -1, new GenProcesoEstadoResult())
-                : DbHelper.CreateOkResponse(estado);
+            return _db.CO_AplExc_Procesa_Estado(CodEmpresa, procesoId);
         }
     }
 }
