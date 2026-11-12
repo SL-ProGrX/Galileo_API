@@ -43,7 +43,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             public string? resultado { get; set; }
         }
 
-        private sealed class CoAplExcContrResultadoException : Exception
+        public sealed class CoAplExcContrResultadoException : Exception
         {
             public CoAplExcContrResultadoException(string mensaje)
                 : base(mensaje)
@@ -260,7 +260,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 using var connection =
                     DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-                etapa = "Abrir la conexión del caso";
                 connection.Open();
 
                 etapa =
@@ -277,8 +276,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: 0
                 ).ToList();
-
-                etapa = "Validar la transacción del caso";
 
                 CO_AplExcContrApl_Transaccion_Verificar(connection);
 
