@@ -83,6 +83,16 @@ namespace Galileo_API.Controllers.ProGrX.General
         }
 
         /// <summary>
+        /// Montos de parámetros de anomalías (CRD_PARAMETROS 23, 24 y 24.1) para etiquetas de pantalla.
+        /// </summary>
+        [Authorize]
+        [HttpGet("CcAnomaliasMontos_Obtener")]
+        public ErrorDto<CcAnomaliaMontosDto> CcAnomaliasMontos_Obtener(int codEmpresa)
+        {
+            return _bl.CcAnomaliasMontos_Obtener(codEmpresa);
+        }
+
+        /// <summary>
         /// Corrige saldos menores (VB6 sbCorrigeSaldoMenor).
         /// </summary>
         [Authorize]

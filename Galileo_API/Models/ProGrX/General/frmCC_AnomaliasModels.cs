@@ -138,6 +138,16 @@
         public string Numero_Documento { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// Montos de CRD_PARAMETROS para anomalías (VB6 fxCrdParametro "23", "24" y "24.1").
+    /// </summary>
+    public class CcAnomaliaMontosDto
+    {
+        public decimal SaldoMenor { get; set; }
+        public decimal MoraMenor { get; set; }
+        public decimal CtaDerivada { get; set; }
+    }
+
     public class CcAnomaliaOficinaOmisionDto
     {
         public string Cod_Unidad { get; set; } = string.Empty;

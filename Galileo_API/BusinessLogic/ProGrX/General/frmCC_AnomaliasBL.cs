@@ -54,6 +54,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.General
             return _db.CcAnomaliasCuentaOpcion_Obtener(codEmpresa, parametro);
         }
 
+        public ErrorDto<CcAnomaliaMontosDto> CcAnomaliasMontos_Obtener(int codEmpresa)
+        {
+            return _db.CcAnomaliasMontos_Obtener(codEmpresa);
+        }
+
         public ErrorDto<CcAnomaliaSaldosMenoresCorregirResultado> CcAnomaliasSaldosMenores_Corregir(
             int codEmpresa,
             CcAnomaliaSaldosMenoresCorregirRequest request)

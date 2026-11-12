@@ -22,6 +22,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
         private const string ParametroMontoMoraMenor = "24";
         private const string ParametroMontoCtaDerivada = "24.1";
         private const string DivisaCol = "COL";
+        private const string FormatoMonto = "#,##0.00";
         private const string MsgDatosCorreccionRequeridos =
             "Debe indicar los datos de la corrección.";
         private const string MsgUsuarioRequerido =
@@ -92,7 +93,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                 _portalDb,
                 codEmpresa,
                 sql,
-                CrearParametrosAnomalia(filtro));
+                CrearParametrosAnomalia(
+                    ObtenerParametroDecimal(codEmpresa, ParametroMontoSaldosMenores),
+                    filtro?.Linea,
+                    filtro?.Destino,
+                    filtro?.Institucion));
         }
 
         /// <summary>
@@ -262,7 +267,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                 _portalDb,
                 codEmpresa,
                 sql,
-                CrearParametrosAnomalia(filtro));
+                CrearParametrosAnomalia(
+                    ObtenerParametroDecimal(codEmpresa, ParametroMontoMoraMenor),
+                    filtro?.Linea,
+                    filtro?.Destino,
+                    filtro?.Institucion));
         }
 
         /// <summary>
@@ -273,12 +282,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
         /// <returns></returns>
         public ErrorDto<List<CcAnomaliaCtaDerivadaItemDto>> CcAnomaliasCtaDerivadaMenor_Obtener(int codEmpresa, CcAnomaliaCtaDerivadaFiltroDto filtro)
         {
-            // VB6 sbCtaDerivada_Consulta: fxCrdParametro("24.1"), default 50 como el SP.
+            // VB6 sbCtaDerivada_Consulta: fxCrdParametro("24.1").
             var mntCancela = ObtenerParametroDecimal(codEmpresa, ParametroMontoCtaDerivada);
-            if (mntCancela <= 0)
-            {
-                mntCancela = filtro?.Monto > 0 ? filtro.Monto.Value : 50m;
-            }
 
             const string sql = @"
                 SELECT
@@ -355,6 +360,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                 sql,
                 null,
                 new { Parametro = (parametro ?? string.Empty).Trim() });
+        }
+
+        /// <summary>
+        /// Montos de CRD_PARAMETROS de anomalías (VB6 fxCrdParametro "23", "24" y "24.1") para etiquetas de pantalla.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<CcAnomaliaMontosDto> CcAnomaliasMontos_Obtener(int codEmpresa)
+        {
+            var montos = new CcAnomaliaMontosDto
+            {
+                SaldoMenor = ObtenerParametroDecimal(codEmpresa, ParametroMontoSaldosMenores),
+                MoraMenor = ObtenerParametroDecimal(codEmpresa, ParametroMontoMoraMenor),
+                CtaDerivada = ObtenerParametroDecimal(codEmpresa, ParametroMontoCtaDerivada)
+            };
+
+            return DbHelper.CreateOkResponse(montos);
         }
 
         /// <summary>
@@ -493,8 +515,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                     new CcAnomaliaSaldosMenoresCorregirResultado
                     {
                         Mensaje =
-                            $"Corrección aplicada con Nota de Crédito #{lngNumero}. " +
-                            $"Casos: {creditos.Count}. Total: {curTotalSaldos:N2}.",
+                            $"Eliminación de Saldos Menores a {pMonto:0.##} se realiza con Nota de Credito #{lngNumero}",
                         Tipo_Documento = TipoDocumentoNc,
                         Numero_Documento = lngNumero,
                         Total_Corregido = curTotalSaldos,
@@ -843,7 +864,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                     new CcAnomaliaMoraMenorCorregirResultado
                     {
                         Mensaje =
-                            $"Mora Menor a {pMonto:0.00} Eliminada Satisfactoriamente...",
+                            $"Mora Menor a {pMonto.ToString(FormatoMonto, CultureInfo.InvariantCulture)} Eliminada Satisfactoriamente...",
                         Monto_Limite = pMonto
                     });
             }
@@ -934,6 +955,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                 sql,
                 string.Empty,
                 new { Parametro = codParametro }).Result;
+
+            // VB6 fxCrdParametro: si el parámetro no existe devuelve 3.
+            if (valor is null)
+            {
+                return 3m;
+            }
 
             if (string.IsNullOrWhiteSpace(valor))
             {

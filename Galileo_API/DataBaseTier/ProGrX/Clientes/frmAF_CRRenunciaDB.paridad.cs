@@ -371,7 +371,7 @@ public partial class FrmAFCrenunciaDB
 
         var restante = Math.Max(0, disponible);
 
-        decimal Deuda(AfRenunciaLiquidacionCreditosPersona credito) =>
+        static decimal Deuda(AfRenunciaLiquidacionCreditosPersona credito) =>
             Math.Max(0, credito.Saldo
                 + credito.INTC
                 + credito.INTM
