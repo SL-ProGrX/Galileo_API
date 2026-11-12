@@ -375,7 +375,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         }
 
         private static bool IsTodos(string provinciaTxt) =>
-            string.Equals(provinciaTxt, "TODOS", StringComparison.OrdinalIgnoreCase);
+            string.IsNullOrWhiteSpace(provinciaTxt) ||
+            provinciaTxt == "0" ||
+            string.Equals(
+                provinciaTxt,
+                "TODOS",
+                StringComparison.OrdinalIgnoreCase);
 
         private static object BuildCantonesParams(string codPoliza, int codRegion, int? provinciaInt) =>
             new { cod_poliza = codPoliza, cod_region = codRegion, provincia = provinciaInt };
