@@ -3,18 +3,13 @@ using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
-using Galileo.Models.Security;
 using Galileo.Models.TES;
 using Galileo_API.Controllers.WFCSinpe;
-using Galileo_API.DataBaseTier.ProGrX.Bancos;
 using Microsoft.Data.SqlClient;
-using Org.BouncyCastle.Asn1.Ocsp;
 using System.Data;
 using System.Globalization;
 using System.Net;
-using System.Reflection;
 using System.Text.RegularExpressions;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Galileo_API.DataBaseTier
 {
@@ -90,9 +85,8 @@ namespace Galileo_API.DataBaseTier
         {
 
             // Selección explícita del resultado según canal
-            SinpeResultLite? sr;
-            sr = (resPIN?.PINSendingResult is null ? null :
-                    new SinpeResultLite(resPIN.PINSendingResult.SINPERefNumber, resPIN.PINSendingResult.State, resPIN.PINSendingResult.CGPRefNumber));
+                SinpeResultLite? sr = resPIN?.PINSendingResult is null ? null :
+                    new SinpeResultLite(resPIN.PINSendingResult.SINPERefNumber, resPIN.PINSendingResult.State, resPIN.PINSendingResult.CGPRefNumber);
 
             return new
             {

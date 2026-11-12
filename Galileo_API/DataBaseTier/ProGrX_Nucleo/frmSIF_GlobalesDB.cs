@@ -23,7 +23,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             FondoPantalla
         ];
 
-        private static readonly object ArchivoLock = new();
+        private static readonly Lock ArchivoLock = new();
         private readonly string _rutaArchivo;
         private readonly MSecurityMainDb _securityMainDb;
 

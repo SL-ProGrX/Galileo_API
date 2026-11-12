@@ -14,7 +14,7 @@ public sealed class AuthSessionStore
     private const string Unidentified = "No identificado";
 
     private readonly SqlAuthSessionRepository? _sql;
-    private readonly object _sync = new();
+    private readonly Lock _sync = new();
     private readonly Dictionary<string, SessionState> _sessionsByRefreshHash = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ChallengeState> _challengesByHash = new(StringComparer.Ordinal);
     private readonly HashSet<string> _revokedSessionIds = new(StringComparer.Ordinal);
