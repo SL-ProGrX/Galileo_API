@@ -173,5 +173,18 @@ namespace Galileo.Models.ProGrX.Clientes
         public int procesados { get; set; }
         public int omitidos_duplicado { get; set; }
         public int omitidos_no_marcado { get; set; }
+
+        /// <summary>Número de ítems que fallaron de forma definitiva (no se detuvo el lote).</summary>
+        public int fallidos { get; set; }
+
+        /// <summary>Detalle de los ítems que no se pudieron procesar.</summary>
+        public List<AfLiquidacionAsientosErrorItem> errores { get; set; } = new();
+    }
+
+
+    public class AfLiquidacionAsientosErrorItem
+    {
+        public long consec { get; set; }
+        public string mensaje { get; set; } = string.Empty;
     }
 }
