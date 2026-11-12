@@ -7,6 +7,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
     public partial class FrmCrPolizasRegistroDb
     {
         private const string FrecuenciaMensual = "Mensual";
+        private const string FrecuenciaIndefinida = "Indefinida";
         private const string MensajeDebeIndicarOperacion = "Debe indicar la operacion.";
         private const string MensajeDebeIndicarOperacionPoliza = "Debe indicar la operacion y el numero de poliza.";
         private const string MensajeOperacionBaseNoEncontrada = "- No se encontr&oacute; la operaci&oacute;n base.";
@@ -100,7 +101,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 "T" => "Trimestral",
                 "S" => "Semestral",
                 "A" => "Anual",
-                "I" => "Indefinida",
+                "I" => FrecuenciaIndefinida,
                 _ => FrecuenciaMensual
             };
         }
@@ -185,7 +186,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 "Trimestral" => "T",
                 "Semestral" => "S",
                 "Anual" => "A",
-                "Indefinida" => "I",
+                FrecuenciaIndefinida => "I",
                 _ => "M"
             };
         }
@@ -198,18 +199,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 "Trimestral" => 4,
                 "Semestral" => 2,
                 "Anual" => 1,
-                "Indefinida" => 1,
+                FrecuenciaIndefinida => 1,
                 _ => 1
             };
         }
 
         /// <summary>
         /// VB6 sbCalculaDatosPoliza solo calcula con "Mensual", "Trimestral", "Semestral" o "Anual";
-        /// "Indefinida" no tiene divisor en VB6 (compara contra "Indefinido").
+        /// FrecuenciaIndefinida no tiene divisor en VB6 (compara contra "Indefinido").
         /// </summary>
         private static bool CrPolizasRegistro_FrecuenciaCalculable(string frecuencia)
         {
-            return (frecuencia ?? string.Empty).Trim() != "Indefinida";
+            return (frecuencia ?? string.Empty).Trim() != FrecuenciaIndefinida;
         }
 
         private static decimal CrPolizasRegistro_Moneda(decimal valor)
