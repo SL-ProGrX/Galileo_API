@@ -70,8 +70,9 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
 
         public ErrorDto<List<DropDownListaGenericaModel>> CrPolizasRegistro_PlanPagos_Obtener(
             int codEmpresa,
-            int operacion)
-            => _db.CrPolizasRegistro_PlanPagos_Obtener(codEmpresa, operacion);
+            int operacion,
+            string usuario)
+            => _db.CrPolizasRegistro_PlanPagos_Obtener(codEmpresa, operacion, usuario);
 
         public ErrorDto<List<CrPolizasRegistroBeneficiarioItem>> CrPolizasRegistro_Beneficiarios_Obtener(
             int codEmpresa,

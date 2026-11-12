@@ -65,6 +65,14 @@
         public bool Reanudado { get; set; }
     }
 
+    /// <summary>Renuncia que terminó con error en un proceso de liquidación masiva.</summary>
+    public class AfLiqMasivaErrorItem
+    {
+        public int Cod_Renuncia { get; set; }
+        public string? Cedula { get; set; }
+        public string? Mensaje { get; set; }
+    }
+
     /// <summary>Fila de detalle pendiente que consume el procesamiento por lotes.</summary>
     internal class AfLiqMasivaDetalleRow
     {

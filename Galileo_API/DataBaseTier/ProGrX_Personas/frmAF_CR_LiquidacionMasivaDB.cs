@@ -250,6 +250,12 @@ WHERE p.PROCESO_ID = @ProcesoId;";
         private const string SqlLiqRenuncia = @"
 SELECT LIQ FROM AFI_CR_RENUNCIAS WHERE COD_RENUNCIA = @Renuncia;";
 
+        private const string SqlProcesoErrores = @"
+SELECT COD_RENUNCIA AS Cod_Renuncia, CEDULA AS Cedula, MENSAJE AS Mensaje
+FROM AFI_CR_LIQ_MASIVA_DETALLE
+WHERE PROCESO_ID = @ProcesoId AND ESTADO = 'Error'
+ORDER BY DETALLE_ID;";
+
         /// <summary>
         /// Inicia un proceso de liquidación masiva: crea el encabezado y una fila de
         /// detalle 'Pendiente' por cada renuncia seleccionada. Si el usuario ya tiene un
@@ -361,6 +367,14 @@ SELECT LIQ FROM AFI_CR_RENUNCIAS WHERE COD_RENUNCIA = @Renuncia;";
 
             try
             {
+                // El SP pone LIQ = -1 al inicio y no tiene transacción: si quedó en -1 o ya tiene
+                // liquidación, el SP no hace nada y no debe contarse como éxito.
+                var liqPrevia = conn.QueryFirstOrDefault<int?>(SqlLiqRenuncia, new { Renuncia = row.Cod_Renuncia });
+                if (liqPrevia == -1)
+                    throw new InvalidOperationException("Renuncia quedó a medias en un intento anterior (LIQ=-1). Requiere revisión manual.");
+                if (liqPrevia is > 0)
+                    throw new InvalidOperationException($"La renuncia ya fue liquidada (LIQ={liqPrevia}).");
+
                 conn.Execute(SqlValidarDestinoJudicial, new { RenunciaId = row.Cod_Renuncia });
                 conn.Execute(
                     "spAFI_Renuncia_Liquidacion_Procesa",
@@ -369,10 +383,13 @@ SELECT LIQ FROM AFI_CR_RENUNCIAS WHERE COD_RENUNCIA = @Renuncia;";
                     commandTimeout: 0);
 
                 liq = conn.QueryFirstOrDefault<int?>(SqlLiqRenuncia, new { Renuncia = row.Cod_Renuncia });
+                if (liq is not > 0)
+                    throw new InvalidOperationException($"La liquidación no se confirmó (LIQ={liq?.ToString() ?? "null"}). Requiere revisión manual.");
             }
             catch (Exception ex)
             {
                 estado = "Error";
+                liq = null;
                 mensaje = ex.Message.Length > 500 ? ex.Message.Substring(0, 500) : ex.Message;
             }
 
@@ -419,6 +436,23 @@ SELECT LIQ FROM AFI_CR_RENUNCIAS WHERE COD_RENUNCIA = @Renuncia;";
                 ? DbHelper.CreateOkResponse(result.Result ?? new AfLiqMasivaProgreso())
                 : DbHelper.CreateErrorResponse<AfLiqMasivaProgreso>(
                     result.Description ?? "Error al consultar el proceso activo.", result.Code.GetValueOrDefault(-1));
+        }
+
+        /// <summary>
+        /// Devuelve las renuncias del proceso que terminaron con error, con el motivo registrado.
+        /// </summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <param name="ProcesoId">Identificador del proceso.</param>
+        /// <returns>Lista de renuncias con error (vacía si no hay).</returns>
+        public ErrorDto<List<AfLiqMasivaErrorItem>> AF_LiquidacionMasiva_Proceso_Errores_Obtener(int CodEmpresa, Guid ProcesoId)
+        {
+            var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, conn =>
+                conn.Query<AfLiqMasivaErrorItem>(SqlProcesoErrores, new { ProcesoId }).ToList());
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(result.Result ?? new List<AfLiqMasivaErrorItem>())
+                : DbHelper.CreateErrorResponse<List<AfLiqMasivaErrorItem>>(
+                    result.Description ?? "Error al consultar las renuncias con error.", result.Code.GetValueOrDefault(-1));
         }
 
         private ErrorDto<List<T>> EjecutarStoredProcedureList<T>(int codEmpresa, string storedProcedure, object parameters)
