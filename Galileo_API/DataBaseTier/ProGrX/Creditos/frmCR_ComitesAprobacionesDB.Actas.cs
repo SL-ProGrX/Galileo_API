@@ -329,12 +329,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         private static object? ValorCampo(IDictionary<string, object> campos, params string[] nombres)
         {
+            // El SP puede devolver el nombre de columna con cualquier combinacion de mayusculas.
             return nombres
-                .Select(nombre => campos.TryGetValue(nombre, out var valor)
-                    ? (encontrado: true, valor)
-                    : (encontrado: false, valor: null))
-                .Where(item => item.encontrado)
-                .Select(item => item.valor)
+                .Select(nombre => campos.FirstOrDefault(campo =>
+                    string.Equals(campo.Key, nombre, StringComparison.OrdinalIgnoreCase)))
+                .Where(campo => campo.Key != null && campo.Value != DBNull.Value)
+                .Select(campo => campo.Value)
                 .FirstOrDefault();
         }
 
