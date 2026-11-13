@@ -67,7 +67,7 @@ namespace Galileo.BusinessLogic.ProGrX.Cobros
                     _procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.Error,
                         0, 0, "No se pudo preparar o encolar el lote: " + ex.Message);
                 }
-                catch { /* El INSERT puede haber fallado antes de crear el proceso. */ }
+                catch (Exception) { /* El INSERT puede haber fallado antes de crear el proceso. */ }
                 return DbHelper.CreateErrorResponse(ex.Message, -1, new GenProcesoIniciadoResult());
             }
 
