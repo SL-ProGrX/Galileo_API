@@ -4,6 +4,7 @@ using Galileo_API.Models.ProGrX_Contabilidad;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.Models;
+using static Galileo_API.Models.ProGrX_Contabilidad.FrmCntxConInformeEspecialModels;
 
 namespace Galileo_API.Controllers.ProGrX_Contabilidad
 {
@@ -43,6 +44,14 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         public ErrorDto<bool> GenerarReporte(int CodEmpresa,int CodContabilidad, CntxRepEspecialFiltroDto filtros)
         {
             return _bl.GenerarReporte(CodEmpresa,CodContabilidad,filtros);
+        }
+
+        [ValidateAntiForgeryToken]
+        [HttpPost]
+        [Route("GenerarExcel")]
+        public ErrorDto<ArchivoGeneradoModel> GenerarExcel(int CodEmpresa, int CodContabilidad, CntxRepEspecialFiltroDto filtros)
+        {
+            return _bl.GenerarExcel(CodEmpresa, CodContabilidad, filtros);
         }
     }
 }
