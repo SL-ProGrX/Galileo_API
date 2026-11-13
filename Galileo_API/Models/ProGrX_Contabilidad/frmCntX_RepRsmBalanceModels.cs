@@ -6,5 +6,7 @@
         public string? centroCosto { get; set; }
         public string? reporte { get; set; }
         public string? usuario { get; set; }
+        public int? anio { get; set; }
+        public int? mes { get; set; }
     }
 }
