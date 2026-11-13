@@ -106,4 +106,10 @@
     {
         public List<long> ids { get; set; } = new();
     }
+
+    public sealed class FrmCOCobroFiadoresProcesoErrorDto
+    {
+        public int IdSolicitud { get; set; }
+        public string Motivo { get; set; } = string.Empty;
+    }
 }
