@@ -457,7 +457,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         rtrim(isnull(Cod_Linea,'')) as linea,
                         rtrim(isnull(Garantia,'')) as garantia,
                         rtrim(isnull(Estado,'')) as estado,
-                        cast(isnull(Expediente,0) as varchar(30)) as operacion
+                        cast(isnull(Expediente,0) as varchar(30)) as operacion,
+                        rtrim(isnull(ResolucionEstadoDesc,'')) as resolucion,
+                        rtrim(isnull(ResolucionNotas,'')) as notas,
+                        isnull(Monto,0) as monto,
+                        isnull(Plazo,0) as plazo,
+                        isnull([Int],0) as tasa,
+                        isnull(Cuota,0) as cuota,
+                        rtrim(isnull(Destino,'')) as destino,
+                        rtrim(isnull(ComiteDesc,'')) as comite,
+                        Recibe_Fecha as registro_fecha,
+                        rtrim(isnull(Recibe_Usuario,'')) as registro_usuario
                     from vCrd_Comites_Actas_Resoluciones
                     where ID_COMITE = @id_comite
                       and cast(ACTA as varchar(30)) = @acta_consulta

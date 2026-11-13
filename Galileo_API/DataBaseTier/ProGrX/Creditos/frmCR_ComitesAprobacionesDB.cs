@@ -11,10 +11,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
     public partial class FrmCrComitesAprobacionesDB
     {
         private readonly PortalDB _portalDB;
+        private readonly string _securityConnectionString;
 
         public FrmCrComitesAprobacionesDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
+            _securityConnectionString = config.GetConnectionString("DefaultConnString")
+                ?? throw new InvalidOperationException("No se encontro la conexion de seguridad.");
         }
 
         /// <summary>

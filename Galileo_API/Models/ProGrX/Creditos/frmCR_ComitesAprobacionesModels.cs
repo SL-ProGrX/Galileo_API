@@ -218,6 +218,13 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public List<string> usuarios { get; set; } = new();
     }
 
+    public class CrComitesAprobacionesUsuarioValidarRequest
+    {
+        public required int id_comite { get; set; }
+        public string usuario { get; set; } = string.Empty;
+        public string clave { get; set; } = string.Empty;
+    }
+
     public class CrComitesAprobacionesCausasGuardarRequest
     {
         public string tipo_caso { get; set; } = string.Empty;
@@ -297,5 +304,15 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string garantia { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
         public string operacion { get; set; } = string.Empty;
+        public string resolucion { get; set; } = string.Empty;
+        public string notas { get; set; } = string.Empty;
+        public decimal monto { get; set; }
+        public int plazo { get; set; }
+        public decimal tasa { get; set; }
+        public decimal cuota { get; set; }
+        public string destino { get; set; } = string.Empty;
+        public string comite { get; set; } = string.Empty;
+        public DateTime? registro_fecha { get; set; }
+        public string registro_usuario { get; set; } = string.Empty;
     }
 }

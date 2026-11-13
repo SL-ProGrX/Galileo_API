@@ -211,6 +211,19 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
 
         [Authorize]
         [ValidateAntiForgeryToken]
+        [HttpPost("CR_ComitesAprobaciones_Usuario_Validar")]
+        public ErrorDto CR_ComitesAprobaciones_Usuario_Validar(int CodEmpresa, [FromBody] CrComitesAprobacionesUsuarioValidarRequest request)
+        {
+            if (request == null)
+            {
+                return DbHelper.ErrorResponse(DatosRequeridos, -2);
+            }
+
+            return BL.CR_ComitesAprobaciones_Usuario_Validar(CodEmpresa, request);
+        }
+
+        [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CR_ComitesAprobaciones_Acta_Cerrar")]
         public ErrorDto CR_ComitesAprobaciones_Acta_Cerrar(int CodEmpresa, int id_comite, string acta, string usuario)
         {
