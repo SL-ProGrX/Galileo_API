@@ -145,7 +145,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             return parameters;
         }
 
-        private sealed class PreaSalariosValidacionException(string message) : Exception(message);
+        public sealed class PreaSalariosValidacionException(string message) : Exception(message);
 
         private sealed class TablaSalariosParametros
         {
