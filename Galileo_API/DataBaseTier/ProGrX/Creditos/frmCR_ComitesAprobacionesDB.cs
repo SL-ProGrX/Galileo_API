@@ -603,6 +603,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
+        /// Obtiene el código de estudio de crédito (COD_PREANALISIS) de una solicitud.
+        /// Equivale a fxEstudioCreditoId de VB6 (frmCR_ComitesAprobaciones.frm).
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="operacion">ID_SOLICITUD de la solicitud.</param>
+        /// <returns>COD_PREANALISIS o cadena vacía si la solicitud no tiene estudio.</returns>
+        public ErrorDto<string> CR_ComitesAprobaciones_Estudio_Obtener(int CodEmpresa, string operacion)
+        {
+            if (string.IsNullOrWhiteSpace(operacion))
+            {
+                return DbHelper.CreateOkResponse(string.Empty);
+            }
+
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+            try
+            {
+                var codPreanalisis = ObtenerCodPreanalisis(conn, "S", operacion);
+                return DbHelper.CreateOkResponse(codPreanalisis);
+            }
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<string>(ex.Message, -1, string.Empty);
+            }
+        }
+
+        /// <summary>
         /// Obtiene las refundiciones asociadas al caso seleccionado.
         /// </summary>
         /// <param name="CodEmpresa"></param>
