@@ -59,7 +59,7 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
 
     public class FrmPreAnalisisCalcularRequest
     {
-        public long operacion { get; set; }
+        public required long operacion { get; set; }
         public List<long> seleccionadas { get; set; } = [];
     }
 
@@ -73,7 +73,7 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
 
     public class FrmPreAnalisisDeudorGuardarRequest
     {
-        public long operacion { get; set; }
+        public required long operacion { get; set; }
         public string usuario { get; set; } = string.Empty;
         public string codigo { get; set; } = string.Empty;
         public decimal? salario_liquido { get; set; }
@@ -82,8 +82,8 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         public decimal? salario_neto { get; set; }
         public decimal? porc_salario_devengado { get; set; }
         public decimal? porc_liquidez { get; set; }
-        public decimal total_cuota { get; set; }
-        public decimal total_saldo { get; set; }
+        public required decimal total_cuota { get; set; }
+        public required decimal total_saldo { get; set; }
         public List<FrmPreAnalisisFiadorData> fiadores { get; set; } = [];
     }
 
@@ -95,7 +95,7 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
 
     public class FrmPreAnalisisObservacionesGuardarRequest
     {
-        public long operacion { get; set; }
+        public required long operacion { get; set; }
         public string usuario { get; set; } = string.Empty;
         public string observacion_analista { get; set; } = string.Empty;
         public string observacion_comite { get; set; } = string.Empty;
