@@ -31,76 +31,19 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
         /// </summary>
         public ErrorDto<GenProcesoIniciadoResult> CO_AplExc_Procesa_Iniciar(int CodEmpresa, ExcedenteAplicarRequest request)
         {
-            var usuario = (request.Usuario ?? string.Empty)
-                .Trim()
-                .ToUpperInvariant();
-
-            if (usuario.Length == 0 || usuario.Length > 30)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "El usuario es obligatorio y admite hasta 30 caracteres.",
-                    -1,
-                    new GenProcesoIniciadoResult());
-            }
-
-            var seleccionados = request.Seleccionados;
-
-            if (seleccionados is null || seleccionados.Count == 0)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "No hay casos a procesar.",
-                    -1,
-                    new GenProcesoIniciadoResult());
-            }
-
-            if (seleccionados.Any(item =>
-                    item is null ||
-                    string.IsNullOrWhiteSpace(item.cedula) ||
-                    item.cedula.Trim().Length > 20))
-            {
-                return DbHelper.CreateErrorResponse(
-                    "La selección contiene identificaciones inválidas.",
-                    -1,
-                    new GenProcesoIniciadoResult());
-            }
-
-            var identificaciones = seleccionados
-                .Select(item => item.cedula.Trim())
-                .ToList();
-
-            if (identificaciones.Distinct(StringComparer.OrdinalIgnoreCase).Count()
-                != identificaciones.Count)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "La selección contiene identificaciones repetidas.",
-                    -1,
-                    new GenProcesoIniciadoResult());
-            }
-
-            request.Usuario = usuario;
-            var totalCasos = seleccionados.Count;
-
-            var procesoId = Guid.NewGuid();
-
-            try
-            {
-                _procesoDb.Iniciar(CodEmpresa, procesoId, GenProcesoTipos.CoAplExc, usuario, totalCasos);
-
-                var encolado = _queue.Encolar(new CoAplExcProcesoTrabajo(procesoId, CodEmpresa, request));
-                if (!encolado)
+            return _procesoDb.CO_Aplicacion_Iniciar(CodEmpresa,
+                new GenProcesoDb.CoAplicacionInicio<CoAplExcProcInformacionData>
                 {
-                    const string msgCola = "No fue posible encolar el proceso. Intente nuevamente.";
-                    _procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.Error, 0, 0, msgCola);
-
-                    return DbHelper.CreateErrorResponse(msgCola, -1, new GenProcesoIniciadoResult());
-                }
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse(ex.Message, -1, new GenProcesoIniciadoResult());
-            }
-
-            return DbHelper.CreateOkResponse(new GenProcesoIniciadoResult { ProcesoId = procesoId });
+                    Usuario = request.Usuario,
+                    Seleccionados = request.Seleccionados,
+                    ObtenerCedula = item => item.cedula,
+                    CedulaMaxima = 20,
+                    TipoProceso = GenProcesoTipos.CoAplExc,
+                    ContratosExcedentes = false,
+                    AsignarUsuario = usuario => request.Usuario = usuario,
+                    Encolar = procesoId => _queue.Encolar(
+                        new CoAplExcProcesoTrabajo(procesoId, CodEmpresa, request))
+                });
         }
 
         /// <summary>

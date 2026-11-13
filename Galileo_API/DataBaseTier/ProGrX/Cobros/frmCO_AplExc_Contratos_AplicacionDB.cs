@@ -1,23 +1,16 @@
-﻿using Dapper;
+﻿using Galileo_API.DataBaseTier.Procesos;
+using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.Procesos;
 using Galileo_API.Models.ProGrX.Cobros;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Caching.Memory;
 using System.Data;
-using System.Text.Json;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
     public class FrmCoAplExcContratosAplicacionDb : CoProcesoDbBase
     {
-        private static readonly MemoryCache ResultadosTemporales =
-            new(new MemoryCacheOptions
-            {
-                ExpirationScanFrequency = TimeSpan.FromMinutes(1)
-            });
-
         private sealed class CoAplExcContrEjecucion
         {
             public Guid ProcesoId { get; init; }
@@ -30,7 +23,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             public List<CoAplExcContrProcesoErrorDto> Errores { get; } = new();
 
             public int Correctos => Procesados - Errores.Count;
-            public int SinIntentar => Total - Procesados;
         }
 
         private sealed class CoAplExcContrGuiaResultado
@@ -152,16 +144,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     ejecucion.Etapa =
                         "Registrar el avance en GEN_PROCESO";
 
-                    _procesoDb.Actualizar(
-                        codEmpresa,
-                        procesoId,
-                        GenProcesoEstados.EnProceso,
-                        ejecucion.Procesados,
-                        ejecucion.Errores.Count,
-                        $"Aplicación {ejecucion.AplicacionId}. " +
-                        $"Procesados: {ejecucion.Procesados} de {ejecucion.Total}. " +
-                        $"Correctos: {ejecucion.Correctos}. " +
-                        $"Con error: {ejecucion.Errores.Count}.");
+                    _procesoDb.CO_Aplicacion_Avance_Actualizar(codEmpresa,
+                        new GenProcesoEstadoResult
+                        {
+                            ProcesoId = procesoId,
+                            ItemsProcesados = ejecucion.Procesados,
+                            ItemsConError = ejecucion.Errores.Count,
+                            TotalItems = ejecucion.Total
+                        }, ejecucion.AplicacionId, true);
                 }
             }
             catch (Exception ex)
@@ -469,130 +459,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             estado.DetalleDisponible = true;
             estado.Errores = ejecucion.Errores.ToList();
 
-            var aplicacion = ejecucion.AplicacionId > 0
-                ? ejecucion.AplicacionId.ToString()
-                : "sin identificador confirmado";
 
-            var resumen =
-                $"Aplicación: {aplicacion}. " +
-                $"Correctos: {ejecucion.Correctos}. " +
-                $"Con error: {ejecucion.Errores.Count}. " +
-                $"Sin intentar: {ejecucion.SinIntentar}. " +
-                $"Procesados: {ejecucion.Procesados} de {ejecucion.Total}.";
-
-            estado.Mensaje = string.IsNullOrWhiteSpace(estado.Mensaje)
-                ? resumen
-                : $"{estado.Mensaje} {resumen}";
-
-            CO_AplExcContrApl_Resultado_Guardar(codEmpresa, estado);
-
-            try
-            {
-                _procesoDb.Actualizar(
-                    codEmpresa,
-                    ejecucion.ProcesoId,
-                    estado.Estado,
-                    estado.ItemsProcesados,
-                    estado.ItemsConError,
-                    estado.Mensaje);
-            }
-            catch (Exception ex)
-            {
-                estado.Mensaje +=
-                    " No fue posible registrar el estado final en GEN_PROCESO. " +
-                    CO_AplExcContrApl_Error_Describir(ex);
-
-                CO_AplExcContrApl_Resultado_Guardar(codEmpresa, estado);
-            }
-
-            var resultado = new CoAplExcContrAplicadosResult
-            {
-                aplicados = ejecucion.Correctos,
-                pendientes = ejecucion.Total - ejecucion.Correctos
-            };
-
-            return estado.Estado == GenProcesoEstados.Terminado
-                ? DbHelper.CreateOkResponse(
-                    resultado,
-                    estado.Mensaje ?? string.Empty)
-                : DbHelper.CreateErrorResponse(
-                    estado.Mensaje ?? string.Empty,
-                    -1,
-                    resultado);
-        }
-
-        /// <summary>
-        /// Conserva una copia del resultado final por dos horas.
-        /// </summary>
-        private static void CO_AplExcContrApl_Resultado_Guardar(
-            int codEmpresa,
-            CoAplExcContrProcesoEstadoResult estado)
-        {
-            ResultadosTemporales.Set(
-                (codEmpresa, estado.ProcesoId),
-                JsonSerializer.Serialize(estado),
-                TimeSpan.FromHours(2));
-        }
-
-        /// <summary>
-        /// Consulta el resultado final temporal o el avance de GEN_PROCESO.
-        /// </summary>
-        public ErrorDto<CoAplExcContrProcesoEstadoResult>
-            CO_AplExcContrApl_Procesa_Estado(
-                int codEmpresa,
-                Guid procesoId)
-        {
-            try
-            {
-                if (ResultadosTemporales.TryGetValue<string>(
-                        (codEmpresa, procesoId),
-                        out var json) &&
-                    !string.IsNullOrWhiteSpace(json))
+            return _procesoDb.CO_Aplicacion_Finalizar(codEmpresa,
+                new GenProcesoDb.CoAplicacionFinalizacion<CoAplExcContrProcesoEstadoResult, CoAplExcContrAplicadosResult>
                 {
-                    var resultado =
-                        JsonSerializer.Deserialize<CoAplExcContrProcesoEstadoResult>(
-                            json);
-
-                    if (resultado is not null)
+                    Estado = estado,
+                    AplicacionId = ejecucion.AplicacionId,
+                    Resultado = new CoAplExcContrAplicadosResult
                     {
-                        return DbHelper.CreateOkResponse(resultado);
-                    }
-                }
-
-                var estado = _procesoDb.Estado_Obtener(
-                    codEmpresa,
-                    procesoId);
-
-                if (estado is null)
-                {
-                    return DbHelper.CreateErrorResponse(
-                        "Proceso no encontrado.",
-                        -1,
-                        new CoAplExcContrProcesoEstadoResult());
-                }
-
-                return DbHelper.CreateOkResponse(
-                    new CoAplExcContrProcesoEstadoResult
-                    {
-                        ProcesoId = estado.ProcesoId,
-                        Estado = estado.Estado,
-                        TotalItems = estado.TotalItems,
-                        ItemsProcesados = estado.ItemsProcesados,
-                        ItemsConError = estado.ItemsConError,
-                        Mensaje = estado.Mensaje,
-                        FechaInicio = estado.FechaInicio,
-                        FechaFin = estado.FechaFin,
-                        DetalleDisponible = false
-                    });
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "No fue posible consultar el avance. " +
-                    CO_AplExcContrApl_Error_Describir(ex),
-                    -1,
-                    new CoAplExcContrProcesoEstadoResult());
-            }
+                        aplicados = ejecucion.Correctos,
+                        pendientes = ejecucion.Total - ejecucion.Correctos
+                    },
+                    DescribirError = CO_AplExcContrApl_Error_Describir
+                });
         }
+
+        /// <summary>Consulta el resultado temporal o el avance de GEN_PROCESO.</summary>
+        public ErrorDto<CoAplExcContrProcesoEstadoResult> CO_AplExcContrApl_Procesa_Estado(
+            int codEmpresa, Guid procesoId)
+            => _procesoDb.CO_Aplicacion_Estado<CoAplExcContrProcesoEstadoResult>(
+                codEmpresa, procesoId, CO_AplExcContrApl_Error_Describir);
     }
 }
