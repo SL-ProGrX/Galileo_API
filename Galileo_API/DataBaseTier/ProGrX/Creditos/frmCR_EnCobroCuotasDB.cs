@@ -9,7 +9,7 @@ using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
-    public class FrmCrEnCobroCuotasDB
+    public partial class FrmCrEnCobroCuotasDB
     {
         private readonly PortalDB _portalDB;
         private readonly MCobroDb _mCobroDb;
@@ -235,59 +235,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
         }
 
-        /// <summary>
-        /// Obtiene la lista de resumen comparativo por operación.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto<CrEnCobroCuotasListaResult<CrEnCobroCuotasResumenData>> CR_EnCobroCuotas_Resumen_Lista_Obtener(int CodEmpresa,CrEnCobroCuotasConsultaRequest request)
-        {
-            var ctxResult = BuildContext(request);
-            if (ctxResult.errorResumen != null) return ctxResult.errorResumen;
-
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                const string sql = @"exec spPrm_Compara_Persona @Institucion, @Proceso, @Cedula;";
-
-                var lista = conn.Query<CrEnCobroCuotasResumenRow>(
-                    sql,
-                    new
-                    {
-                        Institucion = ctxResult.ctx.codInstitucion,
-                        Proceso = ctxResult.ctx.proceso,
-                        Cedula = ctxResult.ctx.cedula
-                    })
-                    .Select(x => new CrEnCobroCuotasResumenData
-                    {
-                        operacion = x.Operacion,
-                        linea = (x.Linea ?? string.Empty).Trim(),
-                        envio = x.Envio,
-                        recibido = x.Recibido,
-                        diferencia = x.Recibido - x.Envio,
-                        tipo_desc = (x.TipoDesc ?? string.Empty).Trim(),
-                        linea_desc = (x.LineaDesc ?? string.Empty).Trim()
-                    })
-                    .ToList();
-
-                return BuildResumenResult(lista, ctxResult.ctx.filtros);
-            }
-            catch (SqlException ex)
-            {
-                return ErrorLista<CrEnCobroCuotasResumenData>(ex.Message);
-            }
-        }
-        public sealed class CrEnCobroCuotasResumenRow
-        {
-            public int Operacion { get; set; }
-            public string Linea { get; set; } = string.Empty;
-            public decimal Envio { get; set; }
-            public decimal Recibido { get; set; }
-            public string TipoDesc { get; set; } = string.Empty;
-            public string LineaDesc { get; set; } = string.Empty;
-        }
         /// <summary>
         /// Exporta la lista completa de resumen comparativo por operación.
         /// </summary>
@@ -1192,10 +1139,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             public FiltrosLazyLoadData filtros { get; set; } = new();
             public string? error { get; set; }
         }
-        private static ErrorDto<CrEnCobroCuotasListaResult<CrEnCobroCuotasResumenData>> BuildResumenResult(List<CrEnCobroCuotasResumenData> lista,FiltrosLazyLoadData filtros)
+        private static ErrorDto<CrEnCobroCuotasListaResult<CrEnCobroCuotasResumenData>> BuildResumenResult(
+            List<CrEnCobroCuotasResumenData> lista,
+            FiltrosLazyLoadData filtros,
+            decimal totalEnviadoCompleto)
         {
-            var data = SortResumen(FiltrarResumen(lista, GetTexto(filtros)), filtros);
-            var totalEnviado = data.Sum(x => x.envio);
+            var textoFiltro = GetTexto(filtros);
+            var data = SortResumen(FiltrarResumen(lista, textoFiltro), filtros);
+            var totalEnviado = string.IsNullOrWhiteSpace(textoFiltro)
+                ? totalEnviadoCompleto
+                : data.Sum(x => x.envio);
             var totalRecibido = data.Sum(x => x.recibido);
 
             return DbHelper.CreateOkResponse(new CrEnCobroCuotasListaResult<CrEnCobroCuotasResumenData>
