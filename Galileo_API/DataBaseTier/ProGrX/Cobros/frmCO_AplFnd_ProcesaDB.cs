@@ -7,7 +7,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
     public class FrmCoAplFndProcesaDb : CoProcesoDbBase
     {
-        private readonly GenProcesoDb.CoAplicacion<CoAplFndProcInformacionData, CoAplFndProcesoErrorDto, CoAplFndProcesoEstadoResult, CoAplFndProcesadosResult> _aplicacion;
+        private readonly GenProcesoDb.CoAplicacion<CoAplFndProcInformacionData, CoAplFndProcesoEstadoResult> _aplicacion;
 
         public sealed class ResultadoException : Exception
         {
@@ -39,7 +39,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 AsignarDetalle = (estado, errores) =>
                 {
                     estado.DetalleDisponible = true;
-                    estado.Errores = errores;
+                    estado.Errores = errores.Cast<CoAplFndProcesoErrorDto>().ToList();
                 },
                 CrearResultado = (correctos, pendientes) => new CoAplFndProcesadosResult
                 {
@@ -59,8 +59,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <summary>Ejecuta la selección y conserva los errores individuales y el avance.</summary>
         public ErrorDto<CoAplFndProcesadosResult> CO_AplFnd_Procesa_Ejecutar(
             int codEmpresa, Guid procesoId, FondosAplicarRequest request)
-            => _aplicacion.CO_Aplicacion_Ejecutar(codEmpresa, procesoId,
-                new() { Seleccionados = request.Seleccionados, Usuario = request.Usuario });
+            => ConvertirResultado(_aplicacion.CO_Aplicacion_Ejecutar(codEmpresa, procesoId,
+                new() { Seleccionados = request.Seleccionados, Usuario = request.Usuario }));
+
+        private static ErrorDto<CoAplFndProcesadosResult> ConvertirResultado(ErrorDto<object> origen)
+            => new() { Code = origen.Code, Description = origen.Description, Result = (CoAplFndProcesadosResult?)origen.Result };
 
         /// <summary>Devuelve el detalle temporal o el avance registrado en GEN_PROCESO.</summary>
         public ErrorDto<CoAplFndProcesoEstadoResult> CO_AplFnd_Procesa_Estado(

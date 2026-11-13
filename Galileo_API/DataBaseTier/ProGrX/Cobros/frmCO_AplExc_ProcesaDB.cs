@@ -7,7 +7,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
     public class FrmCoAplExcProcesaDb : CoProcesoDbBase
     {
-        private readonly GenProcesoDb.CoAplicacion<CoAplExcProcInformacionData, CoAplExcProcesoErrorDto, CoAplExcProcesoEstadoResult, CoAplExcProcesadosResult> _aplicacion;
+        private readonly GenProcesoDb.CoAplicacion<CoAplExcProcInformacionData, CoAplExcProcesoEstadoResult> _aplicacion;
 
         public sealed class ResultadoException : Exception
         {
@@ -39,7 +39,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 AsignarDetalle = (estado, errores) =>
                 {
                     estado.DetalleDisponible = true;
-                    estado.Errores = errores;
+                    estado.Errores = errores.Cast<CoAplExcProcesoErrorDto>().ToList();
                 },
                 CrearResultado = (correctos, pendientes) => new CoAplExcProcesadosResult
                 {
@@ -59,8 +59,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <summary>Ejecuta la selección y conserva los errores individuales y el avance.</summary>
         public ErrorDto<CoAplExcProcesadosResult> CO_AplExc_Procesa_Ejecutar(
             int CodEmpresa, Guid procesoId, ExcedenteAplicarRequest request)
-            => _aplicacion.CO_Aplicacion_Ejecutar(CodEmpresa, procesoId,
-                new() { Seleccionados = request.Seleccionados, Usuario = request.Usuario });
+            => ConvertirResultado(_aplicacion.CO_Aplicacion_Ejecutar(CodEmpresa, procesoId,
+                new() { Seleccionados = request.Seleccionados, Usuario = request.Usuario }));
+
+        private static ErrorDto<CoAplExcProcesadosResult> ConvertirResultado(ErrorDto<object> origen)
+            => new() { Code = origen.Code, Description = origen.Description, Result = (CoAplExcProcesadosResult?)origen.Result };
 
         /// <summary>Devuelve el detalle temporal o el avance registrado en GEN_PROCESO.</summary>
         public ErrorDto<CoAplExcProcesoEstadoResult> CO_AplExc_Procesa_Estado(

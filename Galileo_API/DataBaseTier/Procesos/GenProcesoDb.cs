@@ -197,9 +197,8 @@ namespace Galileo_API.DataBaseTier.Procesos
         }
 
         /// <summary>Coordinador interno compartido por aplicaciones con el mismo contrato SQL.</summary>
-        internal sealed class CoAplicacion<TItem, TError, TEstado, TResultado>
+        internal sealed class CoAplicacion<TItem, TEstado>
             where TItem : class
-            where TError : class
             where TEstado : GenProcesoEstadoResult, new()
         {
             private readonly PortalDB _portalDB;
@@ -218,9 +217,9 @@ namespace Galileo_API.DataBaseTier.Procesos
                 public required Func<TItem?, string?> Cedula { get; init; }
                 public required Func<string, Exception> CrearExcepcion { get; init; }
                 public required Func<Exception, bool> EsErrorResultado { get; init; }
-                public required Func<(int Numero, string Cedula, TItem? Item, string Mensaje), TError> CrearError { get; init; }
-                public required Action<TEstado, List<TError>> AsignarDetalle { get; init; }
-                public required Func<int, int, TResultado> CrearResultado { get; init; }
+                public required Func<(int Numero, string Cedula, TItem? Item, string Mensaje), object> CrearError { get; init; }
+                public required Action<TEstado, List<object>> AsignarDetalle { get; init; }
+                public required Func<int, int, object> CrearResultado { get; init; }
             }
 
             /// <summary>Agrupa la selección y el usuario sin cambiar los requests públicos.</summary>
@@ -246,7 +245,7 @@ namespace Galileo_API.DataBaseTier.Procesos
                 public int Procesados { get; set; }
                 public string Etapa { get; set; } = "Validar selección";
 
-                public List<TError> Errores { get; } = new();
+                public List<object> Errores { get; } = new();
 
                 public int Correctos => Procesados - Errores.Count;
             }
@@ -265,7 +264,7 @@ namespace Galileo_API.DataBaseTier.Procesos
             /// Ejecuta todos los casos posibles, publica el avance y acumula
             /// los motivos de error individuales.
             /// </summary>
-            public ErrorDto<TResultado>
+            public ErrorDto<object>
                 CO_Aplicacion_Ejecutar(
                     int codEmpresa,
                     Guid procesoId,
@@ -402,7 +401,7 @@ namespace Galileo_API.DataBaseTier.Procesos
             /// Ejecuta un caso en su propia conexión, lee Resultado y
             /// confirma el registro mediante la función existente.
             /// </summary>
-            private TError?
+            private object?
                 CO_Aplicacion_Caso_Ejecutar(
                     int codEmpresa,
                     Ejecucion ejecucion,
@@ -547,7 +546,7 @@ namespace Galileo_API.DataBaseTier.Procesos
             /// <summary>
             /// Conserva el detalle temporal y registra los contadores finales.
             /// </summary>
-            private ErrorDto<TResultado>
+            private ErrorDto<object>
                 CO_Aplicacion_Finalizar(
                     int codEmpresa,
                     Ejecucion ejecucion,
@@ -561,7 +560,7 @@ namespace Galileo_API.DataBaseTier.Procesos
 
 
                 return _procesoDb.CO_Aplicacion_Finalizar(codEmpresa,
-                    new CoAplicacionFinalizacion<TEstado, TResultado>
+                    new CoAplicacionFinalizacion<TEstado, object>
                     {
                         Estado = estado,
                         AplicacionId = ejecucion.AplicacionId,

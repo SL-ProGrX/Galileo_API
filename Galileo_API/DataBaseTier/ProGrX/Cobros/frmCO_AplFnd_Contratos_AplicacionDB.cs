@@ -7,7 +7,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
     public class FrmCoAplFndContratosAplicacionDb : CoProcesoDbBase
     {
-        private readonly GenProcesoDb.CoAplicacion<CoAplFndContrAplInformacionData, CoAplFndContrProcesoErrorDto, CoAplFndContrProcesoEstadoResult, CoAplFndContrAplicadosResult> _aplicacion;
+        private readonly GenProcesoDb.CoAplicacion<CoAplFndContrAplInformacionData, CoAplFndContrProcesoEstadoResult> _aplicacion;
 
         public sealed class ResultadoException : Exception
         {
@@ -40,7 +40,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 AsignarDetalle = (estado, errores) =>
                 {
                     estado.DetalleDisponible = true;
-                    estado.Errores = errores;
+                    estado.Errores = errores.Cast<CoAplFndContrProcesoErrorDto>().ToList();
                 },
                 CrearResultado = (correctos, pendientes) => new CoAplFndContrAplicadosResult
                 {
@@ -60,8 +60,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <summary>Ejecuta la selección y conserva los errores individuales y el avance.</summary>
         public ErrorDto<CoAplFndContrAplicadosResult> CO_AplFndContrApl_Procesa_Ejecutar(
             int codEmpresa, Guid procesoId, ContratosAplicarRequest request)
-            => _aplicacion.CO_Aplicacion_Ejecutar(codEmpresa, procesoId,
-                new() { Seleccionados = request.Seleccionados, Usuario = request.Usuario });
+            => ConvertirResultado(_aplicacion.CO_Aplicacion_Ejecutar(codEmpresa, procesoId,
+                new() { Seleccionados = request.Seleccionados, Usuario = request.Usuario }));
+
+        private static ErrorDto<CoAplFndContrAplicadosResult> ConvertirResultado(ErrorDto<object> origen)
+            => new() { Code = origen.Code, Description = origen.Description, Result = (CoAplFndContrAplicadosResult?)origen.Result };
 
         /// <summary>Devuelve el detalle temporal o el avance registrado en GEN_PROCESO.</summary>
         public ErrorDto<CoAplFndContrProcesoEstadoResult> CO_AplFndContrApl_Procesa_Estado(
