@@ -225,7 +225,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             try
             {
-                int MapSortIndex(string sfNorm) => sfNorm switch
+                static int MapSortIndex(string sfNorm) => sfNorm switch
                 {
                     "cod_adendum" => 1,
                     "descripcion" => 2,
@@ -297,7 +297,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             try
             {
-                int MapSortIndex(string sfNorm) => sfNorm switch
+                static int MapSortIndex(string sfNorm) => sfNorm switch
                 {
                     "secuencia"      => 1,
                     "cod_desembolso" => 2,

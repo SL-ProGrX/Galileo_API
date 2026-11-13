@@ -206,7 +206,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         /// <summary>
         /// VB6 sbCalculaDatosPoliza solo calcula con "Mensual", "Trimestral", "Semestral" o "Anual";
-        /// FrecuenciaIndefinida no tiene divisor en VB6 (compara contra "Indefinido").
+        /// "Indefinida" no tiene divisor en VB6 (compara contra "Indefinido").
         /// </summary>
         private static bool CrPolizasRegistro_FrecuenciaCalculable(string frecuencia)
         {

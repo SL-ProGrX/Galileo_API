@@ -2,6 +2,7 @@
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX_Contabilidad;
 using Galileo_API.Models.ProGrX_Contabilidad;
+using static Galileo_API.Models.ProGrX_Contabilidad.FrmCntxConInformeEspecialModels;
 
 namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
 {
@@ -31,6 +32,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
         public ErrorDto<bool> GenerarReporte( int codEmpresa,int codContabilidad,CntxRepEspecialFiltroDto filtros)
         {
             return _db.GenerarReporte(codEmpresa,codContabilidad,filtros);
+        }
+
+        public ErrorDto<ArchivoGeneradoModel> GenerarExcel(int codEmpresa, int codContabilidad, CntxRepEspecialFiltroDto filtros)
+        {
+            return _db.GenerarExcel(codEmpresa, codContabilidad, filtros);
         }
     }
 }

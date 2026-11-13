@@ -369,10 +369,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 string usuario,
                 bool esUpdate)
         {
-            string? VenceFrecuenciaOrNull(string? v) =>
+            static string? VenceFrecuenciaOrNull(string? v) =>
                 string.IsNullOrWhiteSpace(v) ? null : v.Trim().Substring(0, 1);
 
-            string? NullIfWhiteSpace(string? v) =>
+            static string? NullIfWhiteSpace(string? v) =>
                 string.IsNullOrWhiteSpace(v) ? null : v.Trim();
 
             string CleanAccount(string? v) =>
