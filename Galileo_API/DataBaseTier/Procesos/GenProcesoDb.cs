@@ -343,13 +343,7 @@ namespace Galileo_API.DataBaseTier.Procesos
                         }, ejecucion.AplicacionId, false);
                     }
                 }
-                catch (Exception ex) when (
-                    ex is ErrorHandledException ||
-                    ex is SqlException ||
-                    ex is TimeoutException ||
-                    ex is JsonException ||
-                    ex is InvalidOperationException ||
-                    ex is DataException)
+                catch (Exception ex)
                 {
                     // La falla general conserva los casos ya intentados.
                     estado.Estado = GenProcesoEstados.Error;
