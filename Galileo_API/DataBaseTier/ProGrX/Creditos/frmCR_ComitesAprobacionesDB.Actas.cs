@@ -329,12 +329,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         private static object? ValorCampo(IDictionary<string, object> campos, params string[] nombres)
         {
+            // El SP puede devolver el nombre de columna con cualquier combinacion de mayusculas.
             return nombres
-                .Select(nombre => campos.TryGetValue(nombre, out var valor)
-                    ? (encontrado: true, valor)
-                    : (encontrado: false, valor: null))
-                .Where(item => item.encontrado)
-                .Select(item => item.valor)
+                .Select(nombre => campos.FirstOrDefault(campo =>
+                    string.Equals(campo.Key, nombre, StringComparison.OrdinalIgnoreCase)))
+                .Where(campo => campo.Key != null && campo.Value != DBNull.Value)
+                .Select(campo => campo.Value)
                 .FirstOrDefault();
         }
 
@@ -457,7 +457,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         rtrim(isnull(Cod_Linea,'')) as linea,
                         rtrim(isnull(Garantia,'')) as garantia,
                         rtrim(isnull(Estado,'')) as estado,
-                        cast(isnull(Expediente,0) as varchar(30)) as operacion
+                        cast(isnull(Expediente,0) as varchar(30)) as operacion,
+                        rtrim(isnull(ResolucionEstadoDesc,'')) as resolucion,
+                        rtrim(isnull(ResolucionNotas,'')) as notas,
+                        isnull(Monto,0) as monto,
+                        isnull(Plazo,0) as plazo,
+                        isnull([Int],0) as tasa,
+                        isnull(Cuota,0) as cuota,
+                        rtrim(isnull(Destino,'')) as destino,
+                        rtrim(isnull(ComiteDesc,'')) as comite,
+                        Recibe_Fecha as registro_fecha,
+                        rtrim(isnull(Recibe_Usuario,'')) as registro_usuario
                     from vCrd_Comites_Actas_Resoluciones
                     where ID_COMITE = @id_comite
                       and cast(ACTA as varchar(30)) = @acta_consulta

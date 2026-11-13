@@ -86,6 +86,35 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
+        /// Indica si el periodo esta pendiente (estado 'P') en CntX_Periodos
+        /// </summary>
+        public ErrorDto<bool> CntX_PeriodoPendiente(int codEmpresa, int codContabilidad, int anio, int mes)
+        {
+            const string sql = @"
+                SELECT COUNT(*)
+                FROM CntX_Periodos
+                WHERE cod_contabilidad = @cod_contabilidad
+                AND anio = @anio
+                AND mes = @mes
+                AND estado = 'P'
+            ";
+
+            var resp = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                0,
+                new { cod_contabilidad = codContabilidad, anio, mes });
+
+            return new ErrorDto<bool>
+            {
+                Code = resp.Code,
+                Description = resp.Description,
+                Result = resp.Result > 0
+            };
+        }
+
+        /// <summary>
         /// Genera reporte
         /// </summary>
         /// <param name="codEmpresa"></param>
@@ -113,8 +142,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     ", new
                     {
                         usuario = f.usuario,
-                        anio = DateTime.Now.Year,
-                        mes = DateTime.Now.Month
+                        anio = f.anio ?? DateTime.Now.Year,
+                        mes = f.mes ?? DateTime.Now.Month
                     });
                 }
 

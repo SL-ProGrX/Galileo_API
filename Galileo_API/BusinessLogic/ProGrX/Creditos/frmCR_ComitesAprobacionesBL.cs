@@ -133,6 +133,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
             return _db.CR_ComitesAprobaciones_Acta_Guardar(CodEmpresa, request);
         }
 
+        public ErrorDto CR_ComitesAprobaciones_Usuario_Validar(int CodEmpresa, CrComitesAprobacionesUsuarioValidarRequest request)
+        {
+            return _db.CR_ComitesAprobaciones_Usuario_Validar(CodEmpresa, request);
+        }
+
         public ErrorDto CR_ComitesAprobaciones_Acta_Cerrar(int CodEmpresa, int id_comite, string acta, string usuario)
         {
             return _db.CR_ComitesAprobaciones_Acta_Cerrar(CodEmpresa, id_comite, acta ?? string.Empty, usuario ?? string.Empty);
