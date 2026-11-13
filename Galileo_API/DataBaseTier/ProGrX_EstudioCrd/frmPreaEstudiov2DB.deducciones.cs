@@ -35,8 +35,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     @"SELECT ESTADO FROM CRD_PREA_PREANALISIS
                       WHERE COD_PREANALISIS = @Expediente",
                     new { Expediente = expediente });
-                if (string.IsNullOrWhiteSpace(estado))
-                    throw new InvalidOperationException("No se encontró el expediente.");
+                if (estado is null)
+                    throw new InvalidOperationException($"No se encontró el expediente {expediente} en la empresa seleccionada.");
 
                 var permiteModificar = estado.Trim().Equals("R", StringComparison.OrdinalIgnoreCase)
                     || estado.Trim().Equals("P", StringComparison.OrdinalIgnoreCase);
