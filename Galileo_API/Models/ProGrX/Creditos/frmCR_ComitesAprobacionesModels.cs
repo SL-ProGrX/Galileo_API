@@ -115,6 +115,12 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public decimal disponible { get; set; }
     }
 
+    public class CrComitesAprobacionesPatrimonioGarantia
+    {
+        public decimal Pat_Garantia_Total { get; set; }
+        public decimal Pat_Garantia_Saldos { get; set; }
+    }
+
     public class CrComitesAprobacionesDeuda
     {
         public string semaforo { get; set; } = string.Empty;

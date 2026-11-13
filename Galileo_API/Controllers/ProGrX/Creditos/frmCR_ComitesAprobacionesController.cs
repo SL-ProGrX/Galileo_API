@@ -121,13 +121,6 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
         }
 
         [Authorize]
-        [HttpGet("CR_ComitesAprobaciones_Estudio_Obtener")]
-        public ErrorDto<string> CR_ComitesAprobaciones_Estudio_Obtener(int CodEmpresa, string operacion)
-        {
-            return BL.CR_ComitesAprobaciones_Estudio_Obtener(CodEmpresa, operacion ?? string.Empty);
-        }
-
-        [Authorize]
         [HttpGet("CR_ComitesAprobaciones_Desembolsos_Obtener")]
         public ErrorDto<List<CrComitesAprobacionesDesembolso>> CR_ComitesAprobaciones_Desembolsos_Obtener(int CodEmpresa, string tipo_caso, string operacion)
         {

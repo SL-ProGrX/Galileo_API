@@ -82,11 +82,6 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
             return _db.CR_ComitesAprobaciones_Refundiciones_Obtener(CodEmpresa, tipo_caso ?? string.Empty, operacion ?? string.Empty);
         }
 
-        public ErrorDto<string> CR_ComitesAprobaciones_Estudio_Obtener(int CodEmpresa, string operacion)
-        {
-            return _db.CR_ComitesAprobaciones_Estudio_Obtener(CodEmpresa, operacion ?? string.Empty);
-        }
-
         public ErrorDto<List<CrComitesAprobacionesDesembolso>> CR_ComitesAprobaciones_Desembolsos_Obtener(int CodEmpresa, string tipo_caso, string operacion)
         {
             return _db.CR_ComitesAprobaciones_Desembolsos_Obtener(CodEmpresa, tipo_caso ?? string.Empty, operacion ?? string.Empty);
