@@ -216,40 +216,98 @@ namespace Galileo.DataBaseTier.ProGrX.Cobros
         /// <summary>
         /// Ejecuta en segundo plano el procesamiento de cobros a fiadores y registra el avance en GEN_PROCESO.
         /// </summary>
-        public void CO_CobroFiadores_ProcesaCobros_Ejecutar(int CodEmpresa, Guid procesoId, string usuario, IReadOnlyList<int> ids)
+        public void CO_CobroFiadores_ProcesaCobros_Ejecutar(int CodEmpresa, Guid procesoId,
+            string usuario, IReadOnlyList<int> ids, Galileo_API.Services.ProGrX.Cobros.CoCobroFiadoresProcesoQueue resultados)
         {
             var procesoDb = new GenProcesoDb(new PortalDB(_config));
             var procesados = 0;
-
-            procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.EnProceso, 0, 0);
-
-            var exec = DbHelper.WithConn(new PortalDB(_config), CodEmpresa, conn =>
+            var errores = new List<FrmCOCobroFiadoresProcesoErrorDto>();
+            try
             {
-                ValidarParametrosCobroFiador(conn, false);
+                procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.EnProceso, 0, 0);
+                using var conn = new PortalDB(_config).CreateConnection(CodEmpresa);
+                conn.Open();
 
+                // El bloqueo de sesión cubre el lote completo, incluso entre transacciones de casos.
+                var bloqueo = new DynamicParameters();
+                bloqueo.Add("@Resource", $"CO_COBRO_FIADORES_{CodEmpresa}");
+                bloqueo.Add("@LockMode", "Exclusive");
+                bloqueo.Add("@LockOwner", "Session");
+                bloqueo.Add("@LockTimeout", 30000);
+                bloqueo.Add("@ReturnValue", dbType: System.Data.DbType.Int32,
+                    direction: System.Data.ParameterDirection.ReturnValue);
+                conn.Execute("sys.sp_getapplock", bloqueo,
+                    commandType: System.Data.CommandType.StoredProcedure);
+                if (bloqueo.Get<int>("@ReturnValue") < 0)
+                    throw new InvalidOperationException("Otro lote de cobro a fiadores está en ejecución. No se intentó este lote.");
+
+                ValidarParametrosCobroFiador(conn, false);
                 foreach (var id in ids)
                 {
-                    conn.Execute(
-                        ProcesaCobrosProcedimiento,
-                        CrearParametrosAccionBulk("Operacion", id, usuario, false),
-                        commandType: System.Data.CommandType.StoredProcedure,
-                        commandTimeout: 0);
+                    using var transaccion = conn.BeginTransaction();
+                    try
+                    {
+                        conn.Execute(ProcesaCobrosProcedimiento,
+                            CrearParametrosAccionBulk("Operacion", id, usuario, false),
+                            transaction: transaccion,
+                            commandType: System.Data.CommandType.StoredProcedure,
+                            commandTimeout: 0);
+
+                        // El SP tiene SET NOCOUNT ON y no retorna resultado. Un EXEC sin excepción
+                        // no demuestra que se haya activado un cobro.
+                        const string verificar = @"
+                            SELECT COUNT(*) FROM dbo.REG_CREDITOS
+                            WHERE REFERENCIA = @Operacion AND PLAZO = 999 AND ESTADO = 'A'
+                              AND CODIGO IN (SELECT RTRIM(valor) FROM dbo.CBR_PARAMETROS
+                                             WHERE COD_PARAMETRO = '25')";
+                        var confirmados = conn.QuerySingle<int>(verificar,
+                            new { Operacion = id }, transaction: transaccion, commandTimeout: 0);
+                        if (confirmados == 0)
+                            throw new InvalidOperationException(
+                                "El procedimiento terminó sin un cobro activo a fiadores confirmado.");
+
+                        transaccion.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        try { transaccion.Rollback(); }
+                        catch (Exception rollbackEx)
+                        {
+                            errores.Add(new FrmCOCobroFiadoresProcesoErrorDto
+                            {
+                                IdSolicitud = id,
+                                Motivo = $"Resultado no confirmado; falló la reversión: {rollbackEx.Message}. Error original: {ex.Message}"
+                            });
+                            procesados++;
+                            throw;
+                        }
+
+                        errores.Add(new FrmCOCobroFiadoresProcesoErrorDto
+                        {
+                            IdSolicitud = id,
+                            Motivo = ex.Message
+                        });
+                    }
 
                     procesados++;
-                    procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.EnProceso, procesados, 0);
+                    procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.EnProceso,
+                        procesados, errores.Count);
                 }
-
-                return true;
-            });
-
-            if (exec.Code != 0)
-            {
-                procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.Error, procesados, 1, exec.Description ?? MensajeErrorProcesa);
-                return;
+                resultados.GuardarErrores(procesoId, CodEmpresa, errores);
+                RegistrarBitacora(CodEmpresa, usuario,
+                    $"Cobro a Fiadores: Procesa Cobros - Casos {ids.Count}", "Procesa - WEB");
+                procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.Terminado,
+                    procesados, errores.Count,
+                    $"Cobros confirmados: {procesados - errores.Count}. Con error: {errores.Count}.");
             }
-
-            RegistrarBitacora(CodEmpresa, usuario, $"Cobro a Fiadores: Procesa Cobros - Casos {ids.Count}", "Procesa - WEB");
-            procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.Terminado, ids.Count, 0, "Proceso concluido satisfactoriamente");
+            catch (Exception ex)
+            {
+                resultados.GuardarErrores(procesoId, CodEmpresa, errores);
+                procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.Error,
+                    procesados, errores.Count,
+                    $"Lote interrumpido. Confirmados: {procesados - errores.Count}. " +
+                    $"Con error: {errores.Count}. Sin intentar: {ids.Count - procesados}. {ex.Message}");
+            }
         }
 
         /// <summary>

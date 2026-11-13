@@ -23,4 +23,21 @@
         public int aplicados { get; set; } = 0;
         public int pendientes { get; set; } = 0;
     }
+
+    public sealed class CoAplExcContrProcesoErrorDto
+    {
+        public int numero_caso { get; set; }
+        public string cedula { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string operaciones { get; set; } = string.Empty;
+        public string mensaje { get; set; } = string.Empty;
+    }
+
+    public sealed class CoAplExcContrProcesoEstadoResult
+        : global::Galileo_API.Models.Procesos.GenProcesoEstadoResult
+    {
+        public bool DetalleDisponible { get; set; } = false;
+
+        public List<CoAplExcContrProcesoErrorDto> Errores { get; set; } = new();
+    }
 }
