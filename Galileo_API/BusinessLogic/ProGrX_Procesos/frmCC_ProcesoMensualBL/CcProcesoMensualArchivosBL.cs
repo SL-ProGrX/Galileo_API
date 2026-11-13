@@ -120,6 +120,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
 
                 "00" => GenerarPorCodigo(connection, request, "00"),
 
+                "01" => GenerarArchivoF01(connection, request),
+
                 "03" => GenerarArchivoF03(connection, request),
 
                 "05" => GenerarF05YOld(connection, request),
@@ -133,6 +135,47 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
                 _ => GenerarPorCodigo(connection, request, codigo)
             };
         }
+
+        private CcProcesoMensualArchivoGeneradoModel GenerarArchivoF01(
+            IDbConnection connection,
+            CcProcesoMensualGeneraArchivoRequest request)
+        {
+            var resultado = GenerarPorCodigo(connection, request, "01");
+            var archivosGenerados = resultado.ArchivosGenerados
+                .Where(ruta => !string.IsNullOrWhiteSpace(ruta))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (archivosGenerados.Count <= 1)
+            {
+                return resultado;
+            }
+
+            return new CcProcesoMensualArchivoGeneradoModel
+            {
+                Generado = true,
+                CodigoPlanillaEnvio = "01",
+                NombreArchivo = CrearNombreZipF01(archivosGenerados[0]),
+                RutaArchivo = string.Join("; ", archivosGenerados),
+                ContentType = "application/zip",
+                ArchivoBytes = CrearZip(archivosGenerados),
+                ArchivosGenerados = archivosGenerados
+            };
+        }
+
+        private static string CrearNombreZipF01(string rutaPrimerArchivo)
+        {
+            var nombreBase = Path.GetFileNameWithoutExtension(rutaPrimerArchivo);
+            var indiceCodigoArchivo = nombreBase.LastIndexOf("-ARC", StringComparison.OrdinalIgnoreCase);
+
+            if (indiceCodigoArchivo > 0)
+            {
+                nombreBase = nombreBase[..indiceCodigoArchivo];
+            }
+
+            return $"{nombreBase}-CCSS.zip";
+        }
+
         private CcProcesoMensualArchivoGeneradoModel GenerarPorCodigo(IDbConnection connection, CcProcesoMensualGeneraArchivoRequest request, string codigoPlanillaEnvio)
         {
             var generador = BuscarGenerador(codigoPlanillaEnvio);
@@ -245,7 +288,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
                 NombreArchivo = CrearNombreZipF03(archivosConRegistros[0]),
                 RutaArchivo = string.Join("; ", archivosConRegistros),
                 ContentType = "application/zip",
-                ArchivoBytes = CrearZipF03(archivosConRegistros),
+                ArchivoBytes = CrearZip(archivosConRegistros),
                 ArchivosGenerados = archivosConRegistros
             };
         }
@@ -261,7 +304,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos.frmCC_ProcesoMensualBL
                         && !string.Equals(linea.Trim(), "!", StringComparison.Ordinal));
         }
 
-        private byte[] CrearZipF03(IEnumerable<string> archivosGenerados)
+        private byte[] CrearZip(IEnumerable<string> archivosGenerados)
         {
             using var contenidoZip = new MemoryStream();
 
