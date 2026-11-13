@@ -23,6 +23,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
         private readonly PortalDB _portalDB;
         private readonly MTesFuncionesDb mTesFunciones;
         private readonly MProGrxMain _mProGrxMain;
+        private readonly IConfiguration _config;
 
         private const string nSolicitudes = "solicitudes";
         private const string nFechas = "fechas";
@@ -32,6 +33,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos.frmTES_EmisionDocumentos
 
         public FrmTesEmisionDocumentosDb(IConfiguration config)
         {
+            _config = config;
             mTesoreria = new MTesoreria(config);
             _Security_MainDB = new MSecurityMainDb(config);
             mReporting = new MReportingServicesDB(config);
@@ -631,6 +633,9 @@ where B.estado = 'A'
 
                 if (result.Code != 0)
                 {
+                    if (bancoDocs.comprobante == "04")
+                        NotificarRechazoTE(ctx, q, result.Description);
+
                     return DbHelper.CreateErrorResponse<object>(
                         result.Description ?? "Ocurrió un error al generar la emisión."
                     );
@@ -723,6 +728,40 @@ where B.estado = 'A'
                 parametros = ctx.Q.Parametros,
                 comprobante = ctx.BancoDocs.comprobante
             }, Formatting.Indented));
+        }
+
+        /// <summary>
+        /// Notifica con TRAN_RE a las TE del lote cuando falla la generación del archivo.
+        /// Solo aplica a destinos con plantilla TE; las TS se notifican desde la respuesta SINPE.
+        /// </summary>
+        private void NotificarRechazoTE(EmisionContext ctx, QueryBuildResult q, string? motivo)
+        {
+            try
+            {
+                var transacciones = ctx.Conn
+                    .Query<TesTransaccionDto>(q.QueryTransac, q.Parametros)
+                    .Where(t => string.Equals(t.tipo, "TE", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                var kindo = new MKindoServiceDb(_config);
+                var notificacion = new SinpeNotificacionCorreoDB(_config);
+                foreach (var transaccion in transacciones)
+                {
+                    var solicitud = kindo.fxTesConsultaSolicitud(ctx.CodEmpresa, transaccion.nsolicitud).Result;
+                    if (solicitud is null)
+                        continue;
+
+                    var resultado = notificacion.NotificarTransferenciaTE(
+                        ctx.CodEmpresa, solicitud, true, null, motivo ?? "Motivo desconocido.");
+                    var mensaje = SinpeNotificacionCorreoDB.MensajeBitacora(resultado);
+                    if (mensaje is not null)
+                        mTesoreria.sbTesBitacoraEspecial(ctx.CodEmpresa, transaccion.nsolicitud, "10", mensaje, ctx.Filtro.usuario ?? string.Empty);
+                }
+            }
+            catch (Exception)
+            {
+                // no rompas la emisión por un fallo al preparar la notificación
+            }
         }
 
         private ErrorDto<object> ProcesarTransferencias(EmisionContext ctx)

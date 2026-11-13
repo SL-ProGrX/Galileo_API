@@ -2061,12 +2061,7 @@ namespace Galileo_API.DataBaseTier
                 var fallo = error != 0;
                 var motivo = fallo ? _mKindo.fxTesConsultaMotivo(CodEmpresa, error).Result ?? "Motivo desconocido." : null;
                 var resultado = _notificacionCorreo.NotificarTransferencia(CodEmpresa, solicitud, fallo, referencia, motivo);
-                var mensaje = resultado.Code switch
-                {
-                    0 => null,
-                    SinpeNotificacionCorreoDB.CodigoSinCorreo => SinpeNotificacionCorreoDB.MensajeSinCorreo,
-                    _ => $"Notificación por correo no guardada: {resultado.Description}"
-                };
+                var mensaje = SinpeNotificacionCorreoDB.MensajeBitacora(resultado);
                 if (mensaje is not null)
                     _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, solicitud.NumeroSolicitud, "10", mensaje, solicitud.UsuarioGenera ?? string.Empty);
             }
