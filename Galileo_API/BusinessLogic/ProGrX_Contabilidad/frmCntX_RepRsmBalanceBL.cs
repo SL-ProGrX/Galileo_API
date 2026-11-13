@@ -24,6 +24,11 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.CntX_CentroCostos_Listar(codEmpresa, codContabilidad, unidad);
         }
 
+        public ErrorDto<bool> CntX_PeriodoPendiente(int codEmpresa, int codContabilidad, int anio, int mes)
+        {
+            return _db.CntX_PeriodoPendiente(codEmpresa, codContabilidad, anio, mes);
+        }
+
         public ErrorDto<bool> GenerarReporte(int codEmpresa, int codContabilidad, CntxRsmBalanceFiltroDto filtros)
         {
             return _db.GenerarReporte(codEmpresa, codContabilidad, filtros);

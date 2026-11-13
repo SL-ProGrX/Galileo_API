@@ -108,50 +108,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return DbHelper.OkResponse(string.Empty);
         }
 
+        // VB6 (sbDeudas_Load): spCrd_Comites_Caso_Deudas_Rsm cedula, estudioCredito
+        // devuelve Saldo, Cuota y DEDUCCIONES.
         private static void CR_ComitesAprobaciones_Deudas_CargarResumen(
             IDbConnection conn,
             string cedula,
+            string tipoCaso,
+            string operacion,
             CrComitesAprobacionesDeudasResponse response)
         {
-            const string sqlResumen = @"
-                select
-                    isnull(sum(R.SALDO), 0) as total_saldo,
-                    isnull(sum(R.CUOTA), 0) as total_cuota
-                from REG_CREDITOS R
-                where R.SALDO > 0
-                  and R.ESTADO = 'A'
-                  and R.CEDULA = @cedula;";
+            var estudioCredito = ObtenerCodPreanalisis(conn, tipoCaso, operacion);
 
-            var resumen = conn.QueryFirstOrDefault(sqlResumen, new { cedula });
+            var resumen = conn.QueryFirstOrDefault(
+                "exec spCrd_Comites_Caso_Deudas_Rsm @cedula, @estudio",
+                new { cedula, estudio = estudioCredito });
             if (resumen == null)
             {
                 return;
             }
 
-            response.total_saldo = resumen.total_saldo ?? 0;
-            response.total_cuota = resumen.total_cuota ?? 0;
-        }
-
-        private static void CR_ComitesAprobaciones_Deudas_CargarDeducciones(
-            IDbConnection conn,
-            string tipoCaso,
-            string operacion,
-            CrComitesAprobacionesDeudasResponse response)
-        {
-            var codPreanalisis = ObtenerCodPreanalisis(conn, tipoCaso, operacion);
-            if (string.IsNullOrWhiteSpace(codPreanalisis) || codPreanalisis == "0")
-            {
-                return;
-            }
-
-            const string sqlDeducciones = @"
-                select isnull(sum(CUOTA_MENSUAL), 0)
-                from CRD_PREA_DETALLE_DEDUC
-                where COD_PREANALISIS = @cod_preanalisis;";
-
-            response.deducciones = conn.QueryFirstOrDefault<decimal>(
-                sqlDeducciones,
-                new { cod_preanalisis = codPreanalisis });
+            var datos = (IDictionary<string, object>)resumen;
+            response.total_saldo = Decimal(datos, "Saldo");
+            response.total_cuota = Decimal(datos, "Cuota");
+            response.deducciones = Decimal(datos, "DEDUCCIONES");
         }
 
         private static string ObtenerCodPreanalisis(IDbConnection conn, string tipoCaso, string operacion)
@@ -172,34 +151,56 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 new { id_solicitud = operacion?.Trim() ?? string.Empty }) ?? string.Empty;
         }
 
-        private static string ObtenerIdSolicitudCaso(IDbConnection conn, string tipoCaso, string operacion)
-        {
-            var operacionNormalizada = operacion?.Trim() ?? string.Empty;
-            if (EsSolicitud(tipoCaso))
-            {
-                return operacionNormalizada;
-            }
-
-            const string sql = @"
-                select top 1 isnull(ID_SOLICITUD, 0)
-                from CRD_PREA_PREANALISIS
-                where TIPO_PREANALISIS = 'E'
-                  and (
-                    cast(COD_PREANALISIS as varchar(50)) = @operacion
-                    or cast(COD_PREANALISIS_REF as varchar(50)) = @operacion
-                  );";
-
-            return conn.QueryFirstOrDefault<string>(
-                sql,
-                new { operacion = operacionNormalizada }) ?? string.Empty;
-        }
-
         private static List<CrComitesAprobacionesDeuda> CR_ComitesAprobaciones_Deudas_CargarLista(IDbConnection conn, string cedula)
         {
-            const string sqlLista = "exec spSIFEstadoCreditos @cedula";
+            // VB6 (sbCargaGridDeudas): spSys_Consulta_Integrada_Creditos cedula, 'A'
+            const string sqlLista = "exec spSys_Consulta_Integrada_Creditos @cedula, 'A'";
             return conn.Query(sqlLista, new { cedula })
                 .Select(CR_ComitesAprobaciones_Deudas_MapearRow)
                 .ToList();
+        }
+
+        private static CrComitesAprobacionesRefundicion CR_ComitesAprobaciones_Refundiciones_MapearRow(IDictionary<string, object> datos)
+        {
+            var valores = datos.Values.ToList();
+
+            return new CrComitesAprobacionesRefundicion
+            {
+                operacion = ValorTexto(valores, 0),
+                linea = ValorTexto(valores, 1),
+                plazo = ValorDecimal(valores, 2),
+                monto = ValorDecimal(valores, 3),
+                refundicion = ValorDecimal(valores, 4),
+                cuota = ValorDecimal(valores, 5),
+                tipo_movimiento = ValorTexto(valores, 6),
+                interes_corriente = ValorDecimal(valores, 7),
+                interes_moratorio = ValorDecimal(valores, 8),
+                principal = ValorDecimal(valores, 9),
+                cargos = ValorDecimal(valores, 10),
+                polizas = ValorDecimal(valores, 11),
+                garantia = ValorTexto(valores, 12),
+            };
+        }
+
+        private static string ValorTexto(IList<object> valores, int indice)
+        {
+            return indice < valores.Count && valores[indice] != null && valores[indice] != DBNull.Value
+                ? Convert.ToString(valores[indice])?.Trim() ?? string.Empty
+                : string.Empty;
+        }
+
+        private static decimal ValorDecimal(IList<object> valores, int indice)
+        {
+            if (indice >= valores.Count || valores[indice] == null || valores[indice] == DBNull.Value)
+            {
+                return 0;
+            }
+
+            return decimal.TryParse(
+                Convert.ToString(valores[indice], System.Globalization.CultureInfo.InvariantCulture),
+                System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var numero) ? numero : 0;
         }
 
         private static CrComitesAprobacionesDeuda CR_ComitesAprobaciones_Deudas_MapearRow(dynamic row)
@@ -214,16 +215,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 monto = Decimal(datos, "MontoApr"),
                 saldo = Decimal(datos, "Saldo"),
                 cuota = Decimal(datos, "Cuota"),
-                monto_atrasado = Decimal(datos, "MoraPrincipal") + Decimal(datos, "MoraInt"),
-                primer_deduc = CR_ComitesAprobaciones_Deudas_FormatearPrimerMovimiento(datos),
-                ultimo_movimiento = Texto(datos, "UltMovimien"),
-                termina = Texto(datos, "Termina"),
+                monto_atrasado =
+                    Decimal(datos, "MoraInt") +
+                    Decimal(datos, "MoraCargos") +
+                    Decimal(datos, "MoraPrincipal") +
+                    Decimal(datos, "MoraPoliza"),
+                primer_deduc = CR_ComitesAprobaciones_Deudas_FormatearPeriodo(datos, "PriDeduc"),
+                ultimo_movimiento = CR_ComitesAprobaciones_Deudas_FormatearPeriodo(datos, "FecUlt"),
+                termina = CR_ComitesAprobaciones_Deudas_FormatearPeriodo(datos, "Termina"),
                 garantia = Texto(datos, "Garantia"),
                 estado = Texto(datos, "Estado"),
-                proceso = Texto(datos, "ProcesoCod"),
+                proceso = Texto(datos, "Proceso"),
                 operacion_referencia = Texto(datos, "Referencia"),
                 tasa_original = Decimal(datos, "TasaOriginal"),
-                tasa_actual = Decimal(datos, "Tasa"),
+                tasa_actual = Decimal(datos, "InteresV"),
             };
         }
 
@@ -263,10 +268,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return "verde";
         }
 
-        private static string CR_ComitesAprobaciones_Deudas_FormatearPrimerMovimiento(IDictionary<string, object> datos)
+        // VB6: Format(valor, "####-##") sobre periodos aaaamm; Termina llega como fecha.
+        private static string CR_ComitesAprobaciones_Deudas_FormatearPeriodo(IDictionary<string, object> datos, string campo)
         {
-            var primerDeduc = Decimal(datos, "prideduc");
-            return primerDeduc <= 0 ? string.Empty : primerDeduc.ToString("0000-00");
+            if (!TryGetCampo(datos, campo, out var valor) || valor == null || valor == DBNull.Value)
+            {
+                return string.Empty;
+            }
+
+            if (valor is DateTime fecha)
+            {
+                return fecha.ToString("yyyy-MM");
+            }
+
+            if (!decimal.TryParse(Convert.ToString(valor, System.Globalization.CultureInfo.InvariantCulture),
+                    System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out var periodo) || periodo <= 0)
+            {
+                return string.Empty;
+            }
+
+            return periodo.ToString("0000-00");
         }
 
         private static ErrorDto ValidarResolucion(CrComitesAprobacionesResolucionRequest request)

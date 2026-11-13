@@ -11,10 +11,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
     public partial class FrmCrComitesAprobacionesDB
     {
         private readonly PortalDB _portalDB;
+        private readonly string _securityConnectionString;
 
         public FrmCrComitesAprobacionesDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
+            _securityConnectionString = config.GetConnectionString("DefaultConnString")
+                ?? throw new InvalidOperationException("No se encontro la conexion de seguridad.");
         }
 
         /// <summary>
@@ -425,9 +428,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     result.aporte_obrero +
                     result.capitalizacion;
 
-                result.disponible_bruto =
-                    (result.aporte_obrero * (porcObrero / 100m)) +
-                    (result.capitalizacion * (porcCapitalizacion / 100m));
+                // VB6 (sbPatrimonio_Load): Disponible bruto y Saldo vienen de spCrd_Comites_Caso_PAT_Integral.
+                var garantia = conn.QueryFirstOrDefault<CrComitesAprobacionesPatrimonioGarantia>(
+                    "exec spCrd_Comites_Caso_PAT_Integral @cedula",
+                    new { cedula = cedula.Trim() });
+
+                if (garantia != null)
+                {
+                    result.disponible_bruto = garantia.Pat_Garantia_Total;
+                    result.saldo_prestamos = garantia.Pat_Garantia_Saldos;
+                }
+                else
+                {
+                    result.disponible_bruto =
+                        (result.aporte_obrero * (porcObrero / 100m)) +
+                        (result.capitalizacion * (porcCapitalizacion / 100m));
+                }
 
                 result.disponible =
                     result.disponible_bruto -
@@ -515,8 +531,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var response = new CrComitesAprobacionesDeudasResponse();
                 var cedulaNormalizada = cedula.Trim();
 
-                CR_ComitesAprobaciones_Deudas_CargarResumen(conn, cedulaNormalizada, response);
-                CR_ComitesAprobaciones_Deudas_CargarDeducciones(conn, tipo_caso, operacion, response);
+                CR_ComitesAprobaciones_Deudas_CargarResumen(conn, cedulaNormalizada, tipo_caso, operacion, response);
                 response.lista = CR_ComitesAprobaciones_Deudas_CargarLista(conn, cedulaNormalizada);
 
                 return DbHelper.CreateOkResponse(response);
@@ -620,35 +635,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             try
             {
-                var idSolicitud = ObtenerIdSolicitudCaso(conn, tipo_caso, operacion);
-                if (string.IsNullOrWhiteSpace(idSolicitud) || idSolicitud == "0")
-                {
-                    return DbHelper.CreateOkResponse(new List<CrComitesAprobacionesRefundicion>());
-                }
+                // VB6 (sbRefundiciones_Load): spCrd_Comites_Caso_CRD_Refunde operacion, 'T' (solicitud) o 'e' (estudio).
+                // La grilla se llena por posicion (13 columnas), igual que sbCargaGrid.
+                var filas = conn.Query(
+                    "exec spCrd_Comites_Caso_CRD_Refunde @operacion, @tipo",
+                    new { operacion = operacion.Trim(), tipo = EsSolicitud(tipo_caso) ? "T" : "e" });
 
-                const string sql = @"
-                    select
-                        cast(R.ID_SOLICITUD as varchar(50)) as operacion,
-                        rtrim(R.CODIGO) as linea,
-                        isnull(R.PLAZO, 0) as plazo,
-                        isnull(R.MONTOAPR, 0) as monto,
-                        isnull(RE.MONTO, 0) as refundicion,
-                        isnull(R.CUOTA, 0) as cuota,
-                        '' as tipo_movimiento,
-                        cast(0 as decimal(18,2)) as interes_corriente,
-                        cast(0 as decimal(18,2)) as interes_moratorio,
-                        cast(0 as decimal(18,2)) as principal,
-                        cast(0 as decimal(18,2)) as cargos,
-                        cast(0 as decimal(18,2)) as polizas,
-                        isnull(rtrim(R.GARANTIA), '') as garantia
-                    from REG_CREDITOS R
-                    inner join REFUNDICIONES RE on R.ID_SOLICITUD = RE.ID_SOLICITUD
-                    where RE.ID_SOLICITUDR = @id_solicitud
-                    order by R.ID_SOLICITUD;";
-
-                var lista = conn.Query<CrComitesAprobacionesRefundicion>(
-                    sql,
-                    new { id_solicitud = idSolicitud }).ToList();
+                var lista = filas
+                    .Select(fila => CR_ComitesAprobaciones_Refundiciones_MapearRow((IDictionary<string, object>)fila))
+                    .ToList();
 
                 return DbHelper.CreateOkResponse(lista);
             }

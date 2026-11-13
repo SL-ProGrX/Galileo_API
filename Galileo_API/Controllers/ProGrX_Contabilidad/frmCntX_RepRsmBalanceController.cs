@@ -31,6 +31,12 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntX_CentroCostos_Listar(codEmpresa, codContabilidad, unidad);
         }
 
+        [HttpGet("CntX_PeriodoPendiente")]
+        public ErrorDto<bool> CntX_PeriodoPendiente(int codEmpresa, int codContabilidad, int anio, int mes)
+        {
+            return _bl.CntX_PeriodoPendiente(codEmpresa, codContabilidad, anio, mes);
+        }
+
         [ValidateAntiForgeryToken]
         [HttpPost("GenerarReporte")]
         public ErrorDto<bool> GenerarReporte(
