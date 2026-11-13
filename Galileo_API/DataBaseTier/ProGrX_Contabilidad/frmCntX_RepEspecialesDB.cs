@@ -1,14 +1,19 @@
+using ClosedXML.Excel;
 using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Contabilidad;
 using Microsoft.Data.SqlClient;
+using static Galileo_API.Models.ProGrX_Contabilidad.FrmCntxConInformeEspecialModels;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
     public class FrmCntXRepEspecialesDb
     {
+        private const string ExcelContentType =
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
         private readonly PortalDB _portalDb;
 
         /// <summary>
@@ -138,6 +143,193 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 _portalDb,
                 codEmpresa,
                 connection => EjecutarPreparacion(connection, codContabilidad, f));
+        }
+
+        /// <summary>
+        /// Genera el Excel de balance por centro de costo o por unidad (equivale a sbInformeCentroCostos / sbInformeUENS del VB6).
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa conectada.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
+        /// <param name="f">Filtros del reporte, incluido el período contable vigente.</param>
+        /// <returns>Archivo Excel generado con el primer result set del procedimiento.</returns>
+        public ErrorDto<ArchivoGeneradoModel> GenerarExcel(
+            int codEmpresa,
+            int codContabilidad,
+            CntxRepEspecialFiltroDto f)
+        {
+            var validacion = ValidarFiltrosExcel(f);
+            if (validacion is not null)
+            {
+                return DbHelper.CreateErrorResponse(validacion, -1, new ArchivoGeneradoModel());
+            }
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                connection.Open();
+
+                return DbHelper.CreateOkResponse(
+                    GenerarArchivoBalanceExcel(connection, codContabilidad, f));
+            }
+            catch (Exception)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Error al generar el informe en Excel.",
+                    -1,
+                    new ArchivoGeneradoModel());
+            }
+        }
+
+        /// <summary>
+        /// Valida los filtros que requieren los informes Excel de balance.
+        /// </summary>
+        /// <param name="f">Filtros recibidos desde la pantalla.</param>
+        /// <returns>Mensaje de error o null cuando los filtros son válidos.</returns>
+        private static string? ValidarFiltrosExcel(CntxRepEspecialFiltroDto f)
+        {
+            if (f.periodoAnio is null or <= 0 || f.periodoMes is null or < 1 or > 12)
+            {
+                return "El año y mes del período contable son requeridos.";
+            }
+
+            if (string.IsNullOrWhiteSpace(f.usuario))
+            {
+                return "El usuario es requerido.";
+            }
+
+            if (f.reporte is not ("4" or "4.1" or "5" or "5.1"))
+            {
+                return "El tipo de reporte Excel no es válido.";
+            }
+
+            if (f.reporte is "5" or "5.1" && !int.TryParse(f.nivel, out _))
+            {
+                return "El nivel es requerido para el balance por unidad.";
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Ejecuta el procedimiento del informe seleccionado y lo convierte en un archivo Excel.
+        /// </summary>
+        /// <param name="connection">Conexión abierta de la empresa.</param>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
+        /// <param name="f">Filtros del reporte.</param>
+        /// <returns>Archivo Excel listo para descargar.</returns>
+        private static ArchivoGeneradoModel GenerarArchivoBalanceExcel(
+            SqlConnection connection,
+            int codContabilidad,
+            CntxRepEspecialFiltroDto f)
+        {
+            var (sql, parametros, nombre) = PrepararProcedimientoExcel(codContabilidad, f);
+
+            using var reader = connection.ExecuteReader(sql, parametros, commandTimeout: 0);
+
+            var encabezados = new List<string>();
+            for (var i = 0; i < reader.FieldCount; i++)
+            {
+                encabezados.Add(reader.GetName(i));
+            }
+
+            var filas = new List<object?[]>();
+            while (reader.Read())
+            {
+                var fila = new object?[reader.FieldCount];
+                for (var i = 0; i < reader.FieldCount; i++)
+                {
+                    fila[i] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                }
+
+                filas.Add(fila);
+            }
+
+            using var libro = new XLWorkbook();
+            var hoja = libro.Worksheets.Add("Balance");
+
+            for (var c = 0; c < encabezados.Count; c++)
+            {
+                AsignarValorCelda(hoja.Cell(1, c + 1), encabezados[c]);
+            }
+
+            hoja.Row(1).Style.Font.Bold = true;
+
+            for (var r = 0; r < filas.Count; r++)
+            {
+                for (var c = 0; c < encabezados.Count; c++)
+                {
+                    AsignarValorCelda(hoja.Cell(r + 2, c + 1), filas[r][c]);
+                }
+            }
+
+            hoja.SheetView.FreezeRows(1);
+            hoja.Columns().AdjustToContents();
+
+            using var memoria = new MemoryStream();
+            libro.SaveAs(memoria);
+
+            return new ArchivoGeneradoModel
+            {
+                NombreArchivo = $"{nombre}_{f.periodoAnio:0000}{f.periodoMes:00}.xlsx",
+                ContentType = ExcelContentType,
+                ArchivoBytes = memoria.ToArray(),
+            };
+        }
+
+        /// <summary>
+        /// Define el procedimiento, sus parámetros posicionales y el nombre del archivo según el informe (VB6: exec spCntX_Balance_*).
+        /// </summary>
+        /// <param name="codContabilidad">Código de la contabilidad activa.</param>
+        /// <param name="f">Filtros del reporte.</param>
+        /// <returns>SQL de ejecución, parámetros y nombre base del archivo.</returns>
+        private static (string Sql, object Parametros, string Nombre) PrepararProcedimientoExcel(
+            int codContabilidad,
+            CntxRepEspecialFiltroDto f)
+        {
+            var anio = f.periodoAnio ?? 0;
+            var mes = f.periodoMes ?? 0;
+            var usuario = f.usuario?.Trim() ?? string.Empty;
+
+            return f.reporte switch
+            {
+                "4" => (
+                    "EXEC spCntX_Balance_Centro_Costos_Vertical @cod_contabilidad, @periodo_anio, @periodo_mes, @usuario",
+                    new { cod_contabilidad = codContabilidad, periodo_anio = anio, periodo_mes = mes, usuario },
+                    "Balance_CentroCosto_Vertical"),
+                "4.1" => (
+                    "EXEC spCntX_Balance_Centro_Costos_Horizontal @cod_contabilidad, @periodo_anio, @periodo_mes, @usuario",
+                    new { cod_contabilidad = codContabilidad, periodo_anio = anio, periodo_mes = mes, usuario },
+                    "Balance_CentroCosto_Horizontal"),
+                "5" => (
+                    "EXEC spCntX_Balance_UENS_Vertical @cod_contabilidad, @periodo_anio, @periodo_mes, @nivel, @usuario",
+                    new { cod_contabilidad = codContabilidad, periodo_anio = anio, periodo_mes = mes, nivel = int.Parse(f.nivel ?? "0"), usuario },
+                    "Balance_Unidad_Vertical"),
+                _ => (
+                    "EXEC spCntX_Balance_UENS_Horizontal @cod_contabilidad, @periodo_anio, @periodo_mes, @nivel, @usuario",
+                    new { cod_contabilidad = codContabilidad, periodo_anio = anio, periodo_mes = mes, nivel = int.Parse(f.nivel ?? "0"), usuario },
+                    "Balance_Unidad_Horizontal"),
+            };
+        }
+
+        /// <summary>
+        /// Asigna un valor de lectura de base de datos a una celda, conservando el tipo para el formato de Excel.
+        /// </summary>
+        /// <param name="celda">Celda destino.</param>
+        /// <param name="valor">Valor leído.</param>
+        private static void AsignarValorCelda(IXLCell celda, object? valor)
+        {
+            celda.Value = valor switch
+            {
+                null => (XLCellValue)string.Empty,
+                decimal numeroDecimal => (XLCellValue)numeroDecimal,
+                double numeroDouble => (XLCellValue)numeroDouble,
+                int numeroEntero => (XLCellValue)numeroEntero,
+                short numeroCorto => (XLCellValue)numeroCorto,
+                long numeroLargo => (XLCellValue)numeroLargo,
+                bool valorBooleano => (XLCellValue)valorBooleano,
+                DateTime fecha => (XLCellValue)fecha,
+                _ => (XLCellValue)(valor.ToString() ?? string.Empty),
+            };
         }
 
         /// <summary>
