@@ -38,10 +38,10 @@ namespace Galileo_API.Services.ProGrX.Cobros
             IReadOnlyList<FrmCOCobroFiadoresProcesoErrorDto> errores)
         {
             var ahora = DateTimeOffset.UtcNow;
-            foreach (var par in _errores)
+            foreach (var par in System.Linq.Enumerable.Where(_errores,
+                par => par.Value.Vence <= ahora))
             {
-                if (par.Value.Vence <= ahora)
-                    _errores.TryRemove(par.Key, out _);
+                _errores.TryRemove(par.Key, out _);
             }
 
             _errores[procesoId] = new ErroresGuardados(codEmpresa,
