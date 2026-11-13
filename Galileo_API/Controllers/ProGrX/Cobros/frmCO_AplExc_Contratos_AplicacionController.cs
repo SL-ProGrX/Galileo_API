@@ -29,15 +29,15 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         /// </summary>
         [ValidateAntiForgeryToken]
         [HttpPost("CO_AplExcContrApl_Procesa_Aplicar")]
-        public ErrorDto<GenProcesoIniciadoResult> CO_AplExcContrApl_Procesa_Aplicar(int CodEmpresa, ExcContratosAplicarRequest request)
+        public ErrorDto<GenProcesoIniciadoResult> CO_AplExcContrApl_Procesa_Aplicar(int codEmpresa, ExcContratosAplicarRequest request)
         {
-            return _bl.CO_AplExcContrApl_Procesa_Iniciar(CodEmpresa, request);
+            return _bl.CO_AplExcContrApl_Procesa_Iniciar(codEmpresa, request);
         }
 
         [HttpGet("CO_AplExcContrApl_Procesa_Estado")]
-        public ErrorDto<GenProcesoEstadoResult> CO_AplExcContrApl_Procesa_Estado(int CodEmpresa, Guid ProcesoId)
+        public ErrorDto<CoAplExcContrProcesoEstadoResult> CO_AplExcContrApl_Procesa_Estado(int codEmpresa, Guid procesoId)
         {
-            return _bl.CO_AplExcContrApl_Procesa_Estado(CodEmpresa, ProcesoId);
+            return _bl.CO_AplExcContrApl_Procesa_Estado(codEmpresa,  procesoId);
         }
     }
 }

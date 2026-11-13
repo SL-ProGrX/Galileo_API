@@ -1,173 +1,73 @@
-﻿using Dapper;
-using Galileo.DataBaseTier;
+﻿using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
-using Galileo_API.Models.Procesos;
+using Galileo_API.DataBaseTier.Procesos;
 using Galileo_API.Models.ProGrX.Cobros;
-using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
     public class FrmCoAplExcProcesaDb : CoProcesoDbBase
     {
-        public FrmCoAplExcProcesaDb(IConfiguration config)
-            : base(config)
+        private readonly GenProcesoDb.CoAplicacion<CoAplExcProcInformacionData, CoAplExcProcesoEstadoResult> _aplicacion;
+
+        public sealed class ResultadoException : Exception
         {
+            public ResultadoException(string mensaje) : base(mensaje) { }
         }
 
-        public FrmCoAplExcProcesaDb(PortalDB portalDB)
-            : base(portalDB)
+        public FrmCoAplExcProcesaDb(IConfiguration config) : this(new PortalDB(config)) { }
+
+        public FrmCoAplExcProcesaDb(PortalDB portalDB) : base(portalDB)
         {
+            _aplicacion = new(_portalDB, _procesoDb, new()
+            {
+                GuiaSql = "dbo.spCBR_Excedente_Apl_Proceso_Guia_Aplicacion",
+                CasoSql = "dbo.spCBR_Excedente_Apl_Proceso_Aplicacion",
+                ValidacionSql = "SELECT dbo.fxCBR_Excedente_Apl_Proceso_Valida(@Cedula, @Aplicacion);",
+                MensajeInicio = "Preparando la aplicación de excedentes.",
+                CedulaMaxima = 20,
+                VerificarEtapaGuia = false,
+                Cedula = item => item?.cedula,
+                CrearExcepcion = mensaje => new ResultadoException(mensaje),
+                EsErrorResultado = error => error is ResultadoException,
+                CrearError = datos => new CoAplExcProcesoErrorDto
+                {
+                    numero_caso = datos.Numero,
+                    cedula = datos.Cedula,
+                    nombre = datos.Item?.nombre ?? string.Empty,
+                    mensaje = datos.Mensaje
+                },
+                AsignarDetalle = (estado, errores) =>
+                {
+                    estado.DetalleDisponible = true;
+                    estado.Errores = errores.Cast<CoAplExcProcesoErrorDto>().ToList();
+                },
+                CrearResultado = (correctos, pendientes) => new CoAplExcProcesadosResult
+                {
+                    aplicados = correctos,
+                    pendientes = pendientes
+                }
+            });
         }
 
-        /// <summary>
-        /// Obtener información de excedentes a procesar
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
+        /// <summary>Obtiene la información disponible para esta aplicación.</summary>
         public ErrorDto<List<CoAplExcProcInformacionData>> CO_AplExcProc_Informacion_Obtener(int codEmpresa)
-        {
-            using var connection = _portalDB.CreateConnection(codEmpresa);
+            => DbHelper.ExecuteListQuery<CoAplExcProcInformacionData>(
+                _portalDB, codEmpresa,
+                "exec dbo.spCBR_Excedente_Apl_Proceso_Carga_Informacion",
+                commandTimeout: 0);
 
-            var response = connection.Query<CoAplExcProcInformacionData>(
-                sql: "exec spCBR_Excedente_Apl_Proceso_Carga_Informacion",
-                commandTimeout: 0
-            ).ToList();
+        /// <summary>Ejecuta la selección y conserva los errores individuales y el avance.</summary>
+        public ErrorDto<CoAplExcProcesadosResult> CO_AplExc_Procesa_Ejecutar(
+            int CodEmpresa, Guid procesoId, ExcedenteAplicarRequest request)
+            => ConvertirResultado(_aplicacion.CO_Aplicacion_Ejecutar(CodEmpresa, procesoId,
+                new() { Seleccionados = request.Seleccionados, Usuario = request.Usuario }));
 
-            return DbHelper.CreateOkResponse(response);
+        private static ErrorDto<CoAplExcProcesadosResult> ConvertirResultado(ErrorDto<object> origen)
+            => new() { Code = origen.Code, Description = origen.Description, Result = (CoAplExcProcesadosResult?)origen.Result };
 
-        }
-
-        /// <summary>
-        /// Ejecuta la aplicación de excedentes de un proceso encolado. Procesa todos los casos,
-        /// registra el avance en GEN_PROCESO y devuelve los casos con error al final.
-        /// </summary>
-        public ErrorDto<CoAplExcProcesadosResult> CO_AplExc_Procesa_Ejecutar(int CodEmpresa, Guid procesoId, ExcedenteAplicarRequest request)
-        {
-            try
-            {
-                var usuario = (request.Usuario ?? string.Empty).Trim().ToUpper();
-                var cedulas = (request.Seleccionados ?? new List<CoAplExcProcInformacionData>())
-                    .Where(x => !string.IsNullOrWhiteSpace(x.cedula))
-                    .Select(x => x.cedula.Trim())
-                    .ToList();
-
-                if (cedulas.Count == 0)
-                {
-                    return RegistrarError(CodEmpresa, procesoId, "No hay casos a procesar");
-                }
-
-                _procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.EnProceso, 0, 0);
-
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-
-                const string guiaSql = "exec spCBR_Excedente_Apl_Proceso_Guia_Aplicacion @Usuario;";
-
-                var idAplicacion = connection.QuerySingle<int>(
-                    guiaSql,
-                    new { Usuario = usuario },
-                    commandTimeout: 0
-                );
-
-                var resultado = ProcesarCasos(CodEmpresa, procesoId, connection, usuario, idAplicacion, cedulas);
-
-                return FinalizarProceso(CodEmpresa, procesoId, idAplicacion, cedulas.Count, resultado);
-            }
-            catch (Exception ex)
-            {
-                return RegistrarError(CodEmpresa, procesoId, ex.Message);
-            }
-        }
-
-        private ResultadoCasos ProcesarCasos(
-            int codEmpresa, Guid procesoId, IDbConnection connection,
-            string usuario, int idAplicacion, List<string> cedulas)
-        {
-            int validos = 0;
-            int procesados = 0;
-            var errores = new List<string>();
-
-            foreach (var cedula in cedulas)
-            {
-                procesados++;
-
-                try
-                {
-                    if (AplicarExcedente(connection, usuario, cedula, idAplicacion))
-                    {
-                        validos++;
-                    }
-                    else
-                    {
-                        errores.Add(cedula);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    errores.Add($"{cedula} ({ex.Message})");
-                }
-
-                _procesoDb.Actualizar(codEmpresa, procesoId, GenProcesoEstados.EnProceso, procesados, errores.Count);
-            }
-
-            return new ResultadoCasos(validos, errores);
-        }
-
-        private ErrorDto<CoAplExcProcesadosResult> FinalizarProceso(
-            int codEmpresa, Guid procesoId, int idAplicacion, int totalCasos, ResultadoCasos resultado)
-        {
-            var response = new ErrorDto<CoAplExcProcesadosResult>
-            {
-                Code = 0,
-                Description = "Proceso concluido satisfactoriamente",
-                Result = new CoAplExcProcesadosResult
-                {
-                    aplicados = resultado.Validos,
-                    pendientes = totalCasos - resultado.Validos
-                }
-            };
-
-            if (resultado.Errores.Count > 0)
-            {
-                response.Code = -1;
-                response.Description =
-                    $"Proceso concluido con {resultado.Errores.Count} caso(s) con error. " +
-                    $"Aplicación: {idAplicacion}. " +
-                    $"Procesados: {resultado.Validos} de {totalCasos}. " +
-                    $"Casos no procesados: {string.Join(", ", resultado.Errores)}.";
-            }
-
-            _procesoDb.Actualizar(
-                codEmpresa,
-                procesoId,
-                GenProcesoEstados.Terminado,
-                totalCasos,
-                resultado.Errores.Count,
-                response.Description);
-
-            return response;
-        }
-
-        private ErrorDto<CoAplExcProcesadosResult> RegistrarError(int codEmpresa, Guid procesoId, string mensaje) =>
-            RespuestaError(codEmpresa, procesoId, mensaje, new CoAplExcProcesadosResult { aplicados = 0, pendientes = 0 });
-
-        /// <summary>
-        /// Aplica un excedente y valida su resultado.
-        /// </summary>
-        /// <returns>true si el caso quedó válido; false si la validación no lo aprobó.</returns>
-        private static bool AplicarExcedente(IDbConnection connection, string usuario, string cedula, int idAplicacion)
-        {
-            const string aplicaSql =
-                @"exec spCBR_Excedente_Apl_Proceso_Aplicacion
-                    @Usuario, @Cedula, @AplicacionId;";
-
-            const string validaSql =
-                @"select dbo.fxCBR_Excedente_Apl_Proceso_Valida(
-                        @Cedula, @AplicacionId
-                      ) as Resultado;";
-
-            return AplicarYValidarCaso(connection, usuario, cedula, idAplicacion, aplicaSql, validaSql);
-        }
-
-        private sealed record ResultadoCasos(int Validos, List<string> Errores);
+        /// <summary>Devuelve el detalle temporal o el avance registrado en GEN_PROCESO.</summary>
+        public ErrorDto<CoAplExcProcesoEstadoResult> CO_AplExc_Procesa_Estado(
+            int codEmpresa, Guid procesoId)
+            => _aplicacion.CO_Aplicacion_Estado(codEmpresa, procesoId);
     }
 }

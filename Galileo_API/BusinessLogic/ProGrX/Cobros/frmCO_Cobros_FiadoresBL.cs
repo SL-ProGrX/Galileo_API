@@ -30,7 +30,11 @@ namespace Galileo.BusinessLogic.ProGrX.Cobros
         /// </summary>
         public ErrorDto<GenProcesoIniciadoResult> Co_CobroFiadores_ProcesaCobros_Iniciar(int CodEmpresa, string usuario, FrmCOCobroFiadoresAccionBulkDto dto)
         {
-            var ids = (dto?.ids ?? new List<long>()).Where(id => id > 0).Select(id => (int)id).ToList();
+            if (dto?.ids?.Any(id => id <= 0 || id > int.MaxValue) == true)
+                return DbHelper.CreateErrorResponse("La selección contiene identificadores inválidos.",
+                    -2, new GenProcesoIniciadoResult());
+
+            var ids = (dto?.ids ?? new List<long>()).Select(id => (int)id).Distinct().ToList();
             if (ids.Count == 0)
             {
                 return DbHelper.CreateErrorResponse("Debe Seleccionar al menos un caso!", -2, new GenProcesoIniciadoResult());
@@ -58,6 +62,12 @@ namespace Galileo.BusinessLogic.ProGrX.Cobros
             }
             catch (Exception ex)
             {
+                try
+                {
+                    _procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.Error,
+                        0, 0, "No se pudo preparar o encolar el lote: " + ex.Message);
+                }
+                catch (Exception) { /* El INSERT puede haber fallado antes de crear el proceso. */ }
                 return DbHelper.CreateErrorResponse(ex.Message, -1, new GenProcesoIniciadoResult());
             }
 
@@ -74,6 +84,23 @@ namespace Galileo.BusinessLogic.ProGrX.Cobros
             return estado is null
                 ? DbHelper.CreateErrorResponse("Proceso no encontrado.", -1, new GenProcesoEstadoResult())
                 : DbHelper.CreateOkResponse(estado);
+        }
+
+        /// <summary>Devuelve el detalle temporal de los casos fallidos del lote terminado.</summary>
+        public ErrorDto<List<FrmCOCobroFiadoresProcesoErrorDto>> Co_CobroFiadores_ProcesaCobros_Errores(
+            int CodEmpresa, Guid procesoId)
+        {
+            var estado = _procesoDb.Estado_Obtener(CodEmpresa, procesoId);
+            if (estado is null || estado.Estado is not (GenProcesoEstados.Terminado or GenProcesoEstados.Error))
+                return DbHelper.CreateErrorResponse("El proceso no existe o todavía no terminó.",
+                    -1, new List<FrmCOCobroFiadoresProcesoErrorDto>());
+
+            if (!_queue.TryObtenerErrores(procesoId, CodEmpresa, out var errores))
+                return DbHelper.CreateErrorResponse(
+                    "El detalle temporal ya no está disponible en esta instancia del API.",
+                    -1, new List<FrmCOCobroFiadoresProcesoErrorDto>());
+
+            return DbHelper.CreateOkResponse(errores.ToList());
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> Co_Instituciones_Dropdown_Obtener(int CodEmpresa)

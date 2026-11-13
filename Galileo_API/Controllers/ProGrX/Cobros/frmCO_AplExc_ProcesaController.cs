@@ -37,7 +37,9 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
 
         [Authorize]
         [HttpGet("CO_AplExc_Procesa_Estado")]
-        public ErrorDto<GenProcesoEstadoResult> CO_AplExc_Procesa_Estado(int CodEmpresa, Guid ProcesoId)
+        public ErrorDto<CoAplExcProcesoEstadoResult> CO_AplExc_Procesa_Estado(
+            int CodEmpresa,
+            Guid ProcesoId)
         {
             return _bl.CO_AplExc_Procesa_Estado(CodEmpresa, ProcesoId);
         }

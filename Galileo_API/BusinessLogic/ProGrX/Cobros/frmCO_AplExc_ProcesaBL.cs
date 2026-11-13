@@ -31,48 +31,29 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
         /// </summary>
         public ErrorDto<GenProcesoIniciadoResult> CO_AplExc_Procesa_Iniciar(int CodEmpresa, ExcedenteAplicarRequest request)
         {
-            var usuario = (request.Usuario ?? string.Empty).Trim().ToUpper();
-            var totalCasos = request.Seleccionados?.Count(x => !string.IsNullOrWhiteSpace(x.cedula)) ?? 0;
-
-            if (totalCasos == 0)
-            {
-                return DbHelper.CreateErrorResponse(
-                    "No hay casos a procesar", -1, new GenProcesoIniciadoResult());
-            }
-
-            var procesoId = Guid.NewGuid();
-
-            try
-            {
-                _procesoDb.Iniciar(CodEmpresa, procesoId, GenProcesoTipos.CoAplExc, usuario, totalCasos);
-
-                var encolado = _queue.Encolar(new CoAplExcProcesoTrabajo(procesoId, CodEmpresa, request));
-                if (!encolado)
+            return _procesoDb.CO_Aplicacion_Iniciar(CodEmpresa,
+                new GenProcesoDb.CoAplicacionInicio<CoAplExcProcInformacionData>
                 {
-                    const string msgCola = "No fue posible encolar el proceso. Intente nuevamente.";
-                    _procesoDb.Actualizar(CodEmpresa, procesoId, GenProcesoEstados.Error, 0, 0, msgCola);
-
-                    return DbHelper.CreateErrorResponse(msgCola, -1, new GenProcesoIniciadoResult());
-                }
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse(ex.Message, -1, new GenProcesoIniciadoResult());
-            }
-
-            return DbHelper.CreateOkResponse(new GenProcesoIniciadoResult { ProcesoId = procesoId });
+                    Usuario = request.Usuario,
+                    Seleccionados = request.Seleccionados,
+                    ObtenerCedula = item => item.cedula,
+                    CedulaMaxima = 20,
+                    TipoProceso = GenProcesoTipos.CoAplExc,
+                    ContratosExcedentes = false,
+                    AsignarUsuario = usuario => request.Usuario = usuario,
+                    Encolar = procesoId => _queue.Encolar(
+                        new CoAplExcProcesoTrabajo(procesoId, CodEmpresa, request))
+                });
         }
 
         /// <summary>
         /// Consulta el avance de un proceso (polling desde la pantalla).
         /// </summary>
-        public ErrorDto<GenProcesoEstadoResult> CO_AplExc_Procesa_Estado(int CodEmpresa, Guid procesoId)
+        public ErrorDto<CoAplExcProcesoEstadoResult> CO_AplExc_Procesa_Estado(
+            int CodEmpresa,
+            Guid procesoId)
         {
-            var estado = _procesoDb.Estado_Obtener(CodEmpresa, procesoId);
-
-            return estado is null
-                ? DbHelper.CreateErrorResponse("Proceso no encontrado.", -1, new GenProcesoEstadoResult())
-                : DbHelper.CreateOkResponse(estado);
+            return _db.CO_AplExc_Procesa_Estado(CodEmpresa, procesoId);
         }
     }
 }
