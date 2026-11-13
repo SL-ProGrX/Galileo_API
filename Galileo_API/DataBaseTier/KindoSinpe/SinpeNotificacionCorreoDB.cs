@@ -17,6 +17,7 @@ namespace Galileo_API.DataBaseTier
         private const string GrupoBancoInterno = "INT";
         public const int CodigoSinCorreo = 2;
         public const string MensajeSinCorreo = "Notificación no enviada: la solicitud no tiene correo electrónico.";
+        public const string SinPlantillaAplicable = "Sin plantilla de notificación aplicable a esta transferencia.";
         private static readonly CultureInfo CulturaCr = new("es-CR");
 
         private readonly IConfiguration _config;
@@ -62,23 +63,79 @@ namespace Galileo_API.DataBaseTier
             string? referencia,
             string? motivo)
         {
-            try
+            return Ejecutar(() =>
             {
-                var destino = DestinoNotificacion(codEmpresa, solicitud);
-                if (destino.Code != 0)
-                    return new ErrorDto { Code = destino.Code, Description = destino.Description ?? string.Empty };
-
                 var tipo = fallo
                     ? Resultado(TipoPlantillaSinpe.TranRe)
-                    : ResolverTipoPlantilla(codEmpresa, solicitud);
-                if (tipo.Code != 0 || tipo.Result is null)
-                    return new ErrorDto { Code = -1, Description = tipo.Description ?? string.Empty };
+                    : ResolverTipoPlantilla(solicitud);
 
-                return GuardarNotificacionSinpe(
-                    codEmpresa,
-                    tipo.Result.Value,
-                    destino.Result,
-                    ArmarDatos(solicitud, tipo.Result.Value, fallo, referencia, motivo));
+                return Notificar(codEmpresa, solicitud, tipo, fallo, referencia, motivo);
+            });
+        }
+
+        /// <summary>
+        /// Notificación de una transferencia TE (banco, sin respuesta SINPE). Solo aplica cuando el
+        /// destino es proveedor, desembolso a asociado o cuenta interna del asociado; en los demás
+        /// casos no hay correo y devuelve Code 0 sin mensaje. Un fallo usa TRAN_RE solo si aplica.
+        /// </summary>
+        public ErrorDto NotificarTransferenciaTE(
+            int codEmpresa,
+            TesTransaccion solicitud,
+            bool fallo,
+            string? referencia,
+            string? motivo)
+        {
+            return Ejecutar(() =>
+            {
+                var aplica = ResolverTipoPlantillaTE(codEmpresa, solicitud);
+                if (aplica.Code != 0)
+                    return new ErrorDto { Code = -1, Description = aplica.Description ?? string.Empty };
+
+                if (aplica.Result is null)
+                    return new ErrorDto { Code = 0, Description = SinPlantillaAplicable };
+
+                var tipo = fallo ? Resultado(TipoPlantillaSinpe.TranRe) : aplica;
+                return Notificar(codEmpresa, solicitud, tipo, fallo, referencia, motivo);
+            });
+        }
+
+        /// <summary>
+        /// Convierte el resultado de una notificación en el mensaje para la bitácora. Null cuando no hay nada que registrar.
+        /// </summary>
+        public static string? MensajeBitacora(ErrorDto resultado) => resultado.Code switch
+        {
+            0 => null,
+            CodigoSinCorreo => MensajeSinCorreo,
+            _ => $"Notificación por correo no guardada: {resultado.Description}"
+        };
+
+        private ErrorDto Notificar(
+            int codEmpresa,
+            TesTransaccion solicitud,
+            ErrorDto<TipoPlantillaSinpe?> tipo,
+            bool fallo,
+            string? referencia,
+            string? motivo)
+        {
+            if (tipo.Code != 0 || tipo.Result is null)
+                return new ErrorDto { Code = -1, Description = tipo.Description ?? string.Empty };
+
+            var destino = DestinoNotificacion(codEmpresa, solicitud);
+            if (destino.Code != 0)
+                return new ErrorDto { Code = destino.Code, Description = destino.Description ?? string.Empty };
+
+            return GuardarNotificacionSinpe(
+                codEmpresa,
+                tipo.Result.Value,
+                destino.Result,
+                ArmarDatos(solicitud, tipo.Result.Value, fallo, referencia, motivo));
+        }
+
+        private static ErrorDto Ejecutar(Func<ErrorDto> notificacion)
+        {
+            try
+            {
+                return notificacion();
             }
             catch (Exception ex)
             {
@@ -87,14 +144,12 @@ namespace Galileo_API.DataBaseTier
         }
 
         /// <summary>
-        /// Con EnviaEmail en "N" el correo va a TestEmail. Con "Y" usa el correo de la solicitud
-        /// y, si no tiene, lo busca en el maestro (SOCIOS o cxp_proveedores). Sin correo, devuelve CodigoSinCorreo.
+        /// Usa el correo de la solicitud y, si no tiene, lo busca en el maestro (SOCIOS o cxp_proveedores).
+        /// Sin correo, devuelve CodigoSinCorreo. AppSettings:EnviaEmail no aplica: la fila se guarda en
+        /// PSL_EMAIL y otro proceso la envía.
         /// </summary>
         private ErrorDto<string?> DestinoNotificacion(int codEmpresa, TesTransaccion solicitud)
         {
-            if (!string.Equals(_config["AppSettings:EnviaEmail"], "Y", StringComparison.OrdinalIgnoreCase))
-                return new ErrorDto<string?> { Code = 0, Description = "Ok", Result = _config["AppSettings:TestEmail"] };
-
             var correo = solicitud.CorreoNotifica?.Trim();
             if (string.IsNullOrWhiteSpace(correo))
                 correo = ObtenerCorreoMaestro(codEmpresa, solicitud);
@@ -156,10 +211,30 @@ namespace Galileo_API.DataBaseTier
         };
 
         /// <summary>
-        /// Determina la plantilla según TIPO_BENEFICIARIO de la solicitud:
-        /// 3 proveedor; 8 desembolso (asociado o no); 1 persona (interna o externa).
+        /// Determina la plantilla TS según TIPO_BENEFICIARIO de la solicitud:
+        /// 3 proveedor (TRAN-PR); 8 desembolso (TRAN-BE); 1 persona (TRAN_S).
         /// </summary>
-        public ErrorDto<TipoPlantillaSinpe?> ResolverTipoPlantilla(int codEmpresa, TesTransaccion solicitud)
+        public ErrorDto<TipoPlantillaSinpe?> ResolverTipoPlantilla(TesTransaccion solicitud)
+        {
+            var tipo = (int?)solicitud.TIPO_BENEFICIARIO;
+
+            if (tipo == TipoBeneficiarioProveedor)
+                return Resultado(TipoPlantillaSinpe.TranPr);
+
+            if (tipo == TipoBeneficiarioDesembolso)
+                return Resultado(TipoPlantillaSinpe.TranBe);
+
+            if (tipo == TipoBeneficiarioPersona)
+                return Resultado(TipoPlantillaSinpe.TranS);
+
+            return Error($"Tipo de beneficiario {tipo?.ToString() ?? "(vacío)"} no soportado para la notificación SINPE.");
+        }
+
+        /// <summary>
+        /// Determina la plantilla TE: 3 proveedor (TRAN-PR); 8 desembolso a asociado (TRAN-AS);
+        /// 1 persona a cuenta interna (TRAN_I). Cualquier otro caso devuelve Result null (no aplica).
+        /// </summary>
+        public ErrorDto<TipoPlantillaSinpe?> ResolverTipoPlantillaTE(int codEmpresa, TesTransaccion solicitud)
         {
             var tipo = (int?)solicitud.TIPO_BENEFICIARIO;
 
@@ -172,7 +247,7 @@ namespace Galileo_API.DataBaseTier
                 if (asociado.Code != 0)
                     return Error(asociado.Description);
 
-                return Resultado(asociado.Result ? TipoPlantillaSinpe.TranAs : TipoPlantillaSinpe.TranBe);
+                return Resultado(asociado.Result ? TipoPlantillaSinpe.TranAs : null);
             }
 
             if (tipo == TipoBeneficiarioPersona)
@@ -181,10 +256,10 @@ namespace Galileo_API.DataBaseTier
                 if (interna.Code != 0)
                     return Error(interna.Description);
 
-                return Resultado(interna.Result ? TipoPlantillaSinpe.TranI : TipoPlantillaSinpe.TranS);
+                return Resultado(interna.Result ? TipoPlantillaSinpe.TranI : null);
             }
 
-            return Error($"Tipo de beneficiario {tipo?.ToString() ?? "(vacío)"} no soportado para la notificación SINPE.");
+            return Resultado(null);
         }
 
         private ErrorDto<bool> EsAsociado(int codEmpresa, string? codigo)
@@ -236,7 +311,7 @@ WHERE B.id_banco = @IdBanco
             };
         }
 
-        private static ErrorDto<TipoPlantillaSinpe?> Resultado(TipoPlantillaSinpe tipo) =>
+        private static ErrorDto<TipoPlantillaSinpe?> Resultado(TipoPlantillaSinpe? tipo) =>
             new() { Code = 0, Description = "Ok", Result = tipo };
 
         private static ErrorDto<TipoPlantillaSinpe?> Error(string? descripcion) =>
