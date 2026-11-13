@@ -183,7 +183,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
 
         [Authorize]
         [HttpGet("CR_ComitesAprobaciones_ActaActual_Obtener")]
-        public ErrorDto<CrComitesAprobacionesActaActual> CR_ComitesAprobaciones_ActaActual_Obtener(int CodEmpresa, int id_comite, string acta)
+        public ErrorDto<CrComitesAprobacionesActaActual> CR_ComitesAprobaciones_ActaActual_Obtener(int CodEmpresa, int id_comite, string acta = "")
         {
             return BL.CR_ComitesAprobaciones_ActaActual_Obtener(CodEmpresa, id_comite, acta ?? string.Empty);
         }
@@ -219,7 +219,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
 
         [Authorize]
         [HttpGet("CR_ComitesAprobaciones_ActaAsistencia_Obtener")]
-        public ErrorDto<List<CrComitesAprobacionesActaAsistencia>> CR_ComitesAprobaciones_ActaAsistencia_Obtener(int CodEmpresa, int id_comite, string acta)
+        public ErrorDto<List<CrComitesAprobacionesActaAsistencia>> CR_ComitesAprobaciones_ActaAsistencia_Obtener(int CodEmpresa, int id_comite, string acta = "")
         {
             return BL.CR_ComitesAprobaciones_ActaAsistencia_Obtener(CodEmpresa, id_comite, acta ?? string.Empty);
         }
@@ -246,7 +246,7 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
 
         [Authorize]
         [HttpGet("CR_ComitesAprobaciones_ActaResoluciones_Obtener")]
-        public ErrorDto<List<CrComitesAprobacionesActaResolucion>> CR_ComitesAprobaciones_ActaResoluciones_Obtener(int CodEmpresa, int id_comite, string acta)
+        public ErrorDto<List<CrComitesAprobacionesActaResolucion>> CR_ComitesAprobaciones_ActaResoluciones_Obtener(int CodEmpresa, int id_comite, string acta = "")
         {
             return BL.CR_ComitesAprobaciones_ActaResoluciones_Obtener(CodEmpresa, id_comite, acta ?? string.Empty);
         }
