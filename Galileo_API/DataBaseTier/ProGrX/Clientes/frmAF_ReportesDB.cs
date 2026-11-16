@@ -748,6 +748,18 @@ namespace Galileo.DataBaseTier
 
                 if (existe == 0)
                 {
+                    var otroGrupo = connection.ExecuteScalar<int>(
+                        @"SELECT COUNT(*) FROM afi_grpusers WHERE cod_grupo <> @cod_grupo AND usuario = @usuario",
+                        new { cod_grupo, usuario = miembro.nombre });
+
+                    if (otroGrupo > 0)
+                    {
+                        // Igual que VB6 (lswMiembros_ItemCheck): un usuario solo puede pertenecer a un grupo
+                        return DbHelper.ErrorResponse(
+                            "El Usuario ya ha sido asignado a otro grupo, proceda a excluirlo primero del otro grupo antes de agregarlo a este",
+                            -1);
+                    }
+
                     connection.Execute(@"INSERT INTO afi_grpusers (cod_grupo, usuario)
                                     VALUES (@cod_grupo, @usuario);",
                     new { cod_grupo, usuario = miembro.nombre });
@@ -1051,6 +1063,52 @@ namespace Galileo.DataBaseTier
             {
                 response.Code = -1;
                 response.Description = ex.Message;
+            }
+            return response;
+        }
+
+        /// <summary>
+        /// Obtiene los IDs de informes con acceso autorizado para el usuario.
+        /// Igual que VB6 (sbReporteIng): el usuario tiene acceso si pertenece a cualquier
+        /// grupo autorizado para el informe (afi_reportes_grp_usr + afi_reportes_GRP_AUT).
+        /// </summary>
+        private static List<int> ObtenerReportesAutorizadosUsuario(SqlConnection connection, string usuario)
+        {
+            var query = @"
+        SELECT DISTINCT A.id_rep
+        FROM afi_reportes_GRP_AUT A
+        WHERE A.cod_grupo IN (
+            SELECT G.cod_grupo
+            FROM afi_reportes_grp_usr G
+            WHERE G.usuario = @usuario);";
+            return connection.Query<int>(query, new { usuario }).ToList();
+        }
+
+        /// <summary>
+        /// Obtiene los informes autorizados para un usuario
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        public ErrorDto<List<int>> AF_Reportes_Acceso_Obtener(int CodEmpresa, string usuario)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var response = new ErrorDto<List<int>>
+            {
+                Code = 0,
+                Description = ConsultaRealizadaCorrectamente,
+                Result = new List<int>()
+            };
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                response.Result = ObtenerReportesAutorizadosUsuario(connection, usuario);
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
             }
             return response;
         }

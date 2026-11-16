@@ -55,6 +55,20 @@ namespace Galileo.Controllers.ProGrX.Clientes
         }
 
         [Authorize]
+        [HttpGet("AF_CR_Seguimiento_Obtener_UProgramatica")]
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_UProgramatica(int CodEmpresa)
+        {
+            return _bl.AF_CR_Seguimiento_Obtener_UProgramatica(CodEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("AF_CR_Seguimiento_Obtener_UTrabajo")]
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_UTrabajo(int CodEmpresa)
+        {
+            return _bl.AF_CR_Seguimiento_Obtener_UTrabajo(CodEmpresa);
+        }
+
+        [Authorize]
         [HttpGet("AF_CR_Seguimiento_Obtener_Zona")]
         public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Zona(int CodEmpresa)
         {

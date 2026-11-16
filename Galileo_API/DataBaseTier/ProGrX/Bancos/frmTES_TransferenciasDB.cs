@@ -19,10 +19,12 @@ namespace Galileo_API.DataBaseTier
         private readonly PortalDB _portalDB;
         private readonly MTesoreria _mTesoreria;
         private readonly MTesFuncionesDb _mTesFunciones;
+        private readonly IConfiguration _config;
 
         const int commandTimeoutSeconds = 600;
         public FrmTesTransferenciasDB(IConfiguration config)
         {
+            _config = config;
             _mTesFunciones = new MTesFuncionesDb(config);
             _mTesoreria = new MTesoreria(config);
             _portalDB = new PortalDB(config);
@@ -116,6 +118,11 @@ namespace Galileo_API.DataBaseTier
                         {
                             ActualizaReferencia(conn, vDocumento, item);
                         }
+
+                        if (item.tipo == "TE")
+                        {
+                            NotificarTransferenciaTE(CodEmpresa, item.nSolicitud, vDocumento, transferencia.usuario ?? string.Empty);
+                        }
                     }
 
                     ActualizaTesBancosDocsConse(conn, consc, transferencia);
@@ -136,6 +143,30 @@ namespace Galileo_API.DataBaseTier
             catch (Exception ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Guarda el correo de la TE marcada como emitida. Las TS se notifican desde la respuesta SINPE.
+        /// Un fallo al preparar el correo no interrumpe la aceptación.
+        /// </summary>
+        private void NotificarTransferenciaTE(int codEmpresa, int nsolicitud, string documento, string usuario)
+        {
+            try
+            {
+                var solicitud = new MKindoServiceDb(_config).fxTesConsultaSolicitud(codEmpresa, nsolicitud).Result;
+                if (solicitud is null)
+                    return;
+
+                var resultado = new SinpeNotificacionCorreoDB(_config)
+                    .NotificarTransferenciaTE(codEmpresa, solicitud, false, documento, null);
+                var mensaje = SinpeNotificacionCorreoDB.MensajeBitacora(resultado);
+                if (mensaje is not null)
+                    _mTesoreria.sbTesBitacoraEspecial(codEmpresa, nsolicitud, "10", mensaje, usuario);
+            }
+            catch (Exception)
+            {
+                // no rompas la transferencia por un fallo al preparar la notificación
             }
         }
 

@@ -14,6 +14,10 @@
         public DateTime? RegistroFecha { get; set; }
         public string? ResueltoUser { get; set; }
         public DateTime? ResueltoFecha { get; set; }
+        public string? UnidadProgramatica { get; set; }
+        public string? UnidadProgramaticaDesc { get; set; }
+        public string? UnidadTrabajo { get; set; }
+        public string? UnidadTrabajoDesc { get; set; }
     }
 
     public class AfCrSeguimientoFiltros
@@ -39,6 +43,10 @@
         public byte? Reingreso { get; set; }
         public byte? Volver { get; set; }
         public byte? AumentoTasas { get; set; }
+        /// <summary>Códigos de unidad programática marcados. Null = todas (sin filtro).</summary>
+        public List<string>? UnidadesProgramaticas { get; set; }
+        /// <summary>Códigos de unidad de trabajo marcados. Null = todas (sin filtro).</summary>
+        public List<string>? UnidadesTrabajo { get; set; }
     }
 
     public class AfCrSeguimientoDetalle
@@ -64,8 +72,12 @@
         public int Aplica_Reingreso { get; set; }
         public int Mortalidad { get; set; }
         public int Volver { get; set; }
+        public string? UnidadProgramatica { get; set; }
+        public string? UnidadProgramaticaDesc { get; set; }
+        public string? UnidadTrabajo { get; set; }
+        public string? UnidadTrabajoDesc { get; set; }
     }
-    
+
     public class AfCrSeguimientoMotivo
     {
         public string Cod_Motivo { get; set; } = "";

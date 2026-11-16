@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -7,11 +9,16 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
 {
     public class FrmAfReportesBl
     {
+        /// <summary>Clave de configuración (appsettings / user-secrets) con la clave de edición de informes.</summary>
+        private const string ClaveEdicionConfigKey = "ProGrX:ClaveEdicionInformesAF";
+
         private readonly FrmAfReportesDb DbfrmAF_Reportes;
         private readonly MProGrXAuxiliarDB _AuxiliarDB;
+        private readonly IConfiguration _config;
 
         public FrmAfReportesBl(IConfiguration config)
         {
+            _config = config;
             DbfrmAF_Reportes = new FrmAfReportesDb(config);
             _AuxiliarDB = new MProGrXAuxiliarDB(config);
         }
@@ -106,9 +113,40 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
         {
             return DbfrmAF_Reportes.AF_Miembros_Guardar(CodEmpresa, cod_grupo, miembro);
         }
-        public ErrorDto AF_Reportes_Guardar(int CodEmpresa, AfReporteDto reporte)
+        public ErrorDto AF_Reportes_Guardar(int CodEmpresa, AfReporteDto reporte, string? claveEdicion)
         {
+            var errorClave = ValidarClaveEdicion(claveEdicion);
+            if (errorClave != null)
+            {
+                return errorClave;
+            }
+
             return DbfrmAF_Reportes.AF_Reportes_Guardar(CodEmpresa, reporte);
+        }
+
+        /// <summary>
+        /// Clave de edición de informes (VB6: "Clave de Edición (Admin)" en frmAF_Reportes).
+        /// La clave vive en configuración del servidor, no en el código.
+        /// </summary>
+        private ErrorDto? ValidarClaveEdicion(string? claveIngresada)
+        {
+            var claveEsperada = _config[ClaveEdicionConfigKey];
+            if (string.IsNullOrWhiteSpace(claveEsperada))
+            {
+                return DbHelper.ErrorResponse("La clave de edición no está configurada en el servidor.", -1);
+            }
+
+            if (string.IsNullOrEmpty(claveIngresada))
+            {
+                return DbHelper.ErrorResponse("Debe ingresar la clave de edición.", -1);
+            }
+
+            var esperadaBytes = Encoding.UTF8.GetBytes(claveEsperada);
+            var ingresadaBytes = Encoding.UTF8.GetBytes(claveIngresada);
+            var coincide = esperadaBytes.Length == ingresadaBytes.Length
+                && CryptographicOperations.FixedTimeEquals(esperadaBytes, ingresadaBytes);
+
+            return coincide ? null : DbHelper.ErrorResponse("Clave de edición incorrecta.", -1);
         }
 
         public ErrorDto AF_Reportes_Grupo_Guardar(int CodEmpresa, AfSeguridadGrupoDto grupo)
@@ -129,6 +167,11 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
         public ErrorDto AF_Reportes_Seguridad_Guardar(int CodEmpresa, string id_rep, string cod_grupo)
         {
             return DbfrmAF_Reportes.AF_Reportes_Seguridad_Guardar(CodEmpresa, id_rep, cod_grupo);
+        }
+
+        public ErrorDto<List<int>> AF_Reportes_Acceso_Obtener(int CodEmpresa, string usuario)
+        {
+            return DbfrmAF_Reportes.AF_Reportes_Acceso_Obtener(CodEmpresa, usuario);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> CargaGeneros(int CodEmpresa)
