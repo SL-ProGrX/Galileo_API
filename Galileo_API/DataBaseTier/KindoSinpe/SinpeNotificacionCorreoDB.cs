@@ -20,12 +20,10 @@ namespace Galileo_API.DataBaseTier
         public const string SinPlantillaAplicable = "Sin plantilla de notificación aplicable a esta transferencia.";
         private static readonly CultureInfo CulturaCr = new("es-CR");
 
-        private readonly IConfiguration _config;
         private readonly PortalDB _portalDb;
 
         public SinpeNotificacionCorreoDB(IConfiguration config)
         {
-            _config = config;
             _portalDb = new PortalDB(config);
         }
 
@@ -214,7 +212,7 @@ namespace Galileo_API.DataBaseTier
         /// Determina la plantilla TS según TIPO_BENEFICIARIO de la solicitud:
         /// 3 proveedor (TRAN-PR); 8 desembolso (TRAN-BE); 1 persona (TRAN_S).
         /// </summary>
-        public ErrorDto<TipoPlantillaSinpe?> ResolverTipoPlantilla(TesTransaccion solicitud)
+        public static ErrorDto<TipoPlantillaSinpe?> ResolverTipoPlantilla(TesTransaccion solicitud)
         {
             var tipo = (int?)solicitud.TIPO_BENEFICIARIO;
 
