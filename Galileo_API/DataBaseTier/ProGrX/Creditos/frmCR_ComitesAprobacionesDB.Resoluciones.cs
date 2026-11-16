@@ -263,7 +263,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             try
             {
                 System.IO.File.AppendAllText(
-                    System.IO.Path.Combine(System.IO.Path.GetTempPath(), "comites_resolucion_error.log"),
+                    System.IO.Path.Join(System.IO.Path.GetTempPath(), "comites_resolucion_error.log"),
                     $"[{DateTime.Now:O}] {ex}{Environment.NewLine}{Environment.NewLine}");
             }
             catch (IOException)
