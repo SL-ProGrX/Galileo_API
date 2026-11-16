@@ -1,5 +1,6 @@
 using Dapper;
 using Galileo.Models;
+using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
 using System.Data;
 
@@ -28,6 +29,21 @@ namespace Galileo.DataBaseTier
                   SELECT RTRIM(UT_Codigo) AS item, RTRIM(UT_Descripcion) AS descripcion
                   FROM dbo.UTrabajo
                   ORDER BY UT_Descripcion;").ToList();
+        }
+
+        /// <summary>
+        /// Obtiene el largo exacto de la identificación por tipo (AFI_TIPOS_IDS.LARGO_MINIMO).
+        /// </summary>
+        /// <param name="CodEmpresa">Código de empresa.</param>
+        /// <returns>Tipos de identificación con su largo; 0 cuando la tabla no define largo.</returns>
+        public ErrorDto<List<AfTipoIdLargoDto>> AF_TiposId_Largos_Obtener(int CodEmpresa)
+        {
+            return DbHelper.ExecuteListQuery<AfTipoIdLargoDto>(
+                CreatePortalDb(),
+                CodEmpresa,
+                @"SELECT TIPO_ID AS TipoId, ISNULL(LARGO_MINIMO, 0) AS Largo
+                  FROM dbo.AFI_TIPOS_IDS
+                  ORDER BY TIPO_ID;");
         }
     }
 }

@@ -24,6 +24,11 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
             return _db.AF_Catalogos_Obtener(CodEmpresa, cod_institucion);
         }
 
+        public ErrorDto<List<AfTipoIdLargoDto>> AF_TiposId_Largos_Obtener(int CodEmpresa)
+        {
+            return _db.AF_TiposId_Largos_Obtener(CodEmpresa);
+        }
+
         public ErrorDto<AfPersonaDto> AF_Persona_Obtener(int CodEmpresa, string cedula)
         {
             return _db.AF_Persona_Obtener(CodEmpresa, cedula);

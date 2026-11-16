@@ -32,6 +32,13 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [HttpGet("AF_TiposId_Largos_Obtener")]
+        public ErrorDto<List<AfTipoIdLargoDto>> AF_TiposId_Largos_Obtener(int CodEmpresa)
+        {
+            return _bl.AF_TiposId_Largos_Obtener(CodEmpresa);
+        }
+
+        [Authorize]
         [HttpGet("AF_Persona_Obtener")]
         public ErrorDto<AfPersonaDto> AF_Persona_Obtener(int CodEmpresa, string cedula)
         {
