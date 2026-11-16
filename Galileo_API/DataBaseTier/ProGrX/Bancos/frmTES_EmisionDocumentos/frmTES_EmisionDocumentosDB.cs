@@ -745,9 +745,9 @@ where B.estado = 'A'
 
                 var kindo = new MKindoServiceDb(_config);
                 var notificacion = new SinpeNotificacionCorreoDB(_config);
-                foreach (var transaccion in transacciones)
+                foreach (var nsolicitud in transacciones.Select(transaccion => transaccion.nsolicitud))
                 {
-                    var solicitud = kindo.fxTesConsultaSolicitud(ctx.CodEmpresa, transaccion.nsolicitud).Result;
+                    var solicitud = kindo.fxTesConsultaSolicitud(ctx.CodEmpresa, nsolicitud).Result;
                     if (solicitud is null)
                         continue;
 
@@ -755,7 +755,7 @@ where B.estado = 'A'
                         ctx.CodEmpresa, solicitud, true, null, motivo ?? "Motivo desconocido.");
                     var mensaje = SinpeNotificacionCorreoDB.MensajeBitacora(resultado);
                     if (mensaje is not null)
-                        mTesoreria.sbTesBitacoraEspecial(ctx.CodEmpresa, transaccion.nsolicitud, "10", mensaje, ctx.Filtro.usuario ?? string.Empty);
+                        mTesoreria.sbTesBitacoraEspecial(ctx.CodEmpresa, nsolicitud, "10", mensaje, ctx.Filtro.usuario ?? string.Empty);
                 }
             }
             catch (Exception)
