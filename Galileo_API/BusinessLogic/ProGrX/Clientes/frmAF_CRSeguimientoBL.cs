@@ -19,6 +19,16 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
             return _db.AF_CR_Seguimiento_Obtener(CodEmpresa, filtros);
         }
 
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_UProgramatica(int CodEmpresa)
+        {
+            return _db.AF_CR_Seguimiento_Obtener_UProgramatica(CodEmpresa);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_UTrabajo(int CodEmpresa)
+        {
+            return _db.AF_CR_Seguimiento_Obtener_UTrabajo(CodEmpresa);
+        }
+
         public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Gestiones(int CodEmpresa)
         {
             return _db.AF_CR_Seguimiento_Obtener_Gestiones(CodEmpresa);

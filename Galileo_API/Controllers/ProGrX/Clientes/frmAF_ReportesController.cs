@@ -150,9 +150,12 @@ namespace Galileo.Controllers
         [Authorize]
         [ValidateAntiForgeryToken]
         [HttpPost("AF_Reportes_Guardar")]
-        public ErrorDto AF_Reportes_Guardar(int CodEmpresa, AfReporteDto reporte)
+        public ErrorDto AF_Reportes_Guardar(
+            int CodEmpresa,
+            AfReporteDto reporte,
+            [FromHeader(Name = "X-Clave-Edicion")] string? claveEdicion)
         {
-            return BL_AF_Reportes.AF_Reportes_Guardar(CodEmpresa, reporte);
+            return BL_AF_Reportes.AF_Reportes_Guardar(CodEmpresa, reporte, claveEdicion);
         }
 
         [Authorize]
@@ -193,6 +196,13 @@ namespace Galileo.Controllers
         public ErrorDto<List<DropDownListaGenericaModel>> CargaGeneros(int CodEmpresa)
         {
             return BL_AF_Reportes.CargaGeneros(CodEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("AF_Reportes_Acceso_Obtener")]
+        public ErrorDto<List<int>> AF_Reportes_Acceso_Obtener(int CodEmpresa, string usuario)
+        {
+            return BL_AF_Reportes.AF_Reportes_Acceso_Obtener(CodEmpresa, usuario);
         }
 
         [Authorize]

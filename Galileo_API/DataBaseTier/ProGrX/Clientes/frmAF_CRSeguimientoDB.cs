@@ -27,8 +27,18 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                         R.registro_user AS RegistroUser,
                         R.registro_Fecha AS RegistroFecha,
                         R.Resuelto_User AS ResueltoUser,
-                        R.Resuelto_Fecha AS ResueltoFecha
+                        R.Resuelto_Fecha AS ResueltoFecha,
+                        ISNULL(RTRIM(CONVERT(VARCHAR(30), S.UP)), '') AS UnidadProgramatica,
+                        ISNULL(RTRIM(UPR.DESCRIPCION), '') AS UnidadProgramaticaDesc,
+                        ISNULL(RTRIM(CONVERT(VARCHAR(30), S.UT)), '') AS UnidadTrabajo,
+                        ISNULL(RTRIM(UTR.UT_DESCRIPCION), '') AS UnidadTrabajoDesc
                     FROM dbo.vAFI_Renuncias R
+                    LEFT JOIN dbo.socios S
+                        ON S.cedula = R.cedula
+                    LEFT JOIN dbo.UPROGRAMATICA UPR
+                        ON S.UP = UPR.CODIGO
+                    LEFT JOIN dbo.UTRABAJO UTR
+                        ON S.UT = UTR.UT_CODIGO
                     WHERE R.Cod_Renuncia BETWEEN @RenunciaIni AND @RenunciaFin
                       AND (@Estado = '' OR R.Estado = @Estado)
                       AND (@TipoChar = '' OR R.Tipo = @TipoChar)
@@ -48,6 +58,8 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                       AND (@AplicarChecks = 0 OR @Reingreso IS NULL OR R.APLICA_REINGRESO = @Reingreso)
                       AND (@AplicarChecks = 0 OR @Volver IS NULL OR R.Volver = @Volver)
                       AND (@AplicarChecks = 0 OR @AumentoTasas IS NULL OR R.Aumenta_Puntos = @AumentoTasas)
+                      AND (@UPTodas = 1 OR RTRIM(CONVERT(VARCHAR(30), S.UP)) IN @UnidadesProgramaticas)
+                      AND (@UTTodas = 1 OR RTRIM(CONVERT(VARCHAR(30), S.UT)) IN @UnidadesTrabajo)
                     ORDER BY R.cod_renuncia;";
 
         private const string SqlGestiones = @"
@@ -73,6 +85,18 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                     FROM dbo.Provincias
                     ORDER BY Provincia;";
 
+        private const string SqlUnidadesProgramaticas = @"
+                    SELECT ISNULL(RTRIM(CONVERT(VARCHAR(30), codigo)), '') AS item,
+                           RTRIM(descripcion) AS descripcion
+                    FROM dbo.UPROGRAMATICA
+                    ORDER BY descripcion;";
+
+        private const string SqlUnidadesTrabajo = @"
+                    SELECT ISNULL(RTRIM(CONVERT(VARCHAR(30), UT_CODIGO)), '') AS item,
+                           RTRIM(UT_DESCRIPCION) AS descripcion
+                    FROM dbo.UTRABAJO
+                    ORDER BY UT_DESCRIPCION;";
+
         private const string SqlZonas = @"
                     SELECT COD_ZONA AS item,
                            RTRIM(descripcion) AS descripcion
@@ -84,7 +108,11 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                            RTRIM(C.Descripcion) AS CausaX,
                            S.nombre,
                            ISNULL(P.id_promotor, 0) AS Id_Promotor,
-                           ISNULL(P.nombre, 'AFILIACION UNIVERSAL') AS PromotorX
+                           ISNULL(P.nombre, 'AFILIACION UNIVERSAL') AS PromotorX,
+                           ISNULL(RTRIM(CONVERT(VARCHAR(30), S.UP)), '') AS UnidadProgramatica,
+                           ISNULL(RTRIM(UPR.DESCRIPCION), '') AS UnidadProgramaticaDesc,
+                           ISNULL(RTRIM(CONVERT(VARCHAR(30), S.UT)), '') AS UnidadTrabajo,
+                           ISNULL(RTRIM(UTR.UT_DESCRIPCION), '') AS UnidadTrabajoDesc
                     FROM dbo.afi_cr_renuncias R
                     INNER JOIN dbo.causas_renuncias C
                         ON R.id_causa = C.id_causa
@@ -92,6 +120,10 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                         ON R.cedula = S.cedula
                     LEFT JOIN dbo.Promotores P
                         ON R.id_Promotor = P.id_Promotor
+                    LEFT JOIN dbo.UPROGRAMATICA UPR
+                        ON S.UP = UPR.CODIGO
+                    LEFT JOIN dbo.UTRABAJO UTR
+                        ON S.UT = UTR.UT_CODIGO
                     WHERE R.cod_renuncia = @CodRenuncia;";
 
         private const string SqlHistorial = @"
@@ -170,6 +202,24 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
         public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Zona(int CodEmpresa)
         {
             return EjecutarDropDownQuery(CodEmpresa, SqlZonas);
+        }
+
+
+        /// <summary>
+        /// Obtiene el catálogo de unidades programáticas para el filtro de seguimiento.
+        /// </summary>
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_UProgramatica(int CodEmpresa)
+        {
+            return EjecutarDropDownQuery(CodEmpresa, SqlUnidadesProgramaticas);
+        }
+
+
+        /// <summary>
+        /// Obtiene el catálogo de unidades de trabajo para el filtro de seguimiento.
+        /// </summary>
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_UTrabajo(int CodEmpresa)
+        {
+            return EjecutarDropDownQuery(CodEmpresa, SqlUnidadesTrabajo);
         }
 
 
@@ -292,7 +342,11 @@ namespace Galileo.DataBaseTier.ProGrX.Clientes
                 filtros.Mortalidad,
                 filtros.Reingreso,
                 filtros.Volver,
-                AumentoTasas = filtros.AumentoTasas
+                AumentoTasas = filtros.AumentoTasas,
+                UPTodas = filtros.UnidadesProgramaticas is null ? 1 : 0,
+                UnidadesProgramaticas = filtros.UnidadesProgramaticas ?? new List<string>(),
+                UTTodas = filtros.UnidadesTrabajo is null ? 1 : 0,
+                UnidadesTrabajo = filtros.UnidadesTrabajo ?? new List<string>()
             };
         }
 
