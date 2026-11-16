@@ -83,8 +83,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             try
             {
+                conn.Open();
                 var estado = NormalizarEstado(request.estado, out var estadoComite, out var editable);
-                using var tx = conn.BeginTransaction();
+                // Sin 'using': si un SP cierra la conexión, el Dispose del tx lanza
+                // "Invalid operation. The connection is closed." y oculta el SqlException real.
+                var tx = conn.BeginTransaction();
 
                 var validacionNegocio = ValidarResolucionNegocio(conn, tx, request);
                 if (validacionNegocio.Code != 0)
@@ -164,6 +167,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 tx.Commit();
 
                 return DbHelper.OkResponse("Resolucion registrada correctamente.");
+            }
+            catch (Exception ex) when (LogTemporalDiagnostico(ex))
+            {
+                throw;
             }
             catch (InvalidOperationException ex)
             {
@@ -248,6 +255,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
+        }
+
+        // TEMPORAL (diagnostico "connection is closed"): borrar junto con el catch (Exception) when (...) de arriba.
+        private static bool LogTemporalDiagnostico(Exception ex)
+        {
+            try
+            {
+                System.IO.File.AppendAllText(
+                    System.IO.Path.Combine(System.IO.Path.GetTempPath(), "comites_resolucion_error.log"),
+                    $"[{DateTime.Now:O}] {ex}{Environment.NewLine}{Environment.NewLine}");
+            }
+            catch (IOException)
+            {
+                // Solo diagnostico.
+            }
+
+            return false;
         }
 
         private static ErrorDto ValidarResolucionNegocio(SqlConnection conn, SqlTransaction tx, CrComitesAprobacionesResolucionRequest request)

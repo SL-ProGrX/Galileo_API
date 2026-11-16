@@ -80,23 +80,26 @@ namespace Galileo.DataBaseTier
         /// </summary>
         private static ErrorDto AF_Persona_Solicitud_Validar(AfPersonaAddRequestDto dto)
         {
+            var errores = new List<string>();
             if (string.IsNullOrWhiteSpace(dto.Cedula))
             {
-                return DbHelper.ErrorResponse("Debe indicar la cédula de la persona.", -2);
+                errores.Add("Debe indicar la cédula de la persona.");
             }
-            if (dto.Cedula.Length > 20)
+            else if (dto.Cedula.Length > 20)
             {
-                return DbHelper.ErrorResponse("La cédula no puede superar 20 caracteres.", -2);
+                errores.Add("La cédula no puede superar 20 caracteres.");
             }
             if (dto.TipoId <= 0)
             {
-                return DbHelper.ErrorResponse("Debe seleccionar el tipo de identificación.", -2);
+                errores.Add("Debe seleccionar el tipo de identificación.");
             }
             if (string.IsNullOrWhiteSpace(dto.Usuario))
             {
-                return DbHelper.ErrorResponse("No se recibió el usuario que realiza la operación.", -2);
+                errores.Add("No se recibió el usuario que realiza la operación.");
             }
-            return DbHelper.OkResponse("Solicitud válida");
+            return errores.Count > 0
+                ? DbHelper.ErrorResponse(string.Join(Environment.NewLine, errores), -2)
+                : DbHelper.OkResponse("Solicitud válida");
         }
 
         /// <summary>
@@ -249,7 +252,8 @@ namespace Galileo.DataBaseTier
                 "SELECT LARGO_MINIMO FROM AFI_TIPOS_IDS WHERE TIPO_ID = @TipoId",
                 new { dto.TipoId });
 
-            if (dto.Mov == 'A' && !string.IsNullOrEmpty(dto.Cedula) && dto.Cedula.Length != largo)
+            // Se valida al guardar tanto altas como modificaciones (AFI_TIPOS_IDS.LARGO_MINIMO es el largo exacto).
+            if (!string.IsNullOrEmpty(dto.Cedula) && dto.Cedula.Length != largo)
             {
                 errores.Add($"Número de Identidad inválido, se espera {largo} caracteres.");
             }
