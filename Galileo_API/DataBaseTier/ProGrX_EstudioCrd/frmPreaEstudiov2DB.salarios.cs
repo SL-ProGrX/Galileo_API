@@ -1,3 +1,4 @@
+using Galileo.DataBaseTier;
 using Dapper;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
@@ -24,27 +25,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             int codEmpresa,
             FrmPreaEstudiov2TablaSalariosGuardarRequest request)
         {
-            var result = new ErrorDto<List<FrmPreaEstudiov2SalarioDetalleDto>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = []
-            };
+            var result = DbHelper.CreateOkResponse(new List<FrmPreaEstudiov2SalarioDetalleDto>());
 
-            var codPreanalisis = (request.cod_preanalisis ?? string.Empty).Trim();
+            var codPreanalisis = (request?.cod_preanalisis ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(codPreanalisis))
             {
-                result.Code = -1;
+                result.Code = -2;
                 result.Description = "Debe indicar el expediente.";
                 return result;
             }
 
             try
             {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
-                GuardarTablaSalarios(connection, codPreanalisis, request.tabla_salarios);
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                connection.Open();
+                Prea_frmPreaEstudiov2_TablaSalarios_Reemplazar(connection, codPreanalisis, request!.tabla_salarios);
 
                 result.Result = ObtenerTablaSalarios(connection, codPreanalisis);
+            }
+            catch (PreaSalariosValidacionException ex)
+            {
+                result.Code = -2;
+                result.Description = ex.Message;
             }
             catch (Exception ex)
             {
@@ -62,33 +64,54 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// <param name="connection">Conexión abierta a la base de datos de la empresa.</param>
         /// <param name="codPreanalisis">Código del expediente que recibe los salarios.</param>
         /// <param name="tablaSalarios">Filas salariales que se deben persistir.</param>
-        private static void GuardarTablaSalarios(
+        private static void Prea_frmPreaEstudiov2_TablaSalarios_Reemplazar(
             IDbConnection connection,
             string codPreanalisis,
             IEnumerable<FrmPreaEstudiov2SalarioDetalleDto> tablaSalarios)
         {
+            var filas = tablaSalarios?.ToList()
+                ?? throw new PreaSalariosValidacionException("Debe enviar la tabla de salarios.");
+            for (var indice = 0; indice < filas.Count; indice++)
+            {
+                var fila = filas[indice];
+                if (fila is null || !fila.fecha.HasValue || fila.fecha.Value.Year < 1753)
+                    throw new PreaSalariosValidacionException($"Debe indicar una fecha válida del salario en la fila {indice + 1}.");
+                if (fila.mes < 0)
+                    throw new PreaSalariosValidacionException($"El mes de la fila {indice + 1} no puede ser negativo.");
+            }
+            if (connection.State != ConnectionState.Open) connection.Open();
+            using var transaction = connection.BeginTransaction();
+            // Se bloquea el expediente para impedir dos reemplazos intercalados.
+            var editable = connection.QuerySingleOrDefault<int?>(
+                @"SELECT CASE WHEN INDICADOR_EDITABLE = 1 THEN 1 ELSE 0 END
+                  FROM CRD_PREA_PREANALISIS WITH (UPDLOCK, HOLDLOCK)
+                  WHERE COD_PREANALISIS = @Expediente",
+                new { Expediente = codPreanalisis }, transaction);
+            if (editable is null) throw new PreaSalariosValidacionException("No se encontró el expediente.");
+            if (editable != 1) throw new PreaSalariosValidacionException("El expediente no permite modificar salarios.");
+
             connection.Execute(
                 "EXEC spCrdPreaEliminarSalarios @Expediente",
-                new { Expediente = codPreanalisis });
+                new { Expediente = codPreanalisis }, transaction);
 
             const string sqlSistema = @"EXEC spCrdPreaGeneraSalariosSistema
                 @Expediente, @Salario, @Fecha, @Orden, @Ca, @Mes";
             const string sqlOtros = @"EXEC spCrdPreaGeneraSalariosConsultaLinea
                 @Expediente, @Salario, @Fecha, @Orden, @Ca, @Mes";
-            var filas = tablaSalarios.ToList();
+
 
             for (var indice = 0; indice < filas.Count; indice++)
             {
                 var fila = filas[indice];
                 connection.Execute(
                     sqlSistema,
-                    CrearParametrosTablaSalarios(new TablaSalariosParametros
+                    Prea_frmPreaEstudiov2_TablaSalarios_Parametros(new TablaSalariosParametros
                     {
                         CodPreanalisis = codPreanalisis,
                         Fila = fila,
                         Orden = indice + 1,
                         Salario = fila.salario_s
-                    }));
+                    }), transaction);
             }
 
             for (var indice = 0; indice < filas.Count; indice++)
@@ -96,20 +119,21 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 var fila = filas[indice];
                 connection.Execute(
                     sqlOtros,
-                    CrearParametrosTablaSalarios(new TablaSalariosParametros
+                    Prea_frmPreaEstudiov2_TablaSalarios_Parametros(new TablaSalariosParametros
                     {
                         CodPreanalisis = codPreanalisis,
                         Fila = fila,
                         Orden = indice + 1,
                         Salario = fila.salario_rh
-                    }));
+                    }), transaction);
             }
+            transaction.Commit();
         }
 
         /// <summary>
         /// Crea los parámetros comunes para registrar una fila de la tabla de salarios.
         /// </summary>
-        private static DynamicParameters CrearParametrosTablaSalarios(TablaSalariosParametros valores)
+        private static DynamicParameters Prea_frmPreaEstudiov2_TablaSalarios_Parametros(TablaSalariosParametros valores)
         {
             var parameters = new DynamicParameters();
             parameters.Add("@Expediente", valores.CodPreanalisis, DbType.String);
@@ -120,6 +144,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             parameters.Add("@Mes", valores.Fila.mes, DbType.Int32);
             return parameters;
         }
+
+        public sealed class PreaSalariosValidacionException(string message) : Exception(message);
 
         private sealed class TablaSalariosParametros
         {
@@ -149,7 +175,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             var codPreanalisis = (request.cod_preanalisis ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(codPreanalisis))
             {
-                result.Code = -1;
+                result.Code = -2;
                 result.Description = "Debe indicar el expediente.";
                 return result;
             }
@@ -186,6 +212,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 });
 
                 result.Result = "Se ha actualizado la Oficina y el Ejecutivo del expediente correctamente.";
+            }
+            catch (PreaSalariosValidacionException ex)
+            {
+                result.Code = -2;
+                result.Description = ex.Message;
             }
             catch (Exception ex)
             {

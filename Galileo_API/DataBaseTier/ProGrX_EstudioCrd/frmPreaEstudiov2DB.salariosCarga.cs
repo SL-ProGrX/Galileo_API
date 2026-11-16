@@ -41,11 +41,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 ? Convert.ToDecimal(porcentajeRaw)
                 : 100m;
             var detalle = ObtenerDetalleSalarios(connection, codPreanalisis);
-            var tablaSalarios = InicializarTablaSalariosDesdePersona(
-                connection,
-                codPreanalisis,
-                GetString(row, "CEDULA"),
-                detalle.TablaSalarios);
+            var tablaSalarios = detalle.TablaSalarios;
 
             return new FrmPreaEstudiov2SalariosDto
             {
@@ -120,7 +116,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 return tablaActual;
             }
 
-            GuardarTablaSalarios(connection, codPreanalisis, tablaInicial);
+            Prea_frmPreaEstudiov2_TablaSalarios_Reemplazar(connection, codPreanalisis, tablaInicial);
             return ObtenerTablaSalarios(connection, codPreanalisis);
         }
 
