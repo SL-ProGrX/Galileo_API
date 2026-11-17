@@ -54,6 +54,13 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             " @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17" +
             ", @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28, @p29, @p30, @p31, @p32, @p33";
 
+        private const string SqlSincronizarFechaCorteContrato = @"
+                    UPDATE dbo.FND_CONTRATOS
+                    SET FECHA_CORTE = @FechaCorte
+                    WHERE COD_OPERADORA = @Operadora
+                      AND COD_PLAN = @Plan
+                      AND COD_CONTRATO = @Contrato;";
+
         private const string SqlRequiereBeneficiarios = @"
                     SELECT REQUIERE_BENEFICIARIOS
                     FROM dbo.fnd_planes
@@ -156,9 +163,34 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 var codigo = contrato.isNew ? 0 : contrato.cod_contrato;
 
                 var registro = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
-                    connection.QueryFirstOrDefault<FndContratoRegistroData>(
+                {
+                    var resultado = connection.QueryFirstOrDefault<FndContratoRegistroData>(
                         SqlContratoRegistro,
-                        CrearParametrosContratoRegistro(contrato, codigo, usuario)));
+                        CrearParametrosContratoRegistro(contrato, codigo, usuario));
+
+                    if (resultado is not null && contrato.fecha_corte.HasValue)
+                    {
+                        // El SP registra el plazo, pero en planes con vencimiento manual puede recalcular
+                        // FECHA_CORTE desde la fecha inicial. Se conserva la fecha elegida por el usuario.
+                        var actualizados = connection.Execute(
+                            SqlSincronizarFechaCorteContrato,
+                            new
+                            {
+                                FechaCorte = contrato.fecha_corte.Value.Date,
+                                Operadora = contrato.cod_operadora,
+                                Plan = NormalizarTexto(contrato.cod_plan),
+                                Contrato = resultado.cod_contrato
+                            });
+
+                        if (actualizados == 0)
+                        {
+                            throw new InvalidOperationException(
+                                "No fue posible actualizar la fecha de vencimiento del contrato.");
+                        }
+                    }
+
+                    return resultado;
+                });
 
                 if (registro.Code != 0 || registro.Result is null)
                 {
