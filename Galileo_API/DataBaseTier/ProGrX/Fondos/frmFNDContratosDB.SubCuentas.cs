@@ -22,7 +22,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                       AND cod_contrato = @Contrato;";
 
         private const string SqlSubCuentaSiguiente = @"
-                    SELECT ISNULL(COUNT(1), 0) + 1
+                    SELECT ISNULL(MAX(idx), 0) + 1
                     FROM dbo.fnd_subCuentas
                     WHERE cod_operadora = @Operadora
                       AND cod_plan = @Plan
@@ -50,12 +50,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         parentesco,
                         cod_beneficiario
                     )
-                    VALUES
-                    (
+                    OUTPUT INSERTED.idx
+                    SELECT
                         @CodOperadora,
                         @CodPlan,
                         @CodContrato,
-                        @Idx,
+                        ISNULL(MAX(S.idx), 0) + 1,
                         @Cedula,
                         @Nombre,
                         @Cuota,
@@ -70,6 +70,16 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         @Direccion,
                         @Parentesco,
                         @CodBeneficiario
+                    FROM dbo.fnd_subCuentas S WITH (UPDLOCK, HOLDLOCK)
+                    WHERE S.cod_operadora = @CodOperadora
+                      AND S.cod_plan = @CodPlan
+                      AND S.cod_contrato = @CodContrato
+                    HAVING COUNT(S.idx) <
+                    (
+                        SELECT ISNULL(P.SubCuentasMax, 0)
+                        FROM dbo.FND_Planes P
+                        WHERE P.cod_operadora = @CodOperadora
+                          AND P.cod_plan = @CodPlan
                     );";
 
         private const string SqlUpdateSubCuentaContrato = @"
@@ -173,18 +183,31 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns>Resultado de la inserción.</returns>
         private ErrorDto Fnd_Contratos_SubCuentas_Insertar(int CodEmpresa, string usuario, FndContratoSubCuentasData subCuenta)
         {
-            var result = DbHelper.ExecuteNonQuery(
+            var result = DbHelper.ExecuteSingleQuery(
                 CreatePortalDb(),
                 CodEmpresa,
                 SqlInsertSubCuentaContrato,
+                0,
                 CrearParametrosSubCuenta(subCuenta));
 
-            if (result.Code == 0)
+            if (result.Code != 0)
             {
-                RegistrarBitacoraSubCuenta(CodEmpresa, usuario, subCuenta, "Registra - WEB");
+                return DbHelper.ErrorResponse(
+                    result.Description ?? "Error al registrar la subcuenta.",
+                    result.Code.GetValueOrDefault(-1));
             }
 
-            return result;
+            if (result.Result <= 0)
+            {
+                return DbHelper.ErrorResponse(
+                    "No puede ingresar más subcuentas; se alcanzó el máximo configurado para el plan.",
+                    -2);
+            }
+
+            subCuenta.idx = result.Result;
+            RegistrarBitacoraSubCuenta(CodEmpresa, usuario, subCuenta, "Registra - WEB");
+
+            return DbHelper.CreateOkResponse();
         }
 
         /// <summary>

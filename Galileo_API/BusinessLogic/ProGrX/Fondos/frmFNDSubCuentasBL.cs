@@ -21,6 +21,19 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
             return _BD.FND_SubCuentas_Lista_Obtener(CodEmpresa, operadora, plan, contrato);
         }
 
+        public ErrorDto<FndSubCuentasConfiguracionData?> FND_SubCuentas_Configuracion_Obtener(
+            int CodEmpresa,
+            int operadora,
+            string plan,
+            long contrato)
+        {
+            return _BD.FND_SubCuentas_Configuracion_Obtener(
+                CodEmpresa,
+                operadora,
+                plan,
+                contrato);
+        }
+
         public ErrorDto<List<DropDownListaGenericaModel>> FND_SubCuentas_Parentescos_Obtener(int CodEmpresa)
         {
             return _BD.FND_SubCuentas_Parentescos_Obtener(CodEmpresa);
@@ -31,9 +44,21 @@ namespace Galileo.BusinessLogic.ProGrX.Fondos
             return _BD.FND_SubCuentas_Guardar(CodEmpresa, usuario, data);
         }
 
-        public ErrorDto FNDSubCuentas_Borrar(int CodEmpresa, int consec, string usuario)
+        public ErrorDto FNDSubCuentas_Borrar(
+            int CodEmpresa,
+            int operadora,
+            string plan,
+            long contrato,
+            int consec,
+            string usuario)
         {
-            return _BD.FNDSubCuentas_Borrar(CodEmpresa, consec, usuario);
+            return _BD.FNDSubCuentas_Borrar(
+                CodEmpresa,
+                operadora,
+                plan,
+                contrato,
+                consec,
+                usuario);
         }
 
         public ErrorDto<string> FNDDSubCuentas_Cedula_Obtener(int CodEmpresa, string plan, long contrato, int operadora)
