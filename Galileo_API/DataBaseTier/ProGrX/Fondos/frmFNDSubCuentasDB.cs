@@ -348,7 +348,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             if (data.isNew)
             {
                 var limite = ValidarLimiteSubCuentas(CodEmpresa, data);
-                if (limite.Code != 0 || limite.Result != true)
+                if (limite.Code != 0 || !limite.Result)
                 {
                     return limite;
                 }
@@ -510,12 +510,18 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     descripcion.Contains("RefFND_SUBCUENTAS3337", StringComparison.OrdinalIgnoreCase) ||
                     descripcion.Contains("FND_SUBCUENTAS_DETALLE", StringComparison.OrdinalIgnoreCase);
 
+                var mensajeError = descripcion;
+                if (tieneDetalleAsociado)
+                {
+                    mensajeError = "No se puede eliminar la subcuenta porque tiene movimientos o detalles asociados.";
+                }
+                else if (string.IsNullOrWhiteSpace(mensajeError))
+                {
+                    mensajeError = "No fue posible eliminar la subcuenta.";
+                }
+
                 return DbHelper.ErrorResponse(
-                    tieneDetalleAsociado
-                        ? "No se puede eliminar la subcuenta porque tiene movimientos o detalles asociados."
-                        : string.IsNullOrWhiteSpace(descripcion)
-                            ? "No fue posible eliminar la subcuenta."
-                            : descripcion,
+                    mensajeError,
                     result.Code.GetValueOrDefault(-1));
             }
 
