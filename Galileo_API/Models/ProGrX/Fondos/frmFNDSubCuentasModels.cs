@@ -26,4 +26,12 @@
         public string? apellido2 { get; set; }
         public required bool isNew { get; set; }
     }
+
+    public class FndSubCuentasConfiguracionData
+    {
+        public decimal monto_minimo { get; set; }
+        public int subcuentasmax { get; set; }
+        public bool cuenta_maestra { get; set; }
+        public int registradas { get; set; }
+    }
 }
