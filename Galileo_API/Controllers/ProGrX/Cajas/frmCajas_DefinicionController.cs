@@ -187,6 +187,14 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
 
         [Authorize]
         [ValidateAntiForgeryToken]
+        [HttpPost("CajasDefinicion_Caja_Actualizar")]
+        public ErrorDto<bool> CajasDefinicion_Caja_Actualizar(int codEmpresa, [FromBody] CajasDefinicionActualizarParams param)
+        {
+            return _bl.CajasDefinicion_Caja_Actualizar(codEmpresa, param);
+        }
+
+        [Authorize]
+        [ValidateAntiForgeryToken]
         [HttpPost("CajasDefinicion_Caja_Copiar")]
         public ErrorDto<bool> CajasDefinicion_Caja_Copiar(int codEmpresa, [FromBody] CajasDefinicionCopiaParams param)
         {
