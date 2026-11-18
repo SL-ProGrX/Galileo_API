@@ -356,7 +356,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             var codParametro = estado.Trim().ToUpperInvariant() switch
             {
-                "A" => "01",
+                "A" or "AL" => "01",
                 "D" => "02",
                 "P" or "V" or "VL" => "03",
                 _ => "01"
