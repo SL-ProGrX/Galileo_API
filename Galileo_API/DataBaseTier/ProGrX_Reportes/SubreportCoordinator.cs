@@ -15,15 +15,21 @@ namespace Galileo.DataBaseTier
         private readonly IRdlcMetaReader _meta;
         private readonly IRdlcPathResolver _paths;
         private readonly IRdlcExecutor _executor;
+        private readonly IRdlcCodePatcher _patcher;
 
         // Timeout común para las expresiones regulares de esta clase
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
 
-        public SubreportCoordinator(IRdlcMetaReader meta, IRdlcPathResolver paths, IRdlcExecutor executor)
+        public SubreportCoordinator(
+            IRdlcMetaReader meta,
+            IRdlcPathResolver paths,
+            IRdlcExecutor executor,
+            IRdlcCodePatcher patcher)
         {
             _meta    = meta;
             _paths   = paths;
             _executor = executor;
+            _patcher = patcher;
         }
 
         // ================================================================
@@ -46,8 +52,8 @@ namespace Galileo.DataBaseTier
                 if (string.IsNullOrWhiteSpace(subPath) || !File.Exists(subPath))
                     continue;
 
-                using var fs = File.OpenRead(subPath);
-                report.LoadSubreportDefinition(subName, fs);
+                using var patched = _patcher.PatchReportCode(subPath, null);
+                report.LoadSubreportDefinition(subName, patched);
 
                 var (subDs, _) = _meta.ReadRdlcMeta(subPath);
                 subMeta[subName] = subDs;
