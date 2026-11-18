@@ -157,4 +157,15 @@
 
         public DateTime? fxFechaServidor { get; set; }
     }
+
+    public class ConfiguracionEmpresaSesionDto
+    {
+        public int CodEmpresaEnlace { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+        public int SysCrdPlanPago { get; set; }
+        public int SysDocVersion { get; set; }
+        public int SysTesVersion { get; set; }
+        public int SysPreaVersion { get; set; }
+        public int SysCcssInd { get; set; }
+    }
 }

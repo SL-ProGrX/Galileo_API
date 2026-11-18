@@ -791,6 +791,7 @@ namespace Galileo.DataBaseTier
                 // ============================================================
                 // 1. Validar si existe tabla UPROGRAMATICA
                 // ============================================================
+                
                 const string sqlObj =
                     @"SELECT OBJECT_ID('UPROGRAMATICA')";
 
@@ -907,10 +908,10 @@ namespace Galileo.DataBaseTier
 
                 return DbHelper.CreateOkResponse(globales);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<Globales>(
-                    "Error al inicializar parámetros del sistema.",
+                    "Error al inicializar parámetros del sistema." + ex.Message,
                     -1);
             }
         }
