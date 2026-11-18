@@ -14,9 +14,9 @@ namespace Galileo.BusinessLogic
             _db = new FrmCprSolicitudDB(config);
         }
 
-        public ErrorDto<CprSolicitudLista> CprSolicitudLista_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<CprSolicitudLista> CprSolicitudLista_Obtener(int CodEmpresa, string filtros, string usuario)
         {
-            return _db.CprSolicitudLista_Obtener(CodEmpresa, filtros);
+            return _db.CprSolicitudLista_Obtener(CodEmpresa, filtros, usuario);
         }
 
         public ErrorDto<CprSolicitudDto> CprSolicitud_Obtener(int CodEmpresa, int cpr_id, string usuario)
