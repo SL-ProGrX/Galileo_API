@@ -65,10 +65,8 @@ namespace Galileo.DataBaseTier
 
         private static void ApplyNumericLanguage(XDocument xdoc, XNamespace ns)
         {
-            foreach (var item in xdoc.Descendants()
-                .Where(element =>
-                    element.Name == ns + "TextRun" || element.Name == ns + "ChartDataLabel")
-                .Select(element => element))
+            foreach (var item in xdoc.Descendants().Where(element =>
+                element.Name == ns + "TextRun" || element.Name == ns + "ChartDataLabel"))
             {
                 var style = item.Element(ns + "Style");
                 var format = style?.Element(ns + "Format")?.Value;
