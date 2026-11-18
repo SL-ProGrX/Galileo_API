@@ -1689,7 +1689,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 response.Result = new FrmPreaEstudiov2AbandonarResponse
                 {
-                    cod_preanalisis = codPreanalisis
+                    cod_preanalisis = codPreanalisis,
+                    estado = "B",
+                    estado_desc = "Abandonado",
+                    mensaje = "Se ha ABANDONADO el expediente correctamente."
                 };
 
                 return response;
