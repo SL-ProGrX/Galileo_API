@@ -26,10 +26,13 @@ namespace Galileo.BusinessLogic.ProGrx_Personas
             return DbAfSuspendidosGestion.AF_Suspendidos_Gestion_Registrar(CodEmpresa, Cedula, Accion, Notas, Usuario);
         }
 
-        public ErrorDto<List<AfSuspendidosArchivoDto>> AF_Suspendidos_Archivo_Cargar(int CodEmpresa, int Valor, string Usuario, string Lista)
+        public ErrorDto<List<AfSuspendidosArchivoDto>> AF_Suspendidos_Archivo_Cargar(
+            int CodEmpresa,
+            int Valor,
+            string Usuario,
+            List<AfSuspendidosArchivoDto> Lista)
         {
-            List<AfSuspendidosArchivoDto> lista = JsonConvert.DeserializeObject<List<AfSuspendidosArchivoDto>>(Lista) ?? new List<AfSuspendidosArchivoDto>();
-            return DbAfSuspendidosGestion.AF_Suspendidos_Archivo_Cargar(CodEmpresa, Valor, Usuario, lista);
+            return DbAfSuspendidosGestion.AF_Suspendidos_Archivo_Cargar(CodEmpresa, Valor, Usuario, Lista);
         }
 
         public ErrorDto AF_Suspendidos_Archivo_Procesar(int CodEmpresa, int Valor, string Usuario)

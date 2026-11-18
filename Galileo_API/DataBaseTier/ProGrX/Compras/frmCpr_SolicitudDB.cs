@@ -39,8 +39,14 @@ namespace Galileo.DataBaseTier
         //  LISTA SOLICITUDES
         // ===========================
 
-        public ErrorDto<CprSolicitudLista> CprSolicitudLista_Obtener(int codEmpresa, string filtros)
+        public ErrorDto<CprSolicitudLista> CprSolicitudLista_Obtener(int codEmpresa, string filtros, string usuario)
         {
+            var permiso = ValidaUsuarioSolicitud(codEmpresa, usuario, "C", null);
+            if (permiso.Code != 0)
+                return DbHelper.CreateErrorResponse<CprSolicitudLista>(
+                    permiso.Description ?? "El usuario no tiene permisos para realizar esta acción.",
+                    permiso.Code ?? -1);
+
             var filtro = JsonConvert.DeserializeObject<CprSolicitudFiltro>(filtros) ?? new CprSolicitudFiltro();
 
             var r = DbHelper.WithConn<CprSolicitudLista>(_portalDb, codEmpresa, conn =>
@@ -48,6 +54,7 @@ namespace Galileo.DataBaseTier
                 EnsureOpen(conn);
 
                 var p = new DynamicParameters();
+                p.Add("Usuario", usuario);
 
                 // Filtro texto
                 var like = NormalizeLike(filtro.filtro);
@@ -95,10 +102,18 @@ namespace Galileo.DataBaseTier
                 p.Add("SortOrder", sortOrder);
 
                 const string qCount = @"
-                            SELECT COUNT(DISTINCT S.CPR_ID)
-                             from CPR_SOLICITUD S LEFT JOIN CPR_SOLICITUD_PROV P ON S.CPR_ID = P.CPR_ID
-                                    AND P.ADJUDICA_ORDEN is not null;
-                            ";
+                    SELECT COUNT(DISTINCT S.CPR_ID)
+                    FROM CPR_SOLICITUD S
+                    LEFT JOIN CPR_SOLICITUD_PROV P
+                        ON S.CPR_ID = P.CPR_ID
+                       AND P.ADJUDICA_ORDEN IS NOT NULL
+                    WHERE EXISTS (
+                        SELECT 1
+                        FROM CORE_UENS_USUARIOS_ROLES R
+                        WHERE R.CORE_USUARIO = @Usuario
+                          AND R.COD_UNIDAD = S.COD_UNIDAD_SOLICITANTE
+                          AND R.ROL_CONSULTA = 1
+                    );";
 
                 var total = conn.QueryFirstOrDefault<int>(qCount, p);
 
@@ -117,7 +132,14 @@ namespace Galileo.DataBaseTier
     LEFT JOIN CORE_UENS U
         ON U.COD_UNIDAD = S.COD_UNIDAD_SOLICITANTE
     WHERE
-        (@HasFiltro = 0 OR (
+        EXISTS (
+            SELECT 1
+            FROM CORE_UENS_USUARIOS_ROLES R
+            WHERE R.CORE_USUARIO = @Usuario
+              AND R.COD_UNIDAD = S.COD_UNIDAD_SOLICITANTE
+              AND R.ROL_CONSULTA = 1
+        )
+        AND (@HasFiltro = 0 OR (
             CAST(S.CPR_ID AS VARCHAR(20)) LIKE @Like OR
             ISNULL(P.ADJUDICA_ORDEN,'') LIKE @Like OR
             ISNULL(S.REGISTRO_USUARIO,'') LIKE @Like OR

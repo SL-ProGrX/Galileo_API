@@ -22,7 +22,7 @@ namespace Galileo.Controllers
         [HttpGet("CprSolicitudLista_Obtener")]
         public ErrorDto<CprSolicitudLista> CprSolicitudLista_Obtener(int CodEmpresa, string filtros)
         {
-            return _bl.CprSolicitudLista_Obtener(CodEmpresa, filtros);
+            return _bl.CprSolicitudLista_Obtener(CodEmpresa, filtros, User.ObtenerUsuario());
         }
 
         [HttpGet("CprSolicitud_Obtener")]
