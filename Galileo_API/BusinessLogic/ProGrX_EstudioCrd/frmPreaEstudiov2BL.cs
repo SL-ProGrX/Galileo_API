@@ -723,6 +723,30 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
                 };
             }
 
+            string? errorValidacion = null;
+            if (request.monto <= 0)
+            {
+                errorValidacion = "Debe indicar un monto mayor a cero.";
+            }
+            else if (request.cuota < 0)
+            {
+                errorValidacion = "La cuota liberada no puede ser negativa.";
+            }
+            else if (request.cuota > request.monto)
+            {
+                errorValidacion = "La cuota liberada no puede ser mayor al monto.";
+            }
+
+            if (errorValidacion is not null)
+            {
+                return new ErrorDto<FrmPreaEstudiov2DesembolsosResponse>
+                {
+                    Code = -1,
+                    Description = errorValidacion,
+                    Result = new FrmPreaEstudiov2DesembolsosResponse()
+                };
+            }
+
             return _db.Prea_frmPreaEstudiov2_Desembolsos_Guardar(codEmpresa, request);
         }
 
