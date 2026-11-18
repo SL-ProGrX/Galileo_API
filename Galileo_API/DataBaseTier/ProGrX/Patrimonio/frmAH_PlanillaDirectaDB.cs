@@ -264,6 +264,8 @@ exec spPAT_PlanillaDirecta_Inconsistencias
                 return validacion;
             }
 
+            const int tiempoEsperaSegundos = 600;
+
             const string sqlConsecutivo = @"
 update SIF_DOCUMENTOS
 set CONSECUTIVO = isnull(CONSECUTIVO, 0) + 1
@@ -289,6 +291,7 @@ exec spPAT_PlanillaDirecta_Procesa
                     conn.Execute(
                         sqlConsecutivo,
                         transaction: transaction,
+                        commandTimeout: tiempoEsperaSegundos,
                         commandType: CommandType.Text);
 
                     conn.Execute(
@@ -302,6 +305,7 @@ exec spPAT_PlanillaDirecta_Procesa
                             Usuario = request.registro_usuario.Trim()
                         },
                         transaction: transaction,
+                        commandTimeout: tiempoEsperaSegundos,
                         commandType: CommandType.Text);
 
                     transaction.Commit();
