@@ -272,10 +272,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 case 'd':
                     respuesta.salario_devengado = 0;
-                    respuesta.tabla_salarios = [];
                     break;
                 case 'g':
-                    respuesta.tabla_salarios = [];
                     break;
                 case 'f':
                     respuesta.salarios_seleccion = connection

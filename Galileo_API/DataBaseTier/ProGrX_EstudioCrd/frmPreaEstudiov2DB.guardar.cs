@@ -272,6 +272,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 codPreanalisisOverride?.Trim() ??
                 request.cod_preanalisis?.Trim() ??
                 string.Empty;
+            var estadoGuardar = ResolverEstadoGuardar(
+                connection,
+                codPreanalisis,
+                request.estado,
+                !string.IsNullOrWhiteSpace(codPreanalisisOverride));
             var parameters = new DynamicParameters();
             parameters.Add("@COD_PREANALISIS", codPreanalisis, DbType.String);
             parameters.Add("@TIPO_PREANALISIS", string.IsNullOrEmpty(request.tipo_preanalisis) ? "E" : request.tipo_preanalisis.Trim(), DbType.String);
@@ -365,11 +370,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             parameters.Add("@GARANTIA_FND_CONTRATO", int.TryParse(request.contrato, out var garantiaFndContrato) ? garantiaFndContrato : (int?)null, DbType.Int32);
             parameters.Add("@COD_FORMULARIO_CPH", short.TryParse(request.cph, out var cph) ? cph : (short?)null, DbType.Int16);
             parameters.Add("@ID_PROMOTOR", decimal.TryParse(request.id_promotor, out var idPromotor) ? idPromotor : (decimal?)null, DbType.Decimal);
-            parameters.Add("@ESTADO", request.estado?.Trim() ?? string.Empty, DbType.String);
+            parameters.Add("@ESTADO", estadoGuardar, DbType.String);
             // INDICADOR_EDITABLE (#83) en VB6: Select Case lblEstado.Tag / "R","P" -> 1 / Else -> 0
             // (líneas 12239-12244) — se deriva de @ESTADO, no de un control aparte.
-            var estadoTrim = request.estado?.Trim() ?? string.Empty;
-            var indicadorEditable = estadoTrim == "R" || estadoTrim == "P" ? 1 : 0;
+            var indicadorEditable = estadoGuardar == "R" || estadoGuardar == "P" ? 1 : 0;
             parameters.Add("@INDICADOR_EDITABLE", indicadorEditable, DbType.Boolean);
             // COD_ESTADO_V2 (#86) en VB6 es un literal fijo "RECI" (línea 12237), no viene de
             // ningún control — se replica igual, no es un dato inventado.
@@ -441,6 +445,40 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             );
 
             return codPreanalisis;
+        }
+
+        /// <summary>
+        /// Conserva el estado persistido cuando la pantalla no envía uno. Durante la creación,
+        /// spCrdPreaPreanalisisNuevo asigna el estado R; el respaldo evita que la llamada posterior
+        /// a spCrdPreaPreanalisisModifica lo sobrescriba con una cadena vacía.
+        /// </summary>
+        private static string ResolverEstadoGuardar(
+            IDbConnection connection,
+            string codPreanalisis,
+            string? estadoSolicitado,
+            bool esNuevo)
+        {
+            var estado = estadoSolicitado?.Trim() ?? string.Empty;
+            if (!string.IsNullOrEmpty(estado))
+            {
+                return estado;
+            }
+
+            const string sql = @"
+                SELECT NULLIF(LTRIM(RTRIM(ESTADO)), '')
+                FROM dbo.CRD_PREA_PREANALISIS
+                WHERE COD_PREANALISIS = @CodPreanalisis;";
+
+            var estadoActual = connection.QueryFirstOrDefault<string>(
+                sql,
+                new { CodPreanalisis = codPreanalisis });
+
+            if (!string.IsNullOrWhiteSpace(estadoActual))
+            {
+                return estadoActual.Trim();
+            }
+
+            return esNuevo ? "R" : string.Empty;
         }
 
         /// <summary>
