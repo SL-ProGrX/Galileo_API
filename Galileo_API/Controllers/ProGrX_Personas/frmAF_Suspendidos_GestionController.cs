@@ -36,7 +36,11 @@ namespace Galileo.Controllers.ProGrx_Personas
         [Authorize]
         [ValidateAntiForgeryToken]
         [HttpPost("AF_Suspendidos_Archivo_Cargar")]
-        public ErrorDto<List<AfSuspendidosArchivoDto>> AF_Suspendidos_Archivo_Cargar(int CodEmpresa, int Valor, string Usuario, string Lista)
+        public ErrorDto<List<AfSuspendidosArchivoDto>> AF_Suspendidos_Archivo_Cargar(
+            int CodEmpresa,
+            int Valor,
+            string Usuario,
+            [FromBody] List<AfSuspendidosArchivoDto> Lista)
         {
             return BlAfSuspendidosGestion.AF_Suspendidos_Archivo_Cargar(CodEmpresa, Valor, Usuario, Lista);
         }

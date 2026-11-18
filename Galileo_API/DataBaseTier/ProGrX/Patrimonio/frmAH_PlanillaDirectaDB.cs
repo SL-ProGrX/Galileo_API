@@ -121,6 +121,8 @@ SELECT dbo.fxPat_Planillas_Comprobante(
                 return validacion;
             }
 
+            const int tiempoEsperaSegundos = 600;
+
             const string sqlSube = @"
 exec spPAT_PlanillaDirecta_Sube
     @Institucion,
@@ -175,6 +177,7 @@ exec spPAT_PlanillaDirecta_Consulta
                                 Nombre = fila.ref_01.Trim()
                             },
                             transaction: transaction,
+                            commandTimeout: tiempoEsperaSegundos,
                             commandType: CommandType.Text);
                     }
 
@@ -190,6 +193,7 @@ exec spPAT_PlanillaDirecta_Consulta
                             Nombre = request.archivo.Trim()
                         },
                         transaction: transaction,
+                        commandTimeout: tiempoEsperaSegundos,
                         commandType: CommandType.Text).ToList();
 
                     transaction.Commit();
