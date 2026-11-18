@@ -89,7 +89,7 @@ namespace Galileo.DataBaseTier
 
             return value.Contains('#') ||
                 value.Contains('0') ||
-                Regex.IsMatch(value, @"^(?:n|c|p|f|e)\d*$", RegexOptions.IgnoreCase);
+                Regex.IsMatch(value, @"^(?:n|c|p|f|e)\d*$", RegexOptions.IgnoreCase, RegexTimeout);
         }
 
         private static MemoryStream SaveToStream(XDocument xdoc)
