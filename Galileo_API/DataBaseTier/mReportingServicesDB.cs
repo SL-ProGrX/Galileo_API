@@ -30,7 +30,7 @@ namespace Galileo.DataBaseTier
             Patcher = new RdlcCodePatcher();
             Exec = new RdlcExecutor();
             ParamBuilder = new ReportParameterBuilder();
-            Subs = new SubreportCoordinator(Meta, Path, Exec);
+            Subs = new SubreportCoordinator(Meta, Path, Exec, Patcher);
         }
 
     }

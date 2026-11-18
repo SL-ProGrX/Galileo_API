@@ -18,6 +18,8 @@ namespace Galileo.DataBaseTier
             var xdoc   = XDocument.Load(rdlcPath);
             var root   = xdoc.Root ?? throw new InvalidDataException("El archivo RDLC no contiene un elemento raíz.");
             var ns     = root.GetDefaultNamespace();
+            ApplyNumericLanguage(xdoc, ns);
+
             var codeNode = xdoc.Descendants(ns + "Code").FirstOrDefault();
 
             if (string.IsNullOrWhiteSpace(codeSection))
@@ -59,6 +61,36 @@ namespace Galileo.DataBaseTier
                 return (GetCodeFunctionConstantReturnFromText(codeSection, "fxImprimeDetalle"),
                         GetCodeFunctionConstantReturnFromText(codeSection, "fxImprimeRef"));
             }
+        }
+
+        private static void ApplyNumericLanguage(XDocument xdoc, XNamespace ns)
+        {
+            foreach (var style in xdoc.Descendants()
+                .Where(element => element.Name == ns + "TextRun" || element.Name == ns + "ChartDataLabel")
+                .Select(element => element.Element(ns + "Style"))
+                .OfType<XElement>())
+            {
+                var format = style.Element(ns + "Format")?.Value;
+                if (!EsFormatoNumerico(format))
+                    continue;
+
+                var language = style.Element(ns + "Language");
+                if (language is null)
+                    style.Add(new XElement(ns + "Language", "en-US"));
+                else
+                    language.Value = "en-US";
+            }
+        }
+
+        private static bool EsFormatoNumerico(string? format)
+        {
+            var value = format?.Trim();
+            if (string.IsNullOrEmpty(value))
+                return false;
+
+            return value.Contains('#') ||
+                value.Contains('0') ||
+                Regex.IsMatch(value, @"^(?:n|c|p|f|e)\d*$", RegexOptions.IgnoreCase, RegexTimeout);
         }
 
         private static MemoryStream SaveToStream(XDocument xdoc)

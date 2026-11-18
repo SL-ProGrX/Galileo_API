@@ -100,7 +100,8 @@ namespace Galileo.DataBaseTier.ProGrX_Personas
             {
                 connection.Execute(
                     "spPAT_AsociadosSinAportes_RecalculaFechas",
-                    commandType: CommandType.StoredProcedure);
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 300);
                 return true;
             });
 
