@@ -367,9 +367,9 @@ exec spPAT_PlanillaDirecta_Procesa
                     return DbHelper.CreateErrorResponse($"El nombre es requerido en la fila {i + 1}.", -1, response);
                 }
 
-                if (fila.monto_01 <= 0)
+                if (fila.monto_01 == 0)
                 {
-                    return DbHelper.CreateErrorResponse($"El monto debe ser mayor a cero en la fila {i + 1}.", -1, response);
+                    return DbHelper.CreateErrorResponse($"El monto debe ser diferente de cero en la fila {i + 1}.", -1, response);
                 }
             }
 
