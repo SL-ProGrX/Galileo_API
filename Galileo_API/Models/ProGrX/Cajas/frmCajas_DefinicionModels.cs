@@ -183,6 +183,16 @@
         public required string Registro_Usuario { get; set; }
     }
 
+    public class CajasDefinicionActualizarParams : CajasDefinicionBase
+    {
+        public required string Cod_Caja { get; set; }
+        public short? Apertura_Compartida { get; set; }
+        public string? Cierre_Periocidad { get; set; }
+        public string? Cierre_Tipo { get; set; }
+        public CajasDefinicionRestricciones? Restricciones { get; set; }
+        public required string Usuario { get; set; }
+    }
+
     public class CajasDefinicionCopiaParams
     {
         public required string CajaOrigen { get; set; }
