@@ -26,6 +26,21 @@ namespace Galileo.Controllers.ProGrX.Fondos
         }
 
         [Authorize]
+        [HttpGet("FND_SubCuentas_Configuracion_Obtener")]
+        public ErrorDto<FndSubCuentasConfiguracionData?> FND_SubCuentas_Configuracion_Obtener(
+            int CodEmpresa,
+            int operadora,
+            string plan,
+            long contrato)
+        {
+            return _BL.FND_SubCuentas_Configuracion_Obtener(
+                CodEmpresa,
+                operadora,
+                plan,
+                contrato);
+        }
+
+        [Authorize]
         [HttpGet("FND_SubCuentas_Parentescos_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> FND_SubCuentas_Parentescos_Obtener(int CodEmpresa)
         {
@@ -43,9 +58,21 @@ namespace Galileo.Controllers.ProGrX.Fondos
         [Authorize]
         [ValidateAntiForgeryToken]
         [HttpDelete("FND_SubCuentas_Eliminar")]
-        public ErrorDto FND_SubCuentas_Eliminar(int CodEmpresa, int consec, string usuario)
+        public ErrorDto FND_SubCuentas_Eliminar(
+            int CodEmpresa,
+            int operadora,
+            string plan,
+            long contrato,
+            int consec,
+            string usuario)
         {
-            return _BL.FNDSubCuentas_Borrar(CodEmpresa, consec, usuario);
+            return _BL.FNDSubCuentas_Borrar(
+                CodEmpresa,
+                operadora,
+                plan,
+                contrato,
+                consec,
+                usuario);
         }
 
         [Authorize]
