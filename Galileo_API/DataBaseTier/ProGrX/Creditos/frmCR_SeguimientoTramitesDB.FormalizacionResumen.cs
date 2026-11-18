@@ -115,7 +115,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             bool cobraTasa = _mCobroDb.fxCobraTasaFormaliza(
                 codEmpresa,
                 request.codigo,
-                request.destino);
+                request.destino ?? string.Empty);
 
             decimal interes = Cr_SeguimientoTramites_Formalizacion_Interes_Calcular(
                 codEmpresa,
