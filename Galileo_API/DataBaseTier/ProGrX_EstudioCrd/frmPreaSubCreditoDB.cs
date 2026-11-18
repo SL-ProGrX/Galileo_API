@@ -168,7 +168,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                         usuario,
                         Operacion = request.operacion
                     },
-                    commandType: CommandType.Text
+                    commandType: CommandType.Text, commandTimeout: 0
+
                 ) ?? new FrmPreaSubCreditoOperacionData();
 
                 var idSolicitud = operacion.operacion?.Trim() ?? string.Empty;
