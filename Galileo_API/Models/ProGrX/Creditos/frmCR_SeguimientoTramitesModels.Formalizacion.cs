@@ -150,7 +150,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
         [JsonRequired]
         public int operacion { get; set; }
         public string codigo { get; set; } = string.Empty;
-        public string destino { get; set; } = string.Empty;
+        public string? destino { get; set; }
         public string estado_solicitud { get; set; } = string.Empty;
         [JsonRequired]
         public bool ind_deduce_planilla { get; set; }
