@@ -334,6 +334,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     estadoComite = "PNVBL";
                     editable = 1;
                     return "P";
+                case "AL":
+                    // Aprobado pendiente de liquidacion (linea CRRM): mismo tag que aprobar, queda editable y se guarda como "P".
+                    estadoComite = "APLIQ";
+                    editable = 1;
+                    return "P";
                 default:
                     return "A";
             }

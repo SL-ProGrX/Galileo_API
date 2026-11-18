@@ -552,6 +552,79 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         /// <summary>
+        /// Actualiza una caja existente en cajas_definicion.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros de la caja.</param>
+        /// <returns>Resultado de la operación.</returns>
+        public ErrorDto<bool> CajasDefinicion_Caja_Actualizar(int codEmpresa, CajasDefinicionActualizarParams param)
+        {
+            var query = @"
+                update cajas_definicion
+                set descripcion = @Descripcion,
+                    notas = @Notas,
+                    activa = @Activa,
+                    apertura_fecha = @Apertura_Fecha,
+                    apertura_compartida = @Apertura_Compartida,
+                    cierre_periocidad = @Cierre_Periocidad,
+                    cierre_tipo = @Cierre_Tipo,
+                    periocidad_contrasena = @Periocidad_Contrasena,
+                    oficina_utiliza_usuario = @Oficina_Utiliza_Usuario,
+                    cod_oficina = @Cod_Oficina,
+                    cod_cuenta_dev = @Cod_Cuenta_Dev,
+                    PERMITE_MOV_CBRJUD = COALESCE(@Permite_Mov_Cbrjud, PERMITE_MOV_CBRJUD),
+                    Limita_Consulta = COALESCE(@Limita_Consulta, Limita_Consulta),
+                    Limita_Creditos = COALESCE(@Limita_Creditos, Limita_Creditos),
+                    Limita_Fondos = COALESCE(@Limita_Fondos, Limita_Fondos),
+                    Limita_CxC = COALESCE(@Limita_Cxc, Limita_CxC),
+                    Limita_Patrimonio = COALESCE(@Limita_Patrimonio, Limita_Patrimonio),
+                    PERMITE_RC = COALESCE(@Permite_Rc, PERMITE_RC),
+                    PERMITE_TRASLADOS_EF = COALESCE(@Permite_Traslados_Ef, PERMITE_TRASLADOS_EF),
+                    ROL_BOVEDA = COALESCE(@Rol_Boveda, ROL_BOVEDA),
+                    UTILIZA_CTA_CAJA_EF = COALESCE(@Utiliza_Cta_Caja_Ef, UTILIZA_CTA_CAJA_EF),
+                    LIMITA_FONDOS_FP = COALESCE(@Limita_Fondos_Fp, LIMITA_FONDOS_FP)
+                where cod_caja = @Cod_Caja";
+
+            var parametros = new
+            {
+                param.Cod_Caja,
+                param.Descripcion,
+                param.Notas,
+                param.Activa,
+                param.Apertura_Fecha,
+                param.Apertura_Compartida,
+                param.Cierre_Periocidad,
+                param.Cierre_Tipo,
+                param.Periocidad_Contrasena,
+                param.Oficina_Utiliza_Usuario,
+                param.Cod_Oficina,
+                param.Cod_Cuenta_Dev,
+                Permite_Mov_Cbrjud = param.Restricciones?.Permite_Mov_Cbrjud,
+                Limita_Consulta = param.Restricciones?.Limita_Consulta,
+                Limita_Creditos = param.Restricciones?.Limita_Creditos,
+                Limita_Fondos = param.Restricciones?.Limita_Fondos,
+                Limita_Cxc = param.Restricciones?.Limita_Cxc,
+                Limita_Patrimonio = param.Restricciones?.Limita_Patrimonio,
+                Permite_Rc = param.Restricciones?.Permite_Rc,
+                Permite_Traslados_Ef = param.Restricciones?.Permite_Traslados_Ef,
+                Rol_Boveda = param.Restricciones?.Rol_Boveda,
+                Utiliza_Cta_Caja_Ef = param.Restricciones?.Utiliza_Cta_Caja_Ef,
+                Limita_Fondos_Fp = param.Restricciones?.Limita_Fondos_Fp
+            };
+
+            var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, parametros);
+
+            if (result.Code == 0)
+            {
+                RegistrarBitacora(codEmpresa, param.Usuario, $"Definición Cajas: {param.Cod_Caja}", "Modifica - WEB");
+            }
+
+            return result.Code == 0
+                ? DbHelper.CreateOkResponse(true)
+                : DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
+        }
+
+        /// <summary>
         /// Ejecuta el procedimiento de copia de caja.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>

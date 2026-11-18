@@ -121,6 +121,8 @@ SELECT dbo.fxPat_Planillas_Comprobante(
                 return validacion;
             }
 
+            const int tiempoEsperaSegundos = 600;
+
             const string sqlSube = @"
 exec spPAT_PlanillaDirecta_Sube
     @Institucion,
@@ -175,6 +177,7 @@ exec spPAT_PlanillaDirecta_Consulta
                                 Nombre = fila.ref_01.Trim()
                             },
                             transaction: transaction,
+                            commandTimeout: tiempoEsperaSegundos,
                             commandType: CommandType.Text);
                     }
 
@@ -190,6 +193,7 @@ exec spPAT_PlanillaDirecta_Consulta
                             Nombre = request.archivo.Trim()
                         },
                         transaction: transaction,
+                        commandTimeout: tiempoEsperaSegundos,
                         commandType: CommandType.Text).ToList();
 
                     transaction.Commit();
@@ -260,6 +264,8 @@ exec spPAT_PlanillaDirecta_Inconsistencias
                 return validacion;
             }
 
+            const int tiempoEsperaSegundos = 600;
+
             const string sqlConsecutivo = @"
 update SIF_DOCUMENTOS
 set CONSECUTIVO = isnull(CONSECUTIVO, 0) + 1
@@ -285,6 +291,7 @@ exec spPAT_PlanillaDirecta_Procesa
                     conn.Execute(
                         sqlConsecutivo,
                         transaction: transaction,
+                        commandTimeout: tiempoEsperaSegundos,
                         commandType: CommandType.Text);
 
                     conn.Execute(
@@ -298,6 +305,7 @@ exec spPAT_PlanillaDirecta_Procesa
                             Usuario = request.registro_usuario.Trim()
                         },
                         transaction: transaction,
+                        commandTimeout: tiempoEsperaSegundos,
                         commandType: CommandType.Text);
 
                     transaction.Commit();
@@ -359,9 +367,9 @@ exec spPAT_PlanillaDirecta_Procesa
                     return DbHelper.CreateErrorResponse($"El nombre es requerido en la fila {i + 1}.", -1, response);
                 }
 
-                if (fila.monto_01 <= 0)
+                if (fila.monto_01 == 0)
                 {
-                    return DbHelper.CreateErrorResponse($"El monto debe ser mayor a cero en la fila {i + 1}.", -1, response);
+                    return DbHelper.CreateErrorResponse($"El monto debe ser diferente de cero en la fila {i + 1}.", -1, response);
                 }
             }
 
