@@ -124,6 +124,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
             return _db.CajasDefinicion_Caja_Insertar(codEmpresa, param);
         }
 
+        public ErrorDto<bool> CajasDefinicion_Caja_Actualizar(int codEmpresa, CajasDefinicionActualizarParams param)
+        {
+            return _db.CajasDefinicion_Caja_Actualizar(codEmpresa, param);
+        }
+
         public ErrorDto<bool> CajasDefinicion_Caja_Copiar(int codEmpresa, CajasDefinicionCopiaParams param)
         {
             return _db.CajasDefinicion_Caja_Copiar(codEmpresa, param);
