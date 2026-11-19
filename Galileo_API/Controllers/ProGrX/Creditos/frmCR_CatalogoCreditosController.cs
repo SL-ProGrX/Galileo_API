@@ -84,6 +84,18 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CrCatalogoCreditos_Divisas_Obtener(codEmpresa);
         }
 
+        [HttpGet("CrCatalogoCreditos_Comites_Obtener")]
+        public ErrorDto<List<CrCatalogoCreditoBusquedaData>> CrCatalogoCreditos_Comites_Obtener(int codEmpresa)
+        {
+            return _bl.CrCatalogoCreditos_Comites_Obtener(codEmpresa);
+        }
+
+        [HttpGet("CrCatalogoCreditos_Instituciones_Obtener")]
+        public ErrorDto<List<CrCatalogoCreditoBusquedaData>> CrCatalogoCreditos_Instituciones_Obtener(int codEmpresa)
+        {
+            return _bl.CrCatalogoCreditos_Instituciones_Obtener(codEmpresa);
+        }
+
         [ValidateAntiForgeryToken]
         [HttpPost("CrCatalogoCreditos_Asignacion_Guardar")]
         public ErrorDto CrCatalogoCreditos_Asignacion_Guardar(int codEmpresa, CrCatalogoCreditoAsignacionGuardarRequest request)
