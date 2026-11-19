@@ -17,6 +17,18 @@ namespace Galileo.DataBaseTier
 
         private const string SpCatalogosConsulta = "spAF_Catalogos_Consulta";
 
+        private const string SqlCatalogoUProgramatica = @"
+                    SELECT codigo AS item,
+                           descripcion AS descripcion
+                    FROM UPROGRAMATICA
+                    ORDER BY descripcion;";
+
+        private const string SqlCatalogoUTrabajo = @"
+                    SELECT ut_codigo AS item,
+                           ut_descripcion AS descripcion
+                    FROM UTRABAJO
+                    ORDER BY ut_descripcion;";
+
         private const int ModuloBitacora = 9;
         private const int LongitudDetalleBitacora = 50;
         private const string MovimientoModifica = "MODIFICA";
@@ -130,6 +142,32 @@ namespace Galileo.DataBaseTier
                         cod_departamento = @CodDept,
                         cod_seccion = @CodSec
                     WHERE cedula = @Cedula;";
+
+        private const string SqlCargarDatosAjusteAseccss = @"
+                    SELECT S.*,
+                           S.UT AS cod_seccion,
+                           S.UP AS cod_departamento,
+                           Est.Descripcion AS EstadoPersonaDesc,
+                           Est.Cod_Estado + ' - ' + Est.Descripcion AS EstadoPersona,
+                           I.descripcion AS DescInst,
+                           D.descripcion AS DescDept,
+                           X.ut_descripcion AS DescSec,
+                           C.descripcion AS CentroDesc,
+                           Tid.Descripcion AS TipoIdDesc
+                    FROM dbo.socios S
+                    INNER JOIN dbo.Instituciones I
+                        ON S.cod_institucion = I.cod_institucion
+                    LEFT JOIN dbo.UPROGRAMATICA D
+                        ON S.UP = D.codigo
+                    LEFT JOIN dbo.UTRABAJO X
+                        ON S.UT = X.ut_codigo
+                    LEFT JOIN dbo.UPROGRAMATICA C
+                        ON S.CT = C.codigo
+                    INNER JOIN dbo.AFI_ESTADOS_PERSONA Est
+                        ON S.EstadoActual = Est.Cod_Estado
+                    LEFT JOIN dbo.AFI_TIPOS_IDS Tid
+                        ON S.tipo_id = Tid.tipo_id
+                    WHERE S.cedula = @Cedula;";
 
         private const string SqlCargarDatosAjuste = @"
                     SELECT S.*,
@@ -310,10 +348,17 @@ namespace Galileo.DataBaseTier
             int? codInstitucion,
             string? up,
             string? ut,
-            string? ct
+            string? ct,
+            bool? cambiarUp = null,
+            bool? cambiarUt = null,
+            bool? cambiarCt = null
         )
         {
-            if (!codInstitucion.HasValue && string.IsNullOrWhiteSpace(up) && string.IsNullOrWhiteSpace(ut) && string.IsNullOrWhiteSpace(ct))
+            var actualizarUP = cambiarUp ?? !string.IsNullOrWhiteSpace(up);
+            var actualizarUT = cambiarUt ?? !string.IsNullOrWhiteSpace(ut);
+            var actualizarCT = cambiarCt ?? !string.IsNullOrWhiteSpace(ct);
+
+            if (!codInstitucion.HasValue && !actualizarUP && !actualizarUT && !actualizarCT)
             {
                 return DbHelper.OkResponse("No hay cambios para aplicar.");
             }
@@ -330,11 +375,11 @@ namespace Galileo.DataBaseTier
                 connection.Execute(SqlCambiarInstitucionAseccss, new
                 {
                     CodInst = codInstitucion,
-                    CambiarUP = !string.IsNullOrWhiteSpace(up) ? 1 : 0,
+                    CambiarUP = actualizarUP ? 1 : 0,
                     UP = NormalizarTexto(up),
-                    CambiarUT = !string.IsNullOrWhiteSpace(ut) ? 1 : 0,
+                    CambiarUT = actualizarUT ? 1 : 0,
                     UT = NormalizarTexto(ut),
-                    CambiarCT = !string.IsNullOrWhiteSpace(ct) ? 1 : 0,
+                    CambiarCT = actualizarCT ? 1 : 0,
                     CT = NormalizarTexto(ct),
                     Cedula = cedulaSegura
                 });
@@ -440,6 +485,42 @@ namespace Galileo.DataBaseTier
 
 
         /// <summary>
+        /// Carga datos de la persona y sus unidades ASECCSS.
+        /// </summary>
+        public ErrorDto<AfAjustePersonaDetalle> AF_Ajustes_CargarDatos_ASECCSS(int CodEmpresa, string cedula)
+        {
+            var result = DbHelper.ExecuteSingleQuery<AfAjustePersonaDetalle>(
+                CreatePortalDb(),
+                CodEmpresa,
+                SqlCargarDatosAjusteAseccss,
+                null,
+                new { Cedula = NormalizarTexto(cedula) });
+
+            if (result.Code != 0)
+            {
+                return new ErrorDto<AfAjustePersonaDetalle>
+                {
+                    Code = result.Code,
+                    Description = result.Description,
+                    Result = result.Result
+                };
+            }
+
+            if (result.Result is null)
+            {
+                return DbHelper.CreateErrorResponse<AfAjustePersonaDetalle>("No se encontraron datos para la cédula indicada.", 1, null);
+            }
+
+            return new ErrorDto<AfAjustePersonaDetalle>
+            {
+                Code = result.Code,
+                Description = result.Description,
+                Result = result.Result
+            };
+        }
+
+
+        /// <summary>
         /// Aplica ajustes de identificación, estado o institución según el código solicitado.
         /// </summary>
         /// <param name="CodEmpresa">Código de empresa.</param>
@@ -486,6 +567,24 @@ namespace Galileo.DataBaseTier
                 Result = result.Result ?? new AfCatalogosGeneralesDto()
             };
         }
+
+        /// <summary>
+        /// Obtiene el catálogo ASECCSS solicitado.
+        /// </summary>
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Ajustes_CatalogoASECCSS_Obtener(int CodEmpresa, string tipo)
+        {
+            var consulta = tipo.Trim().ToUpperInvariant() switch
+            {
+                "UP" => SqlCatalogoUProgramatica,
+                "UT" => SqlCatalogoUTrabajo,
+                _ => null
+            };
+
+            return consulta is null
+                ? DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>("Tipo de catálogo no válido.", -1, new())
+                : DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(CreatePortalDb(), CodEmpresa, consulta);
+        }
+
 
         /// <summary>
         /// Crea una instancia de acceso al portal usando la configuración inyectada.

@@ -54,6 +54,16 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
             return DbfrmAF_Reportes.AF_UProgramatica_Obtener(CodEmpresa);
         }
 
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Departamentos_Obtener(int CodEmpresa)
+        {
+            return DbfrmAF_Reportes.AF_Departamentos_Obtener(CodEmpresa);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Secciones_Obtener(int CodEmpresa, string Departamento)
+        {
+            return DbfrmAF_Reportes.AF_Secciones_Obtener(CodEmpresa, Departamento);
+        }
+
         public ErrorDto FechaServidor_Obtener(int CodEmpresa)
         {
             return DbfrmAF_Reportes.FechaServidor_Obtener(CodEmpresa);

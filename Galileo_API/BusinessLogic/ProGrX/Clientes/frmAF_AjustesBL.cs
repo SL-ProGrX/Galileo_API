@@ -51,7 +51,10 @@ namespace Galileo.BusinessLogic
                 cambios.codInstitucion,
                 cambios.up,
                 cambios.ut,
-                cambios.ct
+                cambios.ct,
+                cambios.cambiarUp,
+                cambios.cambiarUt,
+                cambios.cambiarCt
             );
         }
 
@@ -75,6 +78,11 @@ namespace Galileo.BusinessLogic
             return _db.AF_Ajustes_CargarDatos(CodEmpresa, cedula);
         }
 
+        public ErrorDto<AfAjustePersonaDetalle> AF_Ajustes_CargarDatos_ASECCSS(int CodEmpresa, string cedula)
+        {
+            return _db.AF_Ajustes_CargarDatos_ASECCSS(CodEmpresa, cedula);
+        }
+
         public ErrorDto AF_Ajustes_Cambiar(int CodEmpresa, string ajuste, int codigo)
         {
             return _db.AF_Ajustes_Cambiar(CodEmpresa, ajuste, codigo);
@@ -83,6 +91,11 @@ namespace Galileo.BusinessLogic
         public ErrorDto<AfCatalogosGeneralesDto> AF_Catalogos_Obtener(int CodEmpresa, string cod_institucion)
         {
             return _db.AF_Catalogos_Obtener(CodEmpresa, cod_institucion);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Ajustes_CatalogoASECCSS_Obtener(int CodEmpresa, string tipo)
+        {
+            return _db.AF_Ajustes_CatalogoASECCSS_Obtener(CodEmpresa, tipo);
         }
     }
 }

@@ -788,6 +788,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         isnull(El.DESCRIPCION,'No Indica') as estado_laboral_desc,
                         isnull(convert(varchar(10), S.FECHAINGRESO, 103),'') as fecha_ingreso,
                         isnull(I.DESCRIPCION,'') as institucion,
+                        isnull(UP.DESCRIPCION,'') as lugar_trabajo_up,
+                        isnull(Dept.DESCRIPCION,'') as lugar_trabajo_departamento,
                         isnull(coalesce(UP.DESCRIPCION, Dept.DESCRIPCION),'') as lugar_trabajo,
                         isnull(P.SALARIO_LIQUIDO,0) as salario_liquido,
                         isnull(P.LIQUIDEZ_SIMPLE,0) as liquidez_simple,
