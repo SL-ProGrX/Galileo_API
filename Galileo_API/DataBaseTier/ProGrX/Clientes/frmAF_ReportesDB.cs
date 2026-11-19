@@ -267,6 +267,75 @@ namespace Galileo.DataBaseTier
         }
 
 
+        private static List<DropDownListaGenericaModel> ObtenerDepartamentosAFI(SqlConnection connection)
+        {
+            const string query = @"
+                SELECT cod_departamento AS item, descripcion
+                FROM AFDepartamentos
+                ORDER BY descripcion;";
+
+            return connection.Query<DropDownListaGenericaModel>(query).ToList();
+        }
+
+        private static List<DropDownListaGenericaModel> ObtenerSeccionesAFI(SqlConnection connection, string departamento)
+        {
+            const string query = @"
+                SELECT cod_seccion AS item, descripcion
+                FROM AFSecciones
+                WHERE cod_departamento = @departamento
+                ORDER BY descripcion;";
+
+            return connection.Query<DropDownListaGenericaModel>(query, new { departamento }).ToList();
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Departamentos_Obtener(int CodEmpresa)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
+            {
+                Code = 0,
+                Result = new List<DropDownListaGenericaModel>()
+            };
+
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                response.Result = ObtenerDepartamentosAFI(connection);
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
+            }
+
+            return response;
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Secciones_Obtener(int CodEmpresa, string Departamento)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
+            {
+                Code = 0,
+                Result = new List<DropDownListaGenericaModel>()
+            };
+
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                response.Result = ObtenerSeccionesAFI(connection, Departamento?.Trim() ?? string.Empty);
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
+            }
+
+            return response;
+        }
+
         /// <summary>
         /// Obtiene la fecha del servidor
         /// </summary>

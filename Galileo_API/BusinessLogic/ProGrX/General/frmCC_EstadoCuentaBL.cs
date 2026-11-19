@@ -53,6 +53,52 @@ namespace Galileo.BusinessLogic
                     solicitud);
         }
 
+        public ErrorDto<string>
+            CC_FrmCCEstadoCuenta_UnidadProgramatica_Descripcion_Obtener(
+                int codEmpresa,
+                string request)
+        {
+            var solicitud =
+                Deserializar<CcEstadoCuentaCodigoRequest>(
+                    request);
+
+            if (solicitud is null)
+            {
+                return DbHelper.CreateErrorResponse(
+                    SolicitudInvalida,
+                    CodigoValidacion,
+                    string.Empty);
+            }
+
+            return _db
+                .CC_FrmCCEstadoCuenta_UnidadProgramatica_Descripcion_Obtener(
+                    codEmpresa,
+                    solicitud);
+        }
+
+        public ErrorDto<string>
+            CC_FrmCCEstadoCuenta_CentroTrabajo_Descripcion_Obtener(
+                int codEmpresa,
+                string request)
+        {
+            var solicitud =
+                Deserializar<CcEstadoCuentaCodigoRequest>(
+                    request);
+
+            if (solicitud is null)
+            {
+                return DbHelper.CreateErrorResponse(
+                    SolicitudInvalida,
+                    CodigoValidacion,
+                    string.Empty);
+            }
+
+            return _db
+                .CC_FrmCCEstadoCuenta_CentroTrabajo_Descripcion_Obtener(
+                    codEmpresa,
+                    solicitud);
+        }
+
         public ErrorDto<List<DropDownListaGenericaModel>>
             CC_FrmCCEstadoCuenta_Departamentos_Obtener(
                 int codEmpresa,

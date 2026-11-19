@@ -61,6 +61,20 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [HttpGet("AF_Departamentos_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Departamentos_Obtener(int CodEmpresa)
+        {
+            return BL_AF_Reportes.AF_Departamentos_Obtener(CodEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("AF_Secciones_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Secciones_Obtener(int CodEmpresa, string Departamento)
+        {
+            return BL_AF_Reportes.AF_Secciones_Obtener(CodEmpresa, Departamento);
+        }
+
+        [Authorize]
         [HttpGet("FechaServidor_Obtener")]
         public ErrorDto FechaServidor_Obtener(int CodEmpresa)
         {

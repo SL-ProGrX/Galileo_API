@@ -17,6 +17,11 @@
         public string cod_seccion { get; set; } = string.Empty;
         public string seccion { get; set; } = string.Empty;
 
+        public string up { get; set; } = string.Empty;
+        public string up_desc { get; set; } = string.Empty;
+        public string ut { get; set; } = string.Empty;
+        public string ut_desc { get; set; } = string.Empty;
+
         public string usuario { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
     }
