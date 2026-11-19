@@ -457,34 +457,10 @@ namespace Galileo.DataBaseTier
         /// <returns>Detalle de la persona para ajustes.</returns>
         public ErrorDto<AfAjustePersonaDetalle> AF_Ajustes_CargarDatos(int CodEmpresa, string cedula)
         {
-            var result = DbHelper.ExecuteSingleQuery<AfAjustePersonaDetalle>(
-                CreatePortalDb(),
+            return CargarDatosAjuste(
                 CodEmpresa,
-                SqlCargarDatosAjuste,
-                null,
-                new { Cedula = NormalizarTexto(cedula) });
-
-            if (result.Code != 0)
-            {
-                return new ErrorDto<AfAjustePersonaDetalle>
-                {
-                    Code = result.Code,
-                    Description = result.Description,
-                    Result = result.Result
-                };
-            }
-
-            if (result.Result is null)
-            {
-                return DbHelper.CreateErrorResponse<AfAjustePersonaDetalle>("No se encontraron datos para la cédula indicada.", 1, null);
-            }
-
-            return new ErrorDto<AfAjustePersonaDetalle>
-            {
-                Code = result.Code,
-                Description = result.Description,
-                Result = result.Result
-            };
+                cedula,
+                SqlCargarDatosAjuste);
         }
 
 
@@ -493,10 +469,21 @@ namespace Galileo.DataBaseTier
         /// </summary>
         public ErrorDto<AfAjustePersonaDetalle> AF_Ajustes_CargarDatos_ASECCSS(int CodEmpresa, string cedula)
         {
+            return CargarDatosAjuste(
+                CodEmpresa,
+                cedula,
+                SqlCargarDatosAjusteAseccss);
+        }
+
+        private ErrorDto<AfAjustePersonaDetalle> CargarDatosAjuste(
+            int CodEmpresa,
+            string cedula,
+            string consulta)
+        {
             var result = DbHelper.ExecuteSingleQuery<AfAjustePersonaDetalle>(
                 CreatePortalDb(),
                 CodEmpresa,
-                SqlCargarDatosAjusteAseccss,
+                consulta,
                 null,
                 new { Cedula = NormalizarTexto(cedula) });
 
