@@ -47,7 +47,7 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
 
         /// <summary>
         /// Comité resolutivo asignado (VB6: rs!ID_COMITE, dentro del mismo
-        /// recordset de spCRDPreaPREANALISIS_T).
+        /// recordset de spCRDPreaPREANALISI
         /// </summary>
         public string comite_resolutivo { get; set; } = string.Empty;
 

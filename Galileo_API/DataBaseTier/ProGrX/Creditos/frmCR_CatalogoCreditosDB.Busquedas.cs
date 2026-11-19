@@ -56,5 +56,39 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
             return DbHelper.ExecuteListQuery<CrCatalogoCreditoBusquedaData>(_portalDb, codEmpresa, query);
         }
+
+        /// <summary>
+        /// Obtiene los comités resolutores disponibles para una línea de crédito.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <returns>Lista de comités disponibles.</returns>
+        public ErrorDto<List<CrCatalogoCreditoBusquedaData>> CrCatalogoCreditos_Comites_Obtener(int codEmpresa)
+        {
+            const string query = @"
+                SELECT
+                    CONVERT(VARCHAR(20), ID_COMITE) AS item,
+                    RTRIM(ISNULL(DESCRIPCION, '')) AS descripcion
+                FROM COMITES
+                ORDER BY ID_COMITE;";
+
+            return DbHelper.ExecuteListQuery<CrCatalogoCreditoBusquedaData>(_portalDb, codEmpresa, query);
+        }
+
+        /// <summary>
+        /// Obtiene las instituciones recaudadoras disponibles para una línea de crédito.
+        /// </summary>
+        /// <param name="codEmpresa">Código de empresa.</param>
+        /// <returns>Lista de instituciones disponibles.</returns>
+        public ErrorDto<List<CrCatalogoCreditoBusquedaData>> CrCatalogoCreditos_Instituciones_Obtener(int codEmpresa)
+        {
+            const string query = @"
+                SELECT
+                    RTRIM(COD_INSTITUCION) AS item,
+                    RTRIM(ISNULL(DESCRIPCION, '')) AS descripcion
+                FROM INSTITUCIONES
+                ORDER BY DESCRIPCION;";
+
+            return DbHelper.ExecuteListQuery<CrCatalogoCreditoBusquedaData>(_portalDb, codEmpresa, query);
+        }
     }
 }
