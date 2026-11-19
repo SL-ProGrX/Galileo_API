@@ -24,7 +24,7 @@ namespace Galileo_API.Models.ProGrX.General
     public sealed class CcReportesEstudioGenerarRequestDto
     {
         public string codigo_reporte { get; set; } = string.Empty;
-        public int sys_ccss_ind { get; set; }
+        public int? sys_ccss_ind { get; set; }
         public required DateTime fecha_inicio { get; set; }
         public required DateTime fecha_corte { get; set; }
         public int rango_proyeccion { get; set; } = 12;

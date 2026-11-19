@@ -48,13 +48,7 @@ namespace Galileo.BusinessLogic
             return _db.AF_Ajustes_CambiarInstitucion_ASECCSS(
                 CodEmpresa,
                 cedula,
-                cambios.codInstitucion,
-                cambios.up,
-                cambios.ut,
-                cambios.ct,
-                cambios.cambiarUp,
-                cambios.cambiarUt,
-                cambios.cambiarCt
+                cambios
             );
         }
 

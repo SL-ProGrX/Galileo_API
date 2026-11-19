@@ -337,28 +337,28 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa">Código de empresa.</param>
         /// <param name="cedula">Cédula de la persona.</param>
-        /// <param name="codInstitucion">Nueva institución, si aplica.</param>
-        /// <param name="up">Nueva UP, si aplica.</param>
-        /// <param name="ut">Nueva UT, si aplica.</param>
-        /// <param name="ct">Nueva CT, si aplica.</param>
+        /// <param name="cambios">Campos de institución y ASECCSS que se van a actualizar.</param>
         /// <returns>Resultado de la actualización.</returns>
         public ErrorDto AF_Ajustes_CambiarInstitucion_ASECCSS(
             int CodEmpresa,
             string cedula,
-            int? codInstitucion,
-            string? up,
-            string? ut,
-            string? ct,
-            bool? cambiarUp = null,
-            bool? cambiarUt = null,
-            bool? cambiarCt = null
+            AjustesInstitucionAseccssDto cambios
         )
         {
-            var actualizarUP = cambiarUp ?? !string.IsNullOrWhiteSpace(up);
-            var actualizarUT = cambiarUt ?? !string.IsNullOrWhiteSpace(ut);
-            var actualizarCT = cambiarCt ?? !string.IsNullOrWhiteSpace(ct);
+            var actualizarUP =
+                cambios.cambiarUp ??
+                !string.IsNullOrWhiteSpace(cambios.up);
+            var actualizarUT =
+                cambios.cambiarUt ??
+                !string.IsNullOrWhiteSpace(cambios.ut);
+            var actualizarCT =
+                cambios.cambiarCt ??
+                !string.IsNullOrWhiteSpace(cambios.ct);
 
-            if (!codInstitucion.HasValue && !actualizarUP && !actualizarUT && !actualizarCT)
+            if (!cambios.codInstitucion.HasValue &&
+                !actualizarUP &&
+                !actualizarUT &&
+                !actualizarCT)
             {
                 return DbHelper.OkResponse("No hay cambios para aplicar.");
             }
@@ -367,20 +367,24 @@ namespace Galileo.DataBaseTier
             {
                 var cedulaSegura = NormalizarTexto(cedula);
 
-                if (codInstitucion.HasValue && !EstadoPermitidoInstitucion(connection, cedulaSegura, codInstitucion.Value))
+                if (cambios.codInstitucion.HasValue &&
+                    !EstadoPermitidoInstitucion(
+                        connection,
+                        cedulaSegura,
+                        cambios.codInstitucion.Value))
                 {
                     return DbHelper.ErrorResponse("El estado actual del socio no está autorizado en la institución indicada.");
                 }
 
                 connection.Execute(SqlCambiarInstitucionAseccss, new
                 {
-                    CodInst = codInstitucion,
+                    CodInst = cambios.codInstitucion,
                     CambiarUP = actualizarUP ? 1 : 0,
-                    UP = NormalizarTexto(up),
+                    UP = NormalizarTexto(cambios.up),
                     CambiarUT = actualizarUT ? 1 : 0,
-                    UT = NormalizarTexto(ut),
+                    UT = NormalizarTexto(cambios.ut),
                     CambiarCT = actualizarCT ? 1 : 0,
-                    CT = NormalizarTexto(ct),
+                    CT = NormalizarTexto(cambios.ct),
                     Cedula = cedulaSegura
                 });
 
