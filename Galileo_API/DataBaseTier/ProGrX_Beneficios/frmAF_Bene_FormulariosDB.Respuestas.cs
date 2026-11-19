@@ -276,7 +276,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         private ErrorDto<int> GuardarOpcionesRespuesta(int CodCliente, int id_pregunta, int id_respuesta, string usuario, object question)
         {
-            var opciones = DeserializarOpciones(question.ToString());
+            var opciones = DeserializarOpciones(ValorComoJson(question));
 
             using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente);
             try
@@ -322,7 +322,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         private ErrorDto<int> GuardaOpcionSelectRespuesta(int CodCliente, int id_pregunta, int id_respuesta, string usuario, object question)
         {
-            var valores = DeserializarValores(JsonConvert.SerializeObject(question));
+            var valores = DeserializarValores(ValorComoJson(question));
 
             using var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente);
             try
@@ -340,6 +340,18 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             {
                 return DbHelper.CreateErrorResponse<int>(ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Convierte el valor de respuesta a JSON. El valor llega como <c>object</c> deserializado por
+        /// System.Text.Json (<c>JsonElement</c>); Newtonsoft lo serializaría como {"ValueKind":...},
+        /// por eso se toma el texto JSON original del elemento.
+        /// </summary>
+        private static string ValorComoJson(object? valor)
+        {
+            return valor is System.Text.Json.JsonElement elemento
+                ? elemento.GetRawText()
+                : JsonConvert.SerializeObject(valor);
         }
 
         /// <summary>
