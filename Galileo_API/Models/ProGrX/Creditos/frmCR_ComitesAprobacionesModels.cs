@@ -94,6 +94,8 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string fecha_ingreso { get; set; } = string.Empty;
         public string institucion { get; set; } = string.Empty;
         public string lugar_trabajo { get; set; } = string.Empty;
+        public string lugar_trabajo_up { get; set; } = string.Empty;
+        public string lugar_trabajo_departamento { get; set; } = string.Empty;
         public decimal salario_liquido { get; set; }
         public decimal liquidez_simple { get; set; }
         public decimal liquidez_cfianzas { get; set; }

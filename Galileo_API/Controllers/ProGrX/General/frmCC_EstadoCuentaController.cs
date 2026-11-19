@@ -44,6 +44,32 @@ namespace Galileo.Controllers
         }
 
         [HttpGet(
+            "CC_FrmCCEstadoCuenta_UnidadProgramatica_Descripcion_Obtener")]
+        public ErrorDto<string>
+            CC_FrmCCEstadoCuenta_UnidadProgramatica_Descripcion_Obtener(
+                int codEmpresa,
+                string request)
+        {
+            return _bl
+                .CC_FrmCCEstadoCuenta_UnidadProgramatica_Descripcion_Obtener(
+                    codEmpresa,
+                    request);
+        }
+
+        [HttpGet(
+            "CC_FrmCCEstadoCuenta_CentroTrabajo_Descripcion_Obtener")]
+        public ErrorDto<string>
+            CC_FrmCCEstadoCuenta_CentroTrabajo_Descripcion_Obtener(
+                int codEmpresa,
+                string request)
+        {
+            return _bl
+                .CC_FrmCCEstadoCuenta_CentroTrabajo_Descripcion_Obtener(
+                    codEmpresa,
+                    request);
+        }
+
+        [HttpGet(
             "CC_FrmCCEstadoCuenta_Departamentos_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>>
             CC_FrmCCEstadoCuenta_Departamentos_Obtener(

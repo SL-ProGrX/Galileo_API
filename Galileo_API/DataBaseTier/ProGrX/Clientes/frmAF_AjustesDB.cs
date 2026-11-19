@@ -17,6 +17,18 @@ namespace Galileo.DataBaseTier
 
         private const string SpCatalogosConsulta = "spAF_Catalogos_Consulta";
 
+        private const string SqlCatalogoUProgramatica = @"
+                    SELECT codigo AS item,
+                           descripcion AS descripcion
+                    FROM UPROGRAMATICA
+                    ORDER BY descripcion;";
+
+        private const string SqlCatalogoUTrabajo = @"
+                    SELECT ut_codigo AS item,
+                           ut_descripcion AS descripcion
+                    FROM UTRABAJO
+                    ORDER BY ut_descripcion;";
+
         private const int ModuloBitacora = 9;
         private const int LongitudDetalleBitacora = 50;
         private const string MovimientoModifica = "MODIFICA";
@@ -130,6 +142,32 @@ namespace Galileo.DataBaseTier
                         cod_departamento = @CodDept,
                         cod_seccion = @CodSec
                     WHERE cedula = @Cedula;";
+
+        private const string SqlCargarDatosAjusteAseccss = @"
+                    SELECT S.*,
+                           S.UT AS cod_seccion,
+                           S.UP AS cod_departamento,
+                           Est.Descripcion AS EstadoPersonaDesc,
+                           Est.Cod_Estado + ' - ' + Est.Descripcion AS EstadoPersona,
+                           I.descripcion AS DescInst,
+                           D.descripcion AS DescDept,
+                           X.ut_descripcion AS DescSec,
+                           C.descripcion AS CentroDesc,
+                           Tid.Descripcion AS TipoIdDesc
+                    FROM dbo.socios S
+                    INNER JOIN dbo.Instituciones I
+                        ON S.cod_institucion = I.cod_institucion
+                    LEFT JOIN dbo.UPROGRAMATICA D
+                        ON S.UP = D.codigo
+                    LEFT JOIN dbo.UTRABAJO X
+                        ON S.UT = X.ut_codigo
+                    LEFT JOIN dbo.UPROGRAMATICA C
+                        ON S.CT = C.codigo
+                    INNER JOIN dbo.AFI_ESTADOS_PERSONA Est
+                        ON S.EstadoActual = Est.Cod_Estado
+                    LEFT JOIN dbo.AFI_TIPOS_IDS Tid
+                        ON S.tipo_id = Tid.tipo_id
+                    WHERE S.cedula = @Cedula;";
 
         private const string SqlCargarDatosAjuste = @"
                     SELECT S.*,
@@ -299,21 +337,28 @@ namespace Galileo.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa">Código de empresa.</param>
         /// <param name="cedula">Cédula de la persona.</param>
-        /// <param name="codInstitucion">Nueva institución, si aplica.</param>
-        /// <param name="up">Nueva UP, si aplica.</param>
-        /// <param name="ut">Nueva UT, si aplica.</param>
-        /// <param name="ct">Nueva CT, si aplica.</param>
+        /// <param name="cambios">Campos de institución y ASECCSS que se van a actualizar.</param>
         /// <returns>Resultado de la actualización.</returns>
         public ErrorDto AF_Ajustes_CambiarInstitucion_ASECCSS(
             int CodEmpresa,
             string cedula,
-            int? codInstitucion,
-            string? up,
-            string? ut,
-            string? ct
+            AjustesInstitucionAseccssDto cambios
         )
         {
-            if (!codInstitucion.HasValue && string.IsNullOrWhiteSpace(up) && string.IsNullOrWhiteSpace(ut) && string.IsNullOrWhiteSpace(ct))
+            var actualizarUP =
+                cambios.cambiarUp ??
+                !string.IsNullOrWhiteSpace(cambios.up);
+            var actualizarUT =
+                cambios.cambiarUt ??
+                !string.IsNullOrWhiteSpace(cambios.ut);
+            var actualizarCT =
+                cambios.cambiarCt ??
+                !string.IsNullOrWhiteSpace(cambios.ct);
+
+            if (!cambios.codInstitucion.HasValue &&
+                !actualizarUP &&
+                !actualizarUT &&
+                !actualizarCT)
             {
                 return DbHelper.OkResponse("No hay cambios para aplicar.");
             }
@@ -322,20 +367,24 @@ namespace Galileo.DataBaseTier
             {
                 var cedulaSegura = NormalizarTexto(cedula);
 
-                if (codInstitucion.HasValue && !EstadoPermitidoInstitucion(connection, cedulaSegura, codInstitucion.Value))
+                if (cambios.codInstitucion.HasValue &&
+                    !EstadoPermitidoInstitucion(
+                        connection,
+                        cedulaSegura,
+                        cambios.codInstitucion.Value))
                 {
                     return DbHelper.ErrorResponse("El estado actual del socio no está autorizado en la institución indicada.");
                 }
 
                 connection.Execute(SqlCambiarInstitucionAseccss, new
                 {
-                    CodInst = codInstitucion,
-                    CambiarUP = !string.IsNullOrWhiteSpace(up) ? 1 : 0,
-                    UP = NormalizarTexto(up),
-                    CambiarUT = !string.IsNullOrWhiteSpace(ut) ? 1 : 0,
-                    UT = NormalizarTexto(ut),
-                    CambiarCT = !string.IsNullOrWhiteSpace(ct) ? 1 : 0,
-                    CT = NormalizarTexto(ct),
+                    CodInst = cambios.codInstitucion,
+                    CambiarUP = actualizarUP ? 1 : 0,
+                    UP = NormalizarTexto(cambios.up),
+                    CambiarUT = actualizarUT ? 1 : 0,
+                    UT = NormalizarTexto(cambios.ut),
+                    CambiarCT = actualizarCT ? 1 : 0,
+                    CT = NormalizarTexto(cambios.ct),
                     Cedula = cedulaSegura
                 });
 
@@ -408,10 +457,33 @@ namespace Galileo.DataBaseTier
         /// <returns>Detalle de la persona para ajustes.</returns>
         public ErrorDto<AfAjustePersonaDetalle> AF_Ajustes_CargarDatos(int CodEmpresa, string cedula)
         {
+            return CargarDatosAjuste(
+                CodEmpresa,
+                cedula,
+                SqlCargarDatosAjuste);
+        }
+
+
+        /// <summary>
+        /// Carga datos de la persona y sus unidades ASECCSS.
+        /// </summary>
+        public ErrorDto<AfAjustePersonaDetalle> AF_Ajustes_CargarDatos_ASECCSS(int CodEmpresa, string cedula)
+        {
+            return CargarDatosAjuste(
+                CodEmpresa,
+                cedula,
+                SqlCargarDatosAjusteAseccss);
+        }
+
+        private ErrorDto<AfAjustePersonaDetalle> CargarDatosAjuste(
+            int CodEmpresa,
+            string cedula,
+            string consulta)
+        {
             var result = DbHelper.ExecuteSingleQuery<AfAjustePersonaDetalle>(
                 CreatePortalDb(),
                 CodEmpresa,
-                SqlCargarDatosAjuste,
+                consulta,
                 null,
                 new { Cedula = NormalizarTexto(cedula) });
 
@@ -486,6 +558,24 @@ namespace Galileo.DataBaseTier
                 Result = result.Result ?? new AfCatalogosGeneralesDto()
             };
         }
+
+        /// <summary>
+        /// Obtiene el catálogo ASECCSS solicitado.
+        /// </summary>
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Ajustes_CatalogoASECCSS_Obtener(int CodEmpresa, string tipo)
+        {
+            var consulta = tipo.Trim().ToUpperInvariant() switch
+            {
+                "UP" => SqlCatalogoUProgramatica,
+                "UT" => SqlCatalogoUTrabajo,
+                _ => null
+            };
+
+            return consulta is null
+                ? DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>("Tipo de catálogo no válido.", -1, new())
+                : DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(CreatePortalDb(), CodEmpresa, consulta);
+        }
+
 
         /// <summary>
         /// Crea una instancia de acceso al portal usando la configuración inyectada.

@@ -93,6 +93,13 @@ namespace Galileo.Models.GEN
             string.Empty;
     }
 
+    public class CcEstadoCuentaCodigoRequest
+    {
+        public string codigo { get; set; } = string.Empty;
+
+        public bool sys_ase_version { get; set; } = false;
+    }
+
     public class CcEstadoCuentaEmailRequest
     {
         public string usuario { get; set; } =

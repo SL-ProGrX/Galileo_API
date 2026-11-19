@@ -60,6 +60,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         departamento = S(V(d, "DepartamentoDesc", "departamentodesc")),
                         cod_seccion = S(V(d, "cod_seccion")),
                         seccion = S(V(d, "SeccionDesc", "secciondesc")),
+                        up = S(V(d, "UP", "up")),
+                        up_desc = S(V(d, "UP_Desc", "UPDesc", "up_desc")),
+                        ut = S(V(d, "UT", "ut")),
+                        ut_desc = S(V(d, "UT_Desc", "UTDesc", "ut_desc")),
                         usuario = pId,
                         nombre = S(V(d, "Nombre", "nombre"))
                     };

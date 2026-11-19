@@ -46,6 +46,7 @@ namespace Galileo.DataBaseTier
         private readonly PortalDB _portalDb;
         private readonly MProGrxMain _mProGrxMain;
         private readonly MSecurityMainDb _securityMainDb;
+        private readonly MAfilicacionDB _mAfiliacionDb;
 
         public FrmCcEstadoCuentaDb(
             IConfiguration config)
@@ -56,6 +57,7 @@ namespace Galileo.DataBaseTier
             _mProGrxMain = new MProGrxMain(config);
             _securityMainDb =
                 new MSecurityMainDb(config);
+            _mAfiliacionDb = new MAfilicacionDB(config);
         }
 
         /// <summary>
@@ -186,6 +188,73 @@ namespace Galileo.DataBaseTier
                 },
                 new CcEstadoCuentaPersonaData(),
                 "No fue posible consultar la persona.");
+        }
+
+        public ErrorDto<string>
+            CC_FrmCCEstadoCuenta_UnidadProgramatica_Descripcion_Obtener(
+                int codEmpresa,
+                CcEstadoCuentaCodigoRequest? request)
+        {
+            if (request is null ||
+                string.IsNullOrWhiteSpace(request.codigo))
+            {
+                return DbHelper.CreateOkResponse(string.Empty);
+            }
+
+            try
+            {
+                string descripcion =
+                    _mAfiliacionDb.fxgAFIDepartamento_Obtener(
+                        codEmpresa,
+                        0,
+                        request.codigo,
+                        request.sys_ase_version) ??
+                    string.Empty;
+
+                return DbHelper.CreateOkResponse(descripcion);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse(
+                    ex.Message,
+                    -1,
+                    string.Empty);
+            }
+        }
+
+        public ErrorDto<string>
+            CC_FrmCCEstadoCuenta_CentroTrabajo_Descripcion_Obtener(
+                int codEmpresa,
+                CcEstadoCuentaCodigoRequest? request)
+        {
+            if (request is null ||
+                string.IsNullOrWhiteSpace(request.codigo))
+            {
+                return DbHelper.CreateOkResponse(string.Empty);
+            }
+
+            try
+            {
+                string descripcion =
+                    _mAfiliacionDb.fxgAFISeccion_Obtener(
+                        codEmpresa,
+                        new MAfilicacionSeccionRequest
+                        {
+                            cod_seccion = request.codigo,
+                            sys_ase_version =
+                                request.sys_ase_version
+                        }) ??
+                    string.Empty;
+
+                return DbHelper.CreateOkResponse(descripcion);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse(
+                    ex.Message,
+                    -1,
+                    string.Empty);
+            }
         }
 
         /// <summary>

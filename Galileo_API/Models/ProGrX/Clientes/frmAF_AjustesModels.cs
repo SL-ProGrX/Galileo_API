@@ -4,8 +4,11 @@
     {
         public int? codInstitucion { get; set; }
         public string? up { get; set; }
+        public bool? cambiarUp { get; set; }
         public string? ut { get; set; }
+        public bool? cambiarUt { get; set; }
         public string? ct { get; set; }
+        public bool? cambiarCt { get; set; }
     }
 
     public class AjustesInstitucionDto
@@ -39,6 +42,7 @@
         public string? cod_departamento { get; set; }
         public int cod_institucion { get; set; }
         public string? cod_seccion { get; set; }
+        public string? ct { get; set; }
         public string? estado_persona_desc { get; set; }
         public string? estado_persona { get; set; }
         public string? descinst { get; set; }

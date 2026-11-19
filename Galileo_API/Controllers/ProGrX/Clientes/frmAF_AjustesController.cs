@@ -79,11 +79,25 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [HttpGet("AF_Ajustes_CargarDatos_ASECCSS")]
+        public ErrorDto<AfAjustePersonaDetalle> AF_Ajustes_CargarDatos_ASECCSS(int CodEmpresa, string cedula)
+        {
+            return _bl.AF_Ajustes_CargarDatos_ASECCSS(CodEmpresa, cedula);
+        }
+
+        [Authorize]
         [ValidateAntiForgeryToken]
         [HttpPost("AF_Ajustes_Cambiar")]
         public ErrorDto AF_Ajustes_Cambiar(int CodEmpresa, string ajuste, int codigo)
         {
             return _bl.AF_Ajustes_Cambiar(CodEmpresa, ajuste, codigo);
+        }
+
+        [Authorize]
+        [HttpGet("AF_Ajustes_CatalogoASECCSS_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Ajustes_CatalogoASECCSS_Obtener(int CodEmpresa, string tipo)
+        {
+            return _bl.AF_Ajustes_CatalogoASECCSS_Obtener(CodEmpresa, tipo);
         }
 
         [Authorize]

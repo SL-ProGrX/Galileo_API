@@ -126,9 +126,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                     "La frecuencia de creditos debe ser mayor o igual a 1.");
             }
 
-            var esAseVersion = false;
+            var esAseVersion = request.sys_ccss_ind == 1;
             decimal fechaCredito = 0;
-            if (codigo is "x02" or "x13" or "x13.2")
+            if (codigo == "x02")
             {
                 var globalesResponse = _mProGrxMain.sbSifParametrosInicializa(codEmpresa, usuario);
                 if (globalesResponse == null || globalesResponse.Code < 0 || globalesResponse.Result == null)
@@ -138,7 +138,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.General
                         globalesResponse?.Code ?? -1);
                 }
 
-                esAseVersion = globalesResponse.Result.SysASEVersion;
                 fechaCredito = globalesResponse.Result.GlngFechaCR;
             }
 
