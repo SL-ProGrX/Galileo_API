@@ -43,10 +43,11 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             {
                 var response = new BEeneCategoriaDataLista();
 
-                const string sqlCount = "SELECT COUNT(*) FROM AFI_BENE_CATEGORIAS";
-                response.Total = connection.QueryFirstOrDefault<int>(sqlCount);
-
                 var like = string.IsNullOrWhiteSpace(filtro) ? null : $"%{filtro}%";
+
+                const string sqlCount = @"SELECT COUNT(*) FROM AFI_BENE_CATEGORIAS
+                                          WHERE (@like IS NULL OR COD_CATEGORIA LIKE @like OR DESCRIPCION LIKE @like)";
+                response.Total = connection.QueryFirstOrDefault<int>(sqlCount, new { like });
                 var offset = pagina ?? 0;
                 var fetch = paginacion ?? 10;
 
@@ -69,9 +70,11 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <returns>Lista de permisos.</returns>
         public ErrorDto<List<BeneCategoriaPermisos>> BeneficiosCategorias_ObtenerPermisos(int CodCliente, string cod_categoria, string? filtro)
         {
-            return DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
+            var result =  DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
                 connection.Query<BeneCategoriaPermisos>("EXEC spAFI_Bene_CategoriaPermisos @cod_categoria, @filtro",
-                    new { cod_categoria, filtro }).ToList());
+                    new { cod_categoria, filtro = filtro ?? string.Empty }).ToList());
+
+            return result;
         }
 
         /// <summary>
