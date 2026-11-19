@@ -317,7 +317,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                             Monto = item.compromiso,
                             Correo = item.correo ?? string.Empty,
                             Operacion = item.id_solicitud,
-                            FecUlt = item.fecult ?? string.Empty,
+                            FecUlt = ObtenerFecUlt(item.fecult),
                             TipoCuota = item.tipo ?? string.Empty
                         },
                         commandType: CommandType.StoredProcedure,
@@ -381,6 +381,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
             {
                 return DbHelper.CreateErrorResponse<ArchivoDto>(ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Convierte el último movimiento (FECULT) a entero, igual que rs!FecUlt en VB6.
+        /// Nulo o vacío se envía como 0.
+        /// </summary>
+        private static int ObtenerFecUlt(string? fecult)
+        {
+            return decimal.TryParse(fecult?.Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out var valor)
+                ? (int)valor
+                : 0;
         }
 
         private static string ConstruirLineaArchivoBanco(string formato, CcCaRemesasArchivoBancoRow item)
