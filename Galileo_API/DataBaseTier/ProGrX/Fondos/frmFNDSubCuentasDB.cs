@@ -363,6 +363,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             AgregarValidacionesRequeridas(data, mensajes);
             if (mensajes.Count == 0)
             {
+                var montoValido = FND_SubCuentas_MontoMinimo_Validar(CodEmpresa, data);
+                if (montoValido.Code != 0)
+                {
+                    return montoValido;
+                }
+
                 return response;
             }
 
@@ -672,7 +678,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 Nombre = CrearNombreCompleto(data),
                 Parentesco = NormalizarTexto(data.parentesco),
                 FechaNac = MProGrXAuxiliarDB.validaFechaGlobal(data.fechanac, esNuevo ? "yyyyMMdd" : "yyyy-MM-dd"),
-                Cuota = esNuevo ? 0 : data.cuota,
+                Cuota = data.cuota,
                 Aportes = 0,
                 Rendimiento = 0,
                 Direccion = NormalizarTexto(data.direccion),
@@ -706,6 +712,65 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 Movimiento = movimiento,
                 Modulo = vModulo
             });
+        }
+
+        /// <summary>
+        /// Valida que el plan admita subcuentas y que la mensualidad alcance
+        /// el monto mínimo configurado, conforme al formulario VB6.
+        /// </summary>
+        /// <param name="CodEmpresa">Empresa del contrato.</param>
+        /// <param name="data">Subcuenta que se intenta guardar.</param>
+        /// <returns>Resultado de la validación de la mensualidad.</returns>
+        private ErrorDto<bool> FND_SubCuentas_MontoMinimo_Validar(
+            int CodEmpresa,
+            FndSubCuentasData data)
+        {
+            var configuracion = DbHelper.ExecuteSingleQuery<FndSubCuentasConfiguracionData>(
+                new PortalDB(_config),
+                CodEmpresa,
+                SqlConfiguracionSubCuentasPlan,
+                default,
+                new
+                {
+                    Operadora = data.cod_operadora,
+                    Plan = NormalizarTexto(data.cod_plan),
+                    Contrato = data.cod_contrato
+                });
+
+            if (configuracion.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(
+                    configuracion.Description ?? "No fue posible validar el monto mínimo del plan.",
+                    configuracion.Code.GetValueOrDefault(-1),
+                    false);
+            }
+
+            if (configuracion.Result is null)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "No se encontró la configuración del plan.",
+                    -2,
+                    false);
+            }
+
+            if (!configuracion.Result.cuenta_maestra)
+            {
+                return DbHelper.CreateErrorResponse(
+                    "Este plan no acepta subcuentas.",
+                    -2,
+                    false);
+            }
+
+            if (data.cuota is null ||
+                data.cuota.Value < configuracion.Result.monto_minimo)
+            {
+                return DbHelper.CreateErrorResponse(
+                    $"La mensualidad debe ser mayor o igual a {configuracion.Result.monto_minimo:N2}.",
+                    -2,
+                    false);
+            }
+
+            return DbHelper.CreateOkResponse(true, string.Empty);
         }
 
         /// <summary>
