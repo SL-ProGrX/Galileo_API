@@ -1047,13 +1047,13 @@ WHERE CPR_ID = @Id;";
                         new { Id = cprId }) ?? "";
 
                     var usuario = conn.QueryFirstOrDefault<string>(
-                        "SELECT autoriza_usuario FROM CPR_SOLICITUD WHERE cpr_id = @Id;",
+                        "SELECT registro_usuario FROM CPR_SOLICITUD WHERE cpr_id = @Id;",
                         new { Id = cprId }) ?? "";
 
                     // OJO: en tu código original esta consulta se veía rara (USUARIOS y cpr_id = usuario).
                     // La dejo igual, pero parametrizada.
                     var correo = conn.QueryFirstOrDefault<string>(
-                        "SELECT email FROM USUARIOS WHERE cpr_id = @Usuario;",
+                        "SELECT email FROM USUARIOS WHERE Nombre = @Usuario;",
                         new { Usuario = usuario }) ?? "";
 
                     return (detalle, usuario, correo);
