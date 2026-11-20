@@ -309,14 +309,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             var formatoCuentas = new MCntLinkDB(_config);
 
-            foreach (var asiento in respuesta.Result)
+            foreach (var asiento in respuesta.Result.Where(asiento =>
+             !string.IsNullOrWhiteSpace(asiento.cod_cuenta) &&
+             !asiento.cod_cuenta.Contains('-')))
             {
-                if (!string.IsNullOrWhiteSpace(asiento.cod_cuenta) &&
-                    !asiento.cod_cuenta.Contains('-'))
-                {
-                    asiento.cod_cuenta = formatoCuentas.fxgCntCuentaFormato(
-                        CodEmpresa, true, asiento.cod_cuenta, 0);
-                }
+                asiento.cod_cuenta = formatoCuentas.fxgCntCuentaFormato(
+                    CodEmpresa, true, asiento.cod_cuenta, 0);
             }
 
             return respuesta;
