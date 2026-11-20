@@ -53,6 +53,15 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
 
         public ErrorDto CajasCierre_Deposito_Guardar(int CodEmpresa, CajasCierreDepositoRequest Request)
         {
+            if (Request.monto < 0)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "El monto del depósito no puede ser negativo."
+                };
+            }
+
             return _db.CajasCierre_Deposito_Guardar(CodEmpresa, Request);
         }
 
@@ -68,6 +77,15 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
 
         public ErrorDto CajasCierre_Denominacion_Registrar(int CodEmpresa, CajasCierreDenominacionRequest Request)
         {
+            if (Request.cantidad < 0)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "La cantidad de denominaciones no puede ser negativa."
+                };
+            }
+
             return _db.CajasCierre_Denominacion_Registrar(CodEmpresa, Request);
         }
     }
