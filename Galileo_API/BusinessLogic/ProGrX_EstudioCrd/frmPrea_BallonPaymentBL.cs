@@ -133,6 +133,60 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             return _db.Prea_frmPrea_BallonPayment_Condiciones_Guardar(codEmpresa, request);
         }
 
+        public ErrorDto<FrmPreaBallonPaymentCondonacionGuardarResponse> Prea_frmPrea_BallonPayment_Condonacion_Guardar(
+            int codEmpresa,
+            FrmPreaBallonPaymentCondonacionGuardarRequest request)
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaBallonPaymentCondonacionGuardarResponse>
+                {
+                    Code = -1,
+                    Description = validaExpediente,
+                    Result = new FrmPreaBallonPaymentCondonacionGuardarResponse()
+                };
+            }
+
+            if (request.monto_condonacion < 0)
+            {
+                return new ErrorDto<FrmPreaBallonPaymentCondonacionGuardarResponse>
+                {
+                    Code = -1,
+                    Description = "El monto de condonación no puede ser negativo.",
+                    Result = new FrmPreaBallonPaymentCondonacionGuardarResponse()
+                };
+            }
+
+            return _db.Prea_frmPrea_BallonPayment_Condonacion_Guardar(codEmpresa, request);
+        }
+
+        public ErrorDto<FrmPreaBallonPaymentLiquidacionGuardarResponse> Prea_frmPrea_BallonPayment_Liquidacion_Guardar(
+            int codEmpresa,
+            FrmPreaBallonPaymentLiquidacionGuardarRequest request)
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.cod_preanalisis))
+            {
+                return new ErrorDto<FrmPreaBallonPaymentLiquidacionGuardarResponse>
+                {
+                    Code = -1,
+                    Description = validaExpediente,
+                    Result = new FrmPreaBallonPaymentLiquidacionGuardarResponse()
+                };
+            }
+
+            if (request.monto_liquidacion < 0)
+            {
+                return new ErrorDto<FrmPreaBallonPaymentLiquidacionGuardarResponse>
+                {
+                    Code = -1,
+                    Description = "El monto de liquidación no puede ser negativo.",
+                    Result = new FrmPreaBallonPaymentLiquidacionGuardarResponse()
+                };
+            }
+
+            return _db.Prea_frmPrea_BallonPayment_Liquidacion_Guardar(codEmpresa, request);
+        }
+
         public ErrorDto<FrmPreaBallonPaymentGuardarResponse> Prea_frmPrea_BallonPayment_Guardar(
             int codEmpresa,
             FrmPreaBallonPaymentGuardarRequest request)
