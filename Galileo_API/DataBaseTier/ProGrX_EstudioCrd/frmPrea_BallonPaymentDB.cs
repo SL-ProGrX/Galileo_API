@@ -53,6 +53,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     cod_preanalisis = cod_preanalisis.Trim(),
                     traslada_salario = GetBool(row, "TRASLADA_SALARIO", "traslada_salario"),
                     deduce_planilla = GetBool(row, "DEDUCE_PLANILLA", "deduce_planilla"),
+                    edita_balloon = GetBool(row, "EDITA_BALLOON", "edita_balloon"),
+                    edita_condonacion = GetBool(row, "EDITA_CONDONACION", "edita_condonacion"),
+                    edita_liquidacion = GetBool(row, "EDITA_LIQUIDACION", "edita_liquidacion"),
+                    monto_condonacion = GetDecimal(row, "MONTO_CONDONACION", "monto_condonacion"),
+                    monto_liquidacion = GetDecimal(row, "MONTO_LIQUIDACION", "monto_liquidacion"),
+                    aplica_liquidacion = GetBool(row, "APLICA_LIQUIDACION", "aplica_liquidacion"),
                     monto = GetDecimal(row, "MONTO", "Monto", "monto"),
                     cuota = GetDecimal(row, "CUOTA", "Cuota", "cuota"),
                     cuota_balloon = GetDecimal(row, "CUOTA_BALLOON", "cuota_balloon"),
@@ -205,6 +211,93 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<FrmPreaBallonPaymentCondicionesGuardarResponse>(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Registra la condonación de recuperación de mora.
+        /// </summary>
+        public ErrorDto<FrmPreaBallonPaymentCondonacionGuardarResponse> Prea_frmPrea_BallonPayment_Condonacion_Guardar(
+            int codEmpresa,
+            FrmPreaBallonPaymentCondonacionGuardarRequest request)
+        {
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+                connection.Open();
+
+                connection.Execute(
+                    @"EXEC spCrdPrea_RecuperaMora_Condonacion
+                        @cod_preanalisis,
+                        @monto_condonacion",
+                    new
+                    {
+                        cod_preanalisis = request.cod_preanalisis.Trim(),
+                        monto_condonacion = request.monto_condonacion
+                    },
+                    commandType: CommandType.Text);
+
+                RegistrarBitacora(
+                    codEmpresa,
+                    request.usuario,
+                    "Registra - WEB",
+                    $"BallonPayment Condonación, Expediente {request.cod_preanalisis.Trim()}, Monto Condonado [{request.monto_condonacion}]");
+
+                return DbHelper.CreateOkResponse(new FrmPreaBallonPaymentCondonacionGuardarResponse
+                {
+                    cod_preanalisis = request.cod_preanalisis.Trim(),
+                    monto_condonacion = request.monto_condonacion,
+                    mensaje = "Condonación registrada satisfactoriamente."
+                });
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<FrmPreaBallonPaymentCondonacionGuardarResponse>(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Guarda los datos de liquidación de recuperación de mora.
+        /// </summary>
+        public ErrorDto<FrmPreaBallonPaymentLiquidacionGuardarResponse> Prea_frmPrea_BallonPayment_Liquidacion_Guardar(
+            int codEmpresa,
+            FrmPreaBallonPaymentLiquidacionGuardarRequest request)
+        {
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+                connection.Open();
+
+                connection.Execute(
+                    @"EXEC spCrdPrea_RecuperaMora_Liquidaciones
+                        @cod_preanalisis,
+                        @monto_liquidacion,
+                        @aplica_liquidacion",
+                    new
+                    {
+                        cod_preanalisis = request.cod_preanalisis.Trim(),
+                        monto_liquidacion = request.monto_liquidacion,
+                        aplica_liquidacion = request.aplica_liquidacion ? 1 : 0
+                    },
+                    commandType: CommandType.Text);
+
+                RegistrarBitacora(
+                    codEmpresa,
+                    request.usuario,
+                    "Registra - WEB",
+                    $"BallonPayment Liquidaciones, Expediente {request.cod_preanalisis.Trim()}, Monto Liquidación [{request.monto_liquidacion}] Liquidación Aplicada? [{(request.aplica_liquidacion ? 1 : 0)}]");
+
+                return DbHelper.CreateOkResponse(new FrmPreaBallonPaymentLiquidacionGuardarResponse
+                {
+                    cod_preanalisis = request.cod_preanalisis.Trim(),
+                    monto_liquidacion = request.monto_liquidacion,
+                    aplica_liquidacion = request.aplica_liquidacion,
+                    mensaje = "Datos de Liquidación actualizados satisfactoriamente."
+                });
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<FrmPreaBallonPaymentLiquidacionGuardarResponse>(ex.Message);
             }
         }
 
