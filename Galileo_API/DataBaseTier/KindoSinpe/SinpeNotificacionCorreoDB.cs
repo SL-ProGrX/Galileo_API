@@ -249,23 +249,16 @@ namespace Galileo_API.DataBaseTier
             }
 
             if (tipo == TipoBeneficiarioPersona)
-            {
-                string grupoInterno = EsCuentaIBANInterno(codEmpresa, solicitud.Cuenta).Result;
-                
-                if (grupoInterno == "INT")
-                {
-                    return Resultado(true ? TipoPlantillaSinpe.TranI : null);
-                }
-                else
-                {
-                    return Resultado(true ? TipoPlantillaSinpe.TranAs : null);
-                }
-                //var interna = EsCuentaInterna(codEmpresa, grupoInterno);
-                //if (interna.Code != 0)
-                //    return Error(interna.Description);
-            }
+                return ResolverPlantillaPersonaTE(codEmpresa, solicitud.Cuenta);
 
             return Resultado(null);
+        }
+
+        private ErrorDto<TipoPlantillaSinpe?> ResolverPlantillaPersonaTE(int codEmpresa, string? cuenta)
+        {
+            string? grupoInterno = EsCuentaIBANInterno(codEmpresa, cuenta).Result;
+
+            return Resultado(grupoInterno == "INT" ? TipoPlantillaSinpe.TranI : TipoPlantillaSinpe.TranAs);
         }
 
         private ErrorDto<bool> EsAsociado(int codEmpresa, string? codigo)
