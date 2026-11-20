@@ -38,6 +38,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 Select
                   S.cod_servicio,
                   S.descripcion as ServicioDesc,
+                  ISNULL(S.GENERA_FACTURA, 0) as Genera_Factura,
+                  ISNULL(RTRIM(S.CABYS), '') as Cabys,
                   R.Cod_recaudador,
                   R.descripcion as RecaudadorDesc
                 from cajas_servicios_asignados X

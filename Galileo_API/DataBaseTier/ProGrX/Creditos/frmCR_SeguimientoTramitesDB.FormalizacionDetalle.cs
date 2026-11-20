@@ -114,7 +114,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     rtrim(O.cod_requisito) as cod_requisito,
                     rtrim(isnull(R.descripcion, '')) as descripcion,
                     case when isnull(O.estado, 0) = 2 then 0 else isnull(R.visible, 0) end as visible,
-                    isnull(O.estado, 0) as estado
+                    isnull(O.estado, 0) as estado,
+                    case isnull(O.estado, 0)
+                        when 1 then 'Cumplido'
+                        when 2 then 'Rechazado'
+                        else 'Pendiente'
+                    end as estado_descripcion
                 from requisitos_adicionales R
                 inner join operacion_requisitos O on R.cod_requisito = O.cod_requisito
                 where O.id_solicitud = @Operacion
