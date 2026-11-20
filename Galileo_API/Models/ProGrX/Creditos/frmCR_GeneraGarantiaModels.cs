@@ -67,10 +67,17 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string codigo { get; set; } = string.Empty;
         public string cedula { get; set; } = string.Empty;
         public string estadosol { get; set; } = string.Empty;
+        public string estado { get; set; } = string.Empty;
         public string garantia { get; set; } = string.Empty;
         public decimal montoapr { get; set; }
         public int plazo { get; set; }
         public decimal int_corriente { get; set; }
+    }
+
+    internal class CrGeneraGarantiaOperacionEstadoData
+    {
+        public string estadosol { get; set; } = string.Empty;
+        public string estado { get; set; } = string.Empty;
     }
 
     internal class CrGeneraGarantiaSocioData
