@@ -527,11 +527,16 @@ namespace Galileo.DataBaseTier
             return ExecuteStoredProcedure(
                 CodEmpresa,
                 "dbo.spAFI_RegistroDefault",
-                new
-                {
-                    Cedula = req.Cedula,
-                    Usuario = req.Usuario
-                });
+                new DynamicParameters());
+        }
+
+        public ErrorDto<List<AfRegistroDefaultResultDto>> AF_RegistroDefault_Obtener(
+            int CodEmpresa)
+        {
+            var connectionString = CreatePortalDb().ObtenerDbConnStringEmpresa(CodEmpresa);
+            return DbHelper.ExecuteStoredProcedureList<AfRegistroDefaultResultDto>(
+                connectionString,
+                "dbo.spAFI_RegistroDefault");
         }
 
         /// <summary>

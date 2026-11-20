@@ -104,6 +104,12 @@ namespace Galileo.BusinessLogic.ProGrX.Clientes
             return _db.AF_RegistroDefault(CodEmpresa, request);
         }
 
+        public ErrorDto<List<AfRegistroDefaultResultDto>> AF_RegistroDefault_Obtener(
+            int CodEmpresa)
+        {
+            return _db.AF_RegistroDefault_Obtener(CodEmpresa);
+        }
+
         public ErrorDto<List<DropDownListaGenericaModel>> AF_Provincias_Obtener(int CodEmpresa)
         {
             return _db.AF_Provincias_Obtener(CodEmpresa);

@@ -157,6 +157,15 @@ namespace Galileo.Controllers
         }
 
         [Authorize]
+        [ValidateAntiForgeryToken]
+        [HttpPost("AF_RegistroDefault_Obtener")]
+        public ErrorDto<List<AfRegistroDefaultResultDto>> AF_RegistroDefault_Obtener(
+            int CodEmpresa)
+        {
+            return _bl.AF_RegistroDefault_Obtener(CodEmpresa);
+        }
+
+        [Authorize]
         [HttpGet("AF_Provincias_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> AF_Provincias_Obtener(int CodEmpresa)
         {

@@ -715,6 +715,13 @@
         public string? Usuario { get; set; } = default;
     }
 
+    public class AfRegistroDefaultResultDto
+    {
+        public string? Tipo { get; set; }
+        public string? Codigo { get; set; }
+        public string? Descripcion { get; set; }
+    }
+
     public class AfPersonaGuardarDto
     {
         public string request { get; set; } = string.Empty;
