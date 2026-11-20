@@ -252,14 +252,7 @@ namespace Galileo_API.DataBaseTier
             {
                 string grupoInterno = EsCuentaIBANInterno(codEmpresa, solicitud.Cuenta).Result;
                 
-                if (grupoInterno == "INT")
-                {
-                    return Resultado(true ? TipoPlantillaSinpe.TranI : null);
-                }
-                else
-                {
-                    return Resultado(true ? TipoPlantillaSinpe.TranAs : null);
-                }
+                return Resultado(grupoInterno == "INT" ? TipoPlantillaSinpe.TranI : TipoPlantillaSinpe.TranAs);
                 //var interna = EsCuentaInterna(codEmpresa, grupoInterno);
                 //if (interna.Code != 0)
                 //    return Error(interna.Description);
