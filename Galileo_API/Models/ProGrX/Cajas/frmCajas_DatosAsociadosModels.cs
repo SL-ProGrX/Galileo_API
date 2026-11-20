@@ -50,12 +50,14 @@ namespace Galileo_API.Models.ProGrX.Cajas
 
     public class CajasServiciosDto
     {
-        public string? servicio { get; set; }
+        // Los nombres coinciden con las columnas de spCajas_Consulta_Servicios para que Dapper los mapee.
+        public string? servicioDesc { get; set; }
+        public string? recaudadorDesc { get; set; }
         public decimal? monto { get; set; }
-        public DateTime? fecha { get; set; }
-        public string? referencia { get; set; }
-        public string? caja { get; set; }
-        public string? usuario { get; set; }
+        public DateTime? registro_fecha { get; set; }
+        public string? num_referencia { get; set; }
+        public string? cod_caja { get; set; }
+        public string? registro_usuario { get; set; }
     }
 
     public class CajasSaldoFavorDto

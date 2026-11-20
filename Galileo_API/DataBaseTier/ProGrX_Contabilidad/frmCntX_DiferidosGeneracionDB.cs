@@ -8,11 +8,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
     public class FrmCntXDiferidosGeneracionDB
     {
+        private const string MsgPeriodoCerrado = "El período actual se encuentra cerrado o no se ha creado, verifique...";
+
         private readonly PortalDB _portalDb;
+        private readonly MCntXCalculosDb _mCalculos;
 
         public FrmCntXDiferidosGeneracionDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
+            _mCalculos = new MCntXCalculosDb(config);
         }
 
         /// <summary>
@@ -48,6 +52,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns>Resultado con TipoDoc y NumDoc.</returns>
         public ErrorDto<CntXDiferidoAsientoResult?> Diferido_Asiento(int codEmpresa, CntXDiferidoAsientoParams param)
         {
+            if (!_mCalculos.FxCntX_PeriodoVerifica(codEmpresa, param.CodContabilidad, param.Anio, param.Mes))
+            {
+                return new ErrorDto<CntXDiferidoAsientoResult?>
+                {
+                    Code = -1,
+                    Description = MsgPeriodoCerrado
+                };
+            }
+
             var sql = "spCntX_Diferido_Asiento";
             var parameters = new
             {

@@ -249,15 +249,16 @@ namespace Galileo_API.DataBaseTier
             }
 
             if (tipo == TipoBeneficiarioPersona)
-            {
-                var interna = EsCuentaInterna(codEmpresa, solicitud.ID_BANCO_DESTINO);
-                if (interna.Code != 0)
-                    return Error(interna.Description);
-
-                return Resultado(interna.Result ? TipoPlantillaSinpe.TranI : null);
-            }
+                return ResolverPlantillaPersonaTE(codEmpresa, solicitud.Cuenta);
 
             return Resultado(null);
+        }
+
+        private ErrorDto<TipoPlantillaSinpe?> ResolverPlantillaPersonaTE(int codEmpresa, string? cuenta)
+        {
+            string? grupoInterno = EsCuentaIBANInterno(codEmpresa, cuenta).Result;
+
+            return Resultado(grupoInterno == "INT" ? TipoPlantillaSinpe.TranI : TipoPlantillaSinpe.TranAs);
         }
 
         private ErrorDto<bool> EsAsociado(int codEmpresa, string? codigo)
@@ -280,18 +281,40 @@ namespace Galileo_API.DataBaseTier
             };
         }
 
+        private ErrorDto<string?> EsCuentaIBANInterno(int codEmpresa, string? iban)
+        {
+            if (string.IsNullOrWhiteSpace(iban))
+                return new ErrorDto<string?> { Code = 0, Description = "Ok", Result = null };
+            const string sql = @"
+                        SELECT TOP 1 RTRIM(ISNULL(COD_BANCO, ''))
+                        FROM SYS_CUENTAS_BANCARIAS WHERE CUENTA_INTERNA = @Iban;";
+            var idBanco = DbHelper.ExecuteSingleQuery<string>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                defaultValue: string.Empty,
+                parameters: new { Iban = iban.Trim() }
+            );
+            return new ErrorDto<string?>
+            {
+                Code = idBanco.Code,
+                Description = idBanco.Description,
+                Result = string.IsNullOrWhiteSpace(idBanco.Result) ? null : idBanco.Result.Trim()
+            };
+        }
+
         private ErrorDto<bool> EsCuentaInterna(int codEmpresa, string? idBancoDestino)
         {
             if (string.IsNullOrWhiteSpace(idBancoDestino))
                 return new ErrorDto<bool> { Code = 0, Description = "Ok", Result = false };
 
             const string sql = @"
-SELECT COUNT(1)
-FROM dbo.TES_BANCOS B
-INNER JOIN dbo.TES_BANCOS_GRUPOS G
-    ON B.cod_Grupo = G.cod_grupo
-WHERE B.id_banco = @IdBanco
-  AND G.cod_grupo = @GrupoInterno;";
+                        SELECT COUNT(1)
+                        FROM dbo.TES_BANCOS B
+                        INNER JOIN dbo.TES_BANCOS_GRUPOS G
+                            ON B.cod_Grupo = G.cod_grupo
+                        WHERE B.id_banco = @IdBanco
+                          AND G.cod_grupo = @GrupoInterno;";
 
             var conteo = DbHelper.ExecuteSingleQuery<int>(
                 _portalDb,
