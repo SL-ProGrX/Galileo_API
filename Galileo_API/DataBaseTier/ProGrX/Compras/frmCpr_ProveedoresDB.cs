@@ -129,10 +129,21 @@ WHERE (@q IS NULL OR PROVEEDOR_CODIGO LIKE @q OR CEDJUR LIKE @q OR DESCRIPCION L
 
                     result.total = conn.ExecuteScalar<int>(countSql, dp);
 
-                    const string dataSql = @"SELECT PROVEEDOR_CODIGO, CEDJUR, DESCRIPCION
-FROM CPR_PROVEEDORES_TEMPO
-WHERE (@q IS NULL OR PROVEEDOR_CODIGO LIKE @q OR CEDJUR LIKE @q OR DESCRIPCION LIKE @q)
-ORDER BY PROVEEDOR_CODIGO
+                    var columnaOrden = (filtro.sortField ?? string.Empty).ToLowerInvariant() switch
+                    {
+                        "descripcion" => "P.DESCRIPCION",
+                        "puntaje_promedio" => "PUNTAJE_PROMEDIO",
+                        _ => "P.PROVEEDOR_CODIGO"
+                    };
+                    var orderBy = columnaOrden + (filtro.sortOrder == -1 ? " DESC" : " ASC");
+                    if (columnaOrden != "P.PROVEEDOR_CODIGO")
+                        orderBy += ", P.PROVEEDOR_CODIGO";
+
+                    var dataSql = @"SELECT P.PROVEEDOR_CODIGO, P.CEDJUR, P.DESCRIPCION,
+    (SELECT AVG(V.VALORA_PUNTAJE) FROM CPR_SOLICITUD_PROV V WHERE V.PROVEEDOR_CODIGO = P.PROVEEDOR_CODIGO) AS PUNTAJE_PROMEDIO
+FROM CPR_PROVEEDORES_TEMPO P
+WHERE (@q IS NULL OR P.PROVEEDOR_CODIGO LIKE @q OR P.CEDJUR LIKE @q OR P.DESCRIPCION LIKE @q)
+ORDER BY " + orderBy + @"
 OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
 
                     result.proveedores = conn.Query<CprProveedoresDto>(dataSql, dp).ToList();
