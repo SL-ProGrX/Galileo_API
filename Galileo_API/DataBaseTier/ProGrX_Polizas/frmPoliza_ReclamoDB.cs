@@ -765,8 +765,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 if (validacion.Code == -1)
                     return validacion;
 
+                if (request.monto <= 0)
+                    return DbHelper.CreateErrorResponse<PolizaReclamoFondoAportacionResponse>(
+                        "El Monto del Aporte no es válido!");
+
                 const string sql = @"EXEC spPoliza_Reclamo_Fondo_Aportacion
                                         @ReclamoId = @ReclamoId,
+                                        @Monto = @Monto,
                                         @Usuario = @Usuario";
 
                 var row = connection.QueryFirstOrDefault<dynamic>(
@@ -774,6 +779,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     new
                     {
                         ReclamoId = request.reclamo_id,
+                        Monto = request.monto,
                         Usuario = TrimOrEmpty(request.usuario)
                     });
 
