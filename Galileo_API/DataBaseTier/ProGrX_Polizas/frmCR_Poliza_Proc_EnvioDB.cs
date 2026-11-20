@@ -266,7 +266,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                 if (incluyeMotorYChasis)
                 {
-                    baseVeh.Add(Col("VIN_MOTOR", "Motor CC", 2000));
+                    baseVeh.Add(Col("VIN_MOTOR", "VIN", 2000));
+                    baseVeh.Add(Col("CILINDRAJE", "Cilindraje (CC)", 2000, GridConstants.Align.Right, GridConstants.Formats.Numeric2));
                     baseVeh.Add(Col("CHASIS_NUMERO", "Chasis", 3000));
                 }
 
