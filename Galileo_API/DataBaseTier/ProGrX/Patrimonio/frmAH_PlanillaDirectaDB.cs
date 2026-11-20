@@ -151,11 +151,16 @@ exec spPAT_PlanillaDirecta_Consulta
                 using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 conn.Open();
 
+                if (Ah_PlanillaDirecta_EstaAplicada(conn, request!.num_doc.Trim()))
+                {
+                    return DbHelper.CreateErrorResponse(MensajeYaAplicada, -1, response);
+                }
+
                 using var transaction = conn.BeginTransaction();
 
                 try
                 {
-                    var tipoAporte = Ah_PlanillaDirecta_NormalizarTipoAporteProceso(request!.tipo_aporte);
+                    var tipoAporte = Ah_PlanillaDirecta_NormalizarTipoAporteProceso(request.tipo_aporte);
 
                     for (var i = 0; i < request.registros.Count; i++)
                     {
@@ -294,7 +299,7 @@ exec spPAT_PlanillaDirecta_Procesa
                         commandTimeout: tiempoEsperaSegundos,
                         commandType: CommandType.Text);
 
-                    conn.Execute(
+                    var documentoGenerado = conn.QueryFirstOrDefault<FrmAhPlanillaDirectaProcesarSpDto>(
                         sqlProcesar,
                         new
                         {
@@ -308,11 +313,17 @@ exec spPAT_PlanillaDirecta_Procesa
                         commandTimeout: tiempoEsperaSegundos,
                         commandType: CommandType.Text);
 
+                    if (documentoGenerado == null)
+                    {
+                        throw new InvalidOperationException("El proceso no devolvió el documento generado.");
+                    }
+
                     transaction.Commit();
 
                     response.accion = "PROCESAR";
                     response.mensaje = "Información actualizada satisfactoriamente.";
-                    response.num_doc = request.num_doc.Trim();
+                    response.num_doc = documentoGenerado.NumDoc.Trim();
+                    response.tipo_documento = documentoGenerado.TipoDoc.Trim();
 
                     return DbHelper.CreateOkResponse(response);
                 }
@@ -326,6 +337,23 @@ exec spPAT_PlanillaDirecta_Procesa
             {
                 return DbHelper.CreateErrorResponse(ex.Message, -1, response);
             }
+        }
+
+        private const string MensajeYaAplicada =
+            "Ya se aplico una planilla con esta fecha de proceso para la institución y el plan elegidos";
+
+        /// <summary>
+        /// Equivale a fxAplicada de V6: indica si el comprobante ya tiene transacción PLA aplicada.
+        /// </summary>
+        private static bool Ah_PlanillaDirecta_EstaAplicada(IDbConnection conn, string numDoc)
+        {
+            const string sql = @"
+select count(*)
+from sif_transacciones
+where Tipo_Documento = 'PLA'
+  and Documento = @Documento;";
+
+            return conn.ExecuteScalar<int>(sql, new { Documento = numDoc }) > 0;
         }
 
         private static ErrorDto<List<FrmAhPlanillaDirectaCargadoDto>>? Ah_PlanillaDirecta_ValidarCargadoRequest(
