@@ -55,6 +55,24 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         }
 
         [ValidateAntiForgeryToken]
+        [HttpPost("Prea_frmPrea_BallonPayment_Condonacion_Guardar")]
+        public ErrorDto<FrmPreaBallonPaymentCondonacionGuardarResponse> Prea_frmPrea_BallonPayment_Condonacion_Guardar(
+            int codEmpresa,
+            [FromBody] FrmPreaBallonPaymentCondonacionGuardarRequest request)
+        {
+            return _bl.Prea_frmPrea_BallonPayment_Condonacion_Guardar(codEmpresa, request);
+        }
+
+        [ValidateAntiForgeryToken]
+        [HttpPost("Prea_frmPrea_BallonPayment_Liquidacion_Guardar")]
+        public ErrorDto<FrmPreaBallonPaymentLiquidacionGuardarResponse> Prea_frmPrea_BallonPayment_Liquidacion_Guardar(
+            int codEmpresa,
+            [FromBody] FrmPreaBallonPaymentLiquidacionGuardarRequest request)
+        {
+            return _bl.Prea_frmPrea_BallonPayment_Liquidacion_Guardar(codEmpresa, request);
+        }
+
+        [ValidateAntiForgeryToken]
         [HttpPost("Prea_frmPrea_BallonPayment_Guardar")]
         public ErrorDto<FrmPreaBallonPaymentGuardarResponse> Prea_frmPrea_BallonPayment_Guardar(
             int codEmpresa,

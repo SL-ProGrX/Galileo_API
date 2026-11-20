@@ -5,6 +5,12 @@
         public string cod_preanalisis { get; set; } = string.Empty;
         public bool traslada_salario { get; set; } = false;
         public bool deduce_planilla { get; set; } = false;
+        public bool edita_balloon { get; set; } = false;
+        public bool edita_condonacion { get; set; } = false;
+        public bool edita_liquidacion { get; set; } = false;
+        public decimal monto_condonacion { get; set; } = 0;
+        public decimal monto_liquidacion { get; set; } = 0;
+        public bool aplica_liquidacion { get; set; } = false;
         public decimal monto { get; set; } = 0;
         public decimal cuota { get; set; } = 0;
         public decimal cuota_balloon { get; set; } = 0;
@@ -32,6 +38,36 @@
         public string cod_preanalisis { get; set; } = string.Empty;
         public bool traslada_salario { get; set; } = false;
         public bool deduce_planilla { get; set; } = false;
+        public string mensaje { get; set; } = string.Empty;
+    }
+
+    public class FrmPreaBallonPaymentCondonacionGuardarRequest
+    {
+        public string usuario { get; set; } = string.Empty;
+        public string cod_preanalisis { get; set; } = string.Empty;
+        public decimal monto_condonacion { get; set; } = 0;
+    }
+
+    public class FrmPreaBallonPaymentCondonacionGuardarResponse
+    {
+        public string cod_preanalisis { get; set; } = string.Empty;
+        public decimal monto_condonacion { get; set; } = 0;
+        public string mensaje { get; set; } = string.Empty;
+    }
+
+    public class FrmPreaBallonPaymentLiquidacionGuardarRequest
+    {
+        public string usuario { get; set; } = string.Empty;
+        public string cod_preanalisis { get; set; } = string.Empty;
+        public decimal monto_liquidacion { get; set; } = 0;
+        public bool aplica_liquidacion { get; set; } = false;
+    }
+
+    public class FrmPreaBallonPaymentLiquidacionGuardarResponse
+    {
+        public string cod_preanalisis { get; set; } = string.Empty;
+        public decimal monto_liquidacion { get; set; } = 0;
+        public bool aplica_liquidacion { get; set; } = false;
         public string mensaje { get; set; } = string.Empty;
     }
 
