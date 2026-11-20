@@ -301,7 +301,25 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                                   where D.cod_transaccion=  @codTransaccion and tipo_Documento = @tipoDocumento
                                   order by D.Numero_linea";
 
-            return DbHelper.ExecuteListQuery<SifConsultaDocCargaAsientoData>(_portalDb, CodEmpresa, query, new { tipoDocumento, codTransaccion });
+            var respuesta = DbHelper.ExecuteListQuery<SifConsultaDocCargaAsientoData>(
+                _portalDb, CodEmpresa, query, new { tipoDocumento, codTransaccion });
+
+            if (respuesta.Code < 0 || respuesta.Result is null)
+                return respuesta;
+
+            var formatoCuentas = new MCntLinkDB(_config);
+
+            foreach (var asiento in respuesta.Result)
+            {
+                if (!string.IsNullOrWhiteSpace(asiento.cod_cuenta) &&
+                    !asiento.cod_cuenta.Contains('-'))
+                {
+                    asiento.cod_cuenta = formatoCuentas.fxgCntCuentaFormato(
+                        CodEmpresa, true, asiento.cod_cuenta, 0);
+                }
+            }
+
+            return respuesta;
         }
 
 
