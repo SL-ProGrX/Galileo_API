@@ -19,6 +19,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
         private const string TipoAporte = "A";
         private const string TipoCredito = "C";
 
+        private const string CodigoEnvioAportesCcss = "0061";
+        private const string CodigoEnvioCreditoCcss = "0062";
+        private const string CodigoEnvioCreditoAlternoCcss = "0063";
+        private const string CodigoArchivoAportesCcss = "34585";
+        private const string CodigoArchivoCreditoCcss = "34586";
+        private const string CodigoArchivoCreditoAlternoCcss = "34587";
+
         private readonly ArchivosGeneradosOptions _archivosOptions;
         public CcProcesoMensualArchivoF01CcssGenerar(IOptions<ArchivosGeneradosOptions> archivosOptions)
         {
@@ -136,7 +143,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 return null;
             }
 
-            var nombreArchivo = CrearNombreArchivo(request.CodInstitucion, request.FechaProceso, configuracion.CodApoArc);
+            var codigoArchivo = ResolverCodigoArchivo(
+                configuracion.CodigoAportesEnv,
+                configuracion.CodApoArc);
+            var nombreArchivo = CrearNombreArchivo(
+                request.CodInstitucion,
+                request.FechaProceso,
+                codigoArchivo);
             var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(rutaBase, rutaDirectorio, nombreArchivo);
             var contenido = CrearContenidoAportes(registros, codigoAportes);
 
@@ -169,10 +182,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
                 return null;
             }
 
+            var codigoArchivoNormalizado = ResolverCodigoArchivo(
+                codigoEnvio,
+                codigoArchivo);
             var nombreArchivo = CrearNombreArchivo(
                 request.CodInstitucion,
                 request.FechaProceso,
-                codigoArchivo);
+                codigoArchivoNormalizado);
             var rutaArchivo = Helpers.CcProcesoMensualArchivoRutaHelperDb.CombinarArchivo(rutaBase, rutaDirectorio, nombreArchivo);
             var contenido = CrearContenidoCreditos(registros, codigoCredito);
 
@@ -318,6 +334,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos.frmCC_ProcesoMensualDB.Archiv
             return int.TryParse(texto, NumberStyles.Integer, CultureInfo.InvariantCulture, out var numero)
                 ? numero.ToString("0000", CultureInfo.InvariantCulture)
                 : texto.PadLeft(4, '0')[^4..];
+        }
+
+        private static string ResolverCodigoArchivo(
+            string codigoEnvio,
+            string codigoArchivoConfigurado)
+        {
+            return FormatearCodigoEnvio(codigoEnvio) switch
+            {
+                CodigoEnvioAportesCcss => CodigoArchivoAportesCcss,
+                CodigoEnvioCreditoCcss => CodigoArchivoCreditoCcss,
+                CodigoEnvioCreditoAlternoCcss => CodigoArchivoCreditoAlternoCcss,
+                _ => codigoArchivoConfigurado?.Trim() ?? string.Empty
+            };
         }
 
         private static string FormatearCedula(string cedula)

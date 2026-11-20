@@ -53,6 +53,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
         public string descripcion { get; set; } = string.Empty;
         public int visible { get; set; }
         public int estado { get; set; }
+        public string estado_descripcion { get; set; } = string.Empty;
     }
 
     public class CrSeguimientoTramitesFormalizacionCargoItem

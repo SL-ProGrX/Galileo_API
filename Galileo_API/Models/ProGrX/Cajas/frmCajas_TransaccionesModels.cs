@@ -19,6 +19,10 @@ namespace Galileo_API.Models.ProGrX.Cajas
     {
         public string? Cod_Servicio { get; set; } = string.Empty;
         public string? ServicioDesc { get; set; } = string.Empty;
+        [JsonPropertyName("Genera_Factura")]
+        public int Genera_Factura { get; set; }
+        [JsonPropertyName("Cabys")]
+        public string? Cabys { get; set; } = string.Empty;
         public string? Cod_Recaudador { get; set; } = string.Empty;
         public string? RecaudadorDesc { get; set; } = string.Empty;
     }
