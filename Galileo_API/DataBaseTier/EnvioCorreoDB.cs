@@ -5,6 +5,8 @@ using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 using Dapper;
+using System.Data;
+using System.Xml.Linq;
 using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier
@@ -113,6 +115,93 @@ SELECT CONVERT(int, @@ROWCOUNT);";
             }
 
             return response;
+        }
+
+        /// <summary>
+        /// Encola un correo con la plantilla de SYS_NOTIFICACIONES_PLANTILLAS usando spCpr_EncolarCorreos
+        /// (base de la empresa). Los valores de <paramref name="textos"/> se escapan en el procedimiento;
+        /// los de <paramref name="html"/> (PRODUCTOS, TERMINOS) se insertan tal cual.
+        /// Si Produccion = N, el destinatario se redirige a TestEmail.
+        /// </summary>
+        public async Task<ErrorDto> QueuePlantillaAsync(
+            int codEmpresa,
+            string codSmtp,
+            string codPlantilla,
+            string para,
+            IReadOnlyDictionary<string, string> textos,
+            IReadOnlyDictionary<string, string>? html = null,
+            string usuario = "Sistema")
+        {
+            var destino = _produccion == "N" && !string.IsNullOrWhiteSpace(_testEmail) ? _testEmail : para;
+            var bloques = html ?? new Dictionary<string, string>();
+
+            try
+            {
+                await using var connection = _portalDb.CreateConnection(codEmpresa);
+                var respuesta = await connection.QueryFirstOrDefaultAsync<RespuestaEncolado>(new CommandDefinition(
+                    "dbo.spCpr_EncolarCorreos",
+                    new
+                    {
+                        COD_PLANTILLA = codPlantilla,
+                        COD_SMTP = codSmtp,
+                        PARA = destino,
+                        CC = (string?)null,
+                        USUARIO = usuario,
+                        COD_EMPRESA = (short)codEmpresa,
+                        DATOS = ConstruirDatosXml(textos),
+                        PRODUCTOS_HTML = bloques.GetValueOrDefault("PRODUCTOS"),
+                        TERMINOS_HTML = bloques.GetValueOrDefault("TERMINOS"),
+                    },
+                    commandType: CommandType.StoredProcedure));
+
+                if (respuesta is null)
+                    return new ErrorDto { Code = -1, Description = "spCpr_EncolarCorreos no devolvió resultado." };
+
+                return new ErrorDto { Code = respuesta.Code, Description = respuesta.Description };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto { Code = -1, Description = ex.Message };
+            }
+        }
+
+        public async Task<string?> ObtenerCuerpoPlantillaAsync(int codEmpresa, string codPlantilla, CancellationToken ct = default)
+        {
+            var plantilla = await ObtenerPlantillaAsync(codEmpresa, codPlantilla, ct).ConfigureAwait(false);
+            return plantilla?.Cuerpo;
+        }
+
+        private async Task<(string Asunto, string Cuerpo)?> ObtenerPlantillaAsync(int codEmpresa, string codPlantilla, CancellationToken ct)
+        {
+            const string sql = @"
+SELECT ASUNTO AS Asunto, CAST(NOTIFICACION AS nvarchar(max)) AS Cuerpo
+FROM SYS_NOTIFICACIONES_PLANTILLAS
+WHERE COD_PLANTILLA = @CodPlantilla AND ACTIVO = 1;";
+
+            // Las plantillas están en la base de la empresa (misma conexión que usa el resto del módulo).
+            await using var connection = _portalDb.CreateConnection(codEmpresa);
+            var fila = await connection.QueryFirstOrDefaultAsync<PlantillaFila>(new CommandDefinition(
+                sql,
+                new { CodPlantilla = codPlantilla },
+                cancellationToken: ct)).ConfigureAwait(false);
+
+            return fila is null ? null : (fila.Asunto ?? string.Empty, fila.Cuerpo ?? string.Empty);
+        }
+
+        private static string ConstruirDatosXml(IReadOnlyDictionary<string, string> textos) =>
+            new XElement("d", textos.Select(kv => new XElement("k", new XAttribute("n", kv.Key), kv.Value)))
+                .ToString(SaveOptions.DisableFormatting);
+
+        private sealed class RespuestaEncolado
+        {
+            public int Code { get; set; }
+            public string Description { get; set; } = string.Empty;
+        }
+
+        private sealed class PlantillaFila
+        {
+            public string? Asunto { get; set; }
+            public string? Cuerpo { get; set; }
         }
 
         private static async Task<MimeMessage> BuildMessageAsync(EmailRequest req, CancellationToken ct)

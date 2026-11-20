@@ -165,6 +165,18 @@ namespace Galileo.Controllers
             return _bl.CprSolicitud_UsuariosEncargados_Obtener(CodEmpresa);
         }
 
+        [HttpGet("CprSolicitud_SitiosEntrega_Obtener")]
+        public ErrorDto<List<CatalogosLista>> CprSolicitud_SitiosEntrega_Obtener(int CodEmpresa)
+        {
+            return _bl.CprSolicitud_SitiosEntrega_Obtener(CodEmpresa);
+        }
+
+        [HttpGet("CprSolicitud_CorreosFactura_Obtener")]
+        public ErrorDto<List<CatalogosLista>> CprSolicitud_CorreosFactura_Obtener(int CodEmpresa)
+        {
+            return _bl.CprSolicitud_CorreosFactura_Obtener(CodEmpresa);
+        }
+
         [HttpGet("Encargados_Obtener")]
         public ErrorDto<List<EncargadosDto>> Encargados_Obtener(int CodEmpresa, int cod_unidad)
         {

@@ -14,26 +14,35 @@ namespace Galileo.DataBaseTier
         private readonly PortalDB _portalDb;
         private readonly EnvioCorreoDB _envioCorreoDB;
         private readonly FrmCprSolicitudDB _frmCprSolicitud;
+        private readonly IConfiguration _config;
 
-        private readonly string _sendEmail;
+        private const string PlantillaCotizacion = "CPR_COTIZ01";
+        private const string PlantillaTerminos = "CPR_TERM01";
         private readonly string _notificaciones;
 
         private const string DefaultErrorMsg = "Error";
         private const string EstadoVigente = "V";
         private const string EstadoEnviado = "E";
 
-        private sealed record CorreoData(CprProveedorDto Proveedor, List<CprSolicitudBsDto> Productos, string Recepcion);
+        private sealed record CorreoData(CprProveedorDto Proveedor, List<CprSolicitudBsDto> Productos, string Recepcion, string Multa, bool Terminos, List<string> Anexos, string LugarEntrega);
         private sealed record InvitarData(int CprId, int ProveedorCodigo, string Usuario);
         private sealed record ProvPuntajeRow(int PROVEEDOR_CODIGO, decimal PUNTAJE);
         private sealed record ProvPresenciaTablas(HashSet<int> ConValora, HashSet<int> ConCotiza, HashSet<int> ConBs);
+        private sealed class SolicitudCorreoFila
+        {
+            public DateTime? recepcion_ofertas { get; set; }
+            public string? int_sitio_entrega { get; set; }
+            public decimal? porc_multa { get; set; }
+            public int? terminos_condiciones { get; set; }
+        }
 
         public FrmCprSolicitudCotizaValoraDB(IConfiguration config)
         {
+            _config = config;
             _portalDb = new PortalDB(config);
             _envioCorreoDB = new EnvioCorreoDB(config);
             _frmCprSolicitud = new FrmCprSolicitudDB(config);
 
-            _sendEmail = config.GetSection("AppSettings:EnviaEmail").Value ?? "N";
             _notificaciones = config.GetSection("AppSettings:Notificaciones").Value ?? string.Empty;
         }
 
@@ -252,7 +261,7 @@ namespace Galileo.DataBaseTier
 
             var correoData = data.Result;
 
-            var mail = await CorreoSolicitaCotizacion_Enviar(codEmpresa, correoData.Proveedor, correoData.Productos, correoData.Recepcion);
+            var mail = await CorreoSolicitaCotizacion_Enviar(codEmpresa, cpr_id, correoData);
             if (mail.Code != 0)
                 return mail;
 
@@ -370,46 +379,67 @@ namespace Galileo.DataBaseTier
                     new { CprId = cpr_id }
                 ).ToList();
 
-                var horario = conn.QueryFirstOrDefault<DateTime?>(
-                    @"SELECT recepcion_ofertas FROM CPR_SOLICITUD WHERE cpr_id = @CprId",
+                var solicitud = conn.QueryFirstOrDefault<SolicitudCorreoFila>(
+                    @"SELECT recepcion_ofertas, porc_multa, terminos_condiciones, int_sitio_entrega
+                      FROM CPR_SOLICITUD
+                      WHERE cpr_id = @CprId",
                     new { CprId = cpr_id }
-                );
+                ) ?? new SolicitudCorreoFila();
 
-                var recepcion = horario?.ToString("yyyy-MM-dd HH:mm:ss") ?? "Sin fecha";
-                return new CorreoData(proveedor, productos, recepcion);
+                return new CorreoData(
+                    proveedor,
+                    productos,
+                    FormatoFechaLimite(solicitud.recepcion_ofertas),
+                    FormatoMulta(solicitud.porc_multa),
+                    (solicitud.terminos_condiciones ?? 0) != 0,
+                    ObtenerAnexos(cpr_id),
+                    solicitud.int_sitio_entrega ?? string.Empty);
             });
         }
 
-        private async Task<ErrorDto> CorreoSolicitaCotizacion_Enviar(int codEmpresa, CprProveedorDto proveedor, List<CprSolicitudBsDto> info, string recepcion)
+        /// <summary>Nombres de los documentos anexos del concurso (GA_Files, módulo CPR).</summary>
+        private List<string> ObtenerAnexos(int cprId)
+        {
+            using var conn = new SqlConnection(_config.GetConnectionString("GAConnString"));
+            return conn.Query<string>(
+                "SELECT filename FROM GA_Files WHERE moduloid = @Modulo AND llave_01 = @Llave ORDER BY filename;",
+                new { Modulo = "CPR", Llave = cprId.ToString() }).ToList();
+        }
+
+        private static string FormatoFechaLimite(DateTime? fecha) =>
+            fecha?.ToString("dd/MM/yyyy HH:mm", System.Globalization.CultureInfo.GetCultureInfo("es-CR")) ?? "Sin fecha";
+
+        private static string FormatoMulta(decimal? porcentaje) =>
+            porcentaje is null ? "No establecida" : $"{porcentaje.Value:0.##}%";
+
+        private async Task<ErrorDto> CorreoSolicitaCotizacion_Enviar(int codEmpresa, int cprId, CorreoData datos)
         {
             try
             {
-                var correoConfigResult = _envioCorreoDB.CorreoConfig(codEmpresa, _notificaciones);
-                if (correoConfigResult.Code != 0 || correoConfigResult.Result == null)
-                    return DbHelper.ErrorResponse($"Error obteniendo configuración de correo: {correoConfigResult.Description}", -1);
+                var terminos = datos.Terminos
+                    ? await _envioCorreoDB.ObtenerCuerpoPlantillaAsync(codEmpresa, PlantillaTerminos) ?? string.Empty
+                    : string.Empty;
 
-                var eConfig = correoConfigResult.Result;
-                var body = ConstruirBodyCorreo(proveedor, info, recepcion);
-
-                var resp = new ErrorDto();
-
-                var emailRequest = new EmailRequest
-                {
-                    To = _sendEmail == "Y" ? proveedor.email : eConfig.User,
-                    From = eConfig.User,
-                    Subject = _sendEmail == "Y"
-                        ? "Solicitud de Cotización"
-                        : "Solicitud de Cotización - Prueba",
-                    Body = body,
-                    Attachments = new List<IFormFile>()
-                };
-
-                await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
-
-                if (resp.Code != 0)
-                    return DbHelper.ErrorResponse(resp.Description ?? DefaultErrorMsg, resp.Code ?? -1);
-
-                return DbHelper.CreateOkResponse();
+                return await _envioCorreoDB.QueuePlantillaAsync(
+                    codEmpresa,
+                    _notificaciones,
+                    PlantillaCotizacion,
+                    datos.Proveedor.email ?? string.Empty,
+                    new Dictionary<string, string>
+                    {
+                        ["NO_SOLICITUD"] = cprId.ToString(),
+                        ["PROVEEDOR"] = datos.Proveedor.descripcion ?? string.Empty,
+                        ["CEDJUR"] = datos.Proveedor.cedjur ?? string.Empty,
+                        ["FECHA_LIMITE"] = datos.Recepcion,
+                        ["MULTA"] = datos.Multa,
+                        ["LUGAR_ENTREGA"] = datos.LugarEntrega,
+                        ["ANEXOS"] = datos.Anexos.Count > 0 ? string.Join(", ", datos.Anexos) : "Sin anexos",
+                    },
+                    new Dictionary<string, string>
+                    {
+                        ["PRODUCTOS"] = ConstruirFilasProductos(datos.Productos),
+                        ["TERMINOS"] = terminos,
+                    });
             }
             catch (Exception ex)
             {
@@ -417,36 +447,25 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        private static string ConstruirBodyCorreo(CprProveedorDto proveedor, List<CprSolicitudBsDto> info, string recepcion)
+        private static string ConstruirFilasProductos(List<CprSolicitudBsDto> info)
         {
             var sb = new StringBuilder();
-            var cprId = info.FirstOrDefault()?.cpr_id ?? 0;
-
-            sb.AppendLine(@"<html lang=""es""><head><meta charset=""UTF-8""></head><body>");
-            sb.AppendLine("<div>");
-            sb.AppendLine("<h2><strong>Solicitud de Cotización</strong></h2>");
-            sb.AppendLine($@"<p>No. Solicitud <strong>{cprId}</strong></p>");
-            sb.AppendLine($@"<p>Proveedor: {proveedor.descripcion}, Cédula Jurídica: {proveedor.cedjur}</p>");
-            sb.AppendLine("<p>Mediante la presente se le solicita una cotización de los productos detallados, a continuación.</p>");
-            sb.AppendLine($@"<p>Fecha límite de recepción de ofertas: {recepcion}</p>");
-            sb.AppendLine(@"<table border=""1"" cellspacing=""0"" cellpadding=""6"">");
-            sb.AppendLine("<tr><th>Cantidad</th><th>U/M</th><th>Código</th><th>Descripción</th><th>Monto</th><th>Total</th></tr>");
-
             foreach (var p in info)
             {
-                sb.AppendLine("<tr>");
-                sb.AppendLine($@"<td>{p.cantidad}</td>");
-                sb.AppendLine($@"<td>{(p.cod_unidad ?? "").ToUpper()}</td>");
-                sb.AppendLine($@"<td>{p.cod_producto}</td>");
-                sb.AppendLine($@"<td>{p.descripcion}</td>");
-                sb.AppendLine($@"<td>{p.monto}</td>");
-                sb.AppendLine($@"<td>{p.total}</td>");
-                sb.AppendLine("</tr>");
+                sb.Append("<tr>")
+                  .Append(Celda(p.cantidad))
+                  .Append(Celda((p.cod_unidad ?? string.Empty).ToUpper()))
+                  .Append(Celda(p.cod_producto))
+                  .Append(Celda(p.descripcion))
+                  .Append(Celda(p.monto))
+                  .Append(Celda(p.total))
+                  .Append("</tr>");
             }
-
-            sb.AppendLine("</table></div></body></html>");
             return sb.ToString();
         }
+
+        private static string Celda(object? valor) =>
+            $"<td>{System.Net.WebUtility.HtmlEncode(Convert.ToString(valor) ?? string.Empty)}</td>";
 
         private static void GuardarValoracionProveedores(SqlConnection conn, SqlTransaction tx, CprSolicitusValoracionGuardar datos, int cprId, int proveedorCodigo, string usuario)
         {
