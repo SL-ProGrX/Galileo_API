@@ -108,8 +108,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                         Plan = plan,
                         Cuenta = cuenta,
                         Usuario = usuario,
-                        Oficina = oficina!,
-                        CtaRetiros = ctaRetiros!,
+                        Oficina = oficina,
+                        CtaRetiros = ctaRetiros,
                         CodEmpresa = codEmpresa
                     });
                 }
