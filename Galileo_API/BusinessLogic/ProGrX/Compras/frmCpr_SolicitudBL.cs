@@ -119,6 +119,16 @@ namespace Galileo.BusinessLogic
             return _db.CprSolicitud_TipoExcepcion(CodCliente);
         }
 
+        public ErrorDto<List<CatalogosLista>> CprSolicitud_SitiosEntrega_Obtener(int CodEmpresa)
+        {
+            return _db.CprSolicitud_SitiosEntrega_Obtener(CodEmpresa);
+        }
+
+        public ErrorDto<List<CatalogosLista>> CprSolicitud_CorreosFactura_Obtener(int CodEmpresa)
+        {
+            return _db.CprSolicitud_CorreosFactura_Obtener(CodEmpresa);
+        }
+
         public ErrorDto<List<string>> CprSolicitud_UsuariosSolicitantes_Obtener(int CodEmpresa)
         {
             return _db.CprSolicitud_UsuariosSolicitantes_Obtener(CodEmpresa);

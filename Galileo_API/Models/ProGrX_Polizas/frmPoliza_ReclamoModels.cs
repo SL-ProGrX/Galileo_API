@@ -249,6 +249,7 @@
     {
         public int? reclamo_id { get; set; }
         public string usuario { get; set; } = string.Empty;
+        public decimal monto { get; set; } = 0;
     }
 
     public class PolizaReclamoFondoAportacionResponse
