@@ -28,8 +28,8 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             => _bl.CrCalculoOperacion_Codigo_Obtener(codEmpresa, cedula, codigo);
 
         [HttpGet("CrCalculoOperacion_Rangos_Obtener")]
-        public ErrorDto<CrCalculoOperacionRangosData> CrCalculoOperacion_Rangos_Obtener(int codEmpresa, string codigo, decimal monto)
-            => _bl.CrCalculoOperacion_Rangos_Obtener(codEmpresa, codigo, monto);
+        public ErrorDto<CrCalculoOperacionRangosData> CrCalculoOperacion_Rangos_Obtener(int codEmpresa, string codigo, decimal monto, string destino = "", string garantia = "")
+            => _bl.CrCalculoOperacion_Rangos_Obtener(codEmpresa, codigo, monto, destino, garantia);
 
         [HttpGet("CrCalculoOperacion_Disponibles_Obtener")]
         public ErrorDto<List<CrCalculoOperacionDisponibleData>> CrCalculoOperacion_Disponibles_Obtener(int codEmpresa, string cedula)
