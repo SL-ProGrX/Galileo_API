@@ -14,6 +14,8 @@ namespace Galileo.DataBaseTier
         // Evitar literales repetidos (Sonar)
         private const string ParamOff = "off";
         private const string ParamTake = "take";
+        private const string ParamSortCol = "sortCol";
+        private const string ParamSortDesc = "sortDesc";
 
         private static ErrorDto Fail(Exception ex) => DbHelper.ErrorResponse(ex.Message, -1);
 
@@ -27,6 +29,19 @@ namespace Galileo.DataBaseTier
 
             var f = filtro.Trim();
             return f.Length == 0 ? null : $"%{f}%";
+        }
+
+        // Columna de orden como entero (1=código, 2=descripción, 3=puntaje) y sentido.
+        // Se pasa como parámetro para no concatenar nada en la consulta (S2077).
+        private static (int Col, bool Desc) NormalizeSort(CprProveedoresFiltros filtro)
+        {
+            var col = (filtro.sortField ?? string.Empty).ToLowerInvariant() switch
+            {
+                "descripcion" => 2,
+                "puntaje_promedio" => 3,
+                _ => 1
+            };
+            return (col, filtro.sortOrder == -1);
         }
 
         private static (int Off, int Take) NormalizePaging(int? pagina, int? paginacion)
@@ -129,21 +144,22 @@ WHERE (@q IS NULL OR PROVEEDOR_CODIGO LIKE @q OR CEDJUR LIKE @q OR DESCRIPCION L
 
                     result.total = conn.ExecuteScalar<int>(countSql, dp);
 
-                    var columnaOrden = (filtro.sortField ?? string.Empty).ToLowerInvariant() switch
-                    {
-                        "descripcion" => "P.DESCRIPCION",
-                        "puntaje_promedio" => "PUNTAJE_PROMEDIO",
-                        _ => "P.PROVEEDOR_CODIGO"
-                    };
-                    var orderBy = columnaOrden + (filtro.sortOrder == -1 ? " DESC" : " ASC");
-                    if (columnaOrden != "P.PROVEEDOR_CODIGO")
-                        orderBy += ", P.PROVEEDOR_CODIGO";
+                    var (sortCol, sortDesc) = NormalizeSort(filtro);
+                    dp.Add(ParamSortCol, sortCol);
+                    dp.Add(ParamSortDesc, sortDesc);
 
-                    var dataSql = @"SELECT P.PROVEEDOR_CODIGO, P.CEDJUR, P.DESCRIPCION,
-    (SELECT AVG(V.VALORA_PUNTAJE) FROM CPR_SOLICITUD_PROV V WHERE V.PROVEEDOR_CODIGO = P.PROVEEDOR_CODIGO) AS PUNTAJE_PROMEDIO
+                    const string dataSql = @"SELECT P.PROVEEDOR_CODIGO, P.CEDJUR, P.DESCRIPCION, PP.PUNTAJE AS PUNTAJE_PROMEDIO
 FROM CPR_PROVEEDORES_TEMPO P
+OUTER APPLY (SELECT AVG(V.VALORA_PUNTAJE) AS PUNTAJE FROM CPR_SOLICITUD_PROV V WHERE V.PROVEEDOR_CODIGO = P.PROVEEDOR_CODIGO) PP
 WHERE (@q IS NULL OR P.PROVEEDOR_CODIGO LIKE @q OR P.CEDJUR LIKE @q OR P.DESCRIPCION LIKE @q)
-ORDER BY " + orderBy + @"
+ORDER BY
+    CASE WHEN @sortCol = 2 AND @sortDesc = 0 THEN P.DESCRIPCION END ASC,
+    CASE WHEN @sortCol = 2 AND @sortDesc = 1 THEN P.DESCRIPCION END DESC,
+    CASE WHEN @sortCol = 3 AND @sortDesc = 0 THEN PP.PUNTAJE END ASC,
+    CASE WHEN @sortCol = 3 AND @sortDesc = 1 THEN PP.PUNTAJE END DESC,
+    CASE WHEN @sortCol = 1 AND @sortDesc = 0 THEN P.PROVEEDOR_CODIGO END ASC,
+    CASE WHEN @sortCol = 1 AND @sortDesc = 1 THEN P.PROVEEDOR_CODIGO END DESC,
+    P.PROVEEDOR_CODIGO ASC
 OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
 
                     result.proveedores = conn.Query<CprProveedoresDto>(dataSql, dp).ToList();
