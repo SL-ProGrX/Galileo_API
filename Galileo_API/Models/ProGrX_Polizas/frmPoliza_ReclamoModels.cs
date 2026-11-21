@@ -266,6 +266,7 @@
         public int? contrato { get; set; }
         public int? banco_id { get; set; }
         public string cuenta { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
         public int metodo_pago { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
