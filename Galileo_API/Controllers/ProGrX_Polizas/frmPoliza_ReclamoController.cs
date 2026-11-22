@@ -12,12 +12,12 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
     [Authorize]
     public class FrmPolizaReclamoController : ControllerBase
     {
-       private readonly FrmPolizaReclamoBL _bl;
-    
-       public FrmPolizaReclamoController(IConfiguration config)
-       {
+        private readonly FrmPolizaReclamoBL _bl;
+
+        public FrmPolizaReclamoController(IConfiguration config)
+        {
             _bl = new FrmPolizaReclamoBL(config);
-       }
+        }
 
         [HttpGet("Poliza_Reclamo_Motivos_Lista")]
         public ErrorDto<List<DropDownListaGenericaModel>> Poliza_Reclamo_Motivos_Lista(

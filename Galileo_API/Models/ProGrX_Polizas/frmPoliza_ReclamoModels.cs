@@ -177,7 +177,7 @@
         public string usuario { get; set; } = string.Empty;
         public DateTime? fecha { get; set; }
         public decimal total_girar { get; set; }
-        public int? pago_tercero_tipo { get; set; }
+        public string? pago_tercero_tipo { get; set; }
         public string pago_tercero_id { get; set; } = string.Empty;
         public string pago_tercero_nombre { get; set; } = string.Empty;
         public string solicitud_tesoreria { get; set; } = string.Empty;
@@ -198,7 +198,7 @@
 
     public class PolizaReclamoActualizarVidaRequest
     {
-        public int? reclamo_id { get; set; } 
+        public int? reclamo_id { get; set; }
         public int? motivo_id { get; set; }
         public int? enfermedad_id { get; set; }
         public int? edad { get; set; }
@@ -267,6 +267,8 @@
         public int? contrato { get; set; }
         public int? banco_id { get; set; }
         public string cuenta { get; set; } = string.Empty;
+        [System.Text.Json.Serialization.JsonRequired]
+        public int metodo_pago { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 
@@ -274,13 +276,15 @@
     {
         public string mensaje { get; set; } = string.Empty;
         public string movimiento { get; set; } = string.Empty;
+        public int liq { get; set; }
+        public int solicitud_tesoreria { get; set; }
     }
 
     public class PolizaReclamoEtiquetaManualAddRequest
     {
         public int? reclamo_id { get; set; }
         public string observaciones { get; set; } = string.Empty;
-        public int i_correo { get; set; }  = 0;
+        public int i_correo { get; set; } = 0;
         public string destinatarios { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
     }
