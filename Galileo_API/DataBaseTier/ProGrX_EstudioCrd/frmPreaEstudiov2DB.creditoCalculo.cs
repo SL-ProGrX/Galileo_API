@@ -102,10 +102,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 var tasa = request.tasa;
                 var plazo = request.plazo;
                 var tasaPtsBono = 0m;
+                var tasaDesdeCatalogo = false;
 
                 if (string.Equals(request.origen, "monto", StringComparison.OrdinalIgnoreCase))
                 {
-                    (tasa, plazo, tasaPtsBono) = RecalcularTasaPlazoCatalogo(
+                    (tasa, plazo, tasaPtsBono, tasaDesdeCatalogo) = RecalcularTasaPlazoCatalogo(
                         connection,
                         new CreditoCatalogoCalculoParametros
                         {
@@ -150,6 +151,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     monto_poliza_desempleo = recalculo.MontoPolizaDesempleo,
                     poliza_incendio = polizaIncendio || recalculo.PolizaIncendioAutoMarcada,
                     tasa_pts_bono = tasaPtsBono,
+                    tasa_desde_catalogo = tasaDesdeCatalogo,
                 };
 
                 Console.WriteLine($"[Credito_Recalcular] RESULT tasa={tasa} plazo={plazo} cuota={recalculo.Cuota} compromiso={recalculo.Compromiso} tasaPtsBono={tasaPtsBono}");
@@ -236,6 +238,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Tasa configurada en el catálogo para la línea, monto, destino y garantía del expediente
+        /// (VB6: fxCatalogoRango tipo 'I'). 0 si no aplica: Fondos (garantía 'Y') o sin monto.
+        /// Angular la usa como tope de la tasa al cargar el expediente.
+        /// </summary>
+        private static decimal ObtenerTasaLinea(IDbConnection connection, FrmPreaEstudiov2CreditoDto credito)
+        {
+            var esFondo = string.Equals(credito.garantia?.Trim(), "Y", StringComparison.OrdinalIgnoreCase);
+            if (esFondo || string.IsNullOrWhiteSpace(credito.linea) || credito.monto <= 0)
+            {
+                return 0m;
+            }
+
+            return CalcularCatalogoRango(connection, credito.linea, credito.monto, "I", credito.destino, credito.garantia);
+        }
+
+        /// <summary>
         /// VB6: fxCatalogoRango(codigo, monto, tipo, destino, garantia) — mValidacion.bas
         /// línea 414-426. Wrapper delgado sobre el UDF de SQL Server, sin lógica de rango
         /// en VB6: SELECT dbo.fxCrdCatalogoRango('&lt;codigo&gt;',&lt;monto&gt;,'&lt;tipo&gt;','&lt;destino&gt;','&lt;garantia&gt;').
@@ -300,12 +318,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// la rama de Garantía "Y" (Fondos) con Tag de fondo ya establecido — para Fondos el
         /// Tasa/Plazo ya vienen fijados por Prea_frmPreaEstudiov2_Fondo_Calcular.
         /// </summary>
-        private static (decimal tasa, int plazo, decimal tasaPtsBono) RecalcularTasaPlazoCatalogo(
+        private static (decimal tasa, int plazo, decimal tasaPtsBono, bool tasaDesdeCatalogo) RecalcularTasaPlazoCatalogo(
             IDbConnection connection,
             CreditoCatalogoCalculoParametros parametros)
         {
             var tasa = parametros.TasaActual;
             var plazo = parametros.PlazoActual;
+            var tasaDesdeCatalogo = false;
 
             var esFondo = string.Equals(parametros.Garantia.Trim(), "Y", StringComparison.OrdinalIgnoreCase);
 
@@ -317,6 +336,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     connection, parametros.Linea, parametros.Monto, "P", parametros.Destino, parametros.Garantia);
                 tasa = CalcularCatalogoRango(
                     connection, parametros.Linea, parametros.Monto, "I", parametros.Destino, parametros.Garantia);
+                tasaDesdeCatalogo = true;
                 Console.WriteLine($"[RecalcularTasaPlazoCatalogo] CatalogoRango result: plazo={plazo} tasa={tasa}");
             }
 
@@ -346,7 +366,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 }
             }
 
-            return (tasa, plazo, tasaPtsBono);
+            return (tasa, plazo, tasaPtsBono, tasaDesdeCatalogo);
         }
 
         /// <summary>VB6: dbo.fxCrd_Prea_Poliza_Vida(Monto) — sbCalculaPolizaDeVida, línea ~15080.</summary>
