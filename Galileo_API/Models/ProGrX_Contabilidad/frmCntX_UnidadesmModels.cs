@@ -21,6 +21,8 @@
         public int? unidad_omision { get; set; }
         public int? reporta_renta { get; set; }
         public int? activa { get; set; }
+        public string? cta_renta { get; set; }
+        public string? cta_renta_gasto { get; set; }
     }
 
     public class CntXUnidadEliminarDto

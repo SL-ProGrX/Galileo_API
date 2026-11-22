@@ -19,8 +19,9 @@ namespace Galileo.DataBaseTier
         private readonly MComprasDB _mComprasDb;
         private readonly EnvioCorreoDB _envioCorreoDB;
 
-        private readonly string sendEmail = "";
         private readonly string Notificaciones = "";
+        private const string PlantillaFacturaAprobada = "CPR_FACA01";
+        private const string PlantillaFacturaRegistrada = "CPR_FACR01";
 
         public FrmCprComprasOrdenDB(IConfiguration config)
         {
@@ -32,7 +33,6 @@ namespace Galileo.DataBaseTier
 
             _envioCorreoDB = new EnvioCorreoDB(config);
 
-            sendEmail = config.GetSection("AppSettings").GetSection("EnviaEmail").Value?.ToString() ?? "";
             Notificaciones = config.GetSection("AppSettings").GetSection("Notificaciones").Value?.ToString() ?? "";
         }
 
@@ -1040,13 +1040,6 @@ VALUES
             return new ErrorDto { Code = r.Result, Description = "Ok" };
         }
 
-        private static string BuildFacturaEmailBody(string proveedor, string codFactura, string accion)
-        {
-            return @$"<html lang=""es""><body>
-<p>Estimado/a {proveedor} la factura número #{codFactura} se ha {accion}.</p>
-</body></html>";
-        }
-
         private ErrorDto<(string Proveedor, string Email)> ObtenerProveedorEmailPorFacturaXml(int codEmpresa, string codFactura)
         {
             return DbHelper.WithConn<(string Proveedor, string Email)>(_portalDb, codEmpresa, conn =>
@@ -1083,31 +1076,15 @@ WHERE cod_proveedor = @Prov;";
             });
         }
 
-        private async Task TrySendEmailAndLog(int codEmpresa, string to, string subject, string body, string registroUsuario, string bitacoraDetalle)
+        private async Task TrySendPlantillaAndLog(int codEmpresa, string to, string codPlantilla,
+            Dictionary<string, string> textos, string registroUsuario, string bitacoraDetalle)
         {
-            if (!string.Equals(sendEmail, "Y", StringComparison.OrdinalIgnoreCase))
-                return;
-
             if (string.IsNullOrWhiteSpace(to))
                 return;
 
-            var eConfigResult = _envioCorreoDB.CorreoConfig(codEmpresa, Notificaciones);
-            if (eConfigResult == null || eConfigResult.Code != 0 || eConfigResult.Result == null)
+            var resp = await _envioCorreoDB.QueuePlantillaAsync(codEmpresa, Notificaciones, codPlantilla, to, textos, usuario: registroUsuario);
+            if (resp.Code != 0)
                 return;
-
-            var eConfig = eConfigResult.Result;
-
-            var emailRequest = new EmailRequest
-            {
-                To = to,
-                From = eConfig.User,
-                Subject = subject,
-                Body = body,
-                Attachments = new List<IFormFile>()
-            };
-
-            var resp = new ErrorDto();
-            await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
 
             BitacoraEnvioCorreo(new BitacoraComprasInsertarDto
             {
@@ -1134,13 +1111,11 @@ WHERE cod_proveedor = @Prov;";
                 var proveedor = datos.Result.Proveedor;
                 var emailProveedor = datos.Result.Email;
 
-                var body = BuildFacturaEmailBody(proveedor, cod_factura, "aprobado");
-
-                await TrySendEmailAndLog(
+                await TrySendPlantillaAndLog(
                     codEmpresa,
                     emailProveedor,
-                    "Aprobación de factura",
-                    body,
+                    PlantillaFacturaAprobada,
+                    new Dictionary<string, string> { ["PROVEEDOR"] = proveedor, ["NO_FACTURA"] = cod_factura },
                     usuario,
                     $@"Envío de correo de aprobacion de factura #{cod_factura}"
                 );
@@ -1162,13 +1137,11 @@ WHERE cod_proveedor = @Prov;";
                 var proveedor = datos.Result.Proveedor;
                 var emailProveedor = datos.Result.Email;
 
-                var body = BuildFacturaEmailBody(proveedor, cod_factura, "registrado");
-
-                await TrySendEmailAndLog(
+                await TrySendPlantillaAndLog(
                     codEmpresa,
                     emailProveedor,
-                    "Registro de factura",
-                    body,
+                    PlantillaFacturaRegistrada,
+                    new Dictionary<string, string> { ["PROVEEDOR"] = proveedor, ["NO_FACTURA"] = cod_factura },
                     usuario,
                     $@"Envío de correo de registro de factura #{cod_factura}"
                 );

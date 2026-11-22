@@ -17,8 +17,9 @@ namespace Galileo.DataBaseTier
 
         private readonly MSecurityMainDb _dbBitacora;
         private readonly EnvioCorreoDB _envioCorreoDB;
+        private const string PlantillaAsignacion = "CPR_ASIG01";
+        private const string PlantillaAnulacion = "CPR_ANUL01";
 
-        private readonly string _sendEmail;
         private readonly string _notificaciones;
 
         public FrmCprSolicitudDB(IConfiguration config)
@@ -29,7 +30,6 @@ namespace Galileo.DataBaseTier
             _dbBitacora = new MSecurityMainDb(config);
             _envioCorreoDB = new EnvioCorreoDB(_config);
 
-            _sendEmail = _config.GetSection("AppSettings").GetSection("EnviaEmail").Value?.ToString() ?? "";
             _notificaciones = _config.GetSection("AppSettings").GetSection("Notificaciones").Value?.ToString() ?? "";
         }
 
@@ -887,7 +887,7 @@ WHERE CPR_ID = @Id;",
             if (r.Code != 0)
                 return DbHelper.ErrorResponse(r.Description ?? ErrorLiteral, r.Code ?? -1);
 
-            _ = CorreoNotificacionDevolucion_Enviar(codEmpresa, cprId);
+            _ = CorreoNotificacionDevolucion_Enviar(codEmpresa, cprId, usuario);
             return DbHelper.CreateOkResponse();
         }
 
@@ -1024,79 +1024,48 @@ WHERE CPR_ID = @Id;";
         //  CORREOS
         // ===========================
 
-        public async Task<ErrorDto> CorreoNotificacionDevolucion_Enviar(int codEmpresa, int cprId)
+        public async Task<ErrorDto> CorreoNotificacionDevolucion_Enviar(int codEmpresa, int cprId, string usuario)
         {
-            var info = new ErrorDto { Code = 0 };
-
-            try
+            var datos = DbHelper.WithConn<(string Detalle, string Usuario, string Correo)>(_portalDb, codEmpresa, conn =>
             {
-                // Config correo
-                var cfg = _envioCorreoDB.CorreoConfig(codEmpresa, _notificaciones);
-                if (cfg == null || cfg.Code != 0 || cfg.Result == null)
-                    return DbHelper.ErrorResponse("No se pudo obtener la configuración de correo.", -1);
+                EnsureOpen(conn);
 
-                var eConfig = cfg.Result;
+                var detalle = conn.QueryFirstOrDefault<string>(
+                    "SELECT detalle_seguimiento FROM CPR_SOLICITUD WHERE cpr_id = @Id;",
+                    new { Id = cprId }) ?? "";
 
-                // datos correo
-                var datos = DbHelper.WithConn<(string Detalle, string Usuario, string Correo)>(_portalDb, codEmpresa, conn =>
+                var usuario = conn.QueryFirstOrDefault<string>(
+                    "SELECT registro_usuario FROM CPR_SOLICITUD WHERE cpr_id = @Id;",
+                    new { Id = cprId }) ?? "";
+
+                var correo = conn.QueryFirstOrDefault<string>(
+                    "SELECT email FROM USUARIOS WHERE Nombre = @Usuario;",
+                    new { Usuario = usuario }) ?? "";
+
+                return (detalle, usuario, correo);
+            });
+
+            if (datos.Code != 0)
+                return DbHelper.ErrorResponse(datos.Description ?? ErrorLiteral, datos.Code ?? -1);
+
+            if (string.IsNullOrWhiteSpace(datos.Result.Correo))
+                return DbHelper.ErrorResponse("El solicitante no tiene correo registrado; la anulación no se notificó.", -1);
+
+            return await _envioCorreoDB.QueuePlantillaAsync(
+                codEmpresa,
+                _notificaciones,
+                PlantillaAnulacion,
+                datos.Result.Correo,
+                new Dictionary<string, string>
                 {
-                    EnsureOpen(conn);
-
-                    var detalle = conn.QueryFirstOrDefault<string>(
-                        "SELECT detalle_seguimiento FROM CPR_SOLICITUD WHERE cpr_id = @Id;",
-                        new { Id = cprId }) ?? "";
-
-                    var usuario = conn.QueryFirstOrDefault<string>(
-                        "SELECT registro_usuario FROM CPR_SOLICITUD WHERE cpr_id = @Id;",
-                        new { Id = cprId }) ?? "";
-
-                    // OJO: en tu código original esta consulta se veía rara (USUARIOS y cpr_id = usuario).
-                    // La dejo igual, pero parametrizada.
-                    var correo = conn.QueryFirstOrDefault<string>(
-                        "SELECT email FROM USUARIOS WHERE Nombre = @Usuario;",
-                        new { Usuario = usuario }) ?? "";
-
-                    return (detalle, usuario, correo);
-                });
-
-                if (datos.Code != 0) return DbHelper.ErrorResponse(datos.Description ?? ErrorLiteral, datos.Code ?? -1);
-
-                var body = @$"<html lang=""es""><body>
-<div style=""font-family: Arial, sans-serif;"">
-  <h2><strong>Anulación Solicitud de Compra</strong></h2>
-  <p>No. Solicitud <strong>{cprId}</strong></p>
-  <p>Mediante la presente se le comunica la anulación de la Solicitud de Compra #{cprId}</p>
-  <p>Justificación: {datos.Result.Detalle}</p>
-</div>
-</body></html>";
-
-                if (_sendEmail == "Y")
-                {
-                    var emailRequest = new EmailRequest
-                    {
-                        To = datos.Result.Correo,
-                        From = eConfig.User,
-                        Subject = "Anulación de Solicitud",
-                        Body = body
-                    };
-
-                    await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, info);
-                }
-            }
-            catch (Exception ex)
-            {
-                info.Code = -1;
-                info.Description = ex.Message;
-            }
-
-            return info;
+                    ["NO_SOLICITUD"] = cprId.ToString(),
+                    ["JUSTIFICACION"] = datos.Result.Detalle,
+                },
+                usuario: usuario);
         }
 
         private async Task CorreoNotificaSolicitud_Enviar(int codEmpresa, int cpr_id, string usuario)
         {
-            var resp = new ErrorDto();
-            var solicitudMascara = cpr_id.ToString("D10");
-
             try
             {
                 // correo del usuario asignado
@@ -1111,32 +1080,16 @@ WHERE CPR_ID = @Id;";
                 if (emailR.Code != 0 || string.IsNullOrWhiteSpace(emailR.Result))
                     return;
 
-                var cfg = _envioCorreoDB.CorreoConfig(codEmpresa, _notificaciones);
-                if (cfg == null || cfg.Code != 0 || cfg.Result == null)
-                    return;
-
-                var eConfig = cfg.Result;
-
-                var body = @$"<html lang=""es""><body>
-<div style=""font-family: Arial, sans-serif;"">
-  <h2><strong>Notificación de asignación de Solicitud de Compra</strong></h2>
-  <p>Estimado/a {usuario} se le comunica la asignación de la solicitud de compra #{solicitudMascara}</p>
-</div>
-</body></html>";
-
-                if (_sendEmail == "Y")
-                {
-                    var emailRequest = new EmailRequest
+                await _envioCorreoDB.QueuePlantillaAsync(
+                    codEmpresa,
+                    _notificaciones,
+                    PlantillaAsignacion,
+                    emailR.Result,
+                    new Dictionary<string, string>
                     {
-                        To = emailR.Result,
-                        From = eConfig.User,
-                        Subject = "Asignación de Solicitud de Compra",
-                        Body = body,
-                        Attachments = new List<IFormFile>()
-                    };
-
-                    await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
-                }
+                        ["USUARIO"] = usuario,
+                        ["NO_SOLICITUD"] = cpr_id.ToString("D10"),
+                    });
             }
             catch
             {
@@ -1308,6 +1261,27 @@ WHERE CPR_ID = @Id;";
                 };
 
             return new ErrorDto<T> { Code = 0, Result = r.Result };
+        }
+
+        /// <summary>Sitios de entrega (CPR_CATALOGOS_ORDENES, tipo 1) para Uso Interno de la solicitud.</summary>
+        public ErrorDto<List<CatalogosLista>> CprSolicitud_SitiosEntrega_Obtener(int codEmpresa)
+        {
+            return CatalogoOrdenes_Obtener(codEmpresa, 1);
+        }
+
+        /// <summary>Correos de factura (CPR_CATALOGOS_ORDENES, tipo 3) para Uso Interno de la solicitud.</summary>
+        public ErrorDto<List<CatalogosLista>> CprSolicitud_CorreosFactura_Obtener(int codEmpresa)
+        {
+            return CatalogoOrdenes_Obtener(codEmpresa, 3);
+        }
+
+        private ErrorDto<List<CatalogosLista>> CatalogoOrdenes_Obtener(int codEmpresa, int tipoId)
+        {
+            const string sql = @"SELECT Catalogo_id item, Descripcion descripcion
+                                 FROM CPR_CATALOGOS_ORDENES
+                                 WHERE tipo_id = @TipoId
+                                 ORDER BY Linea_id;";
+            return DbHelper.ExecuteListQuery<CatalogosLista>(_portalDb, codEmpresa, sql, new { TipoId = tipoId });
         }
 
         private static string NormalizeLike(string? filtro)

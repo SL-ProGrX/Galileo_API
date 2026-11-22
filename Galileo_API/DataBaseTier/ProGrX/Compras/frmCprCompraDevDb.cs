@@ -20,7 +20,6 @@ namespace Galileo.DataBaseTier
         private readonly MSecurityMainDb _dbBitacora;
         private readonly EnvioCorreoDB _envioCorreoDB;
 
-        private readonly string _sendEmail;
 
         public FrmCprCompraDevDB(IConfiguration config)
         {
@@ -30,7 +29,6 @@ namespace Galileo.DataBaseTier
             _envioCorreoDB = new EnvioCorreoDB(config);
             _auxInv = new MProGrXAuxiliarDB(config);
 
-            _sendEmail = config.GetSection("AppSettings").GetSection("EnviaEmail").Value?.ToString() ?? "N";
         }
 
         public ErrorDto Bitacora(BitacoraInsertarDto data) => _dbBitacora.Bitacora(data);
@@ -597,18 +595,14 @@ namespace Galileo.DataBaseTier
 
         // ----------------------------- CORREO -----------------------------
 
+        private const string PlantillaDevolucion = "CPR_DEV01";
+
         public async Task<ErrorDto> CorreoNotificacionDevolucion_Enviar(int codEmpresa, DevolucionInsert orden)
         {
             var info = DbHelper.CreateOkResponse();
 
             try
             {
-                var correoConfigResult = _envioCorreoDB.CorreoConfig(codEmpresa, "1");
-                if (correoConfigResult.Code != 0 || correoConfigResult.Result == null)
-                    return DbHelper.ErrorResponse(correoConfigResult.Description ?? "Error configuración correo", -1);
-
-                var eConfig = correoConfigResult.Result;
-
                 var r = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
                 {
                     var proveedor = conn.QueryFirstOrDefault<string>(
@@ -627,28 +621,19 @@ namespace Galileo.DataBaseTier
                 if (r.Code != 0 || r.Result == null)
                     return DbHelper.ErrorResponse(r.Description ?? DefaultError, r.Code ?? -1);
 
-                var body = @$"<html lang=""es"">
-<head><meta charset=""UTF-8""></head>
-<body>
-  <p>Estimado Proveedor: {r.Result.proveedor}</p>
-  <p>Se le comunica la devolución de la mercadería de la factura #{orden.cod_factura}</p>
-  <p>Debido a {orden.notas}</p>
-  <p>ASECCSS</p>
-</body>
-</html>";
-
-                if (_sendEmail == "Y" && !string.IsNullOrWhiteSpace(r.Result.email))
+                if (!string.IsNullOrWhiteSpace(r.Result.email))
                 {
-                    var emailRequest = new EmailRequest
-                    {
-                        To = r.Result.email,
-                        From = eConfig.User,
-                        Subject = "Devolución de Solicitud de Compra",
-                        Body = body,
-                        Attachments = new List<IFormFile>()
-                    };
-
-                    await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, info);
+                    info = await _envioCorreoDB.QueuePlantillaAsync(
+                        codEmpresa,
+                        "1",
+                        PlantillaDevolucion,
+                        r.Result.email,
+                        new Dictionary<string, string>
+                        {
+                            ["PROVEEDOR"] = r.Result.proveedor,
+                            ["NO_FACTURA"] = $"{orden.cod_factura}",
+                            ["MOTIVO"] = orden.notas ?? string.Empty,
+                        });
                 }
             }
             catch (Exception ex)
