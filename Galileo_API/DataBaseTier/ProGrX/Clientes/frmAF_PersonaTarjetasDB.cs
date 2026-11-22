@@ -130,7 +130,10 @@ namespace Galileo.DataBaseTier
                 Code = NormalizarTexto(tarjeta.code),
                 TipoMov = NormalizarTexto(tarjeta.tipoMov).ToUpperInvariant(),
                 Usuario = NormalizarTexto(tarjeta.usuario),
-                Token = NormalizarTexto(tarjeta.dia_apl_ca)
+                Token = string.Empty,
+                DiaAplCA = int.TryParse(tarjeta.dia_apl_ca, out var diaAplicacion)
+                    ? diaAplicacion
+                    : 1
             };
         }
 
