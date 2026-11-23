@@ -18,6 +18,8 @@
         public decimal rng_inicio { get; set; }
         public decimal rng_corte { get; set; }
         public bool linea_filtra { get; set; }
+        public bool genera_acta { get; set; }
+        public bool aprueba_pantalla_principal { get; set; }
         public bool estado { get; set; }
         public bool isNew { get; set; }
     }
@@ -34,6 +36,8 @@
         public decimal? rng_inicio { get; set; }
         public decimal? rng_corte { get; set; }
         public bool? linea_filtra { get; set; }
+        public bool? genera_acta { get; set; }
+        public bool? aprueba_pantalla_principal { get; set; }
         public bool? estado { get; set; }
         public bool? isNew { get; set; }
     }

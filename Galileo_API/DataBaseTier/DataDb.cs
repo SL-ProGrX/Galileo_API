@@ -1037,8 +1037,7 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<TablasListaGenericaModel> Socios_Obtener(int CodEmpresa, string jfiltro)
         {
-            var filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltro) ??
-                         new FiltrosLazyLoadData();
+            var filtro = ObtenerFiltroSocios(jfiltro);
 
             var response = new ErrorDto<TablasListaGenericaModel>
             {
@@ -1111,6 +1110,31 @@ namespace Galileo.DataBaseTier
             }
 
             return response;
+        }
+
+        private static FiltrosLazyLoadData ObtenerFiltroSocios(string jfiltro)
+        {
+            if (string.IsNullOrWhiteSpace(jfiltro))
+            {
+                return new FiltrosLazyLoadData();
+            }
+
+            try
+            {
+                return JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltro) ??
+                       new FiltrosLazyLoadData();
+            }
+            catch (JsonException)
+            {
+                return new FiltrosLazyLoadData
+                {
+                    pagina = 0,
+                    paginacion = 30,
+                    filtro = jfiltro.Trim(),
+                    sortField = "cedula",
+                    sortOrder = 1
+                };
+            }
         }
 
         #endregion

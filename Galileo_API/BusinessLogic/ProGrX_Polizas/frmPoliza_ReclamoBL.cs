@@ -8,10 +8,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
     public class FrmPolizaReclamoBL
     {
         private readonly FrmPolizaReclamoDB _db;
-    
+
         public FrmPolizaReclamoBL(IConfiguration config)
         {
-           _db = new FrmPolizaReclamoDB(config);
+            _db = new FrmPolizaReclamoDB(config);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> Poliza_Reclamo_Motivos_Lista(

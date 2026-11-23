@@ -10,7 +10,7 @@ using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 {
-    public class FrmPreaConfiguracionesDB
+    public partial class FrmPreaConfiguracionesDB
     {
         private const int ModuloEstudioCredito = 3;
 

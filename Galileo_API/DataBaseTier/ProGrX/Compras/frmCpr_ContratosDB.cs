@@ -14,9 +14,9 @@ namespace Galileo.DataBaseTier
         private readonly PortalDB _portalDB;
         private readonly EnvioCorreoDB _envioCorreoDB;
 
-        private readonly string sendEmail;
         private readonly string nofiticacionConfeccionContrato;
         private readonly string codNotificaciones;
+        private const string PlantillaContrato = "CPR_CON01";
 
         private const string Ok = "Ok";
         private const string ErrorDesconocido = "Error desconocido.";
@@ -34,7 +34,6 @@ namespace Galileo.DataBaseTier
             _portalDB = new PortalDB(config);
             _envioCorreoDB = new EnvioCorreoDB(config);
 
-            sendEmail = config.GetSection("AppSettings").GetSection("EnviaEmail").Value?.ToString() ?? "";
             nofiticacionConfeccionContrato = config.GetSection("Crp_Compras").GetSection("NotiConfeccionContrato").Value?.ToString() ?? "";
             codNotificaciones = config.GetSection("AppSettings").GetSection("Notificaciones").Value?.ToString() ?? "";
         }
@@ -1028,26 +1027,17 @@ namespace Galileo.DataBaseTier
             {
                 var info = await ObtenerInfoNotificacion(CodEmpresa, cod_contrato);
 
-                var eConfigResp = _envioCorreoDB.CorreoConfig(CodEmpresa, codNotificaciones);
-                var eConfig = (eConfigResp != null && eConfigResp.Code == 0) ? eConfigResp.Result : null;
-
-                if (eConfig == null)
-                    return DbHelper.ErrorResponse($"No se pudo obtener la configuración de correo: {eConfigResp?.Description}", ErrorCode);
-
                 info.InfoContrato.divisa = DivisaNombre(info.InfoContrato.divisa);
-                var body = BuildNotificacionBody(mensaje, info.InfoContrato);
 
-                if (sendEmail == "Y" && !string.IsNullOrWhiteSpace(info.EmailConfeccionContrato))
+                if (!string.IsNullOrWhiteSpace(info.EmailConfeccionContrato))
                 {
-                    var emailRequest = new EmailRequest
-                    {
-                        To = info.EmailConfeccionContrato,
-                        From = eConfig.User,
-                        Subject = "Confección de Contrato " + cod_contrato,
-                        Body = body
-                    };
-
-                    await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, response);
+                    response = await _envioCorreoDB.QueuePlantillaAsync(
+                        CodEmpresa,
+                        codNotificaciones,
+                        PlantillaContrato,
+                        info.EmailConfeccionContrato,
+                        ConstruirTokensContrato(mensaje, info.InfoContrato),
+                        usuario: usuario);
                 }
 
                 var upd = DbHelper.ExecuteNonQuery(
@@ -1154,39 +1144,25 @@ namespace Galileo.DataBaseTier
         /// <param name="mensaje"></param>
         /// <param name="c"></param>
         /// <returns></returns>
-        private static string BuildNotificacionBody(string mensaje, CprContratosDto c)
+        private static Dictionary<string, string> ConstruirTokensContrato(string mensaje, CprContratosDto c)
         {
-            return $@"
-                    <html lang=""es"">
-                    <head>
-                    <meta charset=""UTF-8"">
-                    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-                    <title>Solicitud para Confección de Contrato</title>
-                    <style>
-                        table {{ border-collapse: collapse; width: 100%; }}
-                        td {{ border: 1px solid #000; padding: 8px; vertical-align: top; }}
-                        td.label {{ font-weight: bold; width: 30%; background-color: #f0f0f0; }}
-                    </style>
-                    </head>
-                    <body>
-                    <p>{mensaje}</p>
-                    <table>
-                        <tr><td class=""label"">No. Contrato</td><td>{c.cod_contrato}</td></tr>
-                        <tr><td class=""label"">Descripción</td><td>{c.descripcion}</td></tr>
-                        <tr><td class=""label"">Proveedor</td><td>{c.proveedor}</td></tr>
-                        <tr><td class=""label"">Tipo Contrato</td><td>{c.tipo_contrato}</td></tr>
-                        <tr><td class=""label"">Monto</td><td>{c.monto}</td></tr>
-                        <tr><td class=""label"">Divisa</td><td>{c.divisa}</td></tr>
-                        <tr><td class=""label"">CTA Contable</td><td>{c.cta_contable}</td></tr>
-                        <tr><td class=""label"">Centro Costo</td><td>{c.cod_centro_costo}</td></tr>
-                        <tr><td class=""label"">Garantía de Cumplimiento</td><td>{c.porcentaje_garantia} %</td></tr>
-                        <tr><td class=""label"">Monto de Garantía</td><td>{c.monto_garantia}</td></tr>
-                        <tr><td class=""label"">Divisa Garantía</td><td>{c.divisa_garantia}</td></tr>
-                        <tr><td class=""label"">Fiscalizador</td><td>{c.fiscal}</td></tr>
-                        <tr><td class=""label"">Notas</td><td>{c.notas}</td></tr>
-                    </table>
-                    </body>
-                    </html>";
+            return new Dictionary<string, string>
+            {
+                ["MENSAJE"] = mensaje,
+                ["COD_CONTRATO"] = $"{c.cod_contrato}",
+                ["DESCRIPCION"] = $"{c.descripcion}",
+                ["PROVEEDOR"] = $"{c.proveedor}",
+                ["TIPO_CONTRATO"] = $"{c.tipo_contrato}",
+                ["MONTO"] = $"{c.monto}",
+                ["DIVISA"] = $"{c.divisa}",
+                ["CTA_CONTABLE"] = $"{c.cta_contable}",
+                ["CENTRO_COSTO"] = $"{c.cod_centro_costo}",
+                ["PORC_GARANTIA"] = $"{c.porcentaje_garantia}",
+                ["MONTO_GARANTIA"] = $"{c.monto_garantia}",
+                ["DIVISA_GARANTIA"] = $"{c.divisa_garantia}",
+                ["FISCAL"] = $"{c.fiscal}",
+                ["NOTAS"] = $"{c.notas}",
+            };
         }
 
         /// <summary>

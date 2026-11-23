@@ -13,15 +13,14 @@ namespace Galileo.DataBaseTier
     {
         private readonly PortalDB _portalDB;
         private readonly EnvioCorreoDB _envioCorreoDB;
-        private readonly string _sendEmail;
         private readonly string _notificaciones;
+        private const string PlantillaCarga = "CPR_CAR01";
 
         public FrmCprCargadorFacturasDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
             _envioCorreoDB = new EnvioCorreoDB(config);
 
-            _sendEmail = config.GetSection("AppSettings").GetSection("EnviaEmail").Value?.ToString() ?? string.Empty;
             _notificaciones = config.GetSection("AppSettings").GetSection("Notificaciones").Value?.ToString() ?? string.Empty;
         }
 
@@ -52,31 +51,15 @@ namespace Galileo.DataBaseTier
         /// <param name="bitacoraDetalle"></param>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
-        private async Task SendEmailAndLogIfEnabled(int codEmpresa, string to, string subject, string body, string registroUsuario, string bitacoraDetalle)
+        private async Task SendPlantillaAndLog(int codEmpresa, string to, string codPlantilla,
+            Dictionary<string, string> textos, string registroUsuario, string bitacoraDetalle)
         {
-            if (!string.Equals(_sendEmail, "Y", StringComparison.OrdinalIgnoreCase))
-                return;
-
             if (string.IsNullOrWhiteSpace(to))
                 return;
 
-            var correoConfigResult = _envioCorreoDB.CorreoConfig(codEmpresa, _notificaciones);
-            if (correoConfigResult == null || correoConfigResult.Code != 0 || correoConfigResult.Result == null)
-                throw new InvalidOperationException($"No se pudo obtener la configuración de correo: {correoConfigResult?.Description}");
-
-            var eConfig = correoConfigResult.Result;
-
-            var emailRequest = new EmailRequest
-            {
-                To = to,
-                From = eConfig.User,
-                Subject = subject,
-                Body = body,
-                Attachments = new List<IFormFile>()
-            };
-
-            var resp = new ErrorDto();
-            await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
+            var resp = await _envioCorreoDB.QueuePlantillaAsync(codEmpresa, _notificaciones, codPlantilla, to, textos, usuario: registroUsuario);
+            if (resp.Code != 0)
+                return;
 
             BitacoraEnvioCorreo(new BitacoraComprasInsertarDto
             {
@@ -662,24 +645,11 @@ namespace Galileo.DataBaseTier
 
                 var emailProveedor = emailResp.Result ?? string.Empty;
 
-                var body = @$"<html lang=""es"">
-        <head>
-        <meta charset=""UTF-8"">
-        <meta http-equiv=""Content-Type"" content=""text/html; charset=utf-8"">
-        <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-        <title>Notificación de carga de factura</title>
-        </head>
-        <body>
-        <h2><strong>Notificación de carga de factura</strong></h2>
-        <p>Estimado/a {proveedor} La factura #{factura} se ha cargado.</p>
-        </body>
-        </html>";
-
-                await SendEmailAndLogIfEnabled(
+                await SendPlantillaAndLog(
                     CodEmpresa,
                     emailProveedor,
-                    "Notificación de carga de factura",
-                    body,
+                    PlantillaCarga,
+                    new Dictionary<string, string> { ["PROVEEDOR"] = proveedor, ["NO_FACTURA"] = factura },
                     registro_usuario,
                     $@"Envío de correo de registro de factura #{factura} a {proveedor}"
                 );

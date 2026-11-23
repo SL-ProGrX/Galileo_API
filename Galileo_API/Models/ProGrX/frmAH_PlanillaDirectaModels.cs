@@ -49,6 +49,14 @@
         public string accion { get; set; } = string.Empty;
         public string mensaje { get; set; } = string.Empty;
         public string num_doc { get; set; } = string.Empty;
+        public string tipo_documento { get; set; } = string.Empty;
         public int total_registros { get; set; } = 0;
+    }
+
+    /// <summary>Resultado del SP spPAT_PlanillaDirecta_Procesa (columnas NumDoc y TipoDoc).</summary>
+    public class FrmAhPlanillaDirectaProcesarSpDto
+    {
+        public string NumDoc { get; set; } = string.Empty;
+        public string TipoDoc { get; set; } = string.Empty;
     }
 }

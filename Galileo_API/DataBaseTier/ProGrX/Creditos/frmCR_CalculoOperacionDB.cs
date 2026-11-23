@@ -203,7 +203,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         rango_maximo = rangoMaximo,
                         refunde = linea.refunde,
                         operaciones_activas =
-                            linea.operaciones_activas
+                            linea.operaciones_activas,
+                        rebaja_excedente =
+                            EsCreditoExcedenteRebaja(codEmpresa, codigo)
                     },
                     cargos =
                         cargosResp.Result ?? []
@@ -217,11 +219,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="codEmpresa"></param>
         /// <param name="codigo"></param>
         /// <param name="monto"></param>
+        /// <param name="destino">Destino del credito (opcional, afecta el catalogo de rangos).</param>
+        /// <param name="garantia">Garantia del credito (opcional, afecta el catalogo de rangos).</param>
         /// <returns></returns>
         public ErrorDto<CrCalculoOperacionRangosData> CrCalculoOperacion_Rangos_Obtener(
             int codEmpresa,
             string codigo,
-            decimal monto)
+            decimal monto,
+            string destino,
+            string garantia)
         {
             codigo = LimpiarCodigo(codigo);
 
@@ -239,8 +245,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 Code = 0,
                 Result = new CrCalculoOperacionRangosData
                 {
-                    plazo = Convert.ToInt32(FxCatalogoRango(codEmpresa, codigo, monto, "P")),
-                    tasa = FxCatalogoRango(codEmpresa, codigo, monto, "I")
+                    plazo = Convert.ToInt32(FxCatalogoRango(codEmpresa, codigo, monto, "P", destino, garantia)),
+                    tasa = FxCatalogoRango(codEmpresa, codigo, monto, "I", destino, garantia)
                 }
             };
         }
@@ -530,7 +536,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             if (linea.fechacortealterna == "S")
             {
-                var dias = (linea.fechacorte - linea.fecha_server).Days + 1;
+                // DateDiff("d") de VB6: cuenta cambios de fecha, no horas completas.
+                var dias = (linea.fechacorte.Date - linea.fecha_server.Date).Days + 1;
                 return dias < 0 ? 0 : dias;
             }
 
@@ -542,7 +549,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             if (item == null)
                 return 0;
 
-            var diasPar = (item.cr_fecha_calculo - item.fecha).Days + 1;
+            var diasPar = (item.cr_fecha_calculo.Date - item.fecha.Date).Days + 1;
             return diasPar < 0 ? 0 : diasPar;
         }
 
@@ -606,6 +613,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
+        /// Equivale a fxCreditoExcedente del VB6: indica si el saldo de la linea
+        /// debe rebajarse del monto (parametro 05 de EXC_PARAMETROS).
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codigo"></param>
+        /// <returns></returns>
+        private bool EsCreditoExcedenteRebaja(int codEmpresa, string codigo)
+        {
+            const string sql = @"
+                select rtrim(isnull(valor,'')) as codigo
+                from EXC_PARAMETROS
+                where COD_PARAMETRO = '05';";
+
+            var resp = DbHelper.ExecuteSingleQuery<string>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                string.Empty);
+
+            return (resp.Result ?? string.Empty).Trim().Equals(codigo, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
         /// Valida si la linea es de excedentes.
         /// </summary>
         /// <param name="codEmpresa"></param>
@@ -613,18 +643,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <returns></returns>
         private bool EsCodigoExcedente(int codEmpresa, string codigo)
         {
-            const string sqlExcParametros = @"
-                select rtrim(isnull(valor,'')) as codigo
-                from EXC_PARAMETROS
-                where COD_PARAMETRO = '05';";
-
-            var excResp = DbHelper.ExecuteSingleQuery<string>(
-                _portalDb,
-                codEmpresa,
-                sqlExcParametros,
-                string.Empty);
-
-            if ((excResp.Result ?? string.Empty).Trim().Equals(codigo, StringComparison.OrdinalIgnoreCase))
+            if (EsCreditoExcedenteRebaja(codEmpresa, codigo))
                 return true;
 
             const string sqlExcedentesParametros = @"select rtrim(isnull(ase_codigo,'')) from excedentes_parametros;";
@@ -673,9 +692,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="monto"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        private decimal FxCatalogoRango(int codEmpresa, string codigo, decimal monto, string tipo)
+        private decimal FxCatalogoRango(int codEmpresa, string codigo, decimal monto, string tipo, string destino, string garantia)
         {
-            const string sql = @"select dbo.fxCrdCatalogoRango(@Codigo,@Monto,@Tipo,'','') as resultado;";
+            const string sql = @"select dbo.fxCrdCatalogoRango(@Codigo,@Monto,@Tipo,@Destino,@Garantia) as resultado;";
 
             return DbHelper.ExecuteSingleQuery<decimal>(
                 _portalDb,
@@ -686,7 +705,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 {
                     Codigo = codigo,
                     Monto = monto,
-                    Tipo = tipo
+                    Tipo = tipo,
+                    Destino = destino ?? string.Empty,
+                    Garantia = garantia ?? string.Empty
                 }).Result;
         }
 

@@ -239,12 +239,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         -1,
                         new());
 
-                if (operacion.estadosol is not ("A" or "F"))
-                    return DbHelper.CreateErrorResponse<CrGeneraGarantiaPreImpresoDto>(
-                        $"Esta operación no se encuentra Aprobada o Formalizada, verifique... {request.operacion}",
-                        -1,
-                        new());
-
                 var tieneFiadores = operacion.garantia.Equals(
                     "F",
                     StringComparison.OrdinalIgnoreCase);

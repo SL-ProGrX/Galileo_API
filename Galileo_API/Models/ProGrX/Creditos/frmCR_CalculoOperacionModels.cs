@@ -14,6 +14,7 @@
         public decimal rango_maximo { get; set; } = 0;
         public string refunde { get; set; } = "N";
         public int operaciones_activas { get; set; } = 0;
+        public bool rebaja_excedente { get; set; } = false;
     }
 
     public class CrCalculoOperacionGarantiaAhorroData

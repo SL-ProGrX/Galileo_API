@@ -9,10 +9,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
     public class FrmCntXUnidadesDb
     {
         private readonly PortalDB _portalDB;
+        private readonly MCntLinkDB _mCnt;
 
         public FrmCntXUnidadesDb(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
+            _mCnt = new MCntLinkDB(config);
         }
 
 
@@ -39,11 +41,32 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     ORDER BY cod_unidad;
                 ";
 
-            return DbHelper.ExecuteListQuery<CntXUnidadDto>(
+            var result = DbHelper.ExecuteListQuery<CntXUnidadDto>(
                 _portalDB,
                 codEmpresa,
                 sql,
                 new { codContabilidad });
+
+            if (result.Code == 0 && result.Result != null)
+            {
+                foreach (var u in result.Result)
+                {
+                    u.cta_renta = FormatearCuenta(codEmpresa, u.cta_renta, true);
+                    u.cta_renta_gasto = FormatearCuenta(codEmpresa, u.cta_renta_gasto, true);
+                }
+            }
+
+            return result;
+        }
+
+        private string FormatearCuenta(int codEmpresa, string? cuenta, bool conMascara)
+        {
+            if (string.IsNullOrWhiteSpace(cuenta))
+            {
+                return string.Empty;
+            }
+
+            return _mCnt.fxgCntCuentaFormato(codEmpresa, conMascara, cuenta, 0);
         }
 
         /// <summary>
@@ -62,6 +85,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             {
                 using var cn = new SqlConnection(_portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
 
+                var ctaRenta = FormatearCuenta(codEmpresa, dto.cta_renta, false);
+                var ctaRentaGasto = FormatearCuenta(codEmpresa, dto.cta_renta_gasto, false);
+
                 // Existe?
                 var existe = cn.ExecuteScalar<int>(@"
                     SELECT ISNULL(COUNT(*),0)
@@ -76,7 +102,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 if (existe == 0)
                 {
-                    // INSERT (mantengo mismas columnas que VB6, excepto cuentas que vos no estás editando aún)
+                    // INSERT
                     cn.Execute(@"
                         INSERT INTO CntX_Unidades
                         (
@@ -86,7 +112,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                             nivel,
                             unidad_omision,
                             reporta_renta,
-                            activa
+                            activa,
+                            Cta_Renta,
+                            Cta_Renta_Gasto
                         )
                         VALUES
                         (
@@ -96,7 +124,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                             @nivel,
                             @unidad_omision,
                             @reporta_renta,
-                            @activa
+                            @activa,
+                            @cta_renta,
+                            @cta_renta_gasto
                         );
                     ", new
                     {
@@ -106,7 +136,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         nivel = dto.nivel,
                         unidad_omision = dto.unidad_omision,
                         reporta_renta = dto.reporta_renta,
-                        activa = dto.activa
+                        activa = dto.activa,
+                        cta_renta = ctaRenta,
+                        cta_renta_gasto = ctaRentaGasto
                     });
                 }
                 else
@@ -118,7 +150,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                                nivel = @nivel,
                                unidad_omision = @unidad_omision,
                                reporta_renta = @reporta_renta,
-                               activa = @activa
+                               activa = @activa,
+                               Cta_Renta = @cta_renta,
+                               Cta_Renta_Gasto = @cta_renta_gasto
                          WHERE COD_CONTABILIDAD = @codContabilidad
                            AND cod_unidad = @cod_unidad;
                     ", new
@@ -129,7 +163,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         nivel = dto.nivel,
                         unidad_omision = dto.unidad_omision,
                         reporta_renta = dto.reporta_renta,
-                        activa = dto.activa
+                        activa = dto.activa,
+                        cta_renta = ctaRenta,
+                        cta_renta_gasto = ctaRentaGasto
                     });
                 }
 

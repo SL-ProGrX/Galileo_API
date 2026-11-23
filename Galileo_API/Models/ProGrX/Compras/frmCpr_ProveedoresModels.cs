@@ -5,6 +5,8 @@ namespace Galileo.Models.CPR
         public int? pagina { get; set; }
         public int? paginacion { get; set; }
         public string? filtro { get; set; }
+        public string? sortField { get; set; }
+        public int? sortOrder { get; set; }
     }
 
     public class CprProveedoresLista
@@ -28,6 +30,7 @@ namespace Galileo.Models.CPR
         public string? registro_usuario { get; set; }
         public DateTime? modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
+        public float? puntaje_promedio { get; set; }
     }
 
     public class CprProveedorBitacoraData

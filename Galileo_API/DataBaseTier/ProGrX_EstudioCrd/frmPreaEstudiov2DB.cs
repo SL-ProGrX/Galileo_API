@@ -234,6 +234,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     comite_resolutivo = GetString(row, "ID_COMITE"),
                 };
 
+                var comiteAsignado = result.Result.comite_resolutivo;
+                if (!string.IsNullOrWhiteSpace(comiteAsignado))
+                {
+                    var configuracionComite = connection.QueryFirstOrDefault<(string Tipo, bool PantallaPrincipal)>(
+                        @"select rtrim(isnull(TIPO_APROBACION,'')) as Tipo,
+                                 cast(isnull(APRUEBA_PANTALLA_PRINCIPAL,0) as bit) as PantallaPrincipal
+                          from COMITES where ID_COMITE = @IdComite",
+                        new { IdComite = comiteAsignado });
+                    result.Result.tipo_aprobacion_comite = configuracionComite.Tipo ?? string.Empty;
+                    result.Result.aprueba_pantalla_principal = configuracionComite.PantallaPrincipal;
+                }
+
                 // '17' -> GlobalSalarioMinimoInembargable,
                 // GlobalSalarioNormativo = VALOR('17') + VALOR('22').
                 var salarioMinimoInembargable = parametros.Decimal("17");
@@ -244,6 +256,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 // '01' -> GlobalEdadMaximaPermitidaHombre, '02' -> ...Mujeres.
                 result.Result.edad_maxima_hombres = parametros.Entero("01");
                 result.Result.edad_maxima_mujeres = parametros.Entero("02");
+
+                // Tasa configurada de la línea para el monto cargado: tope de la tasa en Angular.
+                result.Result.catalogos.tasa_linea = ObtenerTasaLinea(connection, credito);
 
                 // VB6 recarga cboSubExpediente dentro de la misma carga; se devuelve aquí
                 // para que Angular no necesite una segunda llamada HTTP.
@@ -619,6 +634,32 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         }
 
         /// <summary>
+        /// Topes de la línea según su parametrización (pantalla de rangos del catálogo):
+        ///   monto máximo = MAX(hasta) de Rangos (rangos por monto).
+        ///   plazo máximo = MAX(hasta) de Rangos_plazo (tasas por plazo).
+        /// Angular los usa para no permitir capturar un monto o plazo superior al tope.
+        /// Si la consulta falla, devuelve 0 (sin tope) para no bloquear la pantalla.
+        /// </summary>
+        private static (decimal montoMaximo, decimal plazoMaximo) ObtenerTopesLinea(IDbConnection connection, string linea)
+        {
+            var lineaParam = string.IsNullOrWhiteSpace(linea) ? "-1" : linea.Trim();
+            try
+            {
+                var montoMaximo = connection.QueryFirstOrDefault<decimal?>(
+                    "SELECT ISNULL(MAX(hasta), 0) FROM Rangos WHERE codigo = @Linea",
+                    new { Linea = lineaParam }) ?? 0m;
+                var plazoMaximo = connection.QueryFirstOrDefault<decimal?>(
+                    "SELECT ISNULL(MAX(hasta), 0) FROM Rangos_plazo WHERE codigo = @Linea",
+                    new { Linea = lineaParam }) ?? 0m;
+                return (montoMaximo, plazoMaximo);
+            }
+            catch (Exception)
+            {
+                return (0m, 0m);
+            }
+        }
+
+        /// <summary>
         /// Consulta pública de destinos/garantías por línea, para recargar los combos
         /// cuando el usuario cambia la Línea en Angular (equivalente a lo que VB6 hace
         /// en txtLinea_LostFocus).
@@ -637,9 +678,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             {
                 using var connection = _portalDb.CreateConnection(codEmpresa);
                 var (destinos, garantias, cph) = ObtenerDestinosGarantias(connection, linea);
+                var (montoMaximo, plazoMaximo) = ObtenerTopesLinea(connection, linea);
                 result.Result.destinos = destinos;
                 result.Result.garantias = garantias;
                 result.Result.cph = cph;
+                result.Result.monto_maximo = montoMaximo;
+                result.Result.plazo_maximo = plazoMaximo;
             }
             catch (Exception ex)
             {
@@ -808,11 +852,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             IDbConnection connection, string linea)
         {
             var (destinos, garantias, cph) = ObtenerDestinosGarantias(connection, linea);
+            var (montoMaximo, plazoMaximo) = ObtenerTopesLinea(connection, linea);
             return new FrmPreaEstudiov2DestinosGarantiasResponse
             {
                 destinos = destinos,
                 garantias = garantias,
                 cph = cph,
+                monto_maximo = montoMaximo,
+                plazo_maximo = plazoMaximo,
             };
         }
 

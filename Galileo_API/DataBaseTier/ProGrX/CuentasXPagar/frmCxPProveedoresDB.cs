@@ -511,6 +511,11 @@ namespace Galileo.DataBaseTier
                             I_Extranjero = @I_Extranjero,
                             I_Convenio = @I_Convenio,
                             COD_IVA = @Cod_IVA,
+                            registro_fecha = ISNULL(@registro_fecha, registro_fecha),
+                            fecha_vencimiento = @fecha_vencimiento,
+                            plazo = @plazo,
+                            representante_legal = @representante_legal,
+                            criticidad = ISNULL(@criticidad, criticidad),
                             modifica_fecha = GETDATE(),
                             modifica_usuario = @user_modifica
                       WHERE cod_proveedor = @Cod_Proveedor",
@@ -548,6 +553,11 @@ namespace Galileo.DataBaseTier
                         request.I_Extranjero,
                         request.I_Convenio,
                         request.Cod_IVA,
+                        request.registro_fecha,
+                        request.fecha_vencimiento,
+                        request.plazo,
+                        request.representante_legal,
+                        request.criticidad,
                         request.user_modifica,
                         request.Cod_Proveedor
                     });
@@ -597,7 +607,8 @@ namespace Galileo.DataBaseTier
                             descuento_porc, saldo, cod_cuenta, cedJur, Nit_Codigo, Nit_Nombre,
                             cod_divisa, saldo_divisa_real, cod_banco, web_auto_gestion, web_ferias,
                             HaciendaTipoRegimen, HaciendaImpuestos, I_Extranjero, I_Convenio, COD_IVA,
-                            registro_fecha, registro_usuario)
+                            registro_fecha, registro_usuario,
+                            fecha_vencimiento, plazo, representante_legal, criticidad)
                       VALUES(
                             @Cod_Proveedor, @Tipo, @Cod_Clasificacion, @Descripcion, @Cod_Alter, @Observacion,
                             @Estado, @Contacto_Ventas, @Contacto_Compras, @Telefono, @Telefono_Ext, @Fax, @Fax_Ext,
@@ -605,7 +616,8 @@ namespace Galileo.DataBaseTier
                             @Descuento_Porc, @Saldo, @Cod_Cuenta, @Cedjur, @Nit_Codigo, @Nit_Nombre,
                             @Cod_Divisa, @Saldo_Divisa_Real, @Cod_Banco, @Web_Auto_Gestion, @Web_Ferias,
                             @HaciendaTipoRegimen, @HaciendaImpuestos, @I_Extranjero, @I_Convenio, @Cod_IVA,
-                            GETDATE(), @Registro_Usuario)",
+                            ISNULL(@registro_fecha, GETDATE()), @Registro_Usuario,
+                            @fecha_vencimiento, @plazo, @representante_legal, ISNULL(@criticidad, 'N'))",
                     new
                     {
                         Cod_Proveedor = siguiente,
@@ -643,7 +655,12 @@ namespace Galileo.DataBaseTier
                         request.I_Extranjero,
                         request.I_Convenio,
                         request.Cod_IVA,
-                        request.registro_Usuario
+                        request.registro_fecha,
+                        request.registro_Usuario,
+                        request.fecha_vencimiento,
+                        request.plazo,
+                        request.representante_legal,
+                        request.criticidad
                     });
 
                 return siguiente;
