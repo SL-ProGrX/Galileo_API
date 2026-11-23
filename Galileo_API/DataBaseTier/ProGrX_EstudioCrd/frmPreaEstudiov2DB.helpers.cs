@@ -472,10 +472,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     return response;
                 }
 
-                connection.Execute(
+                var resultadoSp = connection.QueryFirstOrDefault<FrmPreaEstudiov2SolicitarSpResult>(
                     "spCrd_Prea_Estado_Solicitado",
                     new { Expediente = request.cod_preanalisis.Trim(), Usuario = usuario },
                     commandType: CommandType.StoredProcedure);
+
+                if (resultadoSp is null)
+                {
+                    response.Code = -1;
+                    response.Description = "El procedimiento no devolvió un resultado.";
+                    return response;
+                }
+
+                if (resultadoSp.Pass != 1)
+                {
+                    var mensajeError = resultadoSp.Mensaje?.Trim() ?? string.Empty;
+
+                    response.Code = -1;
+                    response.Description = mensajeError;
+                    response.Result = new FrmPreaEstudiov2SolicitarResponse
+                    {
+                        pass = resultadoSp.Pass,
+                        cod_preanalisis = request.cod_preanalisis.Trim(),
+                        mensaje = mensajeError
+                    };
+                    return response;
+                }
+
                 connection.Execute(
                     @"update CRD_PREA_PREANALISIS
                       set ESTADO = 'R', COD_ESTADO_V2 = 'RECI'
@@ -484,10 +507,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
                 response.Result = new FrmPreaEstudiov2SolicitarResponse
                 {
+                    pass = resultadoSp.Pass,
                     cod_preanalisis = request.cod_preanalisis.Trim(),
                     estado = "R",
                     estado_desc = "Recibido",
-                    mensaje = "Expediente devuelto a estado recibido."
+                    mensaje = resultadoSp.Mensaje?.Trim() ?? string.Empty
                 };
 
                 return response;
