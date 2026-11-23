@@ -16,6 +16,17 @@ namespace Galileo.DataBaseTier
             };
         }
 
+        public static IActionResult AsExcel(LocalReport report, string? nombreReporte)
+        {
+            var bytes = report.Render("EXCELOPENXML");
+            return new FileContentResult(
+                bytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            {
+                FileDownloadName = $"{nombreReporte ?? "reporte"}.xlsx"
+            };
+        }
+
         public static IActionResult AsJson(Dictionary<string, object> dataSets, List<string> warnings)
         {
             var payload = new { Code = 0, DataSets = dataSets, Warnings = warnings };

@@ -177,6 +177,38 @@ namespace Galileo.DataBaseTier
                 // Subreport processing
                 _subs.ConfigureSubreportProcessing(report, subMeta, connection, autoAliases, paramDict, subErrors, _patcher.ParseFxConstants(data.codeSection));
 
+                if (data.cod_reporte == "E" && subreportNames.Any())
+                {
+                    report.SubreportProcessing += (_, args) =>
+                    {
+                        foreach (ReportDataSource source in args.DataSources)
+                        {
+                            if (source.Value is not System.Collections.IEnumerable values)
+                                continue;
+
+                            var key = $"SUB::{args.ReportPath}::{source.Name}";
+
+                            if (!jsonDataSets.TryGetValue(key, out var existing))
+                            {
+                                existing = new List<object>();
+                                jsonDataSets.Add(key, existing);
+                            }
+
+                            var accumulatedRows = (List<object>)existing;
+
+                            foreach (var row in values)
+                            {
+                                if (row is not null)
+                                    accumulatedRows.Add(row);
+                            }
+                        }
+                    };
+
+                    // Ejecuta las expresiones y los parámetros de cada instancia
+                    // del subreporte. Sus datos se recogen en el evento anterior.
+                    _ = report.Render("PDF");
+                }
+
                 string errorDesc = string.Join("\n", subErrors) + "\n";
 
                 //elimino ultimo salto de linea
@@ -223,12 +255,18 @@ namespace Galileo.DataBaseTier
                     continue;
                 }
 
-                if (request.data != null && request.data.cod_reporte == "P")
+                if (request.data?.cod_reporte is "P" or "E")
                 {
-                    var rowsFinal = _justifier.Apply(ds.DataSetName, request.justifyRules ?? [], rows);
-                    request.report?.DataSources.Add(new ReportDataSource(ds.DataSetName, rowsFinal));
+                    var rowsFinal = _justifier.Apply(
+                        ds.DataSetName,
+                        request.justifyRules ?? [],
+                        rows);
+
+                    request.report?.DataSources.Add(
+                        new ReportDataSource(ds.DataSetName, rowsFinal));
                 }
-                else if (request.jsonDataSets != null)
+
+                if (request.data?.cod_reporte != "P")
                     request.jsonDataSets[ds.DataSetName] = rows;
             }
         }
