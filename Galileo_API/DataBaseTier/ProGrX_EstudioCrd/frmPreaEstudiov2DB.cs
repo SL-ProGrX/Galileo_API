@@ -369,7 +369,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             var plazoMaximo = edadMax > 0
                 ? Convert.ToInt32((edadMax - edadDecimal) * 12m)
                 : 0;
-            var excede = edadMax > 0 && edadDecimal + (datos.Plazo / 12m) >= edadMax;
+            // PlazoMaximo es el máximo permitido sin justificación. El valor
+            // exacto es válido; solo se considera excedido cuando lo supera.
+            var excede = plazoMaximo > 0 && datos.Plazo > plazoMaximo;
             var justificada = reglas.EdadAplica == 1 && !string.IsNullOrWhiteSpace(reglas.EdadJustificacion);
 
             return new EdadPlazoResultado(
