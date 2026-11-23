@@ -30,7 +30,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             const string sql = """
                 SELECT
-                    RTRIM(Tipo_Asiento) AS item,
+                    RTRIM(Tipo_Asiento) AS tipo_asiento,
                     RTRIM(descripcion) AS descripcion
                 FROM CntX_Tipos_Asientos
                 WHERE cod_contabilidad = @codContabilidad
