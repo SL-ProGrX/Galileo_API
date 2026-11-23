@@ -388,7 +388,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 TipoAbono.Ordinario => RegistrarOrdinario(CodEmpresa, req, vNumDoc, ref extraordinario),
                 TipoAbono.Extraordinario => RegistrarExtraordinario(CodEmpresa, req, vNumDoc, ref extraordinario),
                 TipoAbono.Cancelacion => RegistrarCancelacion(CodEmpresa, req, vNumDoc),
-                TipoAbono.AdelantoCuotas => RegistrarAdelantoCuotas(CodEmpresa, req, vNumDoc),
+                TipoAbono.AdelantoCuotas => RegistrarAdelantoCuotas(CodEmpresa, req, vNumDoc, ref extraordinario),
                 _ => new ErrorDto { Code = -2, Description = "Tipo de abono no soportado" }
             };
         }
@@ -791,20 +791,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 });
         }
 
-        private ErrorDto RegistrarAdelantoCuotas(int codempresa, CajasCrdAbonosCtPRegistrarAbonoRequest req, string vNumDoc)
+        private ErrorDto RegistrarAdelantoCuotas(int codempresa, CajasCrdAbonosCtPRegistrarAbonoRequest req, string vNumDoc, ref bool extraordinario)
         {
-            return Exec(codempresa,
-                @"exec spCrdPlanPagoAbonoOrdinario 
-          @operacion,'CRD004',@Usuario,@tipoDoc,@numdoc,@monto,@fecha,''",
-                new
-                {
-                    operacion = req.operacionid,
-                    Usuario = req.usuario,
-                    tipoDoc = req.tipodoc,
-                    numdoc = vNumDoc,
-                    monto = req.totalcajas,
-                    fecha = DateTime.Now
-                });
+            const string sqlAdelanto = @"exec spCrdPlanPagoAbonoOrdinario 
+          @operacion,'CRD004',@Usuario,@tipoDoc,@numdoc,@monto,@fecha,''";
+
+            // VB6: sin "Aplicar diferencias" se abona el total de cajas; con diferencia se abona el total a cancelar
+            // y luego se aplica la diferencia como Adelanto de Cuota o Abono Extraordinario.
+            var r1 = Exec(codempresa, sqlAdelanto, new
+            {
+                operacion = req.operacionid,
+                Usuario = req.usuario,
+                tipoDoc = req.tipodoc,
+                numdoc = vNumDoc,
+                monto = req.diferenciaaplenabled ? req.totalcancela : req.totalcajas,
+                fecha = DateTime.Now
+            });
+
+            if (!req.diferenciaaplenabled || (r1?.Code.HasValue == true && r1.Code != 0))
+                return r1 ?? new ErrorDto { Code = 0, Description = string.Empty };
+
+            return AplicarDiferenciaOrdinario(codempresa, req, vNumDoc, ref extraordinario);
         }
 
         private CajasCrdInfoExtraordinarioData GetInfoExtraordinario(int codempresa, CajasCrdAbonosCtPRegistrarAbonoRequest req)
@@ -1008,7 +1015,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             )
             values
             (
-              @numdoc, @tipoDoc, GetDate(), @Usuario,
+              @numdoc, @tipoDoc, dbo.MyGetdate(), @Usuario,
               @cedula, @nombre, @Concepto, @monto_total, 'P',
               @operacionid, @Codigo, @ase_doc_deposito, @oficina_titular,
               @linea1,@linea2,@linea3,@linea4,@linea5,@linea6,@linea7,@linea8,@linea9,@linea10,@linea11,
