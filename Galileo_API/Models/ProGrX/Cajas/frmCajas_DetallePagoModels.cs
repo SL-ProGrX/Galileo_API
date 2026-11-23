@@ -10,6 +10,14 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public string? divisa_desc { get; set; }
     }
 
+    /// <summary>Fila de spCajas_FondosDisponiblePersona (plan y contrato del fondo).</summary>
+    public class CajasFondoPersonaDto
+    {
+        public int cod_contrato { get; set; }
+        public string? cod_plan { get; set; }
+        public string? itmx { get; set; }
+    }
+
     public class CajasSaldoFavorDetDto
     {
         public string? clienteid { get; set; }
