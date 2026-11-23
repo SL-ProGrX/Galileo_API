@@ -168,6 +168,6 @@
     public class CrPreaConfiguracionesAutorizadorEstadoGuardarRequest
     {
         public string usuario { get; set; } = string.Empty;
-        public bool activo { get; set; }
+        public required bool activo { get; set; }
     }
 }
