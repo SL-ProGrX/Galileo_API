@@ -13,6 +13,7 @@ namespace Galileo_API.Models.ProGrX.Creditos
 
     public class CrComitesAprobacionesSolicitud
     {
+        public int id_comite { get; set; }
         public string semaforo { get; set; } = string.Empty;
         public string expediente { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;

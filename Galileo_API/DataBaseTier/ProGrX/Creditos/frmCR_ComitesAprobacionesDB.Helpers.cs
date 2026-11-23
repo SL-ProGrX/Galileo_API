@@ -15,12 +15,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             var estado = EstadoSql("R.ESTADOSOL", request.estado);
             var linea = @"
                 and (
-                    isnull((select top 1 LINEA_FILTRA from COMITES where ID_COMITE = @id_comite),0) = 0
-                    or R.CODIGO in (select CODIGO from CRD_COMITES_LINEAS where ID_COMITE = @id_comite)
+                    isnull((select top 1 LINEA_FILTRA from COMITES where ID_COMITE = R.ID_COMITE),0) = 0
+                    or R.CODIGO in (select CODIGO from CRD_COMITES_LINEAS where ID_COMITE = R.ID_COMITE)
                 )";
 
             return $@"
                 select
+                    R.ID_COMITE as id_comite,
                     dbo.fxSemaforo(R.ID_SOLICITUD,R.ID_COMITE,'S') as semaforo,
                     cast(R.ID_SOLICITUD as varchar(30)) as expediente,
                     R.USERREC as usuario,
@@ -39,7 +40,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 inner join SOCIOS S on S.CEDULA = R.CEDULA
                 inner join CRD_COMITES_RNG_GARANTIA G on G.COD_GARANTIA = R.GARANTIA and G.ID_COMITE = R.ID_COMITE
                 inner join CRD_GARANTIA_TIPOS Gt on R.GARANTIA = Gt.GARANTIA
-                where R.ID_COMITE = @id_comite
+                where (@id_comite = 0 or R.ID_COMITE = @id_comite)
                   and R.MONTOSOL between G.RNG_INICIO and G.RNG_CORTE
                   and R.FECHASOL between @FechaInicio and @FechaCorte
                   {estado}
@@ -53,6 +54,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             var estado = EstadoSql("P.ESTADO", request.estado);
             return $@"
                 select
+                    P.ID_COMITE as id_comite,
                     dbo.fxSemaforo(P.COD_PREANALISIS,P.ID_COMITE,'P') as semaforo,
                     cast(P.COD_PREANALISIS as varchar(30)) as expediente,
                     P.USUARIO as usuario,
@@ -72,13 +74,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 inner join CRD_COMITES_RNG_GARANTIA G on G.COD_GARANTIA = P.GARANTIA and G.ID_COMITE = P.ID_COMITE
                 inner join CRD_GARANTIA_TIPOS Gt on P.GARANTIA = Gt.GARANTIA
                 where P.TIPO_PREANALISIS = 'E'
-                  and P.ID_COMITE = @id_comite
+                  and (@id_comite = 0 or P.ID_COMITE = @id_comite)
                   and P.MONTO between G.RNG_INICIO and G.RNG_CORTE
                   and P.FECHA_CREACION between @FechaInicio and @FechaCorte
                   {estado}
                   and (
-                    isnull((select top 1 LINEA_FILTRA from COMITES where ID_COMITE = @id_comite),0) = 0
-                    or P.COD_LINEA in (select CODIGO from CRD_COMITES_LINEAS where ID_COMITE = @id_comite)
+                    isnull((select top 1 LINEA_FILTRA from COMITES where ID_COMITE = P.ID_COMITE),0) = 0
+                    or P.COD_LINEA in (select CODIGO from CRD_COMITES_LINEAS where ID_COMITE = P.ID_COMITE)
                   )
                 order by P.FECHA_CREACION;";
         }
@@ -95,9 +97,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private static ErrorDto ValidarFiltrosSolicitud(CrComitesAprobacionesSolicitudRequest request)
         {
-            if (request == null || request.id_comite <= 0)
+            if (request == null || request.id_comite < 0)
             {
-                return DbHelper.ErrorResponse("Debe indicar un comite valido.", -2);
+                return DbHelper.ErrorResponse("El comite indicado no es valido.", -2);
             }
 
             if (!EsSolicitud(request.tipo_caso) && !request.tipo_caso.Trim().Equals("E", StringComparison.OrdinalIgnoreCase))

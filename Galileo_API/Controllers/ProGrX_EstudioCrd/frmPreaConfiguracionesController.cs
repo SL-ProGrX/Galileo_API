@@ -177,5 +177,27 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         {
             return _bl.CR_Prea_Configuraciones_EdadPension_Guardar(CodEmpresa, usuario, request);
         }
+
+        [Authorize]
+        [HttpGet("CR_Prea_Configuraciones_AutorizadoresEstado_Lista_Obtener")]
+        public ErrorDto<List<CrPreaConfiguracionesAutorizadorEstadoDto>> CR_Prea_Configuraciones_AutorizadoresEstado_Lista_Obtener(int CodEmpresa)
+            => _bl.CR_Prea_Configuraciones_AutorizadoresEstado_Lista_Obtener(CodEmpresa);
+
+        [Authorize]
+        [HttpGet("CR_Prea_Configuraciones_AutorizadoresEstado_Usuarios_Dropdown_Obtener")]
+        public ErrorDto<List<Galileo.Models.DropDownListaGenericaModel>> CR_Prea_Configuraciones_AutorizadoresEstado_Usuarios_Dropdown_Obtener(int CodEmpresa)
+            => _bl.CR_Prea_Configuraciones_AutorizadoresEstado_Usuarios_Dropdown_Obtener(CodEmpresa);
+
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        [HttpPost("CR_Prea_Configuraciones_AutorizadoresEstado_Guardar")]
+        public ErrorDto CR_Prea_Configuraciones_AutorizadoresEstado_Guardar(int CodEmpresa, string usuario, [FromBody] CrPreaConfiguracionesAutorizadorEstadoGuardarRequest request)
+            => _bl.CR_Prea_Configuraciones_AutorizadoresEstado_Guardar(CodEmpresa, usuario, request);
+
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        [HttpDelete("CR_Prea_Configuraciones_AutorizadoresEstado_Eliminar")]
+        public ErrorDto CR_Prea_Configuraciones_AutorizadoresEstado_Eliminar(int CodEmpresa, string usuarioAutorizador)
+            => _bl.CR_Prea_Configuraciones_AutorizadoresEstado_Eliminar(CodEmpresa, usuarioAutorizador);
     }
 }

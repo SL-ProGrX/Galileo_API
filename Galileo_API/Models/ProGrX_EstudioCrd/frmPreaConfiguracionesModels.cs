@@ -154,4 +154,20 @@
         public string item { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
+
+    public class CrPreaConfiguracionesAutorizadorEstadoDto
+    {
+        public string usuario { get; set; } = string.Empty;
+        public bool activo { get; set; }
+        public string registro_usuario { get; set; } = string.Empty;
+        public DateTime? registro_fecha { get; set; }
+        public string modifica_usuario { get; set; } = string.Empty;
+        public DateTime? modifica_fecha { get; set; }
+    }
+
+    public class CrPreaConfiguracionesAutorizadorEstadoGuardarRequest
+    {
+        public string usuario { get; set; } = string.Empty;
+        public required bool activo { get; set; }
+    }
 }
