@@ -43,11 +43,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             try
             {
                 using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-                var validacionEstado = ValidarEstadoPagare(connection, request.operacion);
-                if (validacionEstado is not null)
-                    return DbHelper.CreateErrorResponse<CrGeneraGarantiaPagareDto>(
-                        validacionEstado, -1, new());
-
                 var result = connection.QueryFirstOrDefault<CrGeneraGarantiaPagareDto>(
                     @"exec spCrd_Operacion_Pagare_Registra
                         @Operacion, @Reemplazar, @Cedula, @Provincia, @Reservado",
@@ -133,11 +128,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             try
             {
                 using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
-                var validacionEstado = ValidarEstadoPagare(connection, request.operacion);
-                if (validacionEstado is not null)
-                    return DbHelper.CreateErrorResponse<CrGeneraGarantiaEmailDto>(
-                        validacionEstado, -1, new());
-
                 var result = connection.QueryFirstOrDefault<CrGeneraGarantiaEmailDto>(
                     @"exec spCrd_Pagare_Email
                         @Operacion, @Reemplazar, @Cedula, @Provincia",
@@ -249,12 +239,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         -1,
                         new());
 
-                if (!EsEstadoValidoPagare(operacion.estadosol, operacion.estado))
-                    return DbHelper.CreateErrorResponse<CrGeneraGarantiaPreImpresoDto>(
-                        MensajeEstadoInvalidoPagare(request.operacion),
-                        -1,
-                        new());
-
                 var tieneFiadores = operacion.garantia.Equals(
                     "F",
                     StringComparison.OrdinalIgnoreCase);
@@ -323,33 +307,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 : "Debe seleccionar un lugar de firma válido.";
         }
 
-        private static string? ValidarEstadoPagare(
-            SqlConnection connection,
-            long operacion)
-        {
-            var estado = connection.QueryFirstOrDefault<CrGeneraGarantiaOperacionEstadoData>(
-                @"select
-                    rtrim(isnull(estadosol, '')) as estadosol,
-                    rtrim(isnull(estado, '')) as estado
-                  from Reg_Creditos
-                  where id_solicitud = @operacion;",
-                new { operacion });
-
-            if (estado is null)
-                return $"No existe el número de operación indicado, verifique... {operacion}";
-
-            return EsEstadoValidoPagare(estado.estadosol, estado.estado)
-                ? null
-                : MensajeEstadoInvalidoPagare(operacion);
-        }
-
-        private static bool EsEstadoValidoPagare(string? estadoSolicitud, string? estadoOperacion) =>
-            string.Equals(estadoSolicitud?.Trim(), "F", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(estadoOperacion?.Trim(), "A", StringComparison.OrdinalIgnoreCase);
-
-        private static string MensajeEstadoInvalidoPagare(long operacion) =>
-            $"No se puede generar el pagaré porque la solicitud no está Formalizada ni la operación está Activa. Operación: {operacion}.";
-
         /// <summary>
         /// Obtiene los datos base de una operación para preparar el pagaré preimpreso.
         /// </summary>
@@ -364,7 +321,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     rtrim(codigo) as codigo,
                     rtrim(cedula) as cedula,
                     rtrim(estadosol) as estadosol,
-                    rtrim(isnull(estado, '')) as estado,
                     rtrim(garantia) as garantia,
                     isnull(montoapr, 0) as montoapr,
                     isnull(plazo, 0) as plazo,

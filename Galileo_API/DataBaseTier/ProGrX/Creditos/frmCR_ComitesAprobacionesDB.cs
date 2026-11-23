@@ -21,7 +21,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         }
 
         /// <summary>
-        /// Obtiene comites activos mancomunados para busqueda F4.
+        /// Obtiene todos los comites activos para busqueda F4.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
@@ -37,7 +37,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         rtrim(isnull(DESCRIPCION,'')) as descripcion
                     from COMITES
                     where ESTADO = 1
-                      and TIPO_APROBACION = 'M'
                     order by DESCRIPCION;";
 
                 return DbHelper.CreateOkResponse(conn.Query<DropDownListaGenericaModel>(sql).ToList());
@@ -111,7 +110,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         select top 1 @ComiteBuscar = ID_COMITE
                         from COMITES
                         where ESTADO = 1
-                          and TIPO_APROBACION = 'M'
                         order by ID_COMITE asc;
                     end
                     else if @direccion < 0
@@ -119,7 +117,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         select top 1 @ComiteBuscar = ID_COMITE
                         from COMITES
                         where ESTADO = 1
-                          and TIPO_APROBACION = 'M'
                           and ID_COMITE < @id_comite
                         order by ID_COMITE desc;
                     end
@@ -128,7 +125,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         select top 1 @ComiteBuscar = ID_COMITE
                         from COMITES
                         where ESTADO = 1
-                          and TIPO_APROBACION = 'M'
                           and ID_COMITE > @id_comite
                         order by ID_COMITE asc;
                     end;
@@ -152,7 +148,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         cast(isnull(C.LINEA_FILTRA,0) as bit) as linea_filtra
                     from COMITES C
                     where C.ESTADO = 1
-                      and C.TIPO_APROBACION = 'M'
                       and C.ID_COMITE = @ComiteBuscar;";
 
                 var comite = conn.QueryFirstOrDefault<CrComitesAprobacionesComite>(

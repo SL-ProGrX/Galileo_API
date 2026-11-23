@@ -50,6 +50,8 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         /// recordset de spCRDPreaPREANALISI
         /// </summary>
         public string comite_resolutivo { get; set; } = string.Empty;
+        public string tipo_aprobacion_comite { get; set; } = string.Empty;
+        public bool aprueba_pantalla_principal { get; set; }
 
         /// <summary>
         /// Parámetros globales de la empresa (VB6: sbInicializaGlobales, lee
@@ -1350,6 +1352,7 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         public string mensaje { get; set; } = string.Empty;
         /// <summary>'E' Ejecutivo, 'M' Mancomunado, u otro devuelto por spCrdPrea_Comite_Asigna_Valida.</summary>
         public string tipo_aprobacion { get; set; } = string.Empty;
+        public bool aprueba_pantalla_principal { get; set; }
     }
 
     #endregion
