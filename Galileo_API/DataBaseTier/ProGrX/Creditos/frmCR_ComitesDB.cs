@@ -458,6 +458,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     @Abreviatura,
                     @Orden;";
 
+            if (conn.State != ConnectionState.Open)
+            {
+                conn.Open();
+            }
+
             using var transaction = conn.BeginTransaction();
 
             try
