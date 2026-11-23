@@ -41,7 +41,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 ? Convert.ToDecimal(porcentajeRaw)
                 : 100m;
             var detalle = ObtenerDetalleSalarios(connection, codPreanalisis);
-            var tablaSalarios = detalle.TablaSalarios;
+            // VB6 inicializa el historial al cargar por primera vez el expediente.
+            // Hacerlo aquí permite que el primer guardado y posterior recarga deje
+            // Salarios listo, sin obligar al usuario a presionar "Aplicar tipo".
+            var tablaSalarios = InicializarTablaSalariosDesdePersona(
+                connection,
+                codPreanalisis,
+                GetString(row, "CEDULA"),
+                detalle.TablaSalarios);
 
             return new FrmPreaEstudiov2SalariosDto
             {

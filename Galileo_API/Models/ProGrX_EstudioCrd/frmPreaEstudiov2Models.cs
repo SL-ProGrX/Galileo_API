@@ -504,8 +504,7 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         public List<FrmPreaEstudiov2DropdownDto> cph { get; set; } = [];
         /// <summary>Monto máximo de la línea (MAX(hasta) de Rangos). 0 si la línea no tiene rangos.</summary>
         public decimal monto_maximo { get; set; }
-        /// <summary>Plazo máximo de la línea (MAX(hasta) de Rangos_plazo). Informativo; el tope de plazo
-        /// en Angular es el plazo máximo por edad.</summary>
+        /// <summary>Plazo máximo de la línea (MAX(hasta) de Rangos_plazo).</summary>
         public decimal plazo_maximo { get; set; }
         /// <summary>Tasa configurada en el catálogo para el monto del expediente (solo en la carga). 0 = sin tope.</summary>
         public decimal tasa_linea { get; set; }
