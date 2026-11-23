@@ -184,6 +184,9 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         /// <summary>Puntos de bono de membresía aplicados a la Tasa (0 si no aplicó).
         /// VB6: clsMensajes.TASA_PTS_BONO.</summary>
         public decimal tasa_pts_bono { get; set; }
+        /// <summary>true si la Tasa fue tomada del catálogo de la línea (fxCrdCatalogoRango);
+        /// el frontend la informa al usuario como valor estipulado de la línea.</summary>
+        public bool tasa_desde_catalogo { get; set; }
     }
 
     public class FrmPreaEstudiov2CreditoDto
@@ -499,6 +502,13 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
         public List<FrmPreaEstudiov2DropdownDto> destinos { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> garantias { get; set; } = [];
         public List<FrmPreaEstudiov2DropdownDto> cph { get; set; } = [];
+        /// <summary>Monto máximo de la línea (MAX(hasta) de Rangos). 0 si la línea no tiene rangos.</summary>
+        public decimal monto_maximo { get; set; }
+        /// <summary>Plazo máximo de la línea (MAX(hasta) de Rangos_plazo). Informativo; el tope de plazo
+        /// en Angular es el plazo máximo por edad.</summary>
+        public decimal plazo_maximo { get; set; }
+        /// <summary>Tasa configurada en el catálogo para el monto del expediente (solo en la carga). 0 = sin tope.</summary>
+        public decimal tasa_linea { get; set; }
     }
 
     /// <summary>
