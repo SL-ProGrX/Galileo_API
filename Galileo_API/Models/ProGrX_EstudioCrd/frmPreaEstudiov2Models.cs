@@ -1382,10 +1382,17 @@ namespace Galileo_API.Models.ProGrX_EstudioCrd
 
     public class FrmPreaEstudiov2SolicitarResponse
     {
+        public short pass { get; set; }
         public string cod_preanalisis { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
         public string estado_desc { get; set; } = string.Empty;
         public string mensaje { get; set; } = string.Empty;
+    }
+
+    public class FrmPreaEstudiov2SolicitarSpResult
+    {
+        public short Pass { get; set; }
+        public string Mensaje { get; set; } = string.Empty;
     }
 
     #endregion

@@ -265,6 +265,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 result.Result.sub_expedientes = ObtenerSubExpedientes(
                     connection,
                     ObtenerExpedientePadre(codPreanalisis));
+
+                // Hay datos históricos donde NSUB_EXP quedó en 0 aunque ya existen
+                // hijos. La pantalla debe reflejar como mínimo la cantidad real
+                // registrada, no un valor inconsistente.
+                result.Result.credito.fiadores = Math.Max(
+                    result.Result.credito.fiadores,
+                    result.Result.sub_expedientes.Count);
             }
             catch (Exception ex)
             {
