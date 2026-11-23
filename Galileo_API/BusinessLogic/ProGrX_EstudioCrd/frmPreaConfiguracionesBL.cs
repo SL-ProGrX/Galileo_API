@@ -122,5 +122,17 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         {
             return _db.CR_Prea_Configuraciones_EdadPension_Guardar(CodEmpresa, usuario, request);
         }
+
+        public ErrorDto<List<CrPreaConfiguracionesAutorizadorEstadoDto>> CR_Prea_Configuraciones_AutorizadoresEstado_Lista_Obtener(int CodEmpresa)
+            => _db.CR_Prea_Configuraciones_AutorizadoresEstado_Lista_Obtener(CodEmpresa);
+
+        public ErrorDto<List<Galileo.Models.DropDownListaGenericaModel>> CR_Prea_Configuraciones_AutorizadoresEstado_Usuarios_Dropdown_Obtener(int CodEmpresa)
+            => _db.CR_Prea_Configuraciones_AutorizadoresEstado_Usuarios_Dropdown_Obtener(CodEmpresa);
+
+        public ErrorDto CR_Prea_Configuraciones_AutorizadoresEstado_Guardar(int CodEmpresa, string usuario, CrPreaConfiguracionesAutorizadorEstadoGuardarRequest request)
+            => _db.CR_Prea_Configuraciones_AutorizadoresEstado_Guardar(CodEmpresa, usuario, request);
+
+        public ErrorDto CR_Prea_Configuraciones_AutorizadoresEstado_Eliminar(int CodEmpresa, string usuarioAutorizador)
+            => _db.CR_Prea_Configuraciones_AutorizadoresEstado_Eliminar(CodEmpresa, usuarioAutorizador);
     }
 }

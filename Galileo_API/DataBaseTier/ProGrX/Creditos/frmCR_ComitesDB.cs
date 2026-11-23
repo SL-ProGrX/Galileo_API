@@ -57,6 +57,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         isnull(C.RNG_INICIO,0) as rng_inicio,
                         isnull(C.RNG_CORTE,0) as rng_corte,
                         cast(isnull(C.LINEA_FILTRA,0) as bit) as linea_filtra,
+                        cast(isnull(C.GENERA_ACTA,0) as bit) as genera_acta,
+                        cast(isnull(C.APRUEBA_PANTALLA_PRINCIPAL,0) as bit) as aprueba_pantalla_principal,
                         cast(isnull(C.ESTADO,0) as bit) as estado,
                         cast(0 as bit) as isNew
                     from COMITES C
@@ -456,21 +458,51 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     @Abreviatura,
                     @Orden;";
 
-            return conn.QueryFirstOrDefault<CrComitesGuardarResult>(sql, new
+            using var transaction = conn.BeginTransaction();
+
+            try
             {
-                Comite = request.id_comite.GetValueOrDefault(),
-                Descripcion = NormalizarTexto(request.descripcion),
-                Acta = request.acta.GetValueOrDefault(),
-                Tipo = NormalizarTipoAprobacion(request.tipo_aprobacion),
-                NoAprobacion = request.naprobaciones.GetValueOrDefault(),
-                RngInicio = request.rng_inicio.GetValueOrDefault(),
-                RngCorte = request.rng_corte.GetValueOrDefault(),
-                LineaFiltra = request.linea_filtra.GetValueOrDefault() ? 1 : 0,
-                Activo = request.estado.GetValueOrDefault() ? 1 : 0,
-                Usuario = NormalizarUsuario(usuario),
-                Abreviatura = NormalizarTexto(request.abreviatura),
-                Orden = NormalizarTexto(request.orden)
-            }) ?? new CrComitesGuardarResult();
+                var result = conn.QueryFirstOrDefault<CrComitesGuardarResult>(sql, new
+                {
+                    Comite = request.id_comite.GetValueOrDefault(),
+                    Descripcion = NormalizarTexto(request.descripcion),
+                    Acta = request.acta.GetValueOrDefault(),
+                    Tipo = NormalizarTipoAprobacion(request.tipo_aprobacion),
+                    NoAprobacion = request.naprobaciones.GetValueOrDefault(),
+                    RngInicio = request.rng_inicio.GetValueOrDefault(),
+                    RngCorte = request.rng_corte.GetValueOrDefault(),
+                    LineaFiltra = request.linea_filtra.GetValueOrDefault() ? 1 : 0,
+                    Activo = request.estado.GetValueOrDefault() ? 1 : 0,
+                    Usuario = NormalizarUsuario(usuario),
+                    Abreviatura = NormalizarTexto(request.abreviatura),
+                    Orden = NormalizarTexto(request.orden)
+                }, transaction) ?? new CrComitesGuardarResult();
+
+                result.id_comite = result.id_comite > 0
+                    ? result.id_comite
+                    : request.id_comite.GetValueOrDefault();
+
+                const string sqlActualizarIndicadores = @"
+                    update COMITES
+                    set GENERA_ACTA = @GeneraActa,
+                        APRUEBA_PANTALLA_PRINCIPAL = @ApruebaPantallaPrincipal
+                    where ID_COMITE = @Comite;";
+
+                conn.Execute(sqlActualizarIndicadores, new
+                {
+                    Comite = result.id_comite,
+                    GeneraActa = request.genera_acta.GetValueOrDefault() ? 1 : 0,
+                    ApruebaPantallaPrincipal = request.aprueba_pantalla_principal.GetValueOrDefault() ? 1 : 0
+                }, transaction);
+
+                transaction.Commit();
+                return result;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
 
         private static ErrorDto ValidarComite(CrComitesGuardarRequest request)

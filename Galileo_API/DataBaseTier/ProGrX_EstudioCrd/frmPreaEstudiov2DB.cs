@@ -234,6 +234,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     comite_resolutivo = GetString(row, "ID_COMITE"),
                 };
 
+                var comiteAsignado = result.Result.comite_resolutivo;
+                if (!string.IsNullOrWhiteSpace(comiteAsignado))
+                {
+                    var configuracionComite = connection.QueryFirstOrDefault<(string Tipo, bool PantallaPrincipal)>(
+                        @"select rtrim(isnull(TIPO_APROBACION,'')) as Tipo,
+                                 cast(isnull(APRUEBA_PANTALLA_PRINCIPAL,0) as bit) as PantallaPrincipal
+                          from COMITES where ID_COMITE = @IdComite",
+                        new { IdComite = comiteAsignado });
+                    result.Result.tipo_aprobacion_comite = configuracionComite.Tipo ?? string.Empty;
+                    result.Result.aprueba_pantalla_principal = configuracionComite.PantallaPrincipal;
+                }
+
                 // '17' -> GlobalSalarioMinimoInembargable,
                 // GlobalSalarioNormativo = VALOR('17') + VALOR('22').
                 var salarioMinimoInembargable = parametros.Decimal("17");

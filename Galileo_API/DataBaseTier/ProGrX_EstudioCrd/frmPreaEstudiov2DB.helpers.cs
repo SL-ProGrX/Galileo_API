@@ -245,6 +245,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 var exp = request.cod_preanalisis.Trim();
                 var comite = request.comite?.Trim() ?? string.Empty;
 
+                var configuracionComite = connection.QueryFirstOrDefault<(bool RequiereAdjunto, bool ApruebaPantallaPrincipal)>(
+                    @"select cast(isnull(ADJUNTO_OBLIGATORIO,0) as bit) RequiereAdjunto,
+                             cast(isnull(APRUEBA_PANTALLA_PRINCIPAL,0) as bit) ApruebaPantallaPrincipal
+                      from COMITES where ID_COMITE = @Comite",
+                    new { Comite = comite });
+                if (configuracionComite.RequiereAdjunto)
+                {
+                    var tieneAdjuntos = connection.QueryFirstOrDefault<int>(
+                        "select count(1) from CRD_PREA_V2_ADJUNTOS where ID_EXPEDIENTE = @Expediente",
+                        new { Expediente = exp }) > 0;
+                    if (!tieneAdjuntos)
+                    {
+                        response.Code = -1;
+                        response.Description = "El comité seleccionado requiere adjuntar la documentación obligatoria antes de asignarlo.";
+                        return response;
+                    }
+                }
+
                 var validacionRow = connection.QueryFirstOrDefault(
                     "EXEC spCrdPrea_Comite_Asigna_Valida @Expediente, @Comite",
                     new { Expediente = exp, Comite = comite }
@@ -280,6 +298,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 }
 
                 var tipoAprobacion = GetString(dict, "Tipo_Aprobacion");
+                var apruebaPantallaPrincipal = configuracionComite.ApruebaPantallaPrincipal;
 
                 string nuevoEstado;
                 int indicadorEditable = 0;
@@ -331,7 +350,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     comite = comite,
                     asignado = true,
                     mensaje = "Comité asignado correctamente.",
-                    tipo_aprobacion = tipoAprobacion
+                    tipo_aprobacion = tipoAprobacion,
+                    aprueba_pantalla_principal = apruebaPantallaPrincipal
                 };
 
                 return response;
@@ -440,22 +460,34 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 using var connection = _portalDb.CreateConnection(codEmpresa);
                 connection.Open();
 
+                var usuario = request.usuario?.Trim() ?? string.Empty;
+                var autorizado = connection.QueryFirstOrDefault<int>(
+                    @"select count(1) from CRD_PREA_AUTORIZADORES_ESTADO
+                      where USUARIO = @Usuario and ACTIVO = 1",
+                    new { Usuario = usuario }) > 0;
+                if (!autorizado)
+                {
+                    response.Code = -1;
+                    response.Description = "El usuario actual no está autorizado para devolver expedientes pendientes.";
+                    return response;
+                }
+
                 connection.Execute(
                     "spCrd_Prea_Estado_Solicitado",
-                    new
-                    {
-                        Expediente = request.cod_preanalisis.Trim(),
-                        Usuario = request.usuario?.Trim() ?? string.Empty
-                    },
-                    commandType: CommandType.StoredProcedure
-                );
+                    new { Expediente = request.cod_preanalisis.Trim(), Usuario = usuario },
+                    commandType: CommandType.StoredProcedure);
+                connection.Execute(
+                    @"update CRD_PREA_PREANALISIS
+                      set ESTADO = 'R', COD_ESTADO_V2 = 'RECI'
+                      where COD_PREANALISIS = @Expediente",
+                    new { Expediente = request.cod_preanalisis.Trim() });
 
                 response.Result = new FrmPreaEstudiov2SolicitarResponse
                 {
                     cod_preanalisis = request.cod_preanalisis.Trim(),
-                    estado = "SOL",
-                    estado_desc = "Solicitado",
-                    mensaje = "Expediente marcado como solicitado."
+                    estado = "R",
+                    estado_desc = "Recibido",
+                    mensaje = "Expediente devuelto a estado recibido."
                 };
 
                 return response;
