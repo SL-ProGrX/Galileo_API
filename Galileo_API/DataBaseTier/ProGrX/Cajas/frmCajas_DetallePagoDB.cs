@@ -81,7 +81,7 @@ namespace Galileo.DataBaseTier
                     connectionString,
                     "spCajas_DisponibleFondos",
                     default,
-                    new { CodCaja = codCaja, CodApertura = codApertura, Ticket = ticket, CodPlan = codPlan, CodContrato = codContrato });
+                    new { Caja = codCaja, Apertura = codApertura, Ticket = ticket, Plan = codPlan, Contrato = codContrato });
 
                 response.Code = result.Code;
                 response.Description = result.Description;
@@ -872,7 +872,13 @@ namespace Galileo.DataBaseTier
                 response.Result.Pagadores = multi.Read<DropDownListaGenericaModel>().ToList();
                 response.Result.OrigenRecursos = multi.Read<DropDownListaGenericaModel>().ToList();
                 response.Result.SaldosFavor = multi.Read<CajasSaldoaFavorDto>().ToList();
-                response.Result.Fondos = multi.Read<DropDownListaGenericaModel>().ToList();
+                // item = "plan..contrato" (clave única, igual a la usada por VB6 en fxCajas_FP_Registada)
+                response.Result.Fondos = multi.Read<CajasFondoPersonaDto>()
+                    .Select(f => new DropDownListaGenericaModel
+                    {
+                        item = $"{f.cod_plan?.Trim()}..{f.cod_contrato}",
+                        descripcion = f.itmx ?? string.Empty
+                    }).ToList();
             }
             catch (Exception ex)
             {
