@@ -82,6 +82,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                     scrollCode
                 });
 
+                if (!operacionDestino.HasValue)
+                {
+                    const string queryExtremo = @"
+                        SELECT CASE WHEN @scrollCode = 1
+                            THEN MIN(NOperacion)
+                            ELSE MAX(NOperacion)
+                        END
+                        FROM Afi_CD_Cuentas;";
+
+                    operacionDestino = conn.QueryFirstOrDefault<int?>(queryExtremo, new { scrollCode });
+                }
+
                 var numeroObjetivo = operacionDestino ?? operacion;
 
                 return AfCdCuenta_Obtener(codEmpresa, numeroObjetivo);
