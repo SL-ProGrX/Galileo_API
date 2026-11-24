@@ -93,7 +93,8 @@
         public string? Razon_Social { get; set; }
         public string? Cod_Actividad { get; set; }
         public string? Cod_Sociedad { get; set; }
-        public int? Ind_Propiedades { get; set; }
+        public int? Ind_Propiedades { get; set; }      // Actividad/Profesión APNFD (antes: posee propiedades)
+        public short? Ind_Apnfd { get; set; }          // 1 = realiza APNFD, 0 = no
         public string? Autoriza_Comision_Notas { get; set; }
         public DateTime? Ben_Update_Fecha { get; set; }
         public string? Ben_Update_Usuario { get; set; }
@@ -532,7 +533,8 @@
         // -------- Jurídico / Económico ----------
         public string? Sociedad { get; set; }
         public string? Actividad { get; set; }
-        public short Propiedades { get; set; }         // smallint
+        public short Propiedades { get; set; }         // smallint: código de Actividad/Profesión APNFD
+        public short IndApnfd { get; set; }            // smallint: 1 = realiza APNFD, 0 = no
         public string? Oficina { get; set; } = default;
 
         // -------- Redes ----------

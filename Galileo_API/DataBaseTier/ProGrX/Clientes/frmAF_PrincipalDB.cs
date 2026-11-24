@@ -17,6 +17,7 @@ namespace Galileo.DataBaseTier
         private const string CONSULTA_REALIZADA_CORRECTAMENTE = "Consulta realizada correctamente";
         private const string OPERACION_REALIZADA_CORRECTAMENTE = "Operación realizada correctamente";
         private const string CAMPO_COD_INSTITUCION = "cod_institucion";
+        private const int LARGO_DIMEX = 12;
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(250);
 
         public FrmAFPrincipalDB(IConfiguration config)
@@ -652,35 +653,40 @@ namespace Galileo.DataBaseTier
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection =>
             {
-                using var multi = connection.QueryMultiple(
+                AfConsultasGeneralesDto consultas;
+                using (var multi = connection.QueryMultiple(
                     "spAF_Persona_Consultas",
                     new
                     {
                         Cedula = cedula.Trim(),
                         Usuario = (usuario ?? string.Empty).Trim()
                     },
-                    commandType: CommandType.StoredProcedure);
-
-                return new AfConsultasGeneralesDto
+                    commandType: CommandType.StoredProcedure))
                 {
-                    Telefonos = multi.Read<AfTelefonosDto>().ToList(),
-                    CuentasBancarias = multi.Read<AfCuentaBancariaDto>().ToList(),
-                    Beneficiarios = multi.Read<AfPersonaBeneficiarioDto>().ToList(),
-                    Tarjetas = multi.Read<AfTarjetaDto>().ToList(),
-                    Localizaciones = multi.Read<AfDireccionDto>().ToList(),
-                    Ingresos = multi.Read<AfPersonaIngresoDto>().ToList(),
-                    Renuncias = multi.Read<AfPersonaRenunciaDto>().ToList(),
-                    Liquidaciones = multi.Read<AfPersonaLiquidacionDto>().ToList(),
-                    Nombramientos = multi.Read<AfPersonaNombramientoDto>().ToList(),
-                    Salarios = multi.Read<AfPersonaSalarioDto>().ToList(),
-                    Emails = multi.Read<AfPersonaEmailDto>().ToList(),
-                    Motivos = multi.Read<AfMotivosDto>().ToList(),
-                    Canales = multi.Read<AfCanalesDto>().ToList(),
-                    Preferencias = multi.Read<AfPreferenciaDto>().ToList(),
-                    Bienes = multi.Read<AfBienDto>().ToList(),
-                    Escolaridad = multi.Read<AfEscolaridadDto>().ToList(),
-                    Relaciones = multi.Read<AfPersonaRelacionDto>().ToList()
-                };
+                    consultas = new AfConsultasGeneralesDto
+                    {
+                        Telefonos = multi.Read<AfTelefonosDto>().ToList(),
+                        CuentasBancarias = multi.Read<AfCuentaBancariaDto>().ToList(),
+                        Beneficiarios = multi.Read<AfPersonaBeneficiarioDto>().ToList(),
+                        Tarjetas = multi.Read<AfTarjetaDto>().ToList(),
+                        Localizaciones = multi.Read<AfDireccionDto>().ToList(),
+                        Ingresos = multi.Read<AfPersonaIngresoDto>().ToList(),
+                        Renuncias = multi.Read<AfPersonaRenunciaDto>().ToList(),
+                        Liquidaciones = multi.Read<AfPersonaLiquidacionDto>().ToList(),
+                        Nombramientos = multi.Read<AfPersonaNombramientoDto>().ToList(),
+                        Salarios = multi.Read<AfPersonaSalarioDto>().ToList(),
+                        Emails = multi.Read<AfPersonaEmailDto>().ToList(),
+                        Motivos = multi.Read<AfMotivosDto>().ToList(),
+                        Canales = multi.Read<AfCanalesDto>().ToList(),
+                        Preferencias = multi.Read<AfPreferenciaDto>().ToList(),
+                        Bienes = multi.Read<AfBienDto>().ToList(),
+                        Escolaridad = multi.Read<AfEscolaridadDto>().ToList(),
+                        Relaciones = multi.Read<AfPersonaRelacionDto>().ToList()
+                    };
+                }
+
+                AF_Persona_Telefono_Principal_Marcar(connection, cedula.Trim(), consultas.Telefonos);
+                return consultas;
             });
 
             return result.Code == 0
@@ -689,6 +695,22 @@ namespace Galileo.DataBaseTier
                     result.Description ?? "Error al consultar información general de la persona.",
                     result.Code.GetValueOrDefault(-1),
                     new AfConsultasGeneralesDto());
+        }
+
+        /// <summary>Marca el teléfono principal (el SP de consulta no devuelve ese dato).</summary>
+        private static void AF_Persona_Telefono_Principal_Marcar(
+            System.Data.IDbConnection connection,
+            string cedula,
+            List<AfTelefonosDto>? telefonos)
+        {
+            const string query = @"SELECT CONVERT(varchar(20), TELEFONO)
+                                   FROM TELEFONOS
+                                   WHERE CEDULA = @cedula AND IND_PRINCIPAL = 1";
+            var principales = connection.Query<string>(query, new { cedula }).ToHashSet();
+            foreach (var telefono in telefonos ?? [])
+            {
+                telefono.IndPrincipal = principales.Contains(telefono.Telefono ?? string.Empty) ? 1 : 0;
+            }
         }
 
         /// <summary>
@@ -892,6 +914,12 @@ namespace Galileo.DataBaseTier
         public ErrorDto AF_Persona_Dimex_Add(int codEmpresa, string req)
         {
             var request = JsonConvert.DeserializeObject<AfPersonaDimexAddDto>(req) ?? new AfPersonaDimexAddDto();
+            var dimex = $"{request.dimex}".Trim();
+            if (dimex.Length > 0 && (dimex.Length != LARGO_DIMEX || !dimex.All(char.IsAsciiDigit)))
+            {
+                return DbHelper.ErrorResponse($"El DIMEX debe tener {LARGO_DIMEX} números.");
+            }
+
             return ExecuteStoredProcedure(
                 codEmpresa,
                 "dbo.spAFI_Persona_Dimex_Add",

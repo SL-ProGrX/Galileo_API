@@ -216,6 +216,7 @@ namespace Galileo.DataBaseTier
             p.Add("@OrigenRecursosId", req.OrigenRecursos);
             p.Add("@OrigenRecursosOtros", req.OrigenRecursosOtros);
             p.Add("@OtrosIngresos", req.OtrosIngresos);
+            p.Add("@IndApnfd", req.IndApnfd);
 
             return p;
         }
@@ -361,9 +362,10 @@ namespace Galileo.DataBaseTier
                 errores.Add("La persona es menor de edad.");
             }
 
-            if (dto.fCedulaVence <= DateTime.Now.AddDays(20))
+            // El día del vencimiento la cédula sigue vigente: solo bloquea si ya venció.
+            if (dto.fCedulaVence.Date < DateTime.Today)
             {
-                errores.Add("La cédula está próxima a vencer.");
+                errores.Add("La cédula está vencida.");
             }
         }
 
