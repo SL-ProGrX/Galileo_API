@@ -29,11 +29,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             {
                 const string query = @"
                         SELECT
-                            RTRIM(CodTipoActividad) AS item,
-                            RTRIM(NombreTipoActividad) AS descripcion
-                        FROM AFI_CD_TIPO_ACTIVIDAD
+                            RTRIM(CodTipoCuenta) AS item,
+                            RTRIM(NombreTipoCuenta) AS descripcion
+                        FROM AFI_CD_TIPO_CUENTA
                         WHERE Activo = 1
-                        ORDER BY NombreTipoActividad;";
+                        ORDER BY NombreTipoCuenta;";
 
                 var tiposActividad = conn.Query<DropDownListaGenericaModel>(query).ToList();
 

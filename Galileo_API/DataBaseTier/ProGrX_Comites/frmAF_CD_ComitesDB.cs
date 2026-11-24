@@ -42,7 +42,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                     Ejecutivos = ObtenerEjecutivos(conn, codComite),
                     Miembros = ObtenerMiembros(conn, codComite, true),
                     Liquidaciones = ObtenerLiquidaciones(conn, codComite),
-                    LiquidacionesHistorico = ObtenerLiquidacionesHistorico(conn, codComite),
                     Mensajes = ObtenerMensajes(conn, codComite)
                 };
                 result.Result = detalle;
@@ -200,7 +199,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                     Ejecutivos = ObtenerEjecutivos(conn, codComiteSiguiente),
                     Miembros = ObtenerMiembros(conn, codComiteSiguiente, true),
                     Liquidaciones = ObtenerLiquidaciones(conn, codComiteSiguiente),
-                    LiquidacionesHistorico = ObtenerLiquidacionesHistorico(conn, codComiteSiguiente),
                     Mensajes = ObtenerMensajes(conn, codComiteSiguiente)
                 };
             }
@@ -411,13 +409,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
         public ErrorDto<List<AfCdComiteMiembroHistorialDto>> AfCdComites_HistorialMiembros(int codEmpresa, string codComite)
         {
             const string sql = @"
-                SELECT H.cedula AS Cedula, S.nombre AS Nombre, H.cod_puesto AS Cod_Puesto,
-                       H.registro_fecha AS Registro_Fecha, H.registro_usuario AS Registro_Usuario,
-                       H.apl_desembolsos AS Apl_Desembolsos, H.activo AS Activo, H.cod_comite AS Cod_Comite
-                FROM afi_cd_nombramientos_h H
-                INNER JOIN socios S ON H.cedula = S.cedula
-                WHERE H.cod_comite = @CodComite
-                ORDER BY H.cod_puesto";
+                SELECT N.cedula AS Cedula, S.nombre AS Nombre, N.cod_puesto AS Cod_Puesto,
+                       N.registro_fecha AS Registro_Fecha, N.registro_usuario AS Registro_Usuario,
+                       N.apl_desembolsos AS Apl_Desembolsos, N.activo AS Activo, N.cod_comite AS Cod_Comite
+                FROM afi_cd_nombramientos N
+                INNER JOIN socios S ON N.cedula = S.cedula
+                WHERE N.cod_comite = @CodComite
+                ORDER BY N.cod_puesto, N.registro_fecha, N.cedula";
             var result = DbHelper.ExecuteListQuery<AfCdComiteMiembroHistorialDto>(_portalDb, codEmpresa, sql, new { CodComite = codComite });
             result.Result = result.Result?.Select(x => { x.Puesto = PuestoNombre(x.Cod_Puesto); return x; }).ToList();
             return result;
@@ -537,19 +535,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 WHERE C.cod_comite = @CodComite AND C.estado = 'T'
                 GROUP BY C.notas, A.noperacion, C.estado, C.tesoreria_nsolicitud, C.liquida_fecha
                 ORDER BY A.noperacion";
-            return conn.Query<AfCdComiteLiquidacionDto>(sql, new { CodComite = codComite }).ToList();
-        }
-
-        private static List<AfCdComiteLiquidacionDto> ObtenerLiquidacionesHistorico(SqlConnection conn, string codComite)
-        {
-            const string sql = @"
-                SELECT A.noperacion AS Noperacion, C.notas AS Notas, SUM(A.monto) AS Monto,
-                       C.tesoreria_nsolicitud AS Tesoreria_Nsolicitud, C.liquida_fecha AS Liquida_Fecha
-                FROM afi_cd_cuentas C
-                INNER JOIN afi_cd_cuentas_actividades A ON C.noperacion = A.noperacion
-                WHERE C.cod_comite = @CodComite AND C.estado = 'L'
-                GROUP BY C.notas, A.noperacion, C.estado, C.tesoreria_nsolicitud, C.liquida_fecha
-                ORDER BY C.liquida_fecha DESC, A.noperacion";
             return conn.Query<AfCdComiteLiquidacionDto>(sql, new { CodComite = codComite }).ToList();
         }
 
