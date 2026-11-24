@@ -1036,6 +1036,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 using var tx = await conn.BeginTransactionAsync();
 
+                // VB6: GLOBALES.gEnlace (contabilidad de enlace de la empresa)
+                var enlace = await conn.ExecuteScalarAsync<int?>(
+                    "select isnull(COD_EMPRESA_ENLACE,0) from SIF_EMPRESA", transaction: tx) ?? 0;
+
+                // VB6: vAseDocDeposito = último documento de pago del desglose (cheque, depósito, documento...)
+                var docPago = await conn.ExecuteScalarAsync<string?>(
+                    @"select top 1 left(rtrim(Num_Referencia),30)
+                        from CAJAS_DESGLOCE_PAGO
+                       where Cod_Caja = @caja and Cod_Apertura = @apertura and Ticket = @tiquete
+                         and isnull(rtrim(Num_Referencia),'') <> ''
+                       order by Linea desc",
+                    new { caja = vars.codCaja, apertura = vars.codApertura, tiquete = vars.tiquete },
+                    tx) ?? string.Empty;
+
                 const string sqlInsert = @"
                     INSERT INTO SIF_TRANSACCIONES
                     (
@@ -1093,7 +1107,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                         Monto = montoTransaccion,
                         Ref01 = solicitud.id_solicitud,
                         Ref02 = solicitud.codigo,
-                        Ref03 = vars.vNumDoc,
+                        Ref03 = docPago,
                         CodOficina = vars.oficinaTitular,
                         Linea1 = lineas[0] ?? "",
                         Linea2 = lineas[1] ?? "",
@@ -1107,7 +1121,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                         Linea10 = lineas[9] ?? "",
                         Linea11 = lineas[10] ?? "",
                         Detalle = vars.notas ?? vars.detalle ?? "",
-                        Documento = vars.vNumDoc,
+                        Documento = docPago,
                         CodCaja = vars.codCaja,
                         CodApertura = vars.codApertura
                     },
@@ -1121,20 +1135,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                     const string sp = "spSIFDocsAsiento";
 
+                    // Parámetros reales del SP: @Tipo,@Transaccion,@Monto,@Movimiento,@Divisa,@TipoCambio,@Contabilidad,
+                    // @Unidad,@CentroCosto,@Cuenta,@Referencia1,@Referencia2,@Referencia3
                     var p = new DynamicParameters();
-                    p.Add("@TipoDocumento", vars.vTipoDoc, DbType.String);
-                    p.Add("@CodTransaccion", vars.vNumDoc.Value.ToString(), DbType.String);
+                    p.Add("@Tipo", vars.vTipoDoc, DbType.String);
+                    p.Add("@Transaccion", vars.vNumDoc.Value.ToString(), DbType.String);
                     p.Add("@Monto", monto * (vars.tipoCambio ?? 1m), DbType.Decimal);
-                    p.Add("@Tipo", "C", DbType.String);
+                    p.Add("@Movimiento", "C", DbType.String);
                     p.Add("@Divisa", string.IsNullOrWhiteSpace(cuentaOperacion.cod_divisa) ? solicitud.divisa : cuentaOperacion.cod_divisa, DbType.String);
                     p.Add("@TipoCambio", vars.tipoCambio ?? 1m, DbType.Decimal);
-                    p.Add("@Enlace", vars.enlace ?? 0, DbType.Int32);
-                    p.Add("@CodUnidad", cuentaOperacion.cod_unidad, DbType.String);
-                    p.Add("@CodCentroCosto", cuentaOperacion.cod_centro_costo ?? "", DbType.String);
+                    p.Add("@Contabilidad", enlace, DbType.Int32);
+                    p.Add("@Unidad", cuentaOperacion.cod_unidad, DbType.String);
+                    p.Add("@CentroCosto", cuentaOperacion.cod_centro_costo ?? "", DbType.String);
                     p.Add("@Cuenta", cuenta, DbType.String);
-                    p.Add("@IdSolicitud", solicitud.id_solicitud, DbType.Int64);
-                    p.Add("@Codigo", solicitud.codigo, DbType.String);
-                    p.Add("@Documento", vars.vNumDoc, DbType.String);
+                    p.Add("@Referencia1", solicitud.id_solicitud.ToString(), DbType.String);
+                    p.Add("@Referencia2", solicitud.codigo, DbType.String);
+                    p.Add("@Referencia3", docPago, DbType.String);
 
                     await conn.ExecuteAsync(sp, p, tx, commandType: CommandType.StoredProcedure);
                 }
@@ -1152,13 +1168,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     var pPago = new DynamicParameters();
                     pPago.Add("@Caja", vars.codCaja ?? "", DbType.String);
                     pPago.Add("@Apertura", vars.codApertura ?? 0, DbType.Int32);
-                    pPago.Add("@Tiquete", vars.tiquete ?? "", DbType.String);
+                    pPago.Add("@Ticket", vars.tiquete ?? "", DbType.String);
                     pPago.Add("@Usuario", vars.usuarioRegistro ?? "", DbType.String);
-                    pPago.Add("@TipoDocumento", vars.vTipoDoc ?? "", DbType.String);
-                    pPago.Add("@CodTransaccion", vars.vNumDoc.Value.ToString(), DbType.String);
+                    pPago.Add("@TipoDoc", vars.vTipoDoc ?? "", DbType.String);
+                    pPago.Add("@NumDoc", vars.vNumDoc.Value.ToString(), DbType.String);
                     pPago.Add("@Unidad", vars.unidadCaja ?? "", DbType.String);
-                    pPago.Add("@IdSolicitud", solicitud.id_solicitud, DbType.Int64);
-                    pPago.Add("@Codigo", solicitud.codigo, DbType.String);
+                    pPago.Add("@Ref_01", solicitud.id_solicitud.ToString(), DbType.String);
+                    pPago.Add("@Ref_02", solicitud.codigo, DbType.String);
 
                     await conn.ExecuteAsync(spPagos, pPago, tx, commandType: CommandType.StoredProcedure);
                 }
