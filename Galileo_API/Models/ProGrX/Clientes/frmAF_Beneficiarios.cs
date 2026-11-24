@@ -39,5 +39,6 @@
     {
         public List<DropDownListaGenericaModel>? TiposIdentificacion { get; set; }
         public List<DropDownListaGenericaModel>? Parentescos { get; set; }
+        public bool MostrarAplicaSeguros { get; set; } = true;
     }
 }

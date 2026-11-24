@@ -11,6 +11,7 @@ namespace Galileo.DataBaseTier
 
         private const string SpPersonaBeneficiariosConsulta = "spAFI_PERSONA_BENEFICIARIOS_Consulta";
         private const string SpPersonaBeneficiariosRegistra = "spAFI_PERSONA_BENEFICIARIOS_Registra";
+        private const string ConfigMostrarAplicaSeguros = "AFI_Beneficiarios:MostrarAplicaSeguros";
 
         private const string SqlTiposIdentificacionBeneficiarios = @"
                     SELECT TIPO_ID AS item,
@@ -156,7 +157,8 @@ namespace Galileo.DataBaseTier
             var result = DbHelper.WithConn(CreatePortalDb(), CodEmpresa, connection => new BeneficiariosCatalogoDto
             {
                 TiposIdentificacion = connection.Query<DropDownListaGenericaModel>(SqlTiposIdentificacionBeneficiarios).ToList(),
-                Parentescos = connection.Query<DropDownListaGenericaModel>(SqlParentescosActivos).ToList()
+                Parentescos = connection.Query<DropDownListaGenericaModel>(SqlParentescosActivos).ToList(),
+                MostrarAplicaSeguros = _config.GetValue<bool?>(ConfigMostrarAplicaSeguros) ?? true
             });
 
             return new ErrorDto<BeneficiariosCatalogoDto>
