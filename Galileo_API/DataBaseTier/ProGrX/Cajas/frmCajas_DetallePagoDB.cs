@@ -499,7 +499,8 @@ namespace Galileo.DataBaseTier
                     new { SaldoFavorId = request.saldo_favor_id });
             }
 
-            return request.cod_cuenta;
+            // VB6: fxgCntCuentaFormato(False, ...) guarda la cuenta sin máscara (sin guiones)
+            return request.cod_cuenta?.Replace("-", string.Empty).Trim();
         }
 
         /// <summary>Ejecuta las validaciones de negocio comunes del desglose.</summary>

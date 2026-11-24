@@ -5,22 +5,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
     public partial class FrmArfOperacionesDb
     {
         /// <summary>
-        /// Calcula la fecha de finalización a partir de la fecha inicial y el plazo en meses.
-        /// </summary>
-        /// <param name="fechaInicio">Fecha en que inicia la operación.</param>
-        /// <param name="plazo">Cantidad de meses de vigencia.</param>
-        /// <returns>Fecha calculada o la fecha inicial cuando no hay un plazo válido.</returns>
-        private static DateTime? CalcularFechaFinaliza(DateTime? fechaInicio, short? plazo)
-        {
-            if (!fechaInicio.HasValue || plazo.GetValueOrDefault() <= 0)
-            {
-                return fechaInicio;
-            }
-
-            return fechaInicio.Value.AddMonths(plazo.GetValueOrDefault());
-        }
-
-        /// <summary>
         /// Ejecuta las validaciones requeridas antes de guardar una operación.
         /// </summary>
         /// <param name="request">Datos de la operación que se desea guardar.</param>
@@ -131,7 +115,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="request">Datos de la operación que se desea guardar.</param>
         private static void ValidarFechas(ArfOperacionGuardarRequestDto request)
         {
-            if (request.fecha_inicio >= request.fecha_finaliza)
+            if (!request.fecha_inicio.HasValue ||
+                !request.fecha_finaliza.HasValue ||
+                request.fecha_inicio >= request.fecha_finaliza)
                 throw new ArgumentException("Rango de Fechas Erróneo, verificar.", nameof(request));
         }
 

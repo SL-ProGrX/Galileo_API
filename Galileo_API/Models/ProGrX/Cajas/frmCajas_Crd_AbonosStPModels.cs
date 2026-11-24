@@ -188,7 +188,7 @@ namespace Galileo_API.Models.ProGrX.Cajas
 
         public string? pCharRelleno { get; set; } = string.Empty;
 
-        public int? codCaja { get; set; }
+        public string? codCaja { get; set; }
         public int? codApertura { get; set; }
         public string? usuarioRegistro { get; set; }              // glogon.Usuario / ModuloCajas.mUsuario
         public string? oficinaTitular { get; set; }                // GLOBALES.gOficinaTitular
@@ -201,17 +201,18 @@ namespace Galileo_API.Models.ProGrX.Cajas
     public class CajasCrdAbonoRequest
     {
         public long? id_solicitud { get; set; }
-        public int? totalCajs { get; set; }
+        public decimal? totalCajs { get; set; }
         public string? tipoDoc { get; set; }
         public string? numDoc { get; set; }
+        /// <summary>Obsoleto: el concepto (CRD001/CRD002/CRD003) se deriva de <see cref="tipoAbono"/> como en VB6.</summary>
         public int? concepto { get; set; }
         public string? mUsuario { get; set; }
         public string? mCaja { get; set; }
         public int? mApertura { get; set; }
         public int? chkRecalculaCuota { get; set; }
-        public int? datosAnticipo { get; set; }
+        public decimal? datosAnticipo { get; set; }
         public string? tipo { get; set; }
-        public int? datosInteres { get; set; }
+        public decimal? datosInteres { get; set; }
         public DateTime? FechaCancelacion { get; set; }
 
         public string vNotas { get; set; } = string.Empty;
@@ -219,6 +220,21 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public string? vCuenta { get; set; }
 
         public long? lblFecUltMovR {  get; set; }
+
+        /// <summary>0 = Ordinario, 1 = Extraordinario, 2 = Cancelación (optAbono VB6).</summary>
+        public int? tipoAbono { get; set; }
+        /// <summary>lblSaldo mostrado en pantalla (para validar que la operación no cambió).</summary>
+        public decimal? saldoActual { get; set; }
+        public decimal? compromiso { get; set; }
+        public decimal? amortiza { get; set; }
+        public decimal? diferencia { get; set; }
+        public decimal? moraAmortiza { get; set; }
+        public decimal? moraIntereses { get; set; }
+        public decimal? moraCargos { get; set; }
+        public int? moraCuotas { get; set; }
+        public string? mTiquete { get; set; }
+        public string? mUnidad { get; set; }
+        public bool? fechaCancelacionEnable { get; set; }
     }
 
     public class CajasCrdAbonoMorosidadData
@@ -272,16 +288,17 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public string proceso { get; set; } = string.Empty;          // 'N' / 'S'
         public string retencion { get; set; } = string.Empty;        // 'N' / 'S'
         public string poliza { get; set; } = string.Empty;           // 'N' / 'S'
-        public string cta_amortiza { get; set; } = string.Empty;
-        public string cta_int_c { get; set; } = string.Empty;
-        public string cta_int_m { get; set; } = string.Empty;
-        public string? cta_cargos { get; set; }
+        // Nombres tal cual los devuelve spCrdOperacionCtas (Dapper no mapea guiones bajos por defecto)
+        public string CtaAmortiza { get; set; } = string.Empty;
+        public string CtaIntC { get; set; } = string.Empty;
+        public string CtaIntM { get; set; } = string.Empty;
+        public string? CtaCargos { get; set; }
         public string cod_divisa { get; set; } = string.Empty;
         public string cod_oficina_r { get; set; } = string.Empty;
         public string cod_unidad { get; set; } = string.Empty;
         public string? cod_centro_costo { get; set; }
-        public decimal tipo_cambio { get; set; }
-        public string? cta_iva { get; set; }
+        public decimal TipoCambio { get; set; }
+        public string? CtaIVA { get; set; }
     }
 }
 #endregion

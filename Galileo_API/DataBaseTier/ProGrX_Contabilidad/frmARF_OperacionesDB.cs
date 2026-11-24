@@ -236,7 +236,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
             try
             {
-                request.fecha_finaliza = CalcularFechaFinaliza(request.fecha_inicio, request.plazo);
                 var notas = (request.notas ?? string.Empty).Trim();
                 var estadoActual = ObtenerEstadoActual(cn, tx, request.operacion);
 
@@ -560,17 +559,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             const string sql = @"
                 select
-                    CORTE as corte,
-                    CUOTA as cuota,
-                    DEPRECIACION_GASTO as depreciacion_gasto,
-                    DEPRECIACION_ACUM as depreciacion_acum,
-                    VALOR_LIBROS as valor_libros,
-                    PASIVO as pasivo,
-                    PAGO_PROXIMO as pago_proximo,
-                    CORTE_ULTIMO as corte_ultimo
-                from vARF_Cierre_Operacion_Consulta
-                where OPERACION = @operacion
-                order by CORTE desc";
+                    O.OPERACION as operacion,
+                    O.CORTE as corte,
+                    O.COD_DIVISA as cod_divisa,
+                    Tc.TC_VENTA as tipo_cambio,
+                    O.TASA_DESCUENTO as tasa_descuento,
+                    O.TASA_INTERES as tasa_interes,
+                    O.CUOTA as cuota,
+                    O.PLAZO as plazo,
+                    O.FECHA_INICIO as fecha_inicio,
+                    O.FECHA_FINALIZA as fecha_finaliza,
+                    O.ESTADO as estado,
+                    O.VALOR_INICIAL as valor_inicial,
+                    O.VALOR_LIBROS as valor_libros,
+                    O.VALOR_NOMINAL as valor_nominal,
+                    O.DEPRECIACION_ACUM as depreciacion_acum,
+                    O.PAGO_TRANSITO as pago_transito
+                from ARF_CIERRE_OPS O
+                inner join ARF_CIERRE_TC Tc on O.CORTE = Tc.CORTE and O.COD_DIVISA = Tc.COD_DIVISA
+                where O.OPERACION = @operacion and O.ESTADO = 'A'
+                order by O.CORTE desc";
 
             return DbHelper.ExecuteListQuery<ArfOperacionCierreDto>(_portalDb, codEmpresa, sql, new { operacion });
         }
@@ -603,8 +611,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 sql,
                 new
                 {
-                    pInicio = fechaInicio.ToString("yyyy-MM-dd 00:00:00"),
-                    pCorte = fechaCorte.ToString("yyyy-MM-dd 23:59:59"),
+                    pInicio = fechaInicio.Date,
+                    pCorte = fechaCorte.Date.AddDays(1).AddSeconds(-1),
                     pFiltro = "",
                     pDetalle = $"Operación: {operacion}",
                     pCuenta = ""
@@ -621,24 +629,57 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns>Movimientos del asiento o el error encontrado.</returns>
         public ErrorDto<List<ArfOperacionAsientoDetalleDto>> AsientoDetalle_Listar(
             int codEmpresa,
-            int codContabilidad,
             string tipoAsiento,
             string numAsiento)
         {
-            const string sql = @"
-                select *
-                from vARF_ASIENTOS_DETALLE
-                where COD_CONTABILIDAD = @codContabilidad
-                  and tipo_asiento = @tipoAsiento
-                  and num_asiento = @numAsiento
-                order by Linea_Id";
+            var sql = $@"
+                select {AsientoDetalleColumnas}
+                from vARF_ASIENTOS_DETALLE A
+                where A.TIPO_ASIENTO = @tipoAsiento
+                  and A.NUM_ASIENTO = @numAsiento
+                order by A.LINEA_ID asc";
 
             return DbHelper.ExecuteListQuery<ArfOperacionAsientoDetalleDto>(
                 _portalDb,
                 codEmpresa,
                 sql,
-                new { codContabilidad, tipoAsiento, numAsiento });
+                new { tipoAsiento, numAsiento });
         }
+
+        /// <summary>
+        /// Lista el detalle de los asientos generados por la operación.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa activa.</param>
+        /// <param name="operacion">Número de la operación.</param>
+        /// <returns>Movimientos de los asientos de la operación o el error encontrado.</returns>
+        public ErrorDto<List<ArfOperacionAsientoDetalleDto>> AsientosOperacion_Listar(int codEmpresa, int operacion)
+        {
+            var sql = $@"
+                select {AsientoDetalleColumnas}
+                from ARF_OPERACIONES O
+                inner join vARF_ASIENTOS_DETALLE A on O.NUM_ASIENTO = A.NUM_ASIENTO
+                where O.Operacion = @operacion
+                order by A.LINEA_ID asc";
+
+            return DbHelper.ExecuteListQuery<ArfOperacionAsientoDetalleDto>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                new { operacion });
+        }
+
+        private const string AsientoDetalleColumnas = @"
+                    A.LINEA_ID as id,
+                    A.COD_CUENTA_MASK as cod_cuenta,
+                    A.DESCRIPCION as descripcion,
+                    A.MONTO_DEBITO as monto_debito,
+                    A.MONTO_CREDITO as monto_credito,
+                    A.COD_DIVISA as divisa,
+                    A.TIPO_CAMBIO as tipo_cambio,
+                    A.NUM_ASIENTO as num_asiento,
+                    A.DOCUMENTO as documento,
+                    A.DETALLE as detalle,
+                    A.REFERENCIA as referencia";
 
         /// <summary>
         /// Lista los cambios de condiciones aplicados a la operación.
