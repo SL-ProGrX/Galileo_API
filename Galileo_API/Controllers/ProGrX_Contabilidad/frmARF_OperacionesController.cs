@@ -100,11 +100,16 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         [HttpGet("AsientoDetalle_Listar")]
         public ErrorDto<List<ArfOperacionAsientoDetalleDto>> AsientoDetalle_Listar(
             int codEmpresa,
-            int codContabilidad,
             string tipoAsiento,
             string numAsiento)
         {
-            return _bl.AsientoDetalle_Listar(codEmpresa, codContabilidad, tipoAsiento, numAsiento);
+            return _bl.AsientoDetalle_Listar(codEmpresa, tipoAsiento, numAsiento);
+        }
+
+        [HttpGet("AsientosOperacion_Listar")]
+        public ErrorDto<List<ArfOperacionAsientoDetalleDto>> AsientosOperacion_Listar(int codEmpresa, int operacion)
+        {
+            return _bl.AsientosOperacion_Listar(codEmpresa, operacion);
         }
 
         [HttpGet("Cambios_Listar")]

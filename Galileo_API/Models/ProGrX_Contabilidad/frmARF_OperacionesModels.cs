@@ -125,14 +125,22 @@
 
     public class ArfOperacionCierreDto
     {
+        public int? operacion { get; set; }
         public DateTime? corte { get; set; }
+        public string cod_divisa { get; set; } = string.Empty;
+        public decimal? tipo_cambio { get; set; }
+        public decimal? tasa_descuento { get; set; }
+        public decimal? tasa_interes { get; set; }
         public decimal? cuota { get; set; }
-        public decimal? depreciacion_gasto { get; set; }
-        public decimal? depreciacion_acum { get; set; }
+        public int? plazo { get; set; }
+        public DateTime? fecha_inicio { get; set; }
+        public DateTime? fecha_finaliza { get; set; }
+        public string estado { get; set; } = string.Empty;
+        public decimal? valor_inicial { get; set; }
         public decimal? valor_libros { get; set; }
-        public decimal? pasivo { get; set; }
-        public DateTime? pago_proximo { get; set; }
-        public DateTime? corte_ultimo { get; set; }
+        public decimal? valor_nominal { get; set; }
+        public decimal? depreciacion_acum { get; set; }
+        public decimal? pago_transito { get; set; }
     }
 
     public class ArfOperacionAsientoMainDto

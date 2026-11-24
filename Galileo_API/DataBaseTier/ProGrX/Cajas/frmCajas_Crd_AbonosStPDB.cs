@@ -641,64 +641,68 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
         #region Aplicar abono (spCajas_CrdAbono) + validaciones
 
+        private const string SqlOperacionAbono = @"
+            select R.id_solicitud, R.saldo, R.proceso, R.cedula, R.codigo, R.plazo, R.amortiza, R.cuota, R.montoApr, R.opex,
+                   ISNULL(R.cod_Divisa, 'COL') as divisa, S.nombre, C.descripcion, C.retencion, C.poliza
+              from reg_creditos R
+             inner join Catalogo C on R.codigo = C.codigo
+             inner join Socios S on R.cedula = S.cedula
+             where R.id_solicitud = @id";
+
         /// <summary>
-        /// Aplica abono vía SP principal.
-        /// Nota: este método asume que request ya fue validado en UI/servicio; puede reforzar con fxVerifica si deseas.
+        /// Aplica abono (VB6 sbAbono): validaciones, spCajas_CrdAbono, bitácora,
+        /// documento/asientos (sbDocumentoAbono) y devuelve "mensaje?numDoc" para imprimir el recibo.
         /// </summary>
         public ErrorDto CajasCrdAbonosSt_Abono_Aplica(int codEmpresa, CajasCrdAbonoRequest request)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
             try
             {
-                CajasCrdAbonosStPDData abono = new CajasCrdAbonosStPDData
-                {
-                    id_solicitud = request.id_solicitud,
-                    descripcion = request.vNotas
-                };
-                var valida = fxVerifica(codEmpresa, conn, abono);
+                var tipoAbono = request.tipoAbono ?? 0;
+                if (tipoAbono < 0 || tipoAbono > 2)
+                    return DbHelper.ErrorResponse("Tipo de abono no válido.", -1);
+
+                if (string.IsNullOrWhiteSpace(request.tipoDoc))
+                    return DbHelper.ErrorResponse("Debe seleccionar el Documento (Tipo Doc).", -1);
+
+                // Datos de la operación ANTES de aplicar (el SP modifica el saldo)
+                var solicitud = conn.QueryFirstOrDefault<CajasCrdAbonosStPDData>(SqlOperacionAbono, new { id = request.id_solicitud });
+                if (solicitud == null)
+                    return DbHelper.ErrorResponse("- Número de Operación no es válido...", -1);
+
+                var esRetencion = solicitud.retencion == "S" || solicitud.poliza == "S";
+                var saldoAnterior = CalcularSaldoAnterior(solicitud, esRetencion);
+
+                var valida = fxVerifica(codEmpresa, conn, request, solicitud, esRetencion, saldoAnterior);
                 if (valida.Code != 0)
                     return valida;
 
-                long vNumDoc = _mRecibos.FxDocumentoConsecutivo(codEmpresa, request.tipoDoc!);
+                var vNotas = MProGrxMain.sbSIFCleanTxtInject(request.vNotas) ?? string.Empty;
+
+                long vNumDoc = _mRecibos.FxDocumentoConsecutivo(codEmpresa, request.tipoDoc);
                 decimal glngFechaCR = _mProGrx.glngFechaCR(codEmpresa);
 
                 if (request.lblFecUltMovR.HasValue && request.lblFecUltMovR.Value < (long)glngFechaCR)
                     request.lblFecUltMovR = (long)glngFechaCR;
 
-                var sql = @"exec spCajas_CrdAbono @Operacion, 
-									@Abono , 
-									@TipoDoc, 
-									@NumDoc , 
-									@Concepto ,
-									@Usuario , 
-									@Caja , 
-									@Apertura, 
-									@Recalcula,
-									@CargoAnticipo , 
-									@IntExtra ,
-									@FechaPagoReal ";
+                var (vConcepto, vTipo, tipoTexto, bitacoraDetalle) = ObtenerDatosTipoAbono(tipoAbono, request);
 
-                var parameters = new
-                {
-                    Operacion = request.id_solicitud,
-                    Abono = request.totalCajs,
-                    TipoDoc = request.tipoDoc,
-                    NumDoc = vNumDoc,
-                    Concepto = request.concepto,
-                    Usuario = request.mUsuario,
-                    Caja = request.mCaja,
-                    Apertura = request.mApertura,
-                    Recalcula = request.chkRecalculaCuota,
-                    CargoAnticipo = request.datosAnticipo,
-                    IntExtra = (request.tipo == "E") ? request.datosInteres : 0,
-                    FechaPagoReal = request.FechaCancelacion
-                };
+                var pendiente = EjecutarSpAbono(codEmpresa, request, vNumDoc, vConcepto, vTipo);
 
-                var result = DbHelper.ExecuteSingleQuery<dynamic>(_portalDB, codEmpresa, sql, parameters).Result;
-                if (result != null && result?.Pendiente > 0)
-                    return DbHelper.CreateErrorResponse("Quedó un monto pendiente de :" + result?.Pendiente);
+                // VB6: el pendiente es solo una advertencia, el proceso continúa
+                var advertencia = pendiente != 0m ? " - Quedó un monto pendiente de :" + pendiente.ToString("#,##0.00") + "." : string.Empty;
 
-                return DbHelper.CreateOkResponse();
+                Bitacora(codEmpresa, request.mUsuario ?? string.Empty, bitacoraDetalle);
+
+                var vars = CrearVariables(codEmpresa, conn, request, vNumDoc, vConcepto, vNotas, saldoAnterior);
+
+                var doc = sbDocumentoAbono(codEmpresa, solicitud, vars);
+                if (doc.Code != 0)
+                    return doc;
+
+                var detalleDoc = $" - {tipoTexto} aplicado, con : {request.tipoDoc} ...No.: {vNumDoc}{advertencia}";
+                // Formato "mensaje?numDoc" (igual que CtP) para que Angular imprima el recibo
+                return new ErrorDto { Code = 0, Description = detalleDoc + "\n - Desea Realizar Otra Transacción a Esta Operación ?" + vNumDoc };
             }
             catch (Exception ex)
             {
@@ -706,29 +710,120 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             }
         }
 
+        /// <summary>lblSaldo de pantalla (retención con plazo &lt; 900: remanente por recaudar).</summary>
+        private static decimal CalcularSaldoAnterior(CajasCrdAbonosStPDData solicitud, bool esRetencion)
+        {
+            var plazo = solicitud.plazo ?? 0;
+            if (esRetencion && plazo < 900)
+                return ((solicitud.montoApr ?? 0m) * plazo) - (solicitud.amortiza ?? 0m);
+
+            return solicitud.saldo ?? 0m;
+        }
+
+        /// <summary>Concepto, tipo, texto y detalle de bitácora según el tipo de abono (VB6 optAbono).</summary>
+        private static (string Concepto, string Tipo, string Texto, string Bitacora) ObtenerDatosTipoAbono(
+            int tipoAbono, CajasCrdAbonoRequest request)
+        {
+            return tipoAbono switch
+            {
+                1 => ("CRD002", "E", "ABONO EXTRAORDINARIO",
+                    "Abono ExtraOrd. " + (request.chkRecalculaCuota == 1 ? "Con Recal." : "Sin Recal") + " a la Op.: " + request.id_solicitud),
+                2 => ("CRD003", "O", "CANCELACION DE DEUDA",
+                    "Cancelación de la Operacion : " + request.id_solicitud),
+                _ => ("CRD001", "O", "ABONO ORDINARIO",
+                    "Abono Ordinario a la Operacion : " + request.id_solicitud)
+            };
+        }
+
+        /// <summary>Ejecuta spCajas_CrdAbono y devuelve el monto pendiente (0 si no quedó).</summary>
+        private decimal EjecutarSpAbono(int codEmpresa, CajasCrdAbonoRequest request, long vNumDoc, string vConcepto, string vTipo)
+        {
+            const string sql = @"exec spCajas_CrdAbono @Operacion,
+                                    @Abono ,
+                                    @TipoDoc,
+                                    @NumDoc ,
+                                    @Concepto ,
+                                    @Usuario ,
+                                    @Caja ,
+                                    @Apertura,
+                                    @Recalcula,
+                                    @CargoAnticipo ,
+                                    @IntExtra ,
+                                    @FechaPagoReal ";
+
+            var parameters = new
+            {
+                Operacion = request.id_solicitud,
+                Abono = request.totalCajs,
+                TipoDoc = request.tipoDoc,
+                NumDoc = vNumDoc.ToString(),
+                Concepto = vConcepto,
+                Usuario = request.mUsuario,
+                Caja = request.mCaja,
+                Apertura = request.mApertura,
+                Recalcula = request.chkRecalculaCuota ?? 0,
+                CargoAnticipo = request.datosAnticipo ?? 0m,
+                IntExtra = (vTipo == "E") ? (request.datosInteres ?? 0m) : 0m,
+                FechaPagoReal = request.FechaCancelacion
+            };
+
+            var result = DbHelper.ExecuteSingleQuery<dynamic>(_portalDB, codEmpresa, sql, parameters).Result;
+            if (result?.Pendiente == null)
+                return 0m;
+
+            return Convert.ToDecimal(result.Pendiente);
+        }
+
+        private CajasCrdAbonosStpVariables CrearVariables(int codEmpresa, SqlConnection conn, CajasCrdAbonoRequest request,
+            long vNumDoc, string vConcepto, string vNotas, decimal saldoAnterior)
+        {
+            return new CajasCrdAbonosStpVariables
+            {
+                vTipoDoc = request.tipoDoc,
+                vNumDoc = vNumDoc,
+                vConcepto = vConcepto,
+                id_solicutud = (int?)request.id_solicitud,
+                vSaldoMes = saldoAnterior,
+                notas = vNotas,
+                FechaCancelacion = request.FechaCancelacion,
+                FechaCancelacionEnable = request.fechaCancelacionEnable ?? ((request.tipoAbono ?? 0) != 0),
+                codCaja = request.mCaja,
+                codApertura = request.mApertura,
+                usuarioRegistro = request.mUsuario,
+                tiquete = request.mTiquete,
+                unidadCaja = request.mUnidad,
+                pCharRelleno = MCredito.fxCrdParametro(conn, "05"),
+                oficinaTitular = _mProGrx.sbSifParametrosInicializa(codEmpresa, request.mUsuario ?? string.Empty).Result?.GOficinaTitular ?? string.Empty,
+                enlace = 0
+            };
+        }
+
         /// <summary>
         /// FxVerifica (VB6) - retorna mensaje concatenado. Si mensaje vacío => ok.
         /// </summary>
-        private ErrorDto fxVerifica(int codEmpresa, SqlConnection conn, CajasCrdAbonosStPDData request)
+        private ErrorDto fxVerifica(int codEmpresa, SqlConnection conn, CajasCrdAbonoRequest request,
+            CajasCrdAbonosStPDData solicitud, bool esRetencion, decimal saldoAnterior)
         {
             try
             {
-                var notas = MProGrxMain.sbSIFCleanTxtInject(request.descripcion) ?? string.Empty;
+                var mensaje = new System.Text.StringBuilder();
 
-                var mensaje =
-                    (VerificaProceso(conn, request) ?? string.Empty) +
-                    (VerificaCongelamiento(codEmpresa, request) ?? string.Empty) +
-                    (request.id_solicitud.HasValue
-                        ? (VerificaOperacion(request.id_solicitud.Value) ?? string.Empty)
-                        : string.Empty) +
-                    (VerificaSaldoActual(conn, request) ?? string.Empty);
+                void Agregar(string? m)
+                {
+                    if (!string.IsNullOrEmpty(m)) mensaje.Append(m).Append('\n');
+                }
 
-                mensaje = mensaje.Trim();
+                Agregar(VerificaProceso(conn, solicitud.proceso, request.mCaja, request.mUsuario));
+                Agregar(VerificaCongelamiento(codEmpresa, solicitud.cedula));
+                Agregar(VerificaOperacion(request.id_solicitud ?? 0));
+                Agregar(VerificaSaldoActual(esRetencion, saldoAnterior, request.saldoActual));
+                Agregar(VerificaMontos(request, solicitud, esRetencion, saldoAnterior));
 
-                if (!string.IsNullOrEmpty(mensaje))
-                    return DbHelper.ErrorResponse(mensaje + notas, -1);
+                if (_mCajas.fxCajasAperturaEstado(codEmpresa, request.mCaja ?? string.Empty, request.mApertura ?? 0) == "C")
+                    Agregar($"- La apertura ..:{request.mApertura} de esta caja ha sido cerrada!");
 
-                return DbHelper.OkResponse(notas);
+                var texto = mensaje.ToString().Trim();
+                return texto.Length > 0 ? DbHelper.ErrorResponse(texto, -1) : DbHelper.CreateOkResponse();
             }
             catch (Exception ex)
             {
@@ -736,103 +831,102 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             }
         }
 
-        private string VerificaProceso(SqlConnection conn, CajasCrdAbonosStPDData request)
+        private static string? VerificaProceso(SqlConnection conn, string? proceso, string? caja, string? usuario)
         {
-            try
-            {
-                if (request.proceso == "J")
-                {
-                    const string sql = "select dbo.fxCajas_AbonoCbrJudAutorizada(@pCaja,@usuario) as Valor";
-                    // OJO: aquí dependes del contrato real de fxCajas_AbonoCbrJudAutorizada. Ajusta parámetros si aplica.
-                    var result = conn.QueryFirstOrDefault<bool>(sql, new { pCaja = request.codigo, usuario = request.cedula });
+            if (proceso != "J") return null;
 
-                    if (!result)
-                        return "- Esta CAJA no cuenta con permisos para realizar abonos a Créditos en Cobro Judicial, verifique...";
-                }
-                return string.Empty;
-            }
-            catch (Exception ex)
-            {
-                return "- Error al validar permisos: " + ex.Message;
-            }
+            var autorizada = conn.QueryFirstOrDefault<bool>(
+                "select dbo.fxCajas_AbonoCbrJudAutorizada(@pCaja,@usuario) as Valor",
+                new { pCaja = caja, usuario });
+
+            return autorizada
+                ? null
+                : "- Esta CAJA no cuenta con permisos para realizar abonos a Créditos en Cobro Judicial, verifique...";
         }
 
-        private string VerificaCongelamiento(int codEmpresa, CajasCrdAbonosStPDData request)
-        {
-            try
-            {
-                if (_mAfilicacion.fxgCongelamiento_Obtener(codEmpresa, request.cedula, "per_abono_cajas"))
-                    return "- Esta Persona se encuentra CONGELADA, verifique...";
+        private string? VerificaCongelamiento(int codEmpresa, string cedula)
+            => _mAfilicacion.fxgCongelamiento_Obtener(codEmpresa, cedula, "per_abono_cajas")
+                ? "- Esta Persona se encuentra CONGELADA, verifique..."
+                : null;
 
-                return string.Empty;
-            }
-            catch (Exception ex)
-            {
-                return "- Error al validar congelamiento: " + ex.Message;
-            }
+        private static string? VerificaOperacion(long operacion)
+            => operacion <= 0 ? "- Número de Operación no es válido..." : null;
+
+        private static string? VerificaSaldoActual(bool esRetencion, decimal saldoAnterior, decimal? saldoPantalla)
+        {
+            if (!saldoPantalla.HasValue)
+                return "- No se proporcionó el saldo de la operación.";
+
+            // Misma regla que fxCrdSaldoVerifica de VB6 (retención con saldo > 999 se acepta el de pantalla)
+            var actual = esRetencion && saldoAnterior > 999m ? saldoPantalla.Value : saldoAnterior;
+            return actual != saldoPantalla.Value
+                ? "- Esta Operación ha sido modificada, actualice los datos nuevamente antes de realizar el abono..."
+                : null;
         }
 
-        private static string VerificaOperacion(long operacion)
+        private static string? VerificaMontos(CajasCrdAbonoRequest request, CajasCrdAbonosStPDData solicitud,
+            bool esRetencion, decimal saldoAnterior)
         {
-            try
-            {
-                if (operacion <= 0)
-                    return "- Número de Operación no es válido...";
+            var sb = new System.Text.StringBuilder();
+            var tipoAbono = request.tipoAbono ?? 0;
+            var hayDiferencia = (request.diferencia ?? 0m) != 0m;
 
-                return string.Empty;
-            }
-            catch (Exception ex)
-            {
-                return "- Error al validar N° operación: " + ex.Message;
-            }
+            sb.Append(VerificaAmortizacion(request, solicitud, esRetencion, saldoAnterior));
+
+            if ((request.compromiso ?? 0m) <= 0m)
+                sb.Append("- El compromiso de pago no es un dato válido...verifique...!\n");
+
+            if ((request.totalCajs ?? 0m) <= 0m)
+                sb.Append("- Los valores Recibidos en Cajas no son válidos...verifique...!\n");
+
+            // VB6: no se permiten abonos ordinarios parciales salvo para cuotas atrasadas
+            if (sb.Length == 0 && tipoAbono == 0)
+                sb.Append(VerificaAbonoOrdinarioParcial(request));
+
+            if (sb.Length == 0 && tipoAbono == 1 && hayDiferencia)
+                sb.Append("- El Monto detallado en formas de pago no cubre el compromiso de pago. SOLUCION: Copie el Monto detallado en el monto del abono extraordinario...!\n");
+
+            if (sb.Length == 0 && tipoAbono == 2 && hayDiferencia)
+                sb.Append("- El Monto detallado en formas de pago no cubre el compromiso de cancelación...!\n");
+
+            return sb.Length == 0 ? null : sb.ToString().TrimEnd('\n');
         }
 
-        private string VerificaSaldoActual(SqlConnection conn, CajasCrdAbonosStPDData request)
+        private static string VerificaAmortizacion(CajasCrdAbonoRequest request, CajasCrdAbonosStPDData solicitud,
+            bool esRetencion, decimal saldoAnterior)
         {
-            try
+            var amortiza = request.amortiza ?? 0m;
+
+            if (!esRetencion)
             {
-                decimal curSaldo;
-                if (!request.saldo.HasValue)
-                    return "- No se proporcionó el saldo de la operación.";
-
-                decimal requestSaldo = request.saldo.Value;
-                const string query = @"
-                    select 
-                        case 
-                            when C.poliza = 'S' or C.retencion = 'S' then 'S' 
-                            else 'N' 
-                        end as Retencion,
-                        R.saldo,
-                        R.montoapr,
-                        R.plazo,
-                        R.amortiza
-                    from reg_creditos R
-                    inner join Catalogo C on R.codigo = C.codigo
-                    where R.id_solicitud = @pOperacion";
-
-                var result = conn.QueryFirstOrDefault<dynamic>(query, new { pOperacion = request.id_solicitud });
-
-                if (result == null)
-                    return "- No se pudo validar el saldo actual de la operación.";
-
-                if ((string?)result.Retencion == "S")
-                {
-                    curSaldo = (decimal)result.saldo <= 999m ? (decimal)result.saldo : requestSaldo;
-                }
-                else
-                {
-                    curSaldo = (decimal)result.saldo;
-                }
-
-                if (curSaldo != requestSaldo)
-                    return "- Esta Operación ha sido modificada, actualice los datos nuevamente antes de realizar el abono...";
-
-                return string.Empty;
+                // VB6: (txtDatosAmortiza + txtMoraAmortiza) > lblSaldo
+                return amortiza + (request.moraAmortiza ?? 0m) > saldoAnterior
+                    ? "- La Amortización es mayor al Saldo Actual...\n"
+                    : string.Empty;
             }
-            catch (Exception ex)
+
+            var remanente = ((solicitud.cuota ?? 0m) * (solicitud.plazo ?? 0)) - (solicitud.amortiza ?? 0m);
+            return amortiza > remanente && (solicitud.plazo ?? 0) <= 900
+                ? "- La Amortización es mayor que el Remanente a Recaudar : " + remanente + "\n"
+                : string.Empty;
+        }
+
+        private static string VerificaAbonoOrdinarioParcial(CajasCrdAbonoRequest request)
+        {
+            var compromiso = request.compromiso ?? 0m;
+            var total = request.totalCajs ?? 0m;
+
+            if ((request.moraCuotas ?? 0) <= 0)
             {
-                return "- Error al validar Saldo: " + ex.Message;
+                return compromiso > total
+                    ? "- Tiene que hacer una transaccion Cancelando el Compromiso...!\n"
+                    : string.Empty;
             }
+
+            var soloMora = (request.moraAmortiza ?? 0m) + (request.moraCargos ?? 0m) + (request.moraIntereses ?? 0m);
+            return compromiso < total && total > soloMora
+                ? "- Tiene que hacer una transaccion solo por la mora y luego otro extraordinario...!\n"
+                : string.Empty;
         }
 
         #endregion
@@ -855,7 +949,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             try
             {
-                decimal pTipoCambio = _mCajas.fxCajasTipoCambio(codEmpresa, 0, variable.vTipoDoc!);
+                decimal pTipoCambio = _mCajas.fxCajasTipoCambio(codEmpresa, 0, solicitud.divisa);
                 variable.tipoCambio = pTipoCambio;
 
                 if (!variable.vNumDoc.HasValue)
@@ -870,10 +964,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 var lineas = BuildLineas(docAfectacion, variable, solicitud);
 
-                var doc = ControlDocumentosV2_RegistrarAsync(codEmpresa, solicitud, variable, docAfectacion, cuentaOperacion, lineas);
+                var doc = ControlDocumentosV2_RegistrarAsync(codEmpresa, solicitud, variable, docAfectacion, cuentaOperacion, lineas).GetAwaiter().GetResult();
 
-                if (doc.Result.Code == -1)
-                    return DbHelper.ErrorResponse("Error al registrar el documento de abono: " + doc.Result.Description, -1);
+                if (doc.Code == -1)
+                    return DbHelper.ErrorResponse("Error al registrar el documento de abono: " + doc.Description, -1);
 
                 return DbHelper.CreateOkResponse();
             }
@@ -920,26 +1014,31 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             CajasCrdAbonosStpVariables variable,
             CajasCrdAbonosStPDData solicitud)
         {
-            var saldoActual = (variable.vSaldoMes ?? 0m) - docAfectacion.Principal;
+            var saldoAnterior = variable.vSaldoMes ?? 0m;
+            var saldoActual = saldoAnterior - docAfectacion.Principal;
+            var relleno = string.IsNullOrEmpty(variable.pCharRelleno) ? "0" : variable.pCharRelleno;
 
-            static string Fill(string label, decimal value) => $"{label} ..: {value:#,0.00}";
+            // VB6: SIFGlobal.fxStringRelleno(Format(valor, "Standard"), "I", pCharRelleno, 15)
+            string Fill(string label, decimal value) =>
+                $"{label} ..: " + MHaciendaDB.fxStringRelleno(value.ToString("#,##0.00"), "I", relleno, 15);
 
-            bool vRetencion = (solicitud.retencion == "N");
+            bool vRetencion = solicitud.retencion == "S" || solicitud.poliza == "S";
+            var opex = solicitud.opex == 1 ? "OPEX" : string.Empty;
 
             // Usamos 0..10 para insert (linea1..linea11)
             var l = new string[11];
-            l[0] = Fill("Saldo Anterior", variable.vSaldoMes ?? 0m);
-            l[1] = Fill("Saldo Actual", saldoActual);
+            l[0] = Fill("Saldo Anterior   ", saldoAnterior);
+            l[1] = Fill("Saldo Actual     ", saldoActual);
             l[2] = Fill("Interes Corriente", docAfectacion.IntCor);
-            l[3] = Fill("Interes Atrasado", docAfectacion.IntMor);
-            l[4] = Fill("Amortización", docAfectacion.Principal);
-            l[5] = Fill("Cargos Totales", docAfectacion.Cargos);
-            l[6] = Fill("Pólizas", docAfectacion.Polizas);
+            l[3] = Fill("Interes Atrasado ", docAfectacion.IntMor);
+            l[4] = Fill("Amortización     ", docAfectacion.Principal);
+            l[5] = Fill("Cargos Totales   ", docAfectacion.Cargos);
+            l[6] = Fill("Pólizas          ", docAfectacion.Polizas);
 
-            l[7] = $"Operacion/Línea   ..: Op.:{solicitud.id_solicitud} L.:{solicitud.codigo}-{(solicitud.opex?.ToString() ?? string.Empty).ToUpperInvariant()}";
+            l[7] = $"Operacion/Línea   ..: Op.:{solicitud.id_solicitud} L.:{solicitud.codigo}-{opex}";
             l[8] = $"Descripción       ..: {solicitud.descripcion}";
             l[9] = $"Proc. Retencion   ..: {(vRetencion ? "SI" : "NO")}";
-            l[10] = variable.FechaCancelacionEnable == true
+            l[10] = variable.FechaCancelacionEnable == true && variable.FechaCancelacion.HasValue
                 ? $"Fecha Real Abono {variable.FechaCancelacion:dd/MM/yyyy}"
                 : string.Empty;
 
@@ -970,6 +1069,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 var montoTransaccion = afectacion.IntCor + afectacion.IntMor + afectacion.Principal + afectacion.Cargos;
 
                 using var tx = await conn.BeginTransactionAsync();
+
+                // VB6: GLOBALES.gEnlace (contabilidad de enlace de la empresa)
+                var enlace = await conn.ExecuteScalarAsync<int?>(
+                    "select isnull(COD_EMPRESA_ENLACE,0) from SIF_EMPRESA", transaction: tx) ?? 0;
+
+                // VB6: vAseDocDeposito = último documento de pago del desglose (cheque, depósito, documento...)
+                var docPago = await conn.ExecuteScalarAsync<string?>(
+                    @"select top 1 left(rtrim(Num_Referencia),30)
+                        from CAJAS_DESGLOCE_PAGO
+                       where Cod_Caja = @caja and Cod_Apertura = @apertura and Ticket = @tiquete
+                         and isnull(rtrim(Num_Referencia),'') <> ''
+                       order by Linea desc",
+                    new { caja = vars.codCaja, apertura = vars.codApertura, tiquete = vars.tiquete },
+                    tx) ?? string.Empty;
 
                 const string sqlInsert = @"
                     INSERT INTO SIF_TRANSACCIONES
@@ -1028,7 +1141,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                         Monto = montoTransaccion,
                         Ref01 = solicitud.id_solicitud,
                         Ref02 = solicitud.codigo,
-                        Ref03 = vars.vNumDoc,
+                        Ref03 = docPago,
                         CodOficina = vars.oficinaTitular,
                         Linea1 = lineas[0] ?? "",
                         Linea2 = lineas[1] ?? "",
@@ -1042,42 +1155,44 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                         Linea10 = lineas[9] ?? "",
                         Linea11 = lineas[10] ?? "",
                         Detalle = vars.notas ?? vars.detalle ?? "",
-                        Documento = vars.vNumDoc,
+                        Documento = docPago,
                         CodCaja = vars.codCaja,
                         CodApertura = vars.codApertura
                     },
                     tx
                 );
 
-                async Task ExecAsientoAsync(decimal monto, string cuenta)
+                async Task ExecAsientoAsync(decimal monto, string? cuenta)
                 {
                     if (monto <= 0) return;
                     if (string.IsNullOrWhiteSpace(cuenta)) return;
 
                     const string sp = "spSIFDocsAsiento";
 
+                    // Parámetros reales del SP: @Tipo,@Transaccion,@Monto,@Movimiento,@Divisa,@TipoCambio,@Contabilidad,
+                    // @Unidad,@CentroCosto,@Cuenta,@Referencia1,@Referencia2,@Referencia3
                     var p = new DynamicParameters();
-                    p.Add("@TipoDocumento", vars.vTipoDoc, DbType.String);
-                    p.Add("@CodTransaccion", vars.vNumDoc.Value.ToString(), DbType.String);
+                    p.Add("@Tipo", vars.vTipoDoc, DbType.String);
+                    p.Add("@Transaccion", vars.vNumDoc.Value.ToString(), DbType.String);
                     p.Add("@Monto", monto * (vars.tipoCambio ?? 1m), DbType.Decimal);
-                    p.Add("@Tipo", "C", DbType.String);
-                    p.Add("@Divisa", solicitud.divisa, DbType.String);
+                    p.Add("@Movimiento", "C", DbType.String);
+                    p.Add("@Divisa", string.IsNullOrWhiteSpace(cuentaOperacion.cod_divisa) ? solicitud.divisa : cuentaOperacion.cod_divisa, DbType.String);
                     p.Add("@TipoCambio", vars.tipoCambio ?? 1m, DbType.Decimal);
-                    p.Add("@Enlace", vars.enlace ?? 0, DbType.Int32);
-                    p.Add("@CodUnidad", vars.unidadCaja, DbType.String);
-                    p.Add("@CodCentroCosto", "", DbType.String); // ajustar si tienes centro de costo real
+                    p.Add("@Contabilidad", enlace, DbType.Int32);
+                    p.Add("@Unidad", cuentaOperacion.cod_unidad, DbType.String);
+                    p.Add("@CentroCosto", cuentaOperacion.cod_centro_costo ?? "", DbType.String);
                     p.Add("@Cuenta", cuenta, DbType.String);
-                    p.Add("@IdSolicitud", solicitud.id_solicitud, DbType.Int64);
-                    p.Add("@Codigo", solicitud.codigo, DbType.String);
-                    p.Add("@Documento", vars.vNumDoc, DbType.String);
+                    p.Add("@Referencia1", solicitud.id_solicitud.ToString(), DbType.String);
+                    p.Add("@Referencia2", solicitud.codigo, DbType.String);
+                    p.Add("@Referencia3", docPago, DbType.String);
 
                     await conn.ExecuteAsync(sp, p, tx, commandType: CommandType.StoredProcedure);
                 }
 
-                await ExecAsientoAsync(afectacion.IntCor, cuentaOperacion.cta_int_c);
-                await ExecAsientoAsync(afectacion.IntMor, cuentaOperacion.cta_int_m);
-                await ExecAsientoAsync(afectacion.Cargos, cuentaOperacion.cta_cargos ?? "");
-                await ExecAsientoAsync(afectacion.Principal, cuentaOperacion.cta_amortiza);
+                await ExecAsientoAsync(afectacion.IntCor, cuentaOperacion.CtaIntC);
+                await ExecAsientoAsync(afectacion.IntMor, cuentaOperacion.CtaIntM);
+                await ExecAsientoAsync(afectacion.Cargos, cuentaOperacion.CtaCargos);
+                await ExecAsientoAsync(afectacion.Principal, cuentaOperacion.CtaAmortiza);
 
                 // VB: condición incluye poliza, pero sp usa los mismos parámetros
                 if ((afectacion.IntCor + afectacion.IntMor + afectacion.Principal + afectacion.Cargos + afectacion.Polizas) > 0)
@@ -1085,15 +1200,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     const string spPagos = "spCajas_DesglocePagosDocFinal";
 
                     var pPago = new DynamicParameters();
-                    pPago.Add("@Caja", vars.codCaja ?? 0, DbType.Int32);
+                    pPago.Add("@Caja", vars.codCaja ?? "", DbType.String);
                     pPago.Add("@Apertura", vars.codApertura ?? 0, DbType.Int32);
-                    pPago.Add("@Tiquete", vars.tiquete ?? "", DbType.String);
+                    pPago.Add("@Ticket", vars.tiquete ?? "", DbType.String);
                     pPago.Add("@Usuario", vars.usuarioRegistro ?? "", DbType.String);
-                    pPago.Add("@TipoDocumento", vars.vTipoDoc ?? "", DbType.String);
-                    pPago.Add("@CodTransaccion", vars.vNumDoc.Value.ToString(), DbType.String);
+                    pPago.Add("@TipoDoc", vars.vTipoDoc ?? "", DbType.String);
+                    pPago.Add("@NumDoc", vars.vNumDoc.Value.ToString(), DbType.String);
                     pPago.Add("@Unidad", vars.unidadCaja ?? "", DbType.String);
-                    pPago.Add("@IdSolicitud", solicitud.id_solicitud, DbType.Int64);
-                    pPago.Add("@Codigo", solicitud.codigo, DbType.String);
+                    pPago.Add("@Ref_01", solicitud.id_solicitud.ToString(), DbType.String);
+                    pPago.Add("@Ref_02", solicitud.codigo, DbType.String);
 
                     await conn.ExecuteAsync(spPagos, pPago, tx, commandType: CommandType.StoredProcedure);
                 }

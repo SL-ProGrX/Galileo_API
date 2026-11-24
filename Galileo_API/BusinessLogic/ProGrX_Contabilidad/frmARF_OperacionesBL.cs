@@ -80,11 +80,15 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
 
         public ErrorDto<List<ArfOperacionAsientoDetalleDto>> AsientoDetalle_Listar(
             int codEmpresa,
-            int codContabilidad,
             string tipoAsiento,
             string numAsiento)
         {
-            return _db.AsientoDetalle_Listar(codEmpresa, codContabilidad, tipoAsiento, numAsiento);
+            return _db.AsientoDetalle_Listar(codEmpresa, tipoAsiento, numAsiento);
+        }
+
+        public ErrorDto<List<ArfOperacionAsientoDetalleDto>> AsientosOperacion_Listar(int codEmpresa, int operacion)
+        {
+            return _db.AsientosOperacion_Listar(codEmpresa, operacion);
         }
 
         public ErrorDto<List<ArfOperacionCambioDto>> Cambios_Listar(int codEmpresa, int operacion)

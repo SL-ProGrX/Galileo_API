@@ -123,7 +123,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             const string sql = @"select * from CRD_OPERACION_TRANSAC 
                 where estado = 'A' and id_solicitud = @IdSolicitud 
-                and Fecha_Inicio < GETDATE() order by ID_SEQ asc";
+                and Fecha_Inicio < dbo.MyGetdate() order by ID_SEQ asc";
 
             return DbHelper.ExecuteListQuery<CajasCrdOperacionTransacData>(_portalDb, CodEmpresa, sql, new {IdSolicitud});
         }
@@ -388,7 +388,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 TipoAbono.Ordinario => RegistrarOrdinario(CodEmpresa, req, vNumDoc, ref extraordinario),
                 TipoAbono.Extraordinario => RegistrarExtraordinario(CodEmpresa, req, vNumDoc, ref extraordinario),
                 TipoAbono.Cancelacion => RegistrarCancelacion(CodEmpresa, req, vNumDoc),
-                TipoAbono.AdelantoCuotas => RegistrarAdelantoCuotas(CodEmpresa, req, vNumDoc),
+                TipoAbono.AdelantoCuotas => RegistrarAdelantoCuotas(CodEmpresa, req, vNumDoc, ref extraordinario),
                 _ => new ErrorDto { Code = -2, Description = "Tipo de abono no soportado" }
             };
         }
@@ -791,20 +791,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 });
         }
 
-        private ErrorDto RegistrarAdelantoCuotas(int codempresa, CajasCrdAbonosCtPRegistrarAbonoRequest req, string vNumDoc)
+        private ErrorDto RegistrarAdelantoCuotas(int codempresa, CajasCrdAbonosCtPRegistrarAbonoRequest req, string vNumDoc, ref bool extraordinario)
         {
-            return Exec(codempresa,
-                @"exec spCrdPlanPagoAbonoOrdinario 
-          @operacion,'CRD004',@Usuario,@tipoDoc,@numdoc,@monto,@fecha,''",
-                new
-                {
-                    operacion = req.operacionid,
-                    Usuario = req.usuario,
-                    tipoDoc = req.tipodoc,
-                    numdoc = vNumDoc,
-                    monto = req.totalcajas,
-                    fecha = DateTime.Now
-                });
+            const string sqlAdelanto = @"exec spCrdPlanPagoAbonoOrdinario 
+          @operacion,'CRD004',@Usuario,@tipoDoc,@numdoc,@monto,@fecha,''";
+
+            // VB6: sin "Aplicar diferencias" se abona el total de cajas; con diferencia se abona el total a cancelar
+            // y luego se aplica la diferencia como Adelanto de Cuota o Abono Extraordinario.
+            var r1 = Exec(codempresa, sqlAdelanto, new
+            {
+                operacion = req.operacionid,
+                Usuario = req.usuario,
+                tipoDoc = req.tipodoc,
+                numdoc = vNumDoc,
+                monto = req.diferenciaaplenabled ? req.totalcancela : req.totalcajas,
+                fecha = DateTime.Now
+            });
+
+            if (!req.diferenciaaplenabled || (r1?.Code.HasValue == true && r1.Code != 0))
+                return r1 ?? new ErrorDto { Code = 0, Description = string.Empty };
+
+            return AplicarDiferenciaOrdinario(codempresa, req, vNumDoc, ref extraordinario);
         }
 
         private CajasCrdInfoExtraordinarioData GetInfoExtraordinario(int codempresa, CajasCrdAbonosCtPRegistrarAbonoRequest req)
@@ -987,6 +994,36 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return string.Empty;
         }
 
+        /// <summary>VB6: GLOBALES.gEnlace = contabilidad de enlace de la empresa (SIF_EMPRESA.COD_EMPRESA_ENLACE).</summary>
+        private int ObtenerEnlace(int codempresa)
+        {
+            return DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codempresa,
+                "select isnull(COD_EMPRESA_ENLACE,0) from SIF_EMPRESA",
+                0).Result;
+        }
+
+        /// <summary>
+        /// VB6: vAseDocDeposito = último documento de pago registrado en el desglose
+        /// (cheque, depósito, documento, fondo o saldo a favor), máximo 30 caracteres.
+        /// </summary>
+        private string ObtenerDocumentoPago(int codempresa, CajasCrdAbonosCtPRegistrarAbonoRequest req)
+        {
+            const string sql = @"select top 1 left(rtrim(Num_Referencia),30)
+                                   from CAJAS_DESGLOCE_PAGO
+                                  where Cod_Caja = @caja and Cod_Apertura = @apertura and Ticket = @tiquete
+                                    and isnull(rtrim(Num_Referencia),'') <> ''
+                                  order by Linea desc";
+
+            return DbHelper.ExecuteSingleQuery<string>(
+                _portalDb,
+                codempresa,
+                sql,
+                string.Empty,
+                new { caja = req.mcaja, apertura = req.mapertura, tiquete = req.mtiquete }).Result ?? string.Empty;
+        }
+
         private ErrorDto InsertarTransaccion(
             int codempresa,
             string concepto,
@@ -996,6 +1033,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             string vNumDoc)
         {
             var oficinaTitular = _mProGrxMain.sbSifParametrosInicializa(codempresa, req.usuario ?? "").Result?.GOficinaTitular ?? "";
+            var docPago = ObtenerDocumentoPago(codempresa, req);
 
             const string sql = @"
             insert SIF_TRANSACCIONES
@@ -1008,7 +1046,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             )
             values
             (
-              @numdoc, @tipoDoc, GetDate(), @Usuario,
+              @numdoc, @tipoDoc, dbo.MyGetdate(), @Usuario,
               @cedula, @nombre, @Concepto, @monto_total, 'P',
               @operacionid, @Codigo, @ase_doc_deposito, @oficina_titular,
               @linea1,@linea2,@linea3,@linea4,@linea5,@linea6,@linea7,@linea8,@linea9,@linea10,@linea11,
@@ -1026,7 +1064,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 monto_total,
                 operacionid = req.operacionid.ToString(),
                 Codigo = req.codigo,
-                ase_doc_deposito = "",
+                ase_doc_deposito = docPago,
                 oficina_titular = oficinaTitular, // GLOBALES.gOficinaTitular
                 lineas.linea1,
                 lineas.linea2,
@@ -1040,7 +1078,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 lineas.linea10,
                 lineas.linea11,
                 detalle = req.notas ?? "",
-                documento = "",
+                documento = docPago,
                 caja = req.mcaja,
                 apertura = req.mapertura,
                 sesionid = req.msesionid
@@ -1101,13 +1139,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 monto,
                 codDivisa = ctas.cod_divisa,
                 tipocambio,
-                enlace = 0, // GLOBALES.gEnlace
+                enlace = ObtenerEnlace(codempresa), // GLOBALES.gEnlace
                 codUnidad = ctas.cod_unidad,
                 codCentroCosto = ctas.cod_centro_costo,
                 cuenta,
                 idSolicitud = ctas.id_solicitud,
                 codigo_cta = ctas.codigo,
-                ase_doc_deposito = ""
+                ase_doc_deposito = ObtenerDocumentoPago(codempresa, req)
             };
 
             return DbHelper.ExecuteNonQuery(_portalDb, codempresa, sql, param);
@@ -1164,13 +1202,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 monto,
                 codDivisa = ctas.cod_divisa,
                 tipocambio,
-                enlace = 0, // GLOBALES.gEnlace
+                enlace = ObtenerEnlace(codempresa), // GLOBALES.gEnlace
                 codUnidad = cargo.cod_unidad,
                 codCentroCosto = cargo.cod_centro_costo,
                 cuenta = cargo.cod_cuenta,
                 idSolicitud = cargo.id_solicitud,
                 codigo_cta = cargo.codigo,
-                ase_doc_deposito = ""
+                ase_doc_deposito = ObtenerDocumentoPago(codempresa, req)
             };
 
             return DbHelper.ExecuteNonQuery(_portalDb, codempresa, sql, param);
@@ -1227,13 +1265,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 monto,
                 codDivisa = ctas.cod_divisa,
                 tipocambio,
-                enlace = 0, // GLOBALES.gEnlace
+                enlace = ObtenerEnlace(codempresa), // GLOBALES.gEnlace
                 codUnidad = ctas.cod_unidad,
                 codCentroCosto = ctas.cod_centro_costo,
                 cuenta,
                 idSolicitud = ctas.id_solicitud,
                 codigo_cta = ctas.codigo,
-                ase_doc_deposito = ""
+                ase_doc_deposito = ObtenerDocumentoPago(codempresa, req)
             };
 
             return DbHelper.ExecuteNonQuery(_portalDb, codempresa, sql, param);
