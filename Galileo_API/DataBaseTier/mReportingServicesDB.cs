@@ -21,7 +21,7 @@ namespace Galileo.DataBaseTier
         public IReportParameterBuilder ParamBuilder { get; set; }
         public ISubreportCoordinator Subs { get; set; }
 
-        public MReportingServicesDBDependencies() 
+        public MReportingServicesDBDependencies()
         {
             var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
             Logger = loggerFactory.CreateLogger<MReportingServicesDB>();
@@ -74,13 +74,13 @@ namespace Galileo.DataBaseTier
         public MReportingServicesDB(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            _logger = deps.Logger ;
-            _path = deps.Path ;
-            _meta = deps.Meta ;
-            _patcher = deps.Patcher ;
-            _exec = deps.Exec ;
-            _params = deps.ParamBuilder ;
-            _subs = deps.Subs ;
+            _logger = deps.Logger;
+            _path = deps.Path;
+            _meta = deps.Meta;
+            _patcher = deps.Patcher;
+            _exec = deps.Exec;
+            _params = deps.ParamBuilder;
+            _subs = deps.Subs;
             _justifier = new RdlcTextJustifier(_config.GetSection("Reportes:JustificarTexto").Get<string[]>());
 
             _portalDB = new PortalDB(config);
@@ -91,137 +91,17 @@ namespace Galileo.DataBaseTier
 
         // ================= API PRINCIPAL (V2) =================
         public IActionResult ReporteRDLC_v2(FrmReporteGlobal data)
-         {
+        {
             if (data.parametros == null)
                 return ReportRenderer.Error("Datos del reporte no proporcionados.", 400);
 
             if (string.IsNullOrWhiteSpace(data.nombreReporte))
                 return ReportRenderer.Error("El nombre del reporte no puede ser nulo o vacío.", 400);
 
-            string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(data.codEmpresa);
             var finalPath = string.Empty;
             try
             {
-                using var connection = new SqlConnection(connString);
-                connection.Open();
-                string dirRdlc = GetRequiredParametrerValue(data.codEmpresa, "Rep01");
-
-                // 1) Validar inputs como segmentos
-                var reportFile = data.nombreReporte.Trim();
-                ValidateSegment(reportFile, nameof(data.nombreReporte), allowEmpty: false);
-
-                ValidateSegment(data.folder, nameof(data.folder), allowEmpty: true);
-
-                var report = new LocalReport { EnableExternalImages = true };
-                var basePath = _path.GetBasePath(data.codEmpresa, dirRdlc, data.folder ?? null);
-                var defaultBasePath = _path.GetDefaultBasePath(dirRdlc, data.folder ?? null);
-
-                var mainPath = _path.CombineUnderRoot(basePath, reportFile);
-                finalPath = _path.ResolveReportPath(data.codEmpresa, mainPath, defaultBasePath);
-
-                // CxSuppress: PathTraversal
-                if (!System.IO.File.Exists(finalPath))
-                {
-                    _logger?.LogWarning("Reporte principal no encontrado. Ruta resuelta: {FinalPath}. Base: {BasePath}", finalPath, basePath);
-                    return ReportRenderer.Error("No se encontró el reporte solicitado.", 404);
-                }
-
-                using var patched = _patcher.PatchReportCode(finalPath, data.codeSection);
-                report.LoadReportDefinition(patched);
-
-                var (mainDataSets, subreportNames) = _meta.ReadRdlcMeta(finalPath);
-                var subMeta = _subs.LoadSubreports(data.codEmpresa, report, basePath, subreportNames, defaultBasePath);
-                var autoAliases = _subs.BuildAutoAliasMap(data.codEmpresa, finalPath, basePath, defaultBasePath);
-
-                var (reportParams, paramDict, jParams) = _params.Build(
-                    data,
-                    connection,
-                    connString);
-
-                var parametrosDefinidos = ReporteRDLC_ParametrosDefinidos_Obtener(
-                    report,
-                    reportParams);
-
-                if (parametrosDefinidos.Count > 0)
-                {
-                    report.SetParameters(parametrosDefinidos);
-                }
-
-                var jsonDataSets = new Dictionary<string, object>();
-                var subErrors = new List<string>();
-
-                // Ensure paramDict is Dictionary<string, object>
-                var paramDictObj = paramDict is IDictionary<string, object> dictObj
-                    ? dictObj
-                    : paramDict.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value);
-
-                var safeJParams = jParams ?? new Newtonsoft.Json.Linq.JObject();
-
-                DataSetLoadRequest request = new DataSetLoadRequest
-                {
-                    mainDataSets = mainDataSets,
-                    connection = connection,
-                    paramDict = paramDictObj,
-                    jParams = safeJParams,
-                    data = data,
-                    report = report,
-                    jsonDataSets = jsonDataSets,
-                    subErrors = subErrors,
-                    justifyRules = data.cod_reporte == "P"
-                        ? _justifier.ReadRules(data.nombreReporte, finalPath)
-                        : []
-                };
-
-                LoadMainDataSets(request);
-
-                // Subreport processing
-                _subs.ConfigureSubreportProcessing(report, subMeta, connection, autoAliases, paramDict, subErrors, _patcher.ParseFxConstants(data.codeSection));
-
-                if (data.cod_reporte == "E" && subreportNames.Any())
-                {
-                    report.SubreportProcessing += (_, args) =>
-                    {
-                        foreach (ReportDataSource source in args.DataSources
-                        .Where(source => source.Value is System.Collections.IEnumerable))
-                        {
-                            var values = (System.Collections.IEnumerable)source.Value;
-
-                            var key = $"SUB::{args.ReportPath}::{source.Name}";
-
-                            if (!jsonDataSets.TryGetValue(key, out var existing))
-                            {
-                                existing = new List<object>();
-                                jsonDataSets.Add(key, existing);
-                            }
-
-                            var accumulatedRows = (List<object>)existing;
-
-                            foreach (var row in values)
-                            {
-                                if (row is not null)
-                                    accumulatedRows.Add(row);
-                            }
-                        }
-                    };
-
-                    // Ejecuta las expresiones y los parámetros de cada instancia
-                    // del subreporte. Sus datos se recogen en el evento anterior.
-                    _ = report.Render("PDF");
-                }
-
-                string errorDesc = string.Join("\n", subErrors) + "\n";
-
-                //elimino ultimo salto de linea
-                errorDesc = errorDesc.TrimEnd('\n');
-
-                if (errorDesc.Length > 0)
-                {
-                   return ReportRenderer.Error($"Errores en subreportes:\n{errorDesc}", 500);
-                }
-
-                return data.cod_reporte == "P"
-                    ? ReportRenderer.AsPdf(report, data.nombreReporte)
-                    : ReportRenderer.AsJson(jsonDataSets, subErrors);
+                return ReporteRDLC_v2_Generar(data, out finalPath);
             }
             catch (Exception ex)
             {
@@ -231,44 +111,180 @@ namespace Galileo.DataBaseTier
             }
         }
 
+        private IActionResult ReporteRDLC_v2_Generar(FrmReporteGlobal data, out string finalPath)
+        {
+            finalPath = string.Empty;
+            string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(data.codEmpresa);
+            using var connection = new SqlConnection(connString);
+            connection.Open();
+
+            string dirRdlc = GetRequiredParametrerValue(data.codEmpresa, "Rep01");
+            var reportFile = data.nombreReporte?.Trim() ?? string.Empty;
+            ValidateSegment(reportFile, nameof(data.nombreReporte), allowEmpty: false);
+            ValidateSegment(data.folder, nameof(data.folder), allowEmpty: true);
+
+            var report = new LocalReport { EnableExternalImages = true };
+            var basePath = _path.GetBasePath(data.codEmpresa, dirRdlc, data.folder ?? null);
+            var defaultBasePath = _path.GetDefaultBasePath(dirRdlc, data.folder ?? null);
+            var mainPath = _path.CombineUnderRoot(basePath, reportFile);
+            finalPath = _path.ResolveReportPath(data.codEmpresa, mainPath, defaultBasePath);
+
+            // CxSuppress: PathTraversal
+            if (!System.IO.File.Exists(finalPath))
+            {
+                _logger?.LogWarning("Reporte principal no encontrado. Ruta resuelta: {FinalPath}. Base: {BasePath}", finalPath, basePath);
+                return ReportRenderer.Error("No se encontró el reporte solicitado.", 404);
+            }
+
+            using var patched = _patcher.PatchReportCode(finalPath, data.codeSection);
+            report.LoadReportDefinition(patched);
+
+            var (mainDataSets, subreportNames) = _meta.ReadRdlcMeta(finalPath);
+            var subMeta = _subs.LoadSubreports(data.codEmpresa, report, basePath, subreportNames, defaultBasePath);
+            var autoAliases = _subs.BuildAutoAliasMap(data.codEmpresa, finalPath, basePath, defaultBasePath);
+            var (reportParams, paramDict, jParams) = _params.Build(data, connection, connString);
+            var parametrosDefinidos = ReporteRDLC_ParametrosDefinidos_Obtener(report, reportParams);
+
+            if (parametrosDefinidos.Count > 0)
+                report.SetParameters(parametrosDefinidos);
+
+            var context = new ReportExecutionContext
+            {
+                Data = data,
+                Report = report,
+                Connection = connection,
+                MainDataSets = mainDataSets,
+                SubreportNames = subreportNames,
+                SubMeta = subMeta,
+                AutoAliases = autoAliases,
+                ParamDict = paramDict,
+                JsonParams = jParams,
+                FinalPath = finalPath
+            };
+
+            return ReporteRDLC_v2_Procesar(context);
+        }
+
+        private sealed class ReportExecutionContext
+        {
+            public required FrmReporteGlobal Data { get; init; }
+            public required LocalReport Report { get; init; }
+            public required SqlConnection Connection { get; init; }
+            public required List<RdlcDataSetMeta> MainDataSets { get; init; }
+            public required List<string> SubreportNames { get; init; }
+            public required Dictionary<string, List<RdlcDataSetMeta>> SubMeta { get; init; }
+            public required Dictionary<string, Dictionary<string, string>> AutoAliases { get; init; }
+            public required Dictionary<string, string> ParamDict { get; init; }
+            public JObject? JsonParams { get; init; }
+            public required string FinalPath { get; init; }
+        }
+
+        private IActionResult ReporteRDLC_v2_Procesar(ReportExecutionContext context)
+        {
+            var data = context.Data;
+            var report = context.Report;
+            var jsonDataSets = new Dictionary<string, object>();
+            var subErrors = new List<string>();
+
+            var request = new DataSetLoadRequest
+            {
+                mainDataSets = context.MainDataSets,
+                connection = context.Connection,
+                paramDict = context.ParamDict.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value),
+                jParams = context.JsonParams ?? new JObject(),
+                data = data,
+                report = report,
+                jsonDataSets = jsonDataSets,
+                subErrors = subErrors,
+                justifyRules = data.cod_reporte == "P"
+                    ? _justifier.ReadRules(data.nombreReporte ?? string.Empty, context.FinalPath)
+                    : []
+            };
+
+            LoadMainDataSets(request);
+            _subs.ConfigureSubreportProcessing(
+                report, context.SubMeta, context.Connection, context.AutoAliases,
+                context.ParamDict, subErrors, _patcher.ParseFxConstants(data.codeSection));
+
+            if (data.cod_reporte == "E" && context.SubreportNames.Count > 0)
+            {
+                report.SubreportProcessing += (_, args) =>
+                    ReporteRDLC_v2_SubreportRows_Acumular(args, jsonDataSets);
+                _ = report.Render("PDF");
+            }
+
+            if (subErrors.Count > 0)
+                return ReportRenderer.Error($"Errores en subreportes:\n{string.Join("\n", subErrors)}", 500);
+
+            return data.cod_reporte == "P"
+                ? ReportRenderer.AsPdf(report, data.nombreReporte)
+                : ReportRenderer.AsJson(jsonDataSets, subErrors);
+        }
+
+        private static void ReporteRDLC_v2_SubreportRows_Acumular(
+            SubreportProcessingEventArgs args,
+            Dictionary<string, object> jsonDataSets)
+        {
+            foreach (ReportDataSource source in args.DataSources
+                .Where(source => source.Value is System.Collections.IEnumerable))
+            {
+                var key = $"SUB::{args.ReportPath}::{source.Name}";
+                if (!jsonDataSets.TryGetValue(key, out var existing))
+                {
+                    existing = new List<object>();
+                    jsonDataSets.Add(key, existing);
+                }
+
+                var accumulatedRows = (List<object>)existing;
+                var values = (System.Collections.IEnumerable)source.Value;
+                foreach (var row in values)
+                {
+                    if (row is not null)
+                        accumulatedRows.Add(row);
+                }
+            }
+        }
+
         private void LoadMainDataSets(DataSetLoadRequest request)
         {
-            if (request.mainDataSets == null || request.paramDict == null || request.connection == null || request.subErrors == null || request.jsonDataSets == null)
+            if (request.mainDataSets == null || request.paramDict == null ||
+                request.connection == null || request.subErrors == null ||
+                request.jsonDataSets == null)
                 return;
 
             foreach (var ds in request.mainDataSets)
+                LoadMainDataSet(request, ds);
+        }
+
+        private void LoadMainDataSet(DataSetLoadRequest request, RdlcDataSetMeta? ds)
+        {
+            if (ds == null || string.IsNullOrWhiteSpace(ds.CommandText))
+                return;
+
+            var paramDictStr = request.paramDict!.ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value?.ToString() ?? string.Empty,
+                StringComparer.OrdinalIgnoreCase);
+
+            if (!_exec.TryExecDataSet(
+                request.connection!, ds, paramDictStr, request.jParams, true,
+                out var rows, out var err))
             {
-                if (ds == null || string.IsNullOrWhiteSpace(ds.CommandText))
-                    continue;
-
-                // DESPUÉS:
-                var paramDictStr = request.paramDict?.ToDictionary(
-                    kvp => kvp.Key,
-                    kvp => kvp.Value?.ToString() ?? string.Empty,
-                    StringComparer.OrdinalIgnoreCase)
-                    ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-                if (!_exec.TryExecDataSet(request.connection, ds, paramDictStr, request.jParams, true, out var rows, out var err))
-                {
-                    if (!string.IsNullOrWhiteSpace(err))
-                        request.subErrors?.Add($"[MAIN DS '{ds.DataSetName}'] {err}");
-                    continue;
-                }
-
-                if (request.data?.cod_reporte is "P" or "E")
-                {
-                    var rowsFinal = _justifier.Apply(
-                        ds.DataSetName,
-                        request.justifyRules ?? [],
-                        rows);
-
-                    request.report?.DataSources.Add(
-                        new ReportDataSource(ds.DataSetName, rowsFinal));
-                }
-
-                if (request.data?.cod_reporte != "P")
-                    request.jsonDataSets[ds.DataSetName] = rows;
+                if (!string.IsNullOrWhiteSpace(err))
+                    request.subErrors!.Add($"[MAIN DS '{ds.DataSetName}'] {err}");
+                return;
             }
+
+            if (request.data?.cod_reporte is "P" or "E")
+            {
+                var rowsFinal = _justifier.Apply(
+                    ds.DataSetName, request.justifyRules ?? [], rows);
+                request.report?.DataSources.Add(
+                    new ReportDataSource(ds.DataSetName, rowsFinal));
+            }
+
+            if (request.data?.cod_reporte != "P")
+                request.jsonDataSets![ds.DataSetName] = rows;
         }
 
         // ================= INFO EMPRESA =================
