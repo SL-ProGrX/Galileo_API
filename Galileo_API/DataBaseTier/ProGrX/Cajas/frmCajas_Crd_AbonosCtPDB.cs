@@ -123,7 +123,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             const string sql = @"select * from CRD_OPERACION_TRANSAC 
                 where estado = 'A' and id_solicitud = @IdSolicitud 
-                and Fecha_Inicio < GETDATE() order by ID_SEQ asc";
+                and Fecha_Inicio < dbo.MyGetdate() order by ID_SEQ asc";
 
             return DbHelper.ExecuteListQuery<CajasCrdOperacionTransacData>(_portalDb, CodEmpresa, sql, new {IdSolicitud});
         }
