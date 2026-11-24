@@ -181,10 +181,10 @@ namespace Galileo.DataBaseTier
                 {
                     report.SubreportProcessing += (_, args) =>
                     {
-                        foreach (ReportDataSource source in args.DataSources)
+                        foreach (ReportDataSource source in args.DataSources
+                        .Where(source => source.Value is System.Collections.IEnumerable))
                         {
-                            if (source.Value is not System.Collections.IEnumerable values)
-                                continue;
+                            var values = (System.Collections.IEnumerable)source.Value;
 
                             var key = $"SUB::{args.ReportPath}::{source.Name}";
 
