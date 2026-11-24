@@ -27,9 +27,12 @@ namespace Galileo.Controllers
 
             if (result is FileContentResult fcr)
             {
-                var nombreReporte = $"{data.nombreReporte}.pdf";
-                Response.Headers["Content-Disposition"] = $"inline; filename={nombreReporte}";
-                fcr.FileDownloadName = nombreReporte;
+                var nombreArchivo = fcr.FileDownloadName
+                    ?? $"{data.nombreReporte}.pdf";
+
+                Response.Headers["Content-Disposition"] =
+                    $"inline; filename=\"{nombreArchivo}\"";
+
                 return fcr;
             }
 
