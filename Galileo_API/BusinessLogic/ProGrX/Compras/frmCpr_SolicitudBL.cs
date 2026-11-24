@@ -91,12 +91,14 @@ namespace Galileo.BusinessLogic
 
         public ErrorDto AutorizaSolicitud(int CodEmpresa, int CPR_ID, string usuario)
         {
-            return _db.AutorizaSolicitud(CodEmpresa, CPR_ID, usuario);
+            var permiso = _db.ValidarRolResolucion(CodEmpresa, CPR_ID, usuario);
+            return permiso.Code != 0 ? permiso : _db.AutorizaSolicitud(CodEmpresa, CPR_ID, usuario);
         }
 
         public ErrorDto DeniegaSolicitud(int CodEmpresa, int CPR_ID, string usuario, string detalle_seguimiento)
         {
-            return _db.DeniegaSolicitud(CodEmpresa, CPR_ID, usuario, detalle_seguimiento);
+            var permiso = _db.ValidarRolResolucion(CodEmpresa, CPR_ID, usuario);
+            return permiso.Code != 0 ? permiso : _db.DeniegaSolicitud(CodEmpresa, CPR_ID, usuario, detalle_seguimiento);
         }
 
         public ErrorDto ValidaUsuarioSolicitud(int CodEmpresa, string usuario, string permiso, string? cod_unidad)
