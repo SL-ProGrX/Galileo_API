@@ -694,7 +694,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 Bitacora(codEmpresa, request.mUsuario ?? string.Empty, bitacoraDetalle);
 
-                var vars = CrearVariables(codEmpresa, conn, request, vNumDoc, vConcepto, vNotas, saldoAnterior, tipoAbono);
+                var vars = CrearVariables(codEmpresa, conn, request, vNumDoc, vConcepto, vNotas, saldoAnterior);
 
                 var doc = sbDocumentoAbono(codEmpresa, solicitud, vars);
                 if (doc.Code != 0)
@@ -775,7 +775,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         private CajasCrdAbonosStpVariables CrearVariables(int codEmpresa, SqlConnection conn, CajasCrdAbonoRequest request,
-            long vNumDoc, string vConcepto, string vNotas, decimal saldoAnterior, int tipoAbono)
+            long vNumDoc, string vConcepto, string vNotas, decimal saldoAnterior)
         {
             return new CajasCrdAbonosStpVariables
             {
@@ -786,7 +786,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 vSaldoMes = saldoAnterior,
                 notas = vNotas,
                 FechaCancelacion = request.FechaCancelacion,
-                FechaCancelacionEnable = request.fechaCancelacionEnable ?? (tipoAbono != 0),
+                FechaCancelacionEnable = request.fechaCancelacionEnable ?? ((request.tipoAbono ?? 0) != 0),
                 codCaja = request.mCaja,
                 codApertura = request.mApertura,
                 usuarioRegistro = request.mUsuario,
