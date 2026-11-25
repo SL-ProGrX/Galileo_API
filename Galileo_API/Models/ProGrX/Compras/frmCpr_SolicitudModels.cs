@@ -24,6 +24,11 @@ namespace Galileo.Models.CPR
     [XmlRoot("CprSolicitudDto")]
     public class CprSolicitudDto
     {
+        [XmlIgnore]
+        public string? cntX_Unidad { get; set; }
+        [XmlIgnore]
+        public string? cntX_Centro_Costo { get; set; }
+
         public int? cpr_id { get; set; }
         public int? cpr_id_madre { get; set; } = 0;
         public string? documento { get; set; }

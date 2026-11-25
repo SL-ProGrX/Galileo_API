@@ -10,6 +10,8 @@ namespace Galileo.DataBaseTier
     public class FrmCprOrdenesProcesoDB
     {
         private const string ErrorLiteral = "Error";
+        private const int CodigoSinPermiso = -2;
+        private const string RutaNivelesAutorizacion = "Compras > Niveles de Autorización para el Proceso de Compras";
         private readonly PortalDB _portalDb;
 
         public FrmCprOrdenesProcesoDB(IConfiguration config)
@@ -156,17 +158,7 @@ namespace Galileo.DataBaseTier
 
         private  static ErrorDto ValidarAutorizacion(SqlConnection conn, SqlTransaction tx, string codOrden, string usuario)
         {
-            var codUnidad = "";
-            
-            //Si son directas no pido UEN
-            codUnidad = ObtenerCodUnidad(conn, tx, codOrden);
-            if (string.IsNullOrWhiteSpace(codUnidad))
-            {
-                codUnidad = "GEN";
-                /*return DbHelper.ErrorResponse("No se pudo determinar la UEN (COD_UNIDAD) de la orden.", -1);**/
-            }
-                
-            
+            var codUnidad = ObtenerCodUnidad(conn, tx, codOrden);
 
             var montoColones = ObtenerMontoOrden(conn, tx, codOrden);
             var tipoCambio = ObtenerTipoCambio(conn, tx);
@@ -177,13 +169,55 @@ namespace Galileo.DataBaseTier
             if (montoDolares == 0)
                 return DbHelper.ErrorResponse("El monto de la orden de compra no puede ser 0.", -1);
 
-            if (!UsuarioEnRango(conn, tx, usuario, codUnidad, montoDolares) && codUnidad != "GEN")
-                return DbHelper.ErrorResponse("El Usuario actual no está dentro del rango para esta Gestión.", -1);
+            var permisoUen = ValidarPermisoPorUen(conn, tx, usuario, codUnidad, montoDolares);
+            if (permisoUen.Code != 0)
+                return permisoUen;
 
             if (!UsuarioPuedeAutorizarPendientes(conn, tx, usuario))
-                return DbHelper.ErrorResponse("El Usuario actual no está Autorizado para esta Gestión", -1);
+                return DbHelper.ErrorResponse(
+                    $"No tiene permiso para resolver esta orden: no hay órdenes pendientes de usuarios a su cargo. Solicítelo en {RutaNivelesAutorizacion}, pestaña Usuarios a Cargo.",
+                    CodigoSinPermiso);
 
             return DbHelper.CreateOkResponse();
+        }
+
+        // Con UEN se exige un rango que cubra el monto; sin solicitud/UEN basta con ser autorizador.
+        private static ErrorDto ValidarPermisoPorUen(SqlConnection conn, SqlTransaction tx, string usuario, string? codUnidad, decimal montoDolares)
+        {
+            if (string.IsNullOrWhiteSpace(codUnidad))
+            {
+                return EsUsuarioAutorizador(conn, tx, usuario)
+                    ? DbHelper.CreateOkResponse()
+                    : DbHelper.ErrorResponse(
+                        $"No tiene permiso para resolver esta orden sin solicitud ni UEN: no está registrado como autorizador. Solicítelo en {RutaNivelesAutorizacion}, pestaña Autorizadores.",
+                        CodigoSinPermiso);
+            }
+
+            if (UsuarioEnRango(conn, tx, usuario, codUnidad, montoDolares))
+                return DbHelper.CreateOkResponse();
+
+            var nombreUen = conn.QueryFirstOrDefault<string>(
+                @"SELECT DESCRIPCION FROM CORE_UENS WHERE COD_UNIDAD = @CodUnidad",
+                new { CodUnidad = codUnidad },
+                transaction: tx
+            );
+
+            return DbHelper.ErrorResponse(
+                $"No tiene permiso para resolver esta orden: falta un rango en la UEN {codUnidad} - {nombreUen} que cubra USD {montoDolares:N2}. Solicítelo en {RutaNivelesAutorizacion}, pestañas Rangos y Usuarios por Rango.",
+                CodigoSinPermiso);
+        }
+
+        private static bool EsUsuarioAutorizador(SqlConnection conn, SqlTransaction tx, string usuario)
+        {
+            var count = conn.QueryFirstOrDefault<int>(
+                @"SELECT COUNT(*)
+                  FROM cpr_orden_autorizadores
+                  WHERE usuario = @Usuario",
+                new { Usuario = usuario },
+                transaction: tx
+            );
+
+            return count > 0;
         }
 
         private static string? ObtenerCodUnidad(SqlConnection conn, SqlTransaction tx, string codOrden)

@@ -123,6 +123,8 @@ namespace Galileo.DataBaseTier
         P.ADJUDICA_ORDEN,
         S.DOCUMENTO,
         U.DESCRIPCION AS COD_UNIDAD_SOLICITANTE,
+        U.CntX_Unidad,
+        U.CntX_Centro_Costo,
         S.ESTADO,
         S.REGISTRO_USUARIO,
         S.ENCARGADO_USUARIO
@@ -143,7 +145,10 @@ namespace Galileo.DataBaseTier
             CAST(S.CPR_ID AS VARCHAR(20)) LIKE @Like OR
             ISNULL(P.ADJUDICA_ORDEN,'') LIKE @Like OR
             ISNULL(S.REGISTRO_USUARIO,'') LIKE @Like OR
-            ISNULL(U.DESCRIPCION,'') LIKE @Like
+            ISNULL(U.DESCRIPCION,'') LIKE @Like OR
+            ISNULL(S.COD_UNIDAD_SOLICITANTE,'') LIKE @Like OR
+            ISNULL(U.CntX_Unidad,'') LIKE @Like OR
+            ISNULL(U.CntX_Centro_Costo,'') LIKE @Like
         ))
         AND (@HasSolicitantes = 0 OR S.REGISTRO_USUARIO IN @Solicitantes)
         AND (@HasEncargados = 0 OR S.ENCARGADO_USUARIO IN @Encargados)
@@ -252,7 +257,7 @@ namespace Galileo.DataBaseTier
                 return new ErrorDto<CprSolicitudDto>
                 {
                     Code = -1,
-                    Description = "El usuario no tiene permisos para realizar esta acción",
+                    Description = permiso.Description,
                     Result = null
                 };
 
@@ -487,7 +492,7 @@ WHERE P.CPR_ID = @Id;";
 
             var permiso = ValidaUsuarioSolicitud(codEmpresa, usuario, "C", r.Result.cod_unidad);
             if (permiso.Code == -1)
-                return new ErrorDto<CprSolicitudDto> { Code = -1, Description = "El usuario no tiene permisos para realizar esta acción", Result = null };
+                return new ErrorDto<CprSolicitudDto> { Code = -1, Description = permiso.Description, Result = null };
 
             return new ErrorDto<CprSolicitudDto> { Code = 0, Result = r.Result };
         }
@@ -846,12 +851,9 @@ WHERE P.CPR_ID = @Id;";
             {
                 EnsureOpen(conn);
 
-                var estado = conn.QueryFirstOrDefault<string>(
-                    "SELECT ESTADO FROM CPR_SOLICITUD WHERE CPR_ID = @Id;",
-                    new { Id = cprId }) ?? "";
-
-                if (estado == "A" || estado == "F")
-                    return DbHelper.ErrorResponse("El estado de la solicitud no permite autorizarla", -1);
+                var pendiente = ValidarSolicitudPendiente(conn, cprId);
+                if (pendiente.Code != 0)
+                    return pendiente;
 
                 conn.Execute(@"
 UPDATE CPR_SOLICITUD
@@ -870,11 +872,15 @@ WHERE CPR_ID = @Id;",
 
         public ErrorDto DeniegaSolicitud(int codEmpresa, int cprId, string usuario, string detalle_seguimiento)
         {
-            var r = DbHelper.WithConn<int>(_portalDb, codEmpresa, conn =>
+            var r = DbHelper.WithConn<ErrorDto>(_portalDb, codEmpresa, conn =>
             {
                 EnsureOpen(conn);
 
-                return conn.Execute(@"
+                var pendiente = ValidarSolicitudPendiente(conn, cprId);
+                if (pendiente.Code != 0)
+                    return pendiente;
+
+                conn.Execute(@"
 UPDATE CPR_SOLICITUD
 SET estado = 'D',
     AUTORIZA_FECHA = GETDATE(),
@@ -882,10 +888,15 @@ SET estado = 'D',
     detalle_seguimiento = @Detalle
 WHERE CPR_ID = @Id;",
                     new { Usuario = usuario, Detalle = detalle_seguimiento ?? "", Id = cprId });
+
+                return DbHelper.CreateOkResponse();
             });
 
-            if (r.Code != 0)
+            if (r.Code != 0 || r.Result == null)
                 return DbHelper.ErrorResponse(r.Description ?? ErrorLiteral, r.Code ?? -1);
+
+            if (r.Result.Code != 0)
+                return r.Result;
 
             _ = CorreoNotificacionDevolucion_Enviar(codEmpresa, cprId, usuario);
             return DbHelper.CreateOkResponse();
@@ -931,7 +942,7 @@ WHERE R.CORE_USUARIO = @Usuario
                 return DbHelper.ErrorResponse(r.Description ?? ErrorLiteral, r.Code ?? -1);
 
             if (string.IsNullOrWhiteSpace(r.Result))
-                return DbHelper.ErrorResponse("El usuario no tiene permisos para realizar esta acción", -1);
+                return DbHelper.ErrorResponse(MensajePermisoFaltante(codEmpresa, permiso, cod_unidad), -1);
 
             return DbHelper.CreateOkResponse();
         }
