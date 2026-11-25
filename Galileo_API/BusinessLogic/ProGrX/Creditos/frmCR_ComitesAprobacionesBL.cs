@@ -153,9 +153,9 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
             return _db.CR_ComitesAprobaciones_ActaAsistencia_Guardar(CodEmpresa, request);
         }
 
-        public ErrorDto<List<CrComitesAprobacionesActaHistorico>> CR_ComitesAprobaciones_ActasHistorico_Obtener(int CodEmpresa, int id_comite, DateTime fecha_inicio, DateTime fecha_corte, string identificacion)
+        public ErrorDto<List<CrComitesAprobacionesActaHistorico>> CR_ComitesAprobaciones_ActasHistorico_Obtener(int CodEmpresa, int id_comite, DateTime fecha_inicio, DateTime fecha_corte, string identificacion, string expediente)
         {
-            return _db.CR_ComitesAprobaciones_ActasHistorico_Obtener(CodEmpresa, id_comite, fecha_inicio, fecha_corte, identificacion ?? string.Empty);
+            return _db.CR_ComitesAprobaciones_ActasHistorico_Obtener(CodEmpresa, id_comite, fecha_inicio, fecha_corte, identificacion ?? string.Empty, expediente ?? string.Empty);
         }
 
         public ErrorDto<List<CrComitesAprobacionesActaResolucion>> CR_ComitesAprobaciones_ActaResoluciones_Obtener(int CodEmpresa, int id_comite, string acta)
