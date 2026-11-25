@@ -10,8 +10,6 @@ namespace Galileo.DataBaseTier
     public class FrmCprOrdenesProcesoDB
     {
         private const string ErrorLiteral = "Error";
-        private const int CodigoSinPermiso = -2;
-        private const string RutaNivelesAutorizacion = "Compras > Niveles de Autorización para el Proceso de Compras";
         private readonly PortalDB _portalDb;
 
         public FrmCprOrdenesProcesoDB(IConfiguration config)
@@ -158,10 +156,10 @@ namespace Galileo.DataBaseTier
 
         private  static ErrorDto ValidarAutorizacion(SqlConnection conn, SqlTransaction tx, string codOrden, string usuario)
         {
-            var codUnidad = ObtenerCodUnidad(conn, tx, codOrden);
+            var codUnidad = CprOrdenPermisos.ObtenerCodUnidad(conn, tx, codOrden);
 
-            var montoColones = ObtenerMontoOrden(conn, tx, codOrden);
-            var tipoCambio = ObtenerTipoCambio(conn, tx);
+            var montoColones = CprOrdenPermisos.ObtenerMontoOrden(conn, tx, codOrden);
+            var tipoCambio = CprOrdenPermisos.ObtenerTipoCambio(conn, tx);
             if (tipoCambio <= 0)
                 return DbHelper.ErrorResponse("Tipo de cambio inválido.", -1);
 
@@ -169,104 +167,18 @@ namespace Galileo.DataBaseTier
             if (montoDolares == 0)
                 return DbHelper.ErrorResponse("El monto de la orden de compra no puede ser 0.", -1);
 
-            var permisoUen = ValidarPermisoPorUen(conn, tx, usuario, codUnidad, montoDolares);
-            if (permisoUen.Code != 0)
-                return permisoUen;
+            var faltante = CprOrdenPermisos.FaltantePorUen(conn, tx, usuario, codUnidad, montoDolares);
+            if (faltante != null)
+                return DbHelper.ErrorResponse(
+                    $"No tiene permiso para resolver esta orden: {faltante}. Solicítelo en {CprOrdenPermisos.RutaNivelesAutorizacion}.",
+                    CprOrdenPermisos.CodigoSinPermiso);
 
             if (!UsuarioPuedeAutorizarPendientes(conn, tx, usuario))
                 return DbHelper.ErrorResponse(
-                    $"No tiene permiso para resolver esta orden: no hay órdenes pendientes de usuarios a su cargo. Solicítelo en {RutaNivelesAutorizacion}, pestaña Usuarios a Cargo.",
-                    CodigoSinPermiso);
+                    $"No tiene permiso para resolver esta orden: no hay órdenes pendientes de usuarios a su cargo. Solicítelo en {CprOrdenPermisos.RutaNivelesAutorizacion}, pestaña Usuarios a Cargo.",
+                    CprOrdenPermisos.CodigoSinPermiso);
 
             return DbHelper.CreateOkResponse();
-        }
-
-        // Con UEN se exige un rango que cubra el monto; sin solicitud/UEN basta con ser autorizador.
-        private static ErrorDto ValidarPermisoPorUen(SqlConnection conn, SqlTransaction tx, string usuario, string? codUnidad, decimal montoDolares)
-        {
-            if (string.IsNullOrWhiteSpace(codUnidad))
-            {
-                return EsUsuarioAutorizador(conn, tx, usuario)
-                    ? DbHelper.CreateOkResponse()
-                    : DbHelper.ErrorResponse(
-                        $"No tiene permiso para resolver esta orden sin solicitud ni UEN: no está registrado como autorizador. Solicítelo en {RutaNivelesAutorizacion}, pestaña Autorizadores.",
-                        CodigoSinPermiso);
-            }
-
-            if (UsuarioEnRango(conn, tx, usuario, codUnidad, montoDolares))
-                return DbHelper.CreateOkResponse();
-
-            var nombreUen = conn.QueryFirstOrDefault<string>(
-                @"SELECT DESCRIPCION FROM CORE_UENS WHERE COD_UNIDAD = @CodUnidad",
-                new { CodUnidad = codUnidad },
-                transaction: tx
-            );
-
-            return DbHelper.ErrorResponse(
-                $"No tiene permiso para resolver esta orden: falta un rango en la UEN {codUnidad} - {nombreUen} que cubra USD {montoDolares:N2}. Solicítelo en {RutaNivelesAutorizacion}, pestañas Rangos y Usuarios por Rango.",
-                CodigoSinPermiso);
-        }
-
-        private static bool EsUsuarioAutorizador(SqlConnection conn, SqlTransaction tx, string usuario)
-        {
-            var count = conn.QueryFirstOrDefault<int>(
-                @"SELECT COUNT(*)
-                  FROM cpr_orden_autorizadores
-                  WHERE usuario = @Usuario",
-                new { Usuario = usuario },
-                transaction: tx
-            );
-
-            return count > 0;
-        }
-
-        private static string? ObtenerCodUnidad(SqlConnection conn, SqlTransaction tx, string codOrden)
-        {
-            return conn.QueryFirstOrDefault<string>(
-                @"SELECT TOP 1 COD_UNIDAD
-                  FROM CPR_SOLICITUD
-                  WHERE ADJUDICA_ORDEN = @CodOrden",
-                new { CodOrden = codOrden },
-                transaction: tx
-            );
-        }
-        
-
-        private static decimal ObtenerMontoOrden(SqlConnection conn, SqlTransaction tx, string codOrden)
-        {
-            return conn.QueryFirstOrDefault<decimal>(
-                @"SELECT TOTAL
-                  FROM CPR_ORDENES
-                  WHERE COD_ORDEN = @CodOrden",
-                new { CodOrden = codOrden },
-                transaction: tx
-            );
-        }
-
-        private static decimal ObtenerTipoCambio(SqlConnection conn, SqlTransaction tx)
-        {
-            var tcStr = conn.QueryFirstOrDefault<string>(
-                @"SELECT VALOR
-                  FROM SIF_PARAMETROS
-                  WHERE COD_PARAMETRO = 'TC'",
-                transaction: tx
-            );
-
-            return decimal.TryParse(tcStr, out var tc) ? tc : 0m;
-        }
-
-        private static bool UsuarioEnRango(SqlConnection conn, SqlTransaction tx, string usuario, string uen, decimal montoDolares)
-        {
-            var rangos = conn.Query<(decimal MONTO_MINIMO, decimal MONTO_MAXIMO)>(
-                @"SELECT r.MONTO_MINIMO, r.MONTO_MAXIMO
-                  FROM cpr_orden_rangos r
-                  JOIN CPR_RANGO_USUARIO u ON r.cod_rango = u.cod_rango
-                  WHERE u.USUARIO = @Usuario AND u.ACTIVO = 1 AND u.UEN = @UEN",
-                new { Usuario = usuario, UEN = uen },
-                transaction: tx
-            ).ToList();
-
-            return rangos.Any(r => montoDolares >= r.MONTO_MINIMO && montoDolares <= r.MONTO_MAXIMO);
         }
 
         private static bool UsuarioPuedeAutorizarPendientes(SqlConnection conn, SqlTransaction tx, string usuario)

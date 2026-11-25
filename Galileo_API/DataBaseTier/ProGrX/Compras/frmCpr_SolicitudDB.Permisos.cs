@@ -44,6 +44,21 @@ namespace Galileo.DataBaseTier
         }
 
         /// <summary>
+        /// Valida que la solicitud esté pendiente y que el usuario pueda resolverla.
+        /// </summary>
+        public ErrorDto ValidarResolucion(int codEmpresa, int cprId, string usuario)
+        {
+            var pendiente = DbHelper.WithConn<ErrorDto>(_portalDb, codEmpresa, conn => ValidarSolicitudPendiente(conn, cprId));
+
+            if (pendiente.Code != 0 || pendiente.Result == null)
+                return DbHelper.ErrorResponse(pendiente.Description ?? ErrorLiteral, pendiente.Code ?? -1);
+
+            return pendiente.Result.Code != 0
+                ? pendiente.Result
+                : ValidarRolResolucion(codEmpresa, cprId, usuario);
+        }
+
+        /// <summary>
         /// Valida que el usuario tenga el rol Autoriza en la UEN solicitante.
         /// </summary>
         public ErrorDto ValidarRolResolucion(int codEmpresa, int cprId, string usuario)

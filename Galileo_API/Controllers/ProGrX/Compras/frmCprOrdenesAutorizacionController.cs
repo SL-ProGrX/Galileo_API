@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Galileo_API.Extensions;
+using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
@@ -33,6 +34,7 @@ namespace Galileo.Controllers
         [HttpPost("OrdenCompra_Autorizar")]
         public ErrorDto OrdenCompra_Autorizar(int CodEmpresa, OrdenCompraResolucionRequestDto ordenCompraResolucionRequestDto)
         {
+            ordenCompraResolucionRequestDto.usuario = User.ObtenerUsuario();
             return _bl.OrdenCompra_Autorizar(CodEmpresa, ordenCompraResolucionRequestDto);
         }
 
@@ -40,6 +42,7 @@ namespace Galileo.Controllers
         [HttpPost("OrdenCompra_Rechazar")]
         public ErrorDto OrdenCompra_Rechazar(int CodEmpresa, OrdenCompraResolucionRequestDto ordenCompraRequestDto)
         {
+            ordenCompraRequestDto.usuario = User.ObtenerUsuario();
             return _bl.OrdenCompra_Rechazar(CodEmpresa, ordenCompraRequestDto);
         }
     }

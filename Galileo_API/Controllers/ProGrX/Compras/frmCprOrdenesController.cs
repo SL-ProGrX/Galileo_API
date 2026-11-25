@@ -84,9 +84,9 @@ namespace Galileo.Controllers
 
         [ValidateAntiForgeryToken]
         [HttpPost("CorreoNotificaOrdenCompra")]
-        public ErrorDto CorreoNotificaOrdenCompra(int CodEmpresa, string cod_orden , string proveedor, string cod_proveedor)
+        public ErrorDto CorreoNotificaOrdenCompra(int CodEmpresa, string cod_orden , string proveedor, string cod_proveedor, string? usuario = null)
         {
-            return _bl.CorreoNotificaOrdenCompra(CodEmpresa, cod_orden, proveedor, cod_proveedor);
+            return _bl.CorreoNotificaOrdenCompra(CodEmpresa, cod_orden, proveedor, cod_proveedor, usuario);
         }
     }
 }

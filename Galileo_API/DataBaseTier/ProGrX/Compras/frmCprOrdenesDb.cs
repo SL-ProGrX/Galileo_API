@@ -4,7 +4,8 @@ using Galileo.Models;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
 using System.Data;
-using System.Web;
+using System.Net;
+using Microsoft.AspNetCore.Mvc;
 using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier
@@ -12,12 +13,12 @@ namespace Galileo.DataBaseTier
     public class FrmCprOrdenesDB
     {
         private const string ErrorLiteral = "Error";
+        private const string PlantillaOrden = "CPR_ORDEN01";
         private readonly IConfiguration _config;
 
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _DBBitacora;
         private readonly EnvioCorreoDB _envioCorreoDB;
-        private readonly string _sendEmail;
         private readonly string _notificaciones;
 
         public FrmCprOrdenesDB(IConfiguration config)
@@ -27,7 +28,6 @@ namespace Galileo.DataBaseTier
             _DBBitacora = new MSecurityMainDb(_config);
             _envioCorreoDB = new EnvioCorreoDB(_config);
 
-            _sendEmail = _config.GetSection("AppSettings").GetSection("EnviaEmail").Value?.ToString() ?? "N";
             _notificaciones = _config.GetSection("AppSettings").GetSection("Notificaciones").Value?.ToString() ?? "";
         }
 
@@ -724,11 +724,11 @@ namespace Galileo.DataBaseTier
             return DbHelper.ExecuteListQuery<CprFormaPago>(_portalDb, CodEmpresa, sql, null);
         }
 
-        public ErrorDto CorreoNotificaOrdenCompra(int CodEmpresa, string cod_orden, string proveedor, string cod_proveedor)
+        public ErrorDto CorreoNotificaOrdenCompra(int CodEmpresa, string cod_orden, string proveedor, string cod_proveedor, string? usuario = null)
         {
             try
             {
-                CorreoNotificaOrdenCompra_Enviar(CodEmpresa, cod_orden, proveedor, cod_proveedor)
+                CorreoNotificaOrdenCompra_Enviar(CodEmpresa, cod_orden, proveedor, cod_proveedor, usuario ?? string.Empty)
                     .GetAwaiter().GetResult();
 
                 return DbHelper.CreateOkResponse();
@@ -739,7 +739,7 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        private async Task CorreoNotificaOrdenCompra_Enviar(int CodEmpresa, string cod_orden, string proveedor, string cod_proveedor)
+        private async Task CorreoNotificaOrdenCompra_Enviar(int CodEmpresa, string cod_orden, string proveedor, string cod_proveedor, string usuario)
         {
             var emailProveedor = ObtenerEmailProveedor(CodEmpresa, cod_proveedor);
             if (string.IsNullOrWhiteSpace(emailProveedor))
@@ -747,34 +747,16 @@ namespace Galileo.DataBaseTier
                 throw new InvalidOperationException("El proveedor no tiene email registrado.");
             }
 
-            var correoConfigResult = _envioCorreoDB.CorreoConfig(CodEmpresa, _notificaciones);
-            var eConfig = correoConfigResult.Result;
-            if (eConfig == null)
-                throw new InvalidOperationException("No hay configuración de correo.");
+            var boleta = BoletaRegistro(CodEmpresa, cod_orden, usuario);
 
-            var body = ConstruirBodyCorreo(cod_orden, proveedor);
+            var emailRequest = await ConstruirCorreo(CodEmpresa, cod_orden, proveedor);
+            emailRequest.To = emailProveedor;
 
-            var attachments = new List<IFormFile>();
-            var fileBoleta = await BoletaRegistro(CodEmpresa, cod_orden);
-            if (fileBoleta != null) attachments.Add(fileBoleta);
-
-            if (_sendEmail != "Y") return;
-
-            var resp = new ErrorDto { Code = 0 };
-
-            var emailRequest = new EmailRequest
-            {
-                To = emailProveedor,
-                From = eConfig.User,
-                Subject = "Notificación de Orden de Compra",
-                Body = body,
-                Attachments = attachments
-            };
-
-            await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
+            var resp = await _envioCorreoDB.QueueEmailAdjuntoAsync(
+                CodEmpresa, _notificaciones, emailRequest, boleta, "CPR_ORDEN");
 
             if (resp.Code != 0)
-                throw new InvalidOperationException(resp.Description ?? $"{ErrorLiteral} enviando correo");
+                throw new InvalidOperationException(resp.Description ?? $"{ErrorLiteral} registrando correo");
         }
 
         private string ObtenerEmailProveedor(int CodEmpresa, string cod_proveedor)
@@ -786,6 +768,27 @@ namespace Galileo.DataBaseTier
                 new { CodProveedor = cod_proveedor });
 
             return r.Code == 0 ? (r.Result ?? "") : "";
+        }
+
+        /// <summary>
+        /// Usa la plantilla activa CPR_ORDEN01 de SYS_NOTIFICACIONES_PLANTILLAS, con los textos
+        /// [[NO_ORDEN]] y [[PROVEEDOR]]. Si no existe, conserva el correo estándar.
+        /// </summary>
+        private async Task<EmailRequest> ConstruirCorreo(int CodEmpresa, string cod_orden, string proveedor)
+        {
+            const string asunto = "Notificación de Orden de Compra";
+            var plantilla = await _envioCorreoDB.ObtenerPlantillaAsync(CodEmpresa, PlantillaOrden);
+
+            if (plantilla is null || string.IsNullOrWhiteSpace(plantilla.Value.Cuerpo))
+                return new EmailRequest { Subject = asunto, Body = ConstruirBodyCorreo(cod_orden, proveedor) };
+
+            return new EmailRequest
+            {
+                Subject = string.IsNullOrWhiteSpace(plantilla.Value.Asunto) ? asunto : plantilla.Value.Asunto,
+                Body = plantilla.Value.Cuerpo
+                    .Replace("[[NO_ORDEN]]", WebUtility.HtmlEncode(cod_orden))
+                    .Replace("[[PROVEEDOR]]", WebUtility.HtmlEncode(proveedor))
+            };
         }
 
         private static string ConstruirBodyCorreo(string cod_orden, string proveedor)
@@ -801,37 +804,34 @@ namespace Galileo.DataBaseTier
 </html>";
         }
 
-        private async Task<IFormFile?> BoletaRegistro(int CodEmpresa, string cod_orden)
+        /// <summary>
+        /// Genera la boleta con el mismo reporte RDLC y parámetros que el botón Boleta del toolbar.
+        /// </summary>
+        private EnvioCorreoDB.EmailAdjuntoBase64 BoletaRegistro(int CodEmpresa, string cod_orden, string usuario)
         {
-            string repServer = _config.GetSection("ReporteSrv").GetSection("ReportServer").Value?.ToString() ?? "";
-            string baseUrl = repServer + "/frmCprOrdenes/Compras_OrdenesBoleta";
+            const string reporte = "Compras_OrdenesBoleta";
 
-            string jsonParam = @"{""Usuario"":""Usuario de Demostración""}";
-            string jsonParamEncoded = HttpUtility.UrlEncode(jsonParam);
-
-            // antes estaba fijo CodEmpresa=61 -> ahora usa el parámetro real
-            string parametros = $"?CodEmpresa={CodEmpresa}&nombreRepotre=Compras_OrdenesBoleta&parametros={jsonParamEncoded}&cod_orden={cod_orden}";
-            string fullUrl = $"{baseUrl}{parametros}";
-
-            using var client = new HttpClient();
-
-            try
+            var data = new FrmReporteGlobal
             {
-                var response = await client.GetAsync(fullUrl);
-                if (!response.IsSuccessStatusCode) return null;
+                codEmpresa = CodEmpresa,
+                parametros = JsonConvert.SerializeObject(new { Usuario = usuario, codOrden = cod_orden }),
+                nombreReporte = reporte,
+                usuario = usuario,
+                cod_reporte = "P",
+                folder = "Compras"
+            };
 
-                var base64String = await response.Content.ReadAsStringAsync();
-                var fileBytes = Convert.FromBase64String(base64String);
+            var resultado = new MReportingServicesDB(_config).ReporteRDLC_v2(data);
 
-                using var stream = new MemoryStream(fileBytes);
-                // Create a new MemoryStream for the returned FormFile to avoid leaking the disposable flagged by CodeQL
-                var fileStream = new MemoryStream(stream.ToArray());
-                return new FormFile(fileStream, 0, fileBytes.Length, "file", $"OrdenCompra_{cod_orden}.pdf");
-            }
-            catch
-            {
-                return null;
-            }
+            if (resultado is FileContentResult { FileContents.Length: > 0 } pdf)
+                return new EnvioCorreoDB.EmailAdjuntoBase64(
+                    $"OrdenCompra_{cod_orden}.pdf", Convert.ToBase64String(pdf.FileContents));
+
+            var detalle = resultado is ObjectResult error
+                ? JsonConvert.DeserializeObject<ErrorDto>(JsonConvert.SerializeObject(error.Value))?.Description
+                : null;
+
+            throw new InvalidOperationException(detalle ?? "No fue posible generar la boleta de la orden de compra.");
         }
     }
 }

@@ -113,6 +113,10 @@ namespace Galileo.DataBaseTier
 
             try
             {
+                var valida = ValidarLote(codCliente, solicitudesData, usuario, "autorizó");
+                if (valida.Code != 0)
+                    return valida;
+
                 foreach (var item in solicitudesData)
                 {
                     var info = _dbSolicitud.AutorizaSolicitud(codCliente, item.cpr_id, usuario);
@@ -142,6 +146,10 @@ namespace Galileo.DataBaseTier
 
             try
             {
+                var valida = ValidarLote(codCliente, solicitudesData, usuario, "rechazó");
+                if (valida.Code != 0)
+                    return valida;
+
                 foreach (var item in solicitudesData)
                 {
                     var info = _dbSolicitud.DeniegaSolicitud(codCliente, item.cpr_id, usuario, justificacion);
@@ -155,6 +163,21 @@ namespace Galileo.DataBaseTier
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
+        }
+
+        // Todo o nada: se revisan todas las solicitudes antes de resolver alguna.
+        private ErrorDto ValidarLote(int codCliente, List<CprSolicitudAutoriza> solicitudes, string usuario, string accion)
+        {
+            var fallas = solicitudes
+                .Select(item => new { item.cpr_id, Resultado = _dbSolicitud.ValidarResolucion(codCliente, item.cpr_id, usuario) })
+                .Where(x => x.Resultado.Code != 0)
+                .GroupBy(x => x.Resultado.Description)
+                .Select(g => $"Solicitud {string.Join(", ", g.Select(x => $"#{x.cpr_id}"))}: {g.Key}")
+                .ToList();
+
+            return fallas.Count == 0
+                ? DbHelper.CreateOkResponse()
+                : DbHelper.ErrorResponse($"No se {accion} ninguna solicitud. {string.Join(" ", fallas)}", CprOrdenPermisos.CodigoSinPermiso);
         }
 
         private static bool TryParseIsoToDateTime(string? value, out DateTime dt)
