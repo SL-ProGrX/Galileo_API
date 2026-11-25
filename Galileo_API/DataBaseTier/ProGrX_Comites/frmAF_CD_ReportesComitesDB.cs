@@ -204,19 +204,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
             {
                 new() { codigo = "ROOT", descripcion = "Reportes", codigo_padre = null, nivel = 0, orden = 0, es_hoja = false },
 
-                new() { codigo = "CMT", descripcion = "Comites", codigo_padre = "ROOT", nivel = 1, orden = 1, es_hoja = false },
-                new() { codigo = "CM_CMT", descripcion = "Comites", codigo_padre = "CMT", nivel = 2, orden = 1, es_hoja = true },
-                new() { codigo = "MB_CMT", descripcion = "Miembros por Comites", codigo_padre = "CMT", nivel = 2, orden = 2, es_hoja = true },
+                new() { codigo = "CMT", descripcion = "Comités", codigo_padre = "ROOT", nivel = 1, orden = 1, es_hoja = false },
+                new() { codigo = "CM_CMT", descripcion = "Comités", codigo_padre = "CMT", nivel = 2, orden = 1, es_hoja = true },
+                new() { codigo = "MB_CMT", descripcion = "Miembros por Comité", codigo_padre = "CMT", nivel = 2, orden = 2, es_hoja = true },
                 new() { codigo = "ACT_ASG", descripcion = "Actividades Asignadas", codigo_padre = "CMT", nivel = 2, orden = 3, es_hoja = true },
-                new() { codigo = "CMT_PRM", descripcion = "Comites x Promotor", codigo_padre = "CMT", nivel = 2, orden = 4, es_hoja = true },
+                new() { codigo = "CMT_PRM", descripcion = "Comités x Promotor", codigo_padre = "CMT", nivel = 2, orden = 4, es_hoja = true },
                 new() { codigo = "HIST", descripcion = "Historial Miembros", codigo_padre = "CMT", nivel = 2, orden = 5, es_hoja = true },
 
                 new() { codigo = "ACT", descripcion = "Actividades", codigo_padre = "ROOT", nivel = 1, orden = 2, es_hoja = false },
                 new() { codigo = "ACT_LST", descripcion = "Listado de Actividades", codigo_padre = "ACT", nivel = 2, orden = 1, es_hoja = true },
 
                 new() { codigo = "LIQ", descripcion = "Liquidaciones", codigo_padre = "ROOT", nivel = 1, orden = 3, es_hoja = false },
-                new() { codigo = "LIQ_CMT", descripcion = "Liquidaciones x Comite", codigo_padre = "LIQ", nivel = 2, orden = 1, es_hoja = true },
-                new() { codigo = "LIQ_EST", descripcion = "Liquidacion x Estado", codigo_padre = "LIQ", nivel = 2, orden = 2, es_hoja = true },
+                new() { codigo = "LIQ_CMT", descripcion = "Liquidaciones x Comité", codigo_padre = "LIQ", nivel = 2, orden = 1, es_hoja = true },
+                new() { codigo = "LIQ_EST", descripcion = "Liquidación x Estado", codigo_padre = "LIQ", nivel = 2, orden = 2, es_hoja = true },
 
                 new() { codigo = "CXC", descripcion = "Cuentas x Cobrar", codigo_padre = "ROOT", nivel = 1, orden = 4, es_hoja = false },
                 new() { codigo = "LG_CXC", descripcion = "Listado General", codigo_padre = "CXC", nivel = 2, orden = 1, es_hoja = true },
