@@ -104,9 +104,28 @@ namespace Galileo.DataBaseTier
             bool dentro = rangos.Any(r => montoUsdR.Result >= r.MONTO_MINIMO && montoUsdR.Result <= r.MONTO_MAXIMO);
 
             if (!dentro)
-                return DbHelper.ErrorResponse($"No tiene permisos para visualizar la orden #{orden.cod_orden}", -2);
+                return DbHelper.ErrorResponse(MensajeRangoFaltante(conn, orden, montoUsdR.Result, rangos), -2);
 
             return DbHelper.CreateOkResponse();
+        }
+
+        private static string MensajeRangoFaltante(
+            IDbConnection conn,
+            OrdenDto orden,
+            decimal montoUsd,
+            List<(decimal MONTO_MINIMO, decimal MONTO_MAXIMO)> rangos)
+        {
+            var nombreUen = conn.QueryFirstOrDefault<string>(
+                @"SELECT DESCRIPCION FROM CORE_UENS WHERE COD_UNIDAD = @CodUnidad;",
+                new { CodUnidad = orden.cod_unidad });
+
+            var rangosActuales = rangos.Count == 0
+                ? "no tiene ningún rango asignado en esa UEN"
+                : "sus rangos en esa UEN son " + string.Join(", ", rangos.Select(r => $"USD {r.MONTO_MINIMO:N2} a {r.MONTO_MAXIMO:N2}"));
+
+            return $"No tiene permisos para visualizar la orden #{orden.cod_orden}: falta un rango en la UEN {orden.cod_unidad} - {nombreUen} "
+                 + $"que cubra USD {montoUsd:N2} ({rangosActuales}). "
+                 + "Solicítelo en Compras > Niveles de Autorización para el Proceso de Compras, pestañas Rangos y Usuarios por Rango.";
         }
 
         private static ErrorDto<decimal> CalcularMontoUsd(IDbConnection conn, OrdenDto orden)
