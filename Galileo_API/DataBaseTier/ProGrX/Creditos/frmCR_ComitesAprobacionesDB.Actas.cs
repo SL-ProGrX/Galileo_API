@@ -365,7 +365,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             return string.IsNullOrWhiteSpace(valor) ? "A" : valor.Substring(0, 1).ToUpperInvariant();
         }
 
-        public ErrorDto<List<CrComitesAprobacionesActaHistorico>> CR_ComitesAprobaciones_ActasHistorico_Obtener(int CodEmpresa, int id_comite, DateTime fecha_inicio, DateTime fecha_corte, string identificacion)
+        public ErrorDto<List<CrComitesAprobacionesActaHistorico>> CR_ComitesAprobaciones_ActasHistorico_Obtener(int CodEmpresa, int id_comite, DateTime fecha_inicio, DateTime fecha_corte, string identificacion, string expediente)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -376,7 +376,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         @id_comite,
                         @fecha_inicio,
                         @fecha_corte,
-                        @identificacion;";
+                        @identificacion,
+                        @expediente;";
 
                 var lista = conn.Query(
                     sql,
@@ -385,7 +386,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         id_comite,
                         fecha_inicio = fecha_inicio.Date,
                         fecha_corte = fecha_corte.Date.AddDays(1).AddTicks(-1),
-                        identificacion = identificacion.Trim()
+                        identificacion = (identificacion ?? string.Empty).Trim(),
+                        expediente = (expediente ?? string.Empty).Trim()
                     })
                     .Select(row =>
                     {
