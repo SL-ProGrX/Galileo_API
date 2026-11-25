@@ -252,9 +252,9 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
 
         [Authorize]
         [HttpGet("CR_ComitesAprobaciones_ActasHistorico_Obtener")]
-        public ErrorDto<List<CrComitesAprobacionesActaHistorico>> CR_ComitesAprobaciones_ActasHistorico_Obtener(int CodEmpresa, int id_comite, DateTime fecha_inicio, DateTime fecha_corte, string identificacion = "")
+        public ErrorDto<List<CrComitesAprobacionesActaHistorico>> CR_ComitesAprobaciones_ActasHistorico_Obtener(int CodEmpresa, int id_comite, DateTime fecha_inicio, DateTime fecha_corte, string identificacion = "", string expediente = "")
         {
-            return BL.CR_ComitesAprobaciones_ActasHistorico_Obtener(CodEmpresa, id_comite, fecha_inicio, fecha_corte, identificacion ?? string.Empty);
+            return BL.CR_ComitesAprobaciones_ActasHistorico_Obtener(CodEmpresa, id_comite, fecha_inicio, fecha_corte, identificacion ?? string.Empty, expediente ?? string.Empty);
         }
 
         [Authorize]
