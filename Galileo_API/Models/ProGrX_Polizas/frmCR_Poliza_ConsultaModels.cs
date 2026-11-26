@@ -42,6 +42,21 @@
         public string Orden { get; set; } = "nombre"; // "nombre" o "cedula"
     }
 
+    public class PolizaPersonaFiltroPaginaRequest
+    {
+        public string Filtro { get; set; } = string.Empty;
+        public string Orden { get; set; } = "nombre";
+        public bool Descendente { get; set; } = false;
+        public int Inicio { get; set; } = 0;
+        public int Cantidad { get; set; } = 30;
+    }
+
+    public class PolizaPersonaFiltroPaginaResponse
+    {
+        public List<PolizaPersonaFiltroDto> Value { get; set; } = new();
+        public int Total { get; set; } = 0;
+    }
+
     public class PolizaPersonaCreditoParams
     {
         public string Cedula { get; set; } = string.Empty;

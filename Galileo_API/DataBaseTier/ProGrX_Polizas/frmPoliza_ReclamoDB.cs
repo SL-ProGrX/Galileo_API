@@ -507,22 +507,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <summary>
         /// Actualiza los datos de vida del reclamo.
         /// </summary>
-        public ErrorDto Poliza_Reclamo_Actualiza_Datos_Vida(int codEmpresa, PolizaReclamoActualizarVidaRequest request)
+        /// <summary>
+        /// Actualiza los datos de vida del reclamo y devuelve el resultado del SP.
+        /// </summary>
+        public ErrorDto Poliza_Reclamo_Actualiza_Datos_Vida(
+            int codEmpresa,
+            PolizaReclamoActualizarVidaRequest request)
         {
-            using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+            if (request == null)
+                return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valRequest, -2);
+
+            if (request.reclamo_id is null or <= 0)
+                return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valReclamo, -2);
 
             try
             {
-                if (request == null)
-                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valRequest, -2);
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
-                if (request.reclamo_id <= 0)
-                    return DbHelper.ErrorResponse(PolizaReclamoConstFrm.valReclamo, -2);
+                const string sql = """
+                EXEC dbo.spPoliza_Reclamo_Actualiza_Datos_Vida
+                    @ReclamoId = @ReclamoId,
+                    @MotivoId = @MotivoId,
+                    @Enfermedad = @Enfermedad,
+                    @Edad = @Edad,
+                    @Usuario = @Usuario
+                """;
 
-                const string sql = @"EXEC spPoliza_Reclamo_Actualiza_Datos_Vida
-                       @ReclamoId, @MotivoId, @Enfermedad, @Edad, @Usuario";
-
-                connection.QueryFirstOrDefault<dynamic>(
+                var row = connection.QuerySingleOrDefault<dynamic>(
                     sql,
                     new
                     {
@@ -533,11 +544,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                         Usuario = request.usuario
                     });
 
-                return DbHelper.OkResponse("Datos actualizados correctamente.");
+                if (row == null)
+                    return DbHelper.ErrorResponse(
+                        "No se obtuvo respuesta al actualizar los datos de vida.");
+
+                string mensaje = row.Mensaje?.ToString() ?? string.Empty;
+
+                if ((row.Pass ?? 0) != 1)
+                    return DbHelper.ErrorResponse(
+                        string.IsNullOrWhiteSpace(mensaje)
+                            ? "No fue posible actualizar los datos de vida."
+                            : mensaje,
+                        -2);
+
+                return DbHelper.OkResponse(
+                    string.IsNullOrWhiteSpace(mensaje)
+                        ? "Datos actualizados correctamente."
+                        : mensaje);
             }
             catch (Exception ex)
             {
-                return DbHelper.ErrorResponse($"Error al actualizar datos de vida: {ex.Message}");
+                return DbHelper.ErrorResponse(
+                    $"Error al actualizar datos de vida: {ex.Message}");
             }
         }
 
