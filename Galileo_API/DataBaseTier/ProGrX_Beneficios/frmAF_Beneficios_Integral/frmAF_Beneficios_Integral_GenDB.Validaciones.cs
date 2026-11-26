@@ -78,12 +78,9 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 var validaciones = connection.Query<ValidacionRow>(sqlValidaciones, new { beneficio }).ToList();
                 var mensajes = new StringBuilder();
 
-                foreach (var validacion in validaciones)
+                foreach (var validacion in validaciones.Where(v => MBeneficiosDB.ReglaSeCumple(connection, v, request)))
                 {
-                    if (MBeneficiosDB.ReglaSeCumple(connection, validacion, request))
-                    {
-                        mensajes.Append(validacion.msj_val).Append("...\n");
-                    }
+                    mensajes.Append(validacion.msj_val).Append("...\n");
                 }
 
                 return mensajes.ToString();

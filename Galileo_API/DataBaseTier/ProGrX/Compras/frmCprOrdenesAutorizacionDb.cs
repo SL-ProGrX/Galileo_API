@@ -231,7 +231,7 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
             }
         }
 
-        // Todo o nada: se revisan todas las órdenes antes de actualizar alguna.
+        // Sin resultados parciales: se revisan todas las órdenes antes de actualizar alguna.
         private static ErrorDto ValidarOrdenes(
             SqlConnection conn,
             SqlTransaction tx,

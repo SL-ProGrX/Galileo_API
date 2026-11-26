@@ -165,7 +165,7 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        // Todo o nada: se revisan todas las solicitudes antes de resolver alguna.
+        // Sin resultados parciales: se revisan todas las solicitudes antes de resolver alguna.
         private ErrorDto ValidarLote(int codCliente, List<CprSolicitudAutoriza> solicitudes, string usuario, string accion)
         {
             var fallas = solicitudes

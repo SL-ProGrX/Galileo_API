@@ -116,7 +116,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     ProcesarTrasladoCaso(connection, CodCliente, infoCarga, item, vToken, parametros);
                 }
 
-                connection.Execute("UPDATE AFI_BENEFICIOS_REMESAS SET Estado = 'T' WHERE cod_remesa = @cod_remesa", new { infoCarga.cod_remesa });
+                await connection.ExecuteAsync("UPDATE AFI_BENEFICIOS_REMESAS SET Estado = 'T' WHERE cod_remesa = @cod_remesa", new { infoCarga.cod_remesa });
 
                 var advertencia = _notificaDeposito
                     ? await NotificarDepositosAsync(connection, CodCliente, infoCarga)
