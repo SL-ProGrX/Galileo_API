@@ -244,7 +244,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             if (f.reporte == "03")
             {
-                if (f.nivel is not ("Unidad" or "Centro"))
+                if (f.nivel is not ("Unidad" or "Centro de Costo"))
                     throw new ArgumentException("Nivel de resultados inválido.");
 
                 return;
@@ -296,16 +296,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 dbType: DbType.Int32,
                 direction: ParameterDirection.ReturnValue);
 
-            connection.Execute(
+            var respuesta = connection.QueryFirstOrDefault<CntXRepMovPeriodoResultadoSql>(
                 "dbo.spCntX_Movimientos_Periodo_Resultados",
                 parametros,
                 commandTimeout: 0,
                 commandType: CommandType.StoredProcedure);
 
-            if (parametros.Get<int>("Resultado") != 0)
+            var codigo = parametros.Get<int>("Resultado");
+            if (codigo != 0)
+            {
                 throw new InvalidOperationException(
-                    "No se pudo preparar el reporte de resultados. "
-                    + "El procedimiento revirtió sus cambios; revise los filtros y la configuración del período.");
+                    respuesta?.Mensaje
+                    ?? $"No se pudo preparar el reporte de resultados. Código: {codigo}.");
+            }
         }
 
         /// <summary>
@@ -343,6 +346,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return string.IsNullOrEmpty(normalizado) || normalizado == opcionTodos
                 ? null
                 : normalizado;
+        }
+
+        private sealed class CntXRepMovPeriodoResultadoSql
+        {
+            public string? Movimiento { get; set; }
+            public string? Mensaje { get; set; }
         }
     }
 }
