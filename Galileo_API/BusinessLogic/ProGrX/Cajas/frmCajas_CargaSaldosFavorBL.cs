@@ -20,6 +20,27 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
             return _db.CargaSaldosFavor_Tipos_Obtener(codEmpresa);
         }
 
+        public ErrorDto<CajasCargaSaldosFavorSociosLista> CargaSaldosFavor_Socios_Obtener(
+            int codEmpresa,
+            string? filtro,
+            int pagina,
+            int paginacion,
+            bool exacto)
+        {
+            if (exacto && string.IsNullOrWhiteSpace(filtro))
+            {
+                return DbHelper.CreateErrorResponse<CajasCargaSaldosFavorSociosLista>(
+                    "La cédula es requerida para la búsqueda exacta.");
+            }
+
+            return _db.CargaSaldosFavor_Socios_Obtener(
+                codEmpresa,
+                filtro,
+                pagina,
+                paginacion,
+                exacto);
+        }
+
         public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CargaSaldosFavor_Retenciones_Obtener(int codEmpresa)
         {
             return _db.Cajas_CargaSaldosFavor_Retenciones_Obtener(codEmpresa);

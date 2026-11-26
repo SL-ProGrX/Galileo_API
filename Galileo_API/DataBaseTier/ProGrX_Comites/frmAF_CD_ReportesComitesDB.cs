@@ -210,6 +210,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 new() { codigo = "ACT_ASG", descripcion = "Actividades Asignadas", codigo_padre = "CMT", nivel = 2, orden = 3, es_hoja = true },
                 new() { codigo = "CMT_PRM", descripcion = "Comités x Promotor", codigo_padre = "CMT", nivel = 2, orden = 4, es_hoja = true },
                 new() { codigo = "HIST", descripcion = "Historial Miembros", codigo_padre = "CMT", nivel = 2, orden = 5, es_hoja = true },
+                new() { codigo = "BITC", descripcion = "Bitácora de Cambios", codigo_padre = "CMT", nivel = 2, orden = 5, es_hoja = true },
+                new() { codigo = "CA_CMT", descripcion = "Cantidad Asociados x Comité", codigo_padre = "CMT", nivel = 2, orden = 5, es_hoja = true },
 
                 new() { codigo = "ACT", descripcion = "Actividades", codigo_padre = "ROOT", nivel = 1, orden = 2, es_hoja = false },
                 new() { codigo = "ACT_LST", descripcion = "Listado de Actividades", codigo_padre = "ACT", nivel = 2, orden = 1, es_hoja = true },
@@ -256,6 +258,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Comites
                 {
                     codigo_opcion = codigo,
                     requiere_estado = true
+                },
+                "BITC" => new AfCdReporteDefinicionDto
+                {
+                    codigo_opcion = codigo,
+                    requiere_estado = true
+                },
+                "CA_CMT" => new AfCdReporteDefinicionDto
+                {
+                    codigo_opcion = codigo
                 },
                 "ACT_LST" => new AfCdReporteDefinicionDto
                 {
