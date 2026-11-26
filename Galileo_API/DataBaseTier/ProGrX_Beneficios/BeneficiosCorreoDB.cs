@@ -1,7 +1,5 @@
-using System.Net;
-using Dapper;
+using Galileo.Models;
 using Galileo.Models.ERROR;
-using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
@@ -34,28 +32,16 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
     }
 
     /// <summary>
-    /// Registra los correos de Beneficios en la cola de envío (SYS_MAIL_SERVICE); los dispara un servicio aparte.
-    /// Sin adjuntos usa spCpr_EncolarCorreos, igual que Compras. Con adjuntos usa el formato de MailService 2.0
-    /// (SYS_MAIL_SERVICE.I_ADJUNTOS = 1 y un registro por archivo en SYS_MAIL_SERVICE_ADJUNTOSV2),
-    /// para que todos los archivos lleguen en un mismo correo.
+    /// Registra los correos de Beneficios en la cola de envío; los dispara un servicio aparte.
+    /// Sin adjuntos usa spCpr_EncolarCorreos (SYS_MAIL_SERVICE). Con adjuntos usa el mismo método de
+    /// Compras (spSys_CORREO_POOL_ADD, SYS_MAIL_SERVICE_ADJUNTOS), que admite un solo archivo por correo:
+    /// cuando llegan varios PDF se unen en uno.
     /// </summary>
     public class BeneficiosCorreoDB
     {
-        private const int LargoUsuario = 30;
-        private const int LargoAsunto = 150;
+        private const int LargoAsunto = 100;
         private const int LargoNombreArchivo = 100;
         private const int LargoCodNotificacion = 10;
-
-        private const string SqlCorreo = @"
-            INSERT INTO dbo.SYS_MAIL_SERVICE
-                (COD_SMTP, PARA, CC, CUERPO, ASUNTO, PRIORIDAD, ESTADO, FECHA, COD_EMPRESA, USUARIO, COD_NOTIFICACION, I_ADJUNTOS)
-            VALUES
-                (@codSmtp, @para, @cc, @cuerpo, @asunto, 0, 'P', GETDATE(), @codEmpresa, @usuario, @codNotificacion, 1);
-            SELECT CAST(SCOPE_IDENTITY() AS bigint);";
-
-        private const string SqlAdjunto = @"
-            INSERT INTO dbo.SYS_MAIL_SERVICE_ADJUNTOSV2 (ID_EMAIL, CUERPO, GA_NOMBRE_ARCHIVO, GA_INDICA)
-            VALUES (@idEmail, @contenido, @nombre, 0);";
 
         private readonly IConfiguration _config;
         private readonly EnvioCorreoDB _envioCorreoDB;
@@ -115,7 +101,6 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
         private async Task<ErrorDto> EncolarConAdjuntosAsync(CorreoBeneficio correo)
         {
-            // El servicio de correo solo genera archivos PDF; cualquier otro tipo llegaría dañado.
             var noPdf = correo.Adjuntos.FirstOrDefault(a => !EsPdf(a.ContenidoBase64));
             if (noPdf != null)
             {
@@ -128,48 +113,52 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 return Error($"No existe la plantilla activa {correo.CodPlantilla} en SYS_NOTIFICACIONES_PLANTILLAS.");
             }
 
-            var baseConn = _config.GetConnectionString("BaseConnString");
-            if (string.IsNullOrWhiteSpace(baseConn))
-            {
-                return Error("BaseConnString no está configurada para encolar el correo.");
-            }
-
+            AdjuntoBeneficio adjunto;
             try
             {
-                await using var connection = new SqlConnection(baseConn);
-                await connection.OpenAsync();
-                await using var transaction = await connection.BeginTransactionAsync();
-
-                var idEmail = await connection.QuerySingleAsync<long>(SqlCorreo, new
-                {
-                    codSmtp = correo.CodSmtp,
-                    para = correo.Para.Trim(),
-                    cc = correo.Cc,
-                    cuerpo = Reemplazar(plantilla.Value.Cuerpo, correo.Datos, WebUtility.HtmlEncode),
-                    asunto = Recortar(Reemplazar(plantilla.Value.Asunto, correo.Datos, valor => valor), LargoAsunto),
-                    codEmpresa = correo.CodEmpresa,
-                    usuario = Recortar(correo.Usuario, LargoUsuario),
-                    codNotificacion = Recortar(correo.CodPlantilla, LargoCodNotificacion)
-                }, transaction);
-
-                foreach (var adjunto in correo.Adjuntos)
-                {
-                    await connection.ExecuteAsync(SqlAdjunto, new
-                    {
-                        idEmail,
-                        contenido = adjunto.ContenidoBase64,
-                        nombre = RecortarNombre(adjunto.Nombre)
-                    }, transaction);
-                }
-
-                await transaction.CommitAsync();
-                return new ErrorDto { Code = 0, Description = "Correo agregado a la cola de envío." };
+                adjunto = UnirAdjuntos(correo);
             }
             catch (Exception ex)
             {
-                return Error("No fue posible encolar el correo: " + ex.Message);
+                return Error("No fue posible unir los archivos PDF (revise que no estén protegidos o dañados): " + ex.Message);
             }
+
+            var email = new EmailRequest
+            {
+                To = correo.Para.Trim(),
+                CopyHide = correo.Cc,
+                Subject = Recortar(Reemplazar(plantilla.Value.Asunto, correo.Datos, valor => valor), LargoAsunto),
+                Body = Reemplazar(plantilla.Value.Cuerpo, correo.Datos, EscaparHtml)
+            };
+
+            return await _envioCorreoDB.QueueEmailAdjuntoAsync(
+                correo.CodEmpresa,
+                correo.CodSmtp,
+                email,
+                new EnvioCorreoDB.EmailAdjuntoBase64(RecortarNombre(adjunto.Nombre), adjunto.ContenidoBase64),
+                Recortar(correo.CodPlantilla, LargoCodNotificacion));
         }
+
+        /// <summary>Devuelve el único archivo o, si son varios, un PDF con todos en el orden recibido.</summary>
+        private static AdjuntoBeneficio UnirAdjuntos(CorreoBeneficio correo)
+        {
+            if (correo.Adjuntos.Count == 1)
+            {
+                return correo.Adjuntos[0];
+            }
+
+            var pdfs = correo.Adjuntos.Select(a => Convert.FromBase64String(a.ContenidoBase64)).ToArray();
+            var unido = MProGrXAuxiliarDB.CombinarBytesPdfSharp(pdfs);
+
+            return new AdjuntoBeneficio($"Documentos_{correo.CodPlantilla}.pdf", Convert.ToBase64String(unido));
+        }
+
+        // Mismo escape que aplica spCpr_EncolarCorreos; el cuerpo de esta cola admite hasta 4000 caracteres.
+        private static string EscaparHtml(string valor) => valor
+            .Replace("&", "&amp;")
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;")
+            .Replace("\"", "&quot;");
 
         private static ErrorDto Error(string mensaje) => new() { Code = -1, Description = mensaje };
 

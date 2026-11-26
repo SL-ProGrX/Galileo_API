@@ -6,6 +6,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
     public partial class FrmAfBeneficiosIntegralGenDB
     {
+        private const int MaximoArchivosCobro = 3;
+
         /// <summary>
         /// Envía por correo la notificación de resolución al asociado, adjuntando los archivos recibidos.
         /// Los documentos llegan desde Angular en base64 (no se generan en el API).
@@ -68,20 +70,29 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         }
 
         /// <summary>
-        /// Envía por correo la boleta de cobro de mora al Departamento de Cobros, adjuntando el archivo recibido.
-        /// El documento llega desde Angular en base64 (no se genera en el API).
+        /// Registra el correo de la boleta de cobro de mora para el Departamento de Cobros.
+        /// Los archivos (hasta 3 PDF) llegan desde Angular en base64 y se unen en uno solo.
+        /// Los datos del expediente se toman del primer elemento.
         /// </summary>
-        public async Task<ErrorDto> BeneRegistroMora_Enviar(int CodCliente, DocArchivoBeneIntegralDto parametros)
+        public async Task<ErrorDto> BeneRegistroMora_Enviar(List<DocArchivoBeneIntegralDto> archivos)
         {
             var info = new ErrorDto { Code = 0 };
 
-            if (parametros == null)
+            if (archivos == null || archivos.Count == 0)
             {
-                return new ErrorDto { Code = -1, Description = "Los parámetros no pueden ser nulos" };
+                return new ErrorDto { Code = -1, Description = "Debe adjuntar al menos un archivo" };
             }
+
+            if (archivos.Count > MaximoArchivosCobro)
+            {
+                return new ErrorDto { Code = -1, Description = $"Solo se permiten {MaximoArchivosCobro} archivos por envío" };
+            }
+
+            var parametros = archivos[0];
 
             try
             {
+                var CodCliente = Convert.ToInt32(parametros.codCliente);
                 var emailCobros = ObtenerEmailCobros(CodCliente);
 
                 var expediente = (parametros.id_beneficio ?? 0).ToString().PadLeft(5, '0')
@@ -102,7 +113,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     Para = emailCobros ?? string.Empty,
                     Usuario = parametros.usuario ?? string.Empty,
                     Datos = new Dictionary<string, string> { ["MENSAJE"] = parametros.body, ["EXPEDIENTE"] = expediente },
-                    Adjuntos = ConstruirAdjuntos(new List<DocArchivoBeneIntegralDto> { parametros })
+                    Adjuntos = ConstruirAdjuntos(archivos)
                 });
 
                 if (info.Code == 0)

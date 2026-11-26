@@ -74,9 +74,9 @@ namespace Galileo.BusinessLogic.ProGrX_Beneficios
         public ErrorDto BeneRegistroMora_Guardar(int CodCliente, BeneRegistroMoraGuardar cobroMora)
             => _db.BeneRegistroMora_Guardar(CodCliente, cobroMora);
 
-        /// <summary>[PENDIENTE] Envío de boleta de cobro de mora por correo.</summary>
-        public Task<ErrorDto> BeneRegistroMora_Enviar(int CodCliente, DocArchivoBeneIntegralDto parametros)
-            => _db.BeneRegistroMora_Enviar(CodCliente, parametros);
+        /// <summary>Registra el correo de cobro de mora con sus archivos PDF.</summary>
+        public Task<ErrorDto> BeneRegistroMora_Enviar(List<DocArchivoBeneIntegralDto> archivos)
+            => _db.BeneRegistroMora_Enviar(archivos);
 
         /// <summary>Valida si la persona figura como fallecida.</summary>
         public ErrorDto ValidaFallecido(int CodCliente, string cedulafallecido)
