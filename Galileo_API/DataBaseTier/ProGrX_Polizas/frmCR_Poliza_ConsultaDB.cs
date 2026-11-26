@@ -28,6 +28,65 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         }
 
         /// <summary>
+        /// Consulta una página de personas para el diálogo de búsqueda de pólizas.
+        /// </summary>
+        public ErrorDto<PolizaPersonaFiltroPaginaResponse> Poliza_Persona_Filtros_Pagina(
+            int codEmpresa, PolizaPersonaFiltroPaginaRequest request)
+        {
+            if (request == null)
+                return DbHelper.CreateErrorResponse<PolizaPersonaFiltroPaginaResponse>("Debe indicar los filtros de búsqueda.", -2);
+
+            if (request.Inicio < 0 || request.Cantidad < 1 || request.Cantidad > 100)
+                return DbHelper.CreateErrorResponse<PolizaPersonaFiltroPaginaResponse>("Página o cantidad de registros inválida.", -2);
+
+            var orden = request.Orden?.Trim().ToLowerInvariant() switch
+            {
+                "cedula" => "cedula",
+                "cedular" => "cedular",
+                _ => "nombre"
+            };
+            var sentido = request.Descendente ? "DESC" : "ASC";
+            var filtro = request.Filtro?.Trim() ?? string.Empty;
+            var ordenCompleto = orden == "cedula"
+                ? $"cedula {sentido}"
+                : $"{orden} {sentido}, cedula ASC";
+
+            const string whereSql = @"WHERE @Filtro = ''
+                OR CHARINDEX(@Filtro, ISNULL(cedula, '')) > 0
+                OR CHARINDEX(@Filtro, ISNULL(cedular, '')) > 0
+                OR CHARINDEX(@Filtro, ISNULL(nombre, '')) > 0";
+            var sql = $@"SELECT COUNT(*) FROM dbo.vPoliza_Persona_Filtros {whereSql};
+                SELECT cedula, cedular, nombre
+                FROM dbo.vPoliza_Persona_Filtros {whereSql}
+                ORDER BY {ordenCompleto}
+                OFFSET @Inicio ROWS FETCH NEXT @Cantidad ROWS ONLY;";
+
+            try
+            {
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                connection.Open();
+                using var results = connection.QueryMultiple(sql, new
+                {
+                    Filtro = filtro,
+                    request.Inicio,
+                    request.Cantidad
+                });
+                var total = results.ReadSingle<int>();
+                var value = results.Read<PolizaPersonaFiltroDto>().AsList();
+                return DbHelper.CreateOkResponse(new PolizaPersonaFiltroPaginaResponse
+                {
+                    Value = value,
+                    Total = total
+                });
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<PolizaPersonaFiltroPaginaResponse>(
+                    $"Error al buscar personas: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Consulta las operaciones de crédito de una persona por cédula.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
