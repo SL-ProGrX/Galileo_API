@@ -12,7 +12,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         private readonly MBeneficiosDB _mBeneficiosDB;
         private readonly EnvioCorreoDB _envioCorreoDB;
         private readonly FrmAfBeneficioAsgDB _frmAsgDb;
-        private readonly string _sendEmail;
+        private readonly BeneficiosCorreoDB _beneCorreo;
         private readonly string _notificacionCobros;
 
         /** Indica si el beneficio aplica pago parcial (usado por el flujo de guardado).
@@ -29,7 +29,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             _mBeneficiosDB = new MBeneficiosDB(_config);
             _envioCorreoDB = new EnvioCorreoDB(_config);
             _frmAsgDb = new FrmAfBeneficioAsgDB(_config);
-            _sendEmail = _config.GetSection("AppSettings").GetSection("EnviaEmail").Value ?? "N";
+            _beneCorreo = new BeneficiosCorreoDB(_config);
             _notificacionCobros = _config.GetSection("AFI_Beneficios").GetSection("NotificacionCobros").Value ?? string.Empty;
         }
 

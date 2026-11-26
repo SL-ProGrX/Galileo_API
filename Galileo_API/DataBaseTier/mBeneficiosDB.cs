@@ -4,6 +4,7 @@ using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.mBeneficios;
 using Microsoft.Data.SqlClient;
+using System.Data;
 using System.Globalization;
 using System.Text;
 
@@ -24,7 +25,8 @@ namespace Galileo.DataBaseTier
         {
             cedula = b.cedula,
             
-            cod_beneficio = b.id_beneficio.ToString(CultureInfo.InvariantCulture),
+            cod_beneficio = b.cod_beneficio?.item,
+            id_beneficio = b.id_beneficio.ToString(CultureInfo.InvariantCulture),
             usuario = b.registra_user,
             cod_categoria = b.cod_categoria,
             monto_usuario = Convert.ToDecimal(b.monto_aplicado).ToString(CultureInfo.InvariantCulture),
@@ -34,14 +36,35 @@ namespace Galileo.DataBaseTier
         private static DynamicParameters BuildParams(BeneCategoriaValidaListaRequest request)
         {
             var p = new DynamicParameters();
-            p.Add("cod_categoria", request.cod_categoria);
-            p.Add("cod_beneficio", request.cod_beneficio);
-            p.Add("cedula", request.cedula);
-            p.Add("usuario", request.usuario);
-            p.Add("id_beneficio", request.id_beneficio);
-            p.Add("monto_usuario", request.monto_usuario);
-            p.Add("sepelio_identificacion", request.sepelio_identificacion);
+            p.Add("cod_categoria", request.cod_categoria ?? string.Empty);
+            p.Add("cod_beneficio", request.cod_beneficio ?? string.Empty);
+            p.Add("cedula", request.cedula?.Trim() ?? string.Empty);
+            p.Add("usuario", request.usuario ?? string.Empty);
+            p.Add("id_beneficio", request.id_beneficio ?? "0");
+            p.Add("monto_usuario", MontoUsuario(request));
+            p.Add("sepelio_identificacion", request.sepelio_identificacion ?? string.Empty);
             return p;
+        }
+
+        private static decimal MontoUsuario(BeneCategoriaValidaListaRequest request) =>
+            decimal.TryParse(request.monto_usuario, NumberStyles.Float, CultureInfo.InvariantCulture, out var monto)
+                ? monto
+                : 0m;
+
+        /// <summary>
+        /// Evalúa una regla de AFI_BENE_VALIDACIONES y devuelve true cuando debe mostrarse su mensaje.
+        /// Las reglas de monto se omiten mientras el expediente aún no tiene monto digitado.
+        /// </summary>
+        public static bool ReglaSeCumple(IDbConnection connection, ValidacionRow regla, BeneCategoriaValidaListaRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(regla.query_val)) return false;
+
+            var sinMonto = MontoUsuario(request) <= 0m
+                && regla.query_val.Contains(QuerysStringValidaciones.MontoUsuarioPlaceholder, StringComparison.OrdinalIgnoreCase);
+            if (sinMonto) return false;
+
+            var sql = QuerysStringValidaciones.PrepararConsulta(regla.query_val);
+            return connection.QueryFirstOrDefault<int>(sql, BuildParams(request)) == regla.resultado_val;
         }
 
 
@@ -375,16 +398,12 @@ namespace Galileo.DataBaseTier
                     .Query<ValidacionRow>(query, new { cod_beneficio = request.cod_beneficio })
                     .ToList();
 
-                var parms = BuildParams(request);
                 var sb = new StringBuilder();
                 var code = 0;
 
                 foreach (var v in validaciones)
                 {
-                    if (string.IsNullOrWhiteSpace(v.query_val)) continue;
-
-                    var result = connection.QueryFirstOrDefault<int>(v.query_val, parms);
-                    if (result != v.resultado_val) continue;
+                    if (!ReglaSeCumple(connection, v, request)) continue;
 
                     code = codeOnMatch;
 
@@ -426,7 +445,6 @@ namespace Galileo.DataBaseTier
                     .Query<ValidacionRow>(query, new { cod_beneficio = request.cod_beneficio })
                     .ToList();
 
-                var parms = BuildParams(request);
                 var sb = new StringBuilder();
 
                 int obligatorias = 0;
@@ -434,10 +452,7 @@ namespace Galileo.DataBaseTier
 
                 foreach (var v in validaciones)
                 {
-                    if (string.IsNullOrWhiteSpace(v.query_val)) continue;
-
-                    var result = connection.QueryFirstOrDefault<int>(v.query_val, parms);
-                    if (result != v.resultado_val) continue;
+                    if (!ReglaSeCumple(connection, v, request)) continue;
 
                     obligatorias++;
 

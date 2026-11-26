@@ -394,7 +394,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 Col("ValorConstruccion", "Monto de Construcción", 1800, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
                 Col(GridConstants.Fields.CreditoSaldo, "Saldo del Crédito", 1800, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
 
-                Col("ID_SOLICITUD", "No. Operación", 2000),
+                Col("ID_SOLICITUD", "Pol. Operación", 2000),
 
                 Col("NumeroFinca", "No. Finca", 2000),
                 Col("AreaFinca", "Area Finca", 2000),

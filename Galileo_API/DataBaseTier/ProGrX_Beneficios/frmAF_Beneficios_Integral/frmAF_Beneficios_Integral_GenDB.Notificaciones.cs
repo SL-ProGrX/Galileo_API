@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Http;
 using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
@@ -25,8 +24,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             try
             {
-                var codCategoria = ObtenerCodSmtpCategoria(codCliente, primero.id_beneficio);
-                var eConfig = ObtenerCorreoConfig(codCliente, codCategoria);
+                var codSmtp = ObtenerCodSmtpCategoria(codCliente, primero.id_beneficio)?.Trim() ?? string.Empty;
 
                 var correoResult = _envioCorreoDB.BuscoDatosSocioBeneficio(
                     codCliente, primero.cedula ?? string.Empty, primero.cod_beneficio ?? string.Empty);
@@ -42,26 +40,23 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     primero.body = "Estimado asociado, se le notifica el estado de la resolucion de su socilitud. Por favor, revise el archivo adjunto para más detalles.";
                 }
 
-                var body = ArmarBodyHtml("Notificación de resolucion", primero.body);
-                var attachments = ConstruirAdjuntos(parametros);
-
-                if (_sendEmail == "Y" && eConfig != null)
+                info = await _beneCorreo.EncolarAsync(new CorreoBeneficio
                 {
-                    var emailRequest = new EmailRequest
-                    {
-                        To = correo.email,
-                        CopyHide = eConfig.User,
-                        From = eConfig.User,
-                        Subject = "Notificación de Resolución",
-                        Body = body,
-                        Attachments = attachments
-                    };
+                    CodEmpresa = codCliente,
+                    CodPlantilla = BeneficiosPlantillas.Resolucion,
+                    CodSmtp = codSmtp,
+                    Para = correo.email,
+                    Cc = CuentaRemitente(codCliente, codSmtp),
+                    Usuario = primero.usuario ?? string.Empty,
+                    Datos = new Dictionary<string, string> { ["MENSAJE"] = primero.body },
+                    Adjuntos = ConstruirAdjuntos(parametros)
+                });
 
-                    await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, info);
+                if (info.Code == 0)
+                {
+                    RegistrarBitacora(codCliente, primero.cod_beneficio ?? string.Empty, primero.consec, "Notifica",
+                        $"Notificación de Resolución de Solicitud enviada a {correo.email}", primero.usuario ?? string.Empty);
                 }
-
-                RegistrarBitacora(codCliente, primero.cod_beneficio ?? string.Empty, primero.consec, "Notifica",
-                    $"Notificación de Resolución de Solicitud enviada a {correo.email}", primero.usuario ?? string.Empty);
             }
             catch (Exception ex)
             {
@@ -87,8 +82,6 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             try
             {
-                var codCategoria = ObtenerCodSmtpCategoria(CodCliente, parametros.id_beneficio);
-                var eConfig = ObtenerCorreoConfig(CodCliente, codCategoria);
                 var emailCobros = ObtenerEmailCobros(CodCliente);
 
                 var expediente = (parametros.id_beneficio ?? 0).ToString().PadLeft(5, '0')
@@ -101,25 +94,22 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                                     + parametros.cedula + ".";
                 }
 
-                var body = ArmarBodyHtml("Boleta para aplicación del beneficio al Departamento de Cobros", parametros.body);
-                var attachments = ConstruirAdjuntos(new List<DocArchivoBeneIntegralDto> { parametros });
-
-                if (_sendEmail == "Y" && eConfig != null)
+                info = await _beneCorreo.EncolarAsync(new CorreoBeneficio
                 {
-                    var emailRequest = new EmailRequest
-                    {
-                        To = emailCobros ?? string.Empty,
-                        From = eConfig.User,
-                        Subject = "Aplicación de beneficio - expediente " + expediente,
-                        Body = body,
-                        Attachments = attachments
-                    };
+                    CodEmpresa = CodCliente,
+                    CodPlantilla = BeneficiosPlantillas.CobroMora,
+                    CodSmtp = ObtenerCodSmtpCategoria(CodCliente, parametros.id_beneficio)?.Trim() ?? string.Empty,
+                    Para = emailCobros ?? string.Empty,
+                    Usuario = parametros.usuario ?? string.Empty,
+                    Datos = new Dictionary<string, string> { ["MENSAJE"] = parametros.body, ["EXPEDIENTE"] = expediente },
+                    Adjuntos = ConstruirAdjuntos(new List<DocArchivoBeneIntegralDto> { parametros })
+                });
 
-                    await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, info);
+                if (info.Code == 0)
+                {
+                    RegistrarBitacora(CodCliente, parametros.cod_beneficio ?? string.Empty, parametros.consec, "Notifica",
+                        $"Notificación Cobro de Mora enviada a {emailCobros}", parametros.usuario ?? string.Empty);
                 }
-
-                RegistrarBitacora(CodCliente, parametros.cod_beneficio ?? string.Empty, parametros.consec, "Notifica",
-                    $"Notificación Cobro de Mora enviada a {emailCobros}", parametros.usuario ?? string.Empty);
             }
             catch (Exception ex)
             {
@@ -158,65 +148,25 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         }
 
         /// <summary>
-        /// Resuelve la configuración de correo (SMTP) para la categoría indicada.
+        /// Usuario de la cuenta SMTP, para dejarle copia del correo.
         /// </summary>
-        private EnvioCorreoModels? ObtenerCorreoConfig(int codCliente, string? codCategoria)
+        private string CuentaRemitente(int codCliente, string codSmtp)
         {
-            var resultado = _envioCorreoDB.CorreoConfig(codCliente, codCategoria ?? string.Empty);
-            return (resultado != null && resultado.Code == 0) ? resultado.Result : null;
-        }
+            if (string.IsNullOrWhiteSpace(codSmtp))
+            {
+                return string.Empty;
+            }
 
-        /// <summary>
-        /// Arma el cuerpo HTML del correo con el título y contenido indicados.
-        /// </summary>
-        private static string ArmarBodyHtml(string titulo, string? contenido)
-            => $@"<html lang=""es""><head><meta charset=""UTF-8"">
-                  <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-                  <title>{titulo}</title></head>
-                  <body><p>{contenido}</p><p>ASECCSS</p></body></html>";
+            return _envioCorreoDB.CorreoConfig(codCliente, codSmtp).Result?.User ?? string.Empty;
+        }
 
         /// <summary>
         /// Construye la lista de adjuntos a partir de los archivos en base64 recibidos.
         /// </summary>
-        private static List<IFormFile> ConstruirAdjuntos(List<DocArchivoBeneIntegralDto> archivos)
-        {
-            var attachments = new List<IFormFile>();
-
-            foreach (var archivo in archivos)
-            {
-                if (string.IsNullOrEmpty(archivo.filecontent))
-                {
-                    continue;
-                }
-
-                var bytes = Convert.FromBase64String(archivo.filecontent);
-                attachments.AddRange(ConvertByteArrayToIFormFileList(bytes, archivo.filename ?? "archivo"));
-            }
-
-            return attachments;
-        }
-
-        /// <summary>
-        /// Convierte un arreglo de bytes en una lista de IFormFile para adjuntar al correo.
-        /// </summary>
-        private static List<IFormFile> ConvertByteArrayToIFormFileList(byte[] byteArray, string fileName)
-        {
-            var formFiles = new List<IFormFile>();
-
-            if (byteArray == null || byteArray.Length == 0)
-            {
-                return formFiles;
-            }
-
-            var stream = new MemoryStream(byteArray);
-            var formFile = new FormFile(stream, 0, byteArray.Length, "file", fileName)
-            {
-                Headers = new HeaderDictionary(),
-                ContentType = "application/octet-stream"
-            };
-
-            formFiles.Add(formFile);
-            return formFiles;
-        }
+        private static List<AdjuntoBeneficio> ConstruirAdjuntos(List<DocArchivoBeneIntegralDto> archivos)
+            => archivos
+                .Where(a => !string.IsNullOrEmpty(a.filecontent))
+                .Select(a => new AdjuntoBeneficio(a.filename ?? "archivo.pdf", a.filecontent!))
+                .ToList();
     }
 }

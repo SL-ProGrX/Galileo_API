@@ -21,6 +21,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         private readonly MTesoreria _mTesoreria;
         private readonly string _codComision;
         private readonly string _ctaComision;
+        private readonly BeneficiosCorreoDB _beneCorreo;
+        private readonly bool _notificaDeposito;
 
         /// <summary>
         /// Inicializa el acceso a datos y sus dependencias con la configuración inyectada.
@@ -35,6 +37,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             _mTesoreria = new MTesoreria(_config);
             _codComision = _config.GetSection("AFI_Beneficios").GetSection("CodComision").Value ?? string.Empty;
             _ctaComision = _config.GetSection("AFI_Beneficios").GetSection("CtaComisionBeneficios").Value ?? string.Empty;
+            _beneCorreo = new BeneficiosCorreoDB(_config);
+            _notificaDeposito = _config.GetSection("AFI_Beneficios").GetSection("NotificaDeposito").Value == "S";
         }
 
         /// <summary>

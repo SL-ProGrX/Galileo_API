@@ -11,7 +11,7 @@ namespace Galileo.DataBaseTier
         public const int CodigoSinPermiso = -2;
         public const string RutaNivelesAutorizacion = "Compras > Niveles de Autorización para el Proceso de Compras";
 
-        public static string? ObtenerCodUnidad(IDbConnection conn, IDbTransaction tx, string codOrden)
+        public static string? ObtenerCodUnidad(IDbConnection conn, IDbTransaction? tx, string codOrden)
         {
             return conn.QueryFirstOrDefault<string>(
                 @"SELECT TOP 1 COD_UNIDAD
@@ -89,7 +89,7 @@ namespace Galileo.DataBaseTier
                 : $"falta tener a cargo a {generador} (pestaña Usuarios a Cargo)";
         }
 
-        private static bool EsUsuarioAutorizador(IDbConnection conn, IDbTransaction tx, string usuario)
+        public static bool EsUsuarioAutorizador(IDbConnection conn, IDbTransaction? tx, string usuario)
         {
             var count = conn.QueryFirstOrDefault<int>(
                 @"SELECT COUNT(*)

@@ -969,30 +969,46 @@ WHERE COD_DOCUMENTO = @CodDocumento;";
             return info;
         }
 
+        /// <summary>
+        /// Code 1 = puede autorizar; Code 0 = sin permiso (Description indica cuál falta).
+        /// </summary>
         public ErrorDto ValidaAutorizacion(int codEmpresa, string usuario, string cod_orden)
         {
-            var r = DbHelper.WithConn<int?>(_portalDb, codEmpresa, conn =>
+            var r = DbHelper.WithConn<string>(_portalDb, codEmpresa, conn =>
             {
                 EnsureOpen(conn);
-
-                const string sql = @"
-SELECT 1
-WHERE EXISTS (
-    SELECT 1
-    FROM CPR_SOLICITUD s
-    JOIN CPR_ORDENES o ON s.adjudica_orden = o.cod_orden
-    JOIN CORE_UENS_USUARIOS_ROLES r ON r.COD_UNIDAD = s.COD_UNIDAD
-    WHERE o.COD_ORDEN = @cod_orden
-      AND r.CORE_USUARIO = @usuario
-      AND (r.ROL_AUTORIZA = 1)
-);";
-
-                return conn.ExecuteScalar<int?>(sql, new { cod_orden, usuario });
+                return PermisoFaltanteAutorizacion(conn, usuario, cod_orden);
             });
 
             if (r.Code != 0) return DbHelper.ErrorResponse(r.Description ?? ErrorLiteral, r.Code ?? -1);
 
-            return new ErrorDto { Code = (r.Result.HasValue ? 1 : 0) };
+            return string.IsNullOrEmpty(r.Result)
+                ? new ErrorDto { Code = 1 }
+                : new ErrorDto { Code = 0, Description = r.Result };
+        }
+
+        // Sin UEN basta con ser autorizador; con UEN se exige el rol Autoriza en esa UEN.
+        private static string PermisoFaltanteAutorizacion(IDbConnection conn, string usuario, string codOrden)
+        {
+            var codUnidad = CprOrdenPermisos.ObtenerCodUnidad(conn, null, codOrden);
+
+            if (string.IsNullOrWhiteSpace(codUnidad))
+            {
+                return CprOrdenPermisos.EsUsuarioAutorizador(conn, null, usuario)
+                    ? string.Empty
+                    : $"No tiene permiso para autorizar la orden #{codOrden} (sin UEN): no está registrado como autorizador. Solicítelo en {CprOrdenPermisos.RutaNivelesAutorizacion}, pestaña Autorizadores.";
+            }
+
+            const string sql = @"
+SELECT COUNT(*)
+FROM CORE_UENS_USUARIOS_ROLES
+WHERE COD_UNIDAD = @CodUnidad
+  AND CORE_USUARIO = @Usuario
+  AND ROL_AUTORIZA = 1;";
+
+            return conn.ExecuteScalar<int>(sql, new { CodUnidad = codUnidad, Usuario = usuario }) > 0
+                ? string.Empty
+                : $"No tiene permiso para autorizar la orden #{codOrden}: falta el rol Autoriza en la UEN {codUnidad}. Solicítelo en Núcleo > Información de Usuarios Operativos, pestaña Miembro de, sección Roles.";
         }
 
         // ===========================

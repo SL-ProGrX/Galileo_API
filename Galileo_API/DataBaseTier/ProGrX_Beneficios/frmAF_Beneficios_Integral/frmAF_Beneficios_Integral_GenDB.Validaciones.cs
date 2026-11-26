@@ -1,6 +1,7 @@
 using Dapper;
 using System.Text;
 using Galileo.Models;
+using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
@@ -66,8 +67,11 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     WHERE COD_CATEGORIA = (SELECT ab.COD_CATEGORIA FROM AFI_BENEFICIOS ab WHERE ab.COD_BENEFICIO = @beneficio)
                       AND ESTADO = 1 AND REGISTRO_JUSTIFICA = 1)";
 
-            var cedulaSegura = NormalizarSeguro(cedula);
-            var beneficioSeguro = NormalizarSeguro(beneficio);
+            var request = new BeneCategoriaValidaListaRequest
+            {
+                cedula = NormalizarSeguro(cedula),
+                cod_beneficio = NormalizarSeguro(beneficio)
+            };
 
             var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
             {
@@ -76,15 +80,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
                 foreach (var validacion in validaciones)
                 {
-                    if (string.IsNullOrWhiteSpace(validacion.query_val))
-                    {
-                        continue;
-                    }
-
-                    var sql = validacion.query_val;
-                    var valor = connection.QueryFirstOrDefault<int>(sql, new { cedula = cedulaSegura, cod_beneficio = beneficioSeguro });
-
-                    if (valor == validacion.resultado_val)
+                    if (MBeneficiosDB.ReglaSeCumple(connection, validacion, request))
                     {
                         mensajes.Append(validacion.msj_val).Append("...\n");
                     }

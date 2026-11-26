@@ -123,7 +123,7 @@ SELECT CONVERT(int, @@ROWCOUNT);";
         /// los de <paramref name="html"/> (PRODUCTOS, TERMINOS) se insertan tal cual.
         /// Si Produccion = N, el destinatario se redirige a TestEmail.
         /// </summary>
-        public async Task<ErrorDto> QueuePlantillaAsync(
+        public Task<ErrorDto> QueuePlantillaAsync(
             int codEmpresa,
             string codSmtp,
             string codPlantilla,
@@ -133,6 +133,31 @@ SELECT CONVERT(int, @@ROWCOUNT);";
             string usuario = "Sistema")
         {
             var destino = _produccion == "N" && !string.IsNullOrWhiteSpace(_testEmail) ? _testEmail : para;
+            return EncolarPlantillaAsync(codEmpresa, codSmtp, codPlantilla, destino, textos, html, usuario);
+        }
+
+        /// <summary>
+        /// Igual que <see cref="QueuePlantillaAsync"/>, pero el destinatario es siempre
+        /// <paramref name="para"/>, sin redirigir a TestEmail.
+        /// </summary>
+        public Task<ErrorDto> QueuePlantillaDestinoRealAsync(
+            int codEmpresa,
+            string codSmtp,
+            string codPlantilla,
+            string para,
+            IReadOnlyDictionary<string, string> textos,
+            string usuario) =>
+            EncolarPlantillaAsync(codEmpresa, codSmtp, codPlantilla, para, textos, null, usuario);
+
+        private async Task<ErrorDto> EncolarPlantillaAsync(
+            int codEmpresa,
+            string codSmtp,
+            string codPlantilla,
+            string destino,
+            IReadOnlyDictionary<string, string> textos,
+            IReadOnlyDictionary<string, string>? html,
+            string usuario)
+        {
             var bloques = html ?? new Dictionary<string, string>();
 
             try
