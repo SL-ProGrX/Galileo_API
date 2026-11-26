@@ -78,7 +78,7 @@
             public const string FechaEmision = "Fecha Emisión";
 
             // Crédito (CRD)
-            public const string CrdOperacion = "CRD.Operación";
+            public const string CrdOperacion = "Pol.Operación";
             public const string CrdCodigo = "CRD.Código";
             public const string CrdMonto = "CRD.Monto";
             public const string CrdSaldo = "CRD.Saldo";
