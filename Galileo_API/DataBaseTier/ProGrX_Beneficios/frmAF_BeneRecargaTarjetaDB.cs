@@ -16,11 +16,10 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         private const string FechaFormat = "yyyy/MM/dd";
 
         private readonly IConfiguration _config;
-        private readonly EnvioCorreoDB _envioCorreoDB;
+        private readonly BeneficiosCorreoDB _beneCorreo;
         private readonly MSecurityMainDb _bitacoraDb;
         private readonly MTesFuncionesDb _mTes;
         private readonly MBeneficiosDB _mBeneficiosDB;
-        private readonly string _sendEmail;
 
         /// <summary>
         /// Inicializa el acceso a datos y sus dependencias con la configuración inyectada.
@@ -29,11 +28,10 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         public FrmAfBeneRecargaTarjetaDB(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            _envioCorreoDB = new EnvioCorreoDB(_config);
+            _beneCorreo = new BeneficiosCorreoDB(_config);
             _bitacoraDb = new MSecurityMainDb(_config);
             _mTes = new MTesFuncionesDb(_config);
             _mBeneficiosDB = new MBeneficiosDB(_config);
-            _sendEmail = _config.GetSection("AppSettings").GetSection("EnviaEmail").Value ?? string.Empty;
         }
 
         /// <summary>

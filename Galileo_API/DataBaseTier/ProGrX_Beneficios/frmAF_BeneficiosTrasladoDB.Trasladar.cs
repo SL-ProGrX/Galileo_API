@@ -101,7 +101,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <param name="CodCliente">Código de empresa.</param>
         /// <param name="traslado">JSON con la remesa, usuario y casos.</param>
         /// <returns>Resultado de la operación.</returns>
-        public Task<ErrorDto> AfiTraslado_Aplicar(int CodCliente, string traslado)
+        public async Task<ErrorDto> AfiTraslado_Aplicar(int CodCliente, string traslado)
         {
             var infoCarga = JsonConvert.DeserializeObject<AfiTrasladoAplicar>(traslado) ?? new AfiTrasladoAplicar();
 
@@ -116,13 +116,17 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     ProcesarTrasladoCaso(connection, CodCliente, infoCarga, item, vToken, parametros);
                 }
 
-                connection.Execute("UPDATE AFI_BENEFICIOS_REMESAS SET Estado = 'T' WHERE cod_remesa = @cod_remesa", new { infoCarga.cod_remesa });
+                await connection.ExecuteAsync("UPDATE AFI_BENEFICIOS_REMESAS SET Estado = 'T' WHERE cod_remesa = @cod_remesa", new { infoCarga.cod_remesa });
 
-                return Task.FromResult(new ErrorDto { Code = 0 });
+                var advertencia = _notificaDeposito
+                    ? await NotificarDepositosAsync(connection, CodCliente, infoCarga)
+                    : string.Empty;
+
+                return new ErrorDto { Code = 0, Description = advertencia };
             }
             catch (Exception ex)
             {
-                return Task.FromResult(DbHelper.ErrorResponse(ex.Message));
+                return DbHelper.ErrorResponse(ex.Message);
             }
         }
 

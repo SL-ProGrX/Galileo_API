@@ -18,11 +18,49 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         public async Task<ErrorDto<BeneficioGeneralDatos>> BeneficioIntegralGeneral_Guardar(int CodCliente, string fuente, BeneficioGeneralDatos beneficioGeneral)
         {
-            if (string.IsNullOrEmpty(beneficioGeneral.cedula))
+            if (string.IsNullOrWhiteSpace(beneficioGeneral.cedula))
             {
-                return new ErrorDto<BeneficioGeneralDatos> { Code = -1, Description = "Cédula no puede ser nula" };
+                return RespuestaError("Cédula no puede ser nula");
             }
 
+            try
+            {
+                var rechazo = ValidarGuardado(CodCliente, beneficioGeneral);
+                if (rechazo != null)
+                {
+                    return RespuestaError(rechazo);
+                }
+
+                return beneficioGeneral.id_beneficio == 0
+                    ? await Guarda_Beneficio(CodCliente, beneficioGeneral)
+                    : Actualiza_Beneficio(CodCliente, beneficioGeneral, "S", fuente);
+            }
+            catch (Exception ex)
+            {
+                return RespuestaError("BeneficioIntegralGeneral_Guardar - " + ex.Message);
+            }
+        }
+
+        private static ErrorDto<BeneficioGeneralDatos> RespuestaError(string? mensaje) =>
+            new() { Code = -1, Description = mensaje };
+
+        /// <summary>
+        /// Respuesta de guardado correcto: "id@consecutivo" y, opcionalmente, "@advertencia".
+        /// </summary>
+        private static ErrorDto<BeneficioGeneralDatos> RespuestaGuardado(int idBeneficio, long? consec, string? advertencia = null) =>
+            new()
+            {
+                Code = 0,
+                Description = advertencia == null
+                    ? $"{idBeneficio}@{consec}"
+                    : $"{idBeneficio}@{consec}@{advertencia.Replace('@', ' ')}"
+            };
+
+        /// <summary>
+        /// Aplica permisos y validaciones. Devuelve el motivo del rechazo o null si se puede guardar.
+        /// </summary>
+        private string? ValidarGuardado(int CodCliente, BeneficioGeneralDatos beneficioGeneral)
+        {
             var estadoItem = beneficioGeneral.estado?.item ?? string.Empty;
             var codBeneficio = beneficioGeneral.cod_beneficio?.item ?? string.Empty;
 
@@ -34,18 +72,18 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
             if (permisosResult.Code != 0)
             {
-                return new ErrorDto<BeneficioGeneralDatos> { Code = -1, Description = permisosResult.Description };
+                return permisosResult.Description;
             }
             if (!string.IsNullOrEmpty(permisosResult.Result))
             {
-                return new ErrorDto<BeneficioGeneralDatos> { Code = -1, Description = "\n " + permisosResult.Result };
+                return permisosResult.Result;
             }
 
             // 2. Validación de persona
-            var perError = _mBeneficiosDB.ValidarPersona(CodCliente, beneficioGeneral.cedula.Trim(), codBeneficio);
+            var perError = _mBeneficiosDB.ValidarPersona(CodCliente, beneficioGeneral.cedula!.Trim(), codBeneficio);
             if (perError.Code == -1)
             {
-                return new ErrorDto<BeneficioGeneralDatos> { Code = -1, Description = perError.Description };
+                return perError.Description;
             }
 
             // 3. Requisitos
@@ -54,20 +92,30 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 var respreq = _mBeneficiosDB.ValidaRequisitos(CodCliente, estadoItem, codBeneficio, (int)beneficioGeneral.consec);
                 if (respreq.Code == -1)
                 {
-                    return new ErrorDto<BeneficioGeneralDatos> { Code = respreq.Code, Description = respreq.Description };
+                    return respreq.Description;
                 }
             }
 
-            // 5. Datos del beneficio
+            // 4. Datos del beneficio y, si es nuevo, reglas de persona con justificación.
+            // Se evalúan juntas para informar todos los motivos en un solo mensaje.
+            var mensajes = new List<string?>();
+
             var errBene = _mBeneficiosDB.ValidarBeneficioDato(CodCliente, beneficioGeneral);
             if (errBene.Code == -1)
             {
-                return new ErrorDto<BeneficioGeneralDatos> { Code = errBene.Code, Description = errBene.Description };
+                mensajes.Add(errBene.Description);
             }
 
-            return beneficioGeneral.id_beneficio == 0
-                ? await Guarda_Beneficio(CodCliente, beneficioGeneral)
-                : Actualiza_Beneficio(CodCliente, beneficioGeneral, "S", fuente);
+            if (beneficioGeneral.id_beneficio == 0)
+            {
+                var justError = _mBeneficiosDB.ValidarBeneficioJustificaDato(CodCliente, beneficioGeneral, beneficioGeneral.requiere_justificacion);
+                if (justError.Code == -1)
+                {
+                    mensajes.Add(justError.Description);
+                }
+            }
+
+            return mensajes.Count == 0 ? null : string.Concat(mensajes);
         }
 
         /// <summary>
@@ -81,26 +129,23 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             var tipoItem = beneficio.tipo?.item ?? string.Empty;
             var modificaMonto = tipoItem == "P" ? "N" : "S";
 
-            var justError = _mBeneficiosDB.ValidarBeneficioJustificaDato(CodCliente, beneficio, beneficio.requiere_justificacion);
-            if (justError.Code == -1)
-            {
-                return new ErrorDto<BeneficioGeneralDatos> { Code = justError.Code, Description = justError.Description };
-            }
-
             var empresa = _frmAsgDb.CargaOficinas(CodCliente, beneficio.registra_user).Result;
             if (empresa == null || empresa.Count == 0)
             {
-                return new ErrorDto<BeneficioGeneralDatos> { Code = -1, Description = "No se encontró la oficina del usuario" };
+                return RespuestaError("No se encontró la oficina del usuario");
             }
 
-            var response = new ErrorDto<BeneficioGeneralDatos> { Code = 0 };
+            var idGenerado = 0;
 
             try
             {
                 var vBeneConsec = _mBeneficiosDB.fxConsec(CodCliente, codBeneficio);
+                if (vBeneConsec <= 0)
+                {
+                    return RespuestaError("No fue posible generar el consecutivo del beneficio. El expediente no se creó.");
+                }
                 beneficio.consec = Convert.ToInt32(vBeneConsec);
 
-                int idGenerado;
                 using (var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente))
                 {
                     var estado = await connection.QueryFirstOrDefaultAsync<string>(
@@ -110,7 +155,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                                   SELECT B.COD_GRUPO FROM AFI_GRUPO_BENEFICIO B WHERE COD_BENEFICIO = @codBeneficio))
                           ORDER BY E.COD_ESTADO DESC", new { codBeneficio });
 
-                    await connection.ExecuteAsync(SqlInsertOtorga, new
+                    var nuevoId = await connection.QuerySingleOrDefaultAsync<int?>(SqlInsertOtorga, new
                     {
                         consec = vBeneConsec,
                         codBeneficio,
@@ -138,7 +183,11 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                         aplicaPagoMasivo = beneficio.aplica_pago_masivo ? 1 : 0
                     });
 
-                    idGenerado = await connection.QueryFirstOrDefaultAsync<int>("SELECT IDENT_CURRENT('afi_bene_otorga') AS id");
+                    if (nuevoId is not > 0)
+                    {
+                        return RespuestaError("No fue posible crear el expediente del beneficio.");
+                    }
+                    idGenerado = nuevoId.Value;
                     beneficio.id_beneficio = idGenerado;
 
                     if (tipoItem != "M" && beneficio.productos != null)
@@ -157,13 +206,15 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 }
                 InsertarActualizarMontos(CodCliente, beneficio, modificaMonto);
 
-                response.Description = idGenerado + "@" + beneficio.consec;
-
-                return await NotificarSolicitud(CodCliente, beneficio, idGenerado, vBeneConsec, codBeneficio, response);
+                var advertencia = await NotificarSolicitud(CodCliente, beneficio, idGenerado, vBeneConsec, codBeneficio);
+                return RespuestaGuardado(idGenerado, beneficio.consec, advertencia);
             }
             catch (Exception ex)
             {
-                return new ErrorDto<BeneficioGeneralDatos> { Code = -1, Description = "Guarda_Beneficio - " + ex.Message };
+                // Si el expediente ya se insertó se informa como creado, para que no se registre dos veces.
+                return idGenerado > 0
+                    ? RespuestaGuardado(idGenerado, beneficio.consec, "El expediente se creó, pero no se completó el proceso: " + ex.Message)
+                    : RespuestaError("Guarda_Beneficio - " + ex.Message);
             }
         }
 
@@ -190,43 +241,53 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         }
 
         /// <summary>
-        /// Notifica la solicitud por correo (excepto categoría B_CRECE) y valida el correo del socio.
+        /// Notifica la solicitud por correo (excepto categoría B_CRECE).
+        /// Devuelve una advertencia si no se pudo notificar; el expediente ya está creado.
         /// </summary>
-        private async Task<ErrorDto<BeneficioGeneralDatos>> NotificarSolicitud(
-            int CodCliente, BeneficioGeneralDatos beneficio, int idGenerado, long vBeneConsec, string codBeneficio, ErrorDto<BeneficioGeneralDatos> response)
+        private async Task<string?> NotificarSolicitud(
+            int CodCliente, BeneficioGeneralDatos beneficio, int idGenerado, long vBeneConsec, string codBeneficio)
         {
             var correoResult = _envioCorreoDB.BuscoDatosSocioBeneficio(CodCliente, beneficio.cedula ?? string.Empty, codBeneficio);
             var correo = correoResult?.Result;
 
             if (correo == null || string.IsNullOrEmpty(correo.email))
             {
-                return new ErrorDto<BeneficioGeneralDatos>
-                {
-                    Code = -1,
-                    Description = "El asociado no tiene un correo electrónico registrado en Datos Persona"
-                };
+                return "El asociado no tiene un correo electrónico registrado en Datos Persona; no se envió la notificación.";
             }
-
-            var email = new AfiBeneDatosCorreo
-            {
-                nombre = correo.nombre,
-                cedula = correo.cedula,
-                email = correo.email,
-                beneficio = correo.beneficio,
-                expediente = idGenerado.ToString().PadLeft(5, '0') + codBeneficio.Trim() + vBeneConsec.ToString().PadLeft(5, '0')
-            };
 
             var categoria = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
                 connection.QueryFirstOrDefault<string>(
-                    "SELECT COD_CATEGORIA FROM AFI_BENEFICIOS WHERE COD_BENEFICIO = @codBeneficio", new { codBeneficio })).Result;
+                    "SELECT COD_CATEGORIA FROM AFI_BENEFICIOS WHERE COD_BENEFICIO = @codBeneficio", new { codBeneficio })).Result?.Trim();
 
-            if (categoria != "B_CRECE")
+            if (categoria == "B_CRECE")
             {
-                await CorreoNotificacionSolicitud_Enviar(CodCliente, email, codBeneficio.Trim(),
-                    (beneficio.consec ?? 0).ToString(), idGenerado, beneficio.registra_user ?? string.Empty);
+                return null;
             }
 
-            return response;
+            var consec = vBeneConsec.ToString().PadLeft(5, '0');
+            var envio = await _beneCorreo.EncolarAsync(new CorreoBeneficio
+            {
+                CodEmpresa = CodCliente,
+                CodPlantilla = categoria == "B_PSICO" ? BeneficiosPlantillas.SolicitudPsicologia : BeneficiosPlantillas.Solicitud,
+                CodSmtp = _beneCorreo.CodSmtpPorCategoria(CodCliente, categoria ?? string.Empty),
+                Para = correo.email,
+                Usuario = beneficio.registra_user ?? string.Empty,
+                Datos = new Dictionary<string, string>
+                {
+                    ["BENEFICIO"] = correo.beneficio,
+                    ["EXPEDIENTE"] = idGenerado.ToString().PadLeft(5, '0') + codBeneficio.Trim() + consec
+                }
+            });
+
+            if (envio.Code != 0)
+            {
+                return "No se registró el correo de notificación: " + envio.Description;
+            }
+
+            RegistrarBitacora(CodCliente, codBeneficio.Trim(), beneficio.consec, "Notifica",
+                $"Notificación Solicitud de Beneficio enviada a {correo.email}", beneficio.registra_user ?? string.Empty);
+
+            return null;
         }
 
         /// <summary>
@@ -234,17 +295,22 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         private ErrorDto<BeneficioGeneralDatos> Actualiza_Beneficio(int CodCliente, BeneficioGeneralDatos beneficio, string modificaMonto, string fuente)
         {
-            var response = new ErrorDto<BeneficioGeneralDatos> { Code = 0 };
             var tipoItem = beneficio.tipo?.item ?? string.Empty;
 
             try
             {
+                if (!CorrespondeAlExpediente(CodCliente, beneficio))
+                {
+                    return RespuestaError("Los datos en pantalla no corresponden al expediente que se intenta actualizar. " +
+                                          "Vuelva a seleccionarlo en la consulta o limpie la pantalla para crear uno nuevo.");
+                }
+
                 if (beneficio.cod_motivo != null)
                 {
                     InsertarActualizarMotivos(CodCliente, beneficio);
                 }
 
-                DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
+                var actualizado = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
                     connection.Execute(SqlUpdateOtorga, new
                     {
                         notas = beneficio.notas,
@@ -264,6 +330,11 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                         modificaUsuario = beneficio.modifica_usuario,
                         idBeneficio = beneficio.id_beneficio
                     }));
+
+                if (actualizado.Code != 0)
+                {
+                    return RespuestaError(actualizado.Description);
+                }
 
                 var tipoDesc = ObtenerDescripcionTipo(tipoItem);
 
@@ -285,17 +356,34 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
 
                 if (error.Code == -1)
                 {
-                    return new ErrorDto<BeneficioGeneralDatos> { Code = -1, Description = error.Description };
+                    return RespuestaError(error.Description);
                 }
 
-                response.Description = beneficio.id_beneficio + "@" + beneficio.consec;
+                return RespuestaGuardado(beneficio.id_beneficio, beneficio.consec);
             }
             catch (Exception ex)
             {
-                return new ErrorDto<BeneficioGeneralDatos> { Code = -1, Description = "Actualiza_Beneficio - " + ex.Message };
+                return RespuestaError("Actualiza_Beneficio - " + ex.Message);
             }
+        }
 
-            return response;
+        private bool CorrespondeAlExpediente(int CodCliente, BeneficioGeneralDatos beneficio)
+        {
+            const string sql = @"
+                SELECT COUNT(*) FROM AFI_BENE_OTORGA
+                WHERE ID_BENEFICIO = @idBeneficio AND CONSEC = @consec
+                  AND RTRIM(COD_BENEFICIO) = @codBeneficio AND RTRIM(CEDULA) = @cedula";
+
+            var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
+                connection.QueryFirstOrDefault<int>(sql, new
+                {
+                    idBeneficio = beneficio.id_beneficio,
+                    consec = beneficio.consec,
+                    codBeneficio = (beneficio.cod_beneficio?.item ?? string.Empty).Trim(),
+                    cedula = (beneficio.cedula ?? string.Empty).Trim()
+                }));
+
+            return result.Code == 0 && result.Result > 0;
         }
 
         /// <summary>
@@ -578,73 +666,6 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             return result.Code == 0 && result.Result > 0;
         }
 
-        /// <summary>
-        /// Envía el correo de notificación de solicitud del beneficio al asociado.
-        /// </summary>
-        private async Task CorreoNotificacionSolicitud_Enviar(int CodCliente, AfiBeneDatosCorreo socio, string cod_beneficio, string consec, int id_beneficio, string usuario)
-        {
-            var info = new ErrorDto { Code = 0 };
-
-            try
-            {
-                var codCategoria = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
-                    connection.QueryFirstOrDefault<string>(
-                        @"SELECT C.COD_SMTP FROM AFI_BENE_CATEGORIAS C
-                          WHERE C.COD_CATEGORIA IN (
-                              SELECT B.COD_CATEGORIA FROM AFI_BENEFICIOS B WHERE B.COD_BENEFICIO IN (
-                                  SELECT DISTINCT H.COD_BENEFICIO FROM AFI_BENE_OTORGA H WHERE H.ID_BENEFICIO = @idBeneficio))",
-                        new { idBeneficio = id_beneficio })).Result;
-
-                var eConfig = ObtenerCorreoConfig(CodCliente, codCategoria);
-                if (eConfig == null)
-                {
-                    return;
-                }
-
-                var body = codCategoria == "B_PSICO"
-                    ? ArmarBodyHtml($"Confirmación de solicitud por Beneficio de {socio.beneficio} {socio.expediente}", BodyPsico(socio))
-                    : ArmarBodyHtml($"Confirmación de solicitud por Beneficio de {socio.beneficio} {socio.expediente}", BodyGeneral(socio));
-
-                if (_sendEmail == "Y")
-                {
-                    var emailRequest = new EmailRequest
-                    {
-                        To = socio.email,
-                        From = eConfig.User,
-                        Subject = "Notificación de Solicitud",
-                        Body = body,
-                        Attachments = new List<IFormFile>()
-                    };
-
-                    await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, info);
-                }
-
-                RegistrarBitacora(CodCliente, cod_beneficio, int.TryParse(consec, out var c) ? c : 0, "Notifica",
-                    $"Notificación Solicitud de Beneficio enviada a {socio.email}", usuario);
-            }
-            catch
-            {
-                // El fallo de correo no interrumpe el guardado (comportamiento del sistema anterior).
-            }
-        }
-
-        private static string BodyPsico(AfiBeneDatosCorreo socio) =>
-            $@"<p>Estimado (a) asociado (a):</p>
-               <p>Nos complace informarle que la solicitud de {socio.beneficio} fue registrada en nuestro sistema.</p>
-               <p>Este servicio de atención psicológica en ASECCSS consta de 3 sesiones aproximadamente con la intención de brindar un acompañamiento emocional en el momento que te encuentres enfrentando actualmente.</p>
-               <p>Pronto nuestro equipo se pondrá en contacto con usted para brindarle más detalles y las indicaciones del proceso, así como la fecha de inicio de la primera sesión.</p>
-               <p>En la Gerencia de Bienestar Social y Sostenibilidad de ASECCSS estamos para servirle. ¡Nuestro compromiso solidario es con el asociado/a y su familia!</p>";
-
-        private static string BodyGeneral(AfiBeneDatosCorreo socio) =>
-            $@"<p>Estimado (a) asociado (a):</p>
-               <p>Nos complace informarle que la solicitud de {socio.beneficio} fue registrada en nuestro sistema.</p>
-               <p>Le recordamos algunos puntos fundamentales:</p>
-               <p>1. De la manera más atenta, aclaramos que el llenado del formulario de solicitud y la presentación de los requisitos adjuntos no garantiza la aprobación del beneficio.</p>
-               <p>2. Todas las solicitudes deben ser analizadas por el equipo de Bienestar Social y Sostenibilidad.</p>
-               <p>3. Para finalizar, las resoluciones se estarán brindando luego de la verificación de los requisitos completos de acuerdo con los plazos estipulados en el Reglamento del PROBESOL.</p>
-               <p>Puede consultar el Reglamento PROBESOL y la información de nuestros beneficios solidarios en: https://aseccss.com/beneficios-solidarios/</p>
-               <p>En la Gerencia de Bienestar Social y Sostenibilidad de ASECCSS estamos para servirle. ¡Nuestro compromiso solidario es con el asociado/a y su familia!</p>";
-
         // ==================== SQL de otorga (sin datos de usuario) ====================
 
         private const string SqlInsertOtorga = @"
@@ -655,7 +676,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
             VALUES (@consec, @codBeneficio, @cedula, @monto, @modificaMonto, @registraUser, GETDATE(),
                     @estado, @notas, @solicita, @nombre, @tipo, @codOficina, @montoAplicado, @desaNombre, @desaDescripcion,
                     @sepelioIdent, @sepelioNombre, @sepelioFecha, @creceGrupo, @idProfesional,
-                    @idAptCategoria, @requiereJustificacion, @aplicaMora, @aplicaPagoMasivo)";
+                    @idAptCategoria, @requiereJustificacion, @aplicaMora, @aplicaPagoMasivo);
+            SELECT CAST(SCOPE_IDENTITY() AS int);";
 
         private const string SqlUpdateOtorga = @"
             UPDATE afi_bene_otorga

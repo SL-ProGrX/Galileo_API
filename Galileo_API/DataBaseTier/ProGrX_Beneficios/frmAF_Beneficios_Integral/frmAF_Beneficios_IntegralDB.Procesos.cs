@@ -1,5 +1,4 @@
 using Dapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Galileo.Models;
@@ -214,87 +213,43 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// </summary>
         public async Task<ErrorDto> BeneSolicitudBloqueo_Enviar(int CodCliente, DocArchivoBeneIntegralDto parametros)
         {
-            var info = new ErrorDto { Code = 0 };
-
             try
             {
-                EnvioCorreoModels? eConfig;
-                string? emailCobros;
-
-                using (var connection = DbHelper.OpenConnection(CreatePortalDb(), CodCliente))
-                {
-                    var codCategoria = await connection.QueryFirstOrDefaultAsync<string>(
-                        "SELECT C.COD_SMTP FROM AFI_BENE_CATEGORIAS C WHERE C.COD_CATEGORIA = @codCategoria",
-                        new { codCategoria = parametros.cod_beneficio });
-
-                    var eConfigResult = _envioCorreoDB.CorreoConfig(CodCliente, codCategoria ?? string.Empty);
-                    eConfig = (eConfigResult != null && eConfigResult.Code == 0) ? eConfigResult.Result : null;
-
-                    emailCobros = await connection.QueryFirstOrDefaultAsync<string>(
+                var result = DbHelper.WithConn(CreatePortalDb(), CodCliente, connection =>
+                    connection.QueryFirstOrDefault<string>(
                         "SELECT VALOR FROM SIF_PARAMETROS WHERE COD_PARAMETRO = @codParametro",
-                        new { codParametro = _notificacionCobros });
-                }
+                        new { codParametro = _notificacionCobros }));
+                var emailCobros = result.Result;
 
-                var body = $@"<html lang=""es""><head><meta charset=""UTF-8"">
-                              <title>Boleta para aplicación del beneficio al Departamento de Cobros</title></head>
-                              <body><p>{parametros.body}</p><p>ASECCSS</p></body></html>";
-
-                var attachments = new List<IFormFile>();
-                if (parametros.filecontent != null)
+                var adjuntos = new List<AdjuntoBeneficio>();
+                if (!string.IsNullOrEmpty(parametros.filecontent))
                 {
-                    var fileContent = Convert.FromBase64String(parametros.filecontent);
-                    attachments.AddRange(ConvertByteArrayToIFormFileList(fileContent, parametros.filename ?? "archivo"));
+                    adjuntos.Add(new AdjuntoBeneficio(parametros.filename ?? "archivo.pdf", parametros.filecontent));
                 }
 
-                if (_sendEmail == "Y" && eConfig != null)
+                var info = await _beneCorreo.EncolarAsync(new CorreoBeneficio
                 {
-                    var emailRequest = new EmailRequest
-                    {
-                        To = emailCobros ?? string.Empty,
-                        From = eConfig.User,
-                        Subject = "Solicitud de Bloqueo de Asociado",
-                        Body = body,
-                        Attachments = attachments
-                    };
+                    CodEmpresa = CodCliente,
+                    CodPlantilla = BeneficiosPlantillas.SolicitudBloqueo,
+                    CodSmtp = _beneCorreo.CodSmtpPorCategoria(CodCliente, parametros.cod_beneficio ?? string.Empty),
+                    Para = emailCobros ?? string.Empty,
+                    Usuario = parametros.usuario ?? string.Empty,
+                    Datos = new Dictionary<string, string> { ["MENSAJE"] = parametros.body ?? string.Empty },
+                    Adjuntos = adjuntos
+                });
 
-                    await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, info);
+                if (info.Code == 0)
+                {
+                    RegistrarBitacora(CodCliente, parametros.cod_beneficio ?? string.Empty, parametros.consec, "Notifica",
+                        $"Notificación Solicitud de Bloqueo Asociado {emailCobros}", parametros.usuario ?? string.Empty);
                 }
 
-                RegistrarBitacora(CodCliente, parametros.cod_beneficio ?? string.Empty, parametros.consec, "Notifica",
-                    $"Notificación Solicitud de Bloqueo Asociado {emailCobros}", parametros.usuario ?? string.Empty);
+                return info;
             }
             catch (Exception ex)
             {
-                info.Code = -1;
-                info.Description = ex.Message;
+                return new ErrorDto { Code = -1, Description = ex.Message };
             }
-
-            return info;
-        }
-
-        /// <summary>
-        /// Convierte un arreglo de bytes en una lista de IFormFile para adjuntar al correo.
-        /// </summary>
-        private static List<IFormFile> ConvertByteArrayToIFormFileList(byte[] byteArray, string fileName)
-        {
-            var formFiles = new List<IFormFile>();
-
-            if (byteArray == null || byteArray.Length == 0)
-            {
-                return formFiles;
-            }
-
-            // The stream must remain open for the returned FormFile to be readable.
-            // Its lifecycle is tied to the IFormFile consumer, which is responsible for disposal.
-            var fileContentStream = new MemoryStream(byteArray);
-            var formFile = new FormFile(fileContentStream, 0, byteArray.Length, "file", fileName)
-            {
-                Headers = new HeaderDictionary(),
-                ContentType = "application/octet-stream"
-            };
-
-            formFiles.Add(formFile);
-            return formFiles;
         }
     }
 }

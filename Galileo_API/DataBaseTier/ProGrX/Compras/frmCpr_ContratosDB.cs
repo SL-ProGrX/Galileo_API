@@ -124,7 +124,7 @@ namespace Galileo.DataBaseTier
                                 FROM CPR_CONTRATOS_ESTADOS ce
                                 WHERE ce.COD_CONTRATO = C.COD_CONTRATO
                                 AND ce.FECHA_INICIO <= GETDATE()
-                                ORDER BY ce.FECHA_INICIO DESC
+                                ORDER BY ce.FECHA_INICIO DESC, ce.REGISTRO_FECHA DESC, ce.LINEA_ID DESC
                             ) V
                             {where}
                             ORDER BY C.COD_CONTRATO DESC
@@ -583,7 +583,7 @@ namespace Galileo.DataBaseTier
             return DbHelper.ExecuteListQuery<CprContratosEstadosDto>(
                 _portalDB,
                 CodEmpresa,
-                "SELECT * FROM CPR_CONTRATOS_ESTADOS WHERE COD_CONTRATO = @cod_contrato;",
+                "SELECT * FROM CPR_CONTRATOS_ESTADOS WHERE COD_CONTRATO = @cod_contrato ORDER BY REGISTRO_FECHA DESC, LINEA_ID DESC;",
                 new { cod_contrato }
             );
         }
@@ -604,54 +604,29 @@ namespace Galileo.DataBaseTier
                     conn.Open();
                     using var tx = conn.BeginTransaction();
 
-                    bool existe = conn.ExecuteScalar<int>(
-                        "SELECT COUNT(*) FROM CPR_CONTRATOS_ESTADOS WHERE COD_CONTRATO=@cod AND ESTADO=@est;",
-                        new { cod = estado.cod_contrato, est = estado.estado },
+                    // Cada guardado es una línea nueva de seguimiento, aunque se repita el estado o la fecha de inicio.
+                    conn.Execute(
+                        @"INSERT INTO CPR_CONTRATOS_ESTADOS
+                          (COD_CONTRATO, ESTADO, FECHA_INICIO, NOTAS, REGISTRO_FECHA, REGISTRO_USUARIO)
+                          VALUES (@cod, @est, @fecha_inicio, @notas, GETDATE(), @usr);",
+                        new
+                        {
+                            cod = estado.cod_contrato,
+                            est = estado.estado,
+                            fecha_inicio = estado.fecha_inicio,
+                            notas = estado.notas,
+                            usr = estado.registro_usuario
+                        },
                         tx
-                    ) > 0;
-
-                    if (existe)
-                    {
-                        conn.Execute(
-                            @"UPDATE CPR_CONTRATOS_ESTADOS
-                              SET FECHA_INICIO=@fecha_inicio, NOTAS=@notas, REGISTRO_FECHA=GETDATE(), REGISTRO_USUARIO=@usr
-                              WHERE COD_CONTRATO=@cod AND ESTADO=@est;",
-                            new
-                            {
-                                fecha_inicio = estado.fecha_inicio,
-                                notas = estado.notas,
-                                usr = estado.registro_usuario,
-                                cod = estado.cod_contrato,
-                                est = estado.estado
-                            },
-                            tx
-                        );
-                    }
-                    else
-                    {
-                        conn.Execute(
-                            @"INSERT INTO CPR_CONTRATOS_ESTADOS
-                              (COD_CONTRATO, ESTADO, FECHA_INICIO, NOTAS, REGISTRO_FECHA, REGISTRO_USUARIO)
-                              VALUES (@cod, @est, @fecha_inicio, @notas, GETDATE(), @usr);",
-                            new
-                            {
-                                cod = estado.cod_contrato,
-                                est = estado.estado,
-                                fecha_inicio = estado.fecha_inicio,
-                                notas = estado.notas,
-                                usr = estado.registro_usuario
-                            },
-                            tx
-                        );
-                    }
+                    );
 
                     var descEstado = EstadoDescripcion_Obtener(CodEmpresa, estado.estado ?? "");
 
                     InsertarBitacora(conn, tx, new CprContratosBitacoraDto
                     {
                         cod_contrato = estado.cod_contrato,
-                        movimiento = existe ? MovActualiza : MovInserta,
-                        detalle = (existe ? "Modifica datos de estado: " : "Agrega estado: ") + descEstado,
+                        movimiento = MovInserta,
+                        detalle = "Agrega estado: " + descEstado,
                         registro_usuario = estado.registro_usuario
                     });
 
@@ -1019,7 +994,7 @@ namespace Galileo.DataBaseTier
         /// <param name="mensaje"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public async Task<ErrorDto> CprContratoNotificacion_Enviar(int CodEmpresa, string cod_contrato, string mensaje, string usuario)
+        public async Task<ErrorDto> CprContratoNotificacion_Enviar(int CodEmpresa, string cod_contrato, string? mensaje, string usuario)
         {
             var response = new ErrorDto { Code = 0 };
 
@@ -1029,16 +1004,20 @@ namespace Galileo.DataBaseTier
 
                 info.InfoContrato.divisa = DivisaNombre(info.InfoContrato.divisa);
 
-                if (!string.IsNullOrWhiteSpace(info.EmailConfeccionContrato))
-                {
-                    response = await _envioCorreoDB.QueuePlantillaAsync(
-                        CodEmpresa,
-                        codNotificaciones,
-                        PlantillaContrato,
-                        info.EmailConfeccionContrato,
-                        ConstruirTokensContrato(mensaje, info.InfoContrato),
-                        usuario: usuario);
-                }
+                if (string.IsNullOrWhiteSpace(info.EmailConfeccionContrato))
+                    return DbHelper.ErrorResponse("No hay un correo configurado para el rol de confección de contrato.", ErrorCode);
+
+                response = await _envioCorreoDB.QueuePlantillaDestinoRealAsync(
+                    CodEmpresa,
+                    codNotificaciones,
+                    PlantillaContrato,
+                    info.EmailConfeccionContrato.Trim(),
+                    ConstruirTokensContrato(mensaje ?? string.Empty, info.InfoContrato),
+                    usuario);
+
+                // Si no se pudo encolar, no se marca el contrato como notificado
+                if (response.Code != 0)
+                    return response;
 
                 var upd = DbHelper.ExecuteNonQuery(
                     _portalDB,
@@ -1185,7 +1164,7 @@ namespace Galileo.DataBaseTier
                             FROM CPR_CONTRATOS_ESTADOS ce
                             WHERE ce.COD_CONTRATO = C.COD_CONTRATO
                             AND ce.FECHA_INICIO <= GETDATE()
-                            ORDER BY ce.FECHA_INICIO DESC
+                            ORDER BY ce.FECHA_INICIO DESC, ce.REGISTRO_FECHA DESC, ce.LINEA_ID DESC
                         ) V
                         WHERE C.COD_PROVEEDOR IN
                         (

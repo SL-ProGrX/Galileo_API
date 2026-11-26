@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Galileo_API.DataBaseTier.mBeneficios
 {
@@ -15,6 +16,18 @@ namespace Galileo_API.DataBaseTier.mBeneficios
         public const string IdBeneficioPlaceholder = "@id_beneficio";
         public const string MontoUsuarioPlaceholder = "@monto_usuario";
         public const string SepelioIdentificacionPlaceholder = "@sepelio_identificacion";
+
+        private static readonly Regex PlaceholderEntreComillas = new(
+            @"'(@(?:cod_categoria|cod_beneficio|cedula|usuario|id_beneficio|monto_usuario|sepelio_identificacion))'",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+            TimeSpan.FromSeconds(1));
+
+        /// <summary>
+        /// Las plantillas de AFI_BENE_VALIDACIONES traen los marcadores entre comillas ('@cedula').
+        /// Se quitan las comillas para que SQL Server los trate como parámetros y no como texto.
+        /// </summary>
+        public static string PrepararConsulta(string plantilla) =>
+            PlaceholderEntreComillas.Replace(plantilla, "$1");
 
         // Queries "globales" sin categoría (cuando cod_beneficio es null)
         public const string registroP = @"

@@ -207,7 +207,7 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 
             try
             {
-                var valida = ValidarSiAplica(conn, tx, req.usuario, estadoFinal, codigos);
+                var valida = ValidarOrdenes(conn, tx, req.usuario, estadoFinal, codigos);
                 if (valida.Code != 0)
                 {
                     tx.Rollback();
@@ -231,18 +231,55 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
             }
         }
 
-        private ErrorDto ValidarSiAplica(
+        // Sin resultados parciales: se revisan todas las órdenes antes de actualizar alguna.
+        private static ErrorDto ValidarOrdenes(
             SqlConnection conn,
             SqlTransaction tx,
             string usuario,
             string estadoFinal,
             List<string> codigos)
         {
-            if (estadoFinal != "A")
+            var tipoCambio = CprOrdenPermisos.ObtenerTipoCambio(conn, tx);
+            if (tipoCambio <= 0)
+                return DbHelper.ErrorResponse("Tipo de cambio inválido", -1);
+
+            var fallas = new List<string>();
+            foreach (var codOrden in codigos)
+            {
+                var faltantes = ObtenerFaltantes(conn, tx, usuario, codOrden, tipoCambio);
+                if (faltantes.Count > 0)
+                    fallas.Add($"Orden #{codOrden}: {string.Join("; ", faltantes)}.");
+            }
+
+            if (fallas.Count == 0)
                 return DbHelper.CreateOkResponse();
 
-            // Regla original: validar usando el primer código
-            return ValidarRangoAutorizacion(conn, tx, codigos[0], usuario);
+            var accion = estadoFinal == "A" ? "autorizó" : "rechazó";
+            return DbHelper.ErrorResponse(
+                $"No se {accion} ninguna orden. {string.Join(" ", fallas)} Solicítelo en {CprOrdenPermisos.RutaNivelesAutorizacion}.",
+                CprOrdenPermisos.CodigoSinPermiso);
+        }
+
+        private static List<string> ObtenerFaltantes(
+            SqlConnection conn,
+            SqlTransaction tx,
+            string usuario,
+            string codOrden,
+            decimal tipoCambio)
+        {
+            var montoDolares = CprOrdenPermisos.ObtenerMontoOrden(conn, tx, codOrden) / tipoCambio;
+            if (montoDolares == 0)
+                return new List<string> { "el monto de la orden de compra no puede ser 0" };
+
+            var codUnidad = CprOrdenPermisos.ObtenerCodUnidad(conn, tx, codOrden);
+
+            return new[]
+                {
+                    CprOrdenPermisos.FaltantePorUen(conn, tx, usuario, codUnidad, montoDolares),
+                    CprOrdenPermisos.FaltanteUsuarioACargo(conn, tx, usuario, codOrden)
+                }
+                .OfType<string>()
+                .ToList();
         }
 
         private ErrorDto ActualizarOrdenes(
@@ -281,64 +318,6 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 
 
 
-
-        private ErrorDto ValidarRangoAutorizacion(IDbConnection conn, IDbTransaction tx, string codOrden, string usuario)
-        {
-            // UEN (COD_UNIDAD) por orden: tu query original usaba CPR_SOLICITUD.ADJUDICA_ORDEN = {codigosOrden}
-            var codUnidad = conn.QueryFirstOrDefault<string>(
-                @"SELECT TOP 1 COD_UNIDAD
-                  FROM CPR_SOLICITUD
-                  WHERE ADJUDICA_ORDEN = @CodOrden",
-                new { CodOrden = codOrden },
-                transaction: tx
-            ) ?? string.Empty;
-
-            var montoColones = conn.QueryFirstOrDefault<decimal>(
-                @"SELECT TOTAL
-                  FROM CPR_ORDENES
-                  WHERE COD_ORDEN = @CodOrden",
-                new { CodOrden = codOrden },
-                transaction: tx
-            );
-
-            var tcStr = conn.QueryFirstOrDefault<string>(
-                @"SELECT VALOR
-                  FROM SIF_PARAMETROS
-                  WHERE COD_PARAMETRO = 'TC'",
-                transaction: tx
-            ) ?? "0";
-
-            if (!decimal.TryParse(tcStr, out var tipoCambio) || tipoCambio <= 0)
-                return DbHelper.ErrorResponse("Tipo de cambio inválido", -1);
-
-            var montoDolares = montoColones / tipoCambio;
-
-            if (montoDolares == 0)
-                return DbHelper.ErrorResponse("El monto de la orden de compra no puede ser 0.", -1);
-
-            var montoMinimo = conn.QueryFirstOrDefault<decimal>(
-                @"SELECT TOP 1 MONTO_MINIMO
-                  FROM cpr_orden_rangos r
-                  JOIN CPR_RANGO_USUARIO u ON r.cod_rango = u.cod_rango
-                  WHERE u.USUARIO = @Usuario AND u.ACTIVO = 1 AND u.UEN = @UEN",
-                new { Usuario = usuario, UEN = codUnidad },
-                transaction: tx
-            );
-
-            var montoMaximo = conn.QueryFirstOrDefault<decimal>(
-                @"SELECT TOP 1 MONTO_MAXIMO
-                  FROM cpr_orden_rangos r
-                  JOIN CPR_RANGO_USUARIO u ON r.cod_rango = u.cod_rango
-                  WHERE u.USUARIO = @Usuario AND u.ACTIVO = 1 AND u.UEN = @UEN",
-                new { Usuario = usuario, UEN = codUnidad },
-                transaction: tx
-            );
-
-            if (montoDolares < montoMinimo || montoDolares > montoMaximo)
-                return DbHelper.ErrorResponse("El Usuario actual no está dentro del rango para esta Gestión.", -1);
-
-            return DbHelper.CreateOkResponse();
-        }
 
         // ----------------- Helpers SQL -----------------
 

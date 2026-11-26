@@ -139,7 +139,7 @@ namespace Galileo.Controllers
 
         [ValidateAntiForgeryToken]
         [HttpPost("CprContratoNotificacion_Enviar")]
-        public Task<ErrorDto> CprContratoNotificacion_Enviar(int CodEmpresa, string cod_contrato, string mensaje, string usuario)
+        public Task<ErrorDto> CprContratoNotificacion_Enviar(int CodEmpresa, string cod_contrato, string? mensaje, string usuario)
         {
             return _bl.CprContratoNotificacion_Enviar(CodEmpresa, cod_contrato, mensaje, usuario);
         }

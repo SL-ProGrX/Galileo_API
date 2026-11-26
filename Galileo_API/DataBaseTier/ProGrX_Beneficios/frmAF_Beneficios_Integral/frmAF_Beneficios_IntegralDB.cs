@@ -10,8 +10,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
     {
         private readonly IConfiguration _config;
         private readonly MBeneficiosDB _mBeneficiosDB;
-        private readonly EnvioCorreoDB _envioCorreoDB;
-        private readonly string _sendEmail;
+        private readonly BeneficiosCorreoDB _beneCorreo;
         private readonly string _notificacionCobros;
 
         /// <summary>
@@ -22,8 +21,7 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _mBeneficiosDB = new MBeneficiosDB(_config);
-            _envioCorreoDB = new EnvioCorreoDB(_config);
-            _sendEmail = _config.GetSection("AppSettings").GetSection("EnviaEmail").Value ?? "N";
+            _beneCorreo = new BeneficiosCorreoDB(_config);
             _notificacionCobros = _config.GetSection("AFI_Beneficios").GetSection("NotificacionCobros").Value ?? string.Empty;
         }
 

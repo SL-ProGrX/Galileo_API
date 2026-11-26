@@ -123,7 +123,7 @@ SELECT CONVERT(int, @@ROWCOUNT);";
         /// los de <paramref name="html"/> (PRODUCTOS, TERMINOS) se insertan tal cual.
         /// Si Produccion = N, el destinatario se redirige a TestEmail.
         /// </summary>
-        public async Task<ErrorDto> QueuePlantillaAsync(
+        public Task<ErrorDto> QueuePlantillaAsync(
             int codEmpresa,
             string codSmtp,
             string codPlantilla,
@@ -133,6 +133,31 @@ SELECT CONVERT(int, @@ROWCOUNT);";
             string usuario = "Sistema")
         {
             var destino = _produccion == "N" && !string.IsNullOrWhiteSpace(_testEmail) ? _testEmail : para;
+            return EncolarPlantillaAsync(codEmpresa, codSmtp, codPlantilla, destino, textos, html, usuario);
+        }
+
+        /// <summary>
+        /// Igual que <see cref="QueuePlantillaAsync"/>, pero el destinatario es siempre
+        /// <paramref name="para"/>, sin redirigir a TestEmail.
+        /// </summary>
+        public Task<ErrorDto> QueuePlantillaDestinoRealAsync(
+            int codEmpresa,
+            string codSmtp,
+            string codPlantilla,
+            string para,
+            IReadOnlyDictionary<string, string> textos,
+            string usuario) =>
+            EncolarPlantillaAsync(codEmpresa, codSmtp, codPlantilla, para, textos, null, usuario);
+
+        private async Task<ErrorDto> EncolarPlantillaAsync(
+            int codEmpresa,
+            string codSmtp,
+            string codPlantilla,
+            string destino,
+            IReadOnlyDictionary<string, string> textos,
+            IReadOnlyDictionary<string, string>? html,
+            string usuario)
+        {
             var bloques = html ?? new Dictionary<string, string>();
 
             try
@@ -165,13 +190,73 @@ SELECT CONVERT(int, @@ROWCOUNT);";
             }
         }
 
+        /// <summary>
+        /// Registra en estado P un correo con un adjunto en SYS_MAIL_SERVICE_ADJUNTOS, sin enviarlo,
+        /// usando spSys_CORREO_POOL_ADD (base de la empresa). Sirve para cualquier módulo.
+        /// PAG_DIVISA = ADJ_B64 distingue estos correos de los pagarés; PAG_SECCION_1 lleva el archivo
+        /// en base64 y PAG_SECCION_2 su nombre. El HTML admite hasta 4000 caracteres.
+        /// El destinatario es siempre el indicado en la solicitud, sin redirigir a TestEmail.
+        /// </summary>
+        public async Task<ErrorDto> QueueEmailAdjuntoAsync(
+            int codEmpresa,
+            string codSmtp,
+            EmailRequest emailRequest,
+            EmailAdjuntoBase64 adjunto,
+            string codNotificacion)
+        {
+            var destino = emailRequest.To?.Trim();
+
+            if (string.IsNullOrWhiteSpace(codSmtp) || string.IsNullOrWhiteSpace(destino))
+                return new ErrorDto { Code = -1, Description = "El código SMTP y el destinatario son requeridos para encolar el correo." };
+
+            // CUERPO es varchar(4000) en SYS_MAIL_SERVICE_ADJUNTOS
+            if (emailRequest.Body?.Length > 4000)
+                return new ErrorDto { Code = -1, Description = "El cuerpo del correo supera los 4000 caracteres." };
+
+            try
+            {
+                await using var connection = _portalDb.CreateConnection(codEmpresa);
+                await connection.ExecuteAsync(new CommandDefinition(
+                    "dbo.spSys_CORREO_POOL_ADD",
+                    new
+                    {
+                        DETALLE = emailRequest.Body,
+                        ASUNTO = emailRequest.Subject,
+                        ESTADO = "P",
+                        PARA = destino,
+                        CEDULA = (string?)null,
+                        NOMBRE = (string?)null,
+                        PAG_NUMERO = (int?)null,
+                        PAG_MONTO = (decimal?)null,
+                        PAG_DIVISA = "ADJ_B64",
+                        PAG_SECCION1 = adjunto.ContenidoBase64,
+                        PAG_SECCION2 = adjunto.NombreArchivo,
+                        PAG_SECCION3 = (string?)null,
+                        Copia = emailRequest.CopyHide ?? string.Empty,
+                        Usuario = "Sistema",
+                        NotiCfg = codNotificacion,
+                        SMTP = codSmtp.Trim(),
+                    },
+                    commandType: CommandType.StoredProcedure)).ConfigureAwait(false);
+
+                return new ErrorDto { Code = 0, Description = "Correo agregado a la cola de envío." };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto { Code = -1, Description = ex.Message };
+            }
+        }
+
+        /// <summary>Archivo adjunto de un correo encolado.</summary>
+        public sealed record EmailAdjuntoBase64(string NombreArchivo, string ContenidoBase64);
+
         public async Task<string?> ObtenerCuerpoPlantillaAsync(int codEmpresa, string codPlantilla, CancellationToken ct = default)
         {
             var plantilla = await ObtenerPlantillaAsync(codEmpresa, codPlantilla, ct).ConfigureAwait(false);
             return plantilla?.Cuerpo;
         }
 
-        private async Task<(string Asunto, string Cuerpo)?> ObtenerPlantillaAsync(int codEmpresa, string codPlantilla, CancellationToken ct)
+        public async Task<(string Asunto, string Cuerpo)?> ObtenerPlantillaAsync(int codEmpresa, string codPlantilla, CancellationToken ct = default)
         {
             const string sql = @"
 SELECT ASUNTO AS Asunto, CAST(NOTIFICACION AS nvarchar(max)) AS Cuerpo

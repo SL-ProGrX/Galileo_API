@@ -2,13 +2,14 @@ using Dapper;
 using Galileo.Models;
 using Galileo.Models.AF;
 using Galileo.Models.ERROR;
-using Microsoft.AspNetCore.Http;
 using System.IO;
 
 namespace Galileo.DataBaseTier.ProGrX_Beneficios
 {
     public partial class FrmAfBeneRecargaTarjetaDB
     {
+        private const string CorreoTesoreria = "tesoreria@aseccss.com";
+
         /// <summary>
         /// Obtiene las remesas de tarjetas con datos de proveedor, con paginación y filtro.
         /// </summary>
@@ -79,13 +80,8 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
         /// <returns>Resultado de la operación.</returns>
         public async Task<ErrorDto> AfiTarjetasRegaloRecargadas_Enviar(int CodCliente, DocArchivoBeneRecargaTarjetaDto parametros)
         {
-            var info = new ErrorDto { Code = 0 };
-            var archivos = parametros.archivos ?? new List<FileTarjetasDto>();
-
             try
             {
-                var codCategoria = ObtenerCategoriaCorreo(CodCliente, parametros);
-                var eConfig = _envioCorreoDB.CorreoConfig(CodCliente, codCategoria).Result;
                 var proveedor = ObtenerNombreProveedor(CodCliente, parametros.cod_proveedor);
 
                 if (string.IsNullOrWhiteSpace(parametros.body))
@@ -93,19 +89,30 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                     parametros.body = "Estimado asociado, se le notifica la solicitud de pago para la recarga de tarjetas de regalo. Por favor, revise los archivos adjuntos para mas detalles.";
                 }
 
-                if (_sendEmail == "Y" && eConfig != null)
+                return await _beneCorreo.EncolarAsync(new CorreoBeneficio
                 {
-                    var emailRequest = ConstruirEmail(parametros, proveedor, eConfig, archivos);
-                    await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, info);
-                }
+                    CodEmpresa = CodCliente,
+                    CodPlantilla = BeneficiosPlantillas.RecargaTarjetas,
+                    CodSmtp = ObtenerCategoriaCorreo(CodCliente, parametros).Trim(),
+                    Para = CorreoTesoreria,
+                    Usuario = parametros.usuario ?? string.Empty,
+                    Datos = new Dictionary<string, string>
+                    {
+                        ["MENSAJE"] = parametros.body,
+                        ["REMESA"] = parametros.cod_remesa_tr.ToString(),
+                        ["COD_PROVEEDOR"] = parametros.cod_proveedor.ToString(),
+                        ["PROVEEDOR"] = proveedor
+                    },
+                    Adjuntos = (parametros.archivos ?? new List<FileTarjetasDto>())
+                        .Where(a => a.filecontent is { Length: > 0 })
+                        .Select(a => new AdjuntoBeneficio(a.filename ?? "archivo.pdf", Convert.ToBase64String(a.filecontent!)))
+                        .ToList()
+                });
             }
             catch (Exception ex)
             {
-                info.Code = -1;
-                info.Description = "AfiTarjetasRegaloRecargadas_Enviar - " + ex.Message;
+                return new ErrorDto { Code = -1, Description = "AfiTarjetasRegaloRecargadas_Enviar - " + ex.Message };
             }
-
-            return info;
         }
 
         /// <summary>
@@ -140,61 +147,6 @@ namespace Galileo.DataBaseTier.ProGrX_Beneficios
                 connection.QueryFirstOrDefault<string>(sql, new { cod_proveedor }));
 
             return result.Result ?? string.Empty;
-        }
-
-        /// <summary>
-        /// Construye la solicitud de correo con el cuerpo HTML y los archivos adjuntos.
-        /// </summary>
-        private static EmailRequest ConstruirEmail(DocArchivoBeneRecargaTarjetaDto parametros, string proveedor,
-            EnvioCorreoModels eConfig, List<FileTarjetasDto> archivos)
-        {
-            var body = $@"<html lang=""es"">
-                            <head><meta charset=""UTF-8""><title>Solicitud de Pago: Transferencia</title></head>
-                            <body>
-                                <p>{parametros.body}</p><br>
-                                <p>Cod.Remesa de Tarjetas: {parametros.cod_remesa_tr}</p>
-                                <p>Cod.Proveedor: {parametros.cod_proveedor}</p>
-                                <p>Proveedor: {proveedor}</p>
-                            </body>
-                          </html>";
-
-            var attachments = new List<IFormFile>();
-            foreach (var archivo in archivos)
-            {
-                attachments.AddRange(ConvertByteArrayToIFormFileList(archivo.filecontent, archivo.filename));
-            }
-
-            return new EmailRequest
-            {
-                To = "tesoreria@aseccss.com",
-                From = eConfig.User,
-                Subject = "Solicitud de Pago",
-                Body = body,
-                Attachments = attachments
-            };
-        }
-
-        /// <summary>
-        /// Convierte un arreglo de bytes en una lista con un IFormFile.
-        /// </summary>
-        private static List<IFormFile> ConvertByteArrayToIFormFileList(byte[]? byteArray, string? fileName)
-        {
-            var formFiles = new List<IFormFile>();
-
-            if (byteArray == null || byteArray.Length == 0)
-            {
-                return formFiles;
-            }
-
-            var stream = new MemoryStream(byteArray);
-            var formFile = new FormFile(stream, 0, byteArray.Length, "file", fileName ?? "file")
-            {
-                Headers = new HeaderDictionary(),
-                ContentType = "application/octet-stream"
-            };
-
-            formFiles.Add(formFile);
-            return formFiles;
         }
     }
 }

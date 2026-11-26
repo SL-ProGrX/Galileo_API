@@ -103,7 +103,7 @@ namespace Galileo.BusinessLogic
             return _db.CprContrato_Bitacora_Obtener(CodEmpresa, cod_contrato);
         }
 
-        public Task<ErrorDto> CprContratoNotificacion_Enviar(int CodEmpresa, string cod_contrato, string mensaje, string usuario)
+        public Task<ErrorDto> CprContratoNotificacion_Enviar(int CodEmpresa, string cod_contrato, string? mensaje, string usuario)
         {
             return _db.CprContratoNotificacion_Enviar(CodEmpresa, cod_contrato, mensaje, usuario);
         }

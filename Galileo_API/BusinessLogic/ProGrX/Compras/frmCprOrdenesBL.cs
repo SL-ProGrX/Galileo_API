@@ -63,9 +63,9 @@ namespace Galileo.BusinessLogic
             return _db.formapago_Obtener(CodEmpresa, usuario);
         }
 
-        public ErrorDto CorreoNotificaOrdenCompra(int CodEmpresa, string cod_orden, string proveedor, string cod_proveedor)
+        public ErrorDto CorreoNotificaOrdenCompra(int CodEmpresa, string cod_orden, string proveedor, string cod_proveedor, string? usuario = null)
         {
-            return _db.CorreoNotificaOrdenCompra(CodEmpresa, cod_orden, proveedor,cod_proveedor);
+            return _db.CorreoNotificaOrdenCompra(CodEmpresa, cod_orden, proveedor, cod_proveedor, usuario);
         }
 
     }

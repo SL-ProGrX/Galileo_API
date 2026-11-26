@@ -107,12 +107,12 @@ namespace Galileo.Controllers.ProGrX_Beneficios
         public ErrorDto BeneRegistroMora_Guardar(int CodCliente, [FromBody] BeneRegistroMoraGuardar cobroMora)
             => _bl.BeneRegistroMora_Guardar(CodCliente, cobroMora);
 
-        /// <summary>[PENDIENTE] Envío de boleta de cobro de mora por correo (requiere servidor de reportes).</summary>
+        /// <summary>Registra el correo de cobro de mora con sus archivos PDF (hasta 3).</summary>
         [Authorize]
         [ValidateAntiForgeryToken]
         [HttpPost("BeneRegistroMora_Enviar")]
-        public Task<ErrorDto> BeneRegistroMora_Enviar([FromBody] DocArchivoBeneIntegralDto info)
-            => _bl.BeneRegistroMora_Enviar(Convert.ToInt32(info.codCliente), info);
+        public Task<ErrorDto> BeneRegistroMora_Enviar([FromBody] List<DocArchivoBeneIntegralDto> info)
+            => _bl.BeneRegistroMora_Enviar(info);
 
         /// <summary>Valida si la persona figura como fallecida.</summary>
         [Authorize]
