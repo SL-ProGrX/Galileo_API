@@ -32,6 +32,63 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         /// <summary>
+        /// Obtiene únicamente cédula y nombre para la búsqueda de socios de Cajas: Saldos a Favor.
+        /// </summary>
+        public ErrorDto<CajasCargaSaldosFavorSociosLista> CargaSaldosFavor_Socios_Obtener(
+            int codEmpresa,
+            string? filtro,
+            int pagina,
+            int paginacion,
+            bool exacto)
+        {
+            const string where = @"
+WHERE (@Exacto = 1 AND Cedula = @Filtro)
+   OR (@Exacto = 0 AND (
+       @Filtro = ''
+       OR Cedula LIKE '%' + @Filtro + '%'
+       OR Nombre LIKE '%' + @Filtro + '%'))";
+
+            var filtroNormalizado = filtro?.Trim() ?? string.Empty;
+            var paginaNormalizada = Math.Max(0, pagina);
+            var paginacionNormalizada = Math.Clamp(paginacion, 1, 30);
+
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var parametros = new
+                {
+                    Filtro = filtroNormalizado,
+                    Exacto = exacto
+                };
+
+                var total = conn.ExecuteScalar<int>(
+                    $"SELECT COUNT(1) FROM Socios {where}",
+                    parametros);
+
+                var lista = conn.Query<CajasCargaSaldosFavorSocio>(
+                    $@"
+SELECT Cedula, Nombre
+FROM Socios
+{where}
+ORDER BY Cedula
+OFFSET @Pagina ROWS FETCH NEXT @Paginacion ROWS ONLY;",
+                    new
+                    {
+                        Filtro = filtroNormalizado,
+                        Exacto = exacto,
+                        Pagina = exacto ? 0 : paginaNormalizada,
+                        Paginacion = exacto ? 1 : paginacionNormalizada
+                    })
+                    .ToList();
+
+                return new CajasCargaSaldosFavorSociosLista
+                {
+                    Total = total,
+                    Lista = lista
+                };
+            });
+        }
+
+        /// <summary>
         /// Obtiene los conceptos de retención activos para Carga de Saldos a Favor.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
