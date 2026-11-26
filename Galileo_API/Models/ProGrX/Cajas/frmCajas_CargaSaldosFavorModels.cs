@@ -1,5 +1,17 @@
 ﻿namespace Galileo_API.Models.ProGrX.Cajas
 {
+    public class CajasCargaSaldosFavorSociosLista
+    {
+        public int Total { get; set; }
+        public List<CajasCargaSaldosFavorSocio> Lista { get; set; } = new();
+    }
+
+    public class CajasCargaSaldosFavorSocio
+    {
+        public string? Cedula { get; set; } = string.Empty;
+        public string? Nombre { get; set; } = string.Empty;
+    }
+
     public class CajasSaldoFavorTipoLiquidacionParams
     {
         public string? Usuario { get; set; } = string.Empty;
