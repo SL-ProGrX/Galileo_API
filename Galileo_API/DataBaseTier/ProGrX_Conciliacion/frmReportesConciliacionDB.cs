@@ -1081,6 +1081,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
                 fechaServidor,
                 request.usuario_sesion);
 
+            // El VB6 incluye en el subtítulo de fondos el filtro seleccionado.
+            parametros[0].valor =
+                $"{ConstruirSubtitulo(periodo)} / FILTRO : " +
+                ObtenerDescripcionFiltroFondos(request.codigo_filtro);
+
             AgregarParametro(
                 parametros,
                 ParametroFiltros,
@@ -1091,6 +1096,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
                 titulo,
                 periodo,
                 parametros);
+        }
+
+        private static string ObtenerDescripcionFiltroFondos(string? codigoFiltro)
+        {
+            return NormalizarTexto(codigoFiltro) switch
+            {
+                "01" => "01 - CONTRATOS ACTIVOS",
+                "02" => "02 - LIQUIDADOS ACTIVOS",
+                _ => "00 - TODOS"
+            };
         }
 
         /// <summary>
@@ -1449,13 +1464,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
                 "Mes",
                 periodo.mes);
 
+            // El usuario ya viaja en el encabezado (USUARIO); repetirlo como
+            // "Usuario" duplica el mismo parámetro del reporte.
             if (configuracion.incluyeUsuario)
             {
-                AgregarParametro(
-                    parametros,
-                    "Usuario",
-                    request.usuario_sesion.Trim());
-
                 AgregarParametro(
                     parametros,
                     "Asiento",
@@ -1721,7 +1733,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Conciliacion
 
         CrearParametro(
             "Cartera",
-            ConstruirCarterasEspeciales(request.carteras)),
+            // El VB6 siempre agrega la cartera "00" en este informe.
+            ConstruirCarterasEspeciales(request.carteras.Append("00"))),
 
         CrearParametro(
             "Detalle",
