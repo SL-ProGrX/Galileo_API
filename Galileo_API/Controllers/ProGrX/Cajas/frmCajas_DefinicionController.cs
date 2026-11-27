@@ -40,6 +40,35 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
 
         [Authorize]
+        [HttpGet("CajasDefinicion_Derechos_Obtener")]
+        public ErrorDto<CajasDefinicionDerechosModel> CajasDefinicion_Derechos_Obtener(int codEmpresa, string usuario)
+        {
+            return _bl.CajasDefinicion_Derechos_Obtener(codEmpresa, usuario);
+        }
+
+        [Authorize]
+        [HttpGet("CajasDefinicion_FechaServidor_Obtener")]
+        public ErrorDto<DateTime> CajasDefinicion_FechaServidor_Obtener(int codEmpresa)
+        {
+            return _bl.CajasDefinicion_FechaServidor_Obtener(codEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("CajasDefinicion_Cuenta_Obtener")]
+        public ErrorDto<CajasDefinicionCuentaModel> CajasDefinicion_Cuenta_Obtener(int codEmpresa, string cuenta, int gEnlace)
+        {
+            return _bl.CajasDefinicion_Cuenta_Obtener(codEmpresa, cuenta, gEnlace);
+        }
+
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        [HttpPost("CajasDefinicion_DivisaPolitica_Guardar")]
+        public ErrorDto<bool> CajasDefinicion_DivisaPolitica_Guardar(int codEmpresa, [FromBody] CajasDivisaPoliticaGuardarParams param)
+        {
+            return _bl.CajasDefinicion_DivisaPolitica_Guardar(codEmpresa, param);
+        }
+
+        [Authorize]
         [HttpGet("CajasDefinicion_Recaudadores_Obtener")]
         public ErrorDto<List<CajasRecaudadorModel>> CajasDefinicion_Recaudadores_Obtener(int codEmpresa)
         {

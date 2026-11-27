@@ -34,6 +34,26 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
             return _db.CajasDefinicion_DivisasPolitica_Obtener(codEmpresa, codCaja, gEnlace);
         }
 
+        public ErrorDto<CajasDefinicionDerechosModel> CajasDefinicion_Derechos_Obtener(int codEmpresa, string usuario)
+        {
+            return _db.CajasDefinicion_Derechos_Obtener(codEmpresa, usuario);
+        }
+
+        public ErrorDto<DateTime> CajasDefinicion_FechaServidor_Obtener(int codEmpresa)
+        {
+            return _db.CajasDefinicion_FechaServidor_Obtener(codEmpresa);
+        }
+
+        public ErrorDto<CajasDefinicionCuentaModel> CajasDefinicion_Cuenta_Obtener(int codEmpresa, string cuenta, int gEnlace)
+        {
+            return _db.CajasDefinicion_Cuenta_Obtener(codEmpresa, cuenta, gEnlace);
+        }
+
+        public ErrorDto<bool> CajasDefinicion_DivisaPolitica_Guardar(int codEmpresa, CajasDivisaPoliticaGuardarParams param)
+        {
+            return _db.CajasDefinicion_DivisaPolitica_Guardar(codEmpresa, param);
+        }
+
         public ErrorDto<List<CajasRecaudadorModel>> CajasDefinicion_Recaudadores_Obtener(int codEmpresa)
         {
             return _db.CajasDefinicion_Recaudadores_Obtener(codEmpresa);

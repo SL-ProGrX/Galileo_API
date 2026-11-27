@@ -1,5 +1,12 @@
 namespace Galileo_API.Models.ProGrX.Cajas
 {
+    public class CajasReporteCierresDerechosDto
+    {
+        public bool Reportes { get; set; }
+        public bool ModoSupervisor { get; set; }
+        public bool ForzarCierre { get; set; }
+    }
+
     public class CajasAperturaReporteDto
     {
         public int cod_apertura { get; set; }

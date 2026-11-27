@@ -17,6 +17,34 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
             => _bl = new FrmCajasReporteCierresBl(config);
 
         [Authorize]
+        [HttpGet("Cajas_Derechos_Obtener")]
+        public ErrorDto<CajasReporteCierresDerechosDto> Cajas_Derechos_Obtener(int codEmpresa, string? usuario)
+        {
+            return _bl.Cajas_Derechos_Obtener(codEmpresa, usuario ?? string.Empty);
+        }
+
+        [Authorize]
+        [HttpGet("Cajas_FechaServidor_Obtener")]
+        public ErrorDto<DateTime> Cajas_FechaServidor_Obtener(int codEmpresa)
+        {
+            return _bl.Cajas_FechaServidor_Obtener(codEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("Cajas_Caja_Obtener")]
+        public ErrorDto<DropDownListaGenericaModel?> Cajas_Caja_Obtener(int codEmpresa, string? codCaja)
+        {
+            return _bl.Cajas_Caja_Obtener(codEmpresa, codCaja ?? string.Empty);
+        }
+
+        [Authorize]
+        [HttpGet("Cajas_Apertura_Obtener")]
+        public ErrorDto<CajasAperturaReporteDto?> Cajas_Apertura_Obtener(int codEmpresa, string? codCaja, int codApertura)
+        {
+            return _bl.Cajas_Apertura_Obtener(codEmpresa, codCaja ?? string.Empty, codApertura);
+        }
+
+        [Authorize]
         [HttpGet("Cajas_Aperturas_Consulta")]
         public ErrorDto<List<CajasAperturaReporteDto>> Cajas_Aperturas_Consulta(int codEmpresa, string? codCaja, DateTime fechaInicio,
             DateTime fechaCorte, string filtro)

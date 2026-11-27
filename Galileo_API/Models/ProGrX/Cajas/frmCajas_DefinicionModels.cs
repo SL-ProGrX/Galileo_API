@@ -82,6 +82,37 @@
         }
         public string? OficinaDesc { get; set; }
         public string? CuentaDesc { get; set; }
+        public string? Cod_Cuenta_Mask { get; set; }
+    }
+
+    public class CajasDefinicionDerechosModel
+    {
+        public bool Nuevo { get; set; }
+        public bool Editar { get; set; }
+        public bool Borrar { get; set; }
+        public bool Saldos { get; set; }
+        public bool Servicios { get; set; }
+        public bool Auxiliares { get; set; }
+        public bool FormasPago { get; set; }
+        public bool Documentos { get; set; }
+    }
+
+    public class CajasDefinicionCuentaModel
+    {
+        public string Cuenta { get; set; } = string.Empty;
+        public string Cuenta_Mask { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+    }
+
+    public class CajasDivisaPoliticaGuardarParams
+    {
+        public required string Cod_Caja { get; set; }
+        public required string Cod_Divisa { get; set; }
+        public decimal? Efectivo_Maximo { get; set; }
+        public decimal? Efectivo_Minimo { get; set; }
+        public decimal? Documentos_Maximo { get; set; }
+        public decimal? Documentos_Minimo { get; set; }
+        public required string Usuario { get; set; }
     }
 
     public class CajasDivisaPoliticaModel
