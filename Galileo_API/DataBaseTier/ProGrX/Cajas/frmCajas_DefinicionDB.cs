@@ -1,8 +1,10 @@
-﻿using Galileo.DataBaseTier;
+﻿using Dapper;
+using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Cajas;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 {
@@ -10,13 +12,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
     {
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb DBBitacora;
-        private const int vModulo = 36;
+        private readonly MCntLinkDB _cntLink;
+        private const int vModulo = 5;
         private const string error = "Error";
+        private const int ErrorLlaveForanea = 547;
+        private const string FormName = "frmCajas_Definicion";
 
         public FrmCajasDefinicionDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
             DBBitacora = new MSecurityMainDb(config);
+            _cntLink = new MCntLinkDB(config);
         }
 
         public ErrorDto Bitacora(BitacoraInsertarDto data) => DBBitacora.Bitacora(data);
@@ -59,18 +65,151 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             var query = @"
                 select C.*,
-                       rtrim(O.Cod_Oficina) as Cod_Oficina,
+                       rtrim(isnull(O.Cod_Oficina, C.Cod_Oficina)) as Cod_Oficina,
                        rtrim(O.Descripcion) as OficinaDesc,
                        isnull(Cta.Descripcion,'') as CuentaDesc
                 from cajas_definicion C
-                inner join Sif_Oficinas O
-                        on C.cod_Oficina = O.cod_Oficina
+                left join Sif_Oficinas O
+                       on C.cod_Oficina = O.cod_Oficina
                 left join CntX_Cuentas Cta
                        on C.Cod_Cuenta_Dev = Cta.Cod_Cuenta
                       and Cta.Cod_Contabilidad = @gEnlace
                 where C.cod_caja = @codCaja";
             var parameters = new { codCaja, gEnlace };
-            return DbHelper.ExecuteSingleQuery<CajasDefinicionDetalleModel>(_portalDb, codEmpresa, query, default, parameters);
+            var response = DbHelper.ExecuteSingleQuery<CajasDefinicionDetalleModel>(_portalDb, codEmpresa, query, default, parameters);
+
+            if (response.Result != null && !string.IsNullOrWhiteSpace(response.Result.Cod_Cuenta_Dev))
+            {
+                response.Result.Cod_Cuenta_Mask = _cntLink.fxgCntCuentaFormato(codEmpresa, true, response.Result.Cod_Cuenta_Dev, 0);
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Obtiene los permisos del usuario sobre las acciones del formulario.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="usuario">Usuario de la sesión.</param>
+        /// <returns>Permisos del formulario.</returns>
+        public ErrorDto<CajasDefinicionDerechosModel> CajasDefinicion_Derechos_Obtener(int codEmpresa, string usuario)
+        {
+            bool TieneDerecho(string opcion) => DBBitacora.Derecho(new ParametrosAccesoDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario,
+                Modulo = vModulo,
+                FormName = FormName,
+                Boton = opcion
+            }) != 0;
+
+            return DbHelper.CreateOkResponse(new CajasDefinicionDerechosModel
+            {
+                Nuevo = TieneDerecho("nuevo"),
+                Editar = TieneDerecho("editar"),
+                Borrar = TieneDerecho("borrar"),
+                Saldos = TieneDerecho("vGridRangosDivisa"),
+                Servicios = TieneDerecho("ArbolRecaudador"),
+                Auxiliares = TieneDerecho("lswAuxiliares"),
+                FormasPago = TieneDerecho("lswFormasPago"),
+                Documentos = TieneDerecho("lswDocumentos")
+            });
+        }
+
+        /// <summary>
+        /// Obtiene la fecha del servidor de base de datos.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <returns>Fecha del servidor.</returns>
+        public ErrorDto<DateTime> CajasDefinicion_FechaServidor_Obtener(int codEmpresa)
+        {
+            return DbHelper.ExecuteSingleQuery<DateTime>(_portalDb, codEmpresa, "SELECT dbo.MyGetdate()", DateTime.Today);
+        }
+
+        /// <summary>
+        /// Obtiene el formato y la descripción de una cuenta contable.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="cuenta">Cuenta digitada, con o sin máscara.</param>
+        /// <param name="gEnlace">Enlace de contabilidad.</param>
+        /// <returns>Cuenta sin máscara, con máscara y descripción.</returns>
+        public ErrorDto<CajasDefinicionCuentaModel> CajasDefinicion_Cuenta_Obtener(int codEmpresa, string cuenta, int gEnlace)
+        {
+            var codigo = _cntLink.fxgCntCuentaFormato(codEmpresa, false, cuenta, 0);
+
+            if (string.IsNullOrWhiteSpace(codigo))
+            {
+                return DbHelper.CreateOkResponse(new CajasDefinicionCuentaModel());
+            }
+
+            return DbHelper.CreateOkResponse(new CajasDefinicionCuentaModel
+            {
+                Cuenta = codigo,
+                Cuenta_Mask = _cntLink.fxgCntCuentaFormato(codEmpresa, true, codigo, 0),
+                Descripcion = _cntLink.fxgCntCuentaDesc(codEmpresa, codigo, gEnlace)
+            });
+        }
+
+        /// <summary>
+        /// Guarda los rangos de efectivo y documentos de una divisa para una caja.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Rangos de la divisa.</param>
+        /// <returns>Resultado de la operación.</returns>
+        public ErrorDto<bool> CajasDefinicion_DivisaPolitica_Guardar(int codEmpresa, CajasDivisaPoliticaGuardarParams param)
+        {
+            var parametros = new
+            {
+                param.Cod_Caja,
+                Cod_Divisa = param.Cod_Divisa.Trim().ToUpperInvariant(),
+                Efectivo_Maximo = param.Efectivo_Maximo ?? 0,
+                Efectivo_Minimo = param.Efectivo_Minimo ?? 0,
+                Documentos_Maximo = param.Documentos_Maximo ?? 0,
+                Documentos_Minimo = param.Documentos_Minimo ?? 0,
+                param.Usuario
+            };
+
+            const string existeQuery = @"
+                select count(*)
+                from cajas_politicas_saldos
+                where cod_divisa = @Cod_Divisa
+                  and cod_caja = @Cod_Caja";
+            var existe = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, existeQuery, 0, parametros);
+
+            if (existe.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse<bool>(existe.Description ?? error, existe.Code ?? -1, false);
+            }
+
+            const string insertQuery = @"
+                insert into cajas_politicas_saldos
+                (cod_caja, cod_divisa, efectivo_maximo, efectivo_minimo, documentos_maximo, documentos_minimo, registro_usuario, registro_fecha)
+                values
+                (@Cod_Caja, @Cod_Divisa, @Efectivo_Maximo, @Efectivo_Minimo, @Documentos_Maximo, @Documentos_Minimo, @Usuario, dbo.MyGetdate())";
+            const string updateQuery = @"
+                update cajas_politicas_saldos
+                set efectivo_maximo = @Efectivo_Maximo,
+                    efectivo_minimo = @Efectivo_Minimo,
+                    documentos_maximo = @Documentos_Maximo,
+                    documentos_minimo = @Documentos_Minimo
+                where cod_divisa = @Cod_Divisa
+                  and cod_caja = @Cod_Caja";
+
+            var esNuevo = existe.Result == 0;
+            var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, esNuevo ? insertQuery : updateQuery, parametros);
+
+            if (result.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
+            }
+
+            RegistrarBitacora(
+                codEmpresa,
+                param.Usuario,
+                $"Mantenimiento Rangos Divisas: {parametros.Cod_Divisa} {param.Cod_Caja}",
+                esNuevo ? "Registra - WEB" : "Modifica - WEB");
+
+            return DbHelper.CreateOkResponse(true);
         }
 
         /// <summary>
@@ -317,7 +456,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
             if (result.Code == 0)
             {
-                RegistrarBitacora(codEmpresa, usuario, $"REGISTRA CONCEPTO: {param.CodAuxiliar} en Caja: {param.CodCaja}", "REGISTRA - WEB");
+                RegistrarBitacora(codEmpresa, usuario, $"CONCEPTO: {param.CodAuxiliar} -> AUXILIAR: {param.Tipo} -> CAJA: {param.CodCaja}", "REGISTRA - WEB");
             }
 
             return result.Code == 0
@@ -343,7 +482,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
             if (result.Code == 0)
             {
-                RegistrarBitacora(codEmpresa, usuario, $"ELIMINA CONCEPTO: {param.CodAuxiliar} de Caja: {param.CodCaja}", "ELIMINA - WEB");
+                RegistrarBitacora(codEmpresa, usuario, $"CONCEPTO: {param.CodAuxiliar} -> AUXILIAR: {param.Tipo} -> CAJA: {param.CodCaja}", "ELIMINA - WEB");
             }
 
             return result.Code == 0
@@ -495,6 +634,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto<bool> CajasDefinicion_Caja_Insertar(int codEmpresa, CajasDefinicionInsertParams param)
         {
+            var validacion = ValidarCaja(codEmpresa, param);
+            if (validacion.Length > 0)
+            {
+                return DbHelper.CreateErrorResponse<bool>(validacion, -1, false);
+            }
+
             var query = @"
                 insert into cajas_definicion(
                   cod_caja,descripcion,notas,activa,apertura_fecha,apertura_compartida,
@@ -559,6 +704,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto<bool> CajasDefinicion_Caja_Actualizar(int codEmpresa, CajasDefinicionActualizarParams param)
         {
+            var validacion = ValidarCaja(codEmpresa, param);
+            if (validacion.Length > 0)
+            {
+                return DbHelper.CreateErrorResponse<bool>(validacion, -1, false);
+            }
+
             var query = @"
                 update cajas_definicion
                 set descripcion = @Descripcion,
@@ -646,7 +797,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         /// <summary>
-        /// Elimina una caja de cajas_definicion.
+        /// Elimina una caja junto con su configuración. Si la caja ya fue utilizada, las
+        /// llaves foráneas impiden el borrado y no se elimina nada.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="codCaja">Código de la caja.</param>
@@ -654,19 +806,71 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto<bool> CajasDefinicion_Caja_Eliminar(int codEmpresa, string codCaja, string usuario)
         {
-            var query = @"
-                delete from cajas_definicion
-                where cod_caja = @CodCaja";
-            var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, new { CodCaja = codCaja });
+            const string query = @"
+                set xact_abort on;
+                begin transaction;
+                delete from cajas_politicas_saldos where cod_caja = @CodCaja;
+                delete from cajas_servicios_asignados where cod_caja = @CodCaja;
+                delete from CAJAS_AUXILIARES_ASG where cod_caja = @CodCaja;
+                delete from CAJAS_FORMAS_PAGO where cod_caja = @CodCaja;
+                delete from CAJAS_DOCUMENTOS where cod_caja = @CodCaja;
+                delete from cajas_bancos where cod_caja = @CodCaja;
+                delete from cajas_usuarios where cod_caja = @CodCaja;
+                delete from cajas_usuarios_h where cod_caja = @CodCaja;
+                delete from cajas_definicion where cod_caja = @CodCaja;
+                commit transaction;";
 
-            if (result.Code == 0)
+            try
             {
-                RegistrarBitacora(codEmpresa, usuario, $"Caja : {codCaja}", "Elimina - WEB");
+                using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
+                connection.Execute(query, new { CodCaja = codCaja });
+            }
+            catch (SqlException ex) when (ex.Number == ErrorLlaveForanea)
+            {
+                return DbHelper.CreateErrorResponse<bool>(
+                    $"No es posible eliminar la caja {codCaja} porque ya fue utilizada " +
+                    "(aperturas o movimientos). " +
+                    "No se borró ningún dato; puede desmarcar 'Activa' para inactivarla.",
+                    -1,
+                    false);
+            }
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<bool>(ex.Message, -1, false);
             }
 
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(true)
-                : DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
+            RegistrarBitacora(codEmpresa, usuario, $"Caja : {codCaja}", "Elimina - WEB");
+            return DbHelper.CreateOkResponse(true);
+        }
+
+        /// <summary>
+        /// Aplica las validaciones del formulario y normaliza los datos antes de guardar.
+        /// </summary>
+        private string ValidarCaja(int codEmpresa, CajasDefinicionBase caja)
+        {
+            var mensajes = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(caja.Descripcion))
+            {
+                mensajes.Add(" - Nombre del Recaudador no es válido ...");
+            }
+
+            if (!_cntLink.fxgCntCuentaValida(codEmpresa, caja.Cod_Cuenta_Dev ?? string.Empty))
+            {
+                mensajes.Add(" - Cuenta Contable Principal no es válida..");
+            }
+
+            if (mensajes.Count > 0)
+            {
+                return string.Join(Environment.NewLine, mensajes);
+            }
+
+            caja.Descripcion = caja.Descripcion!.Trim().ToUpperInvariant();
+            caja.Notas = (caja.Notas ?? string.Empty).ToUpperInvariant();
+            caja.Cod_Cuenta_Dev = _cntLink.fxgCntCuentaFormato(codEmpresa, false, caja.Cod_Cuenta_Dev ?? string.Empty, 0);
+            caja.Apertura_Fecha = caja.Apertura_Fecha?.Date;
+
+            return string.Empty;
         }
 
         private void RegistrarBitacora(int codEmpresa, string usuario, string detalle, string movimiento)
