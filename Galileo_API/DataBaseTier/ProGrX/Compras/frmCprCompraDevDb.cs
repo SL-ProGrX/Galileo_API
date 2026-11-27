@@ -19,7 +19,7 @@ namespace Galileo.DataBaseTier
         private readonly MProGrXAuxiliarDB _auxInv;
         private readonly MSecurityMainDb _dbBitacora;
         private readonly EnvioCorreoDB _envioCorreoDB;
-
+        private readonly string _notificaciones;
 
         public FrmCprCompraDevDB(IConfiguration config)
         {
@@ -28,7 +28,7 @@ namespace Galileo.DataBaseTier
             _dbBitacora = new MSecurityMainDb(config);
             _envioCorreoDB = new EnvioCorreoDB(config);
             _auxInv = new MProGrXAuxiliarDB(config);
-
+            _notificaciones = config.GetSection("AppSettings").GetSection("Notificaciones").Value ?? string.Empty;
         }
 
         public ErrorDto Bitacora(BitacoraInsertarDto data) => _dbBitacora.Bitacora(data);
@@ -625,7 +625,7 @@ namespace Galileo.DataBaseTier
                 {
                     info = await _envioCorreoDB.QueuePlantillaAsync(
                         codEmpresa,
-                        "1",
+                        _notificaciones,
                         PlantillaDevolucion,
                         r.Result.email,
                         new Dictionary<string, string>
