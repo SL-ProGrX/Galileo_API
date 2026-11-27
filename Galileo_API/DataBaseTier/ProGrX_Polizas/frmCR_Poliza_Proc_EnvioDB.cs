@@ -325,7 +325,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
             Col("Nombre_Completo", GridConstants.Titles.NombreCompleto, 4000),
 
-            Col("Id_Solicitud", "Pol.Operación", 2000, GridConstants.Align.Center),
+            Col("Id_Solicitud", "Pol Operación", 2000, GridConstants.Align.Center),
             Col("cod_poliza", "Pol.Código", 1500, GridConstants.Align.Center),
             Col("Codigo", "Pol.Retención", 1500, GridConstants.Align.Center),
 
