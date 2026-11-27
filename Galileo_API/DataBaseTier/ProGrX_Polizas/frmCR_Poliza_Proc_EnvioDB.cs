@@ -8,6 +8,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 {
     public class FrmCrPolizaProcEnvioDb
     {
+        // Los SP de cierre de pólizas superan los 30 s que Dapper aplica por defecto.
+        private const int CommandTimeoutSeconds = 360;
+
         private readonly PortalDB _portalDb;
 
         public FrmCrPolizaProcEnvioDb(IConfiguration config)
@@ -122,7 +125,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 {
                     Poliza = codPoliza,
                     Corte = req.fecha_corte.ToString("yyyy-MM-dd")
-                }).ToList();
+                },
+                commandTimeout: CommandTimeoutSeconds).ToList();
 
             var rows = data
                 .Select(r => (IDictionary<string, object>)r)
@@ -394,7 +398,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 Col("ValorConstruccion", "Monto de Construcción", 1800, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
                 Col(GridConstants.Fields.CreditoSaldo, "Saldo del Crédito", 1800, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
 
-                Col("ID_SOLICITUD", "Pol. Operación", 2000),
+                Col("ID_SOLICITUD", "No. Operación", 2000),
 
                 Col("NumeroFinca", "No. Finca", 2000),
                 Col("AreaFinca", "Area Finca", 2000),
