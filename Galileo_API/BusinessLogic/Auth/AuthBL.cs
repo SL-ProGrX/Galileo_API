@@ -299,6 +299,7 @@ public sealed class AuthBL
             UserId = profile.UserId.Value,
             Usuario = string.IsNullOrWhiteSpace(profile.Usuario) ? username : profile.Usuario,
             Nombre = profile.Nombre,
+            Identificacion = profile.Identificacion,
         };
     }
 

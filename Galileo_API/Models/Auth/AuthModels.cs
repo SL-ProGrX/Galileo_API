@@ -20,6 +20,7 @@ public sealed class AuthUserDto
     public int UserId { get; init; }
     public string Usuario { get; init; } = string.Empty;
     public string Nombre { get; init; } = string.Empty;
+    public string Identificacion { get; set; } = string.Empty;
 }
 
 public sealed record AuthSessionClientInfo(
