@@ -245,6 +245,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     });
                 }
 
+                var inicio = (cambio.inicio ?? DateTime.Today).Date;
+                var corte = (cambio.corte ?? DateTime.Today).Date
+                    .AddDays(1)
+                    .AddSeconds(-1);
+
                 const string qInsert = @"
                 INSERT INTO CAJAS_DIVISAS_TIPO_CAMBIO
                     (ID_Cambio, COD_CONTABILIDAD, cod_divisa, Usuario, Fecha,
@@ -261,8 +266,8 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     usuario = usuario ?? string.Empty,
                     tc_compra = cambio.tc_compra,
                     tc_venta = cambio.tc_venta,
-                    inicio = cambio.inicio ?? DateTime.Today,
-                    corte = cambio.corte ?? DateTime.Today,
+                    inicio,
+                    corte,
                     variacion = cambio.variacion
                 });
 
@@ -303,6 +308,11 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             try
             {
+                var inicio = (cambio.inicio ?? DateTime.Today).Date;
+                var corte = (cambio.corte ?? DateTime.Today).Date
+                    .AddDays(1)
+                    .AddSeconds(-1);
+
                 const string qUpdate = @"
                 UPDATE CAJAS_DIVISAS_TIPO_CAMBIO
                 SET TC_Compra = @tc_compra,
@@ -318,8 +328,8 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                 {
                     tc_compra = cambio.tc_compra,
                     tc_venta = cambio.tc_venta,
-                    inicio = cambio.inicio ?? DateTime.Today,
-                    corte = cambio.corte ?? DateTime.Today,
+                    inicio,
+                    corte,
                     variacion = cambio.variacion,
                     cod_contabilidad = cambio.cod_contabilidad,
                     cod_divisa = cambio.cod_divisa,
