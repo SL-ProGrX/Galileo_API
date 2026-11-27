@@ -2,6 +2,7 @@ using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Cajas;
 using System.Data;
 
@@ -10,13 +11,117 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
     public class FrmCajasReporteCierresDb
     {
         private readonly PortalDB _portalDb;
+        private readonly MSecurityMainDb _security;
+        private const int vModulo = 5;
+        private const string FormName = "frmCajas_ReporteCierres";
+        private const string MovimientoAplica = "Aplica - WEB";
+        private const string AperturaNoEncontrada = "No se encontró la apertura de caja indicada.";
+
+        // cierre_ciego igual que VB6: solo el tipo de cierre 'A' deja de ser ciego.
+        private const string SelectAperturas = @"
+                SELECT
+                    M.Cod_Apertura AS cod_apertura,
+                    M.Apertura_Fecha AS apertura_fecha,
+                    M.Apertura_Usuario AS apertura_usuario,
+                    CASE WHEN M.Estado = 'C' THEN 'Cerrada' ELSE 'Abierta' END AS estado,
+                    M.Cierre_Fecha AS cierre_fecha,
+                    M.Cierre_Usuario AS cierre_usuario,
+                    M.Recibe_Fecha AS recibe_fecha,
+                    M.Recibe_Usuario AS recibe_usuario,
+                    M.Revisa_Fecha AS revisa_fecha,
+                    M.Revisa_Usuario AS revisa_usuario,
+                    CASE WHEN D.Cierre_Tipo = 'A' THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS cierre_ciego
+                FROM CAJAS_APERTURAS_MAIN M
+                LEFT JOIN CAJAS_DEFINICION D
+                    ON M.COD_CAJA = D.COD_CAJA";
 
         public FrmCajasReporteCierresDb(IConfiguration config)
-            : this(new PortalDB(config))
         {
+            _portalDb = new PortalDB(config);
+            _security = new MSecurityMainDb(config);
         }
 
-        public FrmCajasReporteCierresDb(PortalDB portalDb) => _portalDb = portalDb;
+        /// <summary>
+        /// Obtiene los permisos del usuario sobre las opciones del formulario.
+        /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa.</param>
+        /// <param name="usuario">Usuario a validar.</param>
+        /// <returns>Permisos de reportes, modo supervisor y forzar cierre.</returns>
+        public ErrorDto<CajasReporteCierresDerechosDto> Cajas_Derechos_Obtener(int codEmpresa, string usuario)
+        {
+            bool TieneDerecho(string opcion) => _security.Derecho(new ParametrosAccesoDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario,
+                Modulo = vModulo,
+                FormName = FormName,
+                Boton = opcion
+            }) != 0;
+
+            return DbHelper.CreateOkResponse(new CajasReporteCierresDerechosDto
+            {
+                Reportes = TieneDerecho("Aplicar"),
+                ModoSupervisor = TieneDerecho("chkModoSupervisor"),
+                ForzarCierre = TieneDerecho("btnCierre")
+            });
+        }
+
+        /// <summary>
+        /// Obtiene la fecha del servidor de la empresa.
+        /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa.</param>
+        /// <returns>Fecha del servidor.</returns>
+        public ErrorDto<DateTime> Cajas_FechaServidor_Obtener(int codEmpresa)
+        {
+            return DbHelper.ExecuteSingleQuery<DateTime>(_portalDb, codEmpresa, "SELECT dbo.MyGetdate()", DateTime.Today);
+        }
+
+        /// <summary>
+        /// Obtiene el codigo y la descripcion de una caja.
+        /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa.</param>
+        /// <param name="codCaja">Codigo de caja.</param>
+        /// <returns>Caja encontrada o nulo si no existe.</returns>
+        public ErrorDto<DropDownListaGenericaModel?> Cajas_Caja_Obtener(int codEmpresa, string codCaja)
+        {
+            const string sql = @"
+                SELECT RTRIM(COD_CAJA) AS item, RTRIM(DESCRIPCION) AS descripcion
+                FROM CAJAS_DEFINICION
+                WHERE COD_CAJA = @codCaja;";
+
+            return DbHelper.ExecuteSingleQuery<DropDownListaGenericaModel>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                null,
+                new { codCaja });
+        }
+
+        /// <summary>
+        /// Consulta una apertura puntual de la caja, sin importar el rango de fechas.
+        /// </summary>
+        /// <param name="codEmpresa">Codigo de empresa.</param>
+        /// <param name="codCaja">Codigo de caja.</param>
+        /// <param name="codApertura">Codigo de apertura.</param>
+        /// <returns>Apertura encontrada o nulo si no existe.</returns>
+        public ErrorDto<CajasAperturaReporteDto?> Cajas_Apertura_Obtener(int codEmpresa, string codCaja, int codApertura)
+        {
+            const string sql = SelectAperturas + @"
+                WHERE M.COD_CAJA = @codCaja
+                  AND M.COD_APERTURA = @codApertura;";
+
+            return DbHelper.ExecuteSingleQuery<CajasAperturaReporteDto>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                null,
+                new { codCaja, codApertura });
+        }
+
+        // Igual que VB6: el rango va de las 00:00:00 del inicio a las 23:59:59 del corte.
+        private static DateTime InicioDelDia(DateTime fecha) => fecha.Date;
+
+        private static DateTime FinDelDia(DateTime fecha) => fecha.Date.AddDays(1).AddSeconds(-1);
 
         /// <summary>
         /// Consulta las aperturas/cierres de caja por rango y filtro.
@@ -34,24 +139,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             DateTime fechaCorte,
             string filtro)
         {
-            var sql = @"
-                SELECT
-                    M.Cod_Apertura AS cod_apertura,
-                    M.Apertura_Fecha AS apertura_fecha,
-                    M.Apertura_Usuario AS apertura_usuario,
-                    CASE WHEN M.Estado = 'C' THEN 'Cerrada' ELSE 'Abierta' END AS estado,
-                    M.Cierre_Fecha AS cierre_fecha,
-                    M.Cierre_Usuario AS cierre_usuario,
-                    M.Recibe_Fecha AS recibe_fecha,
-                    M.Recibe_Usuario AS recibe_usuario,
-                    M.Revisa_Fecha AS revisa_fecha,
-                    M.Revisa_Usuario AS revisa_usuario,
-                    CASE WHEN ISNULL(D.Cierre_Tipo, 'C') = 'C' THEN CAST(1 AS bit) ELSE CAST(0 AS bit) END AS cierre_ciego
-                FROM CAJAS_APERTURAS_MAIN M
-                LEFT JOIN CAJAS_DEFINICION D
-                    ON M.COD_CAJA = D.COD_CAJA
+            const string sql = SelectAperturas + @"
                 WHERE M.Apertura_Fecha BETWEEN @fechaInicio AND @fechaCorte
-                  AND (@codCaja = '' OR M.COD_CAJA = @codCaja)
+                  AND M.COD_CAJA = @codCaja
                   AND (@filtro <> 'R' OR M.Recibe_Fecha IS NULL)
                   AND (@filtro <> 'V' OR M.Revisa_Fecha IS NULL)
                 ORDER BY M.Cod_Apertura DESC;";
@@ -60,7 +150,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 _portalDb,
                 codEmpresa,
                 sql,
-                new { codCaja, fechaInicio, fechaCorte, filtro });
+                new { codCaja, fechaInicio = InicioDelDia(fechaInicio), fechaCorte = FinDelDia(fechaCorte), filtro });
         }
 
         /// <summary>
@@ -86,14 +176,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     SifVersion AS version
                 FROM CAJAS_BITACORA_INGRESO
                 WHERE FechaIngreso BETWEEN @fechaInicio AND @fechaCorte
-                  AND (@codCaja = '' OR Caja = @codCaja)
+                  AND Caja = @codCaja
                 ORDER BY FechaIngreso DESC;";
 
             return DbHelper.ExecuteListQuery<CajasAccesoDto>(
                 _portalDb,
                 codEmpresa,
                 sql,
-                new { codCaja, fechaInicio, fechaCorte });
+                new { codCaja, fechaInicio = InicioDelDia(fechaInicio), fechaCorte = FinDelDia(fechaCorte) });
         }
 
         /// <summary>
@@ -138,6 +228,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             int codApertura,
             string usuario)
         {
+            const string sqlAbierta = @"
+                SELECT COUNT(*)
+                FROM CAJAS_APERTURAS_MAIN
+                WHERE COD_CAJA = @codCaja
+                  AND COD_APERTURA = @codApertura
+                  AND Estado = 'A';";
+
+            var abierta = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codEmpresa,
+                sqlAbierta,
+                0,
+                new { codCaja, codApertura });
+
+            if (abierta.Code != 0 || abierta.Result != 1)
+            {
+                var mensaje = abierta.Code != 0
+                    ? abierta.Description ?? string.Empty
+                    : "Solo se puede forzar el cierre de una apertura abierta";
+                return DbHelper.CreateErrorResponse(mensaje, -1, false);
+            }
+
             const string sql = "exec spCajas_Cierre_Forzado @codCaja, @codApertura, @usuario";
 
             var result = DbHelper.ExecuteNonQuery(
@@ -146,9 +258,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 sql,
                 new { codCaja, codApertura, usuario });
 
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(true)
-                : DbHelper.CreateErrorResponse(result.Description ?? string.Empty, result.Code.GetValueOrDefault(-1), false);
+            if (result.Code != 0)
+            {
+                return DbHelper.CreateErrorResponse(result.Description ?? string.Empty, result.Code.GetValueOrDefault(-1), false);
+            }
+
+            RegistrarBitacora(codEmpresa, usuario, $"Cierre Forzado a Caja: {codCaja} AP: {codApertura}");
+            return DbHelper.CreateOkResponse(true);
         }
 
         /// <summary>
@@ -189,7 +305,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 WHERE COD_CAJA = @codCaja
                   AND COD_APERTURA = @codApertura;";
 
-            return EjecutarActualizacionCierre(codEmpresa, sql, codCaja, codApertura, usuario, esRevision: false);
+            var respuesta = EjecutarActualizacionCierre(codEmpresa, sql, codCaja, codApertura, usuario, esRevision: false);
+            return RegistrarSiAplico(respuesta, codEmpresa, usuario, $"Recepción de Cierre de Caja: {codCaja} AP: {codApertura}");
         }
 
         /// <summary>
@@ -213,7 +330,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 WHERE COD_CAJA = @codCaja
                   AND COD_APERTURA = @codApertura;";
 
-            return EjecutarActualizacionCierre(codEmpresa, sql, codCaja, codApertura, usuario, esRevision: true);
+            var respuesta = EjecutarActualizacionCierre(codEmpresa, sql, codCaja, codApertura, usuario, esRevision: true);
+            return RegistrarSiAplico(respuesta, codEmpresa, usuario, $"Revisión de Cierre de Caja: {codCaja} AP: {codApertura}");
         }
 
         /// <summary>
@@ -355,7 +473,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 return filas > 0
                     ? DbHelper.CreateOkResponse(true)
-                    : DbHelper.CreateErrorResponse("No se encontro la apertura de caja indicada.", -1, false);
+                    : DbHelper.CreateErrorResponse(AperturaNoEncontrada, -1, false);
             });
 
             return response.Code == 0
@@ -370,7 +488,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             if (cierre is null)
             {
-                return "No se encontro la apertura de caja indicada.";
+                return AperturaNoEncontrada;
             }
 
             if (cierre.cierreFecha is null)
@@ -382,13 +500,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 && string.Equals(cierre.cierreUsuario.Trim(), usuario.Trim(), StringComparison.OrdinalIgnoreCase))
             {
                 return esRevision
-                    ? "El usuario actual no puede revisar el cierre de esta caja porque es el mismo que la cerro, verifique!"
-                    : "El usuario actual no puede recibir el cierre de esta caja porque es el mismo que la cerro, verifique!";
+                    ? "El usuario actual no puede revisar el cierre de esta caja porque es el mismo que la cerró, verifique!"
+                    : "El usuario actual no puede recibir el cierre de esta caja porque es el mismo que la cerró, verifique!";
             }
 
             if (!esRevision && cierre.recibeFecha is not null)
             {
-                return "Ya fue aplicada la recepcion del cierre anteriormente, verifique!";
+                return "Ya fue aplicada la recepción del cierre anteriormente, verifique!";
             }
 
             if (esRevision && cierre.recibeFecha is null)
@@ -402,6 +520,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             }
 
             return string.Empty;
+        }
+
+        private ErrorDto<bool> RegistrarSiAplico(ErrorDto<bool> respuesta, int codEmpresa, string usuario, string detalle)
+        {
+            if (respuesta.Code == 0)
+            {
+                RegistrarBitacora(codEmpresa, usuario, detalle);
+            }
+
+            return respuesta;
+        }
+
+        private void RegistrarBitacora(int codEmpresa, string usuario, string detalle)
+        {
+            _security.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = detalle,
+                Movimiento = MovimientoAplica,
+                Modulo = vModulo
+            });
         }
 
         private static void NormalizarDepositos(List<CajasDepositoDto> depositos)

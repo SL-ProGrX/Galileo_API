@@ -104,8 +104,16 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
                     if (existe > 0)
                         return DbHelper.ErrorResponse($"El usuario {usuarioCaja.usuario} ya está asignado.", -2);
 
-                    cn.Execute(@"INSERT INTO CAJAS_USUARIOS (COD_CAJA,USUARIO,CONTRASENA,CONTRASENA_RENOVACION,BLOQUEO,REGISTRO_FECHA,REGISTRO_USUARIO)
-                                 VALUES (@cod_caja,@usuario,'',dbo.MyGetdate(),NULL,dbo.MyGetdate(),@registro_usuario);",
+                    // Igual que VB6: la asignación y su ingreso al historial van juntos.
+                    cn.Execute(@"SET XACT_ABORT ON;
+                                 BEGIN TRANSACTION;
+                                 INSERT INTO CAJAS_USUARIOS (COD_CAJA,USUARIO,CONTRASENA,CONTRASENA_RENOVACION,BLOQUEO,REGISTRO_FECHA,REGISTRO_USUARIO)
+                                 VALUES (@cod_caja,@usuario,'',dbo.MyGetdate(),NULL,dbo.MyGetdate(),@registro_usuario);
+                                 INSERT INTO CAJAS_USUARIOS_H (LINEA,COD_CAJA,USUARIO,REGISTRO_USUARIO,REGISTRO_FECHA)
+                                 SELECT ISNULL(MAX(LINEA),0) + 1, @cod_caja, @usuario, @registro_usuario, dbo.MyGetdate()
+                                 FROM CAJAS_USUARIOS_H WITH (UPDLOCK, HOLDLOCK)
+                                 WHERE COD_CAJA=@cod_caja;
+                                 COMMIT TRANSACTION;",
                         new { usuarioCaja.cod_caja, usuarioCaja.usuario, registro_usuario = usuario });
                 }
                 else
@@ -134,8 +142,16 @@ namespace Galileo.DataBaseTier.ProGrX.Cajas
 
             try
             {
-                cn.Execute(@"DELETE FROM CAJAS_USUARIOS WHERE COD_CAJA=@cod_caja AND USUARIO=@usuario;",
-                    new { cod_caja, usuario = usuarioCaja });
+                cn.Execute(@"SET XACT_ABORT ON;
+                             BEGIN TRANSACTION;
+                             DELETE FROM CAJAS_USUARIOS WHERE COD_CAJA=@cod_caja AND USUARIO=@usuario;
+                             UPDATE CAJAS_USUARIOS_H
+                             SET SALIDA_USUARIO=@salida_usuario, SALIDA_FECHA=dbo.MyGetdate()
+                             WHERE COD_CAJA=@cod_caja
+                               AND LINEA = (SELECT MAX(LINEA) FROM CAJAS_USUARIOS_H
+                                            WHERE COD_CAJA=@cod_caja AND USUARIO=@usuario);
+                             COMMIT TRANSACTION;",
+                    new { cod_caja, usuario = usuarioCaja, salida_usuario = usuario });
             }
             catch (Exception ex)
             {

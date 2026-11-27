@@ -8,6 +8,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 {
     public class FrmCrPolizaProcEnvioDb
     {
+        // Los SP de cierre de pólizas superan los 30 s que Dapper aplica por defecto.
+        private const int CommandTimeoutSeconds = 360;
+
+        private const string CampoPolOperacion = "POL_OPERACION";
+
         private readonly PortalDB _portalDb;
 
         public FrmCrPolizaProcEnvioDb(IConfiguration config)
@@ -122,7 +127,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 {
                     Poliza = codPoliza,
                     Corte = req.fecha_corte.ToString("yyyy-MM-dd")
-                }).ToList();
+                },
+                commandTimeout: CommandTimeoutSeconds).ToList();
 
             var rows = data
                 .Select(r => (IDictionary<string, object>)r)
@@ -135,6 +141,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     ))
                 .ToList();
 
+            AgregarPolOperacion(rows);
+
             var columns = BuildColumnsByTipo(tipo);
 
             return DbHelper.CreateOkResponse(new CrdPolizaConsultaResponseDto
@@ -146,6 +154,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             });
         }
 
+
+        /// <summary>
+        /// VB6 muestra ID_SOLICITUD en dos columnas de Vida (Referencia y Pol Operación).
+        /// La grilla exige un campo por columna, por eso se duplica el valor con otra llave.
+        /// </summary>
+        private static void AgregarPolOperacion(List<Dictionary<string, object?>> rows)
+        {
+            foreach (var row in rows)
+            {
+                if (row.TryGetValue("ID_SOLICITUD", out var operacion))
+                    row[CampoPolOperacion] = operacion;
+            }
+        }
 
         private static string BuildSqlByTipo(string tipo, string analisis)
         {
@@ -325,7 +346,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
             Col("Nombre_Completo", GridConstants.Titles.NombreCompleto, 4000),
 
-            Col("Id_Solicitud", "Pol.Operación", 2000, GridConstants.Align.Center),
+            Col(CampoPolOperacion, "Pol Operación", 2000, GridConstants.Align.Center),
             Col("cod_poliza", "Pol.Código", 1500, GridConstants.Align.Center),
             Col("Codigo", "Pol.Retención", 1500, GridConstants.Align.Center),
 
@@ -394,7 +415,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 Col("ValorConstruccion", "Monto de Construcción", 1800, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
                 Col(GridConstants.Fields.CreditoSaldo, "Saldo del Crédito", 1800, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
 
-                Col("ID_SOLICITUD", "Pol. Operación", 2000),
+                Col("ID_SOLICITUD", "No. Operación", 2000),
 
                 Col("NumeroFinca", "No. Finca", 2000),
                 Col("AreaFinca", "Area Finca", 2000),

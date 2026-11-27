@@ -12,6 +12,26 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
         public FrmCajasReporteCierresBl(IConfiguration config) =>
             DbfrmCajas_ReporteCierres = new FrmCajasReporteCierresDb(config);
 
+        public ErrorDto<CajasReporteCierresDerechosDto> Cajas_Derechos_Obtener(int codEmpresa, string usuario)
+        {
+            return DbfrmCajas_ReporteCierres.Cajas_Derechos_Obtener(codEmpresa, usuario);
+        }
+
+        public ErrorDto<DateTime> Cajas_FechaServidor_Obtener(int codEmpresa)
+        {
+            return DbfrmCajas_ReporteCierres.Cajas_FechaServidor_Obtener(codEmpresa);
+        }
+
+        public ErrorDto<DropDownListaGenericaModel?> Cajas_Caja_Obtener(int codEmpresa, string codCaja)
+        {
+            return DbfrmCajas_ReporteCierres.Cajas_Caja_Obtener(codEmpresa, codCaja);
+        }
+
+        public ErrorDto<CajasAperturaReporteDto?> Cajas_Apertura_Obtener(int codEmpresa, string codCaja, int codApertura)
+        {
+            return DbfrmCajas_ReporteCierres.Cajas_Apertura_Obtener(codEmpresa, codCaja, codApertura);
+        }
+
         public ErrorDto<List<CajasAperturaReporteDto>> Cajas_Aperturas_Consulta(int codEmpresa, string codCaja, DateTime fechaInicio,
             DateTime fechaCorte, string filtro)
         {
