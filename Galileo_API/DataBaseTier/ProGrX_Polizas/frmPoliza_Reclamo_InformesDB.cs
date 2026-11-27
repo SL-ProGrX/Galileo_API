@@ -151,10 +151,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             try
             {
                 if (request == null)
-                    return DbHelper.ErrorResponse("Request is null.");
+                    return DbHelper.ErrorResponse("Debe indicar los filtros del reporte.", -2);
 
                 if (string.IsNullOrWhiteSpace(usuario))
-                    return DbHelper.ErrorResponse("usuario es requerido.");
+                    return DbHelper.ErrorResponse("Debe indicar el usuario.", -2);
 
                 // 1) Inicializa filtros (equivalente VB6)
                 // spPoliza_Report_Filtro_Add(@Tipo varchar(10), @Codigo varchar(30), @Usuario varchar(30), @Inicializa smallint = 0)
