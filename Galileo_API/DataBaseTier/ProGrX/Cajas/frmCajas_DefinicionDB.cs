@@ -447,21 +447,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto<bool> CajasDefinicion_AuxiliarAsignar_Insertar(int codEmpresa, string usuario, CajasAuxiliarAsignarParams param)
         {
-            var query = @"
+            const string query = @"
                 insert into CAJAS_AUXILIARES_ASG
                 (tipo, cod_auxiliar, cod_caja, registro_fecha, registro_usuario)
                 values
                 (@Tipo, @CodAuxiliar, @CodCaja, dbo.MyGetdate(), @Usuario)";
-            var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, param);
 
-            if (result.Code == 0)
-            {
-                RegistrarBitacora(codEmpresa, usuario, $"CONCEPTO: {param.CodAuxiliar} -> AUXILIAR: {param.Tipo} -> CAJA: {param.CodCaja}", "REGISTRA - WEB");
-            }
-
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(true)
-                : DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
+            return AplicarAuxiliar(codEmpresa, usuario, param, query, "REGISTRA - WEB");
         }
 
         /// <summary>
@@ -473,21 +465,31 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <returns>Resultado de la operación.</returns>
         public ErrorDto<bool> CajasDefinicion_AuxiliarAsignar_Eliminar(int codEmpresa, string usuario, CajasAuxiliarAsignarParams param)
         {
-            var query = @"
+            const string query = @"
                 delete from CAJAS_AUXILIARES_ASG
                 where tipo = @Tipo
                   and cod_auxiliar = @CodAuxiliar
                   and cod_caja = @CodCaja";
+
+            return AplicarAuxiliar(codEmpresa, usuario, param, query, "ELIMINA - WEB");
+        }
+
+        private ErrorDto<bool> AplicarAuxiliar(
+            int codEmpresa,
+            string usuario,
+            CajasAuxiliarAsignarParams param,
+            string query,
+            string movimiento)
+        {
             var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, param);
 
-            if (result.Code == 0)
+            if (result.Code != 0)
             {
-                RegistrarBitacora(codEmpresa, usuario, $"CONCEPTO: {param.CodAuxiliar} -> AUXILIAR: {param.Tipo} -> CAJA: {param.CodCaja}", "ELIMINA - WEB");
+                return DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
             }
 
-            return result.Code == 0
-                ? DbHelper.CreateOkResponse(true)
-                : DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
+            RegistrarBitacora(codEmpresa, usuario, $"CONCEPTO: {param.CodAuxiliar} -> AUXILIAR: {param.Tipo} -> CAJA: {param.CodCaja}", movimiento);
+            return DbHelper.CreateOkResponse(true);
         }
 
         /// <summary>
