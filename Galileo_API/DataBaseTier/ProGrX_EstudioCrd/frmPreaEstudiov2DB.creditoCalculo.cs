@@ -273,6 +273,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             }) ?? 0m;
         }
 
+        /// <summary>VB6: fxBonoPlazoMembresia(cedula, garantia).</summary>
+        private static int CalcularBonoPlazoMembresia(
+            IDbConnection connection, string cedula, string garantia)
+        {
+            if (string.IsNullOrWhiteSpace(cedula) || string.IsNullOrWhiteSpace(garantia))
+            {
+                return 0;
+            }
+
+            const string sql = "SELECT dbo.fxCrdPlazoBonifica(@Cedula, @Garantia)";
+            return connection.QueryFirstOrDefault<int?>(sql, new
+            {
+                Cedula = cedula,
+                Garantia = garantia
+            }) ?? 0;
+        }
+
         /// <summary>VB6: fxBonoMembresia(cedula, linea, garantia, destino, plazo) —
         /// mValidacion.bas línea 355-383: SELECT dbo.fxCrdTasaBonifica(...).</summary>
         private static decimal CalcularBonoMembresia(
@@ -294,27 +311,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
             }) ?? 0m;
         }
 
-        /// <summary>VB6: fxBonoPlazoMembresia(cedula, garantia) — mValidacion.bas línea
-        /// 386-406: SELECT dbo.fxCrdPlazoBonifica(...).</summary>
-        private static int CalcularBonoPlazoMembresia(IDbConnection connection, string cedula, string garantia)
-        {
-            if (string.IsNullOrWhiteSpace(cedula) || string.IsNullOrWhiteSpace(garantia))
-            {
-                return 0;
-            }
-
-            const string sql = "SELECT dbo.fxCrdPlazoBonifica(@Cedula, @Garantia)";
-            return connection.QueryFirstOrDefault<int?>(sql, new
-            {
-                Cedula = cedula,
-                Garantia = garantia
-            }) ?? 0;
-        }
-
         /// <summary>
         /// VB6: sbCalcularCuota, Case "txtMonto" (frmPreaEstudiov2.frm ~línea 14879-14911).
-        /// Re-deriva Tasa/Plazo desde el catálogo por rango (línea/monto/destino/garantía) y
-        /// aplica el bono de membresía cuando el Estado del expediente es 'R' o 'P'. No cubre
+        /// Re-deriva Plazo y Tasa desde el catálogo específico por
+        /// línea/monto/destino/garantía, aplica el plazo por membresía y
+        /// aplica el bono de tasa cuando el Estado del expediente es 'R' o 'P'. No cubre
         /// la rama de Garantía "Y" (Fondos) con Tag de fondo ya establecido — para Fondos el
         /// Tasa/Plazo ya vienen fijados por Prea_frmPreaEstudiov2_Fondo_Calcular.
         /// </summary>
@@ -340,6 +341,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 Console.WriteLine($"[RecalcularTasaPlazoCatalogo] CatalogoRango result: plazo={plazo} tasa={tasa}");
             }
 
+            var plazoBono = CalcularBonoPlazoMembresia(
+                connection, parametros.Cedula, parametros.Garantia);
+            if (plazoBono > 0)
+            {
+                plazo = plazoBono;
+            }
+
             var tasaPtsBono = 0m;
             var estadoTrim = parametros.Estado.Trim();
             if (estadoTrim.Equals("R", StringComparison.OrdinalIgnoreCase) || estadoTrim.Equals("P", StringComparison.OrdinalIgnoreCase))
@@ -351,18 +359,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     parametros.Garantia,
                     parametros.Destino,
                     plazo);
-                var plazoBono = CalcularBonoPlazoMembresia(
-                    connection, parametros.Cedula, parametros.Garantia);
-
                 if (bono > 0)
                 {
                     tasa -= bono;
                     tasaPtsBono = bono;
-                }
-
-                if (plazoBono > 0)
-                {
-                    plazo = plazoBono;
                 }
             }
 

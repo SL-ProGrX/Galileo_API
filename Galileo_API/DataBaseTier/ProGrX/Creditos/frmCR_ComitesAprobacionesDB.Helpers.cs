@@ -51,7 +51,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
         private static string QueryEstudios(CrComitesAprobacionesSolicitudRequest request)
         {
-            var estado = EstadoSql("P.ESTADO", request.estado);
+            var estado = EstadoEstudioSql(request.estado);
             return $@"
                 select
                     P.ID_COMITE as id_comite,
@@ -92,6 +92,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 "Recibida" => $"and {campo} = 'R'",
                 "Pendiente" => $"and {campo} = 'P'",
                 _ => $"and {campo} in ('P','R')"
+            };
+        }
+
+        private static string EstadoEstudioSql(string estado)
+        {
+            return estado switch
+            {
+                "Recibida" => "and P.ESTADO = 'R'",
+                "Pendiente" => "and P.ESTADO = 'P' and P.COD_ESTADO_V2 in ('PRCO2','PRCO')",
+                _ => "and (P.ESTADO = 'R' or (P.ESTADO = 'P' and P.COD_ESTADO_V2 in ('PRCO2','PRCO')))"
             };
         }
 

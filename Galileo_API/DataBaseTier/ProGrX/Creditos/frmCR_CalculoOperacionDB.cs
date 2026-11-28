@@ -221,13 +221,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         /// <param name="monto"></param>
         /// <param name="destino">Destino del credito (opcional, afecta el catalogo de rangos).</param>
         /// <param name="garantia">Garantia del credito (opcional, afecta el catalogo de rangos).</param>
+        /// <param name="cedula">Identificación usada para consultar el plazo bonificado por membresía.</param>
         /// <returns></returns>
         public ErrorDto<CrCalculoOperacionRangosData> CrCalculoOperacion_Rangos_Obtener(
             int codEmpresa,
             string codigo,
             decimal monto,
             string destino,
-            string garantia)
+            string garantia,
+            string cedula)
         {
             codigo = LimpiarCodigo(codigo);
 
@@ -240,12 +242,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 };
             }
 
+            var plazoCatalogo = Convert.ToInt32(
+                FxCatalogoRango(codEmpresa, codigo, monto, "P", destino, garantia));
+            var plazoBonificado = FxPlazoBonificado(codEmpresa, cedula, garantia);
+
             return new ErrorDto<CrCalculoOperacionRangosData>
             {
                 Code = 0,
                 Result = new CrCalculoOperacionRangosData
                 {
-                    plazo = Convert.ToInt32(FxCatalogoRango(codEmpresa, codigo, monto, "P", destino, garantia)),
+                    plazo = plazoBonificado > 0 ? plazoBonificado : plazoCatalogo,
                     tasa = FxCatalogoRango(codEmpresa, codigo, monto, "I", destino, garantia)
                 }
             };
@@ -708,6 +714,30 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     Tipo = tipo,
                     Destino = destino ?? string.Empty,
                     Garantia = garantia ?? string.Empty
+                }).Result;
+        }
+
+        /// <summary>
+        /// Obtiene el plazo especial definido para la membresía y garantía.
+        /// Si no existe bonificación, se conserva el plazo base del catálogo.
+        /// </summary>
+        private int FxPlazoBonificado(int codEmpresa, string cedula, string garantia)
+        {
+            if (string.IsNullOrWhiteSpace(cedula) || string.IsNullOrWhiteSpace(garantia))
+            {
+                return 0;
+            }
+
+            const string sql = @"select coalesce(dbo.fxCrdPlazoBonifica(@Cedula,@Garantia),0) as resultado;";
+            return DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                0,
+                new
+                {
+                    Cedula = cedula.Trim(),
+                    Garantia = garantia.Trim()
                 }).Result;
         }
 

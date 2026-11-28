@@ -22,10 +22,18 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
             int pagina,
             int paginacion,
             string? sortField = null,
-            int sortOrder = -1)
+            int sortOrder = -1,
+            DateTime? fechaInicio = null,
+            DateTime? fechaFin = null,
+            string? codEstadoV2 = null)
         {
             return _db.Prea_frmPreaConsultaExpeditentes_Lista_Obtener(
-                codEmpresa, buscar, pagina, paginacion, sortField, sortOrder);
+                codEmpresa, buscar, pagina, paginacion, sortField, sortOrder,
+                fechaInicio, fechaFin, codEstadoV2);
         }
+
+        public ErrorDto<List<FrmPreaConsultaExpeditentesEstado>> Prea_frmPreaConsultaExpeditentes_Estados_Obtener(
+            int codEmpresa)
+            => _db.Prea_frmPreaConsultaExpeditentes_Estados_Obtener(codEmpresa);
     }
 }

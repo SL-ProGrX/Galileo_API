@@ -276,4 +276,18 @@ namespace Galileo_API.Models.ProGrX.Credito
         public string usuario { get; set; } = string.Empty;
         public int asignado { get; set; } = 0;
     }
+
+    public class CrPrendaCotizadorData
+    {
+        public long id { get; set; }
+        public string descripcion { get; set; } = string.Empty;
+        public string nombre_archivo { get; set; } = string.Empty;
+        public DateTime? fecha_vence { get; set; }
+    }
+
+    public class CrPrendaCotizadorArchivoData
+    {
+        public string nombre_archivo { get; set; } = string.Empty;
+        public byte[] archivo { get; set; } = [];
+    }
 }

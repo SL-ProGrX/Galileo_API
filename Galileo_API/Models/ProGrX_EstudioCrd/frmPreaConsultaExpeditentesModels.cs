@@ -6,6 +6,12 @@
         public int total { get; set; }
     }
 
+    public class FrmPreaConsultaExpeditentesEstado
+    {
+        public string item { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
+    }
+
     public class FrmPreaConsultaExpeditentesItem
     {
         public string cod_preanalisis { get; set; } = string.Empty;

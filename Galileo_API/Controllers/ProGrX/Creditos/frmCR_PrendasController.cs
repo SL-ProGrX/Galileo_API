@@ -39,6 +39,20 @@ namespace Galileo_API.Controllers.ProGrX.Creditos
             return _bl.CR_Prendas_TiposActivos(codEmpresa);
         }
 
+        [HttpGet("CR_Prendas_Cotizadores_Obtener")]
+        public ErrorDto<List<CrPrendaCotizadorData>> CR_Prendas_Cotizadores_Obtener(int codEmpresa)
+        {
+            return _bl.CR_Prendas_Cotizadores_Obtener(codEmpresa);
+        }
+
+        [HttpGet("CR_Prendas_CotizadorArchivo_Obtener")]
+        public ErrorDto<CrPrendaCotizadorArchivoData> CR_Prendas_CotizadorArchivo_Obtener(
+            int codEmpresa,
+            long id)
+        {
+            return _bl.CR_Prendas_CotizadorArchivo_Obtener(codEmpresa, id);
+        }
+
         [HttpGet("CR_Prendas_CatalogoLista")]
         public ErrorDto<List<CrPrendaTipoListaData>> CR_Prendas_CatalogoLista(int codEmpresa, string tipoCatalogo)
         {

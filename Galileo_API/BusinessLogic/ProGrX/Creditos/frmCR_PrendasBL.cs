@@ -31,6 +31,18 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
             return _db.CrPrendas_TiposActivos(codEmpresa);
         }
 
+        public ErrorDto<List<CrPrendaCotizadorData>> CR_Prendas_Cotizadores_Obtener(int codEmpresa)
+        {
+            return _db.CrPrendas_Cotizadores_Obtener(codEmpresa);
+        }
+
+        public ErrorDto<CrPrendaCotizadorArchivoData> CR_Prendas_CotizadorArchivo_Obtener(
+            int codEmpresa,
+            long id)
+        {
+            return _db.CrPrendas_CotizadorArchivo_Obtener(codEmpresa, id);
+        }
+
         public ErrorDto<List<CrPrendaTipoListaData>> CR_Prendas_CatalogoLista(int codEmpresa, string tipoCatalogo)
         {
             return _db.CrPrendas_CatalogoLista(codEmpresa, tipoCatalogo);

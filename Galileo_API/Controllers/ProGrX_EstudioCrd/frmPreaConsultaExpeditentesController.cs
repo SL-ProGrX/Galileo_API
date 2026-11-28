@@ -28,10 +28,19 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
             int pagina = 0,
             int paginacion = 30,
             string? sortField = null,
-            int sortOrder = -1)
+            int sortOrder = -1,
+            DateTime? fechaInicio = null,
+            DateTime? fechaFin = null,
+            string? codEstadoV2 = null)
         {
             return _bl.Prea_frmPreaConsultaExpeditentes_Lista_Obtener(
-                codEmpresa, buscar, pagina, paginacion, sortField, sortOrder);
+                codEmpresa, buscar, pagina, paginacion, sortField, sortOrder,
+                fechaInicio, fechaFin, codEstadoV2);
         }
+
+        [HttpGet("Prea_frmPreaConsultaExpeditentes_Estados_Obtener")]
+        public ErrorDto<List<FrmPreaConsultaExpeditentesEstado>> Prea_frmPreaConsultaExpeditentes_Estados_Obtener(
+            int codEmpresa)
+            => _bl.Prea_frmPreaConsultaExpeditentes_Estados_Obtener(codEmpresa);
     }
 }
