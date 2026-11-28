@@ -18,15 +18,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
         /// Obtiene la lista de expedientes y subexpedientes de PREA con paginación server-side.
         /// </summary>
         public ErrorDto<FrmPreaConsultaExpeditentesListaResponse> Prea_frmPreaConsultaExpeditentes_Lista_Obtener(
-            int codEmpresa,
-            string? buscar,
-            int pagina,
-            int paginacion,
-            string? sortField = null,
-            int sortOrder = -1,
-            DateTime? fechaInicio = null,
-            DateTime? fechaFin = null,
-            string? codEstadoV2 = null)
+            FrmPreaConsultaExpeditentesFiltroRequest request)
         {
             var result = new ErrorDto<FrmPreaConsultaExpeditentesListaResponse>
             {
@@ -37,15 +29,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 
             try
             {
-                using var connection = _portalDb.CreateConnection(codEmpresa);
+                using var connection = _portalDb.CreateConnection(request.codEmpresa);
 
-                var filtro = buscar?.Trim() ?? string.Empty;
+                var filtro = request.buscar?.Trim() ?? string.Empty;
                 var like = string.IsNullOrWhiteSpace(filtro) ? null : $"%{filtro}%";
-                var offset = pagina;
-                var fetch = paginacion;
-                sortField = sortField?.Trim().ToLowerInvariant();
-                sortOrder = sortOrder == 1 ? 1 : -1;
-                var estado = codEstadoV2?.Trim() ?? string.Empty;
+                var offset = request.pagina;
+                var fetch = request.paginacion;
+                var sortField = request.sortField?.Trim().ToLowerInvariant();
+                var sortOrder = request.sortOrder == 1 ? 1 : -1;
+                var estado = request.codEstadoV2?.Trim() ?? string.Empty;
                 if (estado.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
                 {
                     estado = string.Empty;
@@ -68,8 +60,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     fetch,
                     sortField,
                     sortOrder,
-                    fechaInicio = fechaInicio?.Date,
-                    fechaFin = fechaFin?.Date,
+                    fechaInicio = request.fechaInicio?.Date,
+                    fechaFin = request.fechaFin?.Date,
                     estado
                 };
 

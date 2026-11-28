@@ -9,6 +9,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
     public class FrmCrDigitalCatalogosDb
     {
         private const int ModuloCreditos = 3;
+        private const string TipoArchivos = "ARCHIVOS";
+        private const string TipoCreditos = "CREDITOS";
+        private const string TipoEstados = "ESTADOS";
         private readonly PortalDB _portalDb;
         private readonly MSecurityMainDb _bitacora;
 
@@ -41,7 +44,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 var sql = tipoNormalizado switch
                 {
-                    "ARCHIVOS" => @"
+                    TipoArchivos => @"
                         SELECT
                             IdTipoArchivo AS id,
                             Descripcion AS descripcion,
@@ -50,7 +53,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                             RegistroUsuario AS registro_usuario
                         FROM CRD_DIG_TiposArchivos
                         ORDER BY IdTipoArchivo;",
-                    "CREDITOS" => @"
+                    TipoCreditos => @"
                         SELECT
                             D.IdTipoCredito AS id,
                             D.IdCodigoCatalogo AS codigo_catalogo,
@@ -115,7 +118,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         $"La tabla {tabla} no existe en la base de datos de la empresa.");
                 }
 
-                if (tipoNormalizado == "CREDITOS" &&
+                if (tipoNormalizado == TipoCreditos &&
                     !CatalogoCreditoExiste(connection, request.codigo_catalogo))
                 {
                     return DbHelper.ErrorResponse(
@@ -188,9 +191,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 var sql = tipoNormalizado switch
                 {
-                    "ARCHIVOS" =>
+                    TipoArchivos =>
                         "DELETE FROM CRD_DIG_TiposArchivos WHERE IdTipoArchivo = @Id;",
-                    "CREDITOS" =>
+                    TipoCreditos =>
                         "DELETE FROM CRD_DIG_TiposCreditos WHERE IdTipoCredito = @Id;",
                     _ =>
                         "DELETE FROM CRD_DIG_TiposEstadosSolicitud WHERE IdEstadoSolicitud = @Id;"
@@ -221,7 +224,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         private static string? NormalizarTipo(string tipo)
         {
             var value = (tipo ?? string.Empty).Trim().ToUpperInvariant();
-            return value is "ARCHIVOS" or "CREDITOS" or "ESTADOS"
+            return value is TipoArchivos or TipoCreditos or TipoEstados
                 ? value
                 : null;
         }
@@ -230,8 +233,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             return tipo switch
             {
-                "ARCHIVOS" => "CRD_DIG_TiposArchivos",
-                "CREDITOS" => "CRD_DIG_TiposCreditos",
+                TipoArchivos => "CRD_DIG_TiposArchivos",
+                TipoCreditos => "CRD_DIG_TiposCreditos",
                 _ => "CRD_DIG_TiposEstadosSolicitud"
             };
         }
@@ -271,11 +274,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             var sql = tipo switch
             {
-                "ARCHIVOS" => @"
+                TipoArchivos => @"
                     SELECT COUNT(1)
                     FROM CRD_DIG_TiposArchivos
                     WHERE IdTipoArchivo = @Id;",
-                "CREDITOS" => @"
+                TipoCreditos => @"
                     SELECT COUNT(1)
                     FROM CRD_DIG_TiposCreditos
                     WHERE IdTipoCredito = @Id;",
@@ -296,23 +299,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return "El código debe ser mayor que cero.";
             }
 
-            if (tipo == "ARCHIVOS" && string.IsNullOrWhiteSpace(request.descripcion))
+            if (tipo == TipoArchivos && string.IsNullOrWhiteSpace(request.descripcion))
             {
                 return "La descripción es requerida.";
             }
 
-            if (tipo == "CREDITOS" &&
+            if (tipo == TipoCreditos &&
                 string.IsNullOrWhiteSpace(request.codigo_catalogo))
             {
                 return "La línea de crédito es requerida.";
             }
 
-            if (tipo == "ESTADOS" && string.IsNullOrWhiteSpace(request.nombre_estado))
+            if (tipo == TipoEstados && string.IsNullOrWhiteSpace(request.nombre_estado))
             {
                 return "El nombre del estado es requerido.";
             }
 
-            if (tipo == "ESTADOS" && request.orden < 0)
+            if (tipo == TipoEstados && request.orden < 0)
             {
                 return "El orden no puede ser negativo.";
             }
@@ -324,7 +327,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
         {
             return (tipo, nuevo) switch
             {
-                ("ARCHIVOS", true) => @"
+                (TipoArchivos, true) => @"
                     INSERT INTO CRD_DIG_TiposArchivos(
                         IdTipoArchivo,
                         Descripcion,
@@ -338,12 +341,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         dbo.MyGetdate(),
                         @Usuario
                     );",
-                ("ARCHIVOS", false) => @"
+                (TipoArchivos, false) => @"
                     UPDATE CRD_DIG_TiposArchivos
                     SET Descripcion = @Descripcion,
                         Activo = @Activo
                     WHERE IdTipoArchivo = @Id;",
-                ("CREDITOS", true) => @"
+                (TipoCreditos, true) => @"
                     INSERT INTO CRD_DIG_TiposCreditos(
                         IdTipoCredito,
                         IdCodigoCatalogo,
@@ -359,13 +362,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         dbo.MyGetdate(),
                         @Usuario
                     );",
-                ("CREDITOS", false) => @"
+                (TipoCreditos, false) => @"
                     UPDATE CRD_DIG_TiposCreditos
                     SET IdCodigoCatalogo = @CodigoCatalogo,
                         Activo = @Activo,
                         Nota = @Nota
                     WHERE IdTipoCredito = @Id;",
-                ("ESTADOS", true) => @"
+                (TipoEstados, true) => @"
                     INSERT INTO CRD_DIG_TiposEstadosSolicitud(
                         IdEstadoSolicitud,
                         NombreEstadoSolicitud,

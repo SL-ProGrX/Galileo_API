@@ -79,22 +79,22 @@
 
     public class CrCategoriasCreditoCrudRequest
     {
-        public int id { get; set; }
+        public required int id { get; set; }
 
-        public bool es_nuevo { get; set; }
+        public required bool es_nuevo { get; set; }
 
         public string descripcion { get; set; } = string.Empty;
 
         public string categoria { get; set; } = string.Empty;
 
-        public decimal valor_inicial { get; set; }
+        public required decimal valor_inicial { get; set; }
 
-        public decimal valor_final { get; set; }
+        public required decimal valor_final { get; set; }
 
-        public decimal porc_probabilidad { get; set; }
+        public required decimal porc_probabilidad { get; set; }
 
         public string cod_segmento { get; set; } = string.Empty;
 
-        public decimal porc_segmento { get; set; }
+        public required decimal porc_segmento { get; set; }
     }
 }

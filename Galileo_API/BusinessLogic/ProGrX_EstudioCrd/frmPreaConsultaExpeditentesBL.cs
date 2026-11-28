@@ -17,19 +17,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_EstudioCrd
         /// Obtiene la lista de expedientes con paginación server-side y filtro global.
         /// </summary>
         public ErrorDto<FrmPreaConsultaExpeditentesListaResponse> Prea_frmPreaConsultaExpeditentes_Lista_Obtener(
-            int codEmpresa,
-            string? buscar,
-            int pagina,
-            int paginacion,
-            string? sortField = null,
-            int sortOrder = -1,
-            DateTime? fechaInicio = null,
-            DateTime? fechaFin = null,
-            string? codEstadoV2 = null)
+            FrmPreaConsultaExpeditentesFiltroRequest request)
         {
-            return _db.Prea_frmPreaConsultaExpeditentes_Lista_Obtener(
-                codEmpresa, buscar, pagina, paginacion, sortField, sortOrder,
-                fechaInicio, fechaFin, codEstadoV2);
+            return _db.Prea_frmPreaConsultaExpeditentes_Lista_Obtener(request);
         }
 
         public ErrorDto<List<FrmPreaConsultaExpeditentesEstado>> Prea_frmPreaConsultaExpeditentes_Estados_Obtener(

@@ -446,57 +446,74 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 return ErrorValidacion("La descripción es requerida.");
             }
 
-            if (tipo == "P")
+            return tipo switch
             {
-                if (request.descripcion.Length > 250)
-                {
-                    return ErrorValidacion("La descripción no puede superar 250 caracteres.");
-                }
+                "P" => ValidarProbabilidadDefault(request),
+                "M" => ValidarProbabilidadMora(request),
+                "S" => ValidarSegmento(request),
+                _ => null
+            };
+        }
 
-                if (string.IsNullOrWhiteSpace(request.categoria) ||
-                    request.categoria.Length > 5)
-                {
-                    return ErrorValidacion("La categoría es requerida y permite hasta 5 caracteres.");
-                }
-
-                if (request.valor_inicial < 0 || request.valor_final < 0 ||
-                    request.valor_inicial > 999.9m ||
-                    request.valor_final > 999.9m ||
-                    request.valor_inicial > request.valor_final)
-                {
-                    return ErrorValidacion(
-                        "El porcentaje mínimo debe ser menor o igual al porcentaje máximo.");
-                }
-            }
-
-            if (tipo == "M" &&
-                (request.descripcion.Length > 150 ||
-                 request.porc_probabilidad < 0 ||
-                 request.porc_probabilidad > 999.99m))
+        private static ErrorDto? ValidarProbabilidadDefault(
+            CrCategoriasCreditoCrudRequest request)
+        {
+            if (request.descripcion.Length > 250)
             {
                 return ErrorValidacion(
-                    "Verifique la descripción y el porcentaje de probabilidad.");
+                    "La descripción no puede superar 250 caracteres.");
             }
 
-            if (tipo == "S")
+            if (string.IsNullOrWhiteSpace(request.categoria) ||
+                request.categoria.Length > 5)
             {
-                if (string.IsNullOrWhiteSpace(request.cod_segmento) ||
-                    request.cod_segmento.Length > 10)
-                {
-                    return ErrorValidacion(
-                        "El código de segmento es requerido y permite hasta 10 caracteres.");
-                }
-
-                if (request.descripcion.Length > 150 ||
-                    request.porc_segmento < 0 ||
-                    request.porc_segmento >= 100m)
-                {
-                    return ErrorValidacion(
-                        "Verifique la descripción y el porcentaje del segmento.");
-                }
+                return ErrorValidacion(
+                    "La categoría es requerida y permite hasta 5 caracteres.");
             }
 
-            return null;
+            var rangoInvalido = request.valor_inicial < 0 ||
+                request.valor_final < 0 ||
+                request.valor_inicial > 999.9m ||
+                request.valor_final > 999.9m ||
+                request.valor_inicial > request.valor_final;
+
+            return rangoInvalido
+                ? ErrorValidacion(
+                    "El porcentaje mínimo debe ser menor o igual al porcentaje máximo.")
+                : null;
+        }
+
+        private static ErrorDto? ValidarProbabilidadMora(
+            CrCategoriasCreditoCrudRequest request)
+        {
+            var datosInvalidos = request.descripcion.Length > 150 ||
+                request.porc_probabilidad < 0 ||
+                request.porc_probabilidad > 999.99m;
+
+            return datosInvalidos
+                ? ErrorValidacion(
+                    "Verifique la descripción y el porcentaje de probabilidad.")
+                : null;
+        }
+
+        private static ErrorDto? ValidarSegmento(
+            CrCategoriasCreditoCrudRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.cod_segmento) ||
+                request.cod_segmento.Length > 10)
+            {
+                return ErrorValidacion(
+                    "El código de segmento es requerido y permite hasta 10 caracteres.");
+            }
+
+            var datosInvalidos = request.descripcion.Length > 150 ||
+                request.porc_segmento < 0 ||
+                request.porc_segmento >= 100m;
+
+            return datosInvalidos
+                ? ErrorValidacion(
+                    "Verifique la descripción y el porcentaje del segmento.")
+                : null;
         }
 
         private static string ObtenerSqlGuardar(string tipo, bool nuevo)
@@ -610,44 +627,58 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             for (var indice = 0; indice < request.registros.Count; indice++)
             {
                 var registro = request.registros[indice];
-                registro.segmento = (registro.segmento ?? string.Empty).Trim();
-
-                if (string.IsNullOrWhiteSpace(registro.segmento))
+                var validacionRegistro = ValidarRegistroCarga(
+                    registro,
+                    indice + 2,
+                    llaves);
+                if (validacionRegistro != null)
                 {
-                    return ErrorValidacion(
-                        $"El segmento de la fila {indice + 2} es obligatorio.");
-                }
-
-                if (registro.segmento.Length > 10)
-                {
-                    return ErrorValidacion(
-                        $"El segmento de la fila {indice + 2} permite hasta 10 caracteres.");
-                }
-
-                if (registro.mes is < 1 or > 12)
-                {
-                    return ErrorValidacion(
-                        $"El mes de la fila {indice + 2} debe estar entre 1 y 12.");
-                }
-
-                if (registro.probabilidad < 0 || registro.probabilidad >= 100m)
-                {
-                    return ErrorValidacion(
-                        $"La probabilidad de la fila {indice + 2} debe estar entre 0 y 99.999999999999999.");
-                }
-
-                var llave =
-                    $"{registro.segmento.ToUpperInvariant()}|{registro.mes}";
-
-                if (!llaves.Add(llave))
-                {
-                    return ErrorValidacion(
-                        $"El segmento {registro.segmento} y el mes " +
-                        $"{registro.mes} están repetidos en el archivo.");
+                    return validacionRegistro;
                 }
             }
 
             return null;
+        }
+
+        private static ErrorDto? ValidarRegistroCarga(
+            CrCategoriasCreditoCargaProbabilidadData registro,
+            int fila,
+            HashSet<string> llaves)
+        {
+            registro.segmento = (registro.segmento ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(registro.segmento))
+            {
+                return ErrorValidacion(
+                    $"El segmento de la fila {fila} es obligatorio.");
+            }
+
+            if (registro.segmento.Length > 10)
+            {
+                return ErrorValidacion(
+                    $"El segmento de la fila {fila} permite hasta 10 caracteres.");
+            }
+
+            if (registro.mes is < 1 or > 12)
+            {
+                return ErrorValidacion(
+                    $"El mes de la fila {fila} debe estar entre 1 y 12.");
+            }
+
+            if (registro.probabilidad < 0 || registro.probabilidad >= 100m)
+            {
+                return ErrorValidacion(
+                    $"La probabilidad de la fila {fila} debe estar entre 0 y 99.999999999999999.");
+            }
+
+            var llave =
+                $"{registro.segmento.ToUpperInvariant()}|{registro.mes}";
+
+            return llaves.Add(llave)
+                ? null
+                : ErrorValidacion(
+                    $"El segmento {registro.segmento} y el mes " +
+                    $"{registro.mes} están repetidos en el archivo.");
         }
 
         private static ErrorDto ErrorValidacion(string mensaje)
