@@ -4,6 +4,7 @@ using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using System.Data;
+using System.Globalization;
 
 
 namespace Galileo.DataBaseTier
@@ -882,14 +883,15 @@ WHERE cod_orden = @CodOrden AND COD_PRODUCTO = @CodProducto;";
             var result = new ErrorDto { Code = 0 };
 
             const string qTotalOrd = "SELECT TOTAL FROM CPR_ORDENES WHERE COD_ORDEN = @CodOrden;";
-            var totalOrd = conn.Query<float>(qTotalOrd, new { CodOrden = orden.cod_orden }).FirstOrDefault();
+            var totalOrd = conn.Query<decimal>(qTotalOrd, new { CodOrden = orden.cod_orden }).FirstOrDefault();
 
             const string qTotalFac = "SELECT ISNULL(SUM(TOTAL), 0) FROM CPR_COMPRAS WHERE COD_ORDEN = @CodOrden;";
-            var totalFac = conn.Query<float>(qTotalFac, new { CodOrden = orden.cod_orden }).FirstOrDefault();
+            var totalFac = conn.Query<decimal>(qTotalFac, new { CodOrden = orden.cod_orden }).FirstOrDefault();
 
             var totalNueva = CalcularTotalLineas(orden.lineas);
 
-            if (totalNueva + totalFac > totalOrd)
+            // Los totales se guardan con 2 decimales: se compara en céntimos
+            if (Math.Round(totalNueva + totalFac, 2, MidpointRounding.AwayFromZero) > totalOrd)
             {
                 result.Code = -1;
                 result.Description = "El total de la factura no puede ser mayor al total de la orden";
@@ -898,19 +900,24 @@ WHERE cod_orden = @CodOrden AND COD_PRODUCTO = @CodProducto;";
             return result;
         }
 
-        private static float CalcularTotalLineas(List<OrdenCompraDetalleData> lineas)
+        private static decimal CalcularTotalLineas(List<OrdenCompraDetalleData> lineas)
         {
-            float total = 0;
+            decimal total = 0;
 
             foreach (var item in lineas)
             {
-                var tmpDesc = (item.cantidad * item.precio) * (item.descuento / 100);
-                var tmpIv = ((item.cantidad * item.precio) - tmpDesc) * (item.imp_ventas / 100);
-                total += (item.cantidad * item.precio) - tmpDesc + tmpIv;
+                var bruto = item.cantidad * ADecimal(item.precio);
+                var tmpDesc = bruto * (ADecimal(item.descuento) / 100);
+                var tmpIv = (bruto - tmpDesc) * (ADecimal(item.imp_ventas) / 100);
+                total += bruto - tmpDesc + tmpIv;
             }
 
             return total;
         }
+
+        // Pasa por texto para no arrastrar el residuo binario del float
+        private static decimal ADecimal(float valor)
+            => decimal.Parse(valor.ToString(CultureInfo.InvariantCulture), NumberStyles.Float, CultureInfo.InvariantCulture);
 
         // ===========================
         //  FACTURAS XML (SIN INJECTION)
