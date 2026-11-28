@@ -21,6 +21,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 request,
                 fechaSistema);
 
+            Cr_SeguimientoTramites_Formalizacion_Pagare_Validar(
+                conn,
+                request,
+                mensajes);
+
             Cr_SeguimientoTramites_Formalizacion_PrimerDeduccion_Validar(
                 conn,
                 request,
@@ -187,11 +192,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 mensajes.Add("- Esta Operación ya fue procesada");
             }
 
-            if (request.pagare <= 0)
-            {
-                mensajes.Add("- Debe generar el pagaré antes de formalizar la operación");
-            }
-
             if (request.primer_deduccion_anio < fechaSistema.Year)
             {
                 mensajes.Add("- El Año especificado no es válido");
@@ -203,6 +203,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
             }
 
             return mensajes;
+        }
+
+        private static void Cr_SeguimientoTramites_Formalizacion_Pagare_Validar(
+            IDbConnection conn,
+            CrSeguimientoTramitesFormalizacionAplicarRequest request,
+            ICollection<string> mensajes)
+        {
+            long pagareRegistrado = conn.QueryFirstOrDefault<long?>(
+                @"select try_convert(bigint, pagare)
+                  from reg_creditos
+                  where id_solicitud = @Operacion;",
+                new { Operacion = request.operacion }) ?? 0;
+
+            if (pagareRegistrado <= 0)
+            {
+                mensajes.Add("- Debe generar el pagaré antes de formalizar la operación");
+                return;
+            }
+
+            // La formalización usa el número persistido, no un valor manipulable del cliente.
+            request.pagare = pagareRegistrado;
         }
 
         private static void Cr_SeguimientoTramites_Formalizacion_PrimerDeduccion_Validar(

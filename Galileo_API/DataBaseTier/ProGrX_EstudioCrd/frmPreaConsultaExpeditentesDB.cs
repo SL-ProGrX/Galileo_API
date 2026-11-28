@@ -45,12 +45,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 }
 
                 const string sqlCount = @"SELECT COUNT(*) FROM CRD_PREA_PREANALISIS P
-                                          WHERE (@fechaInicio IS NULL OR P.FECHA_CREACION >= @fechaInicio)
+                                          WHERE ISNULL(P.COD_PREANALISIS_REF, '') = ''
+                                            AND (@fechaInicio IS NULL OR P.FECHA_CREACION >= @fechaInicio)
                                             AND (@fechaFin IS NULL OR P.FECHA_CREACION < DATEADD(DAY, 1, @fechaFin))
                                             AND (@estado = '' OR ISNULL(P.COD_ESTADO_V2, '') = @estado)
                                             AND (@like IS NULL
                                              OR P.COD_PREANALISIS LIKE @like
-                                             OR P.COD_PREANALISIS_REF LIKE @like
+                                             OR P.COD_LINEA LIKE @like
                                              OR P.NOMBRE LIKE @like
                                              OR P.CEDULA LIKE @like)";
 
@@ -71,7 +72,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                 const string sql = @"
                     SELECT
                         RTRIM(ISNULL(P.COD_PREANALISIS, '')) AS cod_preanalisis,
-                        RTRIM(ISNULL(P.COD_PREANALISIS_REF, '')) AS cod_preanalisis_ref,
+                        RTRIM(ISNULL(P.COD_LINEA, '')) AS cod_linea,
                         RTRIM(ISNULL(P.NOMBRE, '')) AS nombre,
                         RTRIM(ISNULL(P.CEDULA, '')) AS cedula,
                         P.FECHA_CREACION AS fecha_creacion,
@@ -80,17 +81,20 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     FROM CRD_PREA_PREANALISIS P
                     LEFT JOIN CRD_PREA_V2_ESTADOS E
                       ON E.COD_ESTADO = P.COD_ESTADO_V2
-                    WHERE (@fechaInicio IS NULL OR P.FECHA_CREACION >= @fechaInicio)
+                    WHERE ISNULL(P.COD_PREANALISIS_REF, '') = ''
+                      AND (@fechaInicio IS NULL OR P.FECHA_CREACION >= @fechaInicio)
                       AND (@fechaFin IS NULL OR P.FECHA_CREACION < DATEADD(DAY, 1, @fechaFin))
                       AND (@estado = '' OR ISNULL(P.COD_ESTADO_V2, '') = @estado)
                       AND (@like IS NULL
                        OR P.COD_PREANALISIS LIKE @like
-                       OR P.COD_PREANALISIS_REF LIKE @like
+                       OR P.COD_LINEA LIKE @like
                        OR P.NOMBRE LIKE @like
                        OR P.CEDULA LIKE @like)
                     ORDER BY
                         CASE WHEN @sortField = 'cod_preanalisis' AND @sortOrder = 1 THEN P.COD_PREANALISIS END ASC,
                         CASE WHEN @sortField = 'cod_preanalisis' AND @sortOrder = -1 THEN P.COD_PREANALISIS END DESC,
+                        CASE WHEN @sortField = 'cod_linea' AND @sortOrder = 1 THEN P.COD_LINEA END ASC,
+                        CASE WHEN @sortField = 'cod_linea' AND @sortOrder = -1 THEN P.COD_LINEA END DESC,
                         CASE WHEN @sortField = 'nombre' AND @sortOrder = 1 THEN P.NOMBRE END ASC,
                         CASE WHEN @sortField = 'nombre' AND @sortOrder = -1 THEN P.NOMBRE END DESC,
                         CASE WHEN @sortField = 'cedula' AND @sortOrder = 1 THEN P.CEDULA END ASC,
@@ -112,7 +116,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     lista = items.Select(item => new FrmPreaConsultaExpeditentesItem
                     {
                         cod_preanalisis = item.cod_preanalisis,
-                        cod_preanalisis_ref = item.cod_preanalisis_ref,
+                        cod_linea = item.cod_linea,
                         nombre = item.nombre,
                         cedula = item.cedula,
                         fecha_creacion = item.fecha_creacion?.ToString("dd/MM/yyyy") ?? string.Empty,
