@@ -3,6 +3,7 @@ using Dapper;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Creditos;
+using System.Data.Common;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
@@ -202,15 +203,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     Result = registros
                 };
             }
-            catch (Exception ex)
+            catch (DbException ex)
             {
-                return new ErrorDto<List<
-                    CrCategoriasCreditoCargaProbabilidadData>>
-                {
-                    Code = -1,
-                    Description = ex.Message,
-                    Result = []
-                };
+                return CrearErrorCarga(ex);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return CrearErrorCarga(ex);
             }
         }
 
@@ -287,13 +286,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         $"Carga procesada satisfactoriamente. Registros: {request.registros.Count}."
                 };
             }
-            catch (Exception ex)
+            catch (DbException ex)
             {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = ex.Message
-                };
+                return CrearError(ex);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return CrearError(ex);
             }
         }
 
@@ -366,9 +365,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         : "Información actualizada satisfactoriamente."
                 };
             }
-            catch (Exception ex)
+            catch (DbException ex)
             {
-                return new ErrorDto { Code = -1, Description = ex.Message };
+                return CrearError(ex);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return CrearError(ex);
             }
         }
 
@@ -416,10 +419,34 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                     Description = "Información eliminada satisfactoriamente."
                 };
             }
-            catch (Exception ex)
+            catch (DbException ex)
             {
-                return new ErrorDto { Code = -1, Description = ex.Message };
+                return CrearError(ex);
             }
+            catch (InvalidOperationException ex)
+            {
+                return CrearError(ex);
+            }
+        }
+
+        private static ErrorDto<List<CrCategoriasCreditoCargaProbabilidadData>>
+            CrearErrorCarga(Exception ex)
+        {
+            return new ErrorDto<List<CrCategoriasCreditoCargaProbabilidadData>>
+            {
+                Code = -1,
+                Description = ex.Message,
+                Result = []
+            };
+        }
+
+        private static ErrorDto CrearError(Exception ex)
+        {
+            return new ErrorDto
+            {
+                Code = -1,
+                Description = ex.Message
+            };
         }
 
         private static string? NormalizarTipo(string tipo)

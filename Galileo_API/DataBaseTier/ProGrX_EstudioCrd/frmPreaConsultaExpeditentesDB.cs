@@ -2,6 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_EstudioCrd;
+using System.Data.Common;
 
 namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
 {
@@ -121,7 +122,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     total = total
                 };
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = new FrmPreaConsultaExpeditentesListaResponse();
+            }
+            catch (InvalidOperationException ex)
             {
                 result.Code = -1;
                 result.Description = ex.Message;
@@ -150,11 +157,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     new() { item = "TODOS", descripcion = "Todos" }
                 };
 
-                foreach (var row in rows)
-                {
-                    var valores = new Dictionary<string, object>(
+                var valoresRows = rows.Select(row =>
+                    new Dictionary<string, object>(
                         (IDictionary<string, object>)row,
-                        StringComparer.OrdinalIgnoreCase);
+                        StringComparer.OrdinalIgnoreCase));
+
+                foreach (var valores in valoresRows)
+                {
                     var codigo = ObtenerTexto(valores, "COD_ESTADO_V2", "COD_ESTADO", "CODIGO", "ITEM");
                     if (string.IsNullOrWhiteSpace(codigo) || estados.Any(x => x.item.Equals(codigo, StringComparison.OrdinalIgnoreCase)))
                     {
@@ -174,7 +183,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_EstudioCrd
                     .Concat(estados.Skip(1).OrderBy(x => x.descripcion))
                     .ToList();
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = [];
+            }
+            catch (InvalidCastException ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = [];
+            }
+            catch (InvalidOperationException ex)
             {
                 result.Code = -1;
                 result.Description = ex.Message;

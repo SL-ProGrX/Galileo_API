@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Credito;
+using System.Data.Common;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 {
@@ -82,7 +83,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 var result = connection.Query<CrDigitalCatalogoData>(sql).ToList();
                 return DbHelper.CreateOkResponse(result);
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<CrDigitalCatalogoData>>(
+                    ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.CreateErrorResponse<List<CrDigitalCatalogoData>>(
                     ex.Message);
@@ -160,7 +166,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                         ? "Información registrada satisfactoriamente."
                         : "Información actualizada satisfactoriamente.");
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
@@ -215,7 +225,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
 
                 return DbHelper.OkResponse("Información eliminada satisfactoriamente.");
             }
-            catch (Exception ex)
+            catch (DbException ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
