@@ -20,8 +20,8 @@ namespace Galileo_API.BusinessLogic.ProGrX.Creditos
         public ErrorDto<CrCalculoOperacionCodigoData> CrCalculoOperacion_Codigo_Obtener(int codEmpresa, string cedula, string codigo)
             => _db.CrCalculoOperacion_Codigo_Obtener(codEmpresa, cedula, codigo);
 
-        public ErrorDto<CrCalculoOperacionRangosData> CrCalculoOperacion_Rangos_Obtener(int codEmpresa, string codigo, decimal monto, string destino, string garantia)
-            => _db.CrCalculoOperacion_Rangos_Obtener(codEmpresa, codigo, monto, destino, garantia);
+        public ErrorDto<CrCalculoOperacionRangosData> CrCalculoOperacion_Rangos_Obtener(int codEmpresa, string codigo, decimal monto, string destino, string garantia, string cedula)
+            => _db.CrCalculoOperacion_Rangos_Obtener(codEmpresa, codigo, monto, destino, garantia, cedula);
 
         public ErrorDto<List<CrCalculoOperacionDisponibleData>> CrCalculoOperacion_Disponibles_Obtener(int codEmpresa, string cedula)
             => _db.CrCalculoOperacion_Disponibles_Obtener(codEmpresa, cedula);

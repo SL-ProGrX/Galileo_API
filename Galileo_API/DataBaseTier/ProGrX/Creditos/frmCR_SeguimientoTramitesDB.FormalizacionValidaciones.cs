@@ -187,9 +187,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 mensajes.Add("- Esta Operación ya fue procesada");
             }
 
-            if (request.pagare < 0)
+            if (request.pagare <= 0)
             {
-                mensajes.Add("- # de Pagaré no es válido");
+                mensajes.Add("- Debe generar el pagaré antes de formalizar la operación");
             }
 
             if (request.primer_deduccion_anio < fechaSistema.Year)

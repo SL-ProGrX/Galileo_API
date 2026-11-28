@@ -23,15 +23,14 @@ namespace Galileo_API.Controllers.ProGrX_EstudioCrd
         /// </summary>
         [HttpGet("Prea_frmPreaConsultaExpeditentes_Lista_Obtener")]
         public ErrorDto<FrmPreaConsultaExpeditentesListaResponse> Prea_frmPreaConsultaExpeditentes_Lista_Obtener(
-            int codEmpresa,
-            string? buscar = null,
-            int pagina = 0,
-            int paginacion = 30,
-            string? sortField = null,
-            int sortOrder = -1)
+            [FromQuery] FrmPreaConsultaExpeditentesFiltroRequest request)
         {
-            return _bl.Prea_frmPreaConsultaExpeditentes_Lista_Obtener(
-                codEmpresa, buscar, pagina, paginacion, sortField, sortOrder);
+            return _bl.Prea_frmPreaConsultaExpeditentes_Lista_Obtener(request);
         }
+
+        [HttpGet("Prea_frmPreaConsultaExpeditentes_Estados_Obtener")]
+        public ErrorDto<List<FrmPreaConsultaExpeditentesEstado>> Prea_frmPreaConsultaExpeditentes_Estados_Obtener(
+            int codEmpresa)
+            => _bl.Prea_frmPreaConsultaExpeditentes_Estados_Obtener(codEmpresa);
     }
 }

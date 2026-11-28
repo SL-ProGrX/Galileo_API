@@ -99,7 +99,7 @@
         public string Pe_Vencida { get; set; } = string.Empty;
         public string Pe_Cedula { get; set; } = string.Empty;
         public string Pe_Nombre { get; set; } = string.Empty;
-        public decimal? Pe_Cobertura { get; set; }
+        public string? Pe_Cobertura { get; set; }
         public string Titular_Tercero { get; set; } = string.Empty;
         public string Titular_Nombre { get; set; } = string.Empty;
     }

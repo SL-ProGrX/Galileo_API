@@ -52,4 +52,49 @@
 
         public decimal porc_segmento { get; set; } = 0;
     }
+
+    public class
+        CrCategoriasCreditoCargaProbabilidadData
+    {
+        public string segmento { get; set; } = string.Empty;
+
+        public int mes { get; set; }
+
+        public decimal probabilidad { get; set; }
+
+        public DateTime? fec_registra { get; set; }
+
+        public string usuario_registra { get; set; } = string.Empty;
+    }
+
+    public class
+        CrCategoriasCreditoCargaProbabilidadRequest
+    {
+        public string usuario { get; set; } = string.Empty;
+
+        public string nombre_archivo { get; set; } = string.Empty;
+
+        public List<CrCategoriasCreditoCargaProbabilidadData> registros { get; set; } = [];
+    }
+
+    public class CrCategoriasCreditoCrudRequest
+    {
+        public required int id { get; set; }
+
+        public required bool es_nuevo { get; set; }
+
+        public string descripcion { get; set; } = string.Empty;
+
+        public string categoria { get; set; } = string.Empty;
+
+        public required decimal valor_inicial { get; set; }
+
+        public required decimal valor_final { get; set; }
+
+        public required decimal porc_probabilidad { get; set; }
+
+        public string cod_segmento { get; set; } = string.Empty;
+
+        public required decimal porc_segmento { get; set; }
+    }
 }

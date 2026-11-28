@@ -45,14 +45,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Creditos
                 using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
                 var result = connection.QueryFirstOrDefault<CrGeneraGarantiaPagareDto>(
                     @"exec spCrd_Operacion_Pagare_Registra
-                        @Operacion, @Reemplazar, @Cedula, @Provincia, @Reservado",
+                        @Operacion, @Reemplazar, @Cedula, @Provincia, @Reservado,
+                        @NoReturn, @PriDeducForm",
                     new
                     {
                         Operacion = request.operacion,
                         Reemplazar = request.reemplazar_informacion ? 1 : 0,
                         Cedula = request.usar_cedula_real ? 1 : 0,
                         Provincia = request.lugar_firma.Trim(),
-                        Reservado = 0
+                        Reservado = 0,
+                        NoReturn = 0,
+                        PriDeducForm = request.pri_deduc_form
                     });
 
                 return result is null
